@@ -1,0 +1,280 @@
+
+import { useEffect } from 'react';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import { GlassCard } from '@/components/ui/GlassPanels';
+import { Users, Target, Shield, Award, Check } from 'lucide-react';
+
+const values = [
+  {
+    icon: <Users className="w-8 h-8 text-wca-purple" />,
+    title: "Community",
+    description: "We believe in the power of community to transform lives and societies."
+  },
+  {
+    icon: <Target className="w-8 h-8 text-wca-violet" />,
+    title: "Excellence",
+    description: "We pursue excellence in all we do, aiming to honor God with our best."
+  },
+  {
+    icon: <Shield className="w-8 h-8 text-wca-teal" />,
+    title: "Integrity",
+    description: "We uphold transparency and honesty in all areas of leadership and service."
+  },
+  {
+    icon: <Award className="w-8 h-8 text-wca-purple" />,
+    title: "Empowerment",
+    description: "We equip and empower individuals to reach their full potential."
+  }
+];
+
+const team = [
+  {
+    name: "Dr. John Smith",
+    role: "Founder & President",
+    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
+    bio: "Dr. Smith has over 20 years of experience in ministry and leadership development."
+  },
+  {
+    name: "Sarah Johnson",
+    role: "Executive Director",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=988&q=80",
+    bio: "Sarah oversees the daily operations and strategic initiatives of WCA."
+  },
+  {
+    name: "Pastor Michael Chen",
+    role: "Director of Ministries",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
+    bio: "Pastor Chen leads our spiritual development programs and outreach efforts."
+  },
+  {
+    name: "Dr. Grace Williams",
+    role: "Director of Education",
+    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1061&q=80",
+    bio: "Dr. Williams heads our leadership training and educational initiatives."
+  }
+];
+
+const milestones = [
+  {
+    year: "2005",
+    title: "Foundation",
+    description: "WCA was established with the vision to transform lives and communities."
+  },
+  {
+    year: "2010",
+    title: "First Center",
+    description: "Our first official center was opened, providing a home for our growing community."
+  },
+  {
+    year: "2015",
+    title: "Leadership Academy",
+    description: "Launched our comprehensive leadership development program."
+  },
+  {
+    year: "2020",
+    title: "Global Expansion",
+    description: "Expanded to 10 countries with over 50 centers and homes worldwide."
+  }
+];
+
+const About = () => {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      
+      <main className="flex-grow pt-20">
+        {/* Hero Section */}
+        <section className="relative py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+          <div className="container-custom">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="order-2 lg:order-1 animate-fade-up">
+                <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm mb-4">
+                  About Us
+                </div>
+                <h1 className="font-bold mb-4">
+                  <span className="block">Our Story and</span>
+                  <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                    Our Vision for Change
+                  </span>
+                </h1>
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                  World Changers Association (WCA) is dedicated to building a network of fellowships 
+                  that are spiritually, intellectually, and economically empowered to rescue the lost, 
+                  transform them into effective leaders that will bring positive change in the economy, 
+                  legislature, judiciary, and administration of nations.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-start">
+                    <Check className="w-5 h-5 text-wca-teal mr-3 mt-1" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Win the lost at all cost, train them as ministers, transform and empower them into effective leaders
+                    </p>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="w-5 h-5 text-wca-teal mr-3 mt-1" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Promote capacity building for all leaders
+                    </p>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="w-5 h-5 text-wca-teal mr-3 mt-1" />
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Ensure strict accountability for leadership transparency and integrity
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
+                <div className="relative">
+                  <div className="w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2370&q=80" 
+                      alt="WCA Community" 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  {/* Decorative elements */}
+                  <div className="absolute -top-4 -right-4 w-40 h-40 bg-wca-purple/10 rounded-full -z-10"></div>
+                  <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-wca-teal/10 rounded-full -z-10"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Values Section */}
+        <section className="py-20">
+          <div className="container-custom">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <h2 className="font-bold mb-4">
+                Our <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">Values</span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                These core values guide everything we do at World Changers Association.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {values.map((value, index) => (
+                <GlassCard key={index} className="p-6">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-full w-16 h-16 flex items-center justify-center mb-6">
+                    {value.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3">{value.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-300">{value.description}</p>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Timeline/History Section */}
+        <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+          <div className="container-custom">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <h2 className="font-bold mb-4">
+                Our <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">Journey</span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                Key milestones in our history of transforming lives and communities.
+              </p>
+            </div>
+
+            <div className="relative max-w-4xl mx-auto">
+              {/* Timeline line */}
+              <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-gradient-to-b from-wca-purple via-wca-violet to-wca-teal"></div>
+              
+              {/* Timeline items */}
+              <div className="space-y-20">
+                {milestones.map((milestone, index) => (
+                  <div key={index} className={`relative flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
+                    <div className="w-1/2"></div>
+                    
+                    {/* Timeline dot */}
+                    <div className="absolute left-1/2 transform -translate-x-1/2 w-8 h-8 bg-white dark:bg-gray-900 rounded-full border-4 border-wca-purple z-10 flex items-center justify-center">
+                      <div className="w-2 h-2 bg-wca-violet rounded-full"></div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className={`w-1/2 ${index % 2 === 0 ? 'pl-12' : 'pr-12'}`}>
+                      <GlassCard className="p-6">
+                        <div className="text-sm font-semibold text-wca-teal mb-2">{milestone.year}</div>
+                        <h3 className="text-xl font-semibold mb-3">{milestone.title}</h3>
+                        <p className="text-gray-600 dark:text-gray-300">{milestone.description}</p>
+                      </GlassCard>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Leadership Team Section */}
+        <section className="py-20">
+          <div className="container-custom">
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <h2 className="font-bold mb-4">
+                Our <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">Leadership Team</span>
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300">
+                Meet the dedicated individuals who lead World Changers Association.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {team.map((member, index) => (
+                <GlassCard key={index} className="overflow-hidden">
+                  <div className="aspect-square overflow-hidden">
+                    <img 
+                      src={member.image} 
+                      alt={member.name} 
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="font-semibold text-xl">{member.name}</h3>
+                    <p className="text-wca-teal font-medium text-sm mb-3">{member.role}</p>
+                    <p className="text-gray-600 dark:text-gray-300 text-sm">{member.bio}</p>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 bg-gradient-to-br from-wca-purple to-wca-violet text-white">
+          <div className="container-custom">
+            <div className="max-w-3xl mx-auto text-center">
+              <h2 className="font-bold mb-4">Join Our Mission</h2>
+              <p className="text-white/90 text-lg mb-8 max-w-2xl mx-auto">
+                Be part of a movement that is transforming lives and communities around the world. 
+                There are many ways to get involved with World Changers Association.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="/locations" className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors">
+                  Find a Location
+                </a>
+                <a href="/contact" className="bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium px-6 py-3 rounded-md hover:bg-white/20 transition-colors">
+                  Contact Us
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      
+      <Footer />
+    </div>
+  );
+};
+
+export default About;
