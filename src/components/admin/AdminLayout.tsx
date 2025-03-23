@@ -40,7 +40,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
   };
 
   return (
-    <SidebarProvider defaultIsOpen={!isMobile}>
+    <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
         <Sidebar className="border-r border-gray-200 dark:border-gray-800">
           <SidebarHeader className="p-4 flex items-center justify-between">
