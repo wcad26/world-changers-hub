@@ -10,7 +10,7 @@ const RegionalDCG: React.FC = () => {
       <div className="space-y-6">
         <h2 className="text-3xl font-bold tracking-tight">DCG Management</h2>
         <p className="text-muted-foreground">
-          Manage Discipleship Cell Groups in your region.
+          Manage Destiny Care Groups in your region.
         </p>
         
         <Tabs defaultValue="overview">
