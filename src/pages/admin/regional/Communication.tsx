@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -10,9 +9,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageSquare, Mail, Phone, Send, Users, Bell, Calendar, Filter, Search, CheckCircle2 } from "lucide-react";
+import { MessageSquare, Mail, Phone, Send, Users, Bell, Calendar, Filter, Search, CheckCircle2, PlusCircle } from "lucide-react";
 
-// Mock data for demonstration
 const mockMessages = [
   { id: 1, title: "Sunday Service Reminder", type: "Announcement", sentTo: "All Members", sentVia: "Email, SMS", date: "2023-10-25", status: "Sent", opens: 145, clicks: 87 },
   { id: 2, title: "Prayer Meeting Update", type: "Update", sentTo: "Prayer Team", sentVia: "WhatsApp", date: "2023-10-20", status: "Sent", opens: 32, clicks: 18 },
@@ -20,7 +18,6 @@ const mockMessages = [
   { id: 4, title: "Thanksgiving Service", type: "Announcement", sentTo: "All Members", sentVia: "Email, SMS, WhatsApp", date: "2023-11-01", status: "Scheduled", opens: 0, clicks: 0 },
 ];
 
-// Form schema for message creation
 const messageSchema = z.object({
   title: z.string().min(3, { message: "Message title must be at least 3 characters." }),
   messageType: z.string().min(1, { message: "Please select a message type." }),
@@ -69,7 +66,6 @@ const RegionalCommunication: React.FC = () => {
 
   function onSubmit(values: z.infer<typeof messageSchema>) {
     console.log(values);
-    // In a real app, this would save the message to a database and send it
     alert("Message sent/scheduled successfully!");
     form.reset();
     setMessagePreview(false);
@@ -437,7 +433,7 @@ const RegionalCommunication: React.FC = () => {
                 </CardDescription>
                 <div className="flex justify-end mt-4">
                   <Button>
-                    <Plus className="mr-2 h-4 w-4" />
+                    <PlusCircle className="mr-2 h-4 w-4" />
                     New Template
                   </Button>
                 </div>

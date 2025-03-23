@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
@@ -353,6 +354,256 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+// Add new chart components
+const BarChart = ({ 
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter,
+  ...props
+}: React.ComponentProps<typeof ChartContainer> & {
+  data: Record<string, any>[]
+  index: string
+  categories: string[]
+  colors?: string[]
+  valueFormatter?: (value: number) => string
+}) => {
+  const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+  
+  const config: ChartConfig = Object.fromEntries(
+    categories.map((category, i) => [
+      category,
+      {
+        label: category,
+        color: colors?.[i] || defaultColors[i % defaultColors.length],
+      },
+    ])
+  )
+
+  return (
+    <ChartContainer config={config} {...props}>
+      <RechartsPrimitive.BarChart data={data}>
+        <RechartsPrimitive.XAxis
+          dataKey={index}
+          stroke="#888888"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
+        <RechartsPrimitive.YAxis
+          stroke="#888888"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(value) => valueFormatter ? valueFormatter(value) : value}
+        />
+        <RechartsPrimitive.Tooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: number) => valueFormatter ? valueFormatter(value) : `${value}`}
+            />
+          }
+        />
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Bar
+            key={category}
+            dataKey={category}
+            fill={colors?.[i] || defaultColors[i % defaultColors.length]}
+            radius={4}
+          />
+        ))}
+      </RechartsPrimitive.BarChart>
+    </ChartContainer>
+  )
+}
+
+const LineChart = ({
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter,
+  ...props
+}: React.ComponentProps<typeof ChartContainer> & {
+  data: Record<string, any>[]
+  index: string
+  categories: string[]
+  colors?: string[]
+  valueFormatter?: (value: number) => string
+}) => {
+  const defaultColors = ['#8b5cf6', '#e11d48', '#2dd4bf', '#f97316', '#06b6d4']
+  
+  const config: ChartConfig = Object.fromEntries(
+    categories.map((category, i) => [
+      category,
+      {
+        label: category,
+        color: colors?.[i] || defaultColors[i % defaultColors.length],
+      },
+    ])
+  )
+
+  return (
+    <ChartContainer config={config} {...props}>
+      <RechartsPrimitive.LineChart data={data}>
+        <RechartsPrimitive.XAxis
+          dataKey={index}
+          stroke="#888888"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+        />
+        <RechartsPrimitive.YAxis
+          stroke="#888888"
+          fontSize={12}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={(value) => valueFormatter ? valueFormatter(value) : value}
+        />
+        <RechartsPrimitive.Tooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: number) => valueFormatter ? valueFormatter(value) : `${value}`}
+            />
+          }
+        />
+        <RechartsPrimitive.CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+        {categories.map((category, i) => (
+          <RechartsPrimitive.Line
+            key={category}
+            type="monotone"
+            dataKey={category}
+            stroke={colors?.[i] || defaultColors[i % defaultColors.length]}
+            activeDot={{ r: 6 }}
+            strokeWidth={2}
+          />
+        ))}
+      </RechartsPrimitive.LineChart>
+    </ChartContainer>
+  )
+}
+
+const PieChart = ({
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter,
+  ...props
+}: React.ComponentProps<typeof ChartContainer> & {
+  data: Record<string, any>[]
+  index: string
+  categories: string[]
+  colors?: string[]
+  valueFormatter?: (value: number) => string
+}) => {
+  const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+  
+  const config: ChartConfig = Object.fromEntries(
+    data.map((item, i) => [
+      item[index],
+      {
+        label: item[index],
+        color: colors?.[i] || defaultColors[i % defaultColors.length],
+      },
+    ])
+  )
+
+  return (
+    <ChartContainer config={config} {...props}>
+      <RechartsPrimitive.PieChart>
+        <RechartsPrimitive.Pie
+          data={data}
+          dataKey={categories[0]}
+          nameKey={index}
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          label={(entry) => entry[index]}
+          labelLine
+        >
+          {data.map((entry, i) => (
+            <RechartsPrimitive.Cell
+              key={`cell-${i}`}
+              fill={colors?.[i] || defaultColors[i % defaultColors.length]}
+            />
+          ))}
+        </RechartsPrimitive.Pie>
+        <RechartsPrimitive.Tooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: number) => valueFormatter ? valueFormatter(value) : `${value}`}
+            />
+          }
+        />
+        <RechartsPrimitive.Legend content={<ChartLegendContent />} />
+      </RechartsPrimitive.PieChart>
+    </ChartContainer>
+  )
+}
+
+const DonutChart = ({
+  data,
+  index,
+  categories,
+  colors,
+  valueFormatter,
+  ...props
+}: React.ComponentProps<typeof ChartContainer> & {
+  data: Record<string, any>[]
+  index: string
+  categories: string[]
+  colors?: string[]
+  valueFormatter?: (value: number) => string
+}) => {
+  const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+  
+  const config: ChartConfig = Object.fromEntries(
+    data.map((item, i) => [
+      item[index],
+      {
+        label: item[index],
+        color: colors?.[i] || defaultColors[i % defaultColors.length],
+      },
+    ])
+  )
+
+  return (
+    <ChartContainer config={config} {...props}>
+      <RechartsPrimitive.PieChart>
+        <RechartsPrimitive.Pie
+          data={data}
+          dataKey={categories[0]}
+          nameKey={index}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={80}
+          paddingAngle={5}
+          label={(entry) => entry[index]}
+          labelLine
+        >
+          {data.map((entry, i) => (
+            <RechartsPrimitive.Cell
+              key={`cell-${i}`}
+              fill={colors?.[i] || defaultColors[i % defaultColors.length]}
+            />
+          ))}
+        </RechartsPrimitive.Pie>
+        <RechartsPrimitive.Tooltip
+          content={
+            <ChartTooltipContent
+              formatter={(value: number) => valueFormatter ? valueFormatter(value) : `${value}`}
+            />
+          }
+        />
+        <RechartsPrimitive.Legend content={<ChartLegendContent />} />
+      </RechartsPrimitive.PieChart>
+    </ChartContainer>
+  )
+}
+
 export {
   ChartContainer,
   ChartTooltip,
@@ -360,4 +611,9 @@ export {
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
+  // Export the new chart components
+  BarChart,
+  LineChart,
+  PieChart,
+  DonutChart
 }
