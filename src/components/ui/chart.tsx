@@ -354,21 +354,17 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
-// Add new chart components
-const BarChart = ({ 
-  data,
-  index,
-  categories,
-  colors,
-  valueFormatter,
-  ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-}) => {
+// Add new chart components with correct TypeScript interfaces
+const BarChart = React.forwardRef<
+  HTMLDivElement,
+  Omit<React.ComponentProps<typeof ChartContainer>, "children" | "config"> & {
+    data: Record<string, any>[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+  }
+>(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
   const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
   
   const config: ChartConfig = Object.fromEntries(
@@ -382,7 +378,7 @@ const BarChart = ({
   )
 
   return (
-    <ChartContainer config={config} {...props}>
+    <ChartContainer ref={ref} config={config} {...props}>
       <RechartsPrimitive.BarChart data={data}>
         <RechartsPrimitive.XAxis
           dataKey={index}
@@ -416,22 +412,19 @@ const BarChart = ({
       </RechartsPrimitive.BarChart>
     </ChartContainer>
   )
-}
+})
+BarChart.displayName = "BarChart"
 
-const LineChart = ({
-  data,
-  index,
-  categories,
-  colors,
-  valueFormatter,
-  ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-}) => {
+const LineChart = React.forwardRef<
+  HTMLDivElement,
+  Omit<React.ComponentProps<typeof ChartContainer>, "children" | "config"> & {
+    data: Record<string, any>[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+  }
+>(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
   const defaultColors = ['#8b5cf6', '#e11d48', '#2dd4bf', '#f97316', '#06b6d4']
   
   const config: ChartConfig = Object.fromEntries(
@@ -445,7 +438,7 @@ const LineChart = ({
   )
 
   return (
-    <ChartContainer config={config} {...props}>
+    <ChartContainer ref={ref} config={config} {...props}>
       <RechartsPrimitive.LineChart data={data}>
         <RechartsPrimitive.XAxis
           dataKey={index}
@@ -482,22 +475,19 @@ const LineChart = ({
       </RechartsPrimitive.LineChart>
     </ChartContainer>
   )
-}
+})
+LineChart.displayName = "LineChart"
 
-const PieChart = ({
-  data,
-  index,
-  categories,
-  colors,
-  valueFormatter,
-  ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-}) => {
+const PieChart = React.forwardRef<
+  HTMLDivElement,
+  Omit<React.ComponentProps<typeof ChartContainer>, "children" | "config"> & {
+    data: Record<string, any>[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+  }
+>(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
   const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
   
   const config: ChartConfig = Object.fromEntries(
@@ -511,7 +501,7 @@ const PieChart = ({
   )
 
   return (
-    <ChartContainer config={config} {...props}>
+    <ChartContainer ref={ref} config={config} {...props}>
       <RechartsPrimitive.PieChart>
         <RechartsPrimitive.Pie
           data={data}
@@ -541,22 +531,19 @@ const PieChart = ({
       </RechartsPrimitive.PieChart>
     </ChartContainer>
   )
-}
+})
+PieChart.displayName = "PieChart"
 
-const DonutChart = ({
-  data,
-  index,
-  categories,
-  colors,
-  valueFormatter,
-  ...props
-}: React.ComponentProps<typeof ChartContainer> & {
-  data: Record<string, any>[]
-  index: string
-  categories: string[]
-  colors?: string[]
-  valueFormatter?: (value: number) => string
-}) => {
+const DonutChart = React.forwardRef<
+  HTMLDivElement,
+  Omit<React.ComponentProps<typeof ChartContainer>, "children" | "config"> & {
+    data: Record<string, any>[]
+    index: string
+    categories: string[]
+    colors?: string[]
+    valueFormatter?: (value: number) => string
+  }
+>(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
   const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
   
   const config: ChartConfig = Object.fromEntries(
@@ -570,7 +557,7 @@ const DonutChart = ({
   )
 
   return (
-    <ChartContainer config={config} {...props}>
+    <ChartContainer ref={ref} config={config} {...props}>
       <RechartsPrimitive.PieChart>
         <RechartsPrimitive.Pie
           data={data}
@@ -602,7 +589,8 @@ const DonutChart = ({
       </RechartsPrimitive.PieChart>
     </ChartContainer>
   )
-}
+})
+DonutChart.displayName = "DonutChart"
 
 export {
   ChartContainer,
