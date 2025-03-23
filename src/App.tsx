@@ -16,6 +16,28 @@ import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
 import NotFound from "./pages/NotFound";
 
+// Admin Portal Routes
+import RegionalDashboard from "./pages/admin/regional/Dashboard";
+import RegionalMembers from "./pages/admin/regional/Members";
+import RegionalEvents from "./pages/admin/regional/Events";
+import RegionalFundraising from "./pages/admin/regional/Fundraising";
+import RegionalLocations from "./pages/admin/regional/Locations";
+import RegionalFinances from "./pages/admin/regional/Finances";
+import RegionalDCG from "./pages/admin/regional/DCG";
+import RegionalReports from "./pages/admin/regional/Reports";
+import RegionalCommunication from "./pages/admin/regional/Communication";
+
+// Super Admin Portal Routes
+import SuperDashboard from "./pages/admin/super/Dashboard";
+import SuperMembers from "./pages/admin/super/Members";
+import SuperEvents from "./pages/admin/super/Events";
+import SuperFundraising from "./pages/admin/super/Fundraising";
+import SuperLocations from "./pages/admin/super/Locations";
+import SuperFinances from "./pages/admin/super/Finances";
+import SuperRegions from "./pages/admin/super/Regions";
+import SuperReports from "./pages/admin/super/Reports";
+import SuperCommunication from "./pages/admin/super/Communication";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -44,6 +66,7 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/locations" element={<Locations />} />
@@ -53,6 +76,30 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
+            
+            {/* Regional Admin Portal Routes */}
+            <Route path="/admin/regional/dashboard" element={<RegionalDashboard />} />
+            <Route path="/admin/regional/members" element={<RegionalMembers />} />
+            <Route path="/admin/regional/events" element={<RegionalEvents />} />
+            <Route path="/admin/regional/fundraising" element={<RegionalFundraising />} />
+            <Route path="/admin/regional/locations" element={<RegionalLocations />} />
+            <Route path="/admin/regional/finances" element={<RegionalFinances />} />
+            <Route path="/admin/regional/dcg" element={<RegionalDCG />} />
+            <Route path="/admin/regional/reports" element={<RegionalReports />} />
+            <Route path="/admin/regional/communication" element={<RegionalCommunication />} />
+            
+            {/* Super Admin Portal Routes */}
+            <Route path="/admin/super/dashboard" element={<SuperDashboard />} />
+            <Route path="/admin/super/members" element={<SuperMembers />} />
+            <Route path="/admin/super/events" element={<SuperEvents />} />
+            <Route path="/admin/super/fundraising" element={<SuperFundraising />} />
+            <Route path="/admin/super/locations" element={<SuperLocations />} />
+            <Route path="/admin/super/finances" element={<SuperFinances />} />
+            <Route path="/admin/super/regions" element={<SuperRegions />} />
+            <Route path="/admin/super/reports" element={<SuperReports />} />
+            <Route path="/admin/super/communication" element={<SuperCommunication />} />
+            
+            {/* Not Found Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
