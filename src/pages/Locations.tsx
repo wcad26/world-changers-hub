@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { MapPin, Clock, ExternalLink, Phone, Search, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 // Mock data for WCA centers and DCG homes
 const locations = [
@@ -12,6 +11,7 @@ const locations = [
     id: 1,
     type: "center",
     name: "WCA Main Center",
+    region: "North East",
     address: "123 Transformation Ave, New York, NY 10001",
     city: "New York",
     country: "United States",
@@ -31,6 +31,7 @@ const locations = [
     id: 2,
     type: "center",
     name: "WCA Eastside Branch",
+    region: "Mid West",
     address: "456 Vision St, Chicago, IL 60601",
     city: "Chicago",
     country: "United States",
@@ -49,6 +50,7 @@ const locations = [
     id: 3,
     type: "dcg",
     name: "Bright Light DCG",
+    region: "North East",
     address: "789 Community Rd, Los Angeles, CA 90001",
     city: "Los Angeles",
     country: "United States",
@@ -67,6 +69,7 @@ const locations = [
     id: 4,
     type: "dcg",
     name: "New Life DCG",
+    region: "Mid West",
     address: "101 Hope Lane, Houston, TX 77001",
     city: "Houston",
     country: "United States",
@@ -85,6 +88,7 @@ const locations = [
     id: 5,
     type: "center",
     name: "WCA Downtown Center",
+    region: "South East",
     address: "222 Faith Blvd, Miami, FL 33101",
     city: "Miami",
     country: "United States",
@@ -103,6 +107,7 @@ const locations = [
     id: 6,
     type: "dcg",
     name: "Grace Covenant DCG",
+    region: "South East",
     address: "333 Blessing Ave, Phoenix, AZ 85001",
     city: "Phoenix",
     country: "United States",
@@ -159,6 +164,11 @@ const Locations = () => {
     
     setFilteredLocations(result);
   }, [activeFilter, searchQuery, selectedCountry]);
+
+  // Helper function to format region name for URL
+  const formatRegionForUrl = (region: string) => {
+    return region.toLowerCase().replace(/\s+/g, '-');
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -279,6 +289,13 @@ const Locations = () => {
                           {location.type === 'center' ? 'WCA Center' : 'DCG Home'}
                         </span>
                       </div>
+                      {location.type === 'center' && location.region && (
+                        <div className="absolute top-4 left-4">
+                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-white/80 text-gray-800">
+                            {location.region} Region
+                          </span>
+                        </div>
+                      )}
                     </div>
                     <div className="p-6">
                       <h3 className="font-semibold text-xl mb-3">{location.name}</h3>
@@ -306,6 +323,14 @@ const Locations = () => {
                       </div>
                       
                       <div className="flex flex-col gap-3 mt-6">
+                        {location.type === 'center' && location.region && (
+                          <Link 
+                            to={`/locations/${formatRegionForUrl(location.region)}`}
+                            className="flex items-center justify-center bg-wca-purple hover:bg-wca-violet text-white rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                          >
+                            Visit Regional Page
+                          </Link>
+                        )}
                         <a 
                           href={`https://maps.google.com/?q=${location.coordinates.lat},${location.coordinates.lng}`}
                           target="_blank"

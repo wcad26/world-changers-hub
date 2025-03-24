@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Locations from "./pages/Locations";
+import RegionalBranchHome from "./pages/RegionalBranchHome";
 import Events from "./pages/Events";
 import Media from "./pages/Media";
 import Store from "./pages/Store";
@@ -70,6 +71,7 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
             <Route path="/locations" element={<Locations />} />
+            <Route path="/locations/:region" element={<RegionalBranchHome />} />
             <Route path="/events" element={<Events />} />
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
