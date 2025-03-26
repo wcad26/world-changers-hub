@@ -39,6 +39,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Add console log to help debug routing issues
+  console.log("Current location:", location.pathname);
+  console.log("Menu items:", menuItems);
+
   return (
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
