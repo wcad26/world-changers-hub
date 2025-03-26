@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Mail, Phone, Calendar, Search, UserCheck } from "lucide-react";
+import { UserPlus, Mail, Phone, Calendar, Search, UserCheck, CheckCircle, XCircle } from "lucide-react";
 
 // Mock data for demonstration
 const mockMembers = [
@@ -18,6 +18,18 @@ const mockMembers = [
   { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "+1234567891", joined: "2023-02-20", status: "Active", attendance: "92%" },
   { id: 3, name: "Michael Johnson", email: "michael@example.com", phone: "+1234567892", joined: "2023-03-10", status: "Inactive", attendance: "45%" },
   { id: 4, name: "Sarah Williams", email: "sarah@example.com", phone: "+1234567893", joined: "2023-04-05", status: "Active", attendance: "78%" },
+];
+
+// Mock data for attendance records
+const mockAttendanceRecords = [
+  { date: "2023-09-03", type: "Sunday Service", membersPresent: 42, membersAbsent: 8 },
+  { date: "2023-09-10", type: "Sunday Service", membersPresent: 38, membersAbsent: 12 },
+  { date: "2023-09-17", type: "Sunday Service", membersPresent: 45, membersAbsent: 5 },
+  { date: "2023-09-24", type: "Sunday Service", membersPresent: 40, membersAbsent: 10 },
+  { date: "2023-09-06", type: "Bible Study", membersPresent: 25, membersAbsent: 25 },
+  { date: "2023-09-13", type: "Bible Study", membersPresent: 28, membersAbsent: 22 },
+  { date: "2023-09-20", type: "Bible Study", membersPresent: 30, membersAbsent: 20 },
+  { date: "2023-09-27", type: "Bible Study", membersPresent: 26, membersAbsent: 24 },
 ];
 
 // Form schema for member registration
@@ -34,6 +46,10 @@ const memberSchema = z.object({
 const RegionalMembers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [attendanceFilter, setAttendanceFilter] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [attendanceHistory, setAttendanceHistory] = useState(false);
   
   const form = useForm<z.infer<typeof memberSchema>>({
     resolver: zodResolver(memberSchema),
@@ -60,6 +76,20 @@ const RegionalMembers: React.FC = () => {
     alert("Member registered successfully!");
     form.reset();
   }
+
+  const toggleMemberSelection = (id: number) => {
+    if (selectedMembers.includes(id)) {
+      setSelectedMembers(selectedMembers.filter(memberId => memberId !== id));
+    } else {
+      setSelectedMembers([...selectedMembers, id]);
+    }
+  };
+
+  const handleSaveAttendance = () => {
+    // In a real app, this would save attendance to a database
+    alert(`Saved attendance for ${selectedMembers.length} members.`);
+    setSelectedMembers([]);
+  };
 
   return (
     <RegionalAdminLayout>
@@ -282,76 +312,170 @@ const RegionalMembers: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
-                      <FormLabel>Event Type</FormLabel>
-                      <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm">
-                        <option value="">Select event type</option>
-                        <option value="sunday-service">Sunday Service</option>
-                        <option value="bible-study">Bible Study</option>
-                        <option value="prayer-meeting">Prayer Meeting</option>
-                        <option value="special-event">Special Event</option>
-                      </select>
-                    </div>
-                    <div className="flex-1">
-                      <FormLabel>Date</FormLabel>
-                      <Input type="date" />
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-md border overflow-hidden mt-6">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-12">
-                              <div className="flex items-center justify-center">
-                                <input type="checkbox" className="h-4 w-4" />
-                              </div>
-                            </TableHead>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Last Attended</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockMembers.map((member) => (
-                            <TableRow key={member.id}>
-                              <TableCell>
-                                <div className="flex items-center justify-center">
-                                  <input type="checkbox" className="h-4 w-4" />
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-medium">{member.name}</TableCell>
-                              <TableCell>{member.status}</TableCell>
-                              <TableCell>1 week ago</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="ghost" size="sm">
-                                    <UserCheck className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm">
-                                    <Phone className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between mt-4">
-                    <Button variant="outline">
-                      <Calendar className="mr-2 h-4 w-4" />
-                      View Attendance History
-                    </Button>
-                    <Button>
-                      Save Attendance
-                    </Button>
-                  </div>
+                  {!attendanceHistory ? (
+                    <>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <FormLabel>Event Type</FormLabel>
+                          <select 
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                            value={selectedEvent}
+                            onChange={(e) => setSelectedEvent(e.target.value)}
+                          >
+                            <option value="">Select event type</option>
+                            <option value="sunday-service">Sunday Service</option>
+                            <option value="bible-study">Bible Study</option>
+                            <option value="prayer-meeting">Prayer Meeting</option>
+                            <option value="special-event">Special Event</option>
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <FormLabel>Date</FormLabel>
+                          <Input 
+                            type="date" 
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="rounded-md border overflow-hidden mt-6">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-12">
+                                  <div className="flex items-center justify-center">
+                                    <input 
+                                      type="checkbox" 
+                                      className="h-4 w-4"
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedMembers(filteredMembers.map(m => m.id));
+                                        } else {
+                                          setSelectedMembers([]);
+                                        }
+                                      }}
+                                      checked={selectedMembers.length === filteredMembers.length && filteredMembers.length > 0}
+                                    />
+                                  </div>
+                                </TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Last Attended</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredMembers.map((member) => (
+                                <TableRow key={member.id}>
+                                  <TableCell>
+                                    <div className="flex items-center justify-center">
+                                      <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4"
+                                        checked={selectedMembers.includes(member.id)}
+                                        onChange={() => toggleMemberSelection(member.id)}
+                                      />
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium">{member.name}</TableCell>
+                                  <TableCell>{member.status}</TableCell>
+                                  <TableCell>1 week ago</TableCell>
+                                  <TableCell>
+                                    <div className="flex space-x-2">
+                                      <Button 
+                                        variant="ghost" 
+                                        size="sm"
+                                        onClick={() => toggleMemberSelection(member.id)}
+                                      >
+                                        {selectedMembers.includes(member.id) ? 
+                                          <CheckCircle className="h-4 w-4 text-green-500" /> : 
+                                          <UserCheck className="h-4 w-4" />
+                                        }
+                                      </Button>
+                                      <Button variant="ghost" size="sm">
+                                        <Phone className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between mt-4">
+                        <Button 
+                          variant="outline"
+                          onClick={() => setAttendanceHistory(true)}
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          View Attendance History
+                        </Button>
+                        <Button 
+                          onClick={handleSaveAttendance}
+                          disabled={selectedMembers.length === 0 || !selectedEvent || !selectedDate}
+                        >
+                          Save Attendance
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between mb-4">
+                        <h3 className="text-lg font-medium">Attendance History</h3>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setAttendanceHistory(false)}
+                        >
+                          Back to Attendance Taking
+                        </Button>
+                      </div>
+                      
+                      <div className="rounded-md border overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Event Type</TableHead>
+                                <TableHead>Present</TableHead>
+                                <TableHead>Absent</TableHead>
+                                <TableHead>Attendance Rate</TableHead>
+                                <TableHead>Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {mockAttendanceRecords.map((record, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{record.date}</TableCell>
+                                  <TableCell>{record.type}</TableCell>
+                                  <TableCell>{record.membersPresent}</TableCell>
+                                  <TableCell>{record.membersAbsent}</TableCell>
+                                  <TableCell>
+                                    {Math.round((record.membersPresent / (record.membersPresent + record.membersAbsent)) * 100)}%
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex space-x-2">
+                                      <Button variant="ghost" size="sm">
+                                        <Search className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="sm">
+                                        <Mail className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
