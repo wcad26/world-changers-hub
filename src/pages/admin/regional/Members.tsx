@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus, Mail, Phone, Calendar, Search, UserCheck, CheckCircle, XCircle } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
 // Mock data for demonstration
 const mockMembers = [
@@ -72,7 +75,10 @@ const RegionalMembers: React.FC = () => {
   function onSubmit(values: z.infer<typeof memberSchema>) {
     console.log(values);
     // In a real app, this would save the member to a database
-    alert("Member registered successfully!");
+    toast({
+      title: "Member registered",
+      description: "The member has been successfully registered."
+    });
     form.reset();
   }
 
@@ -86,7 +92,10 @@ const RegionalMembers: React.FC = () => {
 
   const handleSaveAttendance = () => {
     // In a real app, this would save attendance to a database
-    alert(`Saved attendance for ${selectedMembers.length} members.`);
+    toast({
+      title: "Attendance saved",
+      description: `Saved attendance for ${selectedMembers.length} members.`
+    });
     setSelectedMembers([]);
   };
 
@@ -315,8 +324,9 @@ const RegionalMembers: React.FC = () => {
                     <div>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
-                          <FormLabel>Event Type</FormLabel>
+                          <Label htmlFor="event-type">Event Type</Label>
                           <select 
+                            id="event-type"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                             value={selectedEvent}
                             onChange={(e) => setSelectedEvent(e.target.value)}
@@ -329,8 +339,9 @@ const RegionalMembers: React.FC = () => {
                           </select>
                         </div>
                         <div className="flex-1">
-                          <FormLabel>Date</FormLabel>
+                          <Label htmlFor="attendance-date">Date</Label>
                           <Input 
+                            id="attendance-date"
                             type="date" 
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
