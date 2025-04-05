@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -313,7 +312,7 @@ const RegionalMembers: React.FC = () => {
               <CardContent>
                 <div className="space-y-4">
                   {!attendanceHistory ? (
-                    <>
+                    <div>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
                           <FormLabel>Event Type</FormLabel>
@@ -421,9 +420,9 @@ const RegionalMembers: React.FC = () => {
                           Save Attendance
                         </Button>
                       </div>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div>
                       <div className="flex justify-between mb-4">
                         <h3 className="text-lg font-medium">Attendance History</h3>
                         <Button 
@@ -474,7 +473,7 @@ const RegionalMembers: React.FC = () => {
                           </Table>
                         </div>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
               </CardContent>
