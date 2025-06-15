@@ -18,7 +18,7 @@ export type DcgWithLeader = Dcg & {
 // Schema for creating/updating a DCG
 // Note: Form-level validation should ensure name is not empty.
 export const dcgSchema = z.object({
-  name: z.string({ required_error: 'DCG name is required' }),
+  name: z.string().min(1, 'DCG name is required'),
   leader_id: z.string().uuid().optional().nullable(),
   description: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
@@ -59,9 +59,14 @@ export const useCreateDcg = () => {
     mutationFn: async (dcgData: DcgData) => {
       if (!userRegion?.id) throw new Error('User region not found');
       
+      const newDcg: Database['public']['Tables']['dcgs']['Insert'] = {
+        ...dcgData,
+        region_id: userRegion.id,
+      };
+      
       const { data, error } = await supabase
         .from('dcgs')
-        .insert({ ...dcgData, region_id: userRegion.id })
+        .insert(newDcg)
         .select()
         .single();
       

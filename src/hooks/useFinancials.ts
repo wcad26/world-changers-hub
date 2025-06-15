@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -70,13 +71,15 @@ export const useCreateFinancialTransaction = () => {
       if (!userRegion?.id) throw new Error('User region not found');
       if (!user?.id) throw new Error('User not found');
       
+      const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
+        ...transactionData,
+        region_id: userRegion.id,
+        recorded_by: user.id
+      };
+      
       const { data, error } = await supabase
         .from('financial_transactions')
-        .insert({ 
-          ...transactionData, 
-          region_id: userRegion.id,
-          recorded_by: user.id
-        })
+        .insert(newTransaction)
         .select()
         .single();
       
