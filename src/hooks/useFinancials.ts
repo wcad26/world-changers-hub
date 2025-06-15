@@ -72,9 +72,13 @@ export const useCreateFinancialTransaction = () => {
       if (!user?.id) throw new Error('User not found');
       
       const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
-        ...transactionData,
         region_id: userRegion.id,
-        recorded_by: user.id
+        recorded_by: user.id,
+        category_id: transactionData.category_id,
+        amount: transactionData.amount,
+        description: transactionData.description,
+        transaction_date: transactionData.transaction_date,
+        dcg_id: transactionData.dcg_id,
       };
       
       const { data, error } = await supabase

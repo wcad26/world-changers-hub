@@ -60,8 +60,14 @@ export const useCreateDcg = () => {
       if (!userRegion?.id) throw new Error('User region not found');
       
       const newDcg: Database['public']['Tables']['dcgs']['Insert'] = {
-        ...dcgData,
+        name: dcgData.name,
         region_id: userRegion.id,
+        leader_id: dcgData.leader_id,
+        description: dcgData.description,
+        location: dcgData.location,
+        meeting_day: dcgData.meeting_day,
+        meeting_time: dcgData.meeting_time,
+        contact_phone: dcgData.contact_phone,
       };
       
       const { data, error } = await supabase
