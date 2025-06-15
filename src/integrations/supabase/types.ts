@@ -207,6 +207,84 @@ export type Database = {
           },
         ]
       }
+      events: {
+        Row: {
+          address: string | null
+          capacity: number | null
+          category: Database["public"]["Enums"]["event_category"] | null
+          created_at: string
+          created_by: string | null
+          dcg_id: string | null
+          description: string | null
+          end_datetime: string | null
+          id: string
+          image_url: string | null
+          is_featured: boolean
+          is_public: boolean
+          location_name: string | null
+          name: string
+          region_id: string | null
+          start_datetime: string
+          status: Database["public"]["Enums"]["event_status"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          capacity?: number | null
+          category?: Database["public"]["Enums"]["event_category"] | null
+          created_at?: string
+          created_by?: string | null
+          dcg_id?: string | null
+          description?: string | null
+          end_datetime?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_public?: boolean
+          location_name?: string | null
+          name: string
+          region_id?: string | null
+          start_datetime: string
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          capacity?: number | null
+          category?: Database["public"]["Enums"]["event_category"] | null
+          created_at?: string
+          created_by?: string | null
+          dcg_id?: string | null
+          description?: string | null
+          end_datetime?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_public?: boolean
+          location_name?: string | null
+          name?: string
+          region_id?: string | null
+          start_datetime?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transaction_categories: {
         Row: {
           description: string | null
@@ -542,6 +620,20 @@ export type Database = {
     Enums: {
       app_role: "super_admin" | "regional_admin" | "member"
       dcg_member_role: "Leader" | "Assistant" | "Member"
+      event_category:
+        | "Conference"
+        | "Worship"
+        | "Revival"
+        | "Outreach"
+        | "Training"
+        | "Workshop"
+        | "Community Service"
+        | "Bible Study"
+        | "Retreat"
+        | "Seminar"
+        | "DCG Meeting"
+        | "Other"
+      event_status: "Upcoming" | "Completed" | "Cancelled" | "Draft"
       financial_transaction_type: "Income" | "Expense"
       member_status: "active" | "inactive" | "new" | "transferred"
     }
@@ -661,6 +753,21 @@ export const Constants = {
     Enums: {
       app_role: ["super_admin", "regional_admin", "member"],
       dcg_member_role: ["Leader", "Assistant", "Member"],
+      event_category: [
+        "Conference",
+        "Worship",
+        "Revival",
+        "Outreach",
+        "Training",
+        "Workshop",
+        "Community Service",
+        "Bible Study",
+        "Retreat",
+        "Seminar",
+        "DCG Meeting",
+        "Other",
+      ],
+      event_status: ["Upcoming", "Completed", "Cancelled", "Draft"],
       financial_transaction_type: ["Income", "Expense"],
       member_status: ["active", "inactive", "new", "transferred"],
     },

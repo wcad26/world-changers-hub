@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,27 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2 } from "lucide-react";
+import { useRegionalEvents, useCreateEvent, useDeleteEvent, NewEvent } from "@/hooks/useEvents";
+import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+const eventCategories = [
+  'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'DCG Meeting', 'Other'
+] as const;
 
 // Mock data for demonstration
 const mockEvents = [
@@ -23,46 +42,136 @@ const mockEvents = [
 // Form schema for event creation
 const eventSchema = z.object({
   name: z.string().min(3, { message: "Event name must be at least 3 characters." }),
-  type: z.string().min(1, { message: "Please select an event type." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
+  category: z.enum(eventCategories),
+  description: z.string().optional(),
   date: z.string().min(1, { message: "Please select a date." }),
   time: z.string().min(1, { message: "Please provide a time." }),
-  location: z.string().min(3, { message: "Please provide a location." }),
-  capacity: z.string().min(1, { message: "Please enter the capacity." }),
-  isPublic: z.boolean().default(true),
+  location_name: z.string().min(3, { message: "Please provide a location." }),
+  capacity: z.coerce.number().positive().int().optional(),
+  is_public: z.boolean().default(true),
 });
 
 const RegionalEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  
+  const { toast } = useToast();
+
+  const { data: events, isLoading, isError, error } = useRegionalEvents();
+  const createEventMutation = useCreateEvent();
+  const deleteEventMutation = useDeleteEvent();
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       name: "",
-      type: "",
       description: "",
       date: "",
       time: "",
-      location: "",
-      capacity: "",
-      isPublic: true,
+      location_name: "",
+      is_public: true,
     },
   });
 
-  const filteredEvents = mockEvents.filter(event => 
-    (event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (statusFilter === "all" || event.status.toLowerCase() === statusFilter.toLowerCase())
-  );
+  const filteredEvents = React.useMemo(() => {
+    if (!events) return [];
+    return events.filter(event => 
+      (event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase())))
+    );
+  }, [events, searchTerm]);
+  
+  const upcomingEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled'), [filteredEvents]);
+  const pastEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) < new Date() || e.status === 'Completed' || e.status === 'Cancelled'), [filteredEvents]);
 
-  function onSubmit(values: z.infer<typeof eventSchema>) {
-    console.log(values);
-    // In a real app, this would save the event to a database
-    alert("Event created successfully!");
-    form.reset();
+  async function onSubmit(values: z.infer<typeof eventSchema>) {
+    const start_datetime = new Date(`${values.date}T${values.time}`).toISOString();
+    
+    const newEventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'> = {
+        name: values.name,
+        description: values.description || null,
+        category: values.category,
+        start_datetime: start_datetime,
+        end_datetime: null,
+        location_name: values.location_name,
+        address: null,
+        image_url: null,
+        capacity: values.capacity || null,
+        is_public: values.is_public,
+        is_featured: false,
+        status: 'Upcoming',
+        dcg_id: null,
+    };
+
+    createEventMutation.mutate(newEventData, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Event created successfully." });
+        form.reset();
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
+      }
+    });
   }
+  
+  const handleDelete = (id: string) => {
+    deleteEventMutation.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Event deleted successfully." });
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.message || "Could not delete event.", variant: "destructive" });
+      }
+    });
+  };
+
+  const renderTableBody = (eventList: typeof events) => {
+    if (isLoading) {
+      return Array.from({ length: 4 }).map((_, i) => (
+        <TableRow key={i}>
+          <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
+        </TableRow>
+      ));
+    }
+    if (!eventList || eventList.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={7} className="text-center h-24">No events found</TableCell>
+        </TableRow>
+      );
+    }
+    return eventList.map((event) => (
+      <TableRow key={event.id}>
+        <TableCell className="font-medium">{event.name}</TableCell>
+        <TableCell>{event.category}</TableCell>
+        <TableCell>{format(new Date(event.start_datetime), 'MMM dd, yyyy')}</TableCell>
+        <TableCell>{format(new Date(event.start_datetime), 'p')}</TableCell>
+        <TableCell>{event.location_name}</TableCell>
+        <TableCell>{event.capacity ?? 'N/A'}</TableCell>
+        <TableCell>
+          <div className="flex space-x-2">
+            <Button variant="outline" size="sm">Edit</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the event.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => handleDelete(event.id)}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </TableCell>
+      </TableRow>
+    ));
+  };
 
   return (
     <RegionalAdminLayout>
@@ -105,6 +214,13 @@ const RegionalEvents: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                {isError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error loading events</AlertTitle>
+                    <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="rounded-md border overflow-hidden">
                   <div className="overflow-x-auto">
                     <Table>
@@ -115,35 +231,12 @@ const RegionalEvents: React.FC = () => {
                           <TableHead>Date</TableHead>
                           <TableHead>Time</TableHead>
                           <TableHead>Location</TableHead>
-                          <TableHead>Expected Attendees</TableHead>
+                          <TableHead>Capacity</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredEvents.filter(event => event.status === "Upcoming").length > 0 ? (
-                          filteredEvents.filter(event => event.status === "Upcoming").map((event) => (
-                            <TableRow key={event.id}>
-                              <TableCell className="font-medium">{event.name}</TableCell>
-                              <TableCell>{event.type}</TableCell>
-                              <TableCell>{event.date}</TableCell>
-                              <TableCell>{event.time}</TableCell>
-                              <TableCell>{event.location}</TableCell>
-                              <TableCell>{event.attendees}</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="outline" size="sm">Edit</Button>
-                                  <Button variant="outline" size="sm">Cancel</Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center h-24">
-                              No upcoming events found
-                            </TableCell>
-                          </TableRow>
-                        )}
+                        {renderTableBody(upcomingEvents)}
                       </TableBody>
                     </Table>
                   </div>
@@ -173,6 +266,13 @@ const RegionalEvents: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                {isError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error loading events</AlertTitle>
+                    <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+                  </Alert>
+                )}
                 <div className="rounded-md border overflow-hidden">
                   <div className="overflow-x-auto">
                     <Table>
@@ -181,37 +281,14 @@ const RegionalEvents: React.FC = () => {
                           <TableHead>Event Name</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Date</TableHead>
-                          <TableHead>Time</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Location</TableHead>
-                          <TableHead>Actual Attendees</TableHead>
+                          <TableHead>Capacity</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredEvents.filter(event => event.status === "Completed").length > 0 ? (
-                          filteredEvents.filter(event => event.status === "Completed").map((event) => (
-                            <TableRow key={event.id}>
-                              <TableCell className="font-medium">{event.name}</TableCell>
-                              <TableCell>{event.type}</TableCell>
-                              <TableCell>{event.date}</TableCell>
-                              <TableCell>{event.time}</TableCell>
-                              <TableCell>{event.location}</TableCell>
-                              <TableCell>{event.attendees}</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="outline" size="sm">View Report</Button>
-                                  <Button variant="outline" size="sm">Duplicate</Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center h-24">
-                              No past events found
-                            </TableCell>
-                          </TableRow>
-                        )}
+                        {renderTableBody(pastEvents)}
                       </TableBody>
                     </Table>
                   </div>
@@ -247,22 +324,19 @@ const RegionalEvents: React.FC = () => {
                       />
                       <FormField
                         control={form.control}
-                        name="type"
+                        name="category"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Event Type</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select event type</option>
-                              <option value="conference">Conference</option>
-                              <option value="worship">Worship Service</option>
-                              <option value="revival">Revival Meeting</option>
-                              <option value="outreach">Community Outreach</option>
-                              <option value="training">Training Workshop</option>
-                              <option value="other">Other</option>
-                            </select>
+                            <FormControl>
+                              <select 
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                {...field}
+                              >
+                                <option value="">Select event type</option>
+                                {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                              </select>
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -297,7 +371,7 @@ const RegionalEvents: React.FC = () => {
                       
                       <FormField
                         control={form.control}
-                        name="location"
+                        name="location_name"
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Location</FormLabel>
@@ -316,7 +390,7 @@ const RegionalEvents: React.FC = () => {
                           <FormItem>
                             <FormLabel>Expected Capacity</FormLabel>
                             <FormControl>
-                              <Input type="number" placeholder="100" {...field} />
+                              <Input type="number" placeholder="100" {...field} value={field.value || ''} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -343,7 +417,7 @@ const RegionalEvents: React.FC = () => {
                       
                       <FormField
                         control={form.control}
-                        name="isPublic"
+                        name="is_public"
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                             <FormControl>
@@ -366,9 +440,9 @@ const RegionalEvents: React.FC = () => {
                     </div>
                     <div className="flex justify-end gap-4">
                       <Button type="button" variant="outline">Cancel</Button>
-                      <Button type="submit">
+                      <Button type="submit" disabled={createEventMutation.isPending}>
                         <Calendar className="mr-2 h-4 w-4" />
-                        Create Event
+                        {createEventMutation.isPending ? "Creating..." : "Create Event"}
                       </Button>
                     </div>
                   </form>
