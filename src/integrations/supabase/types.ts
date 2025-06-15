@@ -700,6 +700,15 @@ export type Database = {
           absent_count: number
         }[]
       }
+      get_global_attendance_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          region_id: string
+          total_present: number
+          total_events: number
+          avg_attendance: number
+        }[]
+      }
       get_region_from_dcg: {
         Args: { _dcg_id: string }
         Returns: string

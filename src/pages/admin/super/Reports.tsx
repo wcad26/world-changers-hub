@@ -2,8 +2,20 @@
 import React from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const SuperReports: React.FC = () => {
+  const { data: reports, isLoading, isError, error } = useSuperAdminReports();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  };
+  const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
@@ -11,18 +23,69 @@ const SuperReports: React.FC = () => {
         <p className="text-muted-foreground">
           Access comprehensive reports and analytics for the entire organization.
         </p>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Organizational Reports</CardTitle>
-            <CardDescription>
-              Generate and analyze organization-wide reports.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center py-8">Global reporting functionality will be implemented here.</p>
-          </CardContent>
-        </Card>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+        ) : isError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading reports</AlertTitle>
+            <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+          </Alert>
+        ) : reports ? (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Regional Performance Snapshot</CardTitle>
+                <CardDescription>
+                  A high-level overview of key metrics across all regions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                 <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Region</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead>Growth (3 mo)</TableHead>
+                        <TableHead>DCGs</TableHead>
+                        <TableHead>YTD Giving</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reports.regionalData.map(region => (
+                        <TableRow key={region.id}>
+                          <TableCell>{region.name}</TableCell>
+                          <TableCell>{formatNumber(region.members)}</TableCell>
+                          <TableCell className="text-green-500">+{region.growth.toFixed(1)}%</TableCell>
+                          <TableCell>{formatNumber(region.dcgs)}</TableCell>
+                          <TableCell>{formatCurrency(region.giving)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Further Reports</CardTitle>
+                <CardDescription>
+                  More detailed global reports will be available here soon.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-center py-8 text-muted-foreground">
+                  Global financial trends, membership demographics, and other analytics are coming soon.
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+           <p className="text-center py-8">No data available for reports.</p>
+        )}
       </div>
     </SuperAdminLayout>
   );

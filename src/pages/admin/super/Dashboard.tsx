@@ -3,10 +3,21 @@ import React from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ChevronUp, Calendar, DollarSign, Globe } from "lucide-react";
+import { Users, ChevronUp, Calendar, DollarSign, Globe, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const SuperDashboard: React.FC = () => {
+  const { data: reports, isLoading, isError, error } = useSuperAdminReports();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+  };
+  
+  const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
@@ -15,52 +26,64 @@ const SuperDashboard: React.FC = () => {
           Welcome to the WCA super admin dashboard. Here's an overview of global operations.
         </p>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">125,742</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-500 flex items-center">
-                  <ChevronUp className="mr-1 h-4 w-4" /> +8% from last quarter
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Regional Branches</CardTitle>
-              <Globe className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">32</div>
-              <p className="text-xs text-muted-foreground">Across 15 countries</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Fundraising</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$2.1M</div>
-              <p className="text-xs text-muted-foreground">75% of annual goal</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">18</div>
-              <p className="text-xs text-muted-foreground">Global leadership conference in 15 days</p>
-            </CardContent>
-          </Card>
-        </div>
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
+          </div>
+        ) : isError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading dashboard</AlertTitle>
+            <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+          </Alert>
+        ) : reports ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalMembers)}</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-green-500 flex items-center">
+                    <ChevronUp className="mr-1 h-4 w-4" /> +{formatNumber(reports.kpis.newMembersLast30Days)} in last 30 days
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Regional Branches</CardTitle>
+                <Globe className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{reports.kpis.totalRegions}</div>
+                <p className="text-xs text-muted-foreground">Across the globe</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Giving (YTD)</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(reports.kpis.totalIncomeYTD)}</div>
+                <p className="text-xs text-muted-foreground">Year-to-date income</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalDcgs)}</div>
+                <p className="text-xs text-muted-foreground">Discipleship Cell Groups worldwide</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : <p>No data available.</p>}
 
         <Tabs defaultValue="regions">
           <TabsList>
@@ -73,55 +96,38 @@ const SuperDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle>Regional Overview</CardTitle>
                 <CardDescription>
-                  Performance overview of top WCA regions.
+                  Performance overview of WCA regions.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Region</TableHead>
-                      <TableHead>Members</TableHead>
-                      <TableHead>Growth</TableHead>
-                      <TableHead>DCGs</TableHead>
-                      <TableHead>Monthly Giving</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>North America</TableCell>
-                      <TableCell>34,250</TableCell>
-                      <TableCell className="text-green-500">+5.2%</TableCell>
-                      <TableCell>324</TableCell>
-                      <TableCell>$425,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Western Europe</TableCell>
-                      <TableCell>28,430</TableCell>
-                      <TableCell className="text-green-500">+3.8%</TableCell>
-                      <TableCell>256</TableCell>
-                      <TableCell>$380,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Africa</TableCell>
-                      <TableCell>42,750</TableCell>
-                      <TableCell className="text-green-500">+10.5%</TableCell>
-                      <TableCell>512</TableCell>
-                      <TableCell>$295,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Asia Pacific</TableCell>
-                      <TableCell>20,312</TableCell>
-                      <TableCell className="text-green-500">+7.3%</TableCell>
-                      <TableCell>215</TableCell>
-                      <TableCell>$275,000</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                {isLoading ? <Skeleton className="h-64" /> : isError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load regional data.</AlertDescription></Alert> : reports ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Region</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead>Growth (3 mo)</TableHead>
+                        <TableHead>DCGs</TableHead>
+                        <TableHead>YTD Giving</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reports.regionalData.map(region => (
+                        <TableRow key={region.id}>
+                          <TableCell>{region.name}</TableCell>
+                          <TableCell>{formatNumber(region.members)}</TableCell>
+                          <TableCell className="text-green-500">+{region.growth.toFixed(1)}%</TableCell>
+                          <TableCell>{formatNumber(region.dcgs)}</TableCell>
+                          <TableCell>{formatCurrency(region.giving)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : null}
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
-                  Showing 4 of 15 major regions
+                  Showing all {reports?.kpis.totalRegions || 0} regions.
                 </p>
               </CardFooter>
             </Card>
@@ -135,53 +141,8 @@ const SuperDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead>This Quarter</TableHead>
-                      <TableHead>Last Quarter</TableHead>
-                      <TableHead>YTD</TableHead>
-                      <TableHead>Annual Goal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Tithes</TableCell>
-                      <TableCell>$2,450,000</TableCell>
-                      <TableCell>$2,320,000</TableCell>
-                      <TableCell>$7,150,000</TableCell>
-                      <TableCell>$10,000,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Offerings</TableCell>
-                      <TableCell>$1,820,000</TableCell>
-                      <TableCell>$1,750,000</TableCell>
-                      <TableCell>$5,320,000</TableCell>
-                      <TableCell>$7,500,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Fundraising</TableCell>
-                      <TableCell>$850,000</TableCell>
-                      <TableCell>$720,000</TableCell>
-                      <TableCell>$2,150,000</TableCell>
-                      <TableCell>$3,000,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Special Projects</TableCell>
-                      <TableCell>$1,200,000</TableCell>
-                      <TableCell>$950,000</TableCell>
-                      <TableCell>$3,420,000</TableCell>
-                      <TableCell>$5,000,000</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                <p className="py-8 text-center text-muted-foreground">Detailed financial charts coming soon.</p>
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Total YTD: $18,040,000 (71% of annual goal)
-                </p>
-              </CardFooter>
             </Card>
           </TabsContent>
           <TabsContent value="major-events" className="space-y-4">
@@ -193,53 +154,8 @@ const SuperDashboard: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Event</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead>Expected Attendance</TableHead>
-                      <TableHead>Budget</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Global Leadership Conference</TableCell>
-                      <TableCell>June 15-18, 2023</TableCell>
-                      <TableCell>New York, USA</TableCell>
-                      <TableCell>1,500</TableCell>
-                      <TableCell>$350,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>European Ministers Retreat</TableCell>
-                      <TableCell>July 8-12, 2023</TableCell>
-                      <TableCell>Geneva, Switzerland</TableCell>
-                      <TableCell>800</TableCell>
-                      <TableCell>$175,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Africa Youth Summit</TableCell>
-                      <TableCell>August 5-7, 2023</TableCell>
-                      <TableCell>Nairobi, Kenya</TableCell>
-                      <TableCell>2,500</TableCell>
-                      <TableCell>$220,000</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Asian Pastors Conference</TableCell>
-                      <TableCell>September 22-25, 2023</TableCell>
-                      <TableCell>Singapore</TableCell>
-                      <TableCell>1,200</TableCell>
-                      <TableCell>$195,000</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                 <p className="py-8 text-center text-muted-foreground">Live event data is coming soon.</p>
               </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Total budget for upcoming events: $940,000
-                </p>
-              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
