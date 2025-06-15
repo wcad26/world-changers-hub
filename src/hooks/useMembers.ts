@@ -1,15 +1,26 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth.tsx';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+// Manually add email to Profile to fix build error due to possibly stale types.ts
+type Profile = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
+
 export type MemberWithProfile = Database['public']['Tables']['members']['Row'] & {
   profiles: Profile | null;
 };
 
-type NewMemberData = Omit<Profile, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'emergency_contact_name' | 'emergency_contact_phone'> & {
+// This type is aligned with the RegisterMemberForm to fix a type mismatch.
+type NewMemberData = {
+    first_name: string;
+    last_name: string;
     email: string;
+    phone?: string;
+    address?: string;
+    date_of_birth?: string;
+    gender?: string;
+    occupation?: string;
 };
 
 export const useMembers = (regionId?: string) => {
