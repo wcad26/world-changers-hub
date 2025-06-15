@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -134,4 +133,62 @@ export const useCreateCommunicationTemplate = () => {
             queryClient.invalidateQueries({ queryKey: ['communication_templates'] });
         },
     });
+};
+
+// --- SUPER ADMIN HOOKS ---
+
+// Hook to get all communications for super admin
+export const useSuperAdminCommunications = () => {
+  return useQuery({
+    queryKey: ['communications', 'super_admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('communications')
+        .select('*, region:regions(name)')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as (Communication & { region: { name: string } | null })[];
+    },
+  });
+};
+
+// Hook for super admin to create communications
+export const useSuperAdminCreateCommunication = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ values, targetRegionIds }: { values: CommunicationFormValues, targetRegionIds: string[] }) => {
+      if (!user?.id) throw new Error('User not found');
+
+      const scheduled_for = !values.sendNow && values.scheduledDate && values.scheduledTime
+          ? new Date(`${values.scheduledDate}T${values.scheduledTime}`).toISOString()
+          : null;
+      
+      const communicationsToInsert: NewCommunication[] = targetRegionIds.map(regionId => ({
+          title: values.title,
+          content: values.content,
+          message_type: values.messageType as CommunicationMessageType,
+          audience: values.audience,
+          channels: values.channels,
+          status: scheduled_for ? 'scheduled' : 'sent',
+          sent_at: scheduled_for ? null : new Date().toISOString(),
+          scheduled_for,
+          region_id: regionId,
+          created_by: user.id
+      }));
+
+      const { data, error } = await supabase
+          .from('communications')
+          .insert(communicationsToInsert)
+          .select();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['communications', 'super_admin'] });
+      queryClient.invalidateQueries({ queryKey: ['communications'] }); // Also invalidate regional views
+    },
+  });
 };
