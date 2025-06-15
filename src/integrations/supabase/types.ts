@@ -9,16 +9,239 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      members: {
+        Row: {
+          baptism_date: string | null
+          created_at: string | null
+          id: string
+          is_volunteer: boolean | null
+          join_date: string | null
+          member_id: string
+          membership_class_completed: boolean | null
+          notes: string | null
+          preferred_service_areas: string[] | null
+          profile_id: string | null
+          region_id: string
+          skills_talents: string[] | null
+          status: Database["public"]["Enums"]["member_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          baptism_date?: string | null
+          created_at?: string | null
+          id?: string
+          is_volunteer?: boolean | null
+          join_date?: string | null
+          member_id: string
+          membership_class_completed?: boolean | null
+          notes?: string | null
+          preferred_service_areas?: string[] | null
+          profile_id?: string | null
+          region_id: string
+          skills_talents?: string[] | null
+          status?: Database["public"]["Enums"]["member_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          baptism_date?: string | null
+          created_at?: string | null
+          id?: string
+          is_volunteer?: boolean | null
+          join_date?: string | null
+          member_id?: string
+          membership_class_completed?: boolean | null
+          notes?: string | null
+          preferred_service_areas?: string[] | null
+          profile_id?: string | null
+          region_id?: string
+          skills_talents?: string[] | null
+          status?: Database["public"]["Enums"]["member_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          first_name: string | null
+          gender: string | null
+          id: string
+          last_name: string | null
+          occupation: string | null
+          phone: string | null
+          region_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id: string
+          last_name?: string | null
+          occupation?: string | null
+          phone?: string | null
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          first_name?: string | null
+          gender?: string | null
+          id?: string
+          last_name?: string | null
+          occupation?: string | null
+          phone?: string | null
+          region_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regions: {
+        Row: {
+          address: string | null
+          code: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string | null
+          description: string | null
+          established_date: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          regional_pastor: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          description?: string | null
+          established_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          regional_pastor?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          description?: string | null
+          established_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          regional_pastor?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          id: string
+          is_active: boolean | null
+          region_id: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          region_id?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          region_id?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_member_id: {
+        Args: { _region_id: string }
+        Returns: string
+      }
+      get_user_region: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      user_belongs_to_region: {
+        Args: { _user_id: string; _region_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "super_admin" | "regional_admin" | "member"
+      member_status: "active" | "inactive" | "new" | "transferred"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +356,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["super_admin", "regional_admin", "member"],
+      member_status: ["active", "inactive", "new", "transferred"],
+    },
   },
 } as const

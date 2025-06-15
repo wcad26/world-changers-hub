@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import RegionalAuth from "./pages/RegionalAuth";
 import SuperAuth from "./pages/SuperAuth";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
@@ -92,26 +94,152 @@ const App = () => {
             <Route path="/admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
             
             {/* Regional Admin Portal Routes */}
-            <Route path="/admin/regional/dashboard" element={<RegionalDashboard />} />
-            <Route path="/admin/regional/members" element={<RegionalMembers />} />
-            <Route path="/admin/regional/events" element={<RegionalEvents />} />
-            <Route path="/admin/regional/fundraising" element={<RegionalFundraising />} />
-            <Route path="/admin/regional/locations" element={<RegionalLocations />} />
-            <Route path="/admin/regional/finances" element={<RegionalFinances />} />
-            <Route path="/admin/regional/dcg" element={<RegionalDCG />} />
-            <Route path="/admin/regional/reports" element={<RegionalReports />} />
-            <Route path="/admin/regional/communication" element={<RegionalCommunication />} />
+            <Route 
+              path="/admin/regional/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/members" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalMembers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/events" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalEvents />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/fundraising" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalFundraising />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/locations" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalLocations />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/finances" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalFinances />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/dcg" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalDCG />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/reports" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalReports />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/communication" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalCommunication />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Super Admin Portal Routes */}
-            <Route path="/admin/super/dashboard" element={<SuperDashboard />} />
-            <Route path="/admin/super/members" element={<SuperMembers />} />
-            <Route path="/admin/super/events" element={<SuperEvents />} />
-            <Route path="/admin/super/fundraising" element={<SuperFundraising />} />
-            <Route path="/admin/super/locations" element={<SuperLocations />} />
-            <Route path="/admin/super/finances" element={<SuperFinances />} />
-            <Route path="/admin/super/regions" element={<SuperRegions />} />
-            <Route path="/admin/super/reports" element={<SuperReports />} />
-            <Route path="/admin/super/communication" element={<SuperCommunication />} />
+            <Route 
+              path="/admin/super/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/members" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperMembers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/events" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperEvents />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/fundraising" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperFundraising />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/locations" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperLocations />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/finances" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperFinances />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/regions" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperRegions />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/reports" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperReports />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/communication" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperCommunication />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Not Found Route */}
             <Route path="*" element={<NotFound />} />

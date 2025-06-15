@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, ChevronLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -28,18 +29,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
-
-  const handleLogout = () => {
-    // For now, just navigate to home page
-    navigate("/");
-    // In a real app, you would implement actual logout functionality here
-  };
+  const { user, profile, userRegion, signOut } = useAuth();
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Add console log to help debug routing issues
   console.log("Current location:", location.pathname);
   console.log("Menu items:", menuItems);
 
@@ -61,9 +56,21 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
           </SidebarHeader>
           <SidebarContent className="px-2">
             <div className="py-2">
-              <h2 className="px-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {title}
-              </h2>
+              <div className="px-4 mb-4">
+                <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  {title}
+                </h2>
+                {userRegion && (
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    {userRegion.name}
+                  </p>
+                )}
+                {profile && (
+                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                    {profile.first_name} {profile.last_name}
+                  </p>
+                )}
+              </div>
               <nav className="mt-2 space-y-1">
                 {menuItems.map((item) => {
                   const isActive = location.pathname === item.path;
@@ -90,7 +97,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
             <Button
               variant="outline"
               className="w-full flex items-center gap-2"
-              onClick={handleLogout}
+              onClick={signOut}
             >
               <LogOut size={16} />
               <span>Logout</span>
@@ -108,6 +115,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   {title} Dashboard
                 </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                {user && (
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {user.email}
+                  </span>
+                )}
               </div>
             </div>
           </header>
