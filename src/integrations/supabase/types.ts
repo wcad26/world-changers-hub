@@ -306,6 +306,16 @@ export type Database = {
         Args: { _region_id: string }
         Returns: string
       }
+      get_attendance_summary: {
+        Args: { p_region_id: string }
+        Returns: {
+          event_id: string
+          event_name: string
+          event_date: string
+          present_count: number
+          absent_count: number
+        }[]
+      }
       get_user_region: {
         Args: { _user_id: string }
         Returns: string

@@ -16,7 +16,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useMembers } from "@/hooks/useMembers";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAttendanceEvents, useCreateAttendanceEvent, useSaveAttendance } from "@/hooks/useAttendance";
+import { useAttendanceEvents, useCreateAttendanceEvent, useSaveAttendance, useAttendanceHistory } from "@/hooks/useAttendance";
 import { format } from "date-fns";
 
 // Form schema for member registration
@@ -39,7 +39,7 @@ const RegionalMembers: React.FC = () => {
   const [attendanceHistory, setAttendanceHistory] = useState(false);
 
   const { data: members, isLoading: isLoadingMembers } = useMembers(userRegion?.id);
-  const { data: attendanceEvents, isLoading: isLoadingAttendanceEvents } = useAttendanceEvents(userRegion?.id);
+  const { data: historyData, isLoading: isLoadingHistory } = useAttendanceHistory(userRegion?.id);
   const createAttendanceEvent = useCreateAttendanceEvent();
   const saveAttendance = useSaveAttendance();
   
@@ -482,23 +482,27 @@ const RegionalMembers: React.FC = () => {
                               <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Event Type</TableHead>
+                                <TableHead>Present</TableHead>
+                                <TableHead>Absent</TableHead>
                                 <TableHead>Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {isLoadingAttendanceEvents ? (
+                              {isLoadingHistory ? (
                                  <TableRow>
-                                  <TableCell colSpan={3} className="text-center h-24">
+                                  <TableCell colSpan={5} className="text-center h-24">
                                     <Skeleton className="h-6 w-full" />
                                   </TableCell>
                                 </TableRow>
-                              ) : attendanceEvents?.map((record, index) => (
-                                <TableRow key={index}>
+                              ) : historyData?.map((record) => (
+                                <TableRow key={record.event_id}>
                                   <TableCell>{format(new Date(record.event_date), "PPP")}</TableCell>
-                                  <TableCell>{record.name}</TableCell>
+                                  <TableCell>{record.event_name}</TableCell>
+                                  <TableCell className="text-center">{record.present_count}</TableCell>
+                                  <TableCell className="text-center">{record.absent_count}</TableCell>
                                   <TableCell>
                                     <div className="flex space-x-2">
-                                      <Button variant="ghost" size="sm">
+                                      <Button variant="ghost" size="sm" title="View Details">
                                         <Search className="h-4 w-4" />
                                       </Button>
                                     </div>

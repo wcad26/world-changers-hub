@@ -15,4 +15,4 @@ AS $function$
   WHERE ae.region_id = p_region_id
   GROUP BY ae.id, ae.name, ae.event_date
   ORDER BY ae.event_date DESC;
-$function$;
+$function$
