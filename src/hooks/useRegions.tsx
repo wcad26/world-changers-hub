@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
-type Region = Database['public']['Tables']['regions']['Row'];
+export type Region = Database['public']['Tables']['regions']['Row'];
 
 export const useRegions = () => {
   return useQuery({

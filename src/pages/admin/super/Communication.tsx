@@ -1,10 +1,9 @@
-
 import React, { useState } from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useSuperAdminCommunications, useSuperAdminCreateCommunication, CommunicationFormValues } from "@/hooks/useCommunications";
-import { useRegions } from "@/hooks/useRegions";
+import { useSuperAdminCommunications, useSuperAdminCreateCommunication } from "@/hooks/useCommunications";
+import { useRegions, type Region } from "@/hooks/useRegions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
@@ -13,7 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, PlusCircle } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { superAdminCommunicationFormSchema, type SuperAdminCommunicationFormSchema as CommunicationFormSchema } from '@/schemas/communicationSchema';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -21,29 +20,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import type { Region } from '@/hooks/useRegions';
-
-const communicationFormSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  messageType: z.string().min(1, 'Message type is required'),
-  content: z.string().min(1, 'Content is required'),
-  audience: z.string().min(1, 'Audience is required'),
-  channels: z.array(z.string()).min(1, 'At least one channel is required'),
-  targetRegionIds: z.array(z.string()).min(1, 'At least one region is required'),
-  sendNow: z.boolean().default(true),
-  scheduledDate: z.string().optional(),
-  scheduledTime: z.string().optional(),
-}).refine(data => {
-    if (!data.sendNow) {
-        return !!data.scheduledDate && !!data.scheduledTime;
-    }
-    return true;
-}, {
-    message: 'Scheduled date and time are required for scheduled sending',
-    path: ['scheduledDate'],
-});
-
-type CommunicationFormSchema = z.infer<typeof communicationFormSchema>;
 
 interface CreateCommunicationDialogProps {
   open: boolean;
@@ -56,7 +32,7 @@ const CreateCommunicationDialog: React.FC<CreateCommunicationDialogProps> = ({ o
   const createCommunicationMutation = useSuperAdminCreateCommunication();
 
   const form = useForm<CommunicationFormSchema>({
-    resolver: zodResolver(communicationFormSchema),
+    resolver: zodResolver(superAdminCommunicationFormSchema),
     defaultValues: {
       title: '',
       messageType: 'announcement',

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Database } from '@/integrations/supabase/types';
+import { type CommunicationFormValues } from '@/schemas/communicationSchema';
 
 export type Communication = Database['public']['Tables']['communications']['Row'];
 export type NewCommunication = Database['public']['Tables']['communications']['Insert'];
@@ -11,16 +12,7 @@ export type CommunicationMessageType = Database['public']['Enums']['communicatio
 export type CommunicationTemplate = Database['public']['Tables']['communication_templates']['Row'];
 export type NewCommunicationTemplate = Database['public']['Tables']['communication_templates']['Insert'];
 
-export type CommunicationFormValues = {
-  title: string;
-  messageType: string;
-  content: string;
-  audience: string;
-  channels: string[];
-  sendNow: boolean;
-  scheduledDate?: string;
-  scheduledTime?: string;
-};
+export type { CommunicationFormValues };
 
 // Hook to get communications for the current admin's region
 export const useCommunications = () => {
