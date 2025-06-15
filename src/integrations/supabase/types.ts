@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          dcg_id: string | null
           description: string | null
           event_date: string
           id: string
@@ -23,6 +24,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          dcg_id?: string | null
           description?: string | null
           event_date: string
           id?: string
@@ -33,6 +35,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          dcg_id?: string | null
           description?: string | null
           event_date?: string
           id?: string
@@ -41,6 +44,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_events_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_events_region_id_fkey"
             columns: ["region_id"]
@@ -88,6 +98,196 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dcg_members: {
+        Row: {
+          created_at: string
+          dcg_id: string
+          id: string
+          is_active: boolean
+          joined_date: string
+          member_id: string
+          role: Database["public"]["Enums"]["dcg_member_role"]
+        }
+        Insert: {
+          created_at?: string
+          dcg_id: string
+          id?: string
+          is_active?: boolean
+          joined_date?: string
+          member_id: string
+          role?: Database["public"]["Enums"]["dcg_member_role"]
+        }
+        Update: {
+          created_at?: string
+          dcg_id?: string
+          id?: string
+          is_active?: boolean
+          joined_date?: string
+          member_id?: string
+          role?: Database["public"]["Enums"]["dcg_member_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dcg_members_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dcg_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dcgs: {
+        Row: {
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          leader_id: string | null
+          location: string | null
+          meeting_day: string | null
+          meeting_time: string | null
+          name: string
+          region_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          leader_id?: string | null
+          location?: string | null
+          meeting_day?: string | null
+          meeting_time?: string | null
+          name: string
+          region_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          leader_id?: string | null
+          location?: string | null
+          meeting_day?: string | null
+          meeting_time?: string | null
+          name?: string
+          region_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dcgs_leader_id_fkey"
+            columns: ["leader_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dcgs_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transaction_categories: {
+        Row: {
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Insert: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          type: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Update: {
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["financial_transaction_type"]
+        }
+        Relationships: []
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          dcg_id: string | null
+          description: string | null
+          id: string
+          recorded_by: string | null
+          region_id: string
+          transaction_date: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          dcg_id?: string | null
+          description?: string | null
+          id?: string
+          recorded_by?: string | null
+          region_id: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          dcg_id?: string | null
+          description?: string | null
+          id?: string
+          recorded_by?: string | null
+          region_id?: string
+          transaction_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transaction_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]
@@ -319,6 +519,10 @@ export type Database = {
           absent_count: number
         }[]
       }
+      get_region_from_dcg: {
+        Args: { _dcg_id: string }
+        Returns: string
+      }
       get_user_region: {
         Args: { _user_id: string }
         Returns: string
@@ -337,6 +541,8 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "regional_admin" | "member"
+      dcg_member_role: "Leader" | "Assistant" | "Member"
+      financial_transaction_type: "Income" | "Expense"
       member_status: "active" | "inactive" | "new" | "transferred"
     }
     CompositeTypes: {
@@ -454,6 +660,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "regional_admin", "member"],
+      dcg_member_role: ["Leader", "Assistant", "Member"],
+      financial_transaction_type: ["Income", "Expense"],
       member_status: ["active", "inactive", "new", "transferred"],
     },
   },

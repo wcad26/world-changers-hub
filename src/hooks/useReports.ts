@@ -1,8 +1,7 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { subMonths, format, parseISO, getYear, differenceInYears } from 'date-fns';
+import { subMonths, format, parseISO, getYear, differenceInYears, startOfMonth, endOfMonth } from 'date-fns';
 
 export const useRegionalReports = () => {
   const { userRegion } = useAuth();
@@ -29,6 +28,37 @@ export const useRegionalReports = () => {
         .gte('created_at', oneMonthAgo);
       if (newMembersError) throw newMembersError;
 
+      // KPI: Total DCGs
+      const { count: totalDcgs, error: dcgsError } = await supabase
+        .from('dcgs')
+        .select('*', { count: 'exact', head: true })
+        .eq('region_id', regionId);
+      if (dcgsError) throw dcgsError;
+
+      // KPI: Financial Summary (this month)
+      const now = new Date();
+      const firstDayOfMonth = format(startOfMonth(now), 'yyyy-MM-dd');
+      const lastDayOfMonth = format(endOfMonth(now), 'yyyy-MM-dd');
+
+      const { data: financialSummary, error: financialError } = await supabase
+        .from('financial_transactions')
+        .select('amount, category:financial_transaction_categories(type)')
+        .eq('region_id', regionId)
+        .gte('transaction_date', firstDayOfMonth)
+        .lte('transaction_date', lastDayOfMonth);
+
+      if (financialError) throw financialError;
+
+      let totalIncome = 0;
+      let totalExpenses = 0;
+      (financialSummary || []).forEach(t => {
+        if (t.category?.type === 'Income') {
+          totalIncome += t.amount;
+        } else if (t.category?.type === 'Expense') {
+          totalExpenses += t.amount;
+        }
+      });
+
       // Attendance Data
       const { data: attendanceSummary, error: attendanceError } = await supabase.rpc(
         'get_attendance_summary',
@@ -40,7 +70,7 @@ export const useRegionalReports = () => {
       
       const attendanceTrends = attendanceSummary
         ? [...attendanceSummary].reverse().map(item => ({
-          month: format(parseISO(item.event_date), 'MMM'),
+          month: item.event_date ? format(parseISO(item.event_date), 'MMM') : 'N/A',
           attendance: item.present_count ?? 0
         }))
         : [];
@@ -92,15 +122,48 @@ export const useRegionalReports = () => {
         value
       }));
 
+      // Financial Trends
+      const { data: financialTrendsData, error: financialTrendsError } = await supabase
+        .from('financial_transactions')
+        .select('amount, transaction_date, category:financial_transaction_categories(type)')
+        .eq('region_id', regionId)
+        .order('transaction_date');
+
+      if (financialTrendsError) throw financialTrendsError;
+
+      const financialTrendsByMonth = (financialTrendsData || []).reduce((acc, transaction) => {
+        if (!transaction.transaction_date) return acc;
+        const month = format(new Date(transaction.transaction_date), 'MMM yyyy');
+        if (!acc[month]) {
+          acc[month] = { income: 0, expense: 0 };
+        }
+        if (transaction.category?.type === 'Income') {
+          acc[month].income += transaction.amount;
+        } else {
+          acc[month].expense += transaction.amount;
+        }
+        return acc;
+      }, {} as Record<string, { income: number, expense: number }>);
+
+      const financialTrends = Object.entries(financialTrendsByMonth).map(([month, totals]) => ({
+        month: month.split(' ')[0],
+        income: totals.income,
+        expense: totals.expense
+      }));
+
       return {
         kpis: {
           totalMembers: totalMembers ?? 0,
           newMembersLast30Days: newMembersLast30Days ?? 0,
           averageAttendance,
+          totalDcgs: totalDcgs ?? 0,
+          totalIncome,
+          totalExpenses,
         },
         attendanceTrends,
         membershipGrowth,
-        membershipDemographics
+        membershipDemographics,
+        financialTrends,
       };
     },
     enabled: !!regionId,
