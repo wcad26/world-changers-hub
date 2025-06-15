@@ -565,7 +565,7 @@ export type Database = {
           emergency_contact_phone?: string | null
           first_name?: string | null
           gender?: string | null
-          id: string
+          id?: string
           last_name?: string | null
           occupation?: string | null
           phone?: string | null
