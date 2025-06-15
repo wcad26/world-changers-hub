@@ -158,6 +158,11 @@
     @apply inline-flex items-center justify-center rounded-md border border-wca-purple text-wca-purple px-5 py-2.5 font-medium shadow-sm transition-all duration-200 hover:bg-wca-purple/10 hover:shadow hover:border-wca-violet focus:outline-none focus:ring-2 focus:ring-wca-purple/50;
   }
 
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0);
+    background-size: 20px 20px;
+  }
+
   .page-transition-enter {
     opacity: 0;
     transform: translateY(10px);

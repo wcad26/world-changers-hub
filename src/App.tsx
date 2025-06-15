@@ -16,6 +16,7 @@ import Blog from "./pages/Blog";
 import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
 
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
@@ -78,6 +79,9 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
+            
+            {/* Authentication Route */}
+            <Route path="/auth" element={<Auth />} />
             
             {/* Admin Redirects - For easier navigation */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
