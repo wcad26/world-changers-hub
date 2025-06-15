@@ -102,6 +102,109 @@ export type Database = {
           },
         ]
       }
+      communication_templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          region_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          region_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          region_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_templates_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      communications: {
+        Row: {
+          audience: string
+          channels: string[]
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          message_type:
+            | Database["public"]["Enums"]["communication_message_type"]
+            | null
+          region_id: string
+          scheduled_for: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["communication_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audience: string
+          channels: string[]
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message_type?:
+            | Database["public"]["Enums"]["communication_message_type"]
+            | null
+          region_id: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["communication_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audience?: string
+          channels?: string[]
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message_type?:
+            | Database["public"]["Enums"]["communication_message_type"]
+            | null
+          region_id?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["communication_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communications_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dcg_members: {
         Row: {
           created_at: string
@@ -619,6 +722,18 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "regional_admin" | "member"
+      communication_message_type:
+        | "announcement"
+        | "invitation"
+        | "reminder"
+        | "update"
+        | "urgent"
+      communication_status:
+        | "draft"
+        | "sent"
+        | "scheduled"
+        | "failed"
+        | "cancelled"
       dcg_member_role: "Leader" | "Assistant" | "Member"
       event_category:
         | "Conference"
@@ -752,6 +867,20 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "regional_admin", "member"],
+      communication_message_type: [
+        "announcement",
+        "invitation",
+        "reminder",
+        "update",
+        "urgent",
+      ],
+      communication_status: [
+        "draft",
+        "sent",
+        "scheduled",
+        "failed",
+        "cancelled",
+      ],
       dcg_member_role: ["Leader", "Assistant", "Member"],
       event_category: [
         "Conference",

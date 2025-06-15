@@ -10,6 +10,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MessageSquare, Mail, Phone, Send, Users, Bell, Calendar, Filter, Search, CheckCircle2, PlusCircle } from "lucide-react";
+import { useCommunications, useCreateCommunication, useCommunicationTemplates } from "@/hooks/useCommunications";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const mockMessages = [
   { id: 1, title: "Sunday Service Reminder", type: "Announcement", sentTo: "All Members", sentVia: "Email, SMS", date: "2023-10-25", status: "Sent", opens: 145, clicks: 87 },
@@ -34,6 +38,10 @@ const RegionalCommunication: React.FC = () => {
   const [selectedChannels, setSelectedChannels] = useState<string[]>(["email"]);
   const [messagePreview, setMessagePreview] = useState(false);
   
+  const { data: communications, isLoading: isLoadingCommunications, error: communicationsError } = useCommunications();
+  const createCommunication = useCreateCommunication();
+  const { data: templates, isLoading: isLoadingTemplates, error: templatesError } = useCommunicationTemplates();
+
   const form = useForm<z.infer<typeof messageSchema>>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
@@ -48,11 +56,11 @@ const RegionalCommunication: React.FC = () => {
     },
   });
 
-  const filteredMessages = mockMessages.filter(message => 
+  const filteredMessages = communications?.filter(message => 
     message.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    message.sentTo.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    (message.message_type && message.message_type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    message.audience.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   const toggleChannel = (channel: string) => {
     if (selectedChannels.includes(channel)) {
@@ -65,10 +73,15 @@ const RegionalCommunication: React.FC = () => {
   };
 
   function onSubmit(values: z.infer<typeof messageSchema>) {
-    console.log(values);
-    alert("Message sent/scheduled successfully!");
-    form.reset();
-    setMessagePreview(false);
+    toast.promise(createCommunication.mutateAsync(values), {
+      loading: values.sendNow ? "Sending message..." : "Scheduling message...",
+      success: () => {
+        form.reset();
+        setMessagePreview(false);
+        return `Message ${values.sendNow ? 'sent' : 'scheduled'} successfully!`;
+      },
+      error: (err) => `Failed to send message: ${err.message}`,
+    });
   }
 
   return (
@@ -286,12 +299,15 @@ const RegionalCommunication: React.FC = () => {
                           type="button" 
                           variant="outline"
                           onClick={() => setMessagePreview(true)}
+                          disabled={!form.formState.isValid}
                         >
                           Preview
                         </Button>
-                        <Button type="submit">
+                        <Button type="submit" disabled={createCommunication.isPending}>
                           <Send className="mr-2 h-4 w-4" />
-                          {form.watch("sendNow") ? "Send Message" : "Schedule Message"}
+                          {createCommunication.isPending 
+                            ? (form.watch("sendNow") ? 'Sending...' : 'Scheduling...')
+                            : (form.watch("sendNow") ? "Send Message" : "Schedule Message")}
                         </Button>
                       </div>
                     </form>
@@ -329,9 +345,11 @@ const RegionalCommunication: React.FC = () => {
                       >
                         Edit
                       </Button>
-                      <Button onClick={form.handleSubmit(onSubmit)}>
+                      <Button onClick={form.handleSubmit(onSubmit)} disabled={createCommunication.isPending}>
                         <Send className="mr-2 h-4 w-4" />
-                        {form.watch("sendNow") ? "Confirm & Send" : "Confirm & Schedule"}
+                        {createCommunication.isPending 
+                            ? (form.watch("sendNow") ? 'Confirming & Sending...' : 'Confirming & Scheduling...')
+                            : (form.watch("sendNow") ? "Confirm & Send" : "Confirm & Schedule")}
                       </Button>
                     </div>
                   </div>
@@ -376,43 +394,51 @@ const RegionalCommunication: React.FC = () => {
                           <TableHead>Via</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Opens/Clicks</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredMessages.length > 0 ? (
+                        {isLoadingCommunications ? (
+                          Array.from({ length: 4 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
+                            </TableRow>
+                          ))
+                        ) : communicationsError ? (
+                           <TableRow>
+                            <TableCell colSpan={7} className="text-center h-24 text-destructive">
+                              Error: {communicationsError.message}
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredMessages.length > 0 ? (
                           filteredMessages.map((message) => (
                             <TableRow key={message.id}>
                               <TableCell className="font-medium">{message.title}</TableCell>
-                              <TableCell>{message.type}</TableCell>
-                              <TableCell>{message.sentTo}</TableCell>
-                              <TableCell>{message.sentVia}</TableCell>
-                              <TableCell>{message.date}</TableCell>
+                              <TableCell className="capitalize">{message.message_type}</TableCell>
+                              <TableCell className="capitalize">{message.audience}</TableCell>
+                              <TableCell>{message.channels.join(', ')}</TableCell>
+                              <TableCell>{format(new Date(message.scheduled_for || message.created_at), "PPp")}</TableCell>
                               <TableCell>
                                 <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset ${
-                                  message.status === "Sent" 
+                                  message.status === "sent" 
                                     ? "bg-green-50 text-green-700 ring-green-600/20" 
-                                    : "bg-yellow-50 text-yellow-700 ring-yellow-600/20"
+                                    : "bg-yellow-50 text-yellow-800 ring-yellow-600/20"
                                 }`}>
                                   {message.status}
                                 </span>
                               </TableCell>
                               <TableCell>
-                                {message.status === "Sent" ? `${message.opens}/${message.clicks}` : "-"}
-                              </TableCell>
-                              <TableCell>
                                 <div className="flex space-x-2">
                                   <Button variant="outline" size="sm">View</Button>
-                                  <Button variant="outline" size="sm">Copy</Button>
+                                  <Button variant="ghost" size="sm">Copy</Button>
                                 </div>
                               </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center h-24">
-                              No messages found
+                            <TableCell colSpan={7} className="text-center h-24">
+                              No messages found.
                             </TableCell>
                           </TableRow>
                         )}
@@ -432,86 +458,56 @@ const RegionalCommunication: React.FC = () => {
                   Create and manage reusable message templates.
                 </CardDescription>
                 <div className="flex justify-end mt-4">
-                  <Button>
+                  <Button onClick={() => toast.info("This feature is coming soon!")}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     New Template
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">Sunday Service Reminder</CardTitle>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">Announcement</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm line-clamp-3">
-                        Dear {"{member_name}"}, this is a reminder that our Sunday service will be held tomorrow at {"{service_time}"}. We look forward to seeing you there!
-                      </p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <span className="text-xs text-muted-foreground">Used 12 times</span>
-                      <Button variant="outline" size="sm">Use Template</Button>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">Birthday Wishes</CardTitle>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">Celebration</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm line-clamp-3">
-                        Happy Birthday {"{member_name}"}! May God bless you abundantly in the coming year. The entire WCA family celebrates with you today.
-                      </p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <span className="text-xs text-muted-foreground">Used 45 times</span>
-                      <Button variant="outline" size="sm">Use Template</Button>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">Special Event Invitation</CardTitle>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">Invitation</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm line-clamp-3">
-                        Dear {"{member_name}"}, you are cordially invited to {"{event_name}"} on {"{event_date}"} at {"{event_time}"}. Location: {"{event_location}"}. Please RSVP by {"{rsvp_date}"}.
-                      </p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <span className="text-xs text-muted-foreground">Used 8 times</span>
-                      <Button variant="outline" size="sm">Use Template</Button>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">Welcome New Member</CardTitle>
-                        <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">Welcome</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pb-2">
-                      <p className="text-sm line-clamp-3">
-                        Welcome to the WCA family, {"{member_name}"}! We're thrilled to have you join us. Please feel free to reach out if you have any questions or need any assistance.
-                      </p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between pt-0">
-                      <span className="text-xs text-muted-foreground">Used 23 times</span>
-                      <Button variant="outline" size="sm">Use Template</Button>
-                    </CardFooter>
-                  </Card>
-                </div>
+                {isLoadingTemplates ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-36 w-full" />)}
+                  </div>
+                ) : templatesError ? (
+                  <p className="text-center py-8 text-destructive">Error loading templates: {templatesError.message}</p>
+                ) : templates && templates.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {templates.map((template) => (
+                      <Card key={template.id}>
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg">{template.name}</CardTitle>
+                            {template.category && <span className="text-xs bg-gray-100 px-2 py-1 rounded-full">{template.category}</span>}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <p className="text-sm line-clamp-3">
+                            {template.content}
+                          </p>
+                        </CardContent>
+                        <CardFooter className="flex justify-end pt-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              form.setValue('content', template.content);
+                              form.setValue('title', template.name);
+                              toast.success(`Template "${template.name}" applied to composer.`);
+                            }}
+                          >
+                            Use Template
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <p>No templates found.</p>
+                    <p className="text-sm">Click "New Template" to create one.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
