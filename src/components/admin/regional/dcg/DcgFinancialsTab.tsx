@@ -1,18 +1,26 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
-
-// Mock data will be replaced later
-const mockDcgs = [ { id: 1, name: "Victory DCG" }, { id: 2, name: "Faith DCG" } ];
-const mockFinancials = [
-  { id: 1, dcgId: 1, dcgName: "Victory DCG", date: "2023-09-05", type: "Tithe", amount: 350, description: "Weekly collection" },
-  { id: 2, dcgId: 1, dcgName: "Victory DCG", date: "2023-09-05", type: "Offering", amount: 120, description: "Weekly collection" },
-];
+import { PlusCircle, Edit, Trash2, AlertCircle } from "lucide-react";
+import { useDcgs } from '@/hooks/useDCGs';
+import { useFinancialTransactions } from '@/hooks/useFinancials';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const DcgFinancialsTab = () => {
+  const [selectedDcgId, setSelectedDcgId] = useState<string>('');
+  const { data: dcgs, isLoading: isLoadingDcgs } = useDcgs();
+  const { data: transactions, isLoading: isLoadingTransactions, isError, error } = useFinancialTransactions();
+
+  const filteredTransactions = (transactions || []).filter(
+    transaction => !selectedDcgId || transaction.dcg_id === selectedDcgId
+  );
+
+  const isLoading = isLoadingDcgs || isLoadingTransactions;
+
   return (
     <Card>
       <CardHeader>
@@ -20,10 +28,17 @@ const DcgFinancialsTab = () => {
         <CardDescription>Financial management for DCGs.</CardDescription>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="flex-1">
-            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">All DCGs</option>
-              {mockDcgs.map(dcg => (<option key={dcg.id} value={dcg.id}>{dcg.name}</option>))}
-            </select>
+            <Select onValueChange={setSelectedDcgId} value={selectedDcgId}>
+              <SelectTrigger>
+                <SelectValue placeholder="All DCGs" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">All DCGs</SelectItem>
+                {dcgs?.map(dcg => (
+                  <SelectItem key={dcg.id} value={dcg.id}>{dcg.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -46,21 +61,50 @@ const DcgFinancialsTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockFinancials.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">{transaction.dcgName}</TableCell>
-                    <TableCell>{transaction.date}</TableCell>
-                    <TableCell>{transaction.type}</TableCell>
-                    <TableCell>${transaction.amount.toFixed(2)}</TableCell>
-                    <TableCell>{transaction.description}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm"><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="sm"><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                      </div>
+                {isLoading && (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={`loading-${i}`}>
+                      <TableCell colSpan={6}><Skeleton className="h-6 w-full" /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {isError && (
+                  <TableRow>
+                    <TableCell colSpan={6}>
+                      <Alert variant="destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Error fetching financials</AlertTitle>
+                        <AlertDescription>
+                          {error instanceof Error ? error.message : "An unknown error occurred."}
+                        </AlertDescription>
+                      </Alert>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
+                {!isLoading && !isError && filteredTransactions.length > 0 && (
+                  filteredTransactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="font-medium">{transaction.dcg?.name || 'N/A'}</TableCell>
+                      <TableCell>{new Date(transaction.transaction_date!).toLocaleDateString()}</TableCell>
+                      <TableCell>{(transaction.category as any)?.name || 'N/A'}</TableCell>
+                      <TableCell>${Number(transaction.amount).toFixed(2)}</TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm"><Edit className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="sm"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+                 {!isLoading && !isError && filteredTransactions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center h-24">
+                        No financial transactions found.
+                      </TableCell>
+                    </TableRow>
+                  )}
               </TableBody>
             </Table>
           </div>
