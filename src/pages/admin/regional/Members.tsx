@@ -6,33 +6,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UserPlus, Mail, Phone, Calendar, Search, UserCheck, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-
-// Mock data for demonstration
-const mockMembers = [
-  { id: 1, name: "John Doe", email: "john@example.com", phone: "+1234567890", joined: "2023-01-15", status: "Active", attendance: "85%" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "+1234567891", joined: "2023-02-20", status: "Active", attendance: "92%" },
-  { id: 3, name: "Michael Johnson", email: "michael@example.com", phone: "+1234567892", joined: "2023-03-10", status: "Inactive", attendance: "45%" },
-  { id: 4, name: "Sarah Williams", email: "sarah@example.com", phone: "+1234567893", joined: "2023-04-05", status: "Active", attendance: "78%" },
-];
-
-// Mock data for attendance records
-const mockAttendanceRecords = [
-  { date: "2023-09-03", type: "Sunday Service", membersPresent: 42, membersAbsent: 8 },
-  { date: "2023-09-10", type: "Sunday Service", membersPresent: 38, membersAbsent: 12 },
-  { date: "2023-09-17", type: "Sunday Service", membersPresent: 45, membersAbsent: 5 },
-  { date: "2023-09-24", type: "Sunday Service", membersPresent: 40, membersAbsent: 10 },
-  { date: "2023-09-06", type: "Bible Study", membersPresent: 25, membersAbsent: 25 },
-  { date: "2023-09-13", type: "Bible Study", membersPresent: 28, membersAbsent: 22 },
-  { date: "2023-09-20", type: "Bible Study", membersPresent: 30, membersAbsent: 20 },
-  { date: "2023-09-27", type: "Bible Study", membersPresent: 26, membersAbsent: 24 },
-];
+import { useAuth } from "@/hooks/useAuth";
+import { useMembers } from "@/hooks/useMembers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useAttendanceEvents, useCreateAttendanceEvent, useSaveAttendance } from "@/hooks/useAttendance";
+import { format } from "date-fns";
 
 // Form schema for member registration
 const memberSchema = z.object({
@@ -46,12 +31,17 @@ const memberSchema = z.object({
 });
 
 const RegionalMembers: React.FC = () => {
+  const { user, userRegion } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [attendanceFilter, setAttendanceFilter] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [attendanceHistory, setAttendanceHistory] = useState(false);
+
+  const { data: members, isLoading: isLoadingMembers } = useMembers(userRegion?.id);
+  const { data: attendanceEvents, isLoading: isLoadingAttendanceEvents } = useAttendanceEvents(userRegion?.id);
+  const createAttendanceEvent = useCreateAttendanceEvent();
+  const saveAttendance = useSaveAttendance();
   
   const form = useForm<z.infer<typeof memberSchema>>({
     resolver: zodResolver(memberSchema),
@@ -66,23 +56,26 @@ const RegionalMembers: React.FC = () => {
     },
   });
 
-  const filteredMembers = mockMembers.filter(member => 
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.phone.includes(searchTerm)
-  );
+  const filteredMembers = members?.filter(member => {
+    const name = `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`;
+    const phone = member.profiles?.phone || '';
+    // email is not available on profile, so removing search by it for now
+    return name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           phone.includes(searchTerm);
+  }) || [];
 
   function onSubmit(values: z.infer<typeof memberSchema>) {
     console.log(values);
-    // In a real app, this would save the member to a database
+    // TODO: Implement member registration logic.
+    // This will likely involve an Edge Function or RPC to create a user, profile, and member record.
     toast({
-      title: "Member registered",
-      description: "The member has been successfully registered."
+      title: "Member Registered (Not Implemented)",
+      description: "This functionality is not yet connected to the database."
     });
     form.reset();
   }
 
-  const toggleMemberSelection = (id: number) => {
+  const toggleMemberSelection = (id: string) => {
     if (selectedMembers.includes(id)) {
       setSelectedMembers(selectedMembers.filter(memberId => memberId !== id));
     } else {
@@ -90,13 +83,41 @@ const RegionalMembers: React.FC = () => {
     }
   };
 
-  const handleSaveAttendance = () => {
-    // In a real app, this would save attendance to a database
-    toast({
-      title: "Attendance saved",
-      description: `Saved attendance for ${selectedMembers.length} members.`
-    });
-    setSelectedMembers([]);
+  const handleSaveAttendance = async () => {
+    if (!user || !userRegion || !selectedEvent || !selectedDate) return;
+
+    try {
+      // 1. Create the attendance event
+      const event = await createAttendanceEvent.mutateAsync({
+        region_id: userRegion.id,
+        name: selectedEvent,
+        event_date: selectedDate,
+        created_by: user.id,
+      });
+
+      // 2. Prepare attendance records
+      const records = filteredMembers.map(member => ({
+        event_id: event.id,
+        member_id: member.id,
+        is_present: selectedMembers.includes(member.id),
+        recorded_by: user.id
+      }));
+
+      // 3. Save the records
+      await saveAttendance.mutateAsync(records);
+
+      toast({
+        title: "Attendance saved",
+        description: `Saved attendance for ${records.length} members.`
+      });
+      setSelectedMembers([]);
+    } catch (error) {
+      toast({
+        title: "Error saving attendance",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -145,24 +166,32 @@ const RegionalMembers: React.FC = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
+                          <TableHead>Member ID</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Joined</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Attendance</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredMembers.length > 0 ? (
+                        {isLoadingMembers ? (
+                          Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell colSpan={6}>
+                                <Skeleton className="h-6 w-full" />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : filteredMembers.length > 0 ? (
                           filteredMembers.map((member) => (
                             <TableRow key={member.id}>
-                              <TableCell className="font-medium">{member.name}</TableCell>
-                              <TableCell>{member.email}</TableCell>
-                              <TableCell>{member.phone}</TableCell>
-                              <TableCell>{member.joined}</TableCell>
+                              <TableCell className="font-medium">
+                                {member.profiles?.first_name} {member.profiles?.last_name}
+                              </TableCell>
+                              <TableCell>{member.member_id}</TableCell>
+                              <TableCell>{member.profiles?.phone}</TableCell>
+                              <TableCell>{member.join_date ? format(new Date(member.join_date), "PPP") : 'N/A'}</TableCell>
                               <TableCell>{member.status}</TableCell>
-                              <TableCell>{member.attendance}</TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
                                   <Button variant="ghost" size="sm">
@@ -177,7 +206,7 @@ const RegionalMembers: React.FC = () => {
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center h-24">
+                            <TableCell colSpan={6} className="text-center h-24">
                               No members found
                             </TableCell>
                           </TableRow>
@@ -372,12 +401,17 @@ const RegionalMembers: React.FC = () => {
                                 </TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Last Attended</TableHead>
                                 <TableHead>Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {filteredMembers.map((member) => (
+                              {isLoadingMembers ? (
+                                <TableRow>
+                                  <TableCell colSpan={4} className="text-center h-24">
+                                    <Skeleton className="h-6 w-full" />
+                                  </TableCell>
+                                </TableRow>
+                              ) : filteredMembers.map((member) => (
                                 <TableRow key={member.id}>
                                   <TableCell>
                                     <div className="flex items-center justify-center">
@@ -389,9 +423,8 @@ const RegionalMembers: React.FC = () => {
                                       />
                                     </div>
                                   </TableCell>
-                                  <TableCell className="font-medium">{member.name}</TableCell>
+                                  <TableCell className="font-medium">{member.profiles?.first_name} {member.profiles?.last_name}</TableCell>
                                   <TableCell>{member.status}</TableCell>
-                                  <TableCell>1 week ago</TableCell>
                                   <TableCell>
                                     <div className="flex space-x-2">
                                       <Button 
@@ -403,9 +436,6 @@ const RegionalMembers: React.FC = () => {
                                           <CheckCircle className="h-4 w-4 text-green-500" /> : 
                                           <UserCheck className="h-4 w-4" />
                                         }
-                                      </Button>
-                                      <Button variant="ghost" size="sm">
-                                        <Phone className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </TableCell>
@@ -452,29 +482,24 @@ const RegionalMembers: React.FC = () => {
                               <TableRow>
                                 <TableHead>Date</TableHead>
                                 <TableHead>Event Type</TableHead>
-                                <TableHead>Present</TableHead>
-                                <TableHead>Absent</TableHead>
-                                <TableHead>Attendance Rate</TableHead>
                                 <TableHead>Actions</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {mockAttendanceRecords.map((record, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>{record.date}</TableCell>
-                                  <TableCell>{record.type}</TableCell>
-                                  <TableCell>{record.membersPresent}</TableCell>
-                                  <TableCell>{record.membersAbsent}</TableCell>
-                                  <TableCell>
-                                    {Math.round((record.membersPresent / (record.membersPresent + record.membersAbsent)) * 100)}%
+                              {isLoadingAttendanceEvents ? (
+                                 <TableRow>
+                                  <TableCell colSpan={3} className="text-center h-24">
+                                    <Skeleton className="h-6 w-full" />
                                   </TableCell>
+                                </TableRow>
+                              ) : attendanceEvents?.map((record, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{format(new Date(record.event_date), "PPP")}</TableCell>
+                                  <TableCell>{record.name}</TableCell>
                                   <TableCell>
                                     <div className="flex space-x-2">
                                       <Button variant="ghost" size="sm">
                                         <Search className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="ghost" size="sm">
-                                        <Mail className="h-4 w-4" />
                                       </Button>
                                     </div>
                                   </TableCell>

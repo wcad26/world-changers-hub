@@ -9,6 +9,89 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attendance_events: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string
+          id: string
+          name: string
+          region_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date: string
+          id?: string
+          name: string
+          region_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string
+          id?: string
+          name?: string
+          region_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_events_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_records: {
+        Row: {
+          event_id: string
+          id: string
+          is_present: boolean | null
+          member_id: string
+          recorded_at: string | null
+          recorded_by: string | null
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          is_present?: boolean | null
+          member_id: string
+          recorded_at?: string | null
+          recorded_by?: string | null
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          is_present?: boolean | null
+          member_id?: string
+          recorded_at?: string | null
+          recorded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "attendance_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           baptism_date: string | null
