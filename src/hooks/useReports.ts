@@ -35,29 +35,45 @@ export const useRegionalReports = () => {
         .eq('region_id', regionId);
       if (dcgsError) throw dcgsError;
 
-      // KPI: Financial Summary (this month)
+      // Fetch financial data for this and last month
       const now = new Date();
-      const firstDayOfMonth = format(startOfMonth(now), 'yyyy-MM-dd');
-      const lastDayOfMonth = format(endOfMonth(now), 'yyyy-MM-dd');
-
-      const { data: financialSummary, error: financialError } = await supabase
+      const thisMonthStart = startOfMonth(now);
+      const lastMonthStart = startOfMonth(subMonths(now, 1));
+      
+      const { data: financialData, error: financialError } = await supabase
         .from('financial_transactions')
-        .select('amount, category:financial_transaction_categories(type)')
+        .select('amount, transaction_date, category:financial_transaction_categories(name, type)')
         .eq('region_id', regionId)
-        .gte('transaction_date', firstDayOfMonth)
-        .lte('transaction_date', lastDayOfMonth);
+        .gte('transaction_date', format(lastMonthStart, 'yyyy-MM-dd'));
 
       if (financialError) throw financialError;
 
-      let totalIncome = 0;
-      let totalExpenses = 0;
-      (financialSummary || []).forEach(t => {
-        if (t.category?.type === 'Income') {
-          totalIncome += t.amount;
-        } else if (t.category?.type === 'Expense') {
-          totalExpenses += t.amount;
+      const processFinancials = (transactions: typeof financialData) => {
+        let totalIncome = 0;
+        let totalExpenses = 0;
+        const incomeByCategory: Record<string, number> = {};
+        
+        for (const t of transactions || []) {
+          const categoryName = t.category?.name || 'Uncategorized';
+          if (t.category?.type === 'Income') {
+            totalIncome += t.amount;
+            incomeByCategory[categoryName] = (incomeByCategory[categoryName] || 0) + t.amount;
+          } else if (t.category?.type === 'Expense') {
+            totalExpenses += t.amount;
+          }
         }
-      });
+        return { totalIncome, totalExpenses, incomeByCategory };
+      };
+
+      const thisMonthTransactions = (financialData || []).filter(
+        t => new Date(t.transaction_date!) >= thisMonthStart
+      );
+      const lastMonthTransactions = (financialData || []).filter(
+        t => new Date(t.transaction_date!) < thisMonthStart
+      );
+
+      const thisMonthSummary = processFinancials(thisMonthTransactions);
+      const lastMonthSummary = processFinancials(lastMonthTransactions);
 
       // Attendance Data
       const { data: attendanceSummary, error: attendanceError } = await supabase.rpc(
@@ -122,16 +138,8 @@ export const useRegionalReports = () => {
         value
       }));
 
-      // Financial Trends
-      const { data: financialTrendsData, error: financialTrendsError } = await supabase
-        .from('financial_transactions')
-        .select('amount, transaction_date, category:financial_transaction_categories(type)')
-        .eq('region_id', regionId)
-        .order('transaction_date');
-
-      if (financialTrendsError) throw financialTrendsError;
-
-      const financialTrendsByMonth = (financialTrendsData || []).reduce((acc, transaction) => {
+      // Financial Trends (re-using fetched financialData)
+      const financialTrendsByMonth = (financialData || []).reduce((acc, transaction) => {
         if (!transaction.transaction_date) return acc;
         const month = format(new Date(transaction.transaction_date), 'MMM yyyy');
         if (!acc[month]) {
@@ -157,8 +165,12 @@ export const useRegionalReports = () => {
           newMembersLast30Days: newMembersLast30Days ?? 0,
           averageAttendance,
           totalDcgs: totalDcgs ?? 0,
-          totalIncome,
-          totalExpenses,
+          totalIncome: thisMonthSummary.totalIncome,
+          totalExpenses: thisMonthSummary.totalExpenses,
+        },
+        financialSummary: {
+          thisMonth: thisMonthSummary,
+          lastMonth: lastMonthSummary,
         },
         attendanceTrends,
         membershipGrowth,

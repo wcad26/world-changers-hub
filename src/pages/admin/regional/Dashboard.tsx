@@ -3,10 +3,36 @@ import React from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ChevronUp, Calendar, DollarSign, Home } from "lucide-react";
+import { Users, Calendar, DollarSign, Home, ArrowUp, ArrowDown, ChevronUp, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useRegionalReports } from "@/hooks/useReports";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const RegionalDashboard: React.FC = () => {
+  const { data: reports, isLoading, isError, error } = useRegionalReports();
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  };
+  
+  const calculatePercentageChange = (current: number, previous: number) => {
+    if (previous === 0) {
+      return current > 0 ? { value: 100, isPositive: true } : { value: 0, isPositive: null };
+    }
+    const change = ((current - previous) / previous) * 100;
+    return { value: Math.abs(change), isPositive: change >= 0 };
+  };
+
+  const allIncomeCategories = React.useMemo(() => {
+    if (!reports?.financialSummary) return [];
+    const categories = new Set([
+      ...Object.keys(reports.financialSummary.thisMonth.incomeByCategory),
+      ...Object.keys(reports.financialSummary.lastMonth.incomeByCategory)
+    ]);
+    return Array.from(categories).sort();
+  }, [reports]);
+
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
@@ -15,54 +41,79 @@ const RegionalDashboard: React.FC = () => {
           Welcome to your regional dashboard. Here's an overview of your region's activities.
         </p>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,523</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-500 flex items-center">
-                  <ChevronUp className="mr-1 h-4 w-4" /> +12% from last month
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-muted-foreground">Next: Prayer Convention</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Fundraising Goal</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$25,250</div>
-              <p className="text-xs text-muted-foreground">63% of annual goal</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
-              <Home className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">27</div>
-              <p className="text-xs text-muted-foreground">+3 new this quarter</p>
-            </CardContent>
-          </Card>
-        </div>
+        {isLoading ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
+          </div>
+        ) : isError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading dashboard</AlertTitle>
+            <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+          </Alert>
+        ) : reports ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{reports.kpis.totalMembers}</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-green-500 flex items-center">
+                    <ChevronUp className="mr-1 h-4 w-4" /> +{reports.kpis.newMembersLast30Days} in last 30 days
+                  </span>
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">5</div>
+                <p className="text-xs text-muted-foreground">Next: Prayer Convention</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Income (This Month)</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(reports.kpis.totalIncome)}</div>
+                <p className="text-xs text-muted-foreground">
+                   {(() => {
+                      const change = calculatePercentageChange(reports.financialSummary.thisMonth.totalIncome, reports.financialSummary.lastMonth.totalIncome);
+                      if (change.isPositive === null) return <span>&nbsp;</span>;
+                      return (
+                        <span className={`${change.isPositive ? 'text-green-500' : 'text-red-500'} flex items-center`}>
+                          {change.isPositive ? <ArrowUp className="mr-1 h-4 w-4" /> : <ArrowDown className="mr-1 h-4 w-4" />}
+                          {change.value.toFixed(1)}% from last month
+                        </span>
+                      );
+                   })()}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
+                <Home className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{reports.kpis.totalDcgs}</div>
+                <p className="text-xs text-muted-foreground">+3 new this quarter</p>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <p>No data available for your region.</p>
+        )}
 
-        <Tabs defaultValue="recent-activities">
+        <Tabs defaultValue="financial-overview">
           <TabsList>
             <TabsTrigger value="recent-activities">Recent Activities</TabsTrigger>
             <TabsTrigger value="financial-overview">Financial Overview</TabsTrigger>
@@ -126,51 +177,71 @@ const RegionalDashboard: React.FC = () => {
               <CardHeader>
                 <CardTitle>Financial Overview</CardTitle>
                 <CardDescription>
-                  Your region's financial summary for the current month.
+                  Your region's income summary for the current month vs. last month.
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {isLoading ? <Skeleton className="h-48 w-full" /> : isError ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>Could not load financial overview.</AlertDescription>
+                  </Alert>
+                ) : reports ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Category</TableHead>
-                      <TableHead>This Month</TableHead>
-                      <TableHead>Last Month</TableHead>
-                      <TableHead>Change</TableHead>
+                      <TableHead className="text-right">This Month</TableHead>
+                      <TableHead className="text-right">Last Month</TableHead>
+                      <TableHead className="text-right">Change</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell>Tithes</TableCell>
-                      <TableCell>$12,450</TableCell>
-                      <TableCell>$11,875</TableCell>
-                      <TableCell className="text-green-500">+4.8%</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Offerings</TableCell>
-                      <TableCell>$8,320</TableCell>
-                      <TableCell>$7,940</TableCell>
-                      <TableCell className="text-green-500">+4.8%</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Special Giving</TableCell>
-                      <TableCell>$5,000</TableCell>
-                      <TableCell>$3,200</TableCell>
-                      <TableCell className="text-green-500">+56.3%</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Fundraising</TableCell>
-                      <TableCell>$2,500</TableCell>
-                      <TableCell>$4,500</TableCell>
-                      <TableCell className="text-red-500">-44.4%</TableCell>
-                    </TableRow>
+                    {allIncomeCategories.length > 0 ? allIncomeCategories.map(category => {
+                      const thisMonthAmount = reports.financialSummary.thisMonth.incomeByCategory[category] || 0;
+                      const lastMonthAmount = reports.financialSummary.lastMonth.incomeByCategory[category] || 0;
+                      const change = calculatePercentageChange(thisMonthAmount, lastMonthAmount);
+                      
+                      return (
+                        <TableRow key={category}>
+                          <TableCell className="font-medium">{category}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(thisMonthAmount)}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(lastMonthAmount)}</TableCell>
+                          <TableCell className={`text-right ${change.isPositive === null ? '' : change.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                            {change.isPositive !== null ? (
+                              <span className="flex items-center justify-end">
+                                {change.isPositive ? <ArrowUp className="mr-1 h-4 w-4" /> : <ArrowDown className="mr-1 h-4 w-4" />}
+                                {change.value.toFixed(1)}%
+                              </span>
+                            ) : <span>-</span>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center h-24">No income recorded this month or last month.</TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
+                ) : null}
               </CardContent>
               <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Total Income: $28,270 (+8.2% from last month)
-                </p>
+                {reports && !isLoading && (
+                  <p className="text-sm text-muted-foreground">
+                    Total Income: {formatCurrency(reports.financialSummary.thisMonth.totalIncome)}
+                    {(() => {
+                      const change = calculatePercentageChange(reports.financialSummary.thisMonth.totalIncome, reports.financialSummary.lastMonth.totalIncome);
+                      if (change.isPositive === null) return null;
+                      return (
+                        <span className={`ml-2 ${change.isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                          ({change.isPositive ? '+' : ''}{change.value.toFixed(1)}% from last month)
+                        </span>
+                      );
+                   })()}
+                  </p>
+                 )}
               </CardFooter>
             </Card>
           </TabsContent>
