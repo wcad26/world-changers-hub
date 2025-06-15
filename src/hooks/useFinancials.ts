@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -11,10 +10,7 @@ export type FinancialCategory = Database['public']['Tables']['financial_transact
 // Schema for a new financial transaction
 export const transactionSchema = z.object({
   category_id: z.string().uuid('Category is required'),
-  amount: z.preprocess(
-    (a) => parseFloat(z.string().parse(a)),
-    z.number().positive('Amount must be positive')
-  ),
+  amount: z.coerce.number().positive('Amount must be positive'),
   description: z.string().optional().nullable(),
   transaction_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid date'),
   dcg_id: z.string().uuid().optional().nullable(),

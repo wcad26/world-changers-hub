@@ -16,8 +16,9 @@ export type DcgWithLeader = Dcg & {
 };
 
 // Schema for creating/updating a DCG
+// Note: Form-level validation should ensure name is not empty.
 export const dcgSchema = z.object({
-  name: z.string().min(1, 'DCG name is required'),
+  name: z.string({ required_error: 'DCG name is required' }),
   leader_id: z.string().uuid().optional().nullable(),
   description: z.string().optional().nullable(),
   location: z.string().optional().nullable(),
