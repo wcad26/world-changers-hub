@@ -38,7 +38,7 @@ export const useDcgs = () => {
       if (!regionId) return [];
       const { data, error } = await supabase
         .from('dcgs')
-        .select('*, leader:members(profiles(first_name, last_name)))')
+        .select('*, leader:leader_id(profiles:profiles(first_name, last_name))')
         .eq('region_id', regionId)
         .order('name', { ascending: true });
 
@@ -60,7 +60,7 @@ export const useCreateDcg = () => {
       
       const { data, error } = await supabase
         .from('dcgs')
-        .insert([{ ...dcgData, region_id: userRegion.id }])
+        .insert({ ...dcgData, region_id: userRegion.id })
         .select()
         .single();
       

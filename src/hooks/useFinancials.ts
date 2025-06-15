@@ -76,11 +76,11 @@ export const useCreateFinancialTransaction = () => {
       
       const { data, error } = await supabase
         .from('financial_transactions')
-        .insert([{ 
+        .insert({ 
           ...transactionData, 
           region_id: userRegion.id,
           recorded_by: user.id
-        }])
+        })
         .select()
         .single();
       
