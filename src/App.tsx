@@ -80,8 +80,10 @@ const App = () => {
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
             
-            {/* Authentication Route */}
+            {/* Authentication Routes */}
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/regional" element={<RegionalAuth />} />
+            <Route path="/auth/super" element={<SuperAuth />} />
             
             {/* Admin Redirects - For easier navigation */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
