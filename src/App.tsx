@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,8 @@ import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import RegionalAuth from "./pages/RegionalAuth";
+import SuperAuth from "./pages/SuperAuth";
 
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
