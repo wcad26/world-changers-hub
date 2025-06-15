@@ -10,7 +10,9 @@ import { BarChart2, LineChart as LineChartIcon, PieChart as PieChartIcon, Downlo
 import { useRegionalReports } from "@/hooks/useReports";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data for demonstration
+// Mock data has been removed as we are now using live data.
+// The remaining mock data will be replaced in future steps.
+
 const mockAttendanceData = [
   { month: "Jan", attendance: 340 },
   { month: "Feb", attendance: 325 },
@@ -72,7 +74,9 @@ const RegionalReports: React.FC = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   
-  const { data: reportData, isLoading, isError, error } = useRegionalReports();
+  const { data: reportData, isLoading, isError, error, refetch } = useRegionalReports();
+
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   
   return (
     <RegionalAdminLayout>
@@ -118,7 +122,7 @@ const RegionalReports: React.FC = () => {
           )}
           
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => refetch()}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -249,19 +253,25 @@ const RegionalReports: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Financial Overview</CardTitle>
                   <CardDescription>
-                    (Mock Data) Monthly income breakdown for the current year
+                    Monthly income breakdown for the current year
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[300px]">
-                    <BarChart
-                      data={mockFinancialData}
-                      index="month"
-                      categories={["tithes", "offerings", "specialGiving"]}
-                      colors={["#8b5cf6", "#a78bfa", "#c4b5fd"]}
-                      valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
-                    />
+                    {reportData.financialsYTD && reportData.financialsYTD.chartData.length > 0 ? (
+                      <BarChart
+                        data={reportData.financialsYTD.chartData}
+                        index="month"
+                        categories={reportData.financialsYTD.chartCategories}
+                        colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
+                        valueFormatter={(value) => `$${value.toLocaleString()}`}
+                        className="h-full"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        No financial data for this period.
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -427,8 +437,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Total Income YTD</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$275,000</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 7.2% from last year</p>
+                    <div className="text-2xl font-bold">{formatCurrency(reportData.financialsYTD?.totalIncome ?? 0)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">&nbsp;</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -436,17 +446,19 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Total Expenses YTD</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$232,500</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 5.4% from last year</p>
+                    <div className="text-2xl font-bold">{formatCurrency(reportData.financialsYTD?.totalExpenses ?? 0)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">&nbsp;</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Current Balance</CardTitle>
+                    <CardTitle className="text-sm font-medium">Net YTD</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$42,500</div>
-                    <p className="text-xs text-muted-foreground mt-1">15.5% of total income</p>
+                    <div className="text-2xl font-bold">{formatCurrency(reportData.financialsYTD?.currentBalance ?? 0)}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {reportData.financialsYTD?.totalIncome ? `${((reportData.financialsYTD.currentBalance / reportData.financialsYTD.totalIncome) * 100).toFixed(1)}% of total income` : '\u00A0'}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -461,14 +473,20 @@ const RegionalReports: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
-                      <BarChart
-                        data={mockFinancialData}
-                        index="month"
-                        categories={["tithes", "offerings", "specialGiving"]}
-                        colors={["#8b5cf6", "#a78bfa", "#c4b5fd"]}
-                        valueFormatter={(value) => `$${value.toLocaleString()}`}
-                        className="h-full"
-                      />
+                      {reportData.financialsYTD && reportData.financialsYTD.chartData.length > 0 ? (
+                        <BarChart
+                          data={reportData.financialsYTD.chartData}
+                          index="month"
+                          categories={reportData.financialsYTD.chartCategories}
+                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No income data for this period.
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -690,19 +708,27 @@ const RegionalReports: React.FC = () => {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {mockDCGData.map((dcg, index) => (
-                            <TableRow key={index}>
-                              <TableCell className="font-medium">{dcg.name}</TableCell>
-                              <TableCell>John Smith</TableCell>
-                              <TableCell>{dcg.members}</TableCell>
-                              <TableCell>{dcg.attendance}</TableCell>
-                              <TableCell className="text-green-600">{dcg.growth}</TableCell>
-                              <TableCell>${(1200 + (index * 200)).toLocaleString()}</TableCell>
-                              <TableCell>
-                                <Button variant="outline" size="sm">View Details</Button>
+                          {reportData.dcgReports && reportData.dcgReports.length > 0 ? (
+                            reportData.dcgReports.map((dcg) => (
+                              <TableRow key={dcg.id}>
+                                <TableCell className="font-medium">{dcg.name}</TableCell>
+                                <TableCell>{dcg.leader}</TableCell>
+                                <TableCell>{dcg.members}</TableCell>
+                                <TableCell>{dcg.attendance}</TableCell>
+                                <TableCell className="text-green-600">{dcg.growth}</TableCell>
+                                <TableCell>{dcg.giving}</TableCell>
+                                <TableCell>
+                                  <Button variant="outline" size="sm">View Details</Button>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={7} className="text-center h-24">
+                                No DCG data available.
                               </TableCell>
                             </TableRow>
-                          ))}
+                          )}
                         </TableBody>
                       </Table>
                     </div>
@@ -753,10 +779,10 @@ const RegionalReports: React.FC = () => {
                   <CardContent>
                     <div className="h-[300px]">
                       <BarChart
-                        data={mockDCGData.map(dcg => ({
+                        data={reportData.dcgReports?.map(dcg => ({
                           name: dcg.name,
                           growth: parseInt(dcg.growth.replace("+", ""))
-                        }))}
+                        })) || []}
                         index="name"
                         categories={["growth"]}
                         colors={["#8b5cf6"]}

@@ -1,7 +1,8 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { subMonths, format, parseISO, getYear, differenceInYears, startOfMonth, endOfMonth } from 'date-fns';
+import { subMonths, format, parseISO, differenceInYears, startOfYear, startOfMonth } from 'date-fns';
 
 export const useRegionalReports = () => {
   const { userRegion } = useAuth();
@@ -35,20 +36,53 @@ export const useRegionalReports = () => {
         .eq('region_id', regionId);
       if (dcgsError) throw dcgsError;
 
-      // Fetch financial data for this and last month
+      // Fetch financial data for the whole year
       const now = new Date();
-      const thisMonthStart = startOfMonth(now);
-      const lastMonthStart = startOfMonth(subMonths(now, 1));
-      
-      const { data: financialData, error: financialError } = await supabase
+      const yearStart = startOfYear(now);
+      const { data: financialDataYear, error: financialYearError } = await supabase
         .from('financial_transactions')
         .select('amount, transaction_date, category:financial_transaction_categories(name, type)')
         .eq('region_id', regionId)
-        .gte('transaction_date', format(lastMonthStart, 'yyyy-MM-dd'));
+        .gte('transaction_date', format(yearStart, 'yyyy-MM-dd'));
 
-      if (financialError) throw financialError;
+      if (financialYearError) throw financialYearError;
 
-      const processFinancials = (transactions: typeof financialData) => {
+      // -- YTD Financials --
+      let totalIncomeYTD = 0;
+      let totalExpensesYTD = 0;
+      (financialDataYear || []).forEach(t => {
+        if (t.category?.type === 'Income') {
+          totalIncomeYTD += t.amount;
+        } else if (t.category?.type === 'Expense') {
+          totalExpensesYTD += t.amount;
+        }
+      });
+      const currentBalance = totalIncomeYTD - totalExpensesYTD;
+
+      const financialChartDataByMonth = (financialDataYear || []).reduce((acc, transaction) => {
+          if (!transaction.transaction_date || transaction.category?.type !== 'Income') return acc;
+          const month = format(new Date(transaction.transaction_date), 'MMM');
+          const categoryName = transaction.category?.name || 'Other Income';
+
+          if (!acc[month]) {
+              acc[month] = { month };
+          }
+          acc[month][categoryName] = (acc[month][categoryName] || 0) + transaction.amount;
+          return acc;
+      }, {} as Record<string, { month: string; [key: string]: any }>);
+
+      const financialChartData = Object.values(financialChartDataByMonth);
+      const financialChartCategories = Array.from(new Set(financialDataYear?.filter(t => t.category?.type === 'Income' && t.category.name).map(t => t.category!.name) || [])).sort();
+      
+      // -- This/Last Month Financial Summary --
+      const thisMonthStart = startOfMonth(now);
+      const lastMonthStart = startOfMonth(subMonths(now, 1));
+      
+      const financialDataThisLastMonth = (financialDataYear || []).filter(
+        t => new Date(t.transaction_date!) >= lastMonthStart
+      );
+
+      const processFinancials = (transactions: typeof financialDataThisLastMonth) => {
         let totalIncome = 0;
         let totalExpenses = 0;
         const incomeByCategory: Record<string, number> = {};
@@ -65,10 +99,10 @@ export const useRegionalReports = () => {
         return { totalIncome, totalExpenses, incomeByCategory };
       };
 
-      const thisMonthTransactions = (financialData || []).filter(
+      const thisMonthTransactions = financialDataThisLastMonth.filter(
         t => new Date(t.transaction_date!) >= thisMonthStart
       );
-      const lastMonthTransactions = (financialData || []).filter(
+      const lastMonthTransactions = financialDataThisLastMonth.filter(
         t => new Date(t.transaction_date!) < thisMonthStart
       );
 
@@ -138,8 +172,24 @@ export const useRegionalReports = () => {
         value
       }));
 
-      // Financial Trends (re-using fetched financialData)
-      const financialTrendsByMonth = (financialData || []).reduce((acc, transaction) => {
+      // DCG Reports
+      const { data: dcgsData, error: dcgsDataError } = await supabase
+        .from('dcgs')
+        .select('*, leader:leader_id(id, profiles:profile_id(first_name, last_name)), dcg_members(count)')
+        .eq('region_id', regionId);
+      if (dcgsDataError) throw dcgsDataError;
+
+      const dcgReports = (dcgsData || []).map(dcg => ({
+        id: dcg.id,
+        name: dcg.name,
+        leader: dcg.leader?.profiles ? `${dcg.leader.profiles.first_name || ''} ${dcg.leader.profiles.last_name || ''}`.trim() : 'N/A',
+        members: dcg.dcg_members[0]?.count || 0,
+        attendance: 'N/A', // Mocked as getting real data is complex for this query
+        growth: 'N/A', // Mocked
+        giving: 'N/A', // Mocked
+      }));
+      
+      const financialTrendsByMonth = (financialDataYear || []).reduce((acc, transaction) => {
         if (!transaction.transaction_date) return acc;
         const month = format(new Date(transaction.transaction_date), 'MMM yyyy');
         if (!acc[month]) {
@@ -172,10 +222,18 @@ export const useRegionalReports = () => {
           thisMonth: thisMonthSummary,
           lastMonth: lastMonthSummary,
         },
+        financialsYTD: {
+          totalIncome: totalIncomeYTD,
+          totalExpenses: totalExpensesYTD,
+          currentBalance,
+          chartData: financialChartData,
+          chartCategories: financialChartCategories,
+        },
         attendanceTrends,
         membershipGrowth,
         membershipDemographics,
         financialTrends,
+        dcgReports,
       };
     },
     enabled: !!regionId,
