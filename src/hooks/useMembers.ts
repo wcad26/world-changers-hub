@@ -3,24 +3,28 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth.tsx';
+import * as z from 'zod';
+
+// Centralized schema for new members
+export const memberSchema = z.object({
+  first_name: z.string().min(1, 'First name is required'),
+  last_name: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  date_of_birth: z.string().optional(),
+  gender: z.string().optional(),
+  occupation: z.string().optional(),
+});
+
+// Type inferred from the schema
+export type NewMemberData = z.infer<typeof memberSchema>;
 
 // Manually add email to Profile to fix build error due to possibly stale types.ts
 type Profile = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
 
 export type MemberWithProfile = Database['public']['Tables']['members']['Row'] & {
   profiles: Profile | null;
-};
-
-// This type is aligned with the RegisterMemberForm to fix a type mismatch.
-type NewMemberData = {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone?: string;
-    address?: string;
-    date_of_birth?: string;
-    gender?: string;
-    occupation?: string;
 };
 
 export const useMembers = (regionId?: string) => {

@@ -1,25 +1,13 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useCreateMember } from '@/hooks/useMembers';
+import { useCreateMember, memberSchema } from '@/hooks/useMembers';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-
-const memberSchema = z.object({
-  first_name: z.string().min(1, 'First name is required'),
-  last_name: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  date_of_birth: z.string().optional(),
-  gender: z.string().optional(),
-  occupation: z.string().optional(),
-});
+import type { z } from 'zod';
 
 type MemberFormValues = z.infer<typeof memberSchema>;
 
