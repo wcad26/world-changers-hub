@@ -1,22 +1,47 @@
-
 import React from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ChevronUp, Calendar, DollarSign, Globe, AlertCircle } from "lucide-react";
+import { Users, ChevronUp, Calendar, DollarSign, Globe, AlertCircle, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import Papa from "papaparse";
+import { useToast } from "@/hooks/use-toast";
 
 const SuperDashboard: React.FC = () => {
   const { data: reports, isLoading, isError, error } = useSuperAdminReports();
+  const { toast } = useToast();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
   };
   
   const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+
+  const handleExport = () => {
+    if (!reports || !reports.regionalData) {
+      toast({ title: "No data to export" });
+      return;
+    }
+    const dataToExport = reports.regionalData.map(region => ({
+        'Region': region.name,
+        'Members': formatNumber(region.members),
+        'Growth (3 mo)': `+${region.growth.toFixed(1)}%`,
+        'DCGs': formatNumber(region.dcgs),
+        'YTD Giving': formatCurrency(region.giving),
+    }));
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `regional-overview-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <SuperAdminLayout>
@@ -94,10 +119,18 @@ const SuperDashboard: React.FC = () => {
           <TabsContent value="regions" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Regional Overview</CardTitle>
-                <CardDescription>
-                  Performance overview of WCA regions.
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Regional Overview</CardTitle>
+                    <CardDescription>
+                      Performance overview of WCA regions.
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading || !reports}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoading ? <Skeleton className="h-64" /> : isError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load regional data.</AlertDescription></Alert> : reports ? (

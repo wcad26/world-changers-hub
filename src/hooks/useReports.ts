@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -40,7 +41,7 @@ export const useRegionalReports = () => {
       const yearStart = startOfYear(now);
       const { data: financialDataYear, error: financialYearError } = await supabase
         .from('financial_transactions')
-        .select('amount, transaction_date, category:financial_transaction_categories(name, type), dcg_id')
+        .select('amount, transaction_date, description, category:financial_transaction_categories(name, type), dcg_id')
         .eq('region_id', regionId)
         .gte('transaction_date', format(yearStart, 'yyyy-MM-dd'));
 
@@ -273,6 +274,7 @@ export const useRegionalReports = () => {
         membershipDemographics,
         financialTrends,
         dcgReports,
+        financialDataYear,
       };
     },
     enabled: !!regionId,

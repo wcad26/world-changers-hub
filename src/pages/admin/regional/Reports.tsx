@@ -9,17 +9,98 @@ import { BarChart, LineChart, PieChart, DonutChart } from "@/components/ui/chart
 import { BarChart2, LineChart as LineChartIcon, PieChart as PieChartIcon, Download, Calendar, Filter, RefreshCw, AlertTriangle } from "lucide-react";
 import { useRegionalReports } from "@/hooks/useReports";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import Papa from "papaparse";
 
 const RegionalReports: React.FC = () => {
   const [dateRange, setDateRange] = useState("year");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
   
   const { data: reportData, isLoading, isError, error, refetch } = useRegionalReports();
+  const { toast } = useToast();
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   
   const dcgTotalMembers = reportData?.dcgReports.reduce((sum, dcg) => sum + dcg.members, 0) ?? 0;
+  
+  const handleExport = () => {
+    if (!reportData) {
+      toast({
+        title: "No data available",
+        description: "Cannot export until report data is loaded.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let dataToExport: unknown[] = [];
+    const filename = `wca-regional-report-${activeTab}-${new Date().toISOString().split("T")[0]}.csv`;
+
+    switch (activeTab) {
+      case "dcg":
+        if (reportData.dcgReports && reportData.dcgReports.length > 0) {
+          dataToExport = reportData.dcgReports.map((dcg) => ({
+            "DCG Name": dcg.name,
+            Leader: dcg.leader,
+            Members: dcg.members,
+            "Avg. Attendance": dcg.attendance,
+            "Quarterly Growth": dcg.growth,
+            "Giving (YTD)": formatCurrency(dcg.giving),
+          }));
+        }
+        break;
+      case "membership":
+        if (reportData.membershipDemographics && reportData.membershipDemographics.length > 0) {
+          dataToExport = reportData.membershipDemographics;
+        }
+        break;
+      case "attendance":
+        if (reportData.attendanceTrends && reportData.attendanceTrends.length > 0) {
+          dataToExport = reportData.attendanceTrends;
+        }
+        break;
+      case "financial":
+        if (reportData.financialDataYear && reportData.financialDataYear.length > 0) {
+          dataToExport = reportData.financialDataYear.map((t: any) => ({
+            Date: t.transaction_date,
+            Description: t.description,
+            Amount: t.amount,
+            Category: t.category?.name,
+            Type: t.category?.type,
+            "DCG ID": t.dcg_id,
+          }));
+        }
+        break;
+      default:
+        toast({
+          title: "Export not available",
+          description: `Export is not implemented for the "${activeTab}" tab.`,
+        });
+        return;
+    }
+
+    if (dataToExport.length > 0) {
+      const csv = Papa.unparse(dataToExport);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } else {
+      toast({
+        title: "No data to export",
+        description: `There is no data to export for the "${activeTab}" tab.`,
+      });
+    }
+  };
   
   return (
     <RegionalAdminLayout>
@@ -69,7 +150,7 @@ const RegionalReports: React.FC = () => {
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -106,7 +187,7 @@ const RegionalReports: React.FC = () => {
         )}
 
         {reportData && !isLoading && !isError && (
-          <Tabs defaultValue="dashboard">
+          <Tabs defaultValue="dashboard" onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-1 md:grid-cols-5 w-full max-w-4xl">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
               <TabsTrigger value="attendance">Attendance</TabsTrigger>
