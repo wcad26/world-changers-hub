@@ -1,8 +1,7 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { subMonths, format, parseISO, differenceInYears, startOfYear, startOfMonth } from 'date-fns';
+import { subMonths, format, parseISO, differenceInYears, startOfYear, startOfMonth, subQuarters } from 'date-fns';
 
 export const useRegionalReports = () => {
   const { userRegion } = useAuth();
@@ -41,23 +40,31 @@ export const useRegionalReports = () => {
       const yearStart = startOfYear(now);
       const { data: financialDataYear, error: financialYearError } = await supabase
         .from('financial_transactions')
-        .select('amount, transaction_date, category:financial_transaction_categories(name, type)')
+        .select('amount, transaction_date, category:financial_transaction_categories(name, type), dcg_id')
         .eq('region_id', regionId)
         .gte('transaction_date', format(yearStart, 'yyyy-MM-dd'));
 
       if (financialYearError) throw financialYearError;
 
-      // -- YTD Financials --
+      // -- YTD Financials & Distribution --
       let totalIncomeYTD = 0;
       let totalExpensesYTD = 0;
+      const incomeDistributionYTD: Record<string, number> = {};
+      const expenseDistributionYTD: Record<string, number> = {};
+
       (financialDataYear || []).forEach(t => {
+        const categoryName = t.category?.name || 'Uncategorized';
         if (t.category?.type === 'Income') {
           totalIncomeYTD += t.amount;
+          incomeDistributionYTD[categoryName] = (incomeDistributionYTD[categoryName] || 0) + t.amount;
         } else if (t.category?.type === 'Expense') {
           totalExpensesYTD += t.amount;
+          expenseDistributionYTD[categoryName] = (expenseDistributionYTD[categoryName] || 0) + t.amount;
         }
       });
       const currentBalance = totalIncomeYTD - totalExpensesYTD;
+      const incomeDistributionChartData = Object.entries(incomeDistributionYTD).map(([category, value]) => ({ category, value }));
+      const expenseDistributionChartData = Object.entries(expenseDistributionYTD).map(([category, value]) => ({ category, value }));
 
       const financialChartDataByMonth = (financialDataYear || []).reduce((acc, transaction) => {
           if (!transaction.transaction_date || transaction.category?.type !== 'Income') return acc;
@@ -76,13 +83,15 @@ export const useRegionalReports = () => {
       
       // -- This/Last Month Financial Summary --
       const thisMonthStart = startOfMonth(now);
+      const thisMonthTransactions = financialDataYear.filter(
+        t => new Date(t.transaction_date!) >= thisMonthStart
+      );
       const lastMonthStart = startOfMonth(subMonths(now, 1));
-      
-      const financialDataThisLastMonth = (financialDataYear || []).filter(
-        t => new Date(t.transaction_date!) >= lastMonthStart
+      const lastMonthTransactions = financialDataYear.filter(
+        t => new Date(t.transaction_date!) < thisMonthStart
       );
 
-      const processFinancials = (transactions: typeof financialDataThisLastMonth) => {
+      const processFinancials = (transactions: typeof financialDataYear) => {
         let totalIncome = 0;
         let totalExpenses = 0;
         const incomeByCategory: Record<string, number> = {};
@@ -98,13 +107,6 @@ export const useRegionalReports = () => {
         }
         return { totalIncome, totalExpenses, incomeByCategory };
       };
-
-      const thisMonthTransactions = financialDataThisLastMonth.filter(
-        t => new Date(t.transaction_date!) >= thisMonthStart
-      );
-      const lastMonthTransactions = financialDataThisLastMonth.filter(
-        t => new Date(t.transaction_date!) < thisMonthStart
-      );
 
       const thisMonthSummary = processFinancials(thisMonthTransactions);
       const lastMonthSummary = processFinancials(lastMonthTransactions);
@@ -145,6 +147,14 @@ export const useRegionalReports = () => {
         newMembers
       }));
 
+      // KPI: New Members YTD
+      const { count: newMembersYTD, error: membersYTDError } = await supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('region_id', regionId)
+        .gte('created_at', format(yearStart, 'yyyy-MM-dd'));
+      if (membersYTDError) throw membersYTDError;
+
       // Membership Demographics
       const { data: profiles, error: profilesError } = await supabase
         .from('members')
@@ -175,9 +185,35 @@ export const useRegionalReports = () => {
       // DCG Reports
       const { data: dcgsData, error: dcgsDataError } = await supabase
         .from('dcgs')
-        .select('*, leader:leader_id(id, profiles:profile_id(first_name, last_name)), dcg_members(count)')
+        .select('id, name, leader:leader_id(id, profiles:profile_id(first_name, last_name)), dcg_members(count)')
         .eq('region_id', regionId);
       if (dcgsDataError) throw dcgsDataError;
+
+      // DCG Giving (YTD)
+      const dcgGiving = (financialDataYear || [])
+        .filter(t => t.dcg_id && t.category?.type === 'Income')
+        .reduce((acc, t) => {
+          if (t.dcg_id) {
+            acc[t.dcg_id] = (acc[t.dcg_id] || 0) + t.amount;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+
+      // DCG Growth (new members in last quarter)
+      const oneQuarterAgo = subQuarters(new Date(), 1).toISOString();
+      const { data: dcgGrowthData, error: dcgGrowthError } = await supabase
+        .from('dcg_members')
+        .select('dcg_id')
+        .gte('joined_date', oneQuarterAgo)
+        .in('dcg_id', dcgsData?.map(d => d.id) || []);
+      if (dcgGrowthError) throw dcgGrowthError;
+
+      const dcgGrowthMap = (dcgGrowthData || []).reduce((acc, item) => {
+        if (item.dcg_id) {
+          acc[item.dcg_id] = (acc[item.dcg_id] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>);
 
       const dcgReports = (dcgsData || []).map(dcg => ({
         id: dcg.id,
@@ -185,8 +221,8 @@ export const useRegionalReports = () => {
         leader: dcg.leader?.profiles ? `${dcg.leader.profiles.first_name || ''} ${dcg.leader.profiles.last_name || ''}`.trim() : 'N/A',
         members: dcg.dcg_members[0]?.count || 0,
         attendance: 'N/A', // Mocked as getting real data is complex for this query
-        growth: 'N/A', // Mocked
-        giving: 'N/A', // Mocked
+        growth: `+${dcgGrowthMap[dcg.id] || 0}`,
+        giving: dcgGiving[dcg.id] || 0,
       }));
       
       const financialTrendsByMonth = (financialDataYear || []).reduce((acc, transaction) => {
@@ -217,6 +253,7 @@ export const useRegionalReports = () => {
           totalDcgs: totalDcgs ?? 0,
           totalIncome: thisMonthSummary.totalIncome,
           totalExpenses: thisMonthSummary.totalExpenses,
+          newMembersYTD: newMembersYTD ?? 0,
         },
         financialSummary: {
           thisMonth: thisMonthSummary,
@@ -228,6 +265,8 @@ export const useRegionalReports = () => {
           currentBalance,
           chartData: financialChartData,
           chartCategories: financialChartCategories,
+          incomeDistribution: incomeDistributionChartData,
+          expenseDistribution: expenseDistributionChartData,
         },
         attendanceTrends,
         membershipGrowth,

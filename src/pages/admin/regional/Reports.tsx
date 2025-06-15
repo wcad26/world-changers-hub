@@ -10,65 +10,6 @@ import { BarChart2, LineChart as LineChartIcon, PieChart as PieChartIcon, Downlo
 import { useRegionalReports } from "@/hooks/useReports";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Mock data has been removed as we are now using live data.
-// The remaining mock data will be replaced in future steps.
-
-const mockAttendanceData = [
-  { month: "Jan", attendance: 340 },
-  { month: "Feb", attendance: 325 },
-  { month: "Mar", attendance: 375 },
-  { month: "Apr", attendance: 390 },
-  { month: "May", attendance: 410 },
-  { month: "Jun", attendance: 395 },
-  { month: "Jul", attendance: 380 },
-  { month: "Aug", attendance: 400 },
-  { month: "Sep", attendance: 420 },
-  { month: "Oct", attendance: 430 },
-  { month: "Nov", attendance: 0 },
-  { month: "Dec", attendance: 0 },
-];
-
-const mockFinancialData = [
-  { month: "Jan", tithes: 12500, offerings: 7500, specialGiving: 2000 },
-  { month: "Feb", tithes: 13000, offerings: 8000, specialGiving: 1500 },
-  { month: "Mar", tithes: 12800, offerings: 7800, specialGiving: 3000 },
-  { month: "Apr", tithes: 13200, offerings: 8200, specialGiving: 2500 },
-  { month: "May", tithes: 14000, offerings: 8500, specialGiving: 4000 },
-  { month: "Jun", tithes: 13500, offerings: 8000, specialGiving: 2000 },
-  { month: "Jul", tithes: 13800, offerings: 8200, specialGiving: 1800 },
-  { month: "Aug", tithes: 14200, offerings: 8300, specialGiving: 2200 },
-  { month: "Sep", tithes: 14500, offerings: 8600, specialGiving: 5000 },
-  { month: "Oct", tithes: 15000, offerings: 9000, specialGiving: 3500 },
-];
-
-const mockDCGData = [
-  { name: "North DCG", members: 28, attendance: "85%", growth: "+3" },
-  { name: "South DCG", members: 32, attendance: "78%", growth: "+5" },
-  { name: "East DCG", members: 24, attendance: "90%", growth: "+2" },
-  { name: "West DCG", members: 30, attendance: "82%", growth: "+4" },
-  { name: "Central DCG", members: 35, attendance: "88%", growth: "+6" },
-];
-
-const mockMembershipData = [
-  { category: "Adults", value: 320 },
-  { category: "Youth", value: 180 },
-  { category: "Children", value: 150 },
-  { category: "Seniors", value: 90 },
-];
-
-const mockGrowthData = [
-  { month: "Jan", newMembers: 12, visitors: 45 },
-  { month: "Feb", newMembers: 15, visitors: 50 },
-  { month: "Mar", newMembers: 10, visitors: 42 },
-  { month: "Apr", newMembers: 18, visitors: 55 },
-  { month: "May", newMembers: 22, visitors: 60 },
-  { month: "Jun", newMembers: 16, visitors: 48 },
-  { month: "Jul", newMembers: 14, visitors: 52 },
-  { month: "Aug", newMembers: 19, visitors: 58 },
-  { month: "Sep", newMembers: 24, visitors: 65 },
-  { month: "Oct", newMembers: 20, visitors: 62 },
-];
-
 const RegionalReports: React.FC = () => {
   const [dateRange, setDateRange] = useState("year");
   const [startDate, setStartDate] = useState("");
@@ -77,6 +18,8 @@ const RegionalReports: React.FC = () => {
   const { data: reportData, isLoading, isError, error, refetch } = useRegionalReports();
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  
+  const dcgTotalMembers = reportData?.dcgReports.reduce((sum, dcg) => sum + dcg.members, 0) ?? 0;
   
   return (
     <RegionalAdminLayout>
@@ -194,12 +137,12 @@ const RegionalReports: React.FC = () => {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium">Monthly Giving</CardTitle>
+                    <CardTitle className="text-sm font-medium">This Month's Giving</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$27,500</div>
+                    <div className="text-2xl font-bold">{formatCurrency(reportData.kpis.totalIncome)}</div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      (Mock Data) ↑ 3.5% from last month
+                      Total income for the current month.
                     </p>
                   </CardContent>
                 </Card>
@@ -285,7 +228,7 @@ const RegionalReports: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">430</div>
-                    <p className="text-xs text-muted-foreground mt-1">58% of total members</p>
+                    <p className="text-xs text-muted-foreground mt-1">58% of total members (Mock)</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -294,7 +237,7 @@ const RegionalReports: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">215</div>
-                    <p className="text-xs text-muted-foreground mt-1">29% of total members</p>
+                    <p className="text-xs text-muted-foreground mt-1">29% of total members (Mock)</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -303,7 +246,7 @@ const RegionalReports: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">149</div>
-                    <p className="text-xs text-muted-foreground mt-1">85% of DCG members</p>
+                    <p className="text-xs text-muted-foreground mt-1">85% of DCG members (Mock)</p>
                   </CardContent>
                 </Card>
               </div>
@@ -361,7 +304,7 @@ const RegionalReports: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Detailed Attendance Records</CardTitle>
                   <CardDescription>
-                    Weekly attendance breakdown for the last 8 weeks
+                    (Mock Data) Weekly attendance breakdown for the last 8 weeks
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -497,24 +440,25 @@ const RegionalReports: React.FC = () => {
                   <CardHeader>
                     <CardTitle>Income Distribution</CardTitle>
                     <CardDescription>
-                      Breakdown by income category
+                      Breakdown by income category (YTD)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[250px]">
-                      <PieChart
-                        data={[
-                          { category: "Tithes", value: 132000 },
-                          { category: "Offerings", value: 83000 },
-                          { category: "Special Giving", value: 25000 },
-                          { category: "Fundraising", value: 35000 },
-                        ]}
-                        index="category"
-                        categories={["value"]}
-                        colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]}
-                        valueFormatter={(value) => `$${value.toLocaleString()}`}
-                        className="h-full"
-                      />
+                      {reportData.financialsYTD && reportData.financialsYTD.incomeDistribution.length > 0 ? (
+                        <PieChart
+                          data={reportData.financialsYTD.incomeDistribution}
+                          index="category"
+                          categories={["value"]}
+                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe", "#a855f7", "#9333ea"]}
+                          valueFormatter={(value) => formatCurrency(value)}
+                          className="h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No income data to display.
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -523,25 +467,25 @@ const RegionalReports: React.FC = () => {
                   <CardHeader>
                     <CardTitle>Expense Distribution</CardTitle>
                     <CardDescription>
-                      Breakdown by expense category
+                      Breakdown by expense category (YTD)
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[250px]">
-                      <PieChart
-                        data={[
-                          { category: "Staff & Salaries", value: 110000 },
-                          { category: "Building & Maintenance", value: 45000 },
-                          { category: "Ministries & Programs", value: 38500 },
-                          { category: "Missions & Outreach", value: 25000 },
-                          { category: "Administration", value: 14000 },
-                        ]}
-                        index="category"
-                        categories={["value"]}
-                        colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
-                        valueFormatter={(value) => `$${value.toLocaleString()}`}
-                        className="h-full"
-                      />
+                      {reportData.financialsYTD && reportData.financialsYTD.expenseDistribution.length > 0 ? (
+                        <PieChart
+                          data={reportData.financialsYTD.expenseDistribution}
+                          index="category"
+                          categories={["value"]}
+                          colors={["#f43f5e", "#fb7185", "#fda4af", "#fecdd3", "#ffe4e6", "#be123c", "#9f1239"]}
+                          valueFormatter={(value) => formatCurrency(value)}
+                          className="h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No expense data to display.
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -555,8 +499,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Total Members</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">740</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 45 from last year</p>
+                    <div className="text-2xl font-bold">{reportData.kpis.totalMembers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">↑ {reportData.kpis.newMembersLast30Days} in last 30 days</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -564,8 +508,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">New Members YTD</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">86</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 12% from last year</p>
+                    <div className="text-2xl font-bold">{reportData.kpis.newMembersYTD}</div>
+                    <p className="text-xs text-muted-foreground mt-1">Since start of the year</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -573,8 +517,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Retention Rate</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">93%</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 2% from last year</p>
+                    <div className="text-2xl font-bold">N/A</div>
+                    <p className="text-xs text-muted-foreground mt-1">(Complex calculation pending)</p>
                   </CardContent>
                 </Card>
               </div>
@@ -627,7 +571,7 @@ const RegionalReports: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Member Engagement</CardTitle>
                   <CardDescription>
-                    Participation in various ministries and activities
+                    (Mock Data) Participation in various ministries and activities
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -661,8 +605,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">12</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 2 from last year</p>
+                    <div className="text-2xl font-bold">{reportData.kpis.totalDcgs}</div>
+                    <p className="text-xs text-muted-foreground mt-1">&nbsp;</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -670,8 +614,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">DCG Members</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">175</div>
-                    <p className="text-xs text-muted-foreground mt-1">24% of total members</p>
+                    <div className="text-2xl font-bold">{dcgTotalMembers}</div>
+                    <p className="text-xs text-muted-foreground mt-1">{reportData.kpis.totalMembers > 0 ? `${((dcgTotalMembers / reportData.kpis.totalMembers) * 100).toFixed(0)}% of total members` : '...'}</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -679,8 +623,8 @@ const RegionalReports: React.FC = () => {
                     <CardTitle className="text-sm font-medium">Average Attendance</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">85%</div>
-                    <p className="text-xs text-muted-foreground mt-1">↑ 3% from last quarter</p>
+                    <div className="text-2xl font-bold">N/A</div>
+                    <p className="text-xs text-muted-foreground mt-1">(Calculation pending)</p>
                   </CardContent>
                 </Card>
               </div>
@@ -703,7 +647,7 @@ const RegionalReports: React.FC = () => {
                             <TableHead>Members</TableHead>
                             <TableHead>Avg. Attendance</TableHead>
                             <TableHead>Quarterly Growth</TableHead>
-                            <TableHead>Giving</TableHead>
+                            <TableHead>Giving (YTD)</TableHead>
                             <TableHead>Actions</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -716,7 +660,7 @@ const RegionalReports: React.FC = () => {
                                 <TableCell>{dcg.members}</TableCell>
                                 <TableCell>{dcg.attendance}</TableCell>
                                 <TableCell className="text-green-600">{dcg.growth}</TableCell>
-                                <TableCell>{dcg.giving}</TableCell>
+                                <TableCell>{formatCurrency(dcg.giving)}</TableCell>
                                 <TableCell>
                                   <Button variant="outline" size="sm">View Details</Button>
                                 </TableCell>
@@ -741,7 +685,7 @@ const RegionalReports: React.FC = () => {
                   <CardHeader>
                     <CardTitle>DCG Attendance Trends</CardTitle>
                     <CardDescription>
-                      Monthly attendance rates across all DCGs
+                      (Mock Data) Monthly attendance rates across all DCGs
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -773,22 +717,28 @@ const RegionalReports: React.FC = () => {
                   <CardHeader>
                     <CardTitle>DCG Growth Distribution</CardTitle>
                     <CardDescription>
-                      Member growth by DCG
+                      New members by DCG in the last quarter
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
-                      <BarChart
-                        data={reportData.dcgReports?.map(dcg => ({
-                          name: dcg.name,
-                          growth: parseInt(dcg.growth.replace("+", ""))
-                        })) || []}
-                        index="name"
-                        categories={["growth"]}
-                        colors={["#8b5cf6"]}
-                        valueFormatter={(value) => `+${value} members`}
-                        className="h-full"
-                      />
+                      {reportData.dcgReports && reportData.dcgReports.some(d => parseInt(d.growth.replace("+", "")) > 0) ? (
+                        <BarChart
+                          data={reportData.dcgReports?.map(dcg => ({
+                            name: dcg.name,
+                            growth: parseInt(dcg.growth.replace("+", ""))
+                          })) || []}
+                          index="name"
+                          categories={["growth"]}
+                          colors={["#8b5cf6"]}
+                          valueFormatter={(value) => `+${value} members`}
+                          className="h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-muted-foreground">
+                          No DCG growth data for this period.
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
