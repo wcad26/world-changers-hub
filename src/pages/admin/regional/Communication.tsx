@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MessageSquare, Mail, Phone, Send, Users, Bell, Calendar, Filter, Search, CheckCircle2, PlusCircle } from "lucide-react";
-import { useCommunications, useCreateCommunication, useCommunicationTemplates } from "@/hooks/useCommunications";
+import { useCommunications, useCreateCommunication, useCommunicationTemplates, CommunicationFormValues } from "@/hooks/useCommunications";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,7 +43,7 @@ const RegionalCommunication: React.FC = () => {
   const createCommunication = useCreateCommunication();
   const { data: templates, isLoading: isLoadingTemplates, error: templatesError } = useCommunicationTemplates();
 
-  const form = useForm<z.infer<typeof messageSchema>>({
+  const form = useForm<CommunicationFormValues>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
       title: "",
@@ -72,7 +73,7 @@ const RegionalCommunication: React.FC = () => {
     form.setValue("channels", [...selectedChannels]);
   };
 
-  function onSubmit(values: z.infer<typeof messageSchema>) {
+  function onSubmit(values: CommunicationFormValues) {
     toast.promise(createCommunication.mutateAsync(values), {
       loading: values.sendNow ? "Sending message..." : "Scheduling message...",
       success: () => {
