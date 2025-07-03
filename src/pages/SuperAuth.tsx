@@ -4,65 +4,61 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Shield, Users } from 'lucide-react';
-
-const authSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().min(1, 'First name is required').optional(),
-  lastName: z.string().min(1, 'Last name is required').optional(),
-});
-
-type AuthFormData = z.infer<typeof authSchema>;
+import { Eye, EyeOff, Shield, Users, Loader2 } from 'lucide-react';
 
 const SuperAuth = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   const from = (location.state as any)?.from?.pathname || '/admin/super/dashboard';
 
-  const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      firstName: '',
-      lastName: ''
-    }
-  });
-
   useEffect(() => {
+    console.log('SuperAuth: Component mounted, checking existing session...');
     checkExistingSession();
   }, []);
 
   const checkExistingSession = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('SuperAuth: Checking for existing session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('SuperAuth: Session check error:', error);
+        return;
+      }
+
       if (session?.user) {
-        console.log('Existing session found, checking super admin role...');
+        console.log('SuperAuth: Found existing session for user:', session.user.id);
         const hasRole = await checkSuperAdminRole(session.user.id);
         if (hasRole) {
-          console.log('Valid super admin session, redirecting...');
+          console.log('SuperAuth: Valid super admin session found, redirecting...');
           navigate(from, { replace: true });
+        } else {
+          console.log('SuperAuth: User does not have super admin role');
         }
+      } else {
+        console.log('SuperAuth: No existing session found');
       }
     } catch (error) {
-      console.error('Error checking session:', error);
+      console.error('SuperAuth: Exception during session check:', error);
     }
   };
 
   const checkSuperAdminRole = async (userId: string): Promise<boolean> => {
     try {
+      console.log('SuperAuth: Checking super admin role for user:', userId);
+      
       const { data: userRoles, error } = await supabase
         .from('user_roles')
         .select('role, is_active')
@@ -71,132 +67,210 @@ const SuperAuth = () => {
         .eq('is_active', true);
 
       if (error) {
-        console.error('Role check error:', error);
+        console.error('SuperAuth: Role check error:', error);
         return false;
       }
 
+      console.log('SuperAuth: Role check result:', userRoles);
       return userRoles && userRoles.length > 0;
     } catch (error) {
-      console.error('Role check exception:', error);
+      console.error('SuperAuth: Role check exception:', error);
       return false;
     }
   };
 
-  const handleSignIn = async (email: string, password: string) => {
-    console.log('Starting sign in process...');
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      console.error('Sign in error:', error);
-      let message = 'Sign in failed. Please try again.';
-      
-      if (error.message.includes('Invalid login credentials')) {
-        message = 'Invalid email or password. Please check your credentials.';
-      } else if (error.message.includes('Email not confirmed')) {
-        message = 'Please check your email and confirm your account first.';
-      }
-      
-      throw new Error(message);
+    if (!email || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive"
+      });
+      return;
     }
 
-    if (!data.user) {
-      throw new Error('Sign in failed - no user data received');
-    }
-
-    console.log('Sign in successful, checking role...');
-    
-    // Check super admin role
-    const hasRole = await checkSuperAdminRole(data.user.id);
-    if (!hasRole) {
-      console.log('User lacks super admin role, signing out...');
-      await supabase.auth.signOut();
-      throw new Error('You don\'t have super admin permissions. Contact an administrator if this is incorrect.');
-    }
-
-    console.log('Super admin role verified, redirecting...');
-    navigate(from, { replace: true });
-    
-    toast({
-      title: "Welcome back!",
-      description: "Successfully signed in to the super admin portal."
-    });
-  };
-
-  const handleSignUp = async (data: AuthFormData) => {
-    console.log('Starting sign up process...');
-    
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          first_name: data.firstName,
-          last_name: data.lastName
-        }
-      }
-    });
-
-    if (error) {
-      console.error('Sign up error:', error);
-      throw new Error(error.message);
-    }
-
-    if (authData.user) {
-      // Try to assign super admin role
-      try {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: 'super_admin',
-            is_active: true
-          });
-
-        if (roleError) {
-          console.error('Role assignment error:', roleError);
-        }
-      } catch (roleErr) {
-        console.error('Role assignment exception:', roleErr);
-      }
-    }
-
-    toast({
-      title: "Account created!",
-      description: authData.user?.email_confirmed_at 
-        ? "You can now sign in with your credentials." 
-        : "Please check your email to confirm your account, then sign in."
-    });
-
-    setIsSignUp(false);
-    form.reset({ email: data.email, password: '' });
-  };
-
-  const onSubmit = async (data: AuthFormData) => {
-    if (isLoading) return;
-    
-    console.log('Form submission started:', { email: data.email, isSignUp });
+    console.log('SuperAuth: Starting sign in process for:', email);
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        await handleSignUp(data);
-      } else {
-        await handleSignIn(data.email, data.password);
+      // Step 1: Sign in with Supabase
+      console.log('SuperAuth: Attempting Supabase sign in...');
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+
+      if (signInError) {
+        console.error('SuperAuth: Sign in error:', signInError);
+        let message = 'Sign in failed. Please try again.';
+        
+        if (signInError.message.includes('Invalid login credentials')) {
+          message = 'Invalid email or password. Please check your credentials.';
+        } else if (signInError.message.includes('Email not confirmed')) {
+          message = 'Please check your email and confirm your account first.';
+        } else if (signInError.message.includes('Too many requests')) {
+          message = 'Too many login attempts. Please wait a moment and try again.';
+        }
+        
+        toast({
+          title: "Sign In Failed",
+          description: message,
+          variant: "destructive"
+        });
+        return;
       }
-    } catch (error: any) {
-      console.error('Authentication error:', error);
+
+      if (!authData.user) {
+        console.error('SuperAuth: No user data received after sign in');
+        toast({
+          title: "Sign In Failed",
+          description: "No user data received. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('SuperAuth: Sign in successful for user:', authData.user.id);
+
+      // Step 2: Check super admin role
+      console.log('SuperAuth: Checking super admin role...');
+      const hasRole = await checkSuperAdminRole(authData.user.id);
+      
+      if (!hasRole) {
+        console.log('SuperAuth: User lacks super admin role, signing out...');
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You don't have super admin permissions. Contact an administrator if this is incorrect.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Step 3: Success - redirect to dashboard
+      console.log('SuperAuth: Super admin role verified, redirecting to:', from);
+      
       toast({
-        title: "Authentication failed",
-        description: error.message || "An unexpected error occurred.",
+        title: "Welcome back!",
+        description: "Successfully signed in to the super admin portal."
+      });
+
+      // Small delay to ensure toast is shown
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
+
+    } catch (error: any) {
+      console.error('SuperAuth: Unexpected error during sign in:', error);
+      toast({
+        title: "Sign In Error",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
       setIsLoading(false);
-      console.log('Form submission completed');
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password || !firstName || !lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('SuperAuth: Starting sign up process for:', email);
+    setIsLoading(true);
+
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim()
+          }
+        }
+      });
+
+      if (signUpError) {
+        console.error('SuperAuth: Sign up error:', signUpError);
+        toast({
+          title: "Sign Up Failed",
+          description: signUpError.message || "Failed to create account. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (authData.user) {
+        console.log('SuperAuth: Sign up successful for user:', authData.user.id);
+        
+        // Try to assign super admin role
+        try {
+          console.log('SuperAuth: Attempting to assign super admin role...');
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: authData.user.id,
+              role: 'super_admin',
+              is_active: true
+            });
+
+          if (roleError) {
+            console.error('SuperAuth: Role assignment error:', roleError);
+            toast({
+              title: "Account created but role assignment failed",
+              description: "Please contact an administrator to assign your super admin role.",
+              variant: "destructive"
+            });
+          } else {
+            console.log('SuperAuth: Super admin role assigned successfully');
+          }
+        } catch (roleErr) {
+          console.error('SuperAuth: Role assignment exception:', roleErr);
+        }
+      }
+
+      toast({
+        title: "Account created!",
+        description: authData.user?.email_confirmed_at 
+          ? "You can now sign in with your credentials." 
+          : "Please check your email to confirm your account, then sign in."
+      });
+
+      // Switch to sign in mode
+      setIsSignUp(false);
+      setPassword('');
+      setFirstName('');
+      setLastName('');
+
+    } catch (error: any) {
+      console.error('SuperAuth: Unexpected error during sign up:', error);
+      toast({
+        title: "Sign Up Error",
+        description: error.message || "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -232,117 +306,102 @@ const SuperAuth = () => {
           </CardHeader>
 
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {isSignUp && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="John"
-                              className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
-                              disabled={isLoading}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Doe"
-                              className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
-                              disabled={isLoading}
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+            <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+              {isSignUp && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                      disabled={isLoading}
+                      required
                     />
                   </div>
-                )}
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Enter your password"
-                            className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20 pr-10"
-                            disabled={isLoading}
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
-                            onClick={() => setShowPassword(!showPassword)}
-                            disabled={isLoading}
-                          >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
                   disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
-                    </div>
-                  ) : (
-                    <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                  )}
-                </Button>
-              </form>
-            </Form>
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20 pr-10"
+                    disabled={isLoading}
+                    required
+                    minLength={6}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
+                  </div>
+                ) : (
+                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
+                )}
+              </Button>
+            </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
@@ -353,7 +412,10 @@ const SuperAuth = () => {
                 className="text-wca-purple hover:text-wca-violet font-medium p-0 h-auto"
                 onClick={() => {
                   setIsSignUp(!isSignUp);
-                  form.reset();
+                  setEmail('');
+                  setPassword('');
+                  setFirstName('');
+                  setLastName('');
                 }}
                 disabled={isLoading}
               >

@@ -21,23 +21,27 @@ export const useAuth = () => {
   useEffect(() => {
     let mounted = true;
 
-    // Set up auth state listener first
+    console.log('useAuth: Setting up auth state listener...');
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
+        console.log('useAuth: Auth state change:', event, session?.user?.id);
         
         if (!mounted) return;
 
-        setUser(session?.user ?? null);
-        
         if (session?.user) {
-          // Use setTimeout to avoid blocking the auth state change
+          setUser(session.user);
+          // Use setTimeout to avoid blocking the auth state change and prevent potential deadlocks
           setTimeout(() => {
             if (mounted) {
+              console.log('useAuth: Fetching user data after auth state change...');
               fetchUserData(session.user.id);
             }
-          }, 0);
+          }, 100);
         } else {
+          console.log('useAuth: No session, clearing user data...');
+          setUser(null);
           setProfile(null);
           setUserRoles([]);
           setUserRegion(null);
@@ -46,21 +50,30 @@ export const useAuth = () => {
       }
     );
 
-    // Then get initial session
+    // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('useAuth: Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
         
+        if (error) {
+          console.error('useAuth: Error getting initial session:', error);
+          setLoading(false);
+          return;
+        }
+
         if (!mounted) return;
 
-        setUser(session?.user ?? null);
         if (session?.user) {
+          console.log('useAuth: Found initial session for user:', session.user.id);
+          setUser(session.user);
           await fetchUserData(session.user.id);
         } else {
+          console.log('useAuth: No initial session found');
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting initial session:', error);
+        console.error('useAuth: Exception getting initial session:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -70,6 +83,7 @@ export const useAuth = () => {
     getInitialSession();
 
     return () => {
+      console.log('useAuth: Cleaning up auth listener...');
       mounted = false;
       subscription.unsubscribe();
     };
@@ -77,7 +91,7 @@ export const useAuth = () => {
 
   const fetchUserData = async (userId: string) => {
     try {
-      console.log('Fetching user data for:', userId);
+      console.log('useAuth: Fetching user data for:', userId);
 
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
@@ -87,9 +101,9 @@ export const useAuth = () => {
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Profile fetch error:', profileError);
-      } else {
-        console.log('Profile data:', profileData);
+        console.error('useAuth: Profile fetch error:', profileError);
+      } else if (profileData) {
+        console.log('useAuth: Profile data loaded:', profileData.first_name, profileData.last_name);
         setProfile(profileData);
       }
 
@@ -101,13 +115,13 @@ export const useAuth = () => {
         .eq('is_active', true);
 
       if (rolesError) {
-        console.error('Roles fetch error:', rolesError);
+        console.error('useAuth: Roles fetch error:', rolesError);
       } else {
-        console.log('User roles:', rolesData);
+        console.log('useAuth: User roles loaded:', rolesData?.map(r => r.role));
         setUserRoles(rolesData || []);
       }
 
-      // Fetch user region if profile exists
+      // Fetch user region if profile exists and has region_id
       if (profileData?.region_id) {
         const { data: regionData, error: regionError } = await supabase
           .from('regions')
@@ -116,14 +130,14 @@ export const useAuth = () => {
           .single();
 
         if (regionError && regionError.code !== 'PGRST116') {
-          console.error('Region fetch error:', regionError);
-        } else {
-          console.log('User region:', regionData);
+          console.error('useAuth: Region fetch error:', regionError);
+        } else if (regionData) {
+          console.log('useAuth: User region loaded:', regionData.name);
           setUserRegion(regionData);
         }
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('useAuth: Exception fetching user data:', error);
       toast({
         title: "Error loading user data",
         description: "Please refresh the page and try again.",
@@ -136,7 +150,7 @@ export const useAuth = () => {
 
   const hasRole = (role: 'super_admin' | 'regional_admin' | 'member') => {
     const result = userRoles.some(ur => ur.role === role && ur.is_active);
-    console.log(`Checking role ${role}:`, result, 'from roles:', userRoles);
+    console.log(`useAuth: Checking role ${role}:`, result, 'from roles:', userRoles.map(r => r.role));
     return result;
   };
 
@@ -146,17 +160,25 @@ export const useAuth = () => {
 
   const signOut = async () => {
     try {
-      console.log('Signing out user...');
+      console.log('useAuth: Signing out user...');
+      setLoading(true);
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Sign out error:', error);
+        console.error('useAuth: Sign out error:', error);
         toast({
           title: "Error signing out",
           description: error.message,
           variant: "destructive"
         });
       } else {
-        console.log('Sign out successful');
+        console.log('useAuth: Sign out successful');
+        // Clear state immediately
+        setUser(null);
+        setProfile(null);
+        setUserRoles([]);
+        setUserRegion(null);
+        
         navigate('/');
         toast({
           title: "Signed out successfully",
@@ -164,7 +186,9 @@ export const useAuth = () => {
         });
       }
     } catch (error) {
-      console.error('Sign out exception:', error);
+      console.error('useAuth: Sign out exception:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
