@@ -47,7 +47,8 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
-        const hasValidRole = await checkUserRole(session.user.id, isSuper ? 'super_admin' : 'regional_admin');
+        const requiredRole = isSuper ? 'super_admin' : 'regional_admin';
+        const hasValidRole = await checkUserRole(session.user.id, requiredRole);
         if (hasValidRole) {
           navigate(redirectPath);
         }
@@ -56,7 +57,7 @@ const Auth = () => {
     checkUser();
   }, [navigate, isSuper]);
 
-  const checkUserRole = async (userId: string, requiredRole: string): Promise<boolean> => {
+  const checkUserRole = async (userId: string, requiredRole: 'super_admin' | 'regional_admin' | 'member'): Promise<boolean> => {
     try {
       console.log(`Checking ${requiredRole} role for user:`, userId);
       
