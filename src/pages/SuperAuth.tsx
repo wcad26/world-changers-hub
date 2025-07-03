@@ -46,11 +46,41 @@ const SuperAuth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate(from);
+        console.log('User already logged in, checking role...');
+        const hasValidRole = await checkSuperAdminRole(session.user.id);
+        if (hasValidRole) {
+          navigate(from);
+        }
       }
     };
     checkUser();
   }, [navigate, from]);
+
+  const checkSuperAdminRole = async (userId: string): Promise<boolean> => {
+    try {
+      console.log('Checking super admin role for user:', userId);
+      
+      // Use a more direct approach to check roles
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role, is_active')
+        .eq('user_id', userId)
+        .eq('role', 'super_admin')
+        .eq('is_active', true);
+
+      console.log('Role check result:', { userRoles, roleError });
+
+      if (roleError) {
+        console.error('Error checking user roles:', roleError);
+        return false;
+      }
+
+      return userRoles && userRoles.length > 0;
+    } catch (error) {
+      console.error('Exception checking roles:', error);
+      return false;
+    }
+  };
 
   const onSubmit = async (data: AuthFormData) => {
     setIsLoading(true);
@@ -135,33 +165,24 @@ const SuperAuth = () => {
 
         console.log('Sign in successful, user:', signInData.user?.id);
 
-        // Check if user has super admin role
+        // Check if user has super admin role - with improved error handling
         if (signInData.user) {
-          const { data: userRoles, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', signInData.user.id)
-            .eq('is_active', true);
-
-          if (roleError) {
-            console.error('Error checking user roles:', roleError);
-            throw new Error('Unable to verify super admin permissions. Please try again.');
-          }
-
-          const hasSuperAdminRole = userRoles?.some(ur => ur.role === 'super_admin');
+          const hasSuperAdminRole = await checkSuperAdminRole(signInData.user.id);
 
           if (!hasSuperAdminRole) {
+            console.log('User does not have super admin role, signing out...');
             // Sign out the user since they don't have super admin permissions
             await supabase.auth.signOut();
-            throw new Error('You don\'t have super admin permissions to access this portal.');
+            throw new Error('You don\'t have super admin permissions to access this portal. If you believe this is an error, please contact an administrator.');
           }
-        }
 
-        navigate(from);
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in to the super admin portal."
-        });
+          console.log('Super admin role verified, redirecting to dashboard...');
+          navigate(from);
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in to the super admin portal."
+          });
+        }
       }
     } catch (error: any) {
       console.error('Super admin authentication error:', error);

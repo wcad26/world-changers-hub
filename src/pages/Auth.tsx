@@ -47,11 +47,39 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
-        navigate(redirectPath);
+        const hasValidRole = await checkUserRole(session.user.id, isSuper ? 'super_admin' : 'regional_admin');
+        if (hasValidRole) {
+          navigate(redirectPath);
+        }
       }
     };
     checkUser();
   }, [navigate, isSuper]);
+
+  const checkUserRole = async (userId: string, requiredRole: string): Promise<boolean> => {
+    try {
+      console.log(`Checking ${requiredRole} role for user:`, userId);
+      
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role, is_active')
+        .eq('user_id', userId)
+        .eq('role', requiredRole)
+        .eq('is_active', true);
+
+      console.log('Role check result:', { userRoles, roleError });
+
+      if (roleError) {
+        console.error('Error checking user roles:', roleError);
+        return false;
+      }
+
+      return userRoles && userRoles.length > 0;
+    } catch (error) {
+      console.error('Exception checking roles:', error);
+      return false;
+    }
+  };
 
   const onSubmit = async (data: AuthFormData) => {
     setIsLoading(true);
@@ -141,35 +169,24 @@ const Auth = () => {
 
         // Check if user has the appropriate role for this portal
         if (signInData.user) {
-          const { data: userRoles, error: roleError } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', signInData.user.id)
-            .eq('is_active', true);
-
-          if (roleError) {
-            console.error('Error checking user roles:', roleError);
-            throw new Error('Unable to verify user permissions. Please try again.');
-          }
-
-          const hasRequiredRole = userRoles?.some(ur => 
-            isSuper ? ur.role === 'super_admin' : ur.role === 'regional_admin'
-          );
+          const requiredRole = isSuper ? 'super_admin' : 'regional_admin';
+          const hasRequiredRole = await checkUserRole(signInData.user.id, requiredRole);
 
           if (!hasRequiredRole) {
+            console.log(`User does not have ${requiredRole} role, signing out...`);
             // Sign out the user since they don't have the right permissions
             await supabase.auth.signOut();
-            throw new Error(`You don't have ${isSuper ? 'super admin' : 'regional admin'} permissions for this portal.`);
+            throw new Error(`You don't have ${isSuper ? 'super admin' : 'regional admin'} permissions for this portal. If you believe this is an error, please contact an administrator.`);
           }
-        }
 
-        const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
-        navigate(redirectPath);
-        
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
+          const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
+          navigate(redirectPath);
+          
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in.",
+          });
+        }
       }
     } catch (error: any) {
       console.error('Authentication error:', error);
