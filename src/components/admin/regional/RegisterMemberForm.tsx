@@ -6,19 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCreateMember, memberSchema } from '@/hooks/useMembers';
+import { useCreateMember, memberSchema, type NewMemberData } from '@/hooks/useMembers';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import type { z } from 'zod';
-
-// Update the schema to include all fields
-const enhancedMemberSchema = memberSchema.extend({
-  gender: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
-});
-
-type EnhancedMemberFormValues = z.infer<typeof enhancedMemberSchema>;
 
 interface RegisterMemberFormProps {
   onSuccess?: () => void;
@@ -28,8 +18,8 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
   const { toast } = useToast();
   const createMember = useCreateMember();
 
-  const form = useForm<EnhancedMemberFormValues>({
-    resolver: zodResolver(enhancedMemberSchema),
+  const form = useForm<NewMemberData>({
+    resolver: zodResolver(memberSchema),
     defaultValues: {
       first_name: '',
       last_name: '',
@@ -44,10 +34,10 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
     },
   });
 
-  const onSubmit = (values: EnhancedMemberFormValues) => {
+  const onSubmit = (values: NewMemberData) => {
     console.log('RegisterMemberForm: Submitting form with values:', values);
     
-    createMember.mutate(values as any, {
+    createMember.mutate(values, {
       onSuccess: (data) => {
         console.log('RegisterMemberForm: Member creation successful:', data);
         toast({
