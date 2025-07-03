@@ -144,9 +144,10 @@ const SuperAuth = () => {
   };
 
   const onSubmit = async (data: AuthFormData) => {
-    console.log('Form submitted with data:', { email: data.email, isSignUp });
+    console.log('=== FORM SUBMISSION STARTED ===');
+    console.log('Form data:', { email: data.email, isSignUp });
     
-    // Clear any previous errors
+    // Clear any previous errors and set loading state
     setErrorMessage('');
     setIsLoading(true);
     setAuthStep('authenticating');
@@ -212,9 +213,19 @@ const SuperAuth = () => {
         form.reset({ email: data.email, password: '' });
       } else {
         console.log('Starting super admin sign in process...');
+        
+        // Add a small delay to ensure the loading state is visible
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password
+        });
+
+        console.log('Sign in attempt completed:', { 
+          success: !signInError, 
+          userId: signInData.user?.id,
+          error: signInError?.message 
         });
 
         if (signInError) {
@@ -253,6 +264,7 @@ const SuperAuth = () => {
         variant: "destructive"
       });
     } finally {
+      console.log('=== FORM SUBMISSION COMPLETED ===');
       setIsLoading(false);
       setAuthStep('idle');
     }
@@ -406,16 +418,16 @@ const SuperAuth = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {getLoadingText()}
+                      <span>{getLoadingText()}</span>
                     </div>
                   ) : (
-                    isSignUp ? 'Create Account' : 'Sign In'
+                    <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
                   )}
                 </Button>
               </form>
