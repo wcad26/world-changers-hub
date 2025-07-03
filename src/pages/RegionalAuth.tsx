@@ -4,129 +4,269 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useRegions } from '@/hooks/useRegions';
-import { Eye, EyeOff, Users } from 'lucide-react';
-
-const authSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  firstName: z.string().min(1, 'First name is required').optional(),
-  lastName: z.string().min(1, 'Last name is required').optional(),
-  regionId: z.string().min(1, 'Please select a region').optional()
-});
-
-type AuthFormData = z.infer<typeof authSchema>;
+import { Eye, EyeOff, Users, Shield, Loader2 } from 'lucide-react';
 
 const RegionalAuth = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { data: regions, isLoading: regionsLoading } = useRegions();
 
   const from = (location.state as any)?.from?.pathname || '/admin/regional/dashboard';
 
-  const form = useForm<AuthFormData>({
-    resolver: zodResolver(authSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      firstName: '',
-      lastName: '',
-      regionId: ''
-    }
-  });
-
-  // Check if user is already logged in
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate(from);
-      }
-    };
-    checkUser();
-  }, [navigate, from]);
+    console.log('RegionalAuth: Component mounted, checking existing session...');
+    checkExistingSession();
+  }, []);
 
-  const onSubmit = async (data: AuthFormData) => {
-    setIsLoading(true);
+  const checkExistingSession = async () => {
     try {
-      if (isSignUp) {
-        const { data: authData, error } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            data: {
-              first_name: data.firstName,
-              last_name: data.lastName,
-              region_id: data.regionId
-            },
-            emailRedirectTo: `${window.location.origin}${from}`
-          }
+      console.log('RegionalAuth: Checking for existing session...');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('RegionalAuth: Session check error:', error);
+        return;
+      }
+
+      if (session?.user) {
+        console.log('RegionalAuth: Found existing session for user:', session.user.id);
+        const hasRole = await checkRegionalAdminRole(session.user.id);
+        if (hasRole) {
+          console.log('RegionalAuth: Valid regional admin session found, redirecting...');
+          navigate(from, { replace: true });
+        } else {
+          console.log('RegionalAuth: User does not have regional admin role');
+        }
+      } else {
+        console.log('RegionalAuth: No existing session found');
+      }
+    } catch (error) {
+      console.error('RegionalAuth: Exception during session check:', error);
+    }
+  };
+
+  const checkRegionalAdminRole = async (userId: string): Promise<boolean> => {
+    try {
+      console.log('RegionalAuth: Checking regional admin role for user:', userId);
+      
+      const { data: userRoles, error } = await supabase
+        .from('user_roles')
+        .select('role, is_active')
+        .eq('user_id', userId)
+        .eq('role', 'regional_admin')
+        .eq('is_active', true);
+
+      if (error) {
+        console.error('RegionalAuth: Role check error:', error);
+        return false;
+      }
+
+      console.log('RegionalAuth: Role check result:', userRoles);
+      return userRoles && userRoles.length > 0;
+    } catch (error) {
+      console.error('RegionalAuth: Role check exception:', error);
+      return false;
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('RegionalAuth: Starting sign in process for:', email);
+    setIsLoading(true);
+
+    try {
+      // Step 1: Sign in with Supabase
+      console.log('RegionalAuth: Attempting Supabase sign in...');
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+
+      if (signInError) {
+        console.error('RegionalAuth: Sign in error:', signInError);
+        let message = 'Sign in failed. Please try again.';
+        
+        if (signInError.message.includes('Invalid login credentials')) {
+          message = 'Invalid email or password. Please check your credentials.';
+        } else if (signInError.message.includes('Email not confirmed')) {
+          message = 'Please check your email and confirm your account first.';
+        } else if (signInError.message.includes('Too many requests')) {
+          message = 'Too many login attempts. Please wait a moment and try again.';
+        }
+        
+        toast({
+          title: "Sign In Failed",
+          description: message,
+          variant: "destructive"
         });
+        return;
+      }
 
-        if (error) throw error;
+      if (!authData.user) {
+        console.error('RegionalAuth: No user data received after sign in');
+        toast({
+          title: "Sign In Failed",
+          description: "No user data received. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-        // Update profile with region info after signup
-        if (authData.user && data.regionId) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({ 
-              region_id: data.regionId,
-              first_name: data.firstName,
-              last_name: data.lastName
-            })
-            .eq('id', authData.user.id);
+      console.log('RegionalAuth: Sign in successful for user:', authData.user.id);
 
-          if (profileError) {
-            console.error('Error updating profile:', profileError);
+      // Step 2: Check regional admin role
+      console.log('RegionalAuth: Checking regional admin role...');
+      const hasRole = await checkRegionalAdminRole(authData.user.id);
+      
+      if (!hasRole) {
+        console.log('RegionalAuth: User lacks regional admin role, signing out...');
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You don't have regional admin permissions. Contact an administrator if this is incorrect.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Step 3: Success - redirect to dashboard
+      console.log('RegionalAuth: Regional admin role verified, redirecting to:', from);
+      
+      toast({
+        title: "Welcome back!",
+        description: "Successfully signed in to the regional portal."
+      });
+
+      // Small delay to ensure toast is shown
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
+
+    } catch (error: any) {
+      console.error('RegionalAuth: Unexpected error during sign in:', error);
+      toast({
+        title: "Sign In Error",
+        description: error.message || "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password || !firstName || !lastName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('RegionalAuth: Starting sign up process for:', email);
+    setIsLoading(true);
+
+    try {
+      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            first_name: firstName.trim(),
+            last_name: lastName.trim()
           }
+        }
+      });
 
-          // Create regional admin role
+      if (signUpError) {
+        console.error('RegionalAuth: Sign up error:', signUpError);
+        toast({
+          title: "Sign Up Failed",
+          description: signUpError.message || "Failed to create account. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (authData.user) {
+        console.log('RegionalAuth: Sign up successful for user:', authData.user.id);
+        
+        // Try to assign regional admin role
+        try {
+          console.log('RegionalAuth: Attempting to assign regional admin role...');
           const { error: roleError } = await supabase
             .from('user_roles')
             .insert({
               user_id: authData.user.id,
               role: 'regional_admin',
-              region_id: data.regionId
+              is_active: true
             });
 
           if (roleError) {
-            console.error('Error creating role:', roleError);
+            console.error('RegionalAuth: Role assignment error:', roleError);
+            toast({
+              title: "Account created but role assignment failed",
+              description: "Please contact an administrator to assign your regional admin role.",
+              variant: "destructive"
+            });
+          } else {
+            console.log('RegionalAuth: Regional admin role assigned successfully');
           }
+        } catch (roleErr) {
+          console.error('RegionalAuth: Role assignment exception:', roleErr);
         }
-
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration."
-        });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password
-        });
-
-        if (error) throw error;
-
-        navigate(from);
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in to the regional portal."
-        });
       }
-    } catch (error: any) {
+
       toast({
-        title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again.",
+        title: "Account created!",
+        description: authData.user?.email_confirmed_at 
+          ? "You can now sign in with your credentials." 
+          : "Please check your email to confirm your account, then sign in."
+      });
+
+      // Switch to sign in mode
+      setIsSignUp(false);
+      setPassword('');
+      setFirstName('');
+      setLastName('');
+
+    } catch (error: any) {
+      console.error('RegionalAuth: Unexpected error during sign up:', error);
+      toast({
+        title: "Sign Up Error",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -166,143 +306,102 @@ const RegionalAuth = () => {
           </CardHeader>
 
           <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                {isSignUp && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="John"
-                                className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Doe"
-                                className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="regionId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Region</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20">
-                                <SelectValue placeholder="Select your region" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {regionsLoading ? (
-                                <SelectItem value="" disabled>Loading regions...</SelectItem>
-                              ) : (
-                                regions?.map((region) => (
-                                  <SelectItem key={region.id} value={region.id}>
-                                    {region.name}
-                                  </SelectItem>
-                                ))
-                              )}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
+            <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
+              {isSignUp && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name
+                    </label>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="John"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
+                      disabled={isLoading}
+                      required
                     />
-                  </>
-                )}
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name
+                    </label>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Doe"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
+                      disabled={isLoading}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="Enter your email"
-                          className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Enter your password"
-                            className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20 pr-10"
-                            {...field}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-wca-teal to-wca-teal/80 hover:from-wca-teal/90 hover:to-wca-teal/70 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
                   disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                    </div>
-                  ) : (
-                    isSignUp ? 'Create Account' : 'Sign In'
-                  )}
-                </Button>
-              </form>
-            </Form>
+                  required
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20 pr-10"
+                    disabled={isLoading}
+                    required
+                    minLength={6}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </Button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-11 bg-gradient-to-r from-wca-teal to-wca-teal/80 hover:from-wca-teal/90 hover:to-wca-teal/70 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
+                  </div>
+                ) : (
+                  <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
+                )}
+              </Button>
+            </form>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
@@ -313,8 +412,12 @@ const RegionalAuth = () => {
                 className="text-wca-teal hover:text-wca-teal/80 font-medium p-0 h-auto"
                 onClick={() => {
                   setIsSignUp(!isSignUp);
-                  form.reset();
+                  setEmail('');
+                  setPassword('');
+                  setFirstName('');
+                  setLastName('');
                 }}
+                disabled={isLoading}
               >
                 {isSignUp ? 'Sign in instead' : 'Create account'}
               </Button>
@@ -322,16 +425,20 @@ const RegionalAuth = () => {
 
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-xs text-center text-muted-foreground mb-2">
-                Need super admin access?
+                Need access to a different portal?
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full h-9"
-                onClick={() => navigate('/auth/super')}
-              >
-                Super Admin Portal
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-9"
+                  onClick={() => navigate('/auth/super')}
+                  disabled={isLoading}
+                >
+                  <Shield size={16} className="mr-1" />
+                  Super Admin
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -341,6 +448,7 @@ const RegionalAuth = () => {
             variant="ghost"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/')}
+            disabled={isLoading}
           >
             ← Back to main site
           </Button>
