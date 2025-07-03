@@ -3,17 +3,23 @@ import React from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import RegionStatsCards from "@/components/admin/super/regions/RegionStatsCards";
+import RegionsTable from "@/components/admin/super/regions/RegionsTable";
 
 const SuperRegions: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Regional Branches Management</h2>
-        <p className="text-muted-foreground">
-          Manage all WCA regions from a global perspective.
-        </p>
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Regional Branches Management</h2>
+          <p className="text-muted-foreground">
+            Manage all WCA regions from a global perspective.
+          </p>
+        </div>
         
-        <Tabs defaultValue="all-regions">
+        <RegionStatsCards />
+        
+        <Tabs defaultValue="all-regions" className="space-y-4">
           <TabsList>
             <TabsTrigger value="all-regions">All Regions</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
@@ -21,21 +27,21 @@ const SuperRegions: React.FC = () => {
             <TabsTrigger value="resource-allocation">Resource Allocation</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all-regions">
+          <TabsContent value="all-regions" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Regional Branches Directory</CardTitle>
                 <CardDescription>
-                  Complete listing of all WCA regions worldwide.
+                  Complete listing and management of all WCA regions worldwide.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8">Regional branches listing and management functionality will be implemented here.</p>
+                <RegionsTable />
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="performance">
+          <TabsContent value="performance" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Regional Performance Metrics</CardTitle>
@@ -44,12 +50,15 @@ const SuperRegions: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8">Regional performance metrics and comparison tools will be implemented here.</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Regional performance metrics and comparison tools will be implemented here.</p>
+                  <p className="text-sm mt-2">Coming soon: Charts, KPIs, and regional comparisons.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="compliance">
+          <TabsContent value="compliance" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Compliance Management</CardTitle>
@@ -58,12 +67,15 @@ const SuperRegions: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8">Compliance tracking and management functionality will be implemented here.</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Compliance tracking and management functionality will be implemented here.</p>
+                  <p className="text-sm mt-2">Coming soon: Policy compliance tracking and reporting.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="resource-allocation">
+          <TabsContent value="resource-allocation" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Resource Allocation</CardTitle>
@@ -72,7 +84,10 @@ const SuperRegions: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-center py-8">Resource allocation and management tools will be implemented here.</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Resource allocation and management tools will be implemented here.</p>
+                  <p className="text-sm mt-2">Coming soon: Budget allocation and resource management tools.</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
