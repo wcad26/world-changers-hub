@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,8 @@ import { Eye, EyeOff, Shield, Users } from 'lucide-react';
 const authSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'First name is required').optional(),
+  lastName: z.string().min(1, 'Last name is required').optional(),
 });
 
 type AuthFormData = z.infer<typeof authSchema>;
@@ -35,6 +36,8 @@ const Auth = () => {
     defaultValues: {
       email: '',
       password: '',
+      firstName: '',
+      lastName: ''
     },
   });
 
@@ -43,7 +46,6 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Redirect based on portal type
         const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
         navigate(redirectPath);
       }
@@ -56,29 +58,111 @@ const Auth = () => {
     
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        console.log('Starting sign up process...');
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
+            data: {
+              first_name: data.firstName,
+              last_name: data.lastName
+            },
             emailRedirectTo: `${window.location.origin}${isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard'}`
           }
         });
 
-        if (error) throw error;
+        if (signUpError) {
+          console.error('Sign up error:', signUpError);
+          throw signUpError;
+        }
+
+        console.log('Sign up successful, user:', authData.user?.id);
+
+        // Create the appropriate role for the user
+        if (authData.user) {
+          try {
+            const roleToAssign = isSuper ? 'super_admin' : 'regional_admin';
+            console.log(`Attempting to assign role: ${roleToAssign}`);
+            
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({
+                user_id: authData.user.id,
+                role: roleToAssign,
+                is_active: true
+              });
+
+            if (roleError) {
+              console.error('Role assignment error:', roleError);
+              toast({
+                title: "Account created but role assignment failed",
+                description: "Please contact an administrator to assign your role.",
+                variant: "destructive"
+              });
+            } else {
+              console.log('Role assigned successfully');
+            }
+          } catch (roleErr) {
+            console.error('Role assignment exception:', roleErr);
+          }
+        }
 
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
+          title: "Account created successfully!",
+          description: authData.user?.email_confirmed_at 
+            ? "You can now sign in with your credentials." 
+            : "Please check your email to confirm your account, then sign in.",
         });
+
+        // Switch to sign in mode
+        setIsSignUp(false);
+        form.reset({ email: data.email, password: '' });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log('Starting sign in process...');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
 
-        if (error) throw error;
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          
+          // Provide specific error messages
+          if (signInError.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials and try again.');
+          } else if (signInError.message.includes('Email not confirmed')) {
+            throw new Error('Please check your email and click the confirmation link before signing in.');
+          } else {
+            throw signInError;
+          }
+        }
 
-        // Redirect based on portal type
+        console.log('Sign in successful, user:', signInData.user?.id);
+
+        // Check if user has the appropriate role for this portal
+        if (signInData.user) {
+          const { data: userRoles, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', signInData.user.id)
+            .eq('is_active', true);
+
+          if (roleError) {
+            console.error('Error checking user roles:', roleError);
+            throw new Error('Unable to verify user permissions. Please try again.');
+          }
+
+          const hasRequiredRole = userRoles?.some(ur => 
+            isSuper ? ur.role === 'super_admin' : ur.role === 'regional_admin'
+          );
+
+          if (!hasRequiredRole) {
+            // Sign out the user since they don't have the right permissions
+            await supabase.auth.signOut();
+            throw new Error(`You don't have ${isSuper ? 'super admin' : 'regional admin'} permissions for this portal.`);
+          }
+        }
+
         const redirectPath = isSuper ? '/admin/super/dashboard' : '/admin/regional/dashboard';
         navigate(redirectPath);
         
@@ -88,9 +172,10 @@ const Auth = () => {
         });
       }
     } catch (error: any) {
+      console.error('Authentication error:', error);
       toast({
         title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -144,6 +229,45 @@ const Auth = () => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {isSignUp && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>First Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="John"
+                              className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lastName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Last Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Doe"
+                              className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 <FormField
                   control={form.control}
                   name="email"

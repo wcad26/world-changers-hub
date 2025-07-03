@@ -56,7 +56,8 @@ const SuperAuth = () => {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        const { data: authData, error } = await supabase.auth.signUp({
+        console.log('Starting super admin sign up process...');
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
@@ -68,33 +69,93 @@ const SuperAuth = () => {
           }
         });
 
-        if (error) throw error;
+        if (signUpError) {
+          console.error('Sign up error:', signUpError);
+          throw signUpError;
+        }
+
+        console.log('Sign up successful, user:', authData.user?.id);
 
         // Create super admin role
         if (authData.user) {
-          const { error: roleError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: authData.user.id,
-              role: 'super_admin'
-            });
+          try {
+            console.log('Attempting to assign super_admin role');
+            const { error: roleError } = await supabase
+              .from('user_roles')
+              .insert({
+                user_id: authData.user.id,
+                role: 'super_admin',
+                is_active: true
+              });
 
-          if (roleError) {
-            console.error('Error creating super admin role:', roleError);
+            if (roleError) {
+              console.error('Error creating super admin role:', roleError);
+              toast({
+                title: "Account created but role assignment failed",
+                description: "Please contact an administrator to assign your super admin role.",
+                variant: "destructive"
+              });
+            } else {
+              console.log('Super admin role assigned successfully');
+            }
+          } catch (roleErr) {
+            console.error('Role assignment exception:', roleErr);
           }
         }
 
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration."
+          title: "Super admin account created!",
+          description: authData.user?.email_confirmed_at 
+            ? "You can now sign in with your credentials." 
+            : "Please check your email to confirm your account, then sign in."
         });
+
+        // Switch to sign in mode
+        setIsSignUp(false);
+        form.reset({ email: data.email, password: '' });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log('Starting super admin sign in process...');
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password
         });
 
-        if (error) throw error;
+        if (signInError) {
+          console.error('Sign in error:', signInError);
+          
+          // Provide specific error messages
+          if (signInError.message.includes('Invalid login credentials')) {
+            throw new Error('Invalid email or password. Please check your credentials and try again.');
+          } else if (signInError.message.includes('Email not confirmed')) {
+            throw new Error('Please check your email and click the confirmation link before signing in.');
+          } else {
+            throw signInError;
+          }
+        }
+
+        console.log('Sign in successful, user:', signInData.user?.id);
+
+        // Check if user has super admin role
+        if (signInData.user) {
+          const { data: userRoles, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', signInData.user.id)
+            .eq('is_active', true);
+
+          if (roleError) {
+            console.error('Error checking user roles:', roleError);
+            throw new Error('Unable to verify super admin permissions. Please try again.');
+          }
+
+          const hasSuperAdminRole = userRoles?.some(ur => ur.role === 'super_admin');
+
+          if (!hasSuperAdminRole) {
+            // Sign out the user since they don't have super admin permissions
+            await supabase.auth.signOut();
+            throw new Error('You don\'t have super admin permissions to access this portal.');
+          }
+        }
 
         navigate(from);
         toast({
@@ -103,9 +164,10 @@ const SuperAuth = () => {
         });
       }
     } catch (error: any) {
+      console.error('Super admin authentication error:', error);
       toast({
         title: "Authentication failed",
-        description: error.message || "Please check your credentials and try again.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
