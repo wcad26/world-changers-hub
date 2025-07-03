@@ -25,6 +25,7 @@ const SuperAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [authStep, setAuthStep] = useState<'idle' | 'authenticating' | 'verifying' | 'redirecting'>('idle');
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -44,13 +45,21 @@ const SuperAuth = () => {
   // Check if user is already logged in
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log('User already logged in, checking role...');
-        const hasValidRole = await checkSuperAdminRole(session.user.id);
-        if (hasValidRole) {
-          navigate(from);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('User already logged in, checking role...');
+          const hasValidRole = await checkSuperAdminRole(session.user.id);
+          if (hasValidRole) {
+            console.log('Valid super admin role found, redirecting...');
+            navigate(from, { replace: true });
+          } else {
+            console.log('User lacks super admin role, signing out...');
+            await supabase.auth.signOut();
+          }
         }
+      } catch (error) {
+        console.error('Error checking existing session:', error);
       }
     };
     checkUser();
@@ -60,7 +69,6 @@ const SuperAuth = () => {
     try {
       console.log('Checking super admin role for user:', userId);
       
-      // Use a more direct approach to check roles
       const { data: userRoles, error: roleError } = await supabase
         .from('user_roles')
         .select('role, is_active')
@@ -75,15 +83,58 @@ const SuperAuth = () => {
         return false;
       }
 
-      return userRoles && userRoles.length > 0;
+      const hasRole = userRoles && userRoles.length > 0;
+      console.log('Super admin role check result:', hasRole);
+      return hasRole;
     } catch (error) {
       console.error('Exception checking roles:', error);
       return false;
     }
   };
 
+  const handleSuccessfulSignIn = async (userId: string) => {
+    try {
+      console.log('Starting post-sign-in verification for user:', userId);
+      setAuthStep('verifying');
+
+      // Wait a moment for auth state to fully update
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Verify super admin role
+      const hasValidRole = await checkSuperAdminRole(userId);
+      
+      if (!hasValidRole) {
+        console.log('User does not have super admin role, signing out...');
+        await supabase.auth.signOut();
+        throw new Error('You don\'t have super admin permissions to access this portal. If you believe this is an error, please contact an administrator.');
+      }
+
+      console.log('Super admin role verified, preparing to redirect...');
+      setAuthStep('redirecting');
+
+      // Additional delay to ensure everything is properly set up
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Navigate to dashboard
+      console.log('Navigating to dashboard:', from);
+      navigate(from, { replace: true });
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in to the super admin portal."
+      });
+
+    } catch (error: any) {
+      console.error('Error in post-sign-in verification:', error);
+      setAuthStep('idle');
+      throw error;
+    }
+  };
+
   const onSubmit = async (data: AuthFormData) => {
     setIsLoading(true);
+    setAuthStep('authenticating');
+
     try {
       if (isSignUp) {
         console.log('Starting super admin sign up process...');
@@ -153,7 +204,6 @@ const SuperAuth = () => {
         if (signInError) {
           console.error('Sign in error:', signInError);
           
-          // Provide specific error messages
           if (signInError.message.includes('Invalid login credentials')) {
             throw new Error('Invalid email or password. Please check your credentials and try again.');
           } else if (signInError.message.includes('Email not confirmed')) {
@@ -165,23 +215,8 @@ const SuperAuth = () => {
 
         console.log('Sign in successful, user:', signInData.user?.id);
 
-        // Check if user has super admin role - with improved error handling
         if (signInData.user) {
-          const hasSuperAdminRole = await checkSuperAdminRole(signInData.user.id);
-
-          if (!hasSuperAdminRole) {
-            console.log('User does not have super admin role, signing out...');
-            // Sign out the user since they don't have super admin permissions
-            await supabase.auth.signOut();
-            throw new Error('You don\'t have super admin permissions to access this portal. If you believe this is an error, please contact an administrator.');
-          }
-
-          console.log('Super admin role verified, redirecting to dashboard...');
-          navigate(from);
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in to the super admin portal."
-          });
+          await handleSuccessfulSignIn(signInData.user.id);
         }
       }
     } catch (error: any) {
@@ -193,6 +228,20 @@ const SuperAuth = () => {
       });
     } finally {
       setIsLoading(false);
+      setAuthStep('idle');
+    }
+  };
+
+  const getLoadingText = () => {
+    switch (authStep) {
+      case 'authenticating':
+        return isSignUp ? 'Creating Account...' : 'Signing In...';
+      case 'verifying':
+        return 'Verifying Permissions...';
+      case 'redirecting':
+        return 'Redirecting to Dashboard...';
+      default:
+        return isSignUp ? 'Creating Account...' : 'Signing In...';
     }
   };
 
@@ -326,7 +375,7 @@ const SuperAuth = () => {
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      {isSignUp ? 'Creating Account...' : 'Signing In...'}
+                      {getLoadingText()}
                     </div>
                   ) : (
                     isSignUp ? 'Create Account' : 'Sign In'
@@ -346,6 +395,7 @@ const SuperAuth = () => {
                   setIsSignUp(!isSignUp);
                   form.reset();
                 }}
+                disabled={isLoading}
               >
                 {isSignUp ? 'Sign in instead' : 'Create account'}
               </Button>
@@ -361,6 +411,7 @@ const SuperAuth = () => {
                   size="sm"
                   className="flex-1 h-9"
                   onClick={() => navigate('/auth/regional')}
+                  disabled={isLoading}
                 >
                   <Users size={16} className="mr-1" />
                   Regional Portal
@@ -375,6 +426,7 @@ const SuperAuth = () => {
             variant="ghost"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/')}
+            disabled={isLoading}
           >
             ← Back to main site
           </Button>
