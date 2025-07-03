@@ -25,8 +25,6 @@ const SuperAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [authStep, setAuthStep] = useState<'idle' | 'authenticating' | 'verifying' | 'redirecting'>('idle');
-  const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -43,243 +41,162 @@ const SuperAuth = () => {
     }
   });
 
-  // Check if user is already logged in
   useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          console.log('User already logged in, checking role...');
-          const hasValidRole = await checkSuperAdminRole(session.user.id);
-          if (hasValidRole) {
-            console.log('Valid super admin role found, redirecting...');
-            navigate(from, { replace: true });
-          } else {
-            console.log('User lacks super admin role, signing out...');
-            await supabase.auth.signOut();
-          }
+    checkExistingSession();
+  }, []);
+
+  const checkExistingSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log('Existing session found, checking super admin role...');
+        const hasRole = await checkSuperAdminRole(session.user.id);
+        if (hasRole) {
+          console.log('Valid super admin session, redirecting...');
+          navigate(from, { replace: true });
         }
-      } catch (error) {
-        console.error('Error checking existing session:', error);
       }
-    };
-    checkUser();
-  }, [navigate, from]);
+    } catch (error) {
+      console.error('Error checking session:', error);
+    }
+  };
 
   const checkSuperAdminRole = async (userId: string): Promise<boolean> => {
     try {
-      console.log('Checking super admin role for user:', userId);
-      
-      const { data: userRoles, error: roleError } = await supabase
+      const { data: userRoles, error } = await supabase
         .from('user_roles')
         .select('role, is_active')
         .eq('user_id', userId)
         .eq('role', 'super_admin')
         .eq('is_active', true);
 
-      console.log('Role check result:', { userRoles, roleError });
-
-      if (roleError) {
-        console.error('Error checking user roles:', roleError);
+      if (error) {
+        console.error('Role check error:', error);
         return false;
       }
 
-      const hasRole = userRoles && userRoles.length > 0;
-      console.log('Super admin role check result:', hasRole);
-      return hasRole;
+      return userRoles && userRoles.length > 0;
     } catch (error) {
-      console.error('Exception checking roles:', error);
+      console.error('Role check exception:', error);
       return false;
     }
   };
 
-  const handleSuccessfulSignIn = async (userId: string) => {
-    try {
-      console.log('Starting post-sign-in verification for user:', userId);
-      setAuthStep('verifying');
+  const handleSignIn = async (email: string, password: string) => {
+    console.log('Starting sign in process...');
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
 
-      // Wait a moment for auth state to fully update
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Verify super admin role
-      const hasValidRole = await checkSuperAdminRole(userId);
+    if (error) {
+      console.error('Sign in error:', error);
+      let message = 'Sign in failed. Please try again.';
       
-      if (!hasValidRole) {
-        console.log('User does not have super admin role, signing out...');
-        await supabase.auth.signOut();
-        throw new Error('You don\'t have super admin permissions to access this portal. If you believe this is an error, please contact an administrator.');
+      if (error.message.includes('Invalid login credentials')) {
+        message = 'Invalid email or password. Please check your credentials.';
+      } else if (error.message.includes('Email not confirmed')) {
+        message = 'Please check your email and confirm your account first.';
       }
-
-      console.log('Super admin role verified, preparing to redirect...');
-      setAuthStep('redirecting');
-
-      // Additional delay to ensure everything is properly set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Navigate to dashboard
-      console.log('Navigating to dashboard:', from);
       
-      // Try navigation with error handling
-      try {
-        navigate(from, { replace: true });
-        
-        // Show success message after a short delay
-        setTimeout(() => {
-          toast({
-            title: "Welcome back!",
-            description: "You have successfully signed in to the super admin portal."
-          });
-        }, 500);
-      } catch (navError) {
-        console.error('Navigation error:', navError);
-        throw new Error('Failed to redirect after sign in. Please try refreshing the page.');
-      }
-
-    } catch (error: any) {
-      console.error('Error in post-sign-in verification:', error);
-      setAuthStep('idle');
-      setErrorMessage(error.message || 'An error occurred during sign in verification');
-      throw error;
+      throw new Error(message);
     }
+
+    if (!data.user) {
+      throw new Error('Sign in failed - no user data received');
+    }
+
+    console.log('Sign in successful, checking role...');
+    
+    // Check super admin role
+    const hasRole = await checkSuperAdminRole(data.user.id);
+    if (!hasRole) {
+      console.log('User lacks super admin role, signing out...');
+      await supabase.auth.signOut();
+      throw new Error('You don\'t have super admin permissions. Contact an administrator if this is incorrect.');
+    }
+
+    console.log('Super admin role verified, redirecting...');
+    navigate(from, { replace: true });
+    
+    toast({
+      title: "Welcome back!",
+      description: "Successfully signed in to the super admin portal."
+    });
+  };
+
+  const handleSignUp = async (data: AuthFormData) => {
+    console.log('Starting sign up process...');
+    
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: {
+          first_name: data.firstName,
+          last_name: data.lastName
+        }
+      }
+    });
+
+    if (error) {
+      console.error('Sign up error:', error);
+      throw new Error(error.message);
+    }
+
+    if (authData.user) {
+      // Try to assign super admin role
+      try {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: 'super_admin',
+            is_active: true
+          });
+
+        if (roleError) {
+          console.error('Role assignment error:', roleError);
+        }
+      } catch (roleErr) {
+        console.error('Role assignment exception:', roleErr);
+      }
+    }
+
+    toast({
+      title: "Account created!",
+      description: authData.user?.email_confirmed_at 
+        ? "You can now sign in with your credentials." 
+        : "Please check your email to confirm your account, then sign in."
+    });
+
+    setIsSignUp(false);
+    form.reset({ email: data.email, password: '' });
   };
 
   const onSubmit = async (data: AuthFormData) => {
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Form data:', { email: data.email, isSignUp });
+    if (isLoading) return;
     
-    // Clear any previous errors and set loading state
-    setErrorMessage('');
+    console.log('Form submission started:', { email: data.email, isSignUp });
     setIsLoading(true);
-    setAuthStep('authenticating');
 
     try {
       if (isSignUp) {
-        console.log('Starting super admin sign up process...');
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            data: {
-              first_name: data.firstName,
-              last_name: data.lastName
-            },
-            emailRedirectTo: `${window.location.origin}${from}`
-          }
-        });
-
-        if (signUpError) {
-          console.error('Sign up error:', signUpError);
-          throw new Error(signUpError.message || 'Failed to create account');
-        }
-
-        console.log('Sign up successful, user:', authData.user?.id);
-
-        // Create super admin role
-        if (authData.user) {
-          try {
-            console.log('Attempting to assign super_admin role');
-            const { error: roleError } = await supabase
-              .from('user_roles')
-              .insert({
-                user_id: authData.user.id,
-                role: 'super_admin',
-                is_active: true
-              });
-
-            if (roleError) {
-              console.error('Error creating super admin role:', roleError);
-              toast({
-                title: "Account created but role assignment failed",
-                description: "Please contact an administrator to assign your super admin role.",
-                variant: "destructive"
-              });
-            } else {
-              console.log('Super admin role assigned successfully');
-            }
-          } catch (roleErr) {
-            console.error('Role assignment exception:', roleErr);
-          }
-        }
-
-        toast({
-          title: "Super admin account created!",
-          description: authData.user?.email_confirmed_at 
-            ? "You can now sign in with your credentials." 
-            : "Please check your email to confirm your account, then sign in."
-        });
-
-        // Switch to sign in mode
-        setIsSignUp(false);
-        form.reset({ email: data.email, password: '' });
+        await handleSignUp(data);
       } else {
-        console.log('Starting super admin sign in process...');
-        
-        // Add a small delay to ensure the loading state is visible
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.email,
-          password: data.password
-        });
-
-        console.log('Sign in attempt completed:', { 
-          success: !signInError, 
-          userId: signInData.user?.id,
-          error: signInError?.message 
-        });
-
-        if (signInError) {
-          console.error('Sign in error:', signInError);
-          
-          let errorMsg = 'Sign in failed. Please try again.';
-          if (signInError.message.includes('Invalid login credentials')) {
-            errorMsg = 'Invalid email or password. Please check your credentials and try again.';
-          } else if (signInError.message.includes('Email not confirmed')) {
-            errorMsg = 'Please check your email and click the confirmation link before signing in.';
-          } else if (signInError.message.includes('Too many requests')) {
-            errorMsg = 'Too many login attempts. Please wait a moment before trying again.';
-          } else {
-            errorMsg = signInError.message;
-          }
-          
-          throw new Error(errorMsg);
-        }
-
-        console.log('Sign in successful, user:', signInData.user?.id);
-
-        if (signInData.user) {
-          await handleSuccessfulSignIn(signInData.user.id);
-        } else {
-          throw new Error('Sign in succeeded but no user data received');
-        }
+        await handleSignIn(data.email, data.password);
       }
     } catch (error: any) {
-      console.error('Super admin authentication error:', error);
-      const errorMsg = error.message || "An unexpected error occurred. Please try again.";
-      setErrorMessage(errorMsg);
-      
+      console.error('Authentication error:', error);
       toast({
         title: "Authentication failed",
-        description: errorMsg,
+        description: error.message || "An unexpected error occurred.",
         variant: "destructive"
       });
     } finally {
-      console.log('=== FORM SUBMISSION COMPLETED ===');
       setIsLoading(false);
-      setAuthStep('idle');
-    }
-  };
-
-  const getLoadingText = () => {
-    switch (authStep) {
-      case 'authenticating':
-        return isSignUp ? 'Creating Account...' : 'Signing In...';
-      case 'verifying':
-        return 'Verifying Permissions...';
-      case 'redirecting':
-        return 'Redirecting to Dashboard...';
-      default:
-        return isSignUp ? 'Creating Account...' : 'Signing In...';
+      console.log('Form submission completed');
     }
   };
 
@@ -315,12 +232,6 @@ const SuperAuth = () => {
           </CardHeader>
 
           <CardContent>
-            {errorMessage && (
-              <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                {errorMessage}
-              </div>
-            )}
-
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {isSignUp && (
@@ -418,13 +329,13 @@ const SuperAuth = () => {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
                   disabled={isLoading}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>{getLoadingText()}</span>
+                      <span>{isSignUp ? 'Creating Account...' : 'Signing In...'}</span>
                     </div>
                   ) : (
                     <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
@@ -442,7 +353,6 @@ const SuperAuth = () => {
                 className="text-wca-purple hover:text-wca-violet font-medium p-0 h-auto"
                 onClick={() => {
                   setIsSignUp(!isSignUp);
-                  setErrorMessage('');
                   form.reset();
                 }}
                 disabled={isLoading}
