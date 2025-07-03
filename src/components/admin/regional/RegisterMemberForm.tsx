@@ -1,15 +1,24 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateMember, memberSchema } from '@/hooks/useMembers';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import type { z } from 'zod';
 
-type MemberFormValues = z.infer<typeof memberSchema>;
+// Update the schema to include all fields
+const enhancedMemberSchema = memberSchema.extend({
+  gender: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+});
+
+type EnhancedMemberFormValues = z.infer<typeof enhancedMemberSchema>;
 
 interface RegisterMemberFormProps {
   onSuccess?: () => void;
@@ -19,8 +28,8 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
   const { toast } = useToast();
   const createMember = useCreateMember();
 
-  const form = useForm<MemberFormValues>({
-    resolver: zodResolver(memberSchema),
+  const form = useForm<EnhancedMemberFormValues>({
+    resolver: zodResolver(enhancedMemberSchema),
     defaultValues: {
       first_name: '',
       last_name: '',
@@ -30,25 +39,31 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
       date_of_birth: '',
       gender: '',
       occupation: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
     },
   });
 
-  const onSubmit = (values: MemberFormValues) => {
-    createMember.mutate(values, {
-      onSuccess: () => {
+  const onSubmit = (values: EnhancedMemberFormValues) => {
+    console.log('RegisterMemberForm: Submitting form with values:', values);
+    
+    createMember.mutate(values as any, {
+      onSuccess: (data) => {
+        console.log('RegisterMemberForm: Member creation successful:', data);
         toast({
-          title: 'Member Registered',
-          description: `An invitation has been sent to ${values.email}.`,
+          title: 'Member Registered Successfully',
+          description: `${values.first_name} ${values.last_name} has been registered. An invitation email has been sent to ${values.email}.`,
         });
         form.reset();
         if (onSuccess) {
           onSuccess();
         }
       },
-      onError: (error) => {
+      onError: (error: any) => {
+        console.error('RegisterMemberForm: Member creation failed:', error);
         toast({
           title: 'Registration Failed',
-          description: error.message,
+          description: error.message || 'Failed to register member. Please try again.',
           variant: 'destructive',
         });
       },
@@ -57,113 +72,189 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Personal Information Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="first_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="John" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="last_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="first_name"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel>Email Address *</FormLabel>
                 <FormControl>
-                  <Input placeholder="John" {...field} />
+                  <Input type="email" placeholder="john.doe@example.com" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="(123) 456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="gender"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Gender</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="last_name"
+            name="address"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel>Address</FormLabel>
                 <FormControl>
-                  <Input placeholder="Doe" {...field} />
+                  <Input placeholder="123 Main St, City, State" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="date_of_birth"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date of Birth</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="occupation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Occupation</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Software Engineer" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="john.doe@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input placeholder="(123) 456-7890" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input placeholder="123 Main St, Anytown USA" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="date_of_birth"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date of Birth</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="occupation"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Occupation</FormLabel>
-                <FormControl>
-                  <Input placeholder="Software Engineer" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+
+        {/* Emergency Contact Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">Emergency Contact</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="emergency_contact_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Emergency Contact Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Jane Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="emergency_contact_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Emergency Contact Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="(123) 456-7890" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
-        
-        <Button type="submit" disabled={createMember.isPending}>
-          {createMember.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Registering...
-            </>
-          ) : (
-            'Register Member'
-          )}
-        </Button>
+
+        <div className="flex justify-end space-x-4 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => form.reset()}
+            disabled={createMember.isPending}
+          >
+            Reset Form
+          </Button>
+          <Button type="submit" disabled={createMember.isPending}>
+            {createMember.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Registering Member...
+              </>
+            ) : (
+              'Register Member'
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );

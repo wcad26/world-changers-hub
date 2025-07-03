@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, LineChart } from "@/components/ui/chart";
-import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal } from 'lucide-react';
+import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAttendanceHistory } from '@/hooks/useAttendance';
@@ -21,6 +21,7 @@ import {
   DialogFooter,
   DialogClose
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 
 const Members: React.FC = () => {
@@ -29,6 +30,7 @@ const Members: React.FC = () => {
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isRegisterDialogOpen, setRegisterDialogOpen] = React.useState(false);
+  const [selectedMember, setSelectedMember] = React.useState<MemberWithProfile | null>(null);
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
@@ -36,12 +38,16 @@ const Members: React.FC = () => {
       const profile = member.profiles;
       if (!profile) return false;
       const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
-      return fullName.includes(searchTerm.toLowerCase());
+      const email = (profile.email || '').toLowerCase();
+      const phone = (profile.phone || '').toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
+      return fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
     });
   }, [members, searchTerm]);
 
   const totalMembers = members?.length || 0;
   const activeMembers = members?.filter(m => m.status === 'active').length || 0;
+  const newMembers = members?.filter(m => m.status === 'new').length || 0;
 
   const attendanceSummary = React.useMemo(() => {
     if (!attendanceHistory || attendanceHistory.length === 0) return { avgAttendance: 0, lastEvent: null };
@@ -52,6 +58,81 @@ const Members: React.FC = () => {
       lastEvent: attendanceHistory[0]
     };
   }, [attendanceHistory, totalMembers]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'new': return 'bg-blue-100 text-blue-800';
+      case 'inactive': return 'bg-gray-100 text-gray-800';
+      case 'transferred': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const MemberDetailsDialog = ({ member }: { member: MemberWithProfile }) => (
+    <DialogContent className="sm:max-w-[600px]">
+      <DialogHeader>
+        <DialogTitle>
+          {member.profiles?.first_name} {member.profiles?.last_name}
+        </DialogTitle>
+        <DialogDescription>
+          Member ID: {member.member_id}
+        </DialogDescription>
+      </DialogHeader>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Email</h4>
+            <p className="text-sm">{member.profiles?.email || 'N/A'}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Phone</h4>
+            <p className="text-sm">{member.profiles?.phone || 'N/A'}</p>
+          </div>
+        </div>
+        <div>
+          <h4 className="font-medium text-sm text-gray-500 mb-1">Address</h4>
+          <p className="text-sm">{member.profiles?.address || 'N/A'}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Date of Birth</h4>
+            <p className="text-sm">{member.profiles?.date_of_birth ? new Date(member.profiles.date_of_birth).toLocaleDateString() : 'N/A'}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Gender</h4>
+            <p className="text-sm capitalize">{member.profiles?.gender || 'N/A'}</p>
+          </div>
+        </div>
+        <div>
+          <h4 className="font-medium text-sm text-gray-500 mb-1">Occupation</h4>
+          <p className="text-sm">{member.profiles?.occupation || 'N/A'}</p>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Emergency Contact</h4>
+            <p className="text-sm">{member.profiles?.emergency_contact_name || 'N/A'}</p>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Emergency Phone</h4>
+            <p className="text-sm">{member.profiles?.emergency_contact_phone || 'N/A'}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Status</h4>
+            <Badge className={getStatusColor(member.status || 'new')}>
+              {member.status || 'new'}
+            </Badge>
+          </div>
+          <div>
+            <h4 className="font-medium text-sm text-gray-500 mb-1">Join Date</h4>
+            <p className="text-sm">{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</p>
+          </div>
+        </div>
+      </div>
+    </DialogContent>
+  );
 
   return (
     <RegionalAdminLayout>
@@ -69,7 +150,7 @@ const Members: React.FC = () => {
                 <PlusCircle className="mr-2 h-4 w-4" /> Register Member
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[625px]">
+            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Register New Member</DialogTitle>
                 <DialogDescription>
@@ -88,7 +169,7 @@ const Members: React.FC = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Members</CardTitle>
@@ -97,6 +178,16 @@ const Members: React.FC = () => {
                 <CardContent>
                   <div className="text-2xl font-bold">{totalMembers}</div>
                   <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">New Members</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{newMembers}</div>
+                  <p className="text-xs text-muted-foreground">Pending activation</p>
                 </CardContent>
               </Card>
               <Card>
@@ -133,7 +224,7 @@ const Members: React.FC = () => {
                     <div className="relative w-full max-w-sm">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search by name..." 
+                            placeholder="Search by name, email, or phone..." 
                             className="pl-8" 
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -155,25 +246,42 @@ const Members: React.FC = () => {
                         <TableHead>Phone</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Join Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoadingMembers ? (
-                        <TableRow><TableCell colSpan={5} className="text-center">Loading members...</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} className="text-center">Loading members...</TableCell></TableRow>
                       ) : membersError ? (
-                         <TableRow><TableCell colSpan={5} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
+                         <TableRow><TableCell colSpan={6} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
                       ) : filteredMembers.length > 0 ? (
                         filteredMembers.map(member => (
                           <TableRow key={member.id}>
-                            <TableCell className="font-medium">{member.profiles?.first_name} {member.profiles?.last_name}</TableCell>
-                            <TableCell>{member.profiles?.email}</TableCell>
+                            <TableCell className="font-medium">
+                              {member.profiles?.first_name} {member.profiles?.last_name}
+                            </TableCell>
+                            <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
                             <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
-                            <TableCell>{member.status}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(member.status || 'new')}>
+                                {member.status || 'new'}
+                              </Badge>
+                            </TableCell>
                             <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <MemberDetailsDialog member={member} />
+                              </Dialog>
+                            </TableCell>
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow><TableCell colSpan={5} className="text-center">No members found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={6} className="text-center">No members found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
@@ -212,6 +320,13 @@ const Members: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Member Details Dialog */}
+      {selectedMember && (
+        <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
+          <MemberDetailsDialog member={selectedMember} />
+        </Dialog>
+      )}
     </RegionalAdminLayout>
   );
 };

@@ -5,7 +5,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth.tsx';
 import * as z from 'zod';
 
-// Centralized schema for new members
+// Enhanced schema for new members with all required fields
 export const memberSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
@@ -15,12 +15,14 @@ export const memberSchema = z.object({
   date_of_birth: z.string().optional(),
   gender: z.string().optional(),
   occupation: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
 });
 
 // Type inferred from the schema
 export type NewMemberData = z.infer<typeof memberSchema>;
 
-// Manually add email to Profile to fix build error due to possibly stale types.ts
+// Enhanced member type with profile data
 type Profile = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
 
 export type MemberWithProfile = Database['public']['Tables']['members']['Row'] & {
@@ -32,13 +34,26 @@ export const useMembers = (regionId?: string) => {
     queryKey: ['members', regionId],
     queryFn: async () => {
       if (!regionId) return [];
+      
+      console.log('useMembers: Fetching members for region:', regionId);
+      
       const { data, error } = await supabase
         .from('members')
-        .select('*, profiles(*)')
+        .select(`
+          *,
+          profiles (
+            *
+          )
+        `)
         .eq('region_id', regionId)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('useMembers: Error fetching members:', error);
+        throw error;
+      }
+      
+      console.log('useMembers: Fetched members:', data);
       return data as MemberWithProfile[];
     },
     enabled: !!regionId,
@@ -51,19 +66,45 @@ export const useCreateMember = () => {
 
   return useMutation({
     mutationFn: async (newMember: NewMemberData) => {
-      if (!userRegion) throw new Error("User region not found");
+      console.log('useCreateMember: Starting member creation:', newMember);
+      
+      if (!userRegion) {
+        console.error('useCreateMember: No user region found');
+        throw new Error("User region not found");
+      }
 
+      console.log('useCreateMember: Calling create-member function with region:', userRegion.id);
+      
       const { data, error } = await supabase.functions.invoke('create-member', {
-        body: { record: { ...newMember, region_id: userRegion.id } },
-      })
+        body: { 
+          record: { 
+            ...newMember, 
+            region_id: userRegion.id 
+          } 
+        },
+      });
 
-      if (error) throw error
-      return data
+      if (error) {
+        console.error('useCreateMember: Function call failed:', error);
+        throw error;
+      }
+      
+      if (!data?.success) {
+        console.error('useCreateMember: Function returned error:', data);
+        throw new Error(data?.error || 'Failed to create member');
+      }
+      
+      console.log('useCreateMember: Member created successfully:', data);
+      return data;
     },
-    onSuccess: () => {
-      if(userRegion?.id) {
+    onSuccess: (data) => {
+      console.log('useCreateMember: Mutation successful, invalidating queries');
+      if (userRegion?.id) {
         queryClient.invalidateQueries({ queryKey: ['members', userRegion.id] });
       }
+    },
+    onError: (error) => {
+      console.error('useCreateMember: Mutation failed:', error);
     },
   });
 };
