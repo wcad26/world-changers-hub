@@ -26,6 +26,7 @@ const SuperAuth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [authStep, setAuthStep] = useState<'idle' | 'authenticating' | 'verifying' | 'redirecting'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -98,7 +99,7 @@ const SuperAuth = () => {
       setAuthStep('verifying');
 
       // Wait a moment for auth state to fully update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       // Verify super admin role
       const hasValidRole = await checkSuperAdminRole(userId);
@@ -113,25 +114,40 @@ const SuperAuth = () => {
       setAuthStep('redirecting');
 
       // Additional delay to ensure everything is properly set up
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Navigate to dashboard
       console.log('Navigating to dashboard:', from);
-      navigate(from, { replace: true });
-
-      toast({
-        title: "Welcome back!",
-        description: "You have successfully signed in to the super admin portal."
-      });
+      
+      // Try navigation with error handling
+      try {
+        navigate(from, { replace: true });
+        
+        // Show success message after a short delay
+        setTimeout(() => {
+          toast({
+            title: "Welcome back!",
+            description: "You have successfully signed in to the super admin portal."
+          });
+        }, 500);
+      } catch (navError) {
+        console.error('Navigation error:', navError);
+        throw new Error('Failed to redirect after sign in. Please try refreshing the page.');
+      }
 
     } catch (error: any) {
       console.error('Error in post-sign-in verification:', error);
       setAuthStep('idle');
+      setErrorMessage(error.message || 'An error occurred during sign in verification');
       throw error;
     }
   };
 
   const onSubmit = async (data: AuthFormData) => {
+    console.log('Form submitted with data:', { email: data.email, isSignUp });
+    
+    // Clear any previous errors
+    setErrorMessage('');
     setIsLoading(true);
     setAuthStep('authenticating');
 
@@ -152,7 +168,7 @@ const SuperAuth = () => {
 
         if (signUpError) {
           console.error('Sign up error:', signUpError);
-          throw signUpError;
+          throw new Error(signUpError.message || 'Failed to create account');
         }
 
         console.log('Sign up successful, user:', authData.user?.id);
@@ -204,26 +220,36 @@ const SuperAuth = () => {
         if (signInError) {
           console.error('Sign in error:', signInError);
           
+          let errorMsg = 'Sign in failed. Please try again.';
           if (signInError.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password. Please check your credentials and try again.');
+            errorMsg = 'Invalid email or password. Please check your credentials and try again.';
           } else if (signInError.message.includes('Email not confirmed')) {
-            throw new Error('Please check your email and click the confirmation link before signing in.');
+            errorMsg = 'Please check your email and click the confirmation link before signing in.';
+          } else if (signInError.message.includes('Too many requests')) {
+            errorMsg = 'Too many login attempts. Please wait a moment before trying again.';
           } else {
-            throw signInError;
+            errorMsg = signInError.message;
           }
+          
+          throw new Error(errorMsg);
         }
 
         console.log('Sign in successful, user:', signInData.user?.id);
 
         if (signInData.user) {
           await handleSuccessfulSignIn(signInData.user.id);
+        } else {
+          throw new Error('Sign in succeeded but no user data received');
         }
       }
     } catch (error: any) {
       console.error('Super admin authentication error:', error);
+      const errorMsg = error.message || "An unexpected error occurred. Please try again.";
+      setErrorMessage(errorMsg);
+      
       toast({
         title: "Authentication failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: errorMsg,
         variant: "destructive"
       });
     } finally {
@@ -277,6 +303,12 @@ const SuperAuth = () => {
           </CardHeader>
 
           <CardContent>
+            {errorMessage && (
+              <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                {errorMessage}
+              </div>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {isSignUp && (
@@ -291,6 +323,7 @@ const SuperAuth = () => {
                             <Input
                               placeholder="John"
                               className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                              disabled={isLoading}
                               {...field}
                             />
                           </FormControl>
@@ -308,6 +341,7 @@ const SuperAuth = () => {
                             <Input
                               placeholder="Doe"
                               className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                              disabled={isLoading}
                               {...field}
                             />
                           </FormControl>
@@ -329,6 +363,7 @@ const SuperAuth = () => {
                           type="email"
                           placeholder="Enter your email"
                           className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
+                          disabled={isLoading}
                           {...field}
                         />
                       </FormControl>
@@ -349,6 +384,7 @@ const SuperAuth = () => {
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Enter your password"
                             className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20 pr-10"
+                            disabled={isLoading}
                             {...field}
                           />
                           <Button
@@ -357,6 +393,7 @@ const SuperAuth = () => {
                             size="icon"
                             className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
                             onClick={() => setShowPassword(!showPassword)}
+                            disabled={isLoading}
                           >
                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </Button>
@@ -393,6 +430,7 @@ const SuperAuth = () => {
                 className="text-wca-purple hover:text-wca-violet font-medium p-0 h-auto"
                 onClick={() => {
                   setIsSignUp(!isSignUp);
+                  setErrorMessage('');
                   form.reset();
                 }}
                 disabled={isLoading}
