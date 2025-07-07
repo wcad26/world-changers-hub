@@ -6,65 +6,63 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MapPin, Home, Building, Users, Plus, Search, Map } from "lucide-react";
-
-// Mock data for demonstration
-const mockLocations = [
-  { id: 1, name: "Main Center", type: "WCA Center", address: "123 Main St, New York, NY 10001", capacity: 500, facilities: "Sanctuary, Classrooms, Offices", status: "Active" },
-  { id: 2, name: "Youth Center", type: "WCA Center", address: "456 Park Ave, New York, NY 10002", capacity: 150, facilities: "Meeting Hall, Recreation Area", status: "Active" },
-  { id: 3, name: "North DCG", type: "DCG Location", address: "789 North Rd, New York, NY 10003", capacity: 30, facilities: "Living Room", status: "Active" },
-  { id: 4, name: "South DCG", type: "DCG Location", address: "321 South Blvd, New York, NY 10004", capacity: 25, facilities: "Basement Meeting Room", status: "Active" },
-];
-
-// Form schema for location creation
-const locationSchema = z.object({
-  name: z.string().min(3, { message: "Location name must be at least 3 characters." }),
-  type: z.string().min(1, { message: "Please select a location type." }),
-  address: z.string().min(5, { message: "Please provide a valid address." }),
-  city: z.string().min(2, { message: "Please enter a city." }),
-  state: z.string().min(2, { message: "Please enter a state." }),
-  zip: z.string().min(5, { message: "Please enter a valid ZIP code." }),
-  capacity: z.string().min(1, { message: "Please enter the capacity." }),
-  facilities: z.string().optional(),
-  contactPerson: z.string().optional(),
-  contactPhone: z.string().optional(),
-});
+import { MapPin, Home, Building, Plus, Search, Map, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocations, useCreateLocation, locationSchema, type NewLocationData } from "@/hooks/useLocations";
+import { useToast } from "@/hooks/use-toast";
 
 const RegionalLocations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const { toast } = useToast();
+  const { userRegion } = useAuth();
   
-  const form = useForm<z.infer<typeof locationSchema>>({
+  // Fetch locations data
+  const { data: locations = [], isLoading } = useLocations(userRegion?.id);
+  const createLocation = useCreateLocation();
+  
+  const form = useForm<NewLocationData>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
       name: "",
-      type: "",
+      type: "WCA Center",
       address: "",
       city: "",
       state: "",
       zip: "",
-      capacity: "",
+      capacity: 1,
       facilities: "",
-      contactPerson: "",
-      contactPhone: "",
+      contact_person: "",
+      contact_phone: "",
     },
   });
 
-  const filteredLocations = mockLocations.filter(location => 
+  const filteredLocations = locations.filter(location => 
     (location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     location.address.toLowerCase().includes(searchTerm.toLowerCase())) &&
     (typeFilter === "all" || location.type.toLowerCase() === typeFilter.toLowerCase())
   );
 
-  function onSubmit(values: z.infer<typeof locationSchema>) {
-    console.log(values);
-    // In a real app, this would save the location to a database
-    alert("Location added successfully!");
-    form.reset();
+  function onSubmit(values: NewLocationData) {
+    createLocation.mutate(values, {
+      onSuccess: () => {
+        toast({
+          title: "Location Created",
+          description: `${values.name} has been added successfully.`,
+        });
+        form.reset();
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create location. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
   }
 
   return (
@@ -116,49 +114,56 @@ const RegionalLocations: React.FC = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Address</TableHead>
-                          <TableHead>Capacity</TableHead>
-                          <TableHead>Facilities</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredLocations.length > 0 ? (
-                          filteredLocations.map((location) => (
-                            <TableRow key={location.id}>
-                              <TableCell className="font-medium">{location.name}</TableCell>
-                              <TableCell>{location.type}</TableCell>
-                              <TableCell>{location.address}</TableCell>
-                              <TableCell>{location.capacity}</TableCell>
-                              <TableCell>{location.facilities}</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="outline" size="sm">Edit</Button>
-                                  <Button variant="outline" size="sm">View</Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">
-                              No locations found
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </CardContent>
+               <CardContent>
+                 {isLoading ? (
+                   <div className="flex items-center justify-center h-32">
+                     <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                     Loading locations...
+                   </div>
+                 ) : (
+                   <div className="rounded-md border overflow-hidden">
+                     <div className="overflow-x-auto">
+                       <Table>
+                         <TableHeader>
+                           <TableRow>
+                             <TableHead>Name</TableHead>
+                             <TableHead>Type</TableHead>
+                             <TableHead>Address</TableHead>
+                             <TableHead>Capacity</TableHead>
+                             <TableHead>Facilities</TableHead>
+                             <TableHead>Actions</TableHead>
+                           </TableRow>
+                         </TableHeader>
+                         <TableBody>
+                           {filteredLocations.length > 0 ? (
+                             filteredLocations.map((location) => (
+                               <TableRow key={location.id}>
+                                 <TableCell className="font-medium">{location.name}</TableCell>
+                                 <TableCell>{location.type}</TableCell>
+                                 <TableCell>{`${location.address}, ${location.city}, ${location.state} ${location.zip}`}</TableCell>
+                                 <TableCell>{location.capacity}</TableCell>
+                                 <TableCell>{location.facilities || "N/A"}</TableCell>
+                                 <TableCell>
+                                   <div className="flex space-x-2">
+                                     <Button variant="outline" size="sm">Edit</Button>
+                                     <Button variant="outline" size="sm">View</Button>
+                                   </div>
+                                 </TableCell>
+                               </TableRow>
+                             ))
+                           ) : (
+                             <TableRow>
+                               <TableCell colSpan={6} className="text-center h-24">
+                                 {isLoading ? "Loading..." : "No locations found"}
+                               </TableCell>
+                             </TableRow>
+                           )}
+                         </TableBody>
+                       </Table>
+                     </div>
+                   </div>
+                 )}
+               </CardContent>
             </Card>
           </TabsContent>
           
@@ -386,19 +391,24 @@ const RegionalLocations: React.FC = () => {
                         )}
                       />
                       
-                      <FormField
-                        control={form.control}
-                        name="capacity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Capacity</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="100" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                       <FormField
+                         control={form.control}
+                         name="capacity"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>Capacity</FormLabel>
+                             <FormControl>
+                               <Input 
+                                 type="number" 
+                                 placeholder="100" 
+                                 {...field}
+                                 onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                               />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
                       <FormField
                         control={form.control}
                         name="facilities"
@@ -413,32 +423,32 @@ const RegionalLocations: React.FC = () => {
                         )}
                       />
                       
-                      <FormField
-                        control={form.control}
-                        name="contactPerson"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contact Person</FormLabel>
-                            <FormControl>
-                              <Input placeholder="John Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="contactPhone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Contact Phone</FormLabel>
-                            <FormControl>
-                              <Input placeholder="+1234567890" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                       <FormField
+                         control={form.control}
+                         name="contact_person"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>Contact Person</FormLabel>
+                             <FormControl>
+                               <Input placeholder="John Doe" {...field} />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
+                       <FormField
+                         control={form.control}
+                         name="contact_phone"
+                         render={({ field }) => (
+                           <FormItem>
+                             <FormLabel>Contact Phone</FormLabel>
+                             <FormControl>
+                               <Input placeholder="+1234567890" {...field} />
+                             </FormControl>
+                             <FormMessage />
+                           </FormItem>
+                         )}
+                       />
                     </div>
                     
                     <div className="mt-6 border rounded-md p-4">
@@ -454,13 +464,22 @@ const RegionalLocations: React.FC = () => {
                       </p>
                     </div>
                     
-                    <div className="flex justify-end gap-4">
-                      <Button type="button" variant="outline">Cancel</Button>
-                      <Button type="submit">
-                        <MapPin className="mr-2 h-4 w-4" />
-                        Add Location
-                      </Button>
-                    </div>
+                     <div className="flex justify-end gap-4">
+                       <Button type="button" variant="outline" disabled={createLocation.isPending}>Cancel</Button>
+                       <Button type="submit" disabled={createLocation.isPending}>
+                         {createLocation.isPending ? (
+                           <>
+                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                             Adding Location...
+                           </>
+                         ) : (
+                           <>
+                             <MapPin className="mr-2 h-4 w-4" />
+                             Add Location
+                           </>
+                         )}
+                       </Button>
+                     </div>
                   </form>
                 </Form>
               </CardContent>
