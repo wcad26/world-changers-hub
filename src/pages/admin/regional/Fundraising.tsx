@@ -8,39 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Target, Users, Plus, PiggyBank, TrendingUp, Search } from "lucide-react";
-
-// Mock data for demonstration
-const mockCampaigns = [
-  { id: 1, name: "Building Fund", goal: 50000, raised: 32500, donors: 78, startDate: "2023-09-01", endDate: "2023-12-31", status: "Active" },
-  { id: 2, name: "Mission Trip", goal: 15000, raised: 12750, donors: 45, startDate: "2023-10-15", endDate: "2023-11-30", status: "Active" },
-  { id: 3, name: "Youth Center Renovation", goal: 25000, raised: 25000, donors: 63, startDate: "2023-05-01", endDate: "2023-08-31", status: "Completed" },
-  { id: 4, name: "Christmas Charity Drive", goal: 10000, raised: 2500, donors: 20, startDate: "2023-11-15", endDate: "2023-12-25", status: "Active" },
-];
-
-// Form schema for campaign creation
-const campaignSchema = z.object({
-  name: z.string().min(3, { message: "Campaign name must be at least 3 characters." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  goal: z.string().min(1, { message: "Please enter a fundraising goal." }),
-  startDate: z.string().min(1, { message: "Please select a start date." }),
-  endDate: z.string().min(1, { message: "Please select an end date." }),
-  image: z.string().optional(),
-  isPublic: z.boolean().default(true),
-});
+import { DollarSign, Calendar, Target, Users, Plus, PiggyBank, TrendingUp, Search, Loader2 } from "lucide-react";
+import { useFundraisingCampaigns, useCreateFundraisingCampaign, useFundraisingAnalytics, campaignSchema, type CampaignData } from "@/hooks/useFundraisingCampaigns";
+import { toast } from "@/hooks/use-toast";
 
 const RegionalFundraising: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   
-  const form = useForm<z.infer<typeof campaignSchema>>({
+  const { data: campaigns = [], isLoading: campaignsLoading } = useFundraisingCampaigns({ status: statusFilter });
+  const { data: analytics, isLoading: analyticsLoading } = useFundraisingAnalytics();
+  const createCampaignMutation = useCreateFundraisingCampaign();
+  
+  const form = useForm<CampaignData>({
     resolver: zodResolver(campaignSchema),
     defaultValues: {
       name: "",
       description: "",
-      goal: "",
+      goal: 0,
       startDate: "",
       endDate: "",
       image: "",
@@ -48,16 +34,28 @@ const RegionalFundraising: React.FC = () => {
     },
   });
 
-  const filteredCampaigns = mockCampaigns.filter(campaign => 
-    (campaign.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (statusFilter === "all" || campaign.status.toLowerCase() === statusFilter.toLowerCase())
+  const filteredCampaigns = campaigns.filter(campaign => 
+    campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  function onSubmit(values: z.infer<typeof campaignSchema>) {
-    console.log(values);
-    // In a real app, this would save the campaign to a database
-    alert("Fundraising campaign created successfully!");
-    form.reset();
+  function onSubmit(values: CampaignData) {
+    createCampaignMutation.mutate(values, {
+      onSuccess: () => {
+        toast({
+          title: "Success",
+          description: "Fundraising campaign created successfully!",
+        });
+        form.reset();
+      },
+      onError: (error) => {
+        toast({
+          title: "Error",
+          description: "Failed to create campaign. Please try again.",
+          variant: "destructive",
+        });
+        console.error("Error creating campaign:", error);
+      },
+    });
   }
 
   return (
@@ -101,55 +99,67 @@ const RegionalFundraising: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  {filteredCampaigns.filter(campaign => campaign.status === "Active").map((campaign) => (
-                    <Card key={campaign.id}>
-                      <CardHeader className="pb-2">
-                        <CardTitle>{campaign.name}</CardTitle>
-                        <CardDescription>
-                          {campaign.startDate} to {campaign.endDate}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Progress</span>
-                            <span className="font-medium">{Math.round((campaign.raised / campaign.goal) * 100)}%</span>
-                          </div>
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-wca-purple" 
-                              style={{ width: `${Math.min((campaign.raised / campaign.goal) * 100, 100)}%` }}
-                            ></div>
-                          </div>
-                          <div className="flex justify-between text-sm pt-1">
-                            <span>
-                              <DollarSign className="inline h-3 w-3" /> 
-                              ${campaign.raised.toLocaleString()}
-                            </span>
-                            <span className="text-muted-foreground">
-                              Goal: ${campaign.goal.toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <Users className="inline h-3 w-3 mr-1" /> 
-                            {campaign.donors} donors
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button variant="outline" size="sm">Details</Button>
-                        <Button variant="outline" size="sm">Update</Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                  
-                  {filteredCampaigns.filter(campaign => campaign.status === "Active").length === 0 && (
-                    <div className="col-span-2 text-center py-8">
-                      No active campaigns found
-                    </div>
-                  )}
-                </div>
+                {campaignsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    {filteredCampaigns.filter(campaign => campaign.status === "Active").map((campaign) => {
+                      const raisedAmount = campaign.raised / 100; // Convert from cents
+                      const goalAmount = campaign.goal / 100; // Convert from cents
+                      const progress = Math.round((raisedAmount / goalAmount) * 100);
+                      
+                      return (
+                        <Card key={campaign.id}>
+                          <CardHeader className="pb-2">
+                            <CardTitle>{campaign.name}</CardTitle>
+                            <CardDescription>
+                              {new Date(campaign.start_date).toLocaleDateString()} to {new Date(campaign.end_date).toLocaleDateString()}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span>Progress</span>
+                                <span className="font-medium">{progress}%</span>
+                              </div>
+                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary" 
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                ></div>
+                              </div>
+                              <div className="flex justify-between text-sm pt-1">
+                                <span>
+                                  <DollarSign className="inline h-3 w-3" /> 
+                                  ${raisedAmount.toLocaleString()}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  Goal: ${goalAmount.toLocaleString()}
+                                </span>
+                              </div>
+                              <div className="text-sm">
+                                <Users className="inline h-3 w-3 mr-1" /> 
+                                {campaign.raised > 0 ? 'View donors' : 'No donors yet'}
+                              </div>
+                            </div>
+                          </CardContent>
+                          <CardFooter className="flex justify-between">
+                            <Button variant="outline" size="sm">Details</Button>
+                            <Button variant="outline" size="sm">Update</Button>
+                          </CardFooter>
+                        </Card>
+                      );
+                    })}
+                    
+                    {filteredCampaigns.filter(campaign => campaign.status === "Active").length === 0 && (
+                      <div className="col-span-2 text-center py-8">
+                        {searchTerm ? "No campaigns match your search" : "No active campaigns found"}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -178,23 +188,37 @@ const RegionalFundraising: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredCampaigns.filter(campaign => campaign.status === "Completed").length > 0 ? (
-                          filteredCampaigns.filter(campaign => campaign.status === "Completed").map((campaign) => (
-                            <TableRow key={campaign.id}>
-                              <TableCell className="font-medium">{campaign.name}</TableCell>
-                              <TableCell>${campaign.goal.toLocaleString()}</TableCell>
-                              <TableCell>${campaign.raised.toLocaleString()}</TableCell>
-                              <TableCell>{campaign.donors}</TableCell>
-                              <TableCell>{campaign.startDate} - {campaign.endDate}</TableCell>
-                              <TableCell>{Math.round((campaign.raised / campaign.goal) * 100)}%</TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="outline" size="sm">Report</Button>
-                                  <Button variant="outline" size="sm">Duplicate</Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))
+                        {campaignsLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center h-24">
+                              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                            </TableCell>
+                          </TableRow>
+                        ) : filteredCampaigns.filter(campaign => campaign.status === "Completed").length > 0 ? (
+                          filteredCampaigns.filter(campaign => campaign.status === "Completed").map((campaign) => {
+                            const raisedAmount = campaign.raised / 100;
+                            const goalAmount = campaign.goal / 100;
+                            const successRate = Math.round((raisedAmount / goalAmount) * 100);
+                            
+                            return (
+                              <TableRow key={campaign.id}>
+                                <TableCell className="font-medium">{campaign.name}</TableCell>
+                                <TableCell>${goalAmount.toLocaleString()}</TableCell>
+                                <TableCell>${raisedAmount.toLocaleString()}</TableCell>
+                                <TableCell>View donors</TableCell>
+                                <TableCell>
+                                  {new Date(campaign.start_date).toLocaleDateString()} - {new Date(campaign.end_date).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>{successRate}%</TableCell>
+                                <TableCell>
+                                  <div className="flex space-x-2">
+                                    <Button variant="outline" size="sm">Report</Button>
+                                    <Button variant="outline" size="sm">Duplicate</Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })
                         ) : (
                           <TableRow>
                             <TableCell colSpan={7} className="text-center h-24">
@@ -235,19 +259,24 @@ const RegionalFundraising: React.FC = () => {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="goal"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Fundraising Goal ($)</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="50000" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="goal"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fundraising Goal ($)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number" 
+                                  placeholder="50000" 
+                                  {...field}
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       
                       <FormField
                         control={form.control}
@@ -337,9 +366,15 @@ const RegionalFundraising: React.FC = () => {
                       />
                     </div>
                     <div className="flex justify-end gap-4">
-                      <Button type="button" variant="outline">Cancel</Button>
-                      <Button type="submit">
-                        <PiggyBank className="mr-2 h-4 w-4" />
+                      <Button type="button" variant="outline" onClick={() => form.reset()}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={createCampaignMutation.isPending}>
+                        {createCampaignMutation.isPending ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <PiggyBank className="mr-2 h-4 w-4" />
+                        )}
                         Create Campaign
                       </Button>
                     </div>
@@ -358,41 +393,47 @@ const RegionalFundraising: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        ${mockCampaigns.reduce((acc, campaign) => acc + campaign.raised, 0).toLocaleString()}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">+$5,000 from last month</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {mockCampaigns.filter(campaign => campaign.status === "Active").length}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">2 ending this month</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">
-                        {mockCampaigns.reduce((acc, campaign) => acc + campaign.donors, 0)}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">+15 new donors</p>
-                    </CardContent>
-                  </Card>
-                </div>
+                {analyticsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          ${analytics?.totalRaised?.toLocaleString() || '0'}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">From all campaigns</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analytics?.activeCampaigns || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Currently running</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {analytics?.totalDonors || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">All-time donations</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
                 
                 <div className="mt-6">
                   <h3 className="text-lg font-medium mb-4">Fundraising Performance</h3>

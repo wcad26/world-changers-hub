@@ -478,6 +478,115 @@ export type Database = {
           },
         ]
       }
+      fundraising_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          end_date: string
+          goal: number
+          id: string
+          image_url: string | null
+          is_public: boolean
+          name: string
+          raised: number
+          region_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          end_date: string
+          goal: number
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          name: string
+          raised?: number
+          region_id: string
+          start_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          end_date?: string
+          goal?: number
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          name?: string
+          raised?: number
+          region_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraising_campaigns_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fundraising_donations: {
+        Row: {
+          amount: number
+          anonymous: boolean
+          campaign_id: string
+          created_at: string
+          currency: string
+          donation_date: string
+          donor_email: string | null
+          donor_name: string | null
+          id: string
+          message: string | null
+        }
+        Insert: {
+          amount: number
+          anonymous?: boolean
+          campaign_id: string
+          created_at?: string
+          currency?: string
+          donation_date?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+        }
+        Update: {
+          amount?: number
+          anonymous?: boolean
+          campaign_id?: string
+          created_at?: string
+          currency?: string
+          donation_date?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          id?: string
+          message?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraising_donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "fundraising_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locations: {
         Row: {
           address: string
