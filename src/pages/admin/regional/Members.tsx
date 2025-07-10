@@ -192,7 +192,7 @@ const Members: React.FC = () => {
     
     if (percentage === 0) {
       return (
-        <div className="flex items-center gap-1 text-muted-foreground">
+        <div className="flex items-center gap-1 text-primary">
           <span className="text-xs font-medium">0%</span>
         </div>
       );
