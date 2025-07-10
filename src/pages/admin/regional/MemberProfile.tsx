@@ -390,7 +390,7 @@ const MemberProfile: React.FC = () => {
             {/* Personal Information */}
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Personal Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground">Date of Birth</label>
                   <p className="text-sm">
@@ -428,7 +428,7 @@ const MemberProfile: React.FC = () => {
             {/* Emergency Contact */}
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Emergency Contact</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground">Contact Name</label>
                   <p className="text-sm flex items-center gap-2">
@@ -443,6 +443,7 @@ const MemberProfile: React.FC = () => {
                     {member.profiles?.emergency_contact_phone || 'Not provided'}
                   </p>
                 </div>
+                <div className="col-span-2"></div>
               </div>
             </div>
 
@@ -451,7 +452,7 @@ const MemberProfile: React.FC = () => {
             {/* Membership Information */}
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Membership Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="text-xs text-muted-foreground">Membership Class</label>
                   <p className="text-sm">
