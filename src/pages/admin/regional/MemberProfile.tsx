@@ -220,38 +220,113 @@ const MemberProfile: React.FC = () => {
                 </p>
                 <div className="h-64 border rounded-lg bg-muted/20 p-4">
                   {impactTrend && impactTrend.length > 0 ? (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-4">
-                        <span>Recent Events</span>
+                    <div className="h-full">
+                      {/* Legend */}
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs text-muted-foreground">Disciples Attendance Over Time</span>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span>You attended</span>
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-xs">You attended</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                            <span>You missed</span>
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span className="text-xs">You missed</span>
                           </div>
                         </div>
                       </div>
-                      <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {impactTrend.map((event, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 bg-background rounded border">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${event.mentor_attended ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                              <div>
-                                <p className="text-sm font-medium">{event.event_name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {new Date(event.event_date).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium">{event.disciples_attended}</p>
-                              <p className="text-xs text-muted-foreground">disciples attended</p>
-                            </div>
-                          </div>
-                        ))}
+                      
+                      {/* Chart Container */}
+                      <div className="relative h-48 w-full">
+                        <svg className="w-full h-full" viewBox="0 0 400 180">
+                          {/* Grid lines */}
+                          <defs>
+                            <pattern id="grid" width="40" height="36" patternUnits="userSpaceOnUse">
+                              <path d="M 40 0 L 0 0 0 36" fill="none" stroke="hsl(var(--muted-foreground))" strokeOpacity="0.1" strokeWidth="1"/>
+                            </pattern>
+                          </defs>
+                          <rect width="100%" height="100%" fill="url(#grid)" />
+                          
+                          {/* Data visualization */}
+                          {(() => {
+                            const sortedData = [...impactTrend].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+                            const maxAttendance = Math.max(...sortedData.map(d => d.disciples_attended), 1);
+                            const xStep = 380 / Math.max(sortedData.length - 1, 1);
+                            
+                            // Generate path for line
+                            const pathData = sortedData.map((event, index) => {
+                              const x = 10 + (index * xStep);
+                              const y = 170 - ((event.disciples_attended / maxAttendance) * 140);
+                              return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+                            }).join(' ');
+                            
+                            return (
+                              <g>
+                                {/* Y-axis labels */}
+                                {[0, Math.ceil(maxAttendance/2), maxAttendance].map((value, index) => (
+                                  <g key={index}>
+                                    <text 
+                                      x="5" 
+                                      y={175 - (index * 70)} 
+                                      textAnchor="middle" 
+                                      className="text-xs fill-muted-foreground"
+                                      fontSize="10"
+                                    >
+                                      {value}
+                                    </text>
+                                  </g>
+                                ))}
+                                
+                                {/* Trend line */}
+                                {sortedData.length > 1 && (
+                                  <path
+                                    d={pathData}
+                                    fill="none"
+                                    stroke="hsl(var(--primary))"
+                                    strokeWidth="2"
+                                    className="animate-fade-in"
+                                  />
+                                )}
+                                
+                                {/* Data points */}
+                                {sortedData.map((event, index) => {
+                                  const x = 10 + (index * xStep);
+                                  const y = 170 - ((event.disciples_attended / maxAttendance) * 140);
+                                  const color = event.mentor_attended ? '#22c55e' : '#ef4444';
+                                  
+                                  return (
+                                    <g key={index} className="animate-scale-in" style={{ animationDelay: `${index * 100}ms` }}>
+                                      <circle
+                                        cx={x}
+                                        cy={y}
+                                        r="4"
+                                        fill={color}
+                                        stroke="white"
+                                        strokeWidth="2"
+                                        className="hover-scale cursor-pointer"
+                                      >
+                                        <title>{`${event.event_name}: ${event.disciples_attended} disciples attended${event.mentor_attended ? ' (You attended)' : ' (You missed)'}`}</title>
+                                      </circle>
+                                      
+                                      {/* Event date labels (every other point to avoid crowding) */}
+                                      {index % 2 === 0 && (
+                                        <text
+                                          x={x}
+                                          y="175"
+                                          textAnchor="middle"
+                                          className="text-xs fill-muted-foreground"
+                                          fontSize="9"
+                                        >
+                                          {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </text>
+                                      )}
+                                    </g>
+                                  );
+                                })}
+                              </g>
+                            );
+                          })()}
+                        </svg>
                       </div>
                     </div>
                   ) : (
