@@ -371,7 +371,7 @@ const Members: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Attendance Trends</CardTitle>
-                <CardDescription>Member and visitor attendance over time with total trend line.</CardDescription>
+                <CardDescription>Member and visitor attendance over time with trend lines.</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoadingWithTypes ? (
@@ -390,6 +390,17 @@ const Members: React.FC = () => {
                         valueFormatter={(value) => `${value}`}
                         className="h-full w-full"
                       />
+                      {/* Overlay Line Chart for Trends */}
+                      <div className="absolute inset-0 pointer-events-none">
+                        <LineChart
+                          data={attendanceWithTypes}
+                          index="date"
+                          categories={["members_present", "visitors_present"]}
+                          colors={["#1e40af", "#059669"]}
+                          valueFormatter={(value) => `${value}`}
+                          className="h-full w-full opacity-80"
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
