@@ -431,9 +431,9 @@ const MemberProfile: React.FC = () => {
                 <div>
                   <label className="text-xs text-muted-foreground">Last Active</label>
                   <p className="text-sm">
-                    {member.updated_at 
-                      ? new Date(member.updated_at).toLocaleDateString() 
-                      : 'Not available'
+                    {attendanceStats?.lastActiveDate 
+                      ? new Date(attendanceStats.lastActiveDate).toLocaleDateString() 
+                      : 'No events attended'
                     }
                   </p>
                 </div>

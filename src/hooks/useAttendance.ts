@@ -201,6 +201,10 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
       const isActiveBasedOnAttendance = last3Events.length < 3 || 
         last3Events.some(record => record.is_present);
       
+      // Get the last attended event date
+      const lastAttendedEvent = data?.find(record => record.is_present);
+      const lastActiveDate = lastAttendedEvent ? lastAttendedEvent.attendance_events.event_date : null;
+      
       return {
         totalEvents,
         eventsAttended,
@@ -210,6 +214,7 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
         thisMonthRate,
         monthlyChange,
         isActiveBasedOnAttendance,
+        lastActiveDate,
         last3EventsAttendance: last3Events.map(record => ({
           eventName: record.attendance_events.name,
           eventDate: record.attendance_events.event_date,
