@@ -31,6 +31,7 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
       occupation: '',
       emergency_contact_name: '',
       emergency_contact_phone: '',
+      member_type: 'member',
     },
   });
 
@@ -66,6 +67,28 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
         {/* Personal Information Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Personal Information</h3>
+          
+          <FormField
+            control={form.control}
+            name="member_type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Member Type *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select member type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="visitor">Visitor</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField

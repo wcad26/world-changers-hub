@@ -17,6 +17,7 @@ export const memberSchema = z.object({
   occupation: z.string().optional(),
   emergency_contact_name: z.string().optional(),
   emergency_contact_phone: z.string().optional(),
+  member_type: z.enum(['member', 'visitor']).default('member'),
 });
 
 // Type inferred from the schema
