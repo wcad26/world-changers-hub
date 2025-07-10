@@ -11,7 +11,7 @@ import { BarChart, LineChart } from "@/components/ui/chart";
 import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
-import { useAttendanceHistory } from '@/hooks/useAttendance';
+import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ const Members: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: members, isLoading: isLoadingMembers, error: membersError } = useMembers(userRegion?.id);
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
+  const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isRegisterDialogOpen, setRegisterDialogOpen] = React.useState(false);
 
@@ -59,6 +60,35 @@ const Members: React.FC = () => {
       lastEvent: attendanceHistory[0]
     };
   }, [attendanceHistory, totalMembers]);
+
+  const attendanceKPIs = React.useMemo(() => {
+    if (!attendanceWithTypes || attendanceWithTypes.length === 0) {
+      return {
+        totalEvents: 0,
+        avgMemberAttendance: 0,
+        avgVisitorAttendance: 0,
+        avgTotalAttendance: 0,
+        highestAttendance: 0,
+        attendanceRate: 0
+      };
+    }
+
+    const totalEvents = attendanceWithTypes.length;
+    const totalMemberAttendance = attendanceWithTypes.reduce((sum, event) => sum + event.members_present, 0);
+    const totalVisitorAttendance = attendanceWithTypes.reduce((sum, event) => sum + event.visitors_present, 0);
+    const totalAttendance = attendanceWithTypes.reduce((sum, event) => sum + event.total_present, 0);
+    const highestAttendance = Math.max(...attendanceWithTypes.map(e => e.total_present));
+    const totalRegistered = attendanceWithTypes.reduce((sum, event) => sum + event.total_present + event.total_absent, 0);
+
+    return {
+      totalEvents,
+      avgMemberAttendance: Math.round(totalMemberAttendance / totalEvents),
+      avgVisitorAttendance: Math.round(totalVisitorAttendance / totalEvents),
+      avgTotalAttendance: Math.round(totalAttendance / totalEvents),
+      highestAttendance,
+      attendanceRate: totalRegistered > 0 ? Math.round((totalAttendance / totalRegistered) * 100) : 0
+    };
+  }, [attendanceWithTypes]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -226,30 +256,105 @@ const Members: React.FC = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="attendance">
-             <Card>
+          <TabsContent value="attendance" className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Events</CardTitle>
+                  <CalendarCheck2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.totalEvents}</div>
+                  <p className="text-xs text-muted-foreground">Events recorded</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg. Members</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.avgMemberAttendance}</div>
+                  <p className="text-xs text-muted-foreground">Per event</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg. Visitors</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.avgVisitorAttendance}</div>
+                  <p className="text-xs text-muted-foreground">Per event</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Avg. Total</CardTitle>
+                  <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.avgTotalAttendance}</div>
+                  <p className="text-xs text-muted-foreground">Per event</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Highest</CardTitle>
+                  <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.highestAttendance}</div>
+                  <p className="text-xs text-muted-foreground">Single event</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Attendance Rate</CardTitle>
+                  <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{attendanceKPIs.attendanceRate}%</div>
+                  <p className="text-xs text-muted-foreground">Overall rate</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Attendance Chart */}
+            <Card>
               <CardHeader>
-                <CardTitle>Attendance History</CardTitle>
-                <CardDescription>Summary of attendance for past events.</CardDescription>
+                <CardTitle>Attendance Trends</CardTitle>
+                <CardDescription>Member and visitor attendance over time with total trend line.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                 {isLoadingHistory ? (
-                  <p>Loading history...</p>
-                ) : historyError ? (
-                  <p className="text-red-500">Error loading attendance history.</p>
-                ) : attendanceHistory && attendanceHistory.length > 0 ? (
-                  <div className="h-[300px]">
-                    <BarChart
-                      data={attendanceHistory.map(e => ({...e, date: new Date(e.event_date).toLocaleDateString()}))}
-                      index="date"
-                      categories={["present_count", "absent_count"]}
-                      colors={["#10b981", "#f43f5e"]}
-                      valueFormatter={(value) => `${value} members`}
-                      className="h-full"
-                    />
+              <CardContent>
+                {isLoadingWithTypes ? (
+                  <div className="h-[400px] flex items-center justify-center">
+                    <p>Loading attendance data...</p>
+                  </div>
+                ) : attendanceWithTypes && attendanceWithTypes.length > 0 ? (
+                  <div className="h-[400px] w-full">
+                    <div className="relative h-full">
+                      {/* Bar Chart for Members vs Visitors */}
+                      <BarChart
+                        data={attendanceWithTypes}
+                        index="date"
+                        categories={["members_present", "visitors_present"]}
+                        colors={["#3b82f6", "#10b981"]}
+                        valueFormatter={(value) => `${value}`}
+                        className="h-full w-full"
+                      />
+                    </div>
                   </div>
                 ) : (
-                  <p>No attendance history found.</p>
+                  <div className="h-[400px] flex items-center justify-center">
+                    <p className="text-muted-foreground">No attendance data available.</p>
+                  </div>
                 )}
               </CardContent>
             </Card>

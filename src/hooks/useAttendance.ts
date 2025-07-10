@@ -75,3 +75,66 @@ export const useAttendanceHistory = (regionId?: string) => {
     enabled: !!regionId
   });
 };
+
+export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
+  return useQuery({
+    queryKey: ['attendance_history_with_types', regionId],
+    queryFn: async () => {
+      if (!regionId) return [];
+      
+      // Get attendance events with detailed breakdown by member type
+      const { data, error } = await supabase
+        .from('attendance_events')
+        .select(`
+          id,
+          name,
+          event_date,
+          attendance_records!inner (
+            is_present,
+            members!inner (
+              member_type
+            )
+          )
+        `)
+        .eq('region_id', regionId)
+        .order('event_date', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Process the data to get counts by member type
+      return data?.map(event => {
+        const records = event.attendance_records || [];
+        
+        const membersPresent = records.filter(r => 
+          r.is_present && r.members?.member_type === 'member'
+        ).length;
+        
+        const visitorsPresent = records.filter(r => 
+          r.is_present && r.members?.member_type === 'visitor'
+        ).length;
+        
+        const membersAbsent = records.filter(r => 
+          !r.is_present && r.members?.member_type === 'member'
+        ).length;
+        
+        const visitorsAbsent = records.filter(r => 
+          !r.is_present && r.members?.member_type === 'visitor'
+        ).length;
+        
+        return {
+          event_id: event.id,
+          event_name: event.name,
+          event_date: event.event_date,
+          members_present: membersPresent,
+          visitors_present: visitorsPresent,
+          members_absent: membersAbsent,
+          visitors_absent: visitorsAbsent,
+          total_present: membersPresent + visitorsPresent,
+          total_absent: membersAbsent + visitorsAbsent,
+          date: new Date(event.event_date).toLocaleDateString()
+        };
+      }) || [];
+    },
+    enabled: !!regionId
+  });
+};
