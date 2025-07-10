@@ -9,10 +9,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, UserCheck } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2 } from "lucide-react";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, NewEvent } from "@/hooks/useEvents";
-import { useAttendanceEvents } from "@/hooks/useAttendance";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,9 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { CreateAttendanceDialog } from "@/components/admin/regional/events/CreateAttendanceDialog";
-import { RecordAttendanceDialog } from "@/components/admin/regional/events/RecordAttendanceDialog";
-import { AttendanceReportView } from "@/components/admin/regional/events/AttendanceReportView";
 
 const eventCategories = [
   'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'DCG Meeting', 'Other'
@@ -58,13 +53,9 @@ const eventSchema = z.object({
 
 const RegionalEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAttendanceEvent, setSelectedAttendanceEvent] = useState<any>(null);
-  const [recordAttendanceOpen, setRecordAttendanceOpen] = useState(false);
   const { toast } = useToast();
-  const { userRegion } = useAuth();
 
   const { data: events, isLoading, isError, error } = useRegionalEvents();
-  const { data: attendanceEvents, isLoading: attendanceLoading } = useAttendanceEvents(userRegion?.id);
   const createEventMutation = useCreateEvent();
   const deleteEventMutation = useDeleteEvent();
 
@@ -191,11 +182,10 @@ const RegionalEvents: React.FC = () => {
         </p>
         
         <Tabs defaultValue="upcoming">
-          <TabsList className="grid grid-cols-1 md:grid-cols-5 w-full max-w-4xl">
+          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
             <TabsTrigger value="create">Create Event</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           
@@ -460,75 +450,6 @@ const RegionalEvents: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-
-          <TabsContent value="attendance">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Attendance Tracking</CardTitle>
-                  <CardDescription>
-                    Create attendance events and record member attendance for regional activities.
-                  </CardDescription>
-                  <div className="flex justify-end">
-                    <CreateAttendanceDialog />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {attendanceLoading ? (
-                    <div className="space-y-4">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-16 w-full" />
-                      ))}
-                    </div>
-                  ) : !attendanceEvents || attendanceEvents.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No attendance events created yet. Create your first attendance event to start tracking.
-                    </div>
-                  ) : (
-                    <div className="rounded-md border overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Event Name</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {attendanceEvents.map((event) => (
-                              <TableRow key={event.id}>
-                                <TableCell className="font-medium">{event.name}</TableCell>
-                                <TableCell>{new Date(event.event_date).toLocaleDateString()}</TableCell>
-                                <TableCell>{event.description || "No description"}</TableCell>
-                                <TableCell>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedAttendanceEvent(event);
-                                      setRecordAttendanceOpen(true);
-                                    }}
-                                  >
-                                    <UserCheck className="mr-2 h-4 w-4" />
-                                    Record Attendance
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Attendance Reports */}
-              <AttendanceReportView />
-            </div>
-          </TabsContent>
           
           <TabsContent value="analytics">
             <Card>
@@ -588,20 +509,6 @@ const RegionalEvents: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Record Attendance Dialog */}
-      {selectedAttendanceEvent && (
-        <RecordAttendanceDialog
-          event={selectedAttendanceEvent}
-          open={recordAttendanceOpen}
-          onOpenChange={(open) => {
-            setRecordAttendanceOpen(open);
-            if (!open) {
-              setSelectedAttendanceEvent(null);
-            }
-          }}
-        />
-      )}
     </RegionalAdminLayout>
   );
 };
