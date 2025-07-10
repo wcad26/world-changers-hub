@@ -229,11 +229,11 @@ const MemberProfile: React.FC = () => {
                 <p className="text-xs text-muted-foreground mb-4">
                   Shows how your event attendance impacts your disciples' participation
                 </p>
-                <div className="h-64 border rounded-lg bg-muted/20 p-4">
+                <div className="h-64 border rounded-lg bg-muted/20">
                   {impactTrend && impactTrend.length > 0 ? (
-                    <div className="h-full">
+                    <div className="h-full w-full">
                       {/* Legend */}
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="flex justify-between items-center p-4 pb-2">
                         <span className="text-xs text-muted-foreground">Disciples Attendance Over Time</span>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-1">
@@ -248,7 +248,7 @@ const MemberProfile: React.FC = () => {
                       </div>
                       
                       {/* Chart Container */}
-                      <div className="relative h-48 w-full">
+                      <div className="relative h-48 w-full px-2">
                         <svg className="w-full h-full" viewBox="0 0 500 180">
                           {/* Grid lines */}
                           <defs>
