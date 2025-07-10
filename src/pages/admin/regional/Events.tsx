@@ -27,6 +27,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -62,6 +70,7 @@ const RegionalEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: events, isLoading, isError, error } = useRegionalEvents();
@@ -115,6 +124,7 @@ const RegionalEvents: React.FC = () => {
       onSuccess: () => {
         toast({ title: "Success", description: "Event created successfully." });
         form.reset();
+        setCreateEventDialogOpen(false);
       },
       onError: (err: any) => {
         toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
@@ -222,10 +232,9 @@ const RegionalEvents: React.FC = () => {
         </p>
         
         <Tabs defaultValue="upcoming">
-          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-1 md:grid-cols-3 w-full max-w-2xl">
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
             <TabsTrigger value="past">Past Events</TabsTrigger>
-            <TabsTrigger value="create">Create Event</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
           
@@ -247,7 +256,7 @@ const RegionalEvents: React.FC = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <Button>
+                  <Button onClick={() => setCreateEventDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" />
                     Add Event
                   </Button>
@@ -337,159 +346,6 @@ const RegionalEvents: React.FC = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="create">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create New Event</CardTitle>
-                <CardDescription>
-                  Plan and schedule a new event for your region.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Annual Conference" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Type</FormLabel>
-                            <FormControl>
-                              <select 
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                {...field}
-                              >
-                                <option value="">Select event type</option>
-                                {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                              </select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="time"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Event Time</FormLabel>
-                            <FormControl>
-                              <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="location_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Main Hall" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="capacity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Expected Capacity</FormLabel>
-                            <FormControl>
-                              <Input type="number" placeholder="100" {...field} value={field.value || ''} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
-                            <FormLabel>Event Description</FormLabel>
-                            <FormControl>
-                              <textarea 
-                                className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Provide details about the event..."
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="is_public"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                checked={field.value}
-                                onChange={field.onChange}
-                                className="h-4 w-4 mt-1"
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Public Event</FormLabel>
-                              <FormDescription>
-                                Display this event on the public website and regional homepage
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-4">
-                      <Button type="button" variant="outline">Cancel</Button>
-                      <Button type="submit" disabled={createEventMutation.isPending}>
-                        <Calendar className="mr-2 h-4 w-4" />
-                        {createEventMutation.isPending ? "Creating..." : "Create Event"}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
           
           <TabsContent value="analytics">
             <Card>
@@ -549,6 +405,162 @@ const RegionalEvents: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Create Event Dialog */}
+      <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create New Event</DialogTitle>
+            <DialogDescription>
+              Plan and schedule a new event for your region.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Annual Conference" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Type</FormLabel>
+                      <FormControl>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                          {...field}
+                        >
+                          <option value="">Select event type</option>
+                          {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Main Hall" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected Capacity</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="100" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Description</FormLabel>
+                      <FormControl>
+                        <textarea 
+                          className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                          placeholder="Provide details about the event..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="is_public"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Public Event</FormLabel>
+                        <FormDescription>
+                          Display this event on the public website and regional homepage
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCreateEventDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createEventMutation.isPending}>
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {createEventMutation.isPending ? "Creating..." : "Create Event"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Attendance Management Dialog */}
       {selectedEvent && (
