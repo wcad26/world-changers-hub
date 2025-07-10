@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, LineChart } from "@/components/ui/chart";
-import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Pen } from 'lucide-react';
+import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Pen, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import DiscipleshipTab from "@/components/admin/regional/discipleship/DiscipleshipTab";
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -194,6 +195,10 @@ const Members: React.FC = () => {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="discipleship">
+              <Heart className="mr-2 h-4 w-4" />
+              Discipleship
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4">
@@ -437,6 +442,10 @@ const Members: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="discipleship">
+            <DiscipleshipTab />
           </TabsContent>
         </Tabs>
       </div>

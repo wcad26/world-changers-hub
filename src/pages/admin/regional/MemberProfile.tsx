@@ -11,6 +11,7 @@ import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend } from '@/hooks/useDiscipleship';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -24,6 +25,10 @@ const MemberProfile: React.FC = () => {
     if (!members || !memberId) return null;
     return members.find(m => m.id === memberId);
   }, [members, memberId]);
+
+  // Fetch real discipleship data
+  const { data: discipleshipStats } = useMemberDiscipleshipStats(member?.id);
+  const { data: impactTrend } = useDiscipleshipImpactTrend(member?.id, userRegion?.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -190,12 +195,16 @@ const MemberProfile: React.FC = () => {
                   <div className="text-xs text-green-600">+5% this month</div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-2xl font-bold text-primary">8</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {discipleshipStats?.total_disciples || 0}
+                  </div>
                   <div className="text-xs text-muted-foreground">Disciples</div>
-                  <div className="text-xs text-blue-600">Following up</div>
+                  <div className="text-xs text-blue-600">Total disciples</div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-2xl font-bold text-primary">75%</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {discipleshipStats?.success_rate ? `${Math.round(discipleshipStats.success_rate)}%` : '0%'}
+                  </div>
                   <div className="text-xs text-muted-foreground">Success Rate</div>
                   <div className="text-xs text-green-600">Became members</div>
                 </div>
@@ -209,12 +218,51 @@ const MemberProfile: React.FC = () => {
                 <p className="text-xs text-muted-foreground mb-4">
                   Shows how your event attendance impacts your disciples' participation
                 </p>
-                <div className="h-64 border rounded-lg bg-muted/20 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <Calendar className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">Discipleship Impact Chart</p>
-                    <p className="text-xs">Coming soon - requires discipleship tracking setup</p>
-                  </div>
+                <div className="h-64 border rounded-lg bg-muted/20 p-4">
+                  {impactTrend && impactTrend.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs text-muted-foreground mb-4">
+                        <span>Recent Events</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>You attended</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span>You missed</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {impactTrend.map((event, index) => (
+                          <div key={index} className="flex items-center justify-between p-2 bg-background rounded border">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${event.mentor_attended ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                              <div>
+                                <p className="text-sm font-medium">{event.event_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(event.event_date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-medium">{event.disciples_attended}</p>
+                              <p className="text-xs text-muted-foreground">disciples attended</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground">
+                        <Calendar className="h-8 w-8 mx-auto mb-2" />
+                        <p className="text-sm">No impact data available</p>
+                        <p className="text-xs">Event attendance data needed</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
