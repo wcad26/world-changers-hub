@@ -87,21 +87,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
               <LogOut size={16} />
               <span>Logout</span>
             </Button>
-            <div className="px-4 mb-4 mt-4">
-              <h2 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                {title}
-              </h2>
-              {userRegion && (
-                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                  {userRegion.name}
-                </p>
-              )}
-              {profile && (
-                <p className="text-xs text-gray-600 dark:text-gray-300">
-                  {profile.first_name} {profile.last_name}
-                </p>
-              )}
-            </div>
           </SidebarFooter>
         </Sidebar>
 
