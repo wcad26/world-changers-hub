@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck } from "lucide-react";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, NewEvent } from "@/hooks/useEvents";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -26,6 +26,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AttendanceManagementDialog } from "@/components/admin/regional/events/AttendanceManagementDialog";
 
 const eventCategories = [
   'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'DCG Meeting', 'Other'
@@ -53,6 +60,8 @@ const eventSchema = z.object({
 
 const RegionalEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const { toast } = useToast();
 
   const { data: events, isLoading, isError, error } = useRegionalEvents();
@@ -124,6 +133,16 @@ const RegionalEvents: React.FC = () => {
     });
   };
 
+  const handleAttendance = (event: any) => {
+    setSelectedEvent(event);
+    setAttendanceDialogOpen(true);
+  };
+
+  const handleEdit = (event: any) => {
+    // TODO: Implement edit functionality
+    toast({ title: "Info", description: "Edit functionality coming soon." });
+  };
+
   const renderTableBody = (eventList: typeof events) => {
     if (isLoading) {
       return Array.from({ length: 4 }).map((_, i) => (
@@ -148,26 +167,47 @@ const RegionalEvents: React.FC = () => {
         <TableCell>{event.location_name}</TableCell>
         <TableCell>{event.capacity ?? 'N/A'}</TableCell>
         <TableCell>
-          <div className="flex space-x-2">
-            <Button variant="outline" size="sm">Edit</Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm"><Trash2 className="h-4 w-4" /></Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete the event.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => handleDelete(event.id)}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleEdit(event)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAttendance(event)}>
+                <UserCheck className="mr-2 h-4 w-4" />
+                Record Attendance
+              </DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the event.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDelete(event.id)}>Delete</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
     ));
@@ -509,6 +549,18 @@ const RegionalEvents: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Attendance Management Dialog */}
+      {selectedEvent && (
+        <AttendanceManagementDialog
+          isOpen={attendanceDialogOpen}
+          onClose={() => {
+            setAttendanceDialogOpen(false);
+            setSelectedEvent(null);
+          }}
+          event={selectedEvent}
+        />
+      )}
     </RegionalAdminLayout>
   );
 };
