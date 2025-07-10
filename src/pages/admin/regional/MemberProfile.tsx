@@ -5,15 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw } from 'lucide-react';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth.tsx';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import { useQueryClient } from '@tanstack/react-query';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
   const navigate = useNavigate();
   const { userRegion } = useAuth();
-  const { data: members, isLoading, error } = useMembers(userRegion?.id);
+  const queryClient = useQueryClient();
+  const { data: members, isLoading, error, refetch } = useMembers(userRegion?.id);
+  const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
 
   const member = React.useMemo(() => {
     if (!members || !memberId) return null;
@@ -79,9 +84,24 @@ const MemberProfile: React.FC = () => {
             <ArrowLeft className="h-4 w-4" />
             Back to Members
           </Button>
-          <Button variant="outline">
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Pen className="h-4 w-4" />
+              Edit Profile
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => refetch()}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3">
@@ -261,15 +281,30 @@ const MemberProfile: React.FC = () => {
         {/* Action Buttons */}
         <div className="flex gap-3">
           <Button variant="outline">
-            Edit Profile
-          </Button>
-          <Button variant="outline">
             Send Message
           </Button>
           <Button variant="outline">
             View Attendance
           </Button>
         </div>
+
+        {/* Edit Member Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Member Profile</DialogTitle>
+              <DialogDescription>
+                Update member information and details.
+              </DialogDescription>
+            </DialogHeader>
+            {member && (
+              <EditMemberForm 
+                member={member} 
+                onSuccess={() => setIsEditDialogOpen(false)} 
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </RegionalAdminLayout>
   );
