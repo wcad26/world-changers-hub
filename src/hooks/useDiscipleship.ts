@@ -15,12 +15,12 @@ export type DiscipleshipRelationshipWithMembers = DiscipleshipRelationship & {
   mentor: { 
     id: string; 
     member_id: string;
-    profiles: { first_name: string; last_name: string } | null;
+    profiles: { first_name: string; last_name: string; phone?: string } | null;
   } | null;
   disciple: { 
     id: string; 
     member_id: string;
-    profiles: { first_name: string; last_name: string } | null;
+    profiles: { first_name: string; last_name: string; phone?: string } | null;
   } | null;
   progress?: DiscipleshipProgress[];
 };
@@ -115,7 +115,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
           mentor:members!mentor_id (
             id,
             member_id,
-            profiles (first_name, last_name)
+            profiles (first_name, last_name, phone)
           )
         `)
         .eq('disciple_id', memberId);
@@ -133,7 +133,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
           disciple:members!disciple_id (
             id,
             member_id,
-            profiles (first_name, last_name)
+            profiles (first_name, last_name, phone)
           )
         `)
         .eq('mentor_id', memberId);

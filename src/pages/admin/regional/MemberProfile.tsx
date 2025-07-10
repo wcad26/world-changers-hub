@@ -443,7 +443,20 @@ const MemberProfile: React.FC = () => {
                     {member.profiles?.emergency_contact_phone || 'Not provided'}
                   </p>
                 </div>
-                <div className="col-span-2"></div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Mentor</label>
+                  <p className="text-sm flex items-center gap-2">
+                    <User className="h-3 w-3" />
+                    {getMentorName()}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Mentor Telephone</label>
+                  <p className="text-sm flex items-center gap-2">
+                    <Phone className="h-3 w-3" />
+                    {discipleshipRelationships?.asDisciple?.find((rel: any) => rel.status === 'active')?.mentor?.profiles?.phone || 'Not provided'}
+                  </p>
+                </div>
               </div>
             </div>
 
