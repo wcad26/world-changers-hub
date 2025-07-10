@@ -238,11 +238,11 @@ const MemberProfile: React.FC = () => {
                       
                       {/* Chart Container */}
                       <div className="relative h-48 w-full">
-                        <svg className="w-full h-full" viewBox="0 0 400 180">
+                        <svg className="w-[90%] h-full mx-auto" viewBox="0 0 500 180">
                           {/* Grid lines */}
                           <defs>
-                            <pattern id="grid" width="40" height="36" patternUnits="userSpaceOnUse">
-                              <path d="M 40 0 L 0 0 0 36" fill="none" stroke="hsl(var(--muted-foreground))" strokeOpacity="0.1" strokeWidth="1"/>
+                            <pattern id="grid" width="50" height="36" patternUnits="userSpaceOnUse">
+                              <path d="M 50 0 L 0 0 0 36" fill="none" stroke="hsl(var(--muted-foreground))" strokeOpacity="0.1" strokeWidth="1"/>
                             </pattern>
                           </defs>
                           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -251,12 +251,12 @@ const MemberProfile: React.FC = () => {
                           {(() => {
                             const sortedData = [...impactTrend].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
                             const maxAttendance = Math.max(...sortedData.map(d => d.disciples_attended), 1);
-                            const xStep = 380 / Math.max(sortedData.length - 1, 1);
+                            const xStep = 460 / Math.max(sortedData.length - 1, 1);
                             
                             // Generate path for line
                             const pathData = sortedData.map((event, index) => {
-                              const x = 10 + (index * xStep);
-                              const y = 170 - ((event.disciples_attended / maxAttendance) * 140);
+                              const x = 20 + (index * xStep);
+                              const y = 160 - ((event.disciples_attended / maxAttendance) * 130);
                               return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
                             }).join(' ');
                             
@@ -266,8 +266,8 @@ const MemberProfile: React.FC = () => {
                                 {[0, Math.ceil(maxAttendance/2), maxAttendance].map((value, index) => (
                                   <g key={index}>
                                     <text 
-                                      x="5" 
-                                      y={175 - (index * 70)} 
+                                      x="10" 
+                                      y={165 - (index * 65)} 
                                       textAnchor="middle" 
                                       className="text-xs fill-muted-foreground"
                                       fontSize="10"
@@ -290,8 +290,8 @@ const MemberProfile: React.FC = () => {
                                 
                                 {/* Data points */}
                                 {sortedData.map((event, index) => {
-                                  const x = 10 + (index * xStep);
-                                  const y = 170 - ((event.disciples_attended / maxAttendance) * 140);
+                                  const x = 20 + (index * xStep);
+                                  const y = 160 - ((event.disciples_attended / maxAttendance) * 130);
                                   const color = event.mentor_attended ? '#22c55e' : '#ef4444';
                                   
                                   return (
@@ -308,21 +308,21 @@ const MemberProfile: React.FC = () => {
                                         <title>{`${event.event_name}: ${event.disciples_attended} disciples attended${event.mentor_attended ? ' (You attended)' : ' (You missed)'}`}</title>
                                       </circle>
                                       
-                                      {/* Event date labels (every other point to avoid crowding) */}
-                                      {index % 2 === 0 && (
+                                      {/* Event date labels (show more labels with better spacing) */}
+                                      {sortedData.length <= 8 || index % Math.ceil(sortedData.length / 6) === 0 ? (
                                         <text
                                           x={x}
-                                          y="175"
+                                          y="170"
                                           textAnchor="middle"
                                           className="text-xs fill-muted-foreground"
                                           fontSize="9"
                                         >
-                                          {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                        </text>
-                                      )}
-                                    </g>
-                                  );
-                                })}
+                                           {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                         </text>
+                                       ) : null}
+                                     </g>
+                                   );
+                                 })}
                               </g>
                             );
                           })()}
