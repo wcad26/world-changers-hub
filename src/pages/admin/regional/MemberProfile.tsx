@@ -249,7 +249,7 @@ const MemberProfile: React.FC = () => {
                       
                       {/* Chart Container */}
                       <div className="relative h-48 w-full">
-                        <svg className="w-[90%] h-full mx-auto" viewBox="0 0 500 180">
+                        <svg className="w-full h-full" viewBox="0 0 500 180">
                           {/* Grid lines */}
                           <defs>
                             <pattern id="grid" width="50" height="36" patternUnits="userSpaceOnUse">
@@ -262,11 +262,12 @@ const MemberProfile: React.FC = () => {
                           {(() => {
                             const sortedData = [...impactTrend].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
                             const maxAttendance = Math.max(...sortedData.map(d => d.disciples_attended), 1);
-                            const xStep = 460 / Math.max(sortedData.length - 1, 1);
+                            const xStep = 480 / Math.max(sortedData.length - 1, 1);
+                            const leftMargin = 10;
                             
                             // Generate path for line
                             const pathData = sortedData.map((event, index) => {
-                              const x = 20 + (index * xStep);
+                              const x = leftMargin + (index * xStep);
                               const y = 160 - ((event.disciples_attended / maxAttendance) * 130);
                               return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
                             }).join(' ');
@@ -277,7 +278,7 @@ const MemberProfile: React.FC = () => {
                                 {[0, Math.ceil(maxAttendance/2), maxAttendance].map((value, index) => (
                                   <g key={index}>
                                     <text 
-                                      x="10" 
+                                      x="5"
                                       y={165 - (index * 65)} 
                                       textAnchor="middle" 
                                       className="text-xs fill-muted-foreground"
@@ -301,7 +302,7 @@ const MemberProfile: React.FC = () => {
                                 
                                 {/* Data points */}
                                 {sortedData.map((event, index) => {
-                                  const x = 20 + (index * xStep);
+                                  const x = leftMargin + (index * xStep);
                                   const y = 160 - ((event.disciples_attended / maxAttendance) * 130);
                                   const color = event.mentor_attended ? '#22c55e' : '#ef4444';
                                   
