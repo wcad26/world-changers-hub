@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, LineChart } from "@/components/ui/chart";
-import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Eye } from 'lucide-react';
+import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Pen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ const Members: React.FC = () => {
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isRegisterDialogOpen, setRegisterDialogOpen] = React.useState(false);
+  const [editMember, setEditMember] = React.useState<MemberWithProfile | null>(null);
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
@@ -169,6 +171,24 @@ const Members: React.FC = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Edit Member Dialog */}
+        <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Member</DialogTitle>
+              <DialogDescription>
+                Update member information and details.
+              </DialogDescription>
+            </DialogHeader>
+            {editMember && (
+              <EditMemberForm 
+                member={editMember} 
+                onSuccess={() => setEditMember(null)} 
+              />
+            )}
+          </DialogContent>
+        </Dialog>
         
         <Tabs defaultValue="overview">
           <TabsList>
@@ -262,9 +282,13 @@ const Members: React.FC = () => {
                         <TableRow><TableCell colSpan={6} className="text-center">Loading members...</TableCell></TableRow>
                       ) : membersError ? (
                          <TableRow><TableCell colSpan={6} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
-                      ) : filteredMembers.length > 0 ? (
+                       ) : filteredMembers.length > 0 ? (
                         filteredMembers.map(member => (
-                          <TableRow key={member.id}>
+                          <TableRow 
+                            key={member.id} 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                          >
                             <TableCell className="font-medium">
                               {member.profiles?.first_name} {member.profiles?.last_name}
                             </TableCell>
@@ -280,9 +304,12 @@ const Members: React.FC = () => {
                               <Button 
                                 variant="ghost" 
                                 size="sm"
-                                onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditMember(member);
+                                }}
                               >
-                                <Eye className="h-4 w-4" />
+                                <Pen className="h-4 w-4" />
                               </Button>
                             </TableCell>
                           </TableRow>
