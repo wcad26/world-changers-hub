@@ -138,3 +138,73 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
     enabled: !!regionId
   });
 };
+
+// Hook to get attendance stats for a specific member
+export const useMemberAttendanceStats = (memberId?: string, regionId?: string) => {
+  return useQuery({
+    queryKey: ['member_attendance_stats', memberId, regionId],
+    queryFn: async () => {
+      if (!memberId || !regionId) return null;
+      
+      // Get all attendance records for this member in this region
+      const { data, error } = await supabase
+        .from('attendance_records')
+        .select(`
+          is_present,
+          attendance_events!inner (
+            id,
+            name,
+            event_date,
+            region_id
+          )
+        `)
+        .eq('member_id', memberId)
+        .eq('attendance_events.region_id', regionId);
+      
+      if (error) throw error;
+      
+      const totalEvents = data?.length || 0;
+      const eventsAttended = data?.filter(record => record.is_present).length || 0;
+      const attendanceRate = totalEvents > 0 ? (eventsAttended / totalEvents) * 100 : 0;
+      
+      // Calculate this month's attendance
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const thisMonthRecords = data?.filter(record => {
+        const eventDate = new Date(record.attendance_events.event_date);
+        return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
+      }) || [];
+      
+      const thisMonthTotal = thisMonthRecords.length;
+      const thisMonthAttended = thisMonthRecords.filter(record => record.is_present).length;
+      const thisMonthRate = thisMonthTotal > 0 ? (thisMonthAttended / thisMonthTotal) * 100 : 0;
+      
+      // Calculate last month's attendance for comparison
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+      
+      const lastMonthRecords = data?.filter(record => {
+        const eventDate = new Date(record.attendance_events.event_date);
+        return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
+      }) || [];
+      
+      const lastMonthTotal = lastMonthRecords.length;
+      const lastMonthAttended = lastMonthRecords.filter(record => record.is_present).length;
+      const lastMonthRate = lastMonthTotal > 0 ? (lastMonthAttended / lastMonthTotal) * 100 : 0;
+      
+      const monthlyChange = thisMonthRate - lastMonthRate;
+      
+      return {
+        totalEvents,
+        eventsAttended,
+        attendanceRate,
+        thisMonthAttended,
+        thisMonthTotal,
+        thisMonthRate,
+        monthlyChange
+      };
+    },
+    enabled: !!memberId && !!regionId
+  });
+};

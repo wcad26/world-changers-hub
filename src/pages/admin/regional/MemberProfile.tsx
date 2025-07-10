@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth.tsx';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
+import { useMemberAttendanceStats } from '@/hooks/useAttendance';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -30,6 +31,9 @@ const MemberProfile: React.FC = () => {
   const { data: discipleshipStats } = useMemberDiscipleshipStats(member?.id);
   const { data: impactTrend } = useDiscipleshipImpactTrend(member?.id, userRegion?.id);
   const { data: discipleshipRelationships } = useMemberDiscipleshipRelationships(member?.id);
+  
+  // Fetch real attendance data
+  const { data: attendanceStats } = useMemberAttendanceStats(member?.id, userRegion?.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -203,14 +207,27 @@ const MemberProfile: React.FC = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-2xl font-bold text-primary">12</div>
-                  <div className="text-xs text-muted-foreground">Total Events</div>
-                  <div className="text-xs text-green-600">Attended</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {attendanceStats?.eventsAttended || 0}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Events Attended</div>
+                  <div className="text-xs text-green-600">
+                    of {attendanceStats?.totalEvents || 0} total
+                  </div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-2xl font-bold text-primary">85%</div>
+                  <div className="text-2xl font-bold text-primary">
+                    {attendanceStats?.attendanceRate ? `${Math.round(attendanceStats.attendanceRate)}%` : '0%'}
+                  </div>
                   <div className="text-xs text-muted-foreground">Attendance Rate</div>
-                  <div className="text-xs text-green-600">+5% this month</div>
+                  <div className={`text-xs ${
+                    (attendanceStats?.monthlyChange || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {attendanceStats?.monthlyChange ? 
+                      `${attendanceStats.monthlyChange >= 0 ? '+' : ''}${Math.round(attendanceStats.monthlyChange)}% this month` : 
+                      'No change'
+                    }
+                  </div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <div className="text-2xl font-bold text-primary">
