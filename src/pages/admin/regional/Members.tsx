@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, LineChart } from "@/components/ui/chart";
-import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Pen, Heart } from 'lucide-react';
+import { PlusCircle, Download, Search, Users, CalendarCheck2, BarChartHorizontal, Pen, Heart, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
@@ -134,6 +134,75 @@ const Members: React.FC = () => {
     };
   }, [attendanceWithTypes]);
 
+  // Calculate growth trends for the cards
+  const growthTrends = React.useMemo(() => {
+    if (!attendanceWithTypes || attendanceWithTypes.length < 2) {
+      return {
+        memberGrowth: 0,
+        visitorGrowth: 0,
+        avgAttendanceGrowth: 0,
+        lastEventGrowth: 0
+      };
+    }
+
+    // Get recent vs previous period data
+    const recentEvents = attendanceWithTypes.slice(0, Math.ceil(attendanceWithTypes.length / 2));
+    const previousEvents = attendanceWithTypes.slice(Math.ceil(attendanceWithTypes.length / 2));
+
+    if (recentEvents.length === 0 || previousEvents.length === 0) {
+      return {
+        memberGrowth: 0,
+        visitorGrowth: 0,
+        avgAttendanceGrowth: 0,
+        lastEventGrowth: 0
+      };
+    }
+
+    // Calculate averages for recent vs previous periods
+    const recentAvgMembers = recentEvents.reduce((sum, e) => sum + e.members_present, 0) / recentEvents.length;
+    const previousAvgMembers = previousEvents.reduce((sum, e) => sum + e.members_present, 0) / previousEvents.length;
+    
+    const recentAvgVisitors = recentEvents.reduce((sum, e) => sum + e.visitors_present, 0) / recentEvents.length;
+    const previousAvgVisitors = previousEvents.reduce((sum, e) => sum + e.visitors_present, 0) / previousEvents.length;
+
+    const recentAvgTotal = recentEvents.reduce((sum, e) => sum + e.total_present, 0) / recentEvents.length;
+    const previousAvgTotal = previousEvents.reduce((sum, e) => sum + e.total_present, 0) / previousEvents.length;
+
+    // Calculate growth percentages
+    const memberGrowth = previousAvgMembers > 0 ? Math.round(((recentAvgMembers - previousAvgMembers) / previousAvgMembers) * 100) : 0;
+    const visitorGrowth = previousAvgVisitors > 0 ? Math.round(((recentAvgVisitors - previousAvgVisitors) / previousAvgVisitors) * 100) : 0;
+    const avgAttendanceGrowth = previousAvgTotal > 0 ? Math.round(((recentAvgTotal - previousAvgTotal) / previousAvgTotal) * 100) : 0;
+
+    // For last event growth, compare with previous event
+    const lastEventGrowth = attendanceWithTypes.length > 1 ? 
+      Math.round(((attendanceWithTypes[0].total_present - attendanceWithTypes[1].total_present) / attendanceWithTypes[1].total_present) * 100) : 0;
+
+    return {
+      memberGrowth,
+      visitorGrowth,
+      avgAttendanceGrowth,
+      lastEventGrowth
+    };
+  }, [attendanceWithTypes]);
+
+  // Component for percentage indicator
+  const PercentageIndicator = ({ percentage }: { percentage: number }) => {
+    if (percentage === 0) return null;
+    
+    const isPositive = percentage > 0;
+    const Icon = isPositive ? TrendingUp : TrendingDown;
+    const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
+    
+    return (
+      <div className={`flex items-center gap-1 ${colorClass}`}>
+        <Icon className="h-3 w-3" />
+        <span className="text-xs font-medium">
+          {isPositive ? '+' : ''}{percentage}%
+        </span>
+      </div>
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -210,7 +279,10 @@ const Members: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalMembers}</div>
-                  <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+                    <PercentageIndicator percentage={growthTrends.memberGrowth} />
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -220,7 +292,10 @@ const Members: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalVisitors}</div>
-                  <p className="text-xs text-muted-foreground">{inactiveVisitors} inactive visitors</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{inactiveVisitors} inactive visitors</p>
+                    <PercentageIndicator percentage={growthTrends.visitorGrowth} />
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -230,9 +305,12 @@ const Members: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{attendanceSummary.avgAttendance}</div>
-                   <p className="text-xs text-muted-foreground">
-                    {attendanceHistory ? `${attendanceHistory.length} events recorded` : 'No events recorded'}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {attendanceHistory ? `${attendanceHistory.length} events recorded` : 'No events recorded'}
+                    </p>
+                    <PercentageIndicator percentage={growthTrends.avgAttendanceGrowth} />
+                  </div>
                 </CardContent>
               </Card>
               <Card>
@@ -242,9 +320,12 @@ const Members: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.total_present || 0}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {attendanceSummary.lastEvent ? `on ${new Date(attendanceSummary.lastEvent.event_date).toLocaleDateString()}` : 'N/A'}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {attendanceSummary.lastEvent ? `on ${new Date(attendanceSummary.lastEvent.event_date).toLocaleDateString()}` : 'N/A'}
+                    </p>
+                    <PercentageIndicator percentage={growthTrends.lastEventGrowth} />
+                  </div>
                 </CardContent>
               </Card>
             </div>
