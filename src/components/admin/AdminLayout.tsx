@@ -91,7 +91,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
         </Sidebar>
 
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="bg-white dark:bg-gray-900 shadow z-10">
+          <header className="sticky top-0 bg-white dark:bg-gray-900 shadow z-20">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
                 <SidebarTrigger className="p-1">
