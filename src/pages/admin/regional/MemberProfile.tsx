@@ -13,6 +13,7 @@ import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
+import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -133,8 +134,24 @@ const MemberProfile: React.FC = () => {
             <CardContent className="space-y-6">
               {/* Avatar and Basic Info */}
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary">
-                  {getInitials(member.profiles?.first_name, member.profiles?.last_name)}
+                <div className="relative">
+                  {member.photo_url ? (
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-muted">
+                      <img 
+                        src={member.photo_url} 
+                        alt={`${member.profiles?.first_name} ${member.profiles?.last_name}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary">
+                      {getInitials(member.profiles?.first_name, member.profiles?.last_name)}
+                    </div>
+                  )}
+                  <MemberPhotoUpload 
+                    memberId={member.id}
+                    currentPhotoUrl={member.photo_url}
+                  />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">

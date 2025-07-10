@@ -766,6 +766,7 @@ export type Database = {
           member_type: string
           membership_class_completed: boolean | null
           notes: string | null
+          photo_url: string | null
           preferred_service_areas: string[] | null
           profile_id: string | null
           region_id: string
@@ -783,6 +784,7 @@ export type Database = {
           member_type?: string
           membership_class_completed?: boolean | null
           notes?: string | null
+          photo_url?: string | null
           preferred_service_areas?: string[] | null
           profile_id?: string | null
           region_id: string
@@ -800,6 +802,7 @@ export type Database = {
           member_type?: string
           membership_class_completed?: boolean | null
           notes?: string | null
+          photo_url?: string | null
           preferred_service_areas?: string[] | null
           profile_id?: string | null
           region_id?: string
