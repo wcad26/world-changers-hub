@@ -144,7 +144,12 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
   return useQuery({
     queryKey: ['member_attendance_stats', memberId, regionId],
     queryFn: async () => {
-      if (!memberId || !regionId) return null;
+      if (!memberId || !regionId) {
+        console.log('useMemberAttendanceStats: Missing memberId or regionId', { memberId, regionId });
+        return null;
+      }
+      
+      console.log('useMemberAttendanceStats: Querying for', { memberId, regionId });
       
       // Get all attendance records for this member in this region
       const { data, error } = await supabase
@@ -162,11 +167,23 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
         .eq('attendance_events.region_id', regionId)
         .order('attendance_events.event_date', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('useMemberAttendanceStats: Query error', error);
+        throw error;
+      }
+      
+      console.log('useMemberAttendanceStats: Raw data from query', { data, dataLength: data?.length });
       
       const totalEvents = data?.length || 0;
       const eventsAttended = data?.filter(record => record.is_present).length || 0;
       const attendanceRate = totalEvents > 0 ? (eventsAttended / totalEvents) * 100 : 0;
+      
+      console.log('useMemberAttendanceStats: Calculated stats', { 
+        totalEvents, 
+        eventsAttended, 
+        attendanceRate,
+        presentRecords: data?.filter(record => record.is_present) 
+      });
       
       // Calculate this month's attendance
       const currentMonth = new Date().getMonth();
