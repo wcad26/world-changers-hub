@@ -164,32 +164,37 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
           )
         `)
         .eq('member_id', memberId)
-        .eq('attendance_events.region_id', regionId)
-        .order('attendance_events.event_date', { ascending: false });
+        .eq('attendance_events.region_id', regionId);
       
       if (error) {
         console.error('useMemberAttendanceStats: Query error', error);
         throw error;
       }
       
-      console.log('useMemberAttendanceStats: Raw data from query', { data, dataLength: data?.length });
+      // Sort by event date descending after fetching
+      const sortedData = data?.sort((a, b) => 
+        new Date(b.attendance_events.event_date).getTime() - 
+        new Date(a.attendance_events.event_date).getTime()
+      );
       
-      const totalEvents = data?.length || 0;
-      const eventsAttended = data?.filter(record => record.is_present).length || 0;
+      console.log('useMemberAttendanceStats: Raw data from query', { data: sortedData, dataLength: sortedData?.length });
+      
+      const totalEvents = sortedData?.length || 0;
+      const eventsAttended = sortedData?.filter(record => record.is_present).length || 0;
       const attendanceRate = totalEvents > 0 ? (eventsAttended / totalEvents) * 100 : 0;
       
       console.log('useMemberAttendanceStats: Calculated stats', { 
         totalEvents, 
         eventsAttended, 
         attendanceRate,
-        presentRecords: data?.filter(record => record.is_present) 
+        presentRecords: sortedData?.filter(record => record.is_present) 
       });
       
       // Calculate this month's attendance
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       
-      const thisMonthRecords = data?.filter(record => {
+      const thisMonthRecords = sortedData?.filter(record => {
         const eventDate = new Date(record.attendance_events.event_date);
         return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
       }) || [];
@@ -202,7 +207,7 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
       
-      const lastMonthRecords = data?.filter(record => {
+      const lastMonthRecords = sortedData?.filter(record => {
         const eventDate = new Date(record.attendance_events.event_date);
         return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
       }) || [];
@@ -214,12 +219,12 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
       const monthlyChange = thisMonthRate - lastMonthRate;
       
       // Calculate activity status based on last 3 events
-      const last3Events = data?.slice(0, 3) || [];
+      const last3Events = sortedData?.slice(0, 3) || [];
       const isActiveBasedOnAttendance = last3Events.length < 3 || 
         last3Events.some(record => record.is_present);
       
       // Get the last attended event date
-      const lastAttendedEvent = data?.find(record => record.is_present);
+      const lastAttendedEvent = sortedData?.find(record => record.is_present);
       const lastActiveDate = lastAttendedEvent ? lastAttendedEvent.attendance_events.event_date : null;
       
       return {
