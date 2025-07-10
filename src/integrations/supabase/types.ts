@@ -315,6 +315,112 @@ export type Database = {
           },
         ]
       }
+      discipleship_progress: {
+        Row: {
+          achieved_date: string | null
+          created_at: string | null
+          id: string
+          milestone: Database["public"]["Enums"]["discipleship_milestone"]
+          notes: string | null
+          recorded_by: string | null
+          relationship_id: string
+        }
+        Insert: {
+          achieved_date?: string | null
+          created_at?: string | null
+          id?: string
+          milestone: Database["public"]["Enums"]["discipleship_milestone"]
+          notes?: string | null
+          recorded_by?: string | null
+          relationship_id: string
+        }
+        Update: {
+          achieved_date?: string | null
+          created_at?: string | null
+          id?: string
+          milestone?: Database["public"]["Enums"]["discipleship_milestone"]
+          notes?: string | null
+          recorded_by?: string | null
+          relationship_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discipleship_progress_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discipleship_progress_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "discipleship_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discipleship_relationships: {
+        Row: {
+          created_at: string | null
+          disciple_id: string
+          end_date: string | null
+          id: string
+          mentor_id: string
+          notes: string | null
+          region_id: string
+          start_date: string | null
+          status: Database["public"]["Enums"]["discipleship_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          disciple_id: string
+          end_date?: string | null
+          id?: string
+          mentor_id: string
+          notes?: string | null
+          region_id: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["discipleship_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          disciple_id?: string
+          end_date?: string | null
+          id?: string
+          mentor_id?: string
+          notes?: string | null
+          region_id?: string
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["discipleship_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discipleship_relationships_disciple_id_fkey"
+            columns: ["disciple_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discipleship_relationships_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discipleship_relationships_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string | null
@@ -879,6 +985,15 @@ export type Database = {
           absent_count: number
         }[]
       }
+      get_discipleship_impact_trend: {
+        Args: { _member_id: string; _region_id: string }
+        Returns: {
+          event_date: string
+          event_name: string
+          mentor_attended: boolean
+          disciples_attended: number
+        }[]
+      }
       get_global_attendance_summary: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -886,6 +1001,15 @@ export type Database = {
           total_present: number
           total_events: number
           avg_attendance: number
+        }[]
+      }
+      get_member_discipleship_stats: {
+        Args: { _member_id: string }
+        Returns: {
+          total_disciples: number
+          active_disciples: number
+          completed_disciples: number
+          success_rate: number
         }[]
       }
       get_region_from_dcg: {
@@ -923,6 +1047,14 @@ export type Database = {
         | "failed"
         | "cancelled"
       dcg_member_role: "Leader" | "Assistant" | "Member"
+      discipleship_milestone:
+        | "first_visit"
+        | "second_visit"
+        | "committed"
+        | "baptized"
+        | "became_member"
+        | "serving"
+      discipleship_status: "active" | "completed" | "transferred" | "inactive"
       event_category:
         | "Conference"
         | "Worship"
@@ -1082,6 +1214,15 @@ export const Constants = {
         "cancelled",
       ],
       dcg_member_role: ["Leader", "Assistant", "Member"],
+      discipleship_milestone: [
+        "first_visit",
+        "second_visit",
+        "committed",
+        "baptized",
+        "became_member",
+        "serving",
+      ],
+      discipleship_status: ["active", "completed", "transferred", "inactive"],
       event_category: [
         "Conference",
         "Worship",
