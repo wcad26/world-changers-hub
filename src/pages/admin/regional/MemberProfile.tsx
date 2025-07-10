@@ -178,9 +178,16 @@ const MemberProfile: React.FC = () => {
                 <Badge className={getStatusColor(member.status || 'new')}>
                   {member.status || 'new'}
                 </Badge>
-                <Badge variant="outline" className="bg-background">
+                <Badge 
+                  variant="outline" 
+                  className={`bg-background ${
+                    member.status === 'active' 
+                      ? 'text-green-600 border-green-200' 
+                      : 'text-red-600 border-red-200'
+                  }`}
+                >
                   <Shield className="h-3 w-3 mr-1" />
-                  {member.status === 'active' ? 'Active Member' : 'New Member'}
+                  {member.status === 'active' ? 'Active Member' : 'Inactive Member'}
                 </Badge>
               </div>
             </CardContent>
