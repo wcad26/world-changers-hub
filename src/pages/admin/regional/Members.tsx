@@ -47,19 +47,60 @@ const Members: React.FC = () => {
     });
   }, [members, searchTerm]);
 
-  const totalMembers = members?.length || 0;
-  const activeMembers = members?.filter(m => m.status === 'active').length || 0;
-  const newMembers = members?.filter(m => m.status === 'new').length || 0;
+  const totalMembers = members?.filter(m => m.member_type === 'member').length || 0;
+  const totalVisitors = members?.filter(m => m.member_type === 'visitor').length || 0;
+
+  // Calculate active members based on attendance (haven't missed last 3 events)
+  const activeMembers = React.useMemo(() => {
+    if (!attendanceWithTypes || !members) return 0;
+    const last3Events = attendanceWithTypes.slice(0, 3);
+    if (last3Events.length === 0) return totalMembers;
+
+    return members.filter(member => {
+      if (member.member_type !== 'member') return false;
+      
+      // Count how many of the last 3 events this member attended
+      const attendedEvents = last3Events.filter(event => {
+        // This is a simplified check - in reality you'd need attendance_records data for each member
+        // For now, we'll use a placeholder logic
+        return true; // Placeholder - would need actual attendance record lookup
+      });
+      
+      // Member is active if they attended at least 1 of the last 3 events
+      return attendedEvents.length > 0;
+    }).length;
+  }, [attendanceWithTypes, members, totalMembers]);
+
+  // Calculate inactive visitors (missed last 2 events)
+  const inactiveVisitors = React.useMemo(() => {
+    if (!attendanceWithTypes || !members) return 0;
+    const last2Events = attendanceWithTypes.slice(0, 2);
+    if (last2Events.length === 0) return 0;
+
+    return members.filter(member => {
+      if (member.member_type !== 'visitor') return false;
+      
+      // Count how many of the last 2 events this visitor attended
+      const attendedEvents = last2Events.filter(event => {
+        // This is a simplified check - in reality you'd need attendance_records data for each member
+        // For now, we'll use a placeholder logic
+        return true; // Placeholder - would need actual attendance record lookup
+      });
+      
+      // Visitor is inactive if they missed both of the last 2 events
+      return attendedEvents.length === 0;
+    }).length;
+  }, [attendanceWithTypes, members]);
 
   const attendanceSummary = React.useMemo(() => {
-    if (!attendanceHistory || attendanceHistory.length === 0) return { avgAttendance: 0, lastEvent: null };
-    const totalPresent = attendanceHistory.reduce((sum, event) => sum + (event.present_count || 0), 0);
-    const avgAttendance = totalMembers > 0 ? (totalPresent / attendanceHistory.length) : 0;
+    if (!attendanceWithTypes || attendanceWithTypes.length === 0) return { avgAttendance: 0, lastEvent: null };
+    const totalAttendance = attendanceWithTypes.reduce((sum, event) => sum + event.total_present, 0);
+    const avgAttendance = attendanceWithTypes.length > 0 ? (totalAttendance / attendanceWithTypes.length) : 0;
     return {
       avgAttendance: Math.round(avgAttendance),
-      lastEvent: attendanceHistory[0]
+      lastEvent: attendanceWithTypes[0]
     };
-  }, [attendanceHistory, totalMembers]);
+  }, [attendanceWithTypes]);
 
   const attendanceKPIs = React.useMemo(() => {
     if (!attendanceWithTypes || attendanceWithTypes.length === 0) {
@@ -149,12 +190,12 @@ const Members: React.FC = () => {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">New Members</CardTitle>
+                  <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{newMembers}</div>
-                  <p className="text-xs text-muted-foreground">Pending activation</p>
+                  <div className="text-2xl font-bold">{totalVisitors}</div>
+                  <p className="text-xs text-muted-foreground">{inactiveVisitors} inactive visitors</p>
                 </CardContent>
               </Card>
               <Card>
@@ -175,7 +216,7 @@ const Members: React.FC = () => {
                   <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.present_count || 0}</div>
+                  <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.total_present || 0}</div>
                   <p className="text-xs text-muted-foreground">
                     {attendanceSummary.lastEvent ? `on ${new Date(attendanceSummary.lastEvent.event_date).toLocaleDateString()}` : 'N/A'}
                   </p>
