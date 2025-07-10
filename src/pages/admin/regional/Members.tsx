@@ -187,9 +187,17 @@ const Members: React.FC = () => {
 
   // Component for percentage indicator
   const PercentageIndicator = ({ percentage }: { percentage: number }) => {
-    if (percentage === 0) return null;
-    
     const isPositive = percentage > 0;
+    const isNegative = percentage < 0;
+    
+    if (percentage === 0) {
+      return (
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <span className="text-xs font-medium">0%</span>
+        </div>
+      );
+    }
+    
     const Icon = isPositive ? TrendingUp : TrendingDown;
     const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
     
