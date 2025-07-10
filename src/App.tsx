@@ -23,6 +23,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
 import RegionalMembers from "./pages/admin/regional/Members";
+import RegionalMemberProfile from "./pages/admin/regional/MemberProfile";
 import RegionalEvents from "./pages/admin/regional/Events";
 import RegionalFundraising from "./pages/admin/regional/Fundraising";
 import RegionalLocations from "./pages/admin/regional/Locations";
@@ -106,6 +107,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
                   <RegionalMembers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/members/:memberId" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalMemberProfile />
                 </ProtectedRoute>
               } 
             />

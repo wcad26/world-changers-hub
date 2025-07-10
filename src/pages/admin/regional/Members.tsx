@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,12 +26,12 @@ import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 
 const Members: React.FC = () => {
+  const navigate = useNavigate();
   const { userRegion } = useAuth();
   const { data: members, isLoading: isLoadingMembers, error: membersError } = useMembers(userRegion?.id);
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isRegisterDialogOpen, setRegisterDialogOpen] = React.useState(false);
-  const [selectedMember, setSelectedMember] = React.useState<MemberWithProfile | null>(null);
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
@@ -69,70 +70,6 @@ const Members: React.FC = () => {
     }
   };
 
-  const MemberDetailsDialog = ({ member }: { member: MemberWithProfile }) => (
-    <DialogContent className="sm:max-w-[600px]">
-      <DialogHeader>
-        <DialogTitle>
-          {member.profiles?.first_name} {member.profiles?.last_name}
-        </DialogTitle>
-        <DialogDescription>
-          Member ID: {member.member_id}
-        </DialogDescription>
-      </DialogHeader>
-      <div className="grid gap-4 py-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Email</h4>
-            <p className="text-sm">{member.profiles?.email || 'N/A'}</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Phone</h4>
-            <p className="text-sm">{member.profiles?.phone || 'N/A'}</p>
-          </div>
-        </div>
-        <div>
-          <h4 className="font-medium text-sm text-gray-500 mb-1">Address</h4>
-          <p className="text-sm">{member.profiles?.address || 'N/A'}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Date of Birth</h4>
-            <p className="text-sm">{member.profiles?.date_of_birth ? new Date(member.profiles.date_of_birth).toLocaleDateString() : 'N/A'}</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Gender</h4>
-            <p className="text-sm capitalize">{member.profiles?.gender || 'N/A'}</p>
-          </div>
-        </div>
-        <div>
-          <h4 className="font-medium text-sm text-gray-500 mb-1">Occupation</h4>
-          <p className="text-sm">{member.profiles?.occupation || 'N/A'}</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Emergency Contact</h4>
-            <p className="text-sm">{member.profiles?.emergency_contact_name || 'N/A'}</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Emergency Phone</h4>
-            <p className="text-sm">{member.profiles?.emergency_contact_phone || 'N/A'}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Status</h4>
-            <Badge className={getStatusColor(member.status || 'new')}>
-              {member.status || 'new'}
-            </Badge>
-          </div>
-          <div>
-            <h4 className="font-medium text-sm text-gray-500 mb-1">Join Date</h4>
-            <p className="text-sm">{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</p>
-          </div>
-        </div>
-      </div>
-    </DialogContent>
-  );
 
   return (
     <RegionalAdminLayout>
@@ -269,14 +206,13 @@ const Members: React.FC = () => {
                             </TableCell>
                             <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
                             <TableCell>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <MemberDetailsDialog member={member} />
-                              </Dialog>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
@@ -321,12 +257,6 @@ const Members: React.FC = () => {
         </Tabs>
       </div>
 
-      {/* Member Details Dialog */}
-      {selectedMember && (
-        <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
-          <MemberDetailsDialog member={selectedMember} />
-        </Dialog>
-      )}
     </RegionalAdminLayout>
   );
 };
