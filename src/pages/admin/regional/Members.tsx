@@ -410,70 +410,9 @@ const Members: React.FC = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Member Attendance Trend */}
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle>Member Attendance Trend</CardTitle>
-                <CardDescription>Track member attendance over time across events.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingWithTypes ? (
-                  <div className="h-[300px] flex items-center justify-center">
-                    <p>Loading member trend data...</p>
-                  </div>
-                ) : attendanceWithTypes && attendanceWithTypes.length > 0 ? (
-                  <div className="h-[300px] w-full">
-                    <LineChart
-                      data={attendanceWithTypes}
-                      index="date"
-                      categories={["members_present"]}
-                      colors={["#3b82f6"]}
-                      valueFormatter={(value) => `${value} members`}
-                      className="h-full w-full"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center">
-                    <p className="text-muted-foreground">No member attendance data available.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Visitor Attendance Trend */}
-            <Card className="animate-fade-in">
-              <CardHeader>
-                <CardTitle>Visitor Attendance Trend</CardTitle>
-                <CardDescription>Track visitor attendance over time across events.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoadingWithTypes ? (
-                  <div className="h-[300px] flex items-center justify-center">
-                    <p>Loading visitor trend data...</p>
-                  </div>
-                ) : attendanceWithTypes && attendanceWithTypes.length > 0 ? (
-                  <div className="h-[300px] w-full">
-                    <LineChart
-                      data={attendanceWithTypes}
-                      index="date"
-                      categories={["visitors_present"]}
-                      colors={["#10b981"]}
-                      valueFormatter={(value) => `${value} visitors`}
-                      className="h-full w-full"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-[300px] flex items-center justify-center">
-                    <p className="text-muted-foreground">No visitor attendance data available.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>
-
     </RegionalAdminLayout>
   );
 };
