@@ -283,7 +283,7 @@ const Members: React.FC = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalMembers}</div>
@@ -296,7 +296,7 @@ const Members: React.FC = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalVisitors}</div>
@@ -309,7 +309,7 @@ const Members: React.FC = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Avg. Event Attendance</CardTitle>
-                  <CalendarCheck2 className="h-4 w-4 text-muted-foreground" />
+                  <CalendarCheck2 className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{attendanceSummary.avgAttendance}</div>
@@ -324,7 +324,7 @@ const Members: React.FC = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Last Event Turnout</CardTitle>
-                  <BarChartHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <BarChartHorizontal className="h-4 w-4 text-orange-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.total_present || 0}</div>
