@@ -185,13 +185,13 @@ const MemberProfile: React.FC = () => {
                 <Badge 
                   variant="outline" 
                   className={`bg-background ${
-                    member.status === 'active' 
+                    attendanceStats?.isActiveBasedOnAttendance 
                       ? 'text-green-600 border-green-200' 
                       : 'text-red-600 border-red-200'
                   }`}
                 >
                   <Shield className="h-3 w-3 mr-1" />
-                  {member.status === 'active' ? 'Active Member' : 'Inactive Member'}
+                  {attendanceStats?.isActiveBasedOnAttendance ? 'Active Member' : 'Inactive Member'}
                 </Badge>
               </div>
             </CardContent>

@@ -159,7 +159,8 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
           )
         `)
         .eq('member_id', memberId)
-        .eq('attendance_events.region_id', regionId);
+        .eq('attendance_events.region_id', regionId)
+        .order('attendance_events.event_date', { ascending: false });
       
       if (error) throw error;
       
@@ -195,6 +196,11 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
       
       const monthlyChange = thisMonthRate - lastMonthRate;
       
+      // Calculate activity status based on last 3 events
+      const last3Events = data?.slice(0, 3) || [];
+      const isActiveBasedOnAttendance = last3Events.length < 3 || 
+        last3Events.some(record => record.is_present);
+      
       return {
         totalEvents,
         eventsAttended,
@@ -202,7 +208,13 @@ export const useMemberAttendanceStats = (memberId?: string, regionId?: string) =
         thisMonthAttended,
         thisMonthTotal,
         thisMonthRate,
-        monthlyChange
+        monthlyChange,
+        isActiveBasedOnAttendance,
+        last3EventsAttendance: last3Events.map(record => ({
+          eventName: record.attendance_events.name,
+          eventDate: record.attendance_events.event_date,
+          isPresent: record.is_present
+        }))
       };
     },
     enabled: !!memberId && !!regionId
