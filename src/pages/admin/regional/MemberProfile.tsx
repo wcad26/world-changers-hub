@@ -170,113 +170,163 @@ const MemberProfile: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Member Details Card */}
+          {/* Member Attendance Summary Dashboard */}
           <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle className="text-lg">Member Details</CardTitle>
-              <p className="text-sm text-muted-foreground">Personal information and member data</p>
+              <CardTitle className="text-lg">Attendance & Impact Summary</CardTitle>
+              <p className="text-sm text-muted-foreground">Track member's engagement and discipleship impact</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">Personal Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Date of Birth</label>
-                    <p className="text-sm">
-                      {member.profiles?.date_of_birth 
-                        ? new Date(member.profiles.date_of_birth).toLocaleDateString() 
-                        : 'Not provided'
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Gender</label>
-                    <p className="text-sm capitalize">{member.profiles?.gender || 'Not provided'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Occupation</label>
-                    <p className="text-sm flex items-center gap-2">
-                      <Briefcase className="h-3 w-3" />
-                      {member.profiles?.occupation || 'Not provided'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Last Active</label>
-                    <p className="text-sm">
-                      {member.updated_at 
-                        ? new Date(member.updated_at).toLocaleDateString() 
-                        : 'Not available'
-                      }
-                    </p>
-                  </div>
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-2xl font-bold text-primary">12</div>
+                  <div className="text-xs text-muted-foreground">Total Events</div>
+                  <div className="text-xs text-green-600">Attended</div>
+                </div>
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-2xl font-bold text-primary">85%</div>
+                  <div className="text-xs text-muted-foreground">Attendance Rate</div>
+                  <div className="text-xs text-green-600">+5% this month</div>
+                </div>
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-2xl font-bold text-primary">8</div>
+                  <div className="text-xs text-muted-foreground">Disciples</div>
+                  <div className="text-xs text-blue-600">Following up</div>
+                </div>
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-2xl font-bold text-primary">75%</div>
+                  <div className="text-xs text-muted-foreground">Success Rate</div>
+                  <div className="text-xs text-green-600">Became members</div>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Emergency Contact */}
+              {/* Discipleship Impact Trend */}
               <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">Emergency Contact</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Contact Name</label>
-                    <p className="text-sm flex items-center gap-2">
-                      <Heart className="h-3 w-3" />
-                      {member.profiles?.emergency_contact_name || 'Not provided'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Contact Phone</label>
-                    <p className="text-sm flex items-center gap-2">
-                      <Phone className="h-3 w-3" />
-                      {member.profiles?.emergency_contact_phone || 'Not provided'}
-                    </p>
+                <h4 className="text-sm font-medium text-muted-foreground mb-3">Discipleship Impact Trend</h4>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Shows how your event attendance impacts your disciples' participation
+                </p>
+                <div className="h-64 border rounded-lg bg-muted/20 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Calendar className="h-8 w-8 mx-auto mb-2" />
+                    <p className="text-sm">Discipleship Impact Chart</p>
+                    <p className="text-xs">Coming soon - requires discipleship tracking setup</p>
                   </div>
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Membership Information */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">Membership Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Membership Class</label>
-                    <p className="text-sm">
-                      {member.membership_class_completed ? 'Completed' : 'Not completed'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Volunteer Status</label>
-                    <p className="text-sm">
-                      {member.is_volunteer ? 'Active Volunteer' : 'Not a volunteer'}
-                    </p>
-                  </div>
-                  {member.baptism_date && (
-                    <div>
-                      <label className="text-xs text-muted-foreground">Baptism Date</label>
-                      <p className="text-sm">
-                        {new Date(member.baptism_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {member.notes && (
-                <>
-                  <Separator />
-                  <div>
-                    <label className="text-xs text-muted-foreground">Notes</label>
-                    <p className="text-sm mt-1 p-3 bg-muted rounded-md">{member.notes}</p>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
         </div>
+
+        {/* Member Details Card - Moved Below */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Member Details</CardTitle>
+            <p className="text-sm text-muted-foreground">Personal information and member data</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Personal Information */}
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Personal Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">Date of Birth</label>
+                  <p className="text-sm">
+                    {member.profiles?.date_of_birth 
+                      ? new Date(member.profiles.date_of_birth).toLocaleDateString() 
+                      : 'Not provided'
+                    }
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Gender</label>
+                  <p className="text-sm capitalize">{member.profiles?.gender || 'Not provided'}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Occupation</label>
+                  <p className="text-sm flex items-center gap-2">
+                    <Briefcase className="h-3 w-3" />
+                    {member.profiles?.occupation || 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Last Active</label>
+                  <p className="text-sm">
+                    {member.updated_at 
+                      ? new Date(member.updated_at).toLocaleDateString() 
+                      : 'Not available'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Emergency Contact */}
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Emergency Contact</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">Contact Name</label>
+                  <p className="text-sm flex items-center gap-2">
+                    <Heart className="h-3 w-3" />
+                    {member.profiles?.emergency_contact_name || 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Contact Phone</label>
+                  <p className="text-sm flex items-center gap-2">
+                    <Phone className="h-3 w-3" />
+                    {member.profiles?.emergency_contact_phone || 'Not provided'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Membership Information */}
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Membership Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground">Membership Class</label>
+                  <p className="text-sm">
+                    {member.membership_class_completed ? 'Completed' : 'Not completed'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Volunteer Status</label>
+                  <p className="text-sm">
+                    {member.is_volunteer ? 'Active Volunteer' : 'Not a volunteer'}
+                  </p>
+                </div>
+                {member.baptism_date && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">Baptism Date</label>
+                    <p className="text-sm">
+                      {new Date(member.baptism_date).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {member.notes && (
+              <>
+                <Separator />
+                <div>
+                  <label className="text-xs text-muted-foreground">Notes</label>
+                  <p className="text-sm mt-1 p-3 bg-muted rounded-md">{member.notes}</p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Action Buttons */}
         <div className="flex gap-3">
