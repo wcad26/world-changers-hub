@@ -11,7 +11,7 @@ import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
-import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend } from '@/hooks/useDiscipleship';
+import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -29,6 +29,7 @@ const MemberProfile: React.FC = () => {
   // Fetch real discipleship data
   const { data: discipleshipStats } = useMemberDiscipleshipStats(member?.id);
   const { data: impactTrend } = useDiscipleshipImpactTrend(member?.id, userRegion?.id);
+  const { data: discipleshipRelationships } = useMemberDiscipleshipRelationships(member?.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -40,7 +41,17 @@ const MemberProfile: React.FC = () => {
     }
   };
 
-  const getInitials = (firstName?: string, lastName?: string) => {
+  const getMentorName = () => {
+    if (!discipleshipRelationships?.asDisciple || discipleshipRelationships.asDisciple.length === 0) {
+      return 'No mentor assigned';
+    }
+    const activeMentorship = discipleshipRelationships.asDisciple.find((rel: any) => rel.status === 'active');
+    if (!activeMentorship?.mentor?.profiles) {
+      return 'No active mentor';
+    }
+    return `${activeMentorship.mentor.profiles.first_name} ${activeMentorship.mentor.profiles.last_name}`;
+  };
+    const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'M';
   };
 
@@ -135,7 +146,7 @@ const MemberProfile: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Member ID: {member.member_id}</span>
+                  <span className="text-sm">Mentor: {getMentorName()}</span>
                 </div>
                 
                 <div className="flex items-center gap-3">

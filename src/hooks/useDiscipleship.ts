@@ -112,7 +112,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
         .from('discipleship_relationships')
         .select(`
           *,
-          mentor:mentor_id (
+          mentor:members!mentor_id (
             id,
             member_id,
             profiles (first_name, last_name)
@@ -130,7 +130,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
         .from('discipleship_relationships')
         .select(`
           *,
-          disciple:disciple_id (
+          disciple:members!disciple_id (
             id,
             member_id,
             profiles (first_name, last_name)
