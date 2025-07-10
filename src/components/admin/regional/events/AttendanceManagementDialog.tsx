@@ -131,7 +131,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
 
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
           {/* Search and controls */}
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
