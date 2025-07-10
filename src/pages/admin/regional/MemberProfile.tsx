@@ -501,15 +501,6 @@ const MemberProfile: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <Button variant="outline">
-            Send Message
-          </Button>
-          <Button variant="outline">
-            View Attendance
-          </Button>
-        </div>
 
         {/* Edit Member Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
