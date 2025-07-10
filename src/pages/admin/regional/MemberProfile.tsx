@@ -207,19 +207,19 @@ const MemberProfile: React.FC = () => {
               {/* Summary Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Events Attended</div>
                   <div className="text-2xl font-bold text-primary">
                     {attendanceStats?.eventsAttended || 0}
                   </div>
-                  <div className="text-xs text-muted-foreground">Events Attended</div>
                   <div className="text-xs text-green-600">
                     of {attendanceStats?.totalEvents || 0} total
                   </div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Attendance Rate</div>
                   <div className="text-2xl font-bold text-primary">
                     {attendanceStats?.attendanceRate ? `${Math.round(attendanceStats.attendanceRate)}%` : '0%'}
                   </div>
-                  <div className="text-xs text-muted-foreground">Attendance Rate</div>
                   <div className={`text-xs ${
                     (attendanceStats?.monthlyChange || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
@@ -230,17 +230,17 @@ const MemberProfile: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Disciples</div>
                   <div className="text-2xl font-bold text-primary">
                     {discipleshipStats?.total_disciples || 0}
                   </div>
-                  <div className="text-xs text-muted-foreground">Disciples</div>
                   <div className="text-xs text-blue-600">Total disciples</div>
                 </div>
                 <div className="p-4 border rounded-lg bg-muted/30">
+                  <div className="text-xs text-muted-foreground">Success Rate</div>
                   <div className="text-2xl font-bold text-primary">
                     {discipleshipStats?.success_rate ? `${Math.round(discipleshipStats.success_rate)}%` : '0%'}
                   </div>
-                  <div className="text-xs text-muted-foreground">Success Rate</div>
                   <div className="text-xs text-green-600">Became members</div>
                 </div>
               </div>
