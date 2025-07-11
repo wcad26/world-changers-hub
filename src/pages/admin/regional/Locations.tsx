@@ -10,15 +10,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MapPin, Home, Building, Plus, Search, Map, Loader2 } from "lucide-react";
+import { MapPin, Home, Building, Plus, Search, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocations, useCreateLocation, locationSchema, type NewLocationData } from "@/hooks/useLocations";
 import { useToast } from "@/hooks/use-toast";
+import GoogleMap from "@/components/ui/GoogleMap";
 
 const RegionalLocations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address: string} | null>(null);
   const { toast } = useToast();
   const { userRegion } = useAuth();
   
@@ -35,8 +37,8 @@ const RegionalLocations: React.FC = () => {
       city: "",
       state: "",
       zip: "",
-      capacity: 1,
-      facilities: "",
+      latitude: undefined,
+      longitude: undefined,
       contact_person: "",
       contact_phone: "",
     },
@@ -215,38 +217,6 @@ const RegionalLocations: React.FC = () => {
                             
                              <FormField
                                control={form.control}
-                               name="capacity"
-                               render={({ field }) => (
-                                 <FormItem>
-                                   <FormLabel>Capacity</FormLabel>
-                                   <FormControl>
-                                     <Input 
-                                       type="number" 
-                                       placeholder="100" 
-                                       {...field}
-                                       onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                                     />
-                                   </FormControl>
-                                   <FormMessage />
-                                 </FormItem>
-                               )}
-                             />
-                            <FormField
-                              control={form.control}
-                              name="facilities"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Facilities</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Sanctuary, Classrooms" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                             <FormField
-                               control={form.control}
                                name="contact_person"
                                render={({ field }) => (
                                  <FormItem>
@@ -275,15 +245,25 @@ const RegionalLocations: React.FC = () => {
                           
                           <div className="mt-6 border rounded-md p-4">
                             <h3 className="text-sm font-medium mb-2">Location Map</h3>
-                            <div className="h-[200px] bg-gray-100 rounded flex items-center justify-center">
-                              <div className="text-center space-y-2">
-                                <Map className="h-8 w-8 mx-auto text-gray-400" />
-                                <p className="text-sm text-muted-foreground">Map will be displayed here</p>
+                            <GoogleMap
+                              height="300px"
+                              onLocationSelect={(lat, lng, address) => {
+                                setSelectedLocation({ lat, lng, address });
+                                form.setValue('latitude', lat);
+                                form.setValue('longitude', lng);
+                                // Optionally update address field
+                                if (address && !form.getValues('address')) {
+                                  form.setValue('address', address);
+                                }
+                              }}
+                            />
+                            {selectedLocation && (
+                              <div className="mt-2 p-2 bg-muted rounded-sm">
+                                <p className="text-xs text-muted-foreground">
+                                  Selected: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+                                </p>
                               </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              Pin the exact location on the map or enter the coordinates
-                            </p>
+                            )}
                           </div>
                           
                            <div className="flex justify-end gap-4">
@@ -319,38 +299,36 @@ const RegionalLocations: React.FC = () => {
                      <div className="overflow-x-auto">
                        <Table>
                          <TableHeader>
-                           <TableRow>
-                             <TableHead>Name</TableHead>
-                             <TableHead>Type</TableHead>
-                             <TableHead>Address</TableHead>
-                             <TableHead>Capacity</TableHead>
-                             <TableHead>Facilities</TableHead>
-                             <TableHead>Actions</TableHead>
-                           </TableRow>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Type</TableHead>
+                              <TableHead>Address</TableHead>
+                              <TableHead>Contact</TableHead>
+                              <TableHead>Actions</TableHead>
+                            </TableRow>
                          </TableHeader>
                          <TableBody>
                            {filteredLocations.length > 0 ? (
                              filteredLocations.map((location) => (
-                               <TableRow key={location.id}>
-                                 <TableCell className="font-medium">{location.name}</TableCell>
-                                 <TableCell>{location.type}</TableCell>
-                                 <TableCell>{`${location.address}, ${location.city}, ${location.state} ${location.zip}`}</TableCell>
-                                 <TableCell>{location.capacity}</TableCell>
-                                 <TableCell>{location.facilities || "N/A"}</TableCell>
-                                 <TableCell>
-                                   <div className="flex space-x-2">
-                                     <Button variant="outline" size="sm">Edit</Button>
-                                     <Button variant="outline" size="sm">View</Button>
-                                   </div>
-                                 </TableCell>
-                               </TableRow>
+                                <TableRow key={location.id}>
+                                  <TableCell className="font-medium">{location.name}</TableCell>
+                                  <TableCell>{location.type}</TableCell>
+                                  <TableCell>{`${location.address}, ${location.city}, ${location.state} ${location.zip}`}</TableCell>
+                                  <TableCell>{location.contact_person || location.contact_phone || "N/A"}</TableCell>
+                                  <TableCell>
+                                    <div className="flex space-x-2">
+                                      <Button variant="outline" size="sm">Edit</Button>
+                                      <Button variant="outline" size="sm">View</Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
                              ))
                            ) : (
-                             <TableRow>
-                               <TableCell colSpan={6} className="text-center h-24">
-                                 {isLoading ? "Loading..." : "No locations found"}
-                               </TableCell>
-                             </TableRow>
+                              <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">
+                                  {isLoading ? "Loading..." : "No locations found"}
+                                </TableCell>
+                              </TableRow>
                            )}
                          </TableBody>
                        </Table>
@@ -384,24 +362,20 @@ const RegionalLocations: React.FC = () => {
                           <Building className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Capacity:</span>
-                            <span>{location.capacity} people</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Facilities:</span>
-                            <span>{location.facilities}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Status:</span>
-                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                              {location.status}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
+                       <CardContent>
+                         <div className="space-y-2 text-sm">
+                           <div className="flex justify-between">
+                             <span className="text-muted-foreground">Contact:</span>
+                             <span>{location.contact_person || location.contact_phone || "N/A"}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-muted-foreground">Status:</span>
+                             <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                               {location.status}
+                             </span>
+                           </div>
+                         </div>
+                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" size="sm">
                           <MapPin className="mr-1 h-4 w-4" />
@@ -447,24 +421,20 @@ const RegionalLocations: React.FC = () => {
                           <Home className="h-5 w-5 text-muted-foreground" />
                         </div>
                       </CardHeader>
-                      <CardContent>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Capacity:</span>
-                            <span>{location.capacity} people</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Facilities:</span>
-                            <span>{location.facilities}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Status:</span>
-                            <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                              {location.status}
-                            </span>
-                          </div>
-                        </div>
-                      </CardContent>
+                       <CardContent>
+                         <div className="space-y-2 text-sm">
+                           <div className="flex justify-between">
+                             <span className="text-muted-foreground">Contact:</span>
+                             <span>{location.contact_person || location.contact_phone || "N/A"}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-muted-foreground">Status:</span>
+                             <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                               {location.status}
+                             </span>
+                           </div>
+                         </div>
+                       </CardContent>
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" size="sm">
                           <MapPin className="mr-1 h-4 w-4" />

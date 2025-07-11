@@ -703,6 +703,8 @@ export type Database = {
           created_at: string
           facilities: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
           region_id: string
           state: string
@@ -720,6 +722,8 @@ export type Database = {
           created_at?: string
           facilities?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
           region_id: string
           state: string
@@ -737,6 +741,8 @@ export type Database = {
           created_at?: string
           facilities?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           region_id?: string
           state?: string
