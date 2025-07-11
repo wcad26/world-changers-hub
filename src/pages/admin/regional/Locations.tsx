@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MapPin, Home, Building, Plus, Search, Map, Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 const RegionalLocations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
   const { userRegion } = useAuth();
   
@@ -54,6 +56,7 @@ const RegionalLocations: React.FC = () => {
           description: `${values.name} has been added successfully.`,
         });
         form.reset();
+        setIsDialogOpen(false);
       },
       onError: (error: any) => {
         toast({
@@ -74,11 +77,10 @@ const RegionalLocations: React.FC = () => {
         </p>
         
         <Tabs defaultValue="all">
-          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-1 md:grid-cols-3 w-full max-w-2xl">
             <TabsTrigger value="all">All Locations</TabsTrigger>
             <TabsTrigger value="centers">WCA Centers</TabsTrigger>
             <TabsTrigger value="dcg">DCG Locations</TabsTrigger>
-            <TabsTrigger value="add">Add Location</TabsTrigger>
           </TabsList>
           
           <TabsContent value="all">
@@ -108,10 +110,202 @@ const RegionalLocations: React.FC = () => {
                     <option value="wca center">WCA Centers</option>
                     <option value="dcg location">DCG Locations</option>
                   </select>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Location
-                  </Button>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Location
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Add New Location</DialogTitle>
+                        <DialogDescription>
+                          Register a new WCA center or DCG meeting location.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Location Name</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Main Center" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="type"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Location Type</FormLabel>
+                                  <select 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                    {...field}
+                                  >
+                                    <option value="">Select type</option>
+                                    <option value="WCA Center">WCA Center</option>
+                                    <option value="DCG Location">DCG Location</option>
+                                  </select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="address"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Address</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="123 Main St" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="city"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>City</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="New York" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name="state"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>State</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="NY" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="zip"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>ZIP Code</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="10001" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                             <FormField
+                               control={form.control}
+                               name="capacity"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Capacity</FormLabel>
+                                   <FormControl>
+                                     <Input 
+                                       type="number" 
+                                       placeholder="100" 
+                                       {...field}
+                                       onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                                     />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                            <FormField
+                              control={form.control}
+                              name="facilities"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Facilities</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Sanctuary, Classrooms" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                             <FormField
+                               control={form.control}
+                               name="contact_person"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Contact Person</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder="John Doe" {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <FormField
+                               control={form.control}
+                               name="contact_phone"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Contact Phone</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder="+1234567890" {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                          </div>
+                          
+                          <div className="mt-6 border rounded-md p-4">
+                            <h3 className="text-sm font-medium mb-2">Location Map</h3>
+                            <div className="h-[200px] bg-gray-100 rounded flex items-center justify-center">
+                              <div className="text-center space-y-2">
+                                <Map className="h-8 w-8 mx-auto text-gray-400" />
+                                <p className="text-sm text-muted-foreground">Map will be displayed here</p>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Pin the exact location on the map or enter the coordinates
+                            </p>
+                          </div>
+                          
+                           <div className="flex justify-end gap-4">
+                             <Button type="button" variant="outline" disabled={createLocation.isPending} onClick={() => setIsDialogOpen(false)}>Cancel</Button>
+                             <Button type="submit" disabled={createLocation.isPending}>
+                               {createLocation.isPending ? (
+                                 <>
+                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                   Adding Location...
+                                 </>
+                               ) : (
+                                 <>
+                                   <MapPin className="mr-2 h-4 w-4" />
+                                   Add Location
+                                 </>
+                               )}
+                             </Button>
+                           </div>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
                <CardContent>
@@ -293,198 +487,6 @@ const RegionalLocations: React.FC = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="add">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Location</CardTitle>
-                <CardDescription>
-                  Register a new WCA center or DCG meeting location.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Main Center" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location Type</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select type</option>
-                              <option value="WCA Center">WCA Center</option>
-                              <option value="DCG Location">DCG Location</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input placeholder="123 Main St" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City</FormLabel>
-                            <FormControl>
-                              <Input placeholder="New York" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="state"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State</FormLabel>
-                            <FormControl>
-                              <Input placeholder="NY" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="zip"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>ZIP Code</FormLabel>
-                            <FormControl>
-                              <Input placeholder="10001" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                       <FormField
-                         control={form.control}
-                         name="capacity"
-                         render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>Capacity</FormLabel>
-                             <FormControl>
-                               <Input 
-                                 type="number" 
-                                 placeholder="100" 
-                                 {...field}
-                                 onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                               />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                         )}
-                       />
-                      <FormField
-                        control={form.control}
-                        name="facilities"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Facilities</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Sanctuary, Classrooms" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                       <FormField
-                         control={form.control}
-                         name="contact_person"
-                         render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>Contact Person</FormLabel>
-                             <FormControl>
-                               <Input placeholder="John Doe" {...field} />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                         )}
-                       />
-                       <FormField
-                         control={form.control}
-                         name="contact_phone"
-                         render={({ field }) => (
-                           <FormItem>
-                             <FormLabel>Contact Phone</FormLabel>
-                             <FormControl>
-                               <Input placeholder="+1234567890" {...field} />
-                             </FormControl>
-                             <FormMessage />
-                           </FormItem>
-                         )}
-                       />
-                    </div>
-                    
-                    <div className="mt-6 border rounded-md p-4">
-                      <h3 className="text-sm font-medium mb-2">Location Map</h3>
-                      <div className="h-[200px] bg-gray-100 rounded flex items-center justify-center">
-                        <div className="text-center space-y-2">
-                          <Map className="h-8 w-8 mx-auto text-gray-400" />
-                          <p className="text-sm text-muted-foreground">Map will be displayed here</p>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Pin the exact location on the map or enter the coordinates
-                      </p>
-                    </div>
-                    
-                     <div className="flex justify-end gap-4">
-                       <Button type="button" variant="outline" disabled={createLocation.isPending}>Cancel</Button>
-                       <Button type="submit" disabled={createLocation.isPending}>
-                         {createLocation.isPending ? (
-                           <>
-                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                             Adding Location...
-                           </>
-                         ) : (
-                           <>
-                             <MapPin className="mr-2 h-4 w-4" />
-                             Add Location
-                           </>
-                         )}
-                       </Button>
-                     </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </RegionalAdminLayout>
