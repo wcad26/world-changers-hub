@@ -255,6 +255,41 @@ export type Database = {
           },
         ]
       }
+      dcg_user_sessions: {
+        Row: {
+          created_at: string | null
+          dcg_id: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          dcg_id: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          dcg_id?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dcg_user_sessions_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dcgs: {
         Row: {
           contact_phone: string | null
@@ -1025,6 +1060,10 @@ export type Database = {
         Args: { _dcg_id: string }
         Returns: string
       }
+      get_user_dcg: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_user_region: {
         Args: { _user_id: string }
         Returns: string
@@ -1042,7 +1081,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "regional_admin" | "member"
+      app_role: "super_admin" | "regional_admin" | "member" | "dcg_leader"
       communication_message_type:
         | "announcement"
         | "invitation"
@@ -1207,7 +1246,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "regional_admin", "member"],
+      app_role: ["super_admin", "regional_admin", "member", "dcg_leader"],
       communication_message_type: [
         "announcement",
         "invitation",

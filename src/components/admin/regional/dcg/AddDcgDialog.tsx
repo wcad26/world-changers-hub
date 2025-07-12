@@ -17,6 +17,7 @@ import { dcgSchema, useCreateDcg } from '@/hooks/useDCGs';
 import { useCreateLocation } from '@/hooks/useLocations';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddDcgDialogProps {
   open: boolean;
@@ -25,13 +26,16 @@ interface AddDcgDialogProps {
 
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-// Enhanced schema for DCG with location fields
+// Enhanced schema for DCG with location fields and leader account
 const enhancedDcgSchema = dcgSchema.extend({
   // Location fields
   address: z.string().min(5, "Please provide a valid address."),
   city: z.string().min(2, "Please enter a city."),
   state: z.string().min(2, "Please enter a state/region/province."),
   zip: z.string().optional(),
+  // Leader account credentials
+  leader_email: z.string().email("Please enter a valid email address."),
+  leader_password: z.string().min(6, "Password must be at least 6 characters."),
 });
 
 export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => {
@@ -55,12 +59,31 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
       city: '',
       state: '',
       zip: '',
+      leader_email: '',
+      leader_password: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof enhancedDcgSchema>) => {
     try {
-      // First create the location
+      // First create user account for DCG leader
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: values.leader_email,
+        password: values.leader_password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dcg-auth`,
+          data: {
+            first_name: members.find(m => m.id === values.leader_id)?.profiles?.first_name || '',
+            last_name: members.find(m => m.id === values.leader_id)?.profiles?.last_name || '',
+          }
+        }
+      });
+
+      if (authError) {
+        throw new Error(`Failed to create user account: ${authError.message}`);
+      }
+
+      // Create the location
       const locationData = {
         name: `${values.name} - DCG Location`,
         type: 'DCG Location' as const,
@@ -72,7 +95,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
 
       const location = await createLocationMutation.mutateAsync(locationData);
       
-      // Then create the DCG with the location reference
+      // Create the DCG
       const dcgData = {
         name: values.name,
         description: values.description,
@@ -83,9 +106,39 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
         leader_id: values.leader_id,
       };
 
-      await createDcgMutation.mutateAsync(dcgData);
+      const dcg = await createDcgMutation.mutateAsync(dcgData);
+
+      // Create DCG leader role and session if user was created successfully
+      if (authData.user && dcg) {
+        // Assign DCG leader role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: 'dcg_leader',
+            region_id: userRegion?.id,
+            is_active: true
+          });
+
+        if (roleError) {
+          console.error('Failed to assign DCG leader role:', roleError);
+        }
+
+        // Create DCG user session
+        const { error: sessionError } = await supabase
+          .from('dcg_user_sessions')
+          .insert({
+            dcg_id: dcg.id,
+            user_id: authData.user.id,
+            is_active: true
+          });
+
+        if (sessionError) {
+          console.error('Failed to create DCG session:', sessionError);
+        }
+      }
       
-      toast.success('DCG and location created successfully!');
+      toast.success('DCG, location, and leader account created successfully!');
       form.reset();
       setOpen(false);
     } catch (error: any) {
@@ -264,6 +317,45 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                       </Popover>
                       <FormDescription>
                         Select the member who will lead this DCG.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Leader Account Information */}
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-lg font-medium">DCG Leader Account</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="leader_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Leader Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="leader@example.com" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        This email will be used to create a login account for the DCG leader.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="leader_password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Leader Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Minimum 6 characters" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Temporary password for the DCG leader's account access.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -18,7 +18,9 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import RegionalAuth from "./pages/RegionalAuth";
 import SuperAuth from "./pages/SuperAuth";
+import DcgAuth from "./pages/DcgAuth";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
 
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
@@ -42,6 +44,15 @@ import SuperFinances from "./pages/admin/super/Finances";
 import SuperRegions from "./pages/admin/super/Regions";
 import SuperReports from "./pages/admin/super/Reports";
 import SuperCommunication from "./pages/admin/super/Communication";
+
+// DCG Portal Routes
+import DcgDashboard from "./pages/dcg/Dashboard";
+import DcgMembers from "./pages/dcg/Members";
+import DcgAttendance from "./pages/dcg/Attendance";
+import DcgEvents from "./pages/dcg/Events";
+import DcgFinances from "./pages/dcg/Finances";
+import DcgReports from "./pages/dcg/Reports";
+import DcgCommunication from "./pages/dcg/Communication";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +98,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/regional" element={<RegionalAuth />} />
             <Route path="/auth/super" element={<SuperAuth />} />
+            <Route path="/dcg-auth" element={<DcgAuth />} />
             
             {/* Admin Redirects - For easier navigation */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
@@ -246,6 +258,65 @@ const App = () => {
                 <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <SuperCommunication />
                 </ProtectedRoute>
+              } 
+            />
+            
+            {/* DCG Portal Routes */}
+            <Route path="/dcg" element={<Navigate to="/dcg/dashboard" replace />} />
+            <Route 
+              path="/dcg/dashboard" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgDashboard />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/members" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgMembers />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/attendance" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgAttendance />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/events" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgEvents />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/finances" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgFinances />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/reports" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgReports />
+                </DcgProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/dcg/communication" 
+              element={
+                <DcgProtectedRoute>
+                  <DcgCommunication />
+                </DcgProtectedRoute>
               } 
             />
             
