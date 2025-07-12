@@ -11,7 +11,7 @@ export const locationSchema = z.object({
   address: z.string().min(5, { message: "Please provide a valid address." }),
   city: z.string().min(2, { message: "Please enter a city." }),
   state: z.string().min(2, { message: "Please enter a state." }),
-  zip: z.string().min(5, { message: "Please enter a valid ZIP code." }),
+  zip: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   contact_person: z.string().optional(),

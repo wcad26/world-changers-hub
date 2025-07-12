@@ -193,7 +193,7 @@ const RegionalLocations: React.FC = () => {
                               name="state"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>State</FormLabel>
+                                  <FormLabel>State/Region/Province</FormLabel>
                                   <FormControl>
                                     <Input placeholder="NY" {...field} />
                                   </FormControl>
