@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
 import { supabase } from '@/integrations/supabase/client';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -22,10 +24,12 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   height = "300px"
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [map, setMap] = useState<any>(null);
   const [marker, setMarker] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const initMap = async () => {
@@ -69,6 +73,34 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         });
 
         setMarker(markerInstance);
+
+        // Initialize Places Autocomplete for search
+        if (searchInputRef.current) {
+          const autocomplete = new (window as any).google.maps.places.Autocomplete(searchInputRef.current, {
+            componentRestrictions: { country: [] }, // Allow all countries
+            fields: ['place_id', 'geometry', 'name', 'formatted_address'],
+            types: ['establishment', 'geocode']
+          });
+
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) {
+              console.log("No geometry found for place:", place.name);
+              return;
+            }
+
+            const lat = place.geometry.location.lat();
+            const lng = place.geometry.location.lng();
+            
+            // Update map center and marker position
+            mapInstance.setCenter({ lat, lng });
+            mapInstance.setZoom(15);
+            markerInstance.setPosition({ lat, lng });
+            
+            // Call the callback
+            onLocationSelect?.(lat, lng, place.formatted_address || place.name || `${lat}, ${lng}`);
+          });
+        }
 
         // Handle marker drag
         markerInstance.addListener('dragend', () => {
@@ -152,13 +184,24 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
   return (
     <div className="space-y-2">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 z-10" />
+        <Input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search for a location..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          className="pl-10"
+        />
+      </div>
       <div 
         ref={mapRef} 
         className="w-full rounded-md border"
         style={{ height }}
       />
       <p className="text-xs text-muted-foreground">
-        Click on the map or drag the marker to set the exact location
+        Search for a location above, click on the map, or drag the marker to set the exact location
       </p>
     </div>
   );
