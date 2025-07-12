@@ -36,6 +36,16 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       try {
         console.log('Initializing Google Maps...');
         
+        // Wait a bit to ensure the DOM element is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        if (!mapRef.current) {
+          console.error('Map container not found after waiting');
+          setError('Map container not found. Please try refreshing the page.');
+          setIsLoading(false);
+          return;
+        }
+        
         // Fetch Google Maps API key from edge function
         const { data, error: functionError } = await supabase.functions.invoke('get-maps-config');
         
@@ -68,9 +78,10 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
         const google = await loader.load();
         console.log('Google Maps API loaded successfully');
         
+        // Double-check that the map container is still available
         if (!mapRef.current) {
-          console.error('Map ref is null');
-          setError('Map container not found');
+          console.error('Map container became unavailable during initialization');
+          setError('Map container not found. Please try refreshing the page.');
           setIsLoading(false);
           return;
         }
@@ -182,9 +193,11 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
       >
         <div className="text-center p-4">
           <p className="text-sm text-muted-foreground">{error}</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Please configure GOOGLE_MAPS_API_KEY in your environment
-          </p>
+          {error.includes('API key') && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Please configure GOOGLE_MAPS_API_KEY in your Supabase secrets
+            </p>
+          )}
         </div>
       </div>
     );
