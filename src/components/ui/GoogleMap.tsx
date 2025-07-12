@@ -34,15 +34,28 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   useEffect(() => {
     const initMap = async () => {
       try {
+        console.log('Initializing Google Maps...');
+        
         // Fetch Google Maps API key from edge function
         const { data, error: functionError } = await supabase.functions.invoke('get-maps-config');
         
-        if (functionError || !data?.apiKey) {
+        console.log('Edge function response:', { data, functionError });
+        
+        if (functionError) {
+          console.error('Edge function error:', functionError);
+          setError(`Edge function error: ${functionError.message}`);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!data?.apiKey) {
+          console.error('No API key received from edge function');
           setError('Google Maps API key not configured. Please add GOOGLE_MAPS_API_KEY to your Supabase secrets.');
           setIsLoading(false);
           return;
         }
         
+        console.log('API key received, loading Google Maps...');
         const googleMapsApiKey = data.apiKey;
 
         const loader = new Loader({
@@ -51,10 +64,18 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           libraries: ['places']
         });
 
+        console.log('Loading Google Maps API...');
         const google = await loader.load();
+        console.log('Google Maps API loaded successfully');
         
-        if (!mapRef.current) return;
+        if (!mapRef.current) {
+          console.error('Map ref is null');
+          setError('Map container not found');
+          setIsLoading(false);
+          return;
+        }
 
+        console.log('Creating map instance...');
         const mapInstance = new (window as any).google.maps.Map(mapRef.current, {
           center: { lat: initialLat, lng: initialLng },
           zoom: 13,
@@ -63,6 +84,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           fullscreenControl: false,
         });
 
+        console.log('Map instance created successfully');
         setMap(mapInstance);
 
         // Add initial marker
