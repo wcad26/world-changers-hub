@@ -32,19 +32,61 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
+    const waitForMapContainer = () => {
+      return new Promise<HTMLDivElement>((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 10;
+        const checkInterval = 200;
+
+        const checkForContainer = () => {
+          attempts++;
+          console.log(`Checking for map container, attempt ${attempts}/${maxAttempts}`);
+          
+          if (mapRef.current) {
+            console.log('Map container found!');
+            resolve(mapRef.current);
+            return;
+          }
+
+          if (attempts >= maxAttempts) {
+            reject(new Error('Map container not found after maximum attempts'));
+            return;
+          }
+
+          setTimeout(checkForContainer, checkInterval);
+        };
+
+        // Start checking immediately, then use MutationObserver as backup
+        checkForContainer();
+
+        // Also use MutationObserver to detect when DOM changes
+        if (typeof MutationObserver !== 'undefined') {
+          const observer = new MutationObserver(() => {
+            if (mapRef.current) {
+              observer.disconnect();
+              resolve(mapRef.current);
+            }
+          });
+
+          observer.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+
+          // Clean up observer after max attempts
+          setTimeout(() => {
+            observer.disconnect();
+          }, maxAttempts * checkInterval);
+        }
+      });
+    };
+
     const initMap = async () => {
       try {
+        console.log('Waiting for map container...');
+        await waitForMapContainer();
+        
         console.log('Initializing Google Maps...');
-        
-        // Wait a bit to ensure the DOM element is ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        if (!mapRef.current) {
-          console.error('Map container not found after waiting');
-          setError('Map container not found. Please try refreshing the page.');
-          setIsLoading(false);
-          return;
-        }
         
         // Fetch Google Maps API key from edge function
         const { data, error: functionError } = await supabase.functions.invoke('get-maps-config');
