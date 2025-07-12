@@ -35,17 +35,21 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     const waitForMapContainer = () => {
       return new Promise<HTMLDivElement>((resolve, reject) => {
         let attempts = 0;
-        const maxAttempts = 10;
-        const checkInterval = 200;
+        const maxAttempts = 15; // Increased for dialog rendering
+        const checkInterval = 300; // Slightly longer interval
 
         const checkForContainer = () => {
           attempts++;
           console.log(`Checking for map container, attempt ${attempts}/${maxAttempts}`);
           
-          if (mapRef.current) {
-            console.log('Map container found!');
-            resolve(mapRef.current);
-            return;
+          if (mapRef.current && mapRef.current.offsetParent !== null) {
+            // Ensure the element is actually visible and in the DOM
+            const rect = mapRef.current.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+              console.log('Map container found and visible!');
+              resolve(mapRef.current);
+              return;
+            }
           }
 
           if (attempts >= maxAttempts) {
@@ -56,27 +60,37 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
           setTimeout(checkForContainer, checkInterval);
         };
 
-        // Start checking immediately, then use MutationObserver as backup
-        checkForContainer();
+        // For dialogs, wait a bit longer initially
+        const isInDialog = document.querySelector('[role="dialog"]') !== null;
+        const initialDelay = isInDialog ? 500 : 100;
+        
+        setTimeout(() => {
+          checkForContainer();
+        }, initialDelay);
 
         // Also use MutationObserver to detect when DOM changes
         if (typeof MutationObserver !== 'undefined') {
           const observer = new MutationObserver(() => {
-            if (mapRef.current) {
-              observer.disconnect();
-              resolve(mapRef.current);
+            if (mapRef.current && mapRef.current.offsetParent !== null) {
+              const rect = mapRef.current.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0) {
+                observer.disconnect();
+                resolve(mapRef.current);
+              }
             }
           });
 
           observer.observe(document.body, {
             childList: true,
-            subtree: true
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
           });
 
           // Clean up observer after max attempts
           setTimeout(() => {
             observer.disconnect();
-          }, maxAttempts * checkInterval);
+          }, maxAttempts * checkInterval + initialDelay);
         }
       });
     };
