@@ -12,13 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AddTransactionDialog } from './AddTransactionDialog';
 
 const DcgFinancialsTab = () => {
-  const [selectedDcgId, setSelectedDcgId] = useState<string>('');
+  const [selectedDcgId, setSelectedDcgId] = useState<string>('all');
   const [isAddTransactionDialogOpen, setAddTransactionDialogOpen] = useState(false);
   const { data: dcgs, isLoading: isLoadingDcgs } = useDcgs();
   const { data: transactions, isLoading: isLoadingTransactions, isError, error } = useFinancialTransactions();
 
   const filteredTransactions = (transactions || []).filter(
-    transaction => !selectedDcgId || transaction.dcg_id === selectedDcgId
+    transaction => selectedDcgId === 'all' || !selectedDcgId || transaction.dcg_id === selectedDcgId
   );
 
   const isLoading = isLoadingDcgs || isLoadingTransactions;
@@ -36,7 +36,7 @@ const DcgFinancialsTab = () => {
                   <SelectValue placeholder="All DCGs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All DCGs</SelectItem>
+                  <SelectItem value="all">All DCGs</SelectItem>
                   {dcgs?.map(dcg => (
                     <SelectItem key={dcg.id} value={dcg.id}>{dcg.name}</SelectItem>
                   ))}
