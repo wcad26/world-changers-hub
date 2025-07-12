@@ -3,16 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Search, Eye, Edit, Phone, AlertCircle } from "lucide-react";
-import { useDcgs, DcgWithLeader } from "@/hooks/useDCGs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PlusCircle, Search, Eye, Edit, Trash2, MoreHorizontal, AlertCircle } from "lucide-react";
+import { useDcgs, useDeleteDcg, DcgWithLeader } from "@/hooks/useDCGs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AddDcgDialog } from "./AddDcgDialog";
+import { useToast } from "@/hooks/use-toast";
 
 const DcgListTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDcgDialogOpen, setAddDcgDialogOpen] = useState(false);
   const { data: dcgs, isLoading, isError, error } = useDcgs();
+  const deleteDcg = useDeleteDcg();
+  const { toast } = useToast();
 
   const filteredDcgs = (dcgs || []).filter(dcg =>
     dcg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,7 +39,25 @@ const DcgListTab = () => {
     date.setHours(parseInt(hour, 10));
     date.setMinutes(parseInt(minute, 10));
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-  }
+  };
+
+  const handleDeleteDcg = async (dcgId: string, dcgName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${dcgName}"? This action cannot be undone.`)) {
+      try {
+        await deleteDcg.mutateAsync(dcgId);
+        toast({
+          title: "DCG deleted",
+          description: `${dcgName} has been successfully deleted.`,
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete DCG. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   return (
     <>
@@ -114,17 +136,30 @@ const DcgListTab = () => {
                         <TableCell>{dcg.meeting_day || 'N/A'}, {formatMeetingTime(dcg.meeting_time)}</TableCell>
                         <TableCell>{/* Attendance not available yet */ 'N/A'}</TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm" aria-label="View DCG">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" aria-label="Edit DCG">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" aria-label="Call DCG Leader">
-                              <Phone className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => handleDeleteDcg(dcg.id, dcg.name)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))

@@ -87,3 +87,26 @@ export const useCreateDcg = () => {
     },
   });
 };
+
+// Hook to delete a DCG
+export const useDeleteDcg = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+
+  return useMutation({
+    mutationFn: async (dcgId: string) => {
+      const { error } = await supabase
+        .from('dcgs')
+        .delete()
+        .eq('id', dcgId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      if(userRegion?.id) {
+        queryClient.invalidateQueries({ queryKey: ['dcgs', userRegion.id] });
+        queryClient.invalidateQueries({ queryKey: ['regionalReports', userRegion.id] });
+      }
+    },
+  });
+};
