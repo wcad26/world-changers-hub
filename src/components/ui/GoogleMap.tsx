@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader } from '@googlemaps/js-api-loader';
+import { supabase } from '@/integrations/supabase/client';
 
 declare global {
   interface Window {
@@ -29,14 +30,16 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   useEffect(() => {
     const initMap = async () => {
       try {
-        // For now, use a placeholder - user needs to add their Google Maps API key
-        const googleMapsApiKey = 'YOUR_GOOGLE_MAPS_API_KEY';
+        // Fetch Google Maps API key from edge function
+        const { data, error: functionError } = await supabase.functions.invoke('get-maps-config');
         
-        if (!googleMapsApiKey) {
-          setError('Google Maps API key not found. Please add it to your environment variables.');
+        if (functionError || !data?.apiKey) {
+          setError('Google Maps API key not configured. Please add GOOGLE_MAPS_API_KEY to your Supabase secrets.');
           setIsLoading(false);
           return;
         }
+        
+        const googleMapsApiKey = data.apiKey;
 
         const loader = new Loader({
           apiKey: googleMapsApiKey,
