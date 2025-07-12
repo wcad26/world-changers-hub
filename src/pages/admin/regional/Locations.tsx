@@ -8,18 +8,25 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MapPin, Home, Building, Plus, Search, Loader2 } from "lucide-react";
+import { MapPin, Home, Building, Plus, Search, Loader2, MoreHorizontal, Edit, Trash } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useLocations, useCreateLocation, locationSchema, type NewLocationData } from "@/hooks/useLocations";
+import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation, locationSchema, type NewLocationData } from "@/hooks/useLocations";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 import GoogleMap from "@/components/ui/GoogleMap";
+
+type Location = Database['public']['Tables']['locations']['Row'];
 
 const RegionalLocations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address: string} | null>(null);
   const { toast } = useToast();
   const { userRegion } = useAuth();
@@ -27,8 +34,26 @@ const RegionalLocations: React.FC = () => {
   // Fetch locations data
   const { data: locations = [], isLoading } = useLocations(userRegion?.id);
   const createLocation = useCreateLocation();
+  const updateLocation = useUpdateLocation();
+  const deleteLocation = useDeleteLocation();
   
   const form = useForm<NewLocationData>({
+    resolver: zodResolver(locationSchema),
+    defaultValues: {
+      name: "",
+      type: "WCA Center",
+      address: "",
+      city: "",
+      state: "",
+      zip: "",
+      latitude: undefined,
+      longitude: undefined,
+      contact_person: "",
+      contact_phone: "",
+    },
+  });
+
+  const editForm = useForm<NewLocationData>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
       name: "",
@@ -64,6 +89,64 @@ const RegionalLocations: React.FC = () => {
         toast({
           title: "Error",
           description: error.message || "Failed to create location. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+  }
+
+  function onEditSubmit(values: NewLocationData) {
+    if (!editingLocation) return;
+    
+    updateLocation.mutate({ id: editingLocation.id, ...values }, {
+      onSuccess: () => {
+        toast({
+          title: "Location Updated",
+          description: `${values.name} has been updated successfully.`,
+        });
+        editForm.reset();
+        setIsEditDialogOpen(false);
+        setEditingLocation(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update location. Please try again.",
+          variant: "destructive",
+        });
+      },
+    });
+  }
+
+  function handleEdit(location: Location) {
+    setEditingLocation(location);
+    editForm.reset({
+      name: location.name,
+      type: location.type as "WCA Center" | "DCG Location",
+      address: location.address,
+      city: location.city,
+      state: location.state,
+      zip: location.zip || "",
+      latitude: location.latitude || undefined,
+      longitude: location.longitude || undefined,
+      contact_person: location.contact_person || "",
+      contact_phone: location.contact_phone || "",
+    });
+    setIsEditDialogOpen(true);
+  }
+
+  function handleDelete(location: Location) {
+    deleteLocation.mutate(location.id, {
+      onSuccess: () => {
+        toast({
+          title: "Location Deleted",
+          description: `${location.name} has been deleted successfully.`,
+        });
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete location. Please try again.",
           variant: "destructive",
         });
       },
@@ -286,6 +369,153 @@ const RegionalLocations: React.FC = () => {
                       </Form>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Edit Location Dialog */}
+                  <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                    <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Edit Location</DialogTitle>
+                        <DialogDescription>
+                          Update the location details.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Form {...editForm}>
+                        <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={editForm.control}
+                              name="name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Location Name</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Main Center" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={editForm.control}
+                              name="type"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Location Type</FormLabel>
+                                  <select 
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                    {...field}
+                                  >
+                                    <option value="">Select type</option>
+                                    <option value="WCA Center">WCA Center</option>
+                                    <option value="DCG Location">DCG Location</option>
+                                  </select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="address"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Address</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="123 Main St" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={editForm.control}
+                              name="city"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>City</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="New York" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={editForm.control}
+                              name="state"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>State/Region/Province</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="NY" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={editForm.control}
+                              name="zip"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>ZIP Code</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="10001" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                             <FormField
+                               control={editForm.control}
+                               name="contact_person"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Contact Person</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder="John Doe" {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                             <FormField
+                               control={editForm.control}
+                               name="contact_phone"
+                               render={({ field }) => (
+                                 <FormItem>
+                                   <FormLabel>Contact Phone</FormLabel>
+                                   <FormControl>
+                                     <Input placeholder="+1234567890" {...field} />
+                                   </FormControl>
+                                   <FormMessage />
+                                 </FormItem>
+                               )}
+                             />
+                          </div>
+                          
+                           <div className="flex justify-end gap-4">
+                             <Button type="button" variant="outline" disabled={updateLocation.isPending} onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+                             <Button type="submit" disabled={updateLocation.isPending}>
+                               {updateLocation.isPending ? (
+                                 <>
+                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                   Updating Location...
+                                 </>
+                               ) : (
+                                 <>
+                                   <Edit className="mr-2 h-4 w-4" />
+                                   Update Location
+                                 </>
+                               )}
+                             </Button>
+                           </div>
+                        </form>
+                      </Form>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
                <CardContent>
@@ -315,12 +545,43 @@ const RegionalLocations: React.FC = () => {
                                   <TableCell>{location.type}</TableCell>
                                   <TableCell>{`${location.address}, ${location.city}, ${location.state} ${location.zip}`}</TableCell>
                                   <TableCell>{location.contact_person || location.contact_phone || "N/A"}</TableCell>
-                                  <TableCell>
-                                    <div className="flex space-x-2">
-                                      <Button variant="outline" size="sm">Edit</Button>
-                                      <Button variant="outline" size="sm">View</Button>
-                                    </div>
-                                  </TableCell>
+                                   <TableCell>
+                                     <DropdownMenu>
+                                       <DropdownMenuTrigger asChild>
+                                         <Button variant="ghost" size="sm">
+                                           <MoreHorizontal className="h-4 w-4" />
+                                         </Button>
+                                       </DropdownMenuTrigger>
+                                       <DropdownMenuContent align="end">
+                                         <DropdownMenuItem onClick={() => handleEdit(location)}>
+                                           <Edit className="mr-2 h-4 w-4" />
+                                           Edit
+                                         </DropdownMenuItem>
+                                         <AlertDialog>
+                                           <AlertDialogTrigger asChild>
+                                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                               <Trash className="mr-2 h-4 w-4" />
+                                               Delete
+                                             </DropdownMenuItem>
+                                           </AlertDialogTrigger>
+                                           <AlertDialogContent>
+                                             <AlertDialogHeader>
+                                               <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                                               <AlertDialogDescription>
+                                                 Are you sure you want to delete {location.name}? This action cannot be undone.
+                                               </AlertDialogDescription>
+                                             </AlertDialogHeader>
+                                             <AlertDialogFooter>
+                                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                               <AlertDialogAction onClick={() => handleDelete(location)}>
+                                                 Delete
+                                               </AlertDialogAction>
+                                             </AlertDialogFooter>
+                                           </AlertDialogContent>
+                                         </AlertDialog>
+                                       </DropdownMenuContent>
+                                     </DropdownMenu>
+                                   </TableCell>
                                 </TableRow>
                              ))
                            ) : (
@@ -376,15 +637,47 @@ const RegionalLocations: React.FC = () => {
                            </div>
                          </div>
                        </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button variant="outline" size="sm">
-                          <MapPin className="mr-1 h-4 w-4" />
-                          View Map
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Edit Details
-                        </Button>
-                      </CardFooter>
+                       <CardFooter className="flex justify-between">
+                         <Button variant="outline" size="sm">
+                           <MapPin className="mr-1 h-4 w-4" />
+                           View Map
+                         </Button>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="outline" size="sm">
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => handleEdit(location)}>
+                               <Edit className="mr-2 h-4 w-4" />
+                               Edit
+                             </DropdownMenuItem>
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                   <Trash className="mr-2 h-4 w-4" />
+                                   Delete
+                                 </DropdownMenuItem>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     Are you sure you want to delete {location.name}? This action cannot be undone.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction onClick={() => handleDelete(location)}>
+                                     Delete
+                                   </AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </CardFooter>
                     </Card>
                   ))}
                   
@@ -435,15 +728,47 @@ const RegionalLocations: React.FC = () => {
                            </div>
                          </div>
                        </CardContent>
-                      <CardFooter className="flex justify-between">
-                        <Button variant="outline" size="sm">
-                          <MapPin className="mr-1 h-4 w-4" />
-                          View Map
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Edit Details
-                        </Button>
-                      </CardFooter>
+                       <CardFooter className="flex justify-between">
+                         <Button variant="outline" size="sm">
+                           <MapPin className="mr-1 h-4 w-4" />
+                           View Map
+                         </Button>
+                         <DropdownMenu>
+                           <DropdownMenuTrigger asChild>
+                             <Button variant="outline" size="sm">
+                               <MoreHorizontal className="h-4 w-4" />
+                             </Button>
+                           </DropdownMenuTrigger>
+                           <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => handleEdit(location)}>
+                               <Edit className="mr-2 h-4 w-4" />
+                               Edit
+                             </DropdownMenuItem>
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                   <Trash className="mr-2 h-4 w-4" />
+                                   Delete
+                                 </DropdownMenuItem>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Delete Location</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     Are you sure you want to delete {location.name}? This action cannot be undone.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction onClick={() => handleDelete(location)}>
+                                     Delete
+                                   </AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
+                           </DropdownMenuContent>
+                         </DropdownMenu>
+                       </CardFooter>
                     </Card>
                   ))}
                   
