@@ -18,7 +18,7 @@ const DcgAuth = () => {
   const { user, hasRole } = useAuth();
 
   useEffect(() => {
-    if (user && hasRole('dcg_leader')) {
+    if (user && hasRole('dcg_admin')) {
       navigate('/dcg/dashboard');
     }
   }, [user, hasRole, navigate]);
@@ -45,7 +45,7 @@ const DcgAuth = () => {
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id)
-          .eq('role', 'dcg_leader')
+          .eq('role', 'dcg_admin')
           .eq('is_active', true)
           .single();
 

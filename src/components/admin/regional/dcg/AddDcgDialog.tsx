@@ -100,7 +100,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
           .from('user_roles')
           .insert({
             user_id: selectedMember.profile_id,
-            role: 'dcg_leader',
+            role: 'dcg_admin',
             region_id: userRegion?.id,
             is_active: true
           });

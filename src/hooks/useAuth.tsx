@@ -148,7 +148,7 @@ export const useAuth = () => {
     }
   };
 
-  const hasRole = (role: 'super_admin' | 'regional_admin' | 'member' | 'dcg_leader') => {
+  const hasRole = (role: 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin') => {
     const result = userRoles.some(ur => ur.role === role && ur.is_active);
     console.log(`useAuth: Checking role ${role}:`, result, 'from roles:', userRoles.map(r => r.role));
     return result;
