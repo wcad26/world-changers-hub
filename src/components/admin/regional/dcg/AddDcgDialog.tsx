@@ -78,8 +78,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
           data: {
             first_name: selectedMember?.profiles?.first_name || '',
             last_name: selectedMember?.profiles?.last_name || '',
-            display_name: values.name, // Use DCG name as display name
-            region_id: userRegion // Pass region_id for profile creation
+            region_id: userRegion?.id // Pass region_id for profile creation
           }
         }
       });
