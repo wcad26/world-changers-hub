@@ -67,14 +67,16 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
   const onSubmit = async (values: z.infer<typeof enhancedDcgSchema>) => {
     try {
       // First create user account for DCG leader
+      const selectedMember = members.find(m => m.id === values.leader_id);
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.leader_email,
         password: values.leader_password,
         options: {
           emailRedirectTo: `${window.location.origin}/dcg-auth`,
           data: {
-            first_name: members.find(m => m.id === values.leader_id)?.profiles?.first_name || '',
-            last_name: members.find(m => m.id === values.leader_id)?.profiles?.last_name || '',
+            first_name: selectedMember?.profiles?.first_name || '',
+            last_name: selectedMember?.profiles?.last_name || '',
+            display_name: values.name, // Use DCG name as display name
           }
         }
       });
