@@ -110,6 +110,16 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
 
       // Create DCG leader role and session if user was created successfully
       if (authData.user && dcg) {
+        // Update the user's profile with region
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ region_id: userRegion?.id })
+          .eq('id', authData.user.id);
+
+        if (profileError) {
+          console.error('Failed to update user profile:', profileError);
+        }
+
         // Assign DCG leader role
         const { error: roleError } = await supabase
           .from('user_roles')
