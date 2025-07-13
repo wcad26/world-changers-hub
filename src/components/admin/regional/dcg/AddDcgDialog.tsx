@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ const enhancedDcgSchema = dcgSchema.extend({
 });
 
 export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => {
+  const navigate = useNavigate();
   const { userRegion } = useAuth();
   const createDcgMutation = useCreateDcg();
   const createLocationMutation = useCreateLocation();
@@ -154,8 +156,11 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
       toast.success('DCG, location, and leader account created successfully!');
       form.reset();
       setOpen(false);
+      navigate('/admin/regional/dcg');
     } catch (error: any) {
       toast.error(`Failed to create DCG: ${error.message}`);
+      setOpen(false);
+      navigate('/admin/regional/dcg');
     }
   };
 
