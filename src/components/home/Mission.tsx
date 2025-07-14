@@ -63,7 +63,7 @@ export default function Mission() {
                 {mission.icon}
               </div>
               <h3 className="text-xl font-semibold mb-3">{mission.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">{mission.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-4 text-justify">{mission.description}</p>
               <ul className="mt-auto space-y-2">
                 {mission.points.map((point, i) => (
                   <li key={i} className="flex items-start">
