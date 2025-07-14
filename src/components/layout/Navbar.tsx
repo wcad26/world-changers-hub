@@ -64,7 +64,7 @@ export default function Navbar() {
         <nav className="flex items-center justify-between">
           <Link to="/" className="text-xl font-bold flex items-center gap-2" onClick={closeMenu}>
             <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">WCA</span>
-            <span className="hidden sm:inline">World Changers Association</span>
+            <span className="hidden lg:inline">World Changers Association</span>
           </Link>
           
           {/* Desktop Navigation */}
