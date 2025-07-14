@@ -143,9 +143,26 @@ export default function Navbar() {
       
       {/* Mobile Navigation Menu */}
       <div className={cn(
-        "fixed inset-0 bg-background pt-20 z-40 transition-transform duration-300 ease-in-out md:hidden",
+        "fixed inset-0 bg-background z-40 transition-transform duration-300 ease-in-out md:hidden",
         isMenuOpen ? "translate-x-0" : "translate-x-full"
       )}>
+        {/* Mobile Menu Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <Link to="/" className="text-xl font-bold flex items-center gap-2" onClick={closeMenu}>
+            <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">WCA</span>
+            <span className="text-sm">World Changers Association</span>
+          </Link>
+          
+          <button 
+            onClick={closeMenu}
+            className="text-foreground"
+            aria-label="Close menu"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        
+        {/* Mobile Menu Content */}
         <div className="container-custom flex flex-col gap-6 py-8">
           <NavLink to="/" className="text-xl" onClick={closeMenu}>Home</NavLink>
           <NavLink to="/about" className="text-xl" onClick={closeMenu}>About</NavLink>
