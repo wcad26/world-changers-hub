@@ -42,17 +42,20 @@ serve(async (req) => {
 
     console.log('create-member: Starting user invitation...')
     
-    // 1. Invite user by email - this creates an auth.users record and triggers profile creation
-    const { data: { user }, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: {
+    // 1. Create user with default password - no email invitation required
+    const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: '123456',
+      email_confirm: true, // Skip email confirmation
+      user_metadata: {
         first_name,
         last_name,
       },
     })
 
-    if (inviteError) {
-      console.error('create-member: User invitation failed:', inviteError)
-      throw inviteError
+    if (createError) {
+      console.error('create-member: User creation failed:', createError)
+      throw createError
     }
     
     if (!user) {
