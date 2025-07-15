@@ -102,7 +102,7 @@ const About = () => {
                     Our Vision for Change
                   </span>
                 </h1>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
+                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 text-justify">
                   World Changers Association (WCA) is dedicated to building a network of fellowships 
                   that are spiritually, intellectually, and economically empowered to rescue the lost, 
                   transform them into effective leaders that will bring positive change in the economy, 
