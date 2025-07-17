@@ -16,7 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  title: string;
+  title?: string;
   menuItems: {
     title: string;
     path: string;
@@ -30,6 +30,34 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { user, profile, userRegion, signOut } = useAuth();
+
+  // Create route-to-title mapping
+  const getPageTitle = () => {
+    if (title) return title;
+    
+    const routeTitleMap: Record<string, string> = {
+      '/admin/regional/dashboard': 'Dashboard',
+      '/admin/regional/finances': 'Financial Management',
+      '/admin/regional/members': 'Member Management',
+      '/admin/regional/events': 'Event Management',
+      '/admin/regional/communication': 'Communication Center',
+      '/admin/regional/dcg': 'DCG Management',
+      '/admin/regional/fundraising': 'Fundraising Management',
+      '/admin/regional/locations': 'Location Management',
+      '/admin/regional/reports': 'Reports & Analytics',
+      '/admin/super/dashboard': 'Dashboard',
+      '/admin/super/regions': 'Region Management',
+      '/admin/super/members': 'Global Member Management',
+      '/admin/super/events': 'Global Event Management',
+      '/admin/super/finances': 'Global Financial Management',
+      '/admin/super/communication': 'Global Communication',
+      '/admin/super/fundraising': 'Global Fundraising',
+      '/admin/super/locations': 'Global Location Management',
+      '/admin/super/reports': 'Global Reports & Analytics',
+    };
+
+    return routeTitleMap[location.pathname] || 'Admin Dashboard';
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -98,7 +126,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
                   <Menu size={22} />
                 </SidebarTrigger>
                 <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {title} Dashboard
+                  {getPageTitle()}
                 </h1>
               </div>
               <div className="flex items-center gap-2">

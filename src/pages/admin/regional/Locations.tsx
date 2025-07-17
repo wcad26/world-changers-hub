@@ -156,10 +156,6 @@ const RegionalLocations: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Location Management</h2>
-        <p className="text-muted-foreground">
-          Manage WCA centers and Destiny Care Group (DCG) meeting locations.
-        </p>
         
         <Card>
           <CardHeader>

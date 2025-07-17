@@ -36,10 +36,6 @@ const RegionalDashboard: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Regional Dashboard</h2>
-        <p className="text-muted-foreground">
-          Welcome to your regional dashboard. Here's an overview of your region's activities.
-        </p>
 
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

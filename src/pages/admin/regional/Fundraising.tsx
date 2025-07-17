@@ -61,10 +61,6 @@ const RegionalFundraising: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Fundraising Management</h2>
-        <p className="text-muted-foreground">
-          Create and manage fundraising campaigns for your region.
-        </p>
         
         <Tabs defaultValue="active">
           <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">

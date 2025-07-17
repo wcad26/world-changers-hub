@@ -105,10 +105,6 @@ const RegionalReports: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
-        <p className="text-muted-foreground">
-          Comprehensive reports and insights for your region.
-        </p>
         
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
           <div className="flex gap-2">

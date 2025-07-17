@@ -32,7 +32,7 @@ const menuItems = [
 
 const RegionalAdminLayout: React.FC<RegionalAdminLayoutProps> = ({ children }) => {
   return (
-    <AdminLayout title="Regional Admin" menuItems={menuItems}>
+    <AdminLayout menuItems={menuItems}>
       {children}
     </AdminLayout>
   );

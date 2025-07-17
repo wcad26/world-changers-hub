@@ -200,12 +200,6 @@ const RegionalFinances: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Financial Management</h2>
-          <p className="text-muted-foreground">
-            Manage all financial aspects of your region.
-          </p>
-        </div>
         
         <Tabs defaultValue="overview">
           <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">

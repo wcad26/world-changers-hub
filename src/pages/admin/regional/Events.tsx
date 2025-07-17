@@ -309,10 +309,6 @@ const RegionalEvents: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Event Management</h2>
-        <p className="text-muted-foreground">
-          Plan, organize, and track events within your region.
-        </p>
         
         <Tabs defaultValue="upcoming">
           <TabsList className="grid grid-cols-1 md:grid-cols-3 w-full max-w-2xl">

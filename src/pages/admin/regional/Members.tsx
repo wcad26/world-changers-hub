@@ -226,12 +226,6 @@ const Members: React.FC = () => {
     <RegionalAdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Member Management</h2>
-            <p className="text-muted-foreground">
-              Manage members and view attendance for your region.
-            </p>
-          </div>
           <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
             <DialogTrigger asChild>
               <Button>
