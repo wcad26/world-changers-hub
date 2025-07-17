@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { MapPin, Plus, Search, Loader2, MoreHorizontal, Edit, Trash } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocations, useCreateLocation, useUpdateLocation, useDeleteLocation, locationSchema, type NewLocationData } from "@/hooks/useLocations";
+import { useMembers } from "@/hooks/useMembers";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import GoogleMap from "@/components/ui/GoogleMap";
@@ -29,8 +30,9 @@ const RegionalLocations: React.FC = () => {
   const { toast } = useToast();
   const { userRegion } = useAuth();
   
-  // Fetch locations data
+  // Fetch locations and members data
   const { data: locations = [], isLoading } = useLocations(userRegion?.id);
+  const { data: members = [], isLoading: membersLoading } = useMembers(userRegion?.id);
   const createLocation = useCreateLocation();
   const updateLocation = useUpdateLocation();
   const deleteLocation = useDeleteLocation();
@@ -294,9 +296,21 @@ const RegionalLocations: React.FC = () => {
                            render={({ field }) => (
                              <FormItem>
                                <FormLabel>Contact Person</FormLabel>
-                               <FormControl>
-                                 <Input placeholder="John Doe" {...field} />
-                               </FormControl>
+                               <select 
+                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                 {...field}
+                                 disabled={membersLoading}
+                               >
+                                 <option value="">Select contact person</option>
+                                 {members.map((member) => (
+                                   <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.first_name} ${member.profiles.last_name}` : member.member_id}>
+                                     {member.profiles?.first_name && member.profiles?.last_name 
+                                       ? `${member.profiles.first_name} ${member.profiles.last_name} (${member.member_id})`
+                                       : member.member_id
+                                     }
+                                   </option>
+                                 ))}
+                               </select>
                                <FormMessage />
                              </FormItem>
                            )}
@@ -464,9 +478,21 @@ const RegionalLocations: React.FC = () => {
                            render={({ field }) => (
                              <FormItem>
                                <FormLabel>Contact Person</FormLabel>
-                               <FormControl>
-                                 <Input placeholder="John Doe" {...field} />
-                               </FormControl>
+                               <select 
+                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                 {...field}
+                                 disabled={membersLoading}
+                               >
+                                 <option value="">Select contact person</option>
+                                 {members.map((member) => (
+                                   <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.first_name} ${member.profiles.last_name}` : member.member_id}>
+                                     {member.profiles?.first_name && member.profiles?.last_name 
+                                       ? `${member.profiles.first_name} ${member.profiles.last_name} (${member.member_id})`
+                                       : member.member_id
+                                     }
+                                   </option>
+                                 ))}
+                               </select>
                                <FormMessage />
                              </FormItem>
                            )}
