@@ -352,8 +352,8 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="tithes">
-            <Card>
-              <CardContent className="space-y-4 pt-6">
+            <Card className="h-[calc(100vh-12rem)] flex flex-col">
+              <CardContent className="space-y-4 pt-6 flex-1 overflow-hidden flex flex-col">
                 {/* Search and Filter Controls */}
                 <div className="flex flex-col sm:flex-row gap-4">
                   <div className="flex-1">
