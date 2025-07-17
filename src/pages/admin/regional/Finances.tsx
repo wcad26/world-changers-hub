@@ -439,7 +439,7 @@ const RegionalFinances: React.FC = () => {
                           </div>
 
                           {/* Date Range Filter */}
-                          <div className="space-y-2">
+                          <div className="space-y-2 w-2/3">
                             <label className="text-sm font-medium">Date Range</label>
                             <div className="flex space-x-2">
                               <Input
