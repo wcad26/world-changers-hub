@@ -13,6 +13,7 @@ import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filte
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
+import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecialGivingDialog";
 
 // Mock data for demonstration
 const mockTithes = [
@@ -78,6 +79,7 @@ const RegionalFinances: React.FC = () => {
   const [dateFilter, setDateFilter] = useState("all");
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
+  const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -455,7 +457,72 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="special-giving">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Special Giving</CardTitle>
+                    <CardDescription>
+                      View and manage recent special donations.
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
+                    <PiggyBank className="mr-2 h-4 w-4" />
+                    Record Special Giving
+                  </Button>
+                </div>
+                <div className="mt-4">
+                  <Input
+                    type="search"
+                    placeholder="Search special giving..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Fund</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Donor</TableHead>
+                          <TableHead>Reference</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mockSpecialGiving.length > 0 ? (
+                          mockSpecialGiving.map((giving) => (
+                            <TableRow key={giving.id}>
+                              <TableCell>{giving.date}</TableCell>
+                              <TableCell>{giving.fund}</TableCell>
+                              <TableCell>${giving.amount.toLocaleString()}</TableCell>
+                              <TableCell>{giving.donor}</TableCell>
+                              <TableCell>{giving.reference}</TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">
+                              No special giving found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <Button variant="outline">
+                    <ArrowUpRight className="mr-2 h-4 w-4" />
+                    View All Special Giving
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Record Special Giving</CardTitle>
@@ -650,9 +717,8 @@ const RegionalFinances: React.FC = () => {
                       View All Special Giving
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="expenses">
@@ -1055,6 +1121,10 @@ const RegionalFinances: React.FC = () => {
       <RecordOfferingDialog 
         open={offeringDialogOpen} 
         onOpenChange={setOfferingDialogOpen} 
+      />
+      <RecordSpecialGivingDialog 
+        open={recordSpecialGivingDialogOpen} 
+        onOpenChange={setRecordSpecialGivingDialogOpen} 
       />
     </RegionalAdminLayout>
   );
