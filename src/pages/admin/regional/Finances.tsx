@@ -1519,8 +1519,8 @@ const RegionalFinances: React.FC = () => {
                         <tr className="border-b">
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Description</th>
-                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
                         </tr>
                       </thead>
@@ -1532,13 +1532,13 @@ const RegionalFinances: React.FC = () => {
                                  {format(new Date(expense.date), 'yyyy-MM-dd')}
                                </td>
                                <td className="p-4 align-middle font-medium">{expense.description}</td>
-                               <td className="p-4 align-middle font-semibold text-red-600">
-                                 ${expense.amount.toLocaleString()}
-                               </td>
                                <td className="p-4 align-middle">
                                  <Badge variant="outline" className="text-xs">
                                    {expense.category}
                                  </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-red-600">
+                                 ${expense.amount.toLocaleString()}
                                </td>
                                <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
                                  {expense.reference}
