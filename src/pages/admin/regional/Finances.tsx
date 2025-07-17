@@ -395,7 +395,7 @@ const RegionalFinances: React.FC = () => {
                       <CardContent className="pt-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {/* Payment Method Filter */}
-                          <div className="space-y-2">
+                          <div className="space-y-2 w-3/4">
                             <label className="text-sm font-medium">Payment Method</label>
                             <div className="space-y-2">
                               {paymentMethods.map((method) => (
@@ -420,7 +420,7 @@ const RegionalFinances: React.FC = () => {
                           </div>
 
                           {/* Amount Range Filter */}
-                          <div className="space-y-2">
+                          <div className="space-y-2 w-3/4">
                             <label className="text-sm font-medium">Amount Range</label>
                             <div className="flex space-x-2">
                               <Input
