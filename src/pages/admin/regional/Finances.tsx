@@ -64,18 +64,8 @@ const specialGivingSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Form schema for expense recording
-const expenseSchema = z.object({
-  date: z.string().min(1, { message: "Date is required" }),
-  category: z.string().min(1, { message: "Please select a category" }),
-  description: z.string().min(3, { message: "Description is required" }),
-  amount: z.string().min(1, { message: "Amount is required" }),
-  payee: z.string().min(3, { message: "Payee is required" }),
-  receiptImage: z.string().optional(),
-  notes: z.string().optional(),
-});
-
 const RegionalFinances: React.FC = () => {
+  // State for dialogs
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
@@ -102,19 +92,6 @@ const RegionalFinances: React.FC = () => {
       amount: "",
       donorId: "",
       isAnonymous: false,
-      notes: "",
-    },
-  });
-
-  const expenseForm = useForm<z.infer<typeof expenseSchema>>({
-    resolver: zodResolver(expenseSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      category: "",
-      description: "",
-      amount: "",
-      payee: "",
-      receiptImage: "",
       notes: "",
     },
   });
