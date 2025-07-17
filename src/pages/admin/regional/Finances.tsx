@@ -531,14 +531,6 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 )}
 
-                {/* Export Button */}
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-
                 {/* Scrollable Table */}
                 <div className="rounded-md border">
                   <div className="max-h-[500px] overflow-auto">
