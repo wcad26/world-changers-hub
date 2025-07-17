@@ -757,10 +757,11 @@ const RegionalFinances: React.FC = () => {
                         <SelectTrigger className="w-20">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                        </SelectContent>
+                         <SelectContent>
+                           <SelectItem value="10">10</SelectItem>
+                           <SelectItem value="25">25</SelectItem>
+                           <SelectItem value="50">50</SelectItem>
+                         </SelectContent>
                       </Select>
                       <span className="text-sm text-muted-foreground">per page</span>
                     </div>
