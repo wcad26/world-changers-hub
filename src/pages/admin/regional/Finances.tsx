@@ -373,6 +373,57 @@ const Finances = () => {
               </Card>
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Income Distribution</CardTitle>
+                  <CardDescription>
+                    Breakdown of monthly income by category
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[250px]">
+                    <PieChart
+                      data={[
+                        { category: "Tithes", value: 18000 },
+                        { category: "Offerings", value: 6000 },
+                        { category: "Special Giving", value: 3000 },
+                      ]}
+                      index="category"
+                      categories={["value"]}
+                      colors={["#8b5cf6", "#a855f7", "#c084fc"]}
+                      valueFormatter={(value) => `$${value.toLocaleString()}`}
+                      className="h-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expense Distribution</CardTitle>
+                  <CardDescription>
+                    Breakdown of monthly expenses by category
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[250px]">
+                    <PieChart
+                      data={[
+                        { category: "Operations", value: 15000 },
+                        { category: "Utilities", value: 4000 },
+                        { category: "Programs", value: 3750 },
+                      ]}
+                      index="category"
+                      categories={["value"]}
+                      colors={["#e11d48", "#f43f5e", "#fb7185"]}
+                      valueFormatter={(value) => `$${value.toLocaleString()}`}
+                      className="h-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle>Monthly Financial Trends</CardTitle>
@@ -406,61 +457,6 @@ const Finances = () => {
                 </div>
               </CardContent>
             </Card>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Income Distribution</CardTitle>
-                  <CardDescription>
-                    Breakdown of monthly income by category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    <PieChart
-                      data={[
-                        { category: "Tithes", value: 15000 },
-                        { category: "Offerings", value: 7500 },
-                        { category: "Special Giving", value: 3500 },
-                        { category: "Other", value: 1500 },
-                      ]}
-                      index="category"
-                      categories={["value"]}
-                      colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]}
-                      valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expense Distribution</CardTitle>
-                  <CardDescription>
-                    Breakdown of monthly expenses by category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    <PieChart
-                      data={[
-                        { category: "Staffing", value: 12000 },
-                        { category: "Facilities", value: 4500 },
-                        { category: "Ministries", value: 3250 },
-                        { category: "Administration", value: 1500 },
-                        { category: "Outreach", value: 1500 },
-                      ]}
-                      index="category"
-                      categories={["value"]}
-                      colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
-                      valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
           
           <TabsContent value="tithes">
