@@ -1451,7 +1451,11 @@ const Finances = () => {
             {/* Record Expense Dialog */}
             <RecordExpenseDialog 
               open={expenseDialogOpen} 
-              onOpenChange={setExpenseDialogOpen} 
+              onOpenChange={setExpenseDialogOpen}
+              onSubmit={(expenseData) => {
+                console.log('Expense recorded:', expenseData);
+                setExpenseDialogOpen(false);
+              }}
             />
           </TabsContent>
           
