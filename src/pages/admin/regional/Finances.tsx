@@ -199,7 +199,7 @@ const RegionalFinances: React.FC = () => {
 
   return (
     <RegionalAdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-2">
         
         <Tabs defaultValue="overview">
           <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">
