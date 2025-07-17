@@ -353,6 +353,14 @@ const RegionalFinances: React.FC = () => {
           
           <TabsContent value="tithes">
             <Card>
+              <CardHeader>
+                <div>
+                  <CardTitle>Tithe Transactions</CardTitle>
+                  <CardDescription>
+                    Manage and view all tithe records from members.
+                  </CardDescription>
+                </div>
+              </CardHeader>
               <CardContent className="space-y-4">
                 {/* Search and Filter Controls */}
                 <div className="flex flex-col sm:flex-row gap-4">
