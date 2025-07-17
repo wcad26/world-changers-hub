@@ -353,179 +353,182 @@ const RegionalFinances: React.FC = () => {
           
           <TabsContent value="tithes">
             <Card className="h-[calc(100vh-8rem)] flex flex-col">
-              <CardContent className="space-y-4 pt-6 flex-1 overflow-hidden flex flex-col">
-                {/* Search and Filter Controls */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by member name or reference..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+              <CardContent className="pt-6 flex-1 flex flex-col">
+                {/* Fixed Controls Section */}
+                <div className="space-y-4 flex-shrink-0">
+                  {/* Search and Filter Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by member name or reference..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="shrink-0"
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filters
+                        {hasActiveFilters && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button onClick={() => setRecordTitheDialogOpen(true)}>
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Record Tithe
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="shrink-0"
-                    >
-                      <Filter className="h-4 w-4 mr-2" />
-                      Filters
-                      {hasActiveFilters && (
-                        <Badge variant="secondary" className="ml-2 text-xs">
-                          Active
+
+                  {/* Filter Panel */}
+                  {showFilters && (
+                    <Card className="border-dashed">
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Payment Method Filter */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Payment Method</label>
+                            <div className="space-y-2">
+                              {paymentMethods.map((method) => (
+                                <div key={method} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={method}
+                                    checked={selectedMethods.includes(method)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedMethods([...selectedMethods, method]);
+                                      } else {
+                                        setSelectedMethods(selectedMethods.filter(m => m !== method));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={method} className="text-sm">
+                                    {method}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Amount Range Filter */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Amount Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="number"
+                                placeholder="Min"
+                                value={amountRange.min}
+                                onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
+                              />
+                              <Input
+                                type="number"
+                                placeholder="Max"
+                                value={amountRange.max}
+                                onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Date Range Filter */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Date Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="date"
+                                value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setDateRange({
+                                  ...dateRange,
+                                  from: e.target.value ? new Date(e.target.value) : undefined
+                                })}
+                              />
+                              <Input
+                                type="date"
+                                value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setDateRange({
+                                  ...dateRange,
+                                  to: e.target.value ? new Date(e.target.value) : undefined
+                                })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Filter Actions */}
+                        <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                          <div className="text-sm text-muted-foreground">
+                            Showing {filteredTithes.length} of {mockTithes.length} transactions
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" onClick={clearFilters}>
+                              <X className="h-4 w-4 mr-1" />
+                              Clear All
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Active Filter Chips */}
+                  {hasActiveFilters && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMethods.map((method) => (
+                        <Badge key={method} variant="secondary" className="gap-1">
+                          <CreditCard className="h-3 w-3" />
+                          {method}
+                          <button
+                            onClick={() => setSelectedMethods(selectedMethods.filter(m => m !== method))}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      {(amountRange.min || amountRange.max) && (
+                        <Badge variant="secondary" className="gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          {amountRange.min && `$${amountRange.min}`}
+                          {amountRange.min && amountRange.max && ' - '}
+                          {amountRange.max && `$${amountRange.max}`}
+                          <button
+                            onClick={() => setAmountRange({ min: '', max: '' })}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </Badge>
                       )}
-                    </Button>
-                    <Button onClick={() => setRecordTitheDialogOpen(true)}>
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Record Tithe
-                    </Button>
-                  </div>
+                      {(dateRange.from || dateRange.to) && (
+                        <Badge variant="secondary" className="gap-1">
+                          <CalendarDays className="h-3 w-3" />
+                          {dateRange.from && dateRange.from.toLocaleDateString()}
+                          {dateRange.from && dateRange.to && ' - '}
+                          {dateRange.to && dateRange.to.toLocaleDateString()}
+                          <button
+                            onClick={() => setDateRange({})}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Filter Panel */}
-                {showFilters && (
-                  <Card className="border-dashed">
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Payment Method Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Payment Method</label>
-                          <div className="space-y-2">
-                            {paymentMethods.map((method) => (
-                              <div key={method} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={method}
-                                  checked={selectedMethods.includes(method)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedMethods([...selectedMethods, method]);
-                                    } else {
-                                      setSelectedMethods(selectedMethods.filter(m => m !== method));
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={method} className="text-sm">
-                                  {method}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Amount Range Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Amount Range</label>
-                          <div className="flex space-x-2">
-                            <Input
-                              type="number"
-                              placeholder="Min"
-                              value={amountRange.min}
-                              onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
-                            />
-                            <Input
-                              type="number"
-                              placeholder="Max"
-                              value={amountRange.max}
-                              onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Date Range Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Date Range</label>
-                          <div className="flex space-x-2">
-                            <Input
-                              type="date"
-                              value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
-                              onChange={(e) => setDateRange({
-                                ...dateRange,
-                                from: e.target.value ? new Date(e.target.value) : undefined
-                              })}
-                            />
-                            <Input
-                              type="date"
-                              value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
-                              onChange={(e) => setDateRange({
-                                ...dateRange,
-                                to: e.target.value ? new Date(e.target.value) : undefined
-                              })}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Filter Actions */}
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                          Showing {filteredTithes.length} of {mockTithes.length} transactions
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={clearFilters}>
-                            <X className="h-4 w-4 mr-1" />
-                            Clear All
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Active Filter Chips */}
-                {hasActiveFilters && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedMethods.map((method) => (
-                      <Badge key={method} variant="secondary" className="gap-1">
-                        <CreditCard className="h-3 w-3" />
-                        {method}
-                        <button
-                          onClick={() => setSelectedMethods(selectedMethods.filter(m => m !== method))}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                    {(amountRange.min || amountRange.max) && (
-                      <Badge variant="secondary" className="gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {amountRange.min && `$${amountRange.min}`}
-                        {amountRange.min && amountRange.max && ' - '}
-                        {amountRange.max && `$${amountRange.max}`}
-                        <button
-                          onClick={() => setAmountRange({ min: '', max: '' })}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {(dateRange.from || dateRange.to) && (
-                      <Badge variant="secondary" className="gap-1">
-                        <CalendarDays className="h-3 w-3" />
-                        {dateRange.from && dateRange.from.toLocaleDateString()}
-                        {dateRange.from && dateRange.to && ' - '}
-                        {dateRange.to && dateRange.to.toLocaleDateString()}
-                        <button
-                          onClick={() => setDateRange({})}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
-                {/* Scrollable Table */}
-                <div className="rounded-md border">
-                  <div className="max-h-[500px] overflow-auto">
+                {/* Scrollable Table Container */}
+                <div className="flex-1 overflow-hidden rounded-md border">
+                  <div className="h-full overflow-auto">
                     <Table>
                       <TableHeader className="sticky top-0 bg-background">
                         <TableRow>
@@ -579,9 +582,9 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pagination */}
+                {/* Fixed Pagination Section */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
                     <div className="text-sm text-muted-foreground">
                       Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTithes.length)} of {filteredTithes.length} transactions
                     </div>
