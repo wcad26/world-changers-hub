@@ -933,8 +933,8 @@ const RegionalFinances: React.FC = () => {
                 </div>
 
                 {/* Scrollable Table Section */}
-                <div className="flex-1 overflow-hidden">
-                  <div className="overflow-auto h-full">
+                <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
+                  <div className="h-full overflow-auto relative">
                     <Table>
                       <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
