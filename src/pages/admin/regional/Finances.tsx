@@ -936,13 +936,13 @@ const RegionalFinances: React.FC = () => {
                 <div className="flex-1 overflow-hidden">
                   <div className="overflow-auto h-full">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Service</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Reference</TableHead>
+                          <TableHead className="bg-background">Date</TableHead>
+                          <TableHead className="bg-background">Service</TableHead>
+                          <TableHead className="bg-background">Amount</TableHead>
+                          <TableHead className="bg-background">Category</TableHead>
+                          <TableHead className="bg-background">Reference</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
