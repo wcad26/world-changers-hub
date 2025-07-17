@@ -15,46 +15,7 @@ export interface NextMeeting {
   is_upcoming: boolean;
 }
 
-// Generate recurring events for DCG
-export const useGenerateDcgRecurringEvents = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (data: { dcg_id: string; weeks_ahead?: number }) => {
-      const { data: result, error } = await supabase.rpc(
-        'generate_dcg_recurring_events',
-        {
-          _dcg_id: data.dcg_id,
-          _weeks_ahead: data.weeks_ahead || 8,
-        }
-      );
-
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: (eventsCreated, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['dcg-attendance-events', variables.dcg_id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['dcg-next-meeting', variables.dcg_id],
-      });
-      
-      toast({
-        title: 'Events Generated',
-        description: `Created ${eventsCreated} recurring attendance events.`,
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: `Failed to generate events: ${error.message}`,
-        variant: 'destructive',
-      });
-    },
-  });
-};
+// Function removed - events are now created manually on the Events page
 
 // Get next DCG meeting
 export const useDcgNextMeeting = (dcgId?: string) => {

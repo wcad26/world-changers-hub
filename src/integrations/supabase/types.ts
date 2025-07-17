@@ -1015,10 +1015,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_dcg_recurring_events: {
-        Args: { _dcg_id: string; _weeks_ahead?: number }
-        Returns: number
-      }
       generate_member_id: {
         Args: { _region_id: string }
         Returns: string

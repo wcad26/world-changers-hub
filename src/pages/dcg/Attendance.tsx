@@ -26,14 +26,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  useDcgAttendanceEvents, 
-  useDcgAttendanceAnalytics,
-  useDcgAttendanceHistory,
-  useGenerateDcgRecurringEvents,
-  useDcgNextMeeting
-} from '@/hooks/useDcgAttendance';
-import { DcgAttendanceRecordDialog } from '@/components/admin/dcg/DcgAttendanceRecordDialog';
+import { useDcgEvents } from '@/hooks/useDcgEvents';
+import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDialog';
 
 const DcgAttendance = () => {
   const { userDcg } = useAuth();
@@ -41,56 +35,24 @@ const DcgAttendance = () => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   const { 
-    data: attendanceEvents, 
+    data: events, 
     isLoading: loadingEvents, 
     error: eventsError 
-  } = useDcgAttendanceEvents(userDcg?.id);
-  
-  const { 
-    data: analytics, 
-    isLoading: loadingAnalytics 
-  } = useDcgAttendanceAnalytics(userDcg?.id);
-  
-  const { 
-    data: attendanceHistory 
-  } = useDcgAttendanceHistory(userDcg?.id);
+  } = useDcgEvents(userDcg?.id);
 
-  const { data: nextMeeting } = useDcgNextMeeting(userDcg?.id);
-  const generateEvents = useGenerateDcgRecurringEvents();
-
-  // Auto-generate events if none exist
-  useEffect(() => {
-    if (userDcg?.id && attendanceEvents !== undefined && attendanceEvents.length === 0) {
-      generateEvents.mutate({ dcg_id: userDcg.id });
-    }
-  }, [userDcg?.id, attendanceEvents, generateEvents]);
-
-  const handleGenerateEvents = () => {
-    if (userDcg?.id) {
-      generateEvents.mutate({ dcg_id: userDcg.id });
-    }
-  };
-
-  const filteredEvents = attendanceEvents?.filter(event => 
+  const filteredEvents = events?.filter(event => 
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    format(new Date(event.event_date), 'PPP').toLowerCase().includes(searchTerm.toLowerCase())
+    format(new Date(event.start_datetime), 'PPP').toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const getAttendanceRate = (eventId: string) => {
-    const historyItem = attendanceHistory?.find(h => h.event_id === eventId);
-    if (!historyItem) return 0;
-    
-    const total = historyItem.total_present + historyItem.total_absent;
-    return total > 0 ? (historyItem.total_present / total) * 100 : 0;
+  // Helper to check if event has past
+  const isPastEvent = (event: any) => {
+    return new Date(event.start_datetime) < new Date();
   };
 
-  const getAttendanceCounts = (eventId: string) => {
-    const historyItem = attendanceHistory?.find(h => h.event_id === eventId);
-    return {
-      present: historyItem?.total_present || 0,
-      total: (historyItem?.total_present || 0) + (historyItem?.total_absent || 0)
-    };
-  };
+  // Get upcoming events
+  const upcomingEvents = filteredEvents.filter(event => !isPastEvent(event));
+  const nextEvent = upcomingEvents.length > 0 ? upcomingEvents[0] : null;
 
   if (!userDcg) {
     return (
@@ -110,36 +72,25 @@ const DcgAttendance = () => {
     <DcgAdminLayout>
       <div className="space-y-6">
         {/* Quick Actions Section */}
-        {nextMeeting && (
+        {nextEvent && (
           <Card className="border-primary/20 bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                {nextMeeting.is_today ? "Today's Meeting" : "Next Meeting"}
+                Next Event
               </CardTitle>
               <CardDescription>
-                {nextMeeting.event_name} - {format(new Date(nextMeeting.event_date), 'PPP')}
+                {nextEvent.name} - {format(new Date(nextEvent.start_datetime), 'PPP')}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => setSelectedEvent(nextMeeting)}
-                  className="flex items-center gap-2"
-                >
-                  <UserCheck className="h-4 w-4" />
-                  Record Attendance
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleGenerateEvents}
-                  disabled={generateEvents.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className={`h-4 w-4 ${generateEvents.isPending ? 'animate-spin' : ''}`} />
-                  Generate Future Events
-                </Button>
-              </div>
+              <Button
+                onClick={() => setSelectedEvent(nextEvent)}
+                className="flex items-center gap-2"
+              >
+                <UserCheck className="h-4 w-4" />
+                Record Attendance
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -148,22 +99,13 @@ const DcgAttendance = () => {
           <div>
             <h1 className="text-3xl font-bold">DCG Attendance</h1>
             <p className="text-muted-foreground">
-              Automatic recurring meetings based on your DCG schedule
+              Record attendance for your DCG events
             </p>
           </div>
-          <Button 
-            variant="outline"
-            onClick={handleGenerateEvents}
-            disabled={generateEvents.isPending}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${generateEvents.isPending ? 'animate-spin' : ''}`} />
-            Generate Events
-          </Button>
         </div>
 
-        {/* Analytics Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Event Stats */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Events</CardTitle>
@@ -171,87 +113,65 @@ const DcgAttendance = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {loadingAnalytics ? (
+                {loadingEvents ? (
                   <Skeleton className="h-8 w-12" />
                 ) : (
-                  analytics?.totalEvents || 0
+                  events?.length || 0
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                All time attendance events
+                All DCG events
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Attendance</CardTitle>
+              <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {loadingEvents ? (
+                  <Skeleton className="h-8 w-12" />
+                ) : (
+                  upcomingEvents.length
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Future events to attend
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Past Events</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {loadingAnalytics ? (
-                  <Skeleton className="h-8 w-16" />
+                {loadingEvents ? (
+                  <Skeleton className="h-8 w-12" />
                 ) : (
-                  `${Math.round(analytics?.averageAttendanceRate || 0)}%`
+                  events?.filter(e => isPastEvent(e)).length || 0
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Overall attendance rate
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingAnalytics ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  `${Math.round(analytics?.thisMonthRate || 0)}%`
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Current month attendance
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Monthly Change</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {loadingAnalytics ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <span className={analytics?.monthlyChange >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {analytics?.monthlyChange >= 0 ? '+' : ''}
-                    {Math.round(analytics?.monthlyChange || 0)}%
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                vs last month
+                Completed events
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Attendance Events */}
+        {/* DCG Events for Attendance */}
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
-                <CardTitle>Attendance Events</CardTitle>
+                <CardTitle>DCG Events</CardTitle>
                 <CardDescription>
-                  Manage and record attendance for DCG meetings and events
+                  Record attendance for your DCG events
                 </CardDescription>
               </div>
               <div className="relative w-64">
@@ -270,7 +190,7 @@ const DcgAttendance = () => {
             {eventsError && (
               <Alert variant="destructive" className="mb-4">
                 <AlertDescription>
-                  Error loading attendance events: {eventsError.message}
+                  Error loading events: {eventsError.message}
                 </AlertDescription>
               </Alert>
             )}
@@ -280,9 +200,9 @@ const DcgAttendance = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Event Name</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Attendance</TableHead>
-                    <TableHead>Rate</TableHead>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="w-[70px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -300,24 +220,39 @@ const DcgAttendance = () => {
                   ) : filteredEvents.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        {searchTerm ? "No events match your search" : "No attendance events found"}
+                        {searchTerm ? "No events match your search" : "No events found. Create events on the Events page."}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredEvents.map((event) => {
-                      const counts = getAttendanceCounts(event.id);
-                      const rate = getAttendanceRate(event.id);
+                      const isUpcoming = !isPastEvent(event);
                       
                       return (
                         <TableRow key={event.id}>
-                          <TableCell className="font-medium">{event.name}</TableCell>
-                          <TableCell>{format(new Date(event.event_date), 'PPP')}</TableCell>
-                          <TableCell>
-                            {counts.present}/{counts.total}
+                          <TableCell className="font-medium">
+                            <div>
+                              <div>{event.name}</div>
+                              {event.description && (
+                                <div className="text-sm text-muted-foreground truncate max-w-xs">
+                                  {event.description}
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={rate >= 75 ? 'default' : rate >= 50 ? 'secondary' : 'destructive'}>
-                              {Math.round(rate)}%
+                            <div>
+                              <div>{format(new Date(event.start_datetime), 'PPP')}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {format(new Date(event.start_datetime), 'p')}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{event.category}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={isUpcoming ? 'default' : 'secondary'}>
+                              {isUpcoming ? 'Upcoming' : 'Completed'}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -348,10 +283,10 @@ const DcgAttendance = () => {
 
       {/* Record Attendance Dialog */}
       {selectedEvent && (
-        <DcgAttendanceRecordDialog
+        <EventAttendanceDialog
           isOpen={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
-          attendanceEvent={selectedEvent}
+          event={selectedEvent}
           dcgId={userDcg.id}
         />
       )}
