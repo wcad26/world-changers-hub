@@ -9,11 +9,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard } from "lucide-react";
+import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
@@ -133,8 +136,39 @@ const mockSpecialGiving = [
 const mockExpenses = [
   { id: 1, date: "2023-10-21", category: "Utilities", description: "Electricity Bill", amount: 850, payee: "Power Company", reference: "E2023-0245" },
   { id: 2, date: "2023-10-18", category: "Maintenance", description: "Plumbing Repairs", amount: 1200, payee: "City Plumbers", reference: "E2023-0244" },
-  { id: 3, date: "2023-10-15", category: "Office", description: "Office Supplies", amount: 350, payee: "Office Store", reference: "E2023-0243" },
-  { id: 4, date: "2023-10-10", category: "Ministry", description: "Youth Event Supplies", amount: 500, payee: "Party Supplies", reference: "E2023-0242" },
+  { id: 3, date: "2023-10-15", category: "Office Supplies", description: "Printer Paper and Ink", amount: 350, payee: "Office Store", reference: "E2023-0243" },
+  { id: 4, date: "2023-10-10", category: "Programs", description: "Youth Event Supplies", amount: 500, payee: "Party Supplies", reference: "E2023-0242" },
+  { id: 5, date: "2023-10-08", category: "Transportation", description: "Van Fuel", amount: 180, payee: "Gas Station", reference: "E2023-0241" },
+  { id: 6, date: "2023-10-05", category: "Equipment", description: "Sound System Repair", amount: 750, payee: "Audio Tech", reference: "E2023-0240" },
+  { id: 7, date: "2023-10-03", category: "Utilities", description: "Water Bill", amount: 220, payee: "City Water", reference: "E2023-0239" },
+  { id: 8, date: "2023-10-01", category: "Maintenance", description: "HVAC Service", amount: 450, payee: "Comfort Systems", reference: "E2023-0238" },
+  { id: 9, date: "2023-09-28", category: "Office Supplies", description: "Cleaning Supplies", amount: 125, payee: "Janitorial Supply", reference: "E2023-0237" },
+  { id: 10, date: "2023-09-25", category: "Programs", description: "Children's Ministry Materials", amount: 280, payee: "Christian Books", reference: "E2023-0236" },
+  { id: 11, date: "2023-09-22", category: "Transportation", description: "Bus Rental", amount: 800, payee: "Charter Bus Co", reference: "E2023-0235" },
+  { id: 12, date: "2023-09-20", category: "Equipment", description: "Laptop Purchase", amount: 1500, payee: "Computer Store", reference: "E2023-0234" },
+  { id: 13, date: "2023-09-18", category: "Utilities", description: "Internet Service", amount: 120, payee: "ISP Provider", reference: "E2023-0233" },
+  { id: 14, date: "2023-09-15", category: "Maintenance", description: "Roof Repairs", amount: 2200, payee: "Roofing Company", reference: "E2023-0232" },
+  { id: 15, date: "2023-09-12", category: "Office Supplies", description: "Stationery and Forms", amount: 95, payee: "Print Shop", reference: "E2023-0231" },
+  { id: 16, date: "2023-09-10", category: "Programs", description: "Music Ministry Equipment", amount: 650, payee: "Music Store", reference: "E2023-0230" },
+  { id: 17, date: "2023-09-08", category: "Transportation", description: "Vehicle Maintenance", amount: 380, payee: "Auto Service", reference: "E2023-0229" },
+  { id: 18, date: "2023-09-05", category: "Equipment", description: "Video Projector", amount: 1200, payee: "Electronics Store", reference: "E2023-0228" },
+  { id: 19, date: "2023-09-03", category: "Utilities", description: "Phone Bill", amount: 85, payee: "Telecom Company", reference: "E2023-0227" },
+  { id: 20, date: "2023-09-01", category: "Maintenance", description: "Carpet Cleaning", amount: 320, payee: "Cleaning Service", reference: "E2023-0226" },
+  { id: 21, date: "2023-08-28", category: "Office Supplies", description: "Computer Accessories", amount: 240, payee: "Tech Store", reference: "E2023-0225" },
+  { id: 22, date: "2023-08-25", category: "Programs", description: "Vacation Bible School", amount: 850, payee: "VBS Supplies", reference: "E2023-0224" },
+  { id: 23, date: "2023-08-22", category: "Transportation", description: "Mission Trip Fuel", amount: 420, payee: "Gas Station", reference: "E2023-0223" },
+  { id: 24, date: "2023-08-20", category: "Equipment", description: "Chairs Purchase", amount: 960, payee: "Furniture Store", reference: "E2023-0222" },
+  { id: 25, date: "2023-08-18", category: "Utilities", description: "Electricity Bill", amount: 890, payee: "Power Company", reference: "E2023-0221" },
+  { id: 26, date: "2023-08-15", category: "Maintenance", description: "Landscaping", amount: 540, payee: "Lawn Service", reference: "E2023-0220" },
+  { id: 27, date: "2023-08-12", category: "Office Supplies", description: "Bulletin Printing", amount: 180, payee: "Print Shop", reference: "E2023-0219" },
+  { id: 28, date: "2023-08-10", category: "Programs", description: "Youth Camp Registration", amount: 1200, payee: "Camp Organization", reference: "E2023-0218" },
+  { id: 29, date: "2023-08-08", category: "Transportation", description: "Van Insurance", amount: 650, payee: "Insurance Company", reference: "E2023-0217" },
+  { id: 30, date: "2023-08-05", category: "Equipment", description: "Microphones", amount: 480, payee: "Audio Equipment", reference: "E2023-0216" },
+  { id: 31, date: "2023-08-03", category: "Utilities", description: "Water Bill", amount: 195, payee: "City Water", reference: "E2023-0215" },
+  { id: 32, date: "2023-08-01", category: "Maintenance", description: "Bathroom Repairs", amount: 720, payee: "Plumbing Service", reference: "E2023-0214" },
+  { id: 33, date: "2023-07-28", category: "Office Supplies", description: "Filing Cabinets", amount: 340, payee: "Office Furniture", reference: "E2023-0213" },
+  { id: 34, date: "2023-07-25", category: "Programs", description: "Guest Speaker Fee", amount: 800, payee: "Conference Speaker", reference: "E2023-0212" },
+  { id: 35, date: "2023-07-22", category: "Transportation", description: "Bus Maintenance", amount: 290, payee: "Bus Service", reference: "E2023-0211" },
 ];
 
 // Form schema for offering recording
@@ -186,6 +220,21 @@ const RegionalFinances: React.FC = () => {
   const [specialGivingSearchTerm, setSpecialGivingSearchTerm] = useState("");
   const [specialGivingCurrentPage, setSpecialGivingCurrentPage] = useState(1);
   const [specialGivingItemsPerPage, setSpecialGivingItemsPerPage] = useState(10);
+
+  // Expense filtering and pagination state
+  const [expenseSearchQuery, setExpenseSearchQuery] = useState("");
+  const [expenseCurrentPage, setExpenseCurrentPage] = useState(1);
+  const [expenseItemsPerPage, setExpenseItemsPerPage] = useState(10);
+  const [showExpenseFilters, setShowExpenseFilters] = useState(false);
+  const [expenseFilters, setExpenseFilters] = useState({
+    categories: [] as string[],
+    minAmount: '',
+    maxAmount: '',
+    startDate: '',
+    endDate: '',
+    payee: ''
+  });
+  const [showRecordExpenseDialog, setShowRecordExpenseDialog] = useState(false);
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -349,6 +398,69 @@ const RegionalFinances: React.FC = () => {
   const specialGivingTotalPages = Math.ceil(filteredSpecialGiving.length / specialGivingItemsPerPage);
   const specialGivingStartIndex = (specialGivingCurrentPage - 1) * specialGivingItemsPerPage;
   const paginatedSpecialGiving = filteredSpecialGiving.slice(specialGivingStartIndex, specialGivingStartIndex + specialGivingItemsPerPage);
+
+  // Expense filtering and pagination logic
+  const filteredExpenses = mockExpenses.filter((expense) => {
+    // Search filter
+    const matchesSearch = 
+      expense.description.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.category.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.payee.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.reference.toLowerCase().includes(expenseSearchQuery.toLowerCase());
+    
+    // Category filter
+    const matchesCategory = expenseFilters.categories.length === 0 || expenseFilters.categories.includes(expense.category);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!expenseFilters.minAmount || expense.amount >= parseFloat(expenseFilters.minAmount)) &&
+      (!expenseFilters.maxAmount || expense.amount <= parseFloat(expenseFilters.maxAmount));
+    
+    // Date range filter
+    const expenseDate = new Date(expense.date);
+    const matchesDate = 
+      (!expenseFilters.startDate || expenseDate >= new Date(expenseFilters.startDate)) &&
+      (!expenseFilters.endDate || expenseDate <= new Date(expenseFilters.endDate));
+    
+    // Payee filter
+    const matchesPayee = !expenseFilters.payee || expense.payee.toLowerCase().includes(expenseFilters.payee.toLowerCase());
+    
+    return matchesSearch && matchesCategory && matchesAmount && matchesDate && matchesPayee;
+  });
+
+  const expenseTotalPages = Math.ceil(filteredExpenses.length / expenseItemsPerPage);
+  const getExpenseStartIndex = () => (expenseCurrentPage - 1) * expenseItemsPerPage;
+  const getCurrentExpenseItems = () => filteredExpenses.slice(getExpenseStartIndex(), getExpenseStartIndex() + expenseItemsPerPage);
+
+  const getExpensePageNumbers = () => {
+    const pages = [];
+    const totalPages = expenseTotalPages;
+    const current = expenseCurrentPage;
+    
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (current >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
     console.log(values);
@@ -1270,69 +1382,235 @@ const RegionalFinances: React.FC = () => {
           
           <TabsContent value="expenses">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>Recent Expenses</CardTitle>
-                  <CardDescription>
-                    View and manage recent expense records.
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setRecordExpenseDialogOpen(true)} size="sm">
-                  <Receipt className="w-4 h-4 mr-2" />
-                  Record Expense
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4 text-gray-400" />
-                    <Input 
-                      placeholder="Search expenses..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
-                    />
+              <CardContent className="p-6">
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                      <Input
+                        placeholder="Search by description, category, or reference..."
+                        value={expenseSearchQuery}
+                        onChange={(e) => setExpenseSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="rounded-md border">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowExpenseFilters(!showExpenseFilters)}
+                    >
+                      <Filter className="mr-2 h-4 w-4" />
+                      Filter
+                    </Button>
+                    <Button onClick={() => setShowRecordExpenseDialog(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Record Expense
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filter Panel */}
+                {showExpenseFilters && (
+                  <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Category</Label>
+                        <div className="space-y-2">
+                          {['Utilities', 'Office Supplies', 'Maintenance', 'Transportation', 'Equipment', 'Programs'].map((category) => (
+                            <div key={category} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`expense-category-${category}`}
+                                checked={expenseFilters.categories.includes(category)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setExpenseFilters(prev => ({
+                                      ...prev,
+                                      categories: [...prev.categories, category]
+                                    }));
+                                  } else {
+                                    setExpenseFilters(prev => ({
+                                      ...prev,
+                                      categories: prev.categories.filter(c => c !== category)
+                                    }));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`expense-category-${category}`} className="text-sm">
+                                {category}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Amount Range</Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="number"
+                            placeholder="Min amount"
+                            value={expenseFilters.minAmount}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Max amount"
+                            value={expenseFilters.maxAmount}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Date Range</Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="date"
+                            value={expenseFilters.startDate}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                          />
+                          <Input
+                            type="date"
+                            value={expenseFilters.endDate}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Payee</Label>
+                        <Input
+                          placeholder="Search payee..."
+                          value={expenseFilters.payee}
+                          onChange={(e) => setExpenseFilters(prev => ({ ...prev, payee: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setExpenseFilters({
+                            categories: [],
+                            minAmount: '',
+                            maxAmount: '',
+                            startDate: '',
+                            endDate: '',
+                            payee: ''
+                          });
+                        }}
+                      >
+                        Clear Filters
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Table */}
+                <div className="rounded-md border overflow-hidden">
+                  <div className="overflow-x-auto">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-muted/50 sticky top-0">
                         <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Amount</TableHead>
+                          <TableHead className="min-w-[100px]">Date</TableHead>
+                          <TableHead className="min-w-[200px]">Description</TableHead>
+                          <TableHead className="min-w-[120px]">Category</TableHead>
+                          <TableHead className="min-w-[100px] text-right">Amount</TableHead>
+                          <TableHead className="min-w-[150px]">Payee</TableHead>
+                          <TableHead className="min-w-[120px]">Reference</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockExpenses
-                          .filter(expense => 
-                            expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            expense.category.toLowerCase().includes(searchTerm.toLowerCase())
-                          )
-                          .slice(0, 5)
-                          .map((expense) => (
-                            <TableRow key={expense.id}>
-                              <TableCell>{expense.date}</TableCell>
-                              <TableCell>{expense.description}</TableCell>
-                              <TableCell>
-                                <span className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs">
-                                  {expense.category}
-                                </span>
-                              </TableCell>
-                              <TableCell className="font-medium text-destructive">
-                                -${expense.amount.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                        {getCurrentExpenseItems().map((expense) => (
+                          <TableRow key={expense.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium">
+                              {format(new Date(expense.date), 'MMM dd, yyyy')}
+                            </TableCell>
+                            <TableCell>{expense.description}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{expense.category}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              ${expense.amount.toLocaleString()}
+                            </TableCell>
+                            <TableCell>{expense.payee}</TableCell>
+                            <TableCell>
+                              <span className="text-muted-foreground text-sm">
+                                {expense.reference}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {getExpenseStartIndex() + 1} to {Math.min(getExpenseStartIndex() + expenseItemsPerPage, filteredExpenses.length)} of {filteredExpenses.length} entries
+                  </div>
                   
-                  <Button variant="outline" className="w-full">
-                    <ArrowUpRight className="w-4 h-4 mr-2" />
-                    View All Expenses
-                  </Button>
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">Show</span>
+                      <Select 
+                        value={expenseItemsPerPage.toString()} 
+                        onValueChange={(value) => {
+                          setExpenseItemsPerPage(Number(value));
+                          setExpenseCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">per page</span>
+                    </div>
+                    
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            onClick={() => setExpenseCurrentPage(Math.max(1, expenseCurrentPage - 1))}
+                            className={expenseCurrentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                        
+                        {getExpensePageNumbers().map((pageNum, index) => (
+                          <PaginationItem key={index}>
+                            {pageNum === '...' ? (
+                              <PaginationEllipsis />
+                            ) : (
+                              <PaginationLink
+                                onClick={() => setExpenseCurrentPage(pageNum as number)}
+                                isActive={pageNum === expenseCurrentPage}
+                                className="cursor-pointer"
+                              >
+                                {pageNum}
+                              </PaginationLink>
+                            )}
+                          </PaginationItem>
+                        ))}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            onClick={() => setExpenseCurrentPage(Math.min(expenseTotalPages, expenseCurrentPage + 1))}
+                            className={expenseCurrentPage === expenseTotalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1549,8 +1827,8 @@ const RegionalFinances: React.FC = () => {
       />
       
       <RecordExpenseDialog
-        open={recordExpenseDialogOpen}
-        onOpenChange={setRecordExpenseDialogOpen}
+        open={showRecordExpenseDialog}
+        onOpenChange={setShowRecordExpenseDialog}
         onSubmit={onExpenseSubmit}
       />
     </RegionalAdminLayout>
