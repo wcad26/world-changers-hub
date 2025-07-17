@@ -601,6 +601,7 @@ const RegionalFinances: React.FC = () => {
                         <SelectContent>
                           <SelectItem value="5">5</SelectItem>
                           <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="15">15</SelectItem>
                         </SelectContent>
                       </Select>
                       <span className="text-sm text-muted-foreground">per page</span>
