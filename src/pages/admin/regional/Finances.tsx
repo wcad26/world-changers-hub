@@ -37,6 +37,21 @@ const mockTithes = [
   { id: 13, date: "2023-09-10", member: "James Wilson", amount: 380, method: "Credit Card", reference: "T2023-0133" },
   { id: 14, date: "2023-09-03", member: "Rachel Moore", amount: 520, method: "Bank Transfer", reference: "T2023-0132" },
   { id: 15, date: "2023-09-03", member: "Daniel Clark", amount: 445, method: "Cash", reference: "T2023-0131" },
+  { id: 16, date: "2023-08-27", member: "Nancy Rodriguez", amount: 600, method: "Bank Transfer", reference: "T2023-0130" },
+  { id: 17, date: "2023-08-27", member: "Brian Lewis", amount: 375, method: "Credit Card", reference: "T2023-0129" },
+  { id: 18, date: "2023-08-20", member: "Catherine Hall", amount: 525, method: "Cash", reference: "T2023-0128" },
+  { id: 19, date: "2023-08-20", member: "Steven Allen", amount: 480, method: "Bank Transfer", reference: "T2023-0127" },
+  { id: 20, date: "2023-08-13", member: "Angela Young", amount: 420, method: "Credit Card", reference: "T2023-0126" },
+  { id: 21, date: "2023-08-13", member: "Kenneth King", amount: 650, method: "Bank Transfer", reference: "T2023-0125" },
+  { id: 22, date: "2023-08-06", member: "Dorothy Wright", amount: 390, method: "Cash", reference: "T2023-0124" },
+  { id: 23, date: "2023-08-06", member: "Paul Lopez", amount: 575, method: "Bank Transfer", reference: "T2023-0123" },
+  { id: 24, date: "2023-07-30", member: "Helen Hill", amount: 340, method: "Credit Card", reference: "T2023-0122" },
+  { id: 25, date: "2023-07-30", member: "Ronald Green", amount: 720, method: "Bank Transfer", reference: "T2023-0121" },
+  { id: 26, date: "2023-07-23", member: "Betty Adams", amount: 460, method: "Cash", reference: "T2023-0120" },
+  { id: 27, date: "2023-07-23", member: "George Baker", amount: 510, method: "Bank Transfer", reference: "T2023-0119" },
+  { id: 28, date: "2023-07-16", member: "Sandra Gonzalez", amount: 385, method: "Credit Card", reference: "T2023-0118" },
+  { id: 29, date: "2023-07-16", member: "William Nelson", amount: 630, method: "Bank Transfer", reference: "T2023-0117" },
+  { id: 30, date: "2023-07-09", member: "Sharon Carter", amount: 450, method: "Cash", reference: "T2023-0116" },
 ];
 
 const mockOfferings = [
