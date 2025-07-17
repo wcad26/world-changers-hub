@@ -12,9 +12,11 @@ import { Loader2 } from 'lucide-react';
 
 interface RegisterMemberFormProps {
   onSuccess?: () => void;
+  customSubmit?: (data: NewMemberData) => void;
+  isLoading?: boolean;
 }
 
-const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) => {
+const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, customSubmit, isLoading }) => {
   const { toast } = useToast();
   const createMember = useCreateMember();
 
@@ -37,6 +39,11 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
 
   const onSubmit = (values: NewMemberData) => {
     console.log('RegisterMemberForm: Submitting form with values:', values);
+    
+    if (customSubmit) {
+      customSubmit(values);
+      return;
+    }
     
     createMember.mutate(values, {
       onSuccess: (data) => {
@@ -253,12 +260,12 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess }) =>
             type="button"
             variant="outline"
             onClick={() => form.reset()}
-            disabled={createMember.isPending}
+            disabled={isLoading ?? createMember.isPending}
           >
             Reset Form
           </Button>
-          <Button type="submit" disabled={createMember.isPending}>
-            {createMember.isPending ? (
+          <Button type="submit" disabled={isLoading ?? createMember.isPending}>
+            {(isLoading ?? createMember.isPending) ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Registering Member...

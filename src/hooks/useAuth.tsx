@@ -8,12 +8,14 @@ import type { Database } from '@/integrations/supabase/types';
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
+type Dcg = Database['public']['Tables']['dcgs']['Row'];
 
 export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
+  const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -45,6 +47,7 @@ export const useAuth = () => {
           setProfile(null);
           setUserRoles([]);
           setUserRegion(null);
+          setUserDcg(null);
           setLoading(false);
         }
       }
@@ -136,6 +139,30 @@ export const useAuth = () => {
           setUserRegion(regionData);
         }
       }
+
+      // Fetch user DCG if user has dcg_admin role
+      const hasDcgRole = rolesData?.some(role => role.role === 'dcg_admin' && role.is_active);
+      if (hasDcgRole) {
+        const { data: dcgId, error: dcgIdError } = await supabase
+          .rpc('get_user_dcg', { _user_id: userId });
+
+        if (dcgIdError) {
+          console.error('useAuth: DCG ID fetch error:', dcgIdError);
+        } else if (dcgId) {
+          const { data: dcgData, error: dcgError } = await supabase
+            .from('dcgs')
+            .select('*')
+            .eq('id', dcgId)
+            .single();
+
+          if (dcgError && dcgError.code !== 'PGRST116') {
+            console.error('useAuth: DCG fetch error:', dcgError);
+          } else if (dcgData) {
+            console.log('useAuth: User DCG loaded:', dcgData.name);
+            setUserDcg(dcgData);
+          }
+        }
+      }
     } catch (error) {
       console.error('useAuth: Exception fetching user data:', error);
       toast({
@@ -157,6 +184,7 @@ export const useAuth = () => {
   const isSuperAdmin = () => hasRole('super_admin');
   const isRegionalAdmin = () => hasRole('regional_admin');
   const isMember = () => hasRole('member');
+  const isDcgAdmin = () => hasRole('dcg_admin');
 
   const signOut = async () => {
     try {
@@ -178,6 +206,7 @@ export const useAuth = () => {
         setProfile(null);
         setUserRoles([]);
         setUserRegion(null);
+        setUserDcg(null);
         
         navigate('/');
         toast({
@@ -197,11 +226,13 @@ export const useAuth = () => {
     profile,
     userRoles,
     userRegion,
+    userDcg,
     loading,
     hasRole,
     isSuperAdmin,
     isRegionalAdmin,
     isMember,
+    isDcgAdmin,
     signOut,
     refetchUserData: () => user ? fetchUserData(user.id) : null
   };
