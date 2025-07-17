@@ -486,7 +486,6 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Financial Overview</CardTitle>
                 <CardDescription>
-                  Summary of your region's financial standing.
                 </CardDescription>
               </CardHeader>
               <CardContent>
