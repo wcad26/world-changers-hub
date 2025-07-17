@@ -58,13 +58,21 @@ export const useDcgs = () => {
         .in('dcg_id', dcgIds)
         .eq('is_active', true);
 
-      if (memberCountsError) throw memberCountsError;
+      if (memberCountsError) {
+        console.error('Error fetching member counts:', memberCountsError);
+        throw memberCountsError;
+      }
+
+      console.log('Member counts data:', memberCounts);
+      console.log('DCG IDs:', dcgIds);
 
       // Count members per DCG
       const memberCountMap = memberCounts?.reduce((acc, member) => {
         acc[member.dcg_id] = (acc[member.dcg_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
+
+      console.log('Member count map:', memberCountMap);
 
       // Combine DCG data with member counts
       const dcgsWithCounts = dcgsData?.map(dcg => ({
