@@ -238,65 +238,6 @@ const DcgOverviewTab = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-
-          <div className="rounded-md border overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>DCG Name</TableHead>
-                    <TableHead>Activity</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activityLoading && (
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <TableRow key={`activity-skeleton-${i}`}>
-                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                  {!activityLoading && recentActivity && recentActivity.length > 0 ? (
-                    recentActivity.map((activity, index) => (
-                      <TableRow key={`activity-${index}`}>
-                        <TableCell className="font-medium">{activity.dcgName}</TableCell>
-                        <TableCell>{activity.activity}</TableCell>
-                        <TableCell>{activity.date}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            activity.status === 'Completed' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {activity.status}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : null}
-                  {!activityLoading && (!recentActivity || recentActivity.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center h-24">
-                        No recent activity found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <AddDcgDialog open={isAddDcgDialogOpen} setOpen={setAddDcgDialogOpen} />
     </div>
