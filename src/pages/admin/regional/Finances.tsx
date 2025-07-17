@@ -1381,11 +1381,11 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="expenses">
-            <Card>
-              <CardContent className="p-6">
-                {/* Header Section */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                  <div className="flex-1">
+            <Card className="h-[calc(100vh-8rem)]">
+              <CardContent className="p-6 h-full flex flex-col">
+                {/* Search and Action Bar */}
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+                  <div className="flex-1 w-full sm:max-w-md">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
@@ -1396,16 +1396,18 @@ const RegionalFinances: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setShowExpenseFilters(!showExpenseFilters)}
+                      className="flex items-center gap-2"
                     >
-                      <Filter className="mr-2 h-4 w-4" />
+                      <Filter className="h-4 w-4" />
                       Filter
                     </Button>
-                    <Button onClick={() => setShowRecordExpenseDialog(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
+                    <Button className="flex items-center gap-2" onClick={() => setShowRecordExpenseDialog(true)}>
+                      <Plus className="h-4 w-4" />
                       Record Expense
                     </Button>
                   </div>
@@ -1509,108 +1511,131 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 )}
 
-                {/* Table */}
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader className="bg-muted/50 sticky top-0">
-                        <TableRow>
-                          <TableHead className="min-w-[100px]">Date</TableHead>
-                          <TableHead className="min-w-[200px]">Description</TableHead>
-                          <TableHead className="min-w-[120px]">Category</TableHead>
-                          <TableHead className="min-w-[100px] text-right">Amount</TableHead>
-                          <TableHead className="min-w-[150px]">Payee</TableHead>
-                          <TableHead className="min-w-[120px]">Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {getCurrentExpenseItems().map((expense) => (
-                          <TableRow key={expense.id} className="hover:bg-muted/50">
-                            <TableCell className="font-medium">
-                              {format(new Date(expense.date), 'MMM dd, yyyy')}
-                            </TableCell>
-                            <TableCell>{expense.description}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{expense.category}</Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              ${expense.amount.toLocaleString()}
-                            </TableCell>
-                            <TableCell>{expense.payee}</TableCell>
-                            <TableCell>
-                              <span className="text-muted-foreground text-sm">
-                                {expense.reference}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                {/* Scrollable Table Section */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Description</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getCurrentExpenseItems().length > 0 ? (
+                          getCurrentExpenseItems().map((expense) => (
+                            <tr key={expense.id} className="border-b transition-colors hover:bg-muted/50">
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {format(new Date(expense.date), 'yyyy-MM-dd')}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{expense.description}</td>
+                               <td className="p-4 align-middle font-semibold text-red-600">
+                                 ${expense.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {expense.category}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {expense.reference}
+                               </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
+                              No expenses found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
-                {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
                   <div className="text-sm text-muted-foreground">
                     Showing {getExpenseStartIndex() + 1} to {Math.min(getExpenseStartIndex() + expenseItemsPerPage, filteredExpenses.length)} of {filteredExpenses.length} entries
                   </div>
                   
-                  <div className="flex items-center space-x-6">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">Show</span>
-                      <Select 
-                        value={expenseItemsPerPage.toString()} 
-                        onValueChange={(value) => {
-                          setExpenseItemsPerPage(Number(value));
-                          setExpenseCurrentPage(1);
-                        }}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-muted-foreground">per page</span>
-                    </div>
-                    
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            onClick={() => setExpenseCurrentPage(Math.max(1, expenseCurrentPage - 1))}
-                            className={expenseCurrentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                        
-                        {getExpensePageNumbers().map((pageNum, index) => (
-                          <PaginationItem key={index}>
-                            {pageNum === '...' ? (
-                              <PaginationEllipsis />
-                            ) : (
-                              <PaginationLink
-                                onClick={() => setExpenseCurrentPage(pageNum as number)}
-                                isActive={pageNum === expenseCurrentPage}
-                                className="cursor-pointer"
-                              >
-                                {pageNum}
-                              </PaginationLink>
-                            )}
-                          </PaginationItem>
-                        ))}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            onClick={() => setExpenseCurrentPage(Math.min(expenseTotalPages, expenseCurrentPage + 1))}
-                            className={expenseCurrentPage === expenseTotalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={expenseItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setExpenseItemsPerPage(parseInt(value));
+                        setExpenseCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
                   </div>
+                  
+                  {expenseTotalPages > 1 ? (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpenseCurrentPage(Math.max(1, expenseCurrentPage - 1))}
+                        disabled={expenseCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, expenseTotalPages) }, (_, i) => {
+                          let page;
+                          if (expenseTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (expenseCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (expenseCurrentPage >= expenseTotalPages - 2) {
+                            page = expenseTotalPages - 4 + i;
+                          } else {
+                            page = expenseCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={expenseCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setExpenseCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpenseCurrentPage(Math.min(expenseTotalPages, expenseCurrentPage + 1))}
+                        disabled={expenseCurrentPage === expenseTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
                 </div>
               </CardContent>
             </Card>
