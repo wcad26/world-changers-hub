@@ -1057,43 +1057,54 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="special-giving">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Special Giving</CardTitle>
-                    <CardDescription>
-                      View and manage recent special donations.
-                    </CardDescription>
+            <Card className="h-[calc(100vh-8rem)]">
+              <CardContent className="p-6 h-full flex flex-col">
+                {/* Fixed Controls Section */}
+                <div className="space-y-4 flex-shrink-0 mb-4">
+                  {/* Search and Filter Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by fund, donor, or reference..."
+                          value={specialGivingSearchTerm}
+                          onChange={(e) => setSpecialGivingSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="relative"
+                      >
+                        <Filter className="h-4 w-4" />
+                        Filter
+                      </Button>
+                      <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
+                        <PiggyBank className="mr-2 h-4 w-4" />
+                        Record Special Giving
+                      </Button>
+                    </div>
                   </div>
-                  <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
-                    <PiggyBank className="mr-2 h-4 w-4" />
-                    Record Special Giving
-                  </Button>
                 </div>
-                <div className="mt-4">
-                  <Input
-                    type="search"
-                    placeholder="Search special giving..."
-                    value={specialGivingSearchTerm}
-                    onChange={(e) => setSpecialGivingSearchTerm(e.target.value)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full caption-bottom text-sm">
-                      <thead className="[&_tr]:border-b">
-                        <tr className="border-b transition-colors hover:bg-muted/50 sticky top-0 z-10 bg-background">
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Date</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Fund</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Amount</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Donor</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Reference</th>
+
+                {/* Scrollable Table Section */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Fund</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Donor</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
                         </tr>
                       </thead>
-                      <tbody className="[&_tr:last-child]:border-0">
+                      <tbody>
                         {paginatedSpecialGiving.length > 0 ? (
                           paginatedSpecialGiving.map((giving) => (
                             <tr key={giving.id} className="border-b transition-colors hover:bg-muted/50">
@@ -1116,7 +1127,7 @@ const RegionalFinances: React.FC = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan={5} className="p-4 align-middle text-center h-24">
+                            <td colSpan={5} className="text-center h-24 p-4">
                               No special giving found
                             </td>
                           </tr>
@@ -1125,9 +1136,35 @@ const RegionalFinances: React.FC = () => {
                     </table>
                   </div>
                 </div>
-                
-                {/* Pagination */}
-                <div className="flex items-center justify-between mt-4">
+
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {specialGivingStartIndex + 1} to {Math.min(specialGivingStartIndex + specialGivingItemsPerPage, filteredSpecialGiving.length)} of {filteredSpecialGiving.length} entries
+                  </div>
+                  
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={specialGivingItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setSpecialGivingItemsPerPage(parseInt(value));
+                        setSpecialGivingCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  
                   {specialGivingTotalPages > 1 ? (
                     <div className="flex items-center space-x-2">
                       <Button
@@ -1139,9 +1176,9 @@ const RegionalFinances: React.FC = () => {
                         <ChevronLeft className="h-4 w-4" />
                         Previous
                       </Button>
-                      <div className="flex items-center space-x-1">
+                      <div className="flex space-x-1">
                         {Array.from({ length: Math.min(5, specialGivingTotalPages) }, (_, i) => {
-                          let page: number;
+                          let page;
                           if (specialGivingTotalPages <= 5) {
                             page = i + 1;
                           } else if (specialGivingCurrentPage <= 3) {
@@ -1179,29 +1216,6 @@ const RegionalFinances: React.FC = () => {
                   ) : (
                     <div></div>
                   )}
-                  
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">Rows per page</span>
-                    <Select value={specialGivingItemsPerPage.toString()} onValueChange={(value) => {
-                      setSpecialGivingItemsPerPage(parseInt(value));
-                      setSpecialGivingCurrentPage(1);
-                    }}>
-                      <SelectTrigger className="w-16 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <Button variant="outline">
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    View All Special Giving
-                  </Button>
                 </div>
               </CardContent>
             </Card>
