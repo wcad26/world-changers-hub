@@ -620,42 +620,42 @@ const RegionalFinances: React.FC = () => {
                 </div>
 
                 {/* Scrollable Table Container */}
-                <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-                  <div className="h-full overflow-auto relative">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                        <TableRow>
-                          <TableHead className="bg-background">Date</TableHead>
-                          <TableHead className="bg-background">Member</TableHead>
-                          <TableHead className="bg-background">Amount</TableHead>
-                          <TableHead className="bg-background">Method</TableHead>
-                          <TableHead className="bg-background">Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Member</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Method</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {paginatedTithes.length > 0 ? (
                           paginatedTithes.map((tithe) => (
-                            <TableRow key={tithe.id}>
-                              <TableCell className="font-mono text-xs">
+                            <tr key={tithe.id} className="border-b transition-colors hover:bg-muted/50">
+                              <td className="p-4 align-middle font-mono text-xs">
                                 {new Date(tithe.date).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell className="font-medium">{tithe.member}</TableCell>
-                              <TableCell className="font-semibold text-green-600">
+                              </td>
+                              <td className="p-4 align-middle font-medium">{tithe.member}</td>
+                              <td className="p-4 align-middle font-semibold text-green-600">
                                 ${tithe.amount.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
+                              </td>
+                              <td className="p-4 align-middle">
                                 <Badge variant="outline" className="text-xs">
                                   {tithe.method}
                                 </Badge>
-                              </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">
+                              </td>
+                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
                                 {tithe.reference}
-                              </TableCell>
-                            </TableRow>
+                              </td>
+                            </tr>
                           ))
                         ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
                               <div className="flex flex-col items-center justify-center space-y-2">
                                 <Search className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-muted-foreground">
@@ -667,11 +667,11 @@ const RegionalFinances: React.FC = () => {
                                   </Button>
                                 )}
                               </div>
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         )}
-                      </TableBody>
-                    </Table>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
@@ -933,38 +933,38 @@ const RegionalFinances: React.FC = () => {
                 </div>
 
                 {/* Scrollable Table Section */}
-                <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
-                  <div className="h-full overflow-auto relative">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
-                        <TableRow>
-                          <TableHead className="bg-background">Date</TableHead>
-                          <TableHead className="bg-background">Service</TableHead>
-                          <TableHead className="bg-background">Amount</TableHead>
-                          <TableHead className="bg-background">Category</TableHead>
-                          <TableHead className="bg-background">Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Service</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {paginatedOfferings.length > 0 ? (
                           paginatedOfferings.map((offering) => (
-                            <TableRow key={offering.id}>
-                              <TableCell>{offering.date}</TableCell>
-                              <TableCell>{offering.service}</TableCell>
-                              <TableCell>${offering.amount.toLocaleString()}</TableCell>
-                              <TableCell>{offering.category}</TableCell>
-                              <TableCell>{offering.reference}</TableCell>
-                            </TableRow>
+                            <tr key={offering.id} className="border-b transition-colors hover:bg-muted/50">
+                              <td className="p-4 align-middle">{offering.date}</td>
+                              <td className="p-4 align-middle">{offering.service}</td>
+                              <td className="p-4 align-middle">${offering.amount.toLocaleString()}</td>
+                              <td className="p-4 align-middle">{offering.category}</td>
+                              <td className="p-4 align-middle">{offering.reference}</td>
+                            </tr>
                           ))
                         ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
                               No offerings found
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         )}
-                      </TableBody>
-                    </Table>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
