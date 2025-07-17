@@ -9,7 +9,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search } from "lucide-react";
+import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
@@ -22,6 +26,17 @@ const mockTithes = [
   { id: 2, date: "2023-10-22", member: "Sarah Johnson", amount: 350, method: "Cash", reference: "T2023-0146" },
   { id: 3, date: "2023-10-15", member: "Michael Brown", amount: 450, method: "Credit Card", reference: "T2023-0142" },
   { id: 4, date: "2023-10-15", member: "Emily Wilson", amount: 300, method: "Bank Transfer", reference: "T2023-0143" },
+  { id: 5, date: "2023-10-08", member: "David Miller", amount: 750, method: "Bank Transfer", reference: "T2023-0141" },
+  { id: 6, date: "2023-10-08", member: "Jessica Davis", amount: 425, method: "Credit Card", reference: "T2023-0140" },
+  { id: 7, date: "2023-10-01", member: "Robert Garcia", amount: 550, method: "Cash", reference: "T2023-0139" },
+  { id: 8, date: "2023-09-24", member: "Lisa Martinez", amount: 400, method: "Bank Transfer", reference: "T2023-0138" },
+  { id: 9, date: "2023-09-24", member: "Christopher Lee", amount: 625, method: "Credit Card", reference: "T2023-0137" },
+  { id: 10, date: "2023-09-17", member: "Amanda Taylor", amount: 475, method: "Bank Transfer", reference: "T2023-0136" },
+  { id: 11, date: "2023-09-17", member: "Kevin Anderson", amount: 325, method: "Cash", reference: "T2023-0135" },
+  { id: 12, date: "2023-09-10", member: "Michelle Thomas", amount: 700, method: "Bank Transfer", reference: "T2023-0134" },
+  { id: 13, date: "2023-09-10", member: "James Wilson", amount: 380, method: "Credit Card", reference: "T2023-0133" },
+  { id: 14, date: "2023-09-03", member: "Rachel Moore", amount: 520, method: "Bank Transfer", reference: "T2023-0132" },
+  { id: 15, date: "2023-09-03", member: "Daniel Clark", amount: 445, method: "Cash", reference: "T2023-0131" },
 ];
 
 const mockOfferings = [
@@ -67,11 +82,18 @@ const specialGivingSchema = z.object({
 const RegionalFinances: React.FC = () => {
   // State for dialogs
   const [searchTerm, setSearchTerm] = useState("");
-  const [dateFilter, setDateFilter] = useState("all");
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
   const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
   const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
+  
+  // Tithe filtering and pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
+  const [amountRange, setAmountRange] = useState({ min: "", max: "" });
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -122,6 +144,52 @@ const RegionalFinances: React.FC = () => {
       notes: "",
     });
   }
+
+  // Filter and pagination logic for tithes
+  const paymentMethods = ["Bank Transfer", "Cash", "Credit Card"];
+  
+  const filteredTithes = mockTithes.filter((tithe) => {
+    // Search filter
+    const matchesSearch = 
+      tithe.member.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tithe.reference.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Payment method filter
+    const matchesMethod = selectedMethods.length === 0 || selectedMethods.includes(tithe.method);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!amountRange.min || tithe.amount >= parseFloat(amountRange.min)) &&
+      (!amountRange.max || tithe.amount <= parseFloat(amountRange.max));
+    
+    // Date range filter
+    const titheDate = new Date(tithe.date);
+    const matchesDate = 
+      (!dateRange.from || titheDate >= dateRange.from) &&
+      (!dateRange.to || titheDate <= dateRange.to);
+    
+    return matchesSearch && matchesMethod && matchesAmount && matchesDate;
+  });
+
+  const totalPages = Math.ceil(filteredTithes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTithes = filteredTithes.slice(startIndex, startIndex + itemsPerPage);
+
+  const clearFilters = () => {
+    setSelectedMethods([]);
+    setAmountRange({ min: "", max: "" });
+    setDateRange({});
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = 
+    selectedMethods.length > 0 || 
+    amountRange.min || 
+    amountRange.max || 
+    dateRange.from || 
+    dateRange.to ||
+    searchTerm;
 
   function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
     console.log(values);
@@ -294,9 +362,9 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Recent Tithes</CardTitle>
+                    <CardTitle>Tithe Transactions</CardTitle>
                     <CardDescription>
-                      Latest tithe records from members.
+                      Manage and view all tithe records from members.
                     </CardDescription>
                   </div>
                   <Button onClick={() => setRecordTitheDialogOpen(true)}>
@@ -305,57 +373,304 @@ const RegionalFinances: React.FC = () => {
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="mt-4">
-                  <Input
-                    type="search"
-                    placeholder="Search tithes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="mt-6">
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Member</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Method</TableHead>
-                            <TableHead>Reference</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockTithes.length > 0 ? (
-                            mockTithes.map((tithe) => (
-                              <TableRow key={tithe.id}>
-                                <TableCell>{tithe.date}</TableCell>
-                                <TableCell>{tithe.member}</TableCell>
-                                <TableCell>${tithe.amount.toLocaleString()}</TableCell>
-                                <TableCell>{tithe.method}</TableCell>
-                                <TableCell>{tithe.reference}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center h-24">
-                                No tithes found
-                              </TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
+              <CardContent className="space-y-4">
+                {/* Search and Filter Controls */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search by member name or reference..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="outline">
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
-                      View All Tithes
-                    </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="shrink-0"
+                  >
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filters
+                    {hasActiveFilters && (
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        Active
+                      </Badge>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Filter Panel */}
+                {showFilters && (
+                  <Card className="border-dashed">
+                    <CardContent className="pt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Payment Method Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Payment Method</label>
+                          <div className="space-y-2">
+                            {paymentMethods.map((method) => (
+                              <div key={method} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={method}
+                                  checked={selectedMethods.includes(method)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedMethods([...selectedMethods, method]);
+                                    } else {
+                                      setSelectedMethods(selectedMethods.filter(m => m !== method));
+                                    }
+                                  }}
+                                />
+                                <label htmlFor={method} className="text-sm">
+                                  {method}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Amount Range Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Amount Range</label>
+                          <div className="flex space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Min"
+                              value={amountRange.min}
+                              onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
+                            />
+                            <Input
+                              type="number"
+                              placeholder="Max"
+                              value={amountRange.max}
+                              onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Date Range Filter */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Date Range</label>
+                          <div className="flex space-x-2">
+                            <Input
+                              type="date"
+                              value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
+                              onChange={(e) => setDateRange({
+                                ...dateRange,
+                                from: e.target.value ? new Date(e.target.value) : undefined
+                              })}
+                            />
+                            <Input
+                              type="date"
+                              value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
+                              onChange={(e) => setDateRange({
+                                ...dateRange,
+                                to: e.target.value ? new Date(e.target.value) : undefined
+                              })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Filter Actions */}
+                      <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          Showing {filteredTithes.length} of {mockTithes.length} transactions
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" onClick={clearFilters}>
+                            <X className="h-4 w-4 mr-1" />
+                            Clear All
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Active Filter Chips */}
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMethods.map((method) => (
+                      <Badge key={method} variant="secondary" className="gap-1">
+                        <CreditCard className="h-3 w-3" />
+                        {method}
+                        <button
+                          onClick={() => setSelectedMethods(selectedMethods.filter(m => m !== method))}
+                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {(amountRange.min || amountRange.max) && (
+                      <Badge variant="secondary" className="gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        {amountRange.min && `$${amountRange.min}`}
+                        {amountRange.min && amountRange.max && ' - '}
+                        {amountRange.max && `$${amountRange.max}`}
+                        <button
+                          onClick={() => setAmountRange({ min: '', max: '' })}
+                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                    {(dateRange.from || dateRange.to) && (
+                      <Badge variant="secondary" className="gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {dateRange.from && dateRange.from.toLocaleDateString()}
+                        {dateRange.from && dateRange.to && ' - '}
+                        {dateRange.to && dateRange.to.toLocaleDateString()}
+                        <button
+                          onClick={() => setDateRange({})}
+                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                {/* Table Controls */}
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                      setItemsPerPage(parseInt(value));
+                      setCurrentPage(1);
+                    }}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+
+                {/* Scrollable Table */}
+                <div className="rounded-md border">
+                  <div className="max-h-[500px] overflow-auto">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background">
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Member</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Method</TableHead>
+                          <TableHead>Reference</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {paginatedTithes.length > 0 ? (
+                          paginatedTithes.map((tithe) => (
+                            <TableRow key={tithe.id}>
+                              <TableCell className="font-mono text-xs">
+                                {new Date(tithe.date).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="font-medium">{tithe.member}</TableCell>
+                              <TableCell className="font-semibold text-green-600">
+                                ${tithe.amount.toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="text-xs">
+                                  {tithe.method}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs text-muted-foreground">
+                                {tithe.reference}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <Search className="h-8 w-8 text-muted-foreground" />
+                                <p className="text-muted-foreground">
+                                  {hasActiveFilters ? 'No tithes match your filters' : 'No tithes found'}
+                                </p>
+                                {hasActiveFilters && (
+                                  <Button variant="link" size="sm" onClick={clearFilters}>
+                                    Clear filters
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTithes.length)} of {filteredTithes.length} transactions
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => 
+                            page === 1 || 
+                            page === totalPages || 
+                            Math.abs(page - currentPage) <= 1
+                          )
+                          .map((page, index, array) => (
+                            <React.Fragment key={page}>
+                              {index > 0 && array[index - 1] !== page - 1 && (
+                                <span className="px-2 text-muted-foreground">...</span>
+                              )}
+                              <Button
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          ))
+                        }
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
