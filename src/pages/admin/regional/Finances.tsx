@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -12,6 +11,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search } from "lucide-react";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
+import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 
 // Mock data for demonstration
 const mockTithes = [
@@ -41,15 +41,6 @@ const mockExpenses = [
   { id: 3, date: "2023-10-15", category: "Office", description: "Office Supplies", amount: 350, payee: "Office Store", reference: "E2023-0243" },
   { id: 4, date: "2023-10-10", category: "Ministry", description: "Youth Event Supplies", amount: 500, payee: "Party Supplies", reference: "E2023-0242" },
 ];
-
-// Form schema for tithe recording
-const titheSchema = z.object({
-  date: z.string().min(1, { message: "Date is required" }),
-  memberId: z.string().min(1, { message: "Please select a member" }),
-  amount: z.string().min(1, { message: "Amount is required" }),
-  method: z.string().min(1, { message: "Please select a payment method" }),
-  notes: z.string().optional(),
-});
 
 // Form schema for offering recording
 const offeringSchema = z.object({
@@ -84,17 +75,7 @@ const expenseSchema = z.object({
 const RegionalFinances: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
-  
-  const titheForm = useForm<z.infer<typeof titheSchema>>({
-    resolver: zodResolver(titheSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      memberId: "",
-      amount: "",
-      method: "",
-      notes: "",
-    },
-  });
+  const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -131,19 +112,6 @@ const RegionalFinances: React.FC = () => {
       notes: "",
     },
   });
-
-  function onTitheSubmit(values: z.infer<typeof titheSchema>) {
-    console.log(values);
-    // In a real app, this would save the tithe to a database
-    alert("Tithe recorded successfully!");
-    titheForm.reset({
-      date: new Date().toISOString().split('T')[0],
-      memberId: "",
-      amount: "",
-      method: "",
-      notes: "",
-    });
-  }
 
   function onOfferingSubmit(values: z.infer<typeof offeringSchema>) {
     console.log(values);
@@ -346,134 +314,31 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="tithes">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Record Tithe</CardTitle>
-                  <CardDescription>
-                    Record a new tithe payment from a member.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...titheForm}>
-                    <form onSubmit={titheForm.handleSubmit(onTitheSubmit)} className="space-y-4">
-                      <FormField
-                        control={titheForm.control}
-                        name="date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={titheForm.control}
-                        name="memberId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Member</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select a member</option>
-                              <option value="1">John Smith</option>
-                              <option value="2">Sarah Johnson</option>
-                              <option value="3">Michael Brown</option>
-                              <option value="4">Emily Wilson</option>
-                              <option value="5">David Lee</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={titheForm.control}
-                        name="amount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Amount ($)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={titheForm.control}
-                        name="method"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payment Method</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select payment method</option>
-                              <option value="cash">Cash</option>
-                              <option value="check">Check</option>
-                              <option value="bank_transfer">Bank Transfer</option>
-                              <option value="credit_card">Credit Card</option>
-                              <option value="mobile_payment">Mobile Payment</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={titheForm.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
-                            <FormControl>
-                              <textarea 
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Any additional information"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex justify-end">
-                        <Button type="submit">
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Record Tithe
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Tithes</CardTitle>
-                  <CardDescription>
-                    View and manage recent tithe records.
-                  </CardDescription>
-                  <div className="mt-4">
-                    <Input
-                      type="search"
-                      placeholder="Search tithes..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Tithes</CardTitle>
+                    <CardDescription>
+                      Latest tithe records from members.
+                    </CardDescription>
                   </div>
-                </CardHeader>
-                <CardContent>
+                  <Button onClick={() => setRecordTitheDialogOpen(true)}>
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Record Tithe
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="mt-4">
+                  <Input
+                    type="search"
+                    placeholder="Search tithes..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="mt-6">
                   <div className="rounded-md border overflow-hidden">
                     <div className="overflow-x-auto">
                       <Table>
@@ -514,9 +379,9 @@ const RegionalFinances: React.FC = () => {
                       View All Tithes
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="offerings">
@@ -550,32 +415,17 @@ const RegionalFinances: React.FC = () => {
                         name="service"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Service/Event</FormLabel>
+                            <FormLabel>Service</FormLabel>
                             <select 
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                               {...field}
                             >
-                              <option value="">Select service/event</option>
+                              <option value="">Select a service</option>
                               <option value="sunday_morning">Sunday Morning</option>
                               <option value="sunday_evening">Sunday Evening</option>
                               <option value="midweek">Midweek Service</option>
-                              <option value="prayer_meeting">Prayer Meeting</option>
-                              <option value="special_event">Special Event</option>
+                              <option value="special">Special Service</option>
                             </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={offeringForm.control}
-                        name="amount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Amount ($)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" {...field} />
-                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -591,13 +441,26 @@ const RegionalFinances: React.FC = () => {
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                               {...field}
                             >
-                              <option value="">Select category</option>
-                              <option value="general">General</option>
+                              <option value="">Select a category</option>
+                              <option value="general">General Offering</option>
                               <option value="missions">Missions</option>
                               <option value="building">Building Fund</option>
-                              <option value="youth">Youth Ministry</option>
-                              <option value="children">Children's Ministry</option>
+                              <option value="special">Special Collection</option>
                             </select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={offeringForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Total Amount ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -611,9 +474,9 @@ const RegionalFinances: React.FC = () => {
                             <FormLabel>Notes (Optional)</FormLabel>
                             <FormControl>
                               <textarea 
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Any additional information"
-                                {...field}
+                                placeholder="Additional notes about this offering..." 
+                                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" 
+                                {...field} 
                               />
                             </FormControl>
                             <FormMessage />
@@ -621,12 +484,10 @@ const RegionalFinances: React.FC = () => {
                         )}
                       />
                       
-                      <div className="flex justify-end">
-                        <Button type="submit">
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Record Offering
-                        </Button>
-                      </div>
+                      <Button type="submit" className="w-full">
+                        <Receipt className="mr-2 h-4 w-4" />
+                        Record Offering
+                      </Button>
                     </form>
                   </Form>
                 </CardContent>
@@ -636,7 +497,7 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Recent Offerings</CardTitle>
                   <CardDescription>
-                    View and manage recent offering collections.
+                    View and manage recent offering records.
                   </CardDescription>
                   <div className="mt-4">
                     <Input
@@ -699,7 +560,7 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Record Special Giving</CardTitle>
                   <CardDescription>
-                    Record a new special donation or contribution.
+                    Record a special donation or pledge.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -729,12 +590,12 @@ const RegionalFinances: React.FC = () => {
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                               {...field}
                             >
-                              <option value="">Select fund/project</option>
-                              <option value="building_fund">Building Fund</option>
+                              <option value="">Select a fund</option>
+                              <option value="building">Building Fund</option>
                               <option value="missions">Mission Fund</option>
-                              <option value="youth_camp">Youth Camp</option>
-                              <option value="community_outreach">Community Outreach</option>
-                              <option value="benevolence">Benevolence Fund</option>
+                              <option value="youth">Youth Ministry</option>
+                              <option value="outreach">Community Outreach</option>
+                              <option value="other">Other</option>
                             </select>
                             <FormMessage />
                           </FormItem>
@@ -755,55 +616,56 @@ const RegionalFinances: React.FC = () => {
                         )}
                       />
                       
-                      <FormField
-                        control={specialGivingForm.control}
-                        name="isAnonymous"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                checked={field.value}
-                                onChange={(e) => {
-                                  field.onChange(e.target.checked);
-                                }}
-                                className="h-4 w-4 mt-1"
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Anonymous Donor</FormLabel>
-                              <FormDescription>
-                                Check if the donor wishes to remain anonymous
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {!specialGivingForm.watch("isAnonymous") && (
+                      <div className="space-y-3">
                         <FormField
                           control={specialGivingForm.control}
-                          name="donorId"
+                          name="isAnonymous"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Donor</FormLabel>
-                              <select 
-                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                {...field}
-                              >
-                                <option value="">Select a donor</option>
-                                <option value="1">John Smith</option>
-                                <option value="2">Sarah Johnson</option>
-                                <option value="3">Michael Brown</option>
-                                <option value="4">Emily Wilson</option>
-                                <option value="5">David Lee</option>
-                                <option value="custom">Enter custom name</option>
-                              </select>
-                              <FormMessage />
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                              <FormControl>
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border border-input bg-background"
+                                  checked={field.value}
+                                  onChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>
+                                  Anonymous Donation
+                                </FormLabel>
+                                <FormDescription>
+                                  Check if the donor wishes to remain anonymous
+                                </FormDescription>
+                              </div>
                             </FormItem>
                           )}
                         />
-                      )}
+                        
+                        {!specialGivingForm.watch("isAnonymous") && (
+                          <FormField
+                            control={specialGivingForm.control}
+                            name="donorId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Donor</FormLabel>
+                                <select 
+                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                                  {...field}
+                                >
+                                  <option value="">Select a donor</option>
+                                  <option value="1">John Smith</option>
+                                  <option value="2">Sarah Johnson</option>
+                                  <option value="3">Michael Brown</option>
+                                  <option value="4">Emily Wilson</option>
+                                  <option value="5">David Lee</option>
+                                </select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        )}
+                      </div>
                       
                       <FormField
                         control={specialGivingForm.control}
@@ -813,9 +675,9 @@ const RegionalFinances: React.FC = () => {
                             <FormLabel>Notes (Optional)</FormLabel>
                             <FormControl>
                               <textarea 
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Any additional information"
-                                {...field}
+                                placeholder="Additional notes about this special giving..." 
+                                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" 
+                                {...field} 
                               />
                             </FormControl>
                             <FormMessage />
@@ -823,12 +685,10 @@ const RegionalFinances: React.FC = () => {
                         )}
                       />
                       
-                      <div className="flex justify-end">
-                        <Button type="submit">
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Record Special Giving
-                        </Button>
-                      </div>
+                      <Button type="submit" className="w-full">
+                        <PiggyBank className="mr-2 h-4 w-4" />
+                        Record Special Giving
+                      </Button>
                     </form>
                   </Form>
                 </CardContent>
@@ -856,7 +716,7 @@ const RegionalFinances: React.FC = () => {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Date</TableHead>
-                            <TableHead>Fund/Project</TableHead>
+                            <TableHead>Fund</TableHead>
                             <TableHead>Amount</TableHead>
                             <TableHead>Donor</TableHead>
                             <TableHead>Reference</TableHead>
@@ -931,14 +791,12 @@ const RegionalFinances: React.FC = () => {
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                               {...field}
                             >
-                              <option value="">Select category</option>
+                              <option value="">Select a category</option>
                               <option value="utilities">Utilities</option>
-                              <option value="maintenance">Maintenance</option>
+                              <option value="maintenance">Maintenance & Repairs</option>
                               <option value="office">Office Supplies</option>
-                              <option value="ministry">Ministry Expenses</option>
-                              <option value="staffing">Staff & Salaries</option>
-                              <option value="equipment">Equipment</option>
-                              <option value="outreach">Outreach</option>
+                              <option value="ministry">Ministry Supplies</option>
+                              <option value="travel">Travel & Transportation</option>
                               <option value="other">Other</option>
                             </select>
                             <FormMessage />
@@ -953,7 +811,7 @@ const RegionalFinances: React.FC = () => {
                           <FormItem>
                             <FormLabel>Description</FormLabel>
                             <FormControl>
-                              <Input placeholder="Electricity Bill" {...field} />
+                              <Input placeholder="Brief description of the expense" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -979,9 +837,9 @@ const RegionalFinances: React.FC = () => {
                         name="payee"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Payee/Vendor</FormLabel>
+                            <FormLabel>Payee</FormLabel>
                             <FormControl>
-                              <Input placeholder="Power Company" {...field} />
+                              <Input placeholder="Who was paid" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -993,12 +851,12 @@ const RegionalFinances: React.FC = () => {
                         name="receiptImage"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Receipt (Optional)</FormLabel>
+                            <FormLabel>Receipt Image (Optional)</FormLabel>
                             <FormControl>
-                              <Input type="file" className="cursor-pointer" />
+                              <Input type="file" accept="image/*" {...field} />
                             </FormControl>
                             <FormDescription>
-                              Upload an image of the receipt
+                              Upload a photo of the receipt for your records
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -1013,9 +871,9 @@ const RegionalFinances: React.FC = () => {
                             <FormLabel>Notes (Optional)</FormLabel>
                             <FormControl>
                               <textarea 
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                placeholder="Any additional information"
-                                {...field}
+                                placeholder="Additional notes about this expense..." 
+                                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" 
+                                {...field} 
                               />
                             </FormControl>
                             <FormMessage />
@@ -1023,12 +881,10 @@ const RegionalFinances: React.FC = () => {
                         )}
                       />
                       
-                      <div className="flex justify-end">
-                        <Button type="submit">
-                          <Receipt className="mr-2 h-4 w-4" />
-                          Record Expense
-                        </Button>
-                      </div>
+                      <Button type="submit" className="w-full">
+                        <Receipt className="mr-2 h-4 w-4" />
+                        Record Expense
+                      </Button>
                     </form>
                   </Form>
                 </CardContent>
@@ -1038,7 +894,7 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Recent Expenses</CardTitle>
                   <CardDescription>
-                    View and manage recent expenses.
+                    View and manage recent expense records.
                   </CardDescription>
                   <div className="mt-4">
                     <Input
@@ -1100,205 +956,202 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Financial Reports</CardTitle>
                 <CardDescription>
-                  Generate and view detailed financial reports.
+                  Generate and view detailed financial reports
                 </CardDescription>
-                <div className="flex flex-col md:flex-row gap-4 justify-between items-center mt-4">
-                  <div className="flex gap-2">
-                    <Button variant={dateFilter === "month" ? "default" : "outline"} onClick={() => setDateFilter("month")}>
-                      Month
-                    </Button>
-                    <Button variant={dateFilter === "quarter" ? "default" : "outline"} onClick={() => setDateFilter("quarter")}>
-                      Quarter
-                    </Button>
-                    <Button variant={dateFilter === "year" ? "default" : "outline"} onClick={() => setDateFilter("year")}>
-                      Year
-                    </Button>
-                    <Button variant={dateFilter === "custom" ? "default" : "outline"} onClick={() => setDateFilter("custom")}>
-                      Custom
-                    </Button>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button variant="outline">
-                      <Filter className="mr-2 h-4 w-4" />
-                      Filters
-                    </Button>
-                    <Button variant="outline">
-                      <Download className="mr-2 h-4 w-4" />
-                      Export
-                    </Button>
-                  </div>
-                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Income Statement</CardTitle>
+                      <CardTitle className="text-lg">Income Statement</CardTitle>
                       <CardDescription>
-                        Summary of income and expenses for the selected period
+                        Current month financial summary
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="rounded-md border overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="font-bold">Category</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
-                                <TableHead className="text-right">% of Total</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              <TableRow>
-                                <TableCell colSpan={3} className="font-semibold bg-gray-50">Income</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Tithes</TableCell>
-                                <TableCell className="text-right">$15,000.00</TableCell>
-                                <TableCell className="text-right">54.5%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Offerings</TableCell>
-                                <TableCell className="text-right">$7,500.00</TableCell>
-                                <TableCell className="text-right">27.3%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Special Giving</TableCell>
-                                <TableCell className="text-right">$3,500.00</TableCell>
-                                <TableCell className="text-right">12.7%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Other Income</TableCell>
-                                <TableCell className="text-right">$1,500.00</TableCell>
-                                <TableCell className="text-right">5.5%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="font-semibold">Total Income</TableCell>
-                                <TableCell className="text-right font-semibold">$27,500.00</TableCell>
-                                <TableCell className="text-right font-semibold">100%</TableCell>
-                              </TableRow>
-                              
-                              <TableRow>
-                                <TableCell colSpan={3} className="font-semibold bg-gray-50">Expenses</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Staff & Salaries</TableCell>
-                                <TableCell className="text-right">$12,000.00</TableCell>
-                                <TableCell className="text-right">52.7%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Facilities</TableCell>
-                                <TableCell className="text-right">$4,500.00</TableCell>
-                                <TableCell className="text-right">19.8%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Ministries</TableCell>
-                                <TableCell className="text-right">$3,250.00</TableCell>
-                                <TableCell className="text-right">14.3%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Administration</TableCell>
-                                <TableCell className="text-right">$1,500.00</TableCell>
-                                <TableCell className="text-right">6.6%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="pl-6">Outreach</TableCell>
-                                <TableCell className="text-right">$1,500.00</TableCell>
-                                <TableCell className="text-right">6.6%</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="font-semibold">Total Expenses</TableCell>
-                                <TableCell className="text-right font-semibold">$22,750.00</TableCell>
-                                <TableCell className="text-right font-semibold">100%</TableCell>
-                              </TableRow>
-                              
-                              <TableRow>
-                                <TableCell className="font-bold">Net Income</TableCell>
-                                <TableCell className="text-right font-bold">$4,750.00</TableCell>
-                                <TableCell className="text-right font-bold">17.3%</TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Income</span>
+                          <span className="text-sm font-bold text-green-600">$27,500</span>
+                        </div>
+                        <div className="pl-4 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Tithes</span>
+                            <span>$15,000</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Offerings</span>
+                            <span>$7,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Special Giving</span>
+                            <span>$3,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Other Income</span>
+                            <span>$1,500</span>
+                          </div>
+                        </div>
+                        
+                        <hr />
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Expenses</span>
+                          <span className="text-sm font-bold text-red-600">$22,750</span>
+                        </div>
+                        <div className="pl-4 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Staffing</span>
+                            <span>$12,000</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Facilities</span>
+                            <span>$4,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Ministries</span>
+                            <span>$3,250</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Administration</span>
+                            <span>$1,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Outreach</span>
+                            <span>$1,500</span>
+                          </div>
+                        </div>
+                        
+                        <hr />
+                        
+                        <div className="flex justify-between">
+                          <span className="font-semibold">Net Income</span>
+                          <span className="font-bold text-green-600">$4,750</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-6">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Income Trends</CardTitle>
-                        <CardDescription>
-                          Monthly income for the current year
-                        </CardDescription>
+                        <CardTitle className="text-lg">Quick Actions</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="h-[300px]">
-                          <LineChart
-                            data={[
-                              { month: "Jan", tithes: 12500, offerings: 7500, specialGiving: 2000 },
-                              { month: "Feb", tithes: 13000, offerings: 8000, specialGiving: 1500 },
-                              { month: "Mar", tithes: 12800, offerings: 7800, specialGiving: 3000 },
-                              { month: "Apr", tithes: 13200, offerings: 8200, specialGiving: 2500 },
-                              { month: "May", tithes: 14000, offerings: 8500, specialGiving: 4000 },
-                              { month: "Jun", tithes: 13500, offerings: 8000, specialGiving: 2000 },
-                              { month: "Jul", tithes: 13800, offerings: 8200, specialGiving: 1800 },
-                              { month: "Aug", tithes: 14200, offerings: 8300, specialGiving: 2200 },
-                              { month: "Sep", tithes: 14500, offerings: 8600, specialGiving: 5000 },
-                              { month: "Oct", tithes: 15000, offerings: 9000, specialGiving: 3500 },
-                            ]}
-                            index="month"
-                            categories={["tithes", "offerings", "specialGiving"]}
-                            colors={["#8b5cf6", "#a78bfa", "#c4b5fd"]}
-                            valueFormatter={(value) => `$${value.toLocaleString()}`}
-                            className="h-full"
-                          />
-                        </div>
+                      <CardContent className="space-y-3">
+                        <Button variant="outline" className="w-full justify-start">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Monthly Report
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Generate Custom Report
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start">
+                          <TrendingUp className="mr-2 h-4 w-4" />
+                          View Year-to-Date Summary
+                        </Button>
                       </CardContent>
                     </Card>
                     
                     <Card>
                       <CardHeader>
-                        <CardTitle>Expense Breakdown</CardTitle>
-                        <CardDescription>
-                          Distribution by expense category
-                        </CardDescription>
+                        <CardTitle className="text-lg">Report Filters</CardTitle>
                       </CardHeader>
-                      <CardContent>
-                        <div className="h-[300px]">
-                          <PieChart
-                            data={[
-                              { category: "Staffing", value: 12000 },
-                              { category: "Facilities", value: 4500 },
-                              { category: "Ministries", value: 3250 },
-                              { category: "Administration", value: 1500 },
-                              { category: "Outreach", value: 1500 },
-                            ]}
-                            index="category"
-                            categories={["value"]}
-                            colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
-                            valueFormatter={(value) => `$${value.toLocaleString()}`}
-                            className="h-full"
-                          />
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Date Range</label>
+                          <select className="w-full p-2 border rounded">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                            <option>This Quarter</option>
+                            <option>This Year</option>
+                            <option>Custom Range</option>
+                          </select>
                         </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Report Type</label>
+                          <select className="w-full p-2 border rounded">
+                            <option>All Transactions</option>
+                            <option>Income Only</option>
+                            <option>Expenses Only</option>
+                            <option>By Category</option>
+                          </select>
+                        </div>
+                        <Button className="w-full">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Apply Filters
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Income Trends</CardTitle>
+                      <CardDescription>
+                        Monthly income over the past 6 months
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px]">
+                        <LineChart
+                          data={[
+                            { month: "May", income: 25500 },
+                            { month: "Jun", income: 27000 },
+                            { month: "Jul", income: 26000 },
+                            { month: "Aug", income: 26500 },
+                            { month: "Sep", income: 27000 },
+                            { month: "Oct", income: 27500 },
+                          ]}
+                          index="month"
+                          categories={["income"]}
+                          colors={["#8b5cf6"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                   
-                  <div className="flex justify-end">
-                    <Button>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Full Report
-                    </Button>
-                  </div>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Expense Breakdown</CardTitle>
+                      <CardDescription>
+                        Current month expense distribution
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px]">
+                        <BarChart
+                          data={[
+                            { category: "Staffing", amount: 12000 },
+                            { category: "Facilities", amount: 4500 },
+                            { category: "Ministries", amount: 3250 },
+                            { category: "Admin", amount: 1500 },
+                            { category: "Outreach", amount: 1500 },
+                          ]}
+                          index="category"
+                          categories={["amount"]}
+                          colors={["#8b5cf6"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+      
+      <RecordTitheDialog 
+        open={recordTitheDialogOpen} 
+        onOpenChange={setRecordTitheDialogOpen} 
+      />
     </RegionalAdminLayout>
   );
 };
