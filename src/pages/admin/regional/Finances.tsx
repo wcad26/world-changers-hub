@@ -355,7 +355,7 @@ const RegionalFinances: React.FC = () => {
             <Card className="h-[calc(100vh-8rem)]">
               <CardContent className="p-6 h-full flex flex-col">
                 {/* Fixed Controls Section */}
-                <div className="space-y-4 flex-shrink-0">
+                <div className="space-y-4 flex-shrink-0 mb-4">
                   {/* Search and Filter Controls */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
@@ -527,16 +527,16 @@ const RegionalFinances: React.FC = () => {
                 </div>
 
                 {/* Scrollable Table Container */}
-                <div className="flex-1 min-h-0 rounded-md border">
-                  <div className="h-full overflow-auto">
+                <div className="flex-1 min-h-0 rounded-md border overflow-hidden">
+                  <div className="h-full overflow-auto relative">
                     <Table>
-                      <TableHeader className="sticky top-0 bg-background">
+                      <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                         <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Member</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Method</TableHead>
-                          <TableHead>Reference</TableHead>
+                          <TableHead className="bg-background">Date</TableHead>
+                          <TableHead className="bg-background">Member</TableHead>
+                          <TableHead className="bg-background">Amount</TableHead>
+                          <TableHead className="bg-background">Method</TableHead>
+                          <TableHead className="bg-background">Reference</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -584,7 +584,7 @@ const RegionalFinances: React.FC = () => {
 
                 {/* Fixed Pagination Section */}
                 {totalPages > 1 && (
-                  <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t">
+                  <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
                     <div className="text-sm text-muted-foreground">
                       Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTithes.length)} of {filteredTithes.length} transactions
                     </div>
