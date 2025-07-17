@@ -84,11 +84,14 @@ export const useDcgAttendanceEvents = (dcgId?: string) => {
       const { data, error } = await supabase
         .from('attendance_events')
         .select('*')
-        .eq('dcg_id', dcgId)
-        .order('event_date', { ascending: false });
+        .eq('dcg_id', dcgId);
       
       if (error) throw error;
-      return data;
+      
+      // Sort client-side to avoid SQL ambiguity
+      return data?.sort((a, b) => 
+        new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+      ) || [];
     },
     enabled: !!dcgId,
   });
@@ -188,13 +191,12 @@ export const useDcgAttendanceHistory = (dcgId?: string) => {
           )
         `)
         .eq('dcg_id', dcgId)
-        .eq('attendance_records.members.dcg_members.dcg_id', dcgId)
-        .order('event_date', { ascending: false });
+        .eq('attendance_records.members.dcg_members.dcg_id', dcgId);
       
       if (error) throw error;
       
-      // Process the data to get counts
-      return data?.map(event => {
+      // Process the data to get counts and sort client-side
+      const processedData = data?.map(event => {
         const records = event.attendance_records || [];
         
         const membersPresent = records.filter(r => 
@@ -226,6 +228,11 @@ export const useDcgAttendanceHistory = (dcgId?: string) => {
           date: new Date(event.event_date).toLocaleDateString()
         };
       }) || [];
+      
+      // Sort by event_date descending (client-side)
+      return processedData.sort((a, b) => 
+        new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+      );
     },
     enabled: !!dcgId
   });
@@ -325,17 +332,21 @@ export const useDcgAttendanceAnalytics = (dcgId?: string) => {
             is_present
           )
         `)
-        .eq('dcg_id', dcgId)
-        .order('event_date', { ascending: false });
+        .eq('dcg_id', dcgId);
       
       if (error) throw error;
       
-      const totalEvents = events?.length || 0;
+      // Sort events client-side to avoid SQL ambiguity
+      const sortedEvents = events?.sort((a, b) => 
+        new Date(b.event_date).getTime() - new Date(a.event_date).getTime()
+      ) || [];
+      
+      const totalEvents = sortedEvents.length;
       let totalAttendanceRecords = 0;
       let totalPresentRecords = 0;
       
       // Calculate overall stats
-      events?.forEach(event => {
+      sortedEvents.forEach(event => {
         const records = event.attendance_records || [];
         totalAttendanceRecords += records.length;
         totalPresentRecords += records.filter(r => r.is_present).length;
@@ -351,15 +362,15 @@ export const useDcgAttendanceAnalytics = (dcgId?: string) => {
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
       
-      const thisMonthEvents = events?.filter(event => {
+      const thisMonthEvents = sortedEvents.filter(event => {
         const eventDate = new Date(event.event_date);
         return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
-      }) || [];
+      });
       
-      const lastMonthEvents = events?.filter(event => {
+      const lastMonthEvents = sortedEvents.filter(event => {
         const eventDate = new Date(event.event_date);
         return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
-      }) || [];
+      });
       
       let thisMonthTotal = 0;
       let thisMonthPresent = 0;
