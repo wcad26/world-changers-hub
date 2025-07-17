@@ -1015,6 +1015,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_dcg_recurring_events: {
+        Args: { _dcg_id: string; _weeks_ahead?: number }
+        Returns: number
+      }
       generate_member_id: {
         Args: { _region_id: string }
         Returns: string
@@ -1054,6 +1058,16 @@ export type Database = {
           active_disciples: number
           completed_disciples: number
           success_rate: number
+        }[]
+      }
+      get_next_dcg_meeting: {
+        Args: { _dcg_id: string }
+        Returns: {
+          event_id: string
+          event_name: string
+          event_date: string
+          is_today: boolean
+          is_upcoming: boolean
         }[]
       }
       get_region_from_dcg: {

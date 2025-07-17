@@ -7,6 +7,73 @@ type AttendanceEvent = Database['public']['Tables']['attendance_events']['Row'];
 type AttendanceRecordInsert = Database['public']['Tables']['attendance_records']['Insert'];
 type AttendanceEventInsert = Database['public']['Tables']['attendance_events']['Insert'];
 
+export interface NextMeeting {
+  event_id: string;
+  event_name: string;
+  event_date: string;
+  is_today: boolean;
+  is_upcoming: boolean;
+}
+
+// Generate recurring events for DCG
+export const useGenerateDcgRecurringEvents = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { dcg_id: string; weeks_ahead?: number }) => {
+      const { data: result, error } = await supabase.rpc(
+        'generate_dcg_recurring_events',
+        {
+          _dcg_id: data.dcg_id,
+          _weeks_ahead: data.weeks_ahead || 8,
+        }
+      );
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (eventsCreated, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['dcg-attendance-events', variables.dcg_id],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['dcg-next-meeting', variables.dcg_id],
+      });
+      
+      toast({
+        title: 'Events Generated',
+        description: `Created ${eventsCreated} recurring attendance events.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to generate events: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+// Get next DCG meeting
+export const useDcgNextMeeting = (dcgId?: string) => {
+  return useQuery({
+    queryKey: ['dcg-next-meeting', dcgId],
+    queryFn: async () => {
+      if (!dcgId) return null;
+      
+      const { data, error } = await supabase.rpc('get_next_dcg_meeting', {
+        _dcg_id: dcgId,
+      });
+
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: !!dcgId,
+  });
+};
+
 // Get attendance events for a specific DCG
 export const useDcgAttendanceEvents = (dcgId?: string) => {
   return useQuery({

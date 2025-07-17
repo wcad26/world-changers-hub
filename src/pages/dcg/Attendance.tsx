@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from 'react';
+import { format, isToday, isFuture } from 'date-fns';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +9,15 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Plus, 
   UserCheck, 
   Calendar,
   Users,
   TrendingUp,
+  TrendingDown,
   Search,
   MoreHorizontal,
-  Eye
+  RefreshCw,
+  Clock
 } from 'lucide-react';
 import { 
   DropdownMenu,
@@ -28,15 +29,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { 
   useDcgAttendanceEvents, 
   useDcgAttendanceAnalytics,
-  useDcgAttendanceHistory 
+  useDcgAttendanceHistory,
+  useGenerateDcgRecurringEvents,
+  useDcgNextMeeting
 } from '@/hooks/useDcgAttendance';
-import { CreateDcgAttendanceEventDialog } from '@/components/admin/dcg/CreateDcgAttendanceEventDialog';
 import { DcgAttendanceRecordDialog } from '@/components/admin/dcg/DcgAttendanceRecordDialog';
 
 const DcgAttendance = () => {
   const { userDcg } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
   const { 
@@ -53,6 +54,22 @@ const DcgAttendance = () => {
   const { 
     data: attendanceHistory 
   } = useDcgAttendanceHistory(userDcg?.id);
+
+  const { data: nextMeeting } = useDcgNextMeeting(userDcg?.id);
+  const generateEvents = useGenerateDcgRecurringEvents();
+
+  // Auto-generate events if none exist
+  useEffect(() => {
+    if (userDcg?.id && attendanceEvents !== undefined && attendanceEvents.length === 0) {
+      generateEvents.mutate({ dcg_id: userDcg.id });
+    }
+  }, [userDcg?.id, attendanceEvents, generateEvents]);
+
+  const handleGenerateEvents = () => {
+    if (userDcg?.id) {
+      generateEvents.mutate({ dcg_id: userDcg.id });
+    }
+  };
 
   const filteredEvents = attendanceEvents?.filter(event => 
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,16 +109,56 @@ const DcgAttendance = () => {
   return (
     <DcgAdminLayout>
       <div className="space-y-6">
+        {/* Quick Actions Section */}
+        {nextMeeting && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {nextMeeting.is_today ? "Today's Meeting" : "Next Meeting"}
+              </CardTitle>
+              <CardDescription>
+                {nextMeeting.event_name} - {format(new Date(nextMeeting.event_date), 'PPP')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSelectedEvent(nextMeeting)}
+                  className="flex items-center gap-2"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  Record Attendance
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateEvents}
+                  disabled={generateEvents.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${generateEvents.isPending ? 'animate-spin' : ''}`} />
+                  Generate Future Events
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-3xl font-bold">Attendance Management</h1>
+            <h1 className="text-3xl font-bold">DCG Attendance</h1>
             <p className="text-muted-foreground">
-              Track and manage DCG member attendance for meetings and events
+              Automatic recurring meetings based on your DCG schedule
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Event
+          <Button 
+            variant="outline"
+            onClick={handleGenerateEvents}
+            disabled={generateEvents.isPending}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${generateEvents.isPending ? 'animate-spin' : ''}`} />
+            Generate Events
           </Button>
         </div>
 
@@ -288,13 +345,6 @@ const DcgAttendance = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Create Event Dialog */}
-      <CreateDcgAttendanceEventDialog
-        isOpen={isCreateDialogOpen}
-        onClose={() => setIsCreateDialogOpen(false)}
-        dcgId={userDcg.id}
-      />
 
       {/* Record Attendance Dialog */}
       {selectedEvent && (
