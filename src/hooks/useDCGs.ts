@@ -13,6 +13,7 @@ export type DcgWithLeader = Dcg & {
       last_name: string | null;
     } | null;
   } | null;
+  member_count?: number;
 };
 
 // Schema for creating/updating a DCG
@@ -37,14 +38,41 @@ export const useDcgs = () => {
     queryKey: ['dcgs', regionId],
     queryFn: async () => {
       if (!regionId) return [];
-      const { data, error } = await supabase
+      
+      // Fetch DCGs with leader info
+      const { data: dcgsData, error: dcgsError } = await supabase
         .from('dcgs')
         .select('*, leader:leader_id(profiles:profiles(first_name, last_name))')
         .eq('region_id', regionId)
         .order('name', { ascending: true });
 
-      if (error) throw error;
-      return data as DcgWithLeader[];
+      if (dcgsError) throw dcgsError;
+
+      // Fetch member counts for each DCG
+      const dcgIds = dcgsData?.map(dcg => dcg.id) || [];
+      if (dcgIds.length === 0) return dcgsData as DcgWithLeader[];
+
+      const { data: memberCounts, error: memberCountsError } = await supabase
+        .from('dcg_members')
+        .select('dcg_id')
+        .in('dcg_id', dcgIds)
+        .eq('is_active', true);
+
+      if (memberCountsError) throw memberCountsError;
+
+      // Count members per DCG
+      const memberCountMap = memberCounts?.reduce((acc, member) => {
+        acc[member.dcg_id] = (acc[member.dcg_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      // Combine DCG data with member counts
+      const dcgsWithCounts = dcgsData?.map(dcg => ({
+        ...dcg,
+        member_count: memberCountMap[dcg.id] || 0
+      })) || [];
+
+      return dcgsWithCounts as DcgWithLeader[];
     },
     enabled: !!regionId,
   });

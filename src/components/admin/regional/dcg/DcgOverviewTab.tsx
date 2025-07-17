@@ -192,7 +192,7 @@ const DcgOverviewTab = () => {
                         <TableCell className="font-medium">{dcg.name}</TableCell>
                         <TableCell>{getLeaderName(dcg)}</TableCell>
                         <TableCell>{dcg.location || 'N/A'}</TableCell>
-                        <TableCell>N/A</TableCell>
+                        <TableCell>{dcg.member_count || 0}</TableCell>
                         <TableCell>{dcg.meeting_day || 'N/A'}, {formatMeetingTime(dcg.meeting_time)}</TableCell>
                         <TableCell>N/A</TableCell>
                         <TableCell>
