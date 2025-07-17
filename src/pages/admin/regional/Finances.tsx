@@ -963,32 +963,32 @@ const RegionalFinances: React.FC = () => {
                     <table className="w-full">
                       <thead className="sticky top-0 bg-background z-10 border-b">
                         <tr className="border-b">
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Service</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Service</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
                         </tr>
                       </thead>
                       <tbody>
                         {paginatedOfferings.length > 0 ? (
                           paginatedOfferings.map((offering) => (
                             <tr key={offering.id} className="border-b transition-colors hover:bg-muted/50">
-                              <td className="p-4 align-middle font-mono text-xs">
-                                {offering.date}
-                              </td>
-                              <td className="p-4 align-middle font-medium">{offering.service}</td>
-                              <td className="p-4 align-middle font-semibold text-green-600">
-                                ${offering.amount.toLocaleString()}
-                              </td>
-                              <td className="p-4 align-middle">
-                                <Badge variant="outline" className="text-xs">
-                                  {offering.category}
-                                </Badge>
-                              </td>
-                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
-                                {offering.reference}
-                              </td>
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {offering.date}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{offering.service}</td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {offering.category}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-green-600">
+                                 ${offering.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {offering.reference}
+                               </td>
                             </tr>
                           ))
                         ) : (
