@@ -9,92 +9,214 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search } from "lucide-react";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
-import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
-import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
-import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecialGivingDialog";
-import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog";
 
 // Mock data for demonstration
-const mockTithes = [
-  { id: 1, date: "2023-10-22", member: "John Smith", amount: 500, method: "Bank Transfer", reference: "T2023-0145" },
-  { id: 2, date: "2023-10-22", member: "Sarah Johnson", amount: 350, method: "Cash", reference: "T2023-0146" },
-  { id: 3, date: "2023-10-15", member: "Michael Brown", amount: 450, method: "Credit Card", reference: "T2023-0142" },
-  { id: 4, date: "2023-10-15", member: "Emily Wilson", amount: 300, method: "Bank Transfer", reference: "T2023-0143" },
-  { id: 5, date: "2023-10-08", member: "David Miller", amount: 750, method: "Bank Transfer", reference: "T2023-0141" },
-  { id: 6, date: "2023-10-08", member: "Jessica Davis", amount: 425, method: "Credit Card", reference: "T2023-0140" },
-  { id: 7, date: "2023-10-01", member: "Robert Garcia", amount: 550, method: "Cash", reference: "T2023-0139" },
-  { id: 8, date: "2023-09-24", member: "Lisa Martinez", amount: 400, method: "Bank Transfer", reference: "T2023-0138" },
-  { id: 9, date: "2023-09-24", member: "Christopher Lee", amount: 625, method: "Credit Card", reference: "T2023-0137" },
-  { id: 10, date: "2023-09-17", member: "Amanda Taylor", amount: 475, method: "Bank Transfer", reference: "T2023-0136" },
-  { id: 11, date: "2023-09-17", member: "Kevin Anderson", amount: 325, method: "Cash", reference: "T2023-0135" },
-  { id: 12, date: "2023-09-10", member: "Michelle Thomas", amount: 700, method: "Bank Transfer", reference: "T2023-0134" },
-  { id: 13, date: "2023-09-10", member: "James Wilson", amount: 380, method: "Credit Card", reference: "T2023-0133" },
-  { id: 14, date: "2023-09-03", member: "Rachel Moore", amount: 520, method: "Bank Transfer", reference: "T2023-0132" },
-  { id: 15, date: "2023-09-03", member: "Daniel Clark", amount: 445, method: "Cash", reference: "T2023-0131" },
-];
+const mockTithes = [{
+  id: 1,
+  date: "2023-10-22",
+  member: "John Smith",
+  amount: 500,
+  method: "Bank Transfer",
+  reference: "T2023-0145"
+}, {
+  id: 2,
+  date: "2023-10-22",
+  member: "Sarah Johnson",
+  amount: 350,
+  method: "Cash",
+  reference: "T2023-0146"
+}, {
+  id: 3,
+  date: "2023-10-15",
+  member: "Michael Brown",
+  amount: 450,
+  method: "Credit Card",
+  reference: "T2023-0142"
+}, {
+  id: 4,
+  date: "2023-10-15",
+  member: "Emily Wilson",
+  amount: 300,
+  method: "Bank Transfer",
+  reference: "T2023-0143"
+}];
+const mockOfferings = [{
+  id: 1,
+  date: "2023-10-22",
+  service: "Sunday Morning",
+  amount: 2500,
+  category: "General",
+  reference: "O2023-0145"
+}, {
+  id: 2,
+  date: "2023-10-22",
+  service: "Sunday Evening",
+  amount: 1200,
+  category: "General",
+  reference: "O2023-0146"
+}, {
+  id: 3,
+  date: "2023-10-15",
+  service: "Sunday Morning",
+  amount: 2350,
+  category: "General",
+  reference: "O2023-0142"
+}, {
+  id: 4,
+  date: "2023-10-15",
+  service: "Midweek",
+  amount: 850,
+  category: "General",
+  reference: "O2023-0143"
+}];
+const mockSpecialGiving = [{
+  id: 1,
+  date: "2023-10-20",
+  fund: "Building Fund",
+  amount: 5000,
+  donor: "John & Mary Smith",
+  reference: "S2023-0045"
+}, {
+  id: 2,
+  date: "2023-10-18",
+  fund: "Mission Fund",
+  amount: 2500,
+  donor: "Anonymous",
+  reference: "S2023-0046"
+}, {
+  id: 3,
+  date: "2023-10-10",
+  fund: "Youth Camp",
+  amount: 1500,
+  donor: "Robert Johnson",
+  reference: "S2023-0043"
+}, {
+  id: 4,
+  date: "2023-10-05",
+  fund: "Building Fund",
+  amount: 3000,
+  donor: "Sarah Williams",
+  reference: "S2023-0042"
+}];
+const mockExpenses = [{
+  id: 1,
+  date: "2023-10-21",
+  category: "Utilities",
+  description: "Electricity Bill",
+  amount: 850,
+  payee: "Power Company",
+  reference: "E2023-0245"
+}, {
+  id: 2,
+  date: "2023-10-18",
+  category: "Maintenance",
+  description: "Plumbing Repairs",
+  amount: 1200,
+  payee: "City Plumbers",
+  reference: "E2023-0244"
+}, {
+  id: 3,
+  date: "2023-10-15",
+  category: "Office",
+  description: "Office Supplies",
+  amount: 350,
+  payee: "Office Store",
+  reference: "E2023-0243"
+}, {
+  id: 4,
+  date: "2023-10-10",
+  category: "Ministry",
+  description: "Youth Event Supplies",
+  amount: 500,
+  payee: "Party Supplies",
+  reference: "E2023-0242"
+}];
 
-const mockOfferings = [
-  { id: 1, date: "2023-10-22", service: "Sunday Morning", amount: 2500, category: "General", reference: "O2023-0145" },
-  { id: 2, date: "2023-10-22", service: "Sunday Evening", amount: 1200, category: "General", reference: "O2023-0146" },
-  { id: 3, date: "2023-10-15", service: "Sunday Morning", amount: 2350, category: "General", reference: "O2023-0142" },
-  { id: 4, date: "2023-10-15", service: "Midweek", amount: 850, category: "General", reference: "O2023-0143" },
-];
-
-const mockSpecialGiving = [
-  { id: 1, date: "2023-10-20", fund: "Building Fund", amount: 5000, donor: "John & Mary Smith", reference: "S2023-0045" },
-  { id: 2, date: "2023-10-18", fund: "Mission Fund", amount: 2500, donor: "Anonymous", reference: "S2023-0046" },
-  { id: 3, date: "2023-10-10", fund: "Youth Camp", amount: 1500, donor: "Robert Johnson", reference: "S2023-0043" },
-  { id: 4, date: "2023-10-05", fund: "Building Fund", amount: 3000, donor: "Sarah Williams", reference: "S2023-0042" },
-];
-
-const mockExpenses = [
-  { id: 1, date: "2023-10-21", category: "Utilities", description: "Electricity Bill", amount: 850, payee: "Power Company", reference: "E2023-0245" },
-  { id: 2, date: "2023-10-18", category: "Maintenance", description: "Plumbing Repairs", amount: 1200, payee: "City Plumbers", reference: "E2023-0244" },
-  { id: 3, date: "2023-10-15", category: "Office", description: "Office Supplies", amount: 350, payee: "Office Store", reference: "E2023-0243" },
-  { id: 4, date: "2023-10-10", category: "Ministry", description: "Youth Event Supplies", amount: 500, payee: "Party Supplies", reference: "E2023-0242" },
-];
+// Form schema for tithe recording
+const titheSchema = z.object({
+  date: z.string().min(1, {
+    message: "Date is required"
+  }),
+  memberId: z.string().min(1, {
+    message: "Please select a member"
+  }),
+  amount: z.string().min(1, {
+    message: "Amount is required"
+  }),
+  method: z.string().min(1, {
+    message: "Please select a payment method"
+  }),
+  notes: z.string().optional()
+});
 
 // Form schema for offering recording
 const offeringSchema = z.object({
-  date: z.string().min(1, { message: "Date is required" }),
-  service: z.string().min(1, { message: "Please select a service" }),
-  amount: z.string().min(1, { message: "Amount is required" }),
-  category: z.string().min(1, { message: "Please select a category" }),
-  notes: z.string().optional(),
+  date: z.string().min(1, {
+    message: "Date is required"
+  }),
+  service: z.string().min(1, {
+    message: "Please select a service"
+  }),
+  amount: z.string().min(1, {
+    message: "Amount is required"
+  }),
+  category: z.string().min(1, {
+    message: "Please select a category"
+  }),
+  notes: z.string().optional()
 });
 
 // Form schema for special giving recording
 const specialGivingSchema = z.object({
-  date: z.string().min(1, { message: "Date is required" }),
-  fund: z.string().min(1, { message: "Please select a fund" }),
-  amount: z.string().min(1, { message: "Amount is required" }),
+  date: z.string().min(1, {
+    message: "Date is required"
+  }),
+  fund: z.string().min(1, {
+    message: "Please select a fund"
+  }),
+  amount: z.string().min(1, {
+    message: "Amount is required"
+  }),
   donorId: z.string().optional(),
   isAnonymous: z.boolean().default(false),
-  notes: z.string().optional(),
+  notes: z.string().optional()
 });
 
+// Form schema for expense recording
+const expenseSchema = z.object({
+  date: z.string().min(1, {
+    message: "Date is required"
+  }),
+  category: z.string().min(1, {
+    message: "Please select a category"
+  }),
+  description: z.string().min(3, {
+    message: "Description is required"
+  }),
+  amount: z.string().min(1, {
+    message: "Amount is required"
+  }),
+  payee: z.string().min(3, {
+    message: "Payee is required"
+  }),
+  receiptImage: z.string().optional(),
+  notes: z.string().optional()
+});
 const RegionalFinances: React.FC = () => {
-  // State for dialogs
   const [searchTerm, setSearchTerm] = useState("");
-  const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
-  const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
-  const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
-  const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
-  
-  // Tithe filtering and pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
-  const [amountRange, setAmountRange] = useState({ min: "", max: "" });
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-
+  const [dateFilter, setDateFilter] = useState("all");
+  const titheForm = useForm<z.infer<typeof titheSchema>>({
+    resolver: zodResolver(titheSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      memberId: "",
+      amount: "",
+      method: "",
+      notes: ""
+    }
+  });
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
     defaultValues: {
@@ -102,10 +224,9 @@ const RegionalFinances: React.FC = () => {
       service: "",
       amount: "",
       category: "",
-      notes: "",
-    },
+      notes: ""
+    }
   });
-
   const specialGivingForm = useForm<z.infer<typeof specialGivingSchema>>({
     resolver: zodResolver(specialGivingSchema),
     defaultValues: {
@@ -114,10 +235,33 @@ const RegionalFinances: React.FC = () => {
       amount: "",
       donorId: "",
       isAnonymous: false,
-      notes: "",
-    },
+      notes: ""
+    }
   });
-
+  const expenseForm = useForm<z.infer<typeof expenseSchema>>({
+    resolver: zodResolver(expenseSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      category: "",
+      description: "",
+      amount: "",
+      payee: "",
+      receiptImage: "",
+      notes: ""
+    }
+  });
+  function onTitheSubmit(values: z.infer<typeof titheSchema>) {
+    console.log(values);
+    // In a real app, this would save the tithe to a database
+    alert("Tithe recorded successfully!");
+    titheForm.reset({
+      date: new Date().toISOString().split('T')[0],
+      memberId: "",
+      amount: "",
+      method: "",
+      notes: ""
+    });
+  }
   function onOfferingSubmit(values: z.infer<typeof offeringSchema>) {
     console.log(values);
     // In a real app, this would save the offering to a database
@@ -127,10 +271,9 @@ const RegionalFinances: React.FC = () => {
       service: "",
       amount: "",
       category: "",
-      notes: "",
+      notes: ""
     });
   }
-
   function onSpecialGivingSubmit(values: z.infer<typeof specialGivingSchema>) {
     console.log(values);
     // In a real app, this would save the special giving to a database
@@ -141,80 +284,38 @@ const RegionalFinances: React.FC = () => {
       amount: "",
       donorId: "",
       isAnonymous: false,
-      notes: "",
+      notes: ""
     });
   }
-
-  // Filter and pagination logic for tithes
-  const paymentMethods = ["Bank Transfer", "Cash", "Credit Card"];
-  
-  const filteredTithes = mockTithes.filter((tithe) => {
-    // Search filter
-    const matchesSearch = 
-      tithe.member.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tithe.reference.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Payment method filter
-    const matchesMethod = selectedMethods.length === 0 || selectedMethods.includes(tithe.method);
-    
-    // Amount range filter
-    const matchesAmount = 
-      (!amountRange.min || tithe.amount >= parseFloat(amountRange.min)) &&
-      (!amountRange.max || tithe.amount <= parseFloat(amountRange.max));
-    
-    // Date range filter
-    const titheDate = new Date(tithe.date);
-    const matchesDate = 
-      (!dateRange.from || titheDate >= dateRange.from) &&
-      (!dateRange.to || titheDate <= dateRange.to);
-    
-    return matchesSearch && matchesMethod && matchesAmount && matchesDate;
-  });
-
-  const totalPages = Math.ceil(filteredTithes.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedTithes = filteredTithes.slice(startIndex, startIndex + itemsPerPage);
-
-  const clearFilters = () => {
-    setSelectedMethods([]);
-    setAmountRange({ min: "", max: "" });
-    setDateRange({});
-    setSearchTerm("");
-    setCurrentPage(1);
-  };
-
-  const hasActiveFilters = 
-    selectedMethods.length > 0 || 
-    amountRange.min || 
-    amountRange.max || 
-    dateRange.from || 
-    dateRange.to ||
-    searchTerm;
-
-  function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
+  function onExpenseSubmit(values: z.infer<typeof expenseSchema>) {
     console.log(values);
     // In a real app, this would save the expense to a database
     alert("Expense recorded successfully!");
+    expenseForm.reset({
+      date: new Date().toISOString().split('T')[0],
+      category: "",
+      description: "",
+      amount: "",
+      payee: "",
+      receiptImage: "",
+      notes: ""
+    });
   }
-
-  return (
-    <RegionalAdminLayout>
+  return <RegionalAdminLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Financial Management</h2>
-          <p className="text-muted-foreground">
-            Manage all financial aspects of your region.
-          </p>
-        </div>
+        <h2 className="text-3xl font-bold tracking-tight">Financial Management</h2>
+        <p className="text-muted-foreground">
+          Manage all financial aspects of your region.
+        </p>
         
         <Tabs defaultValue="overview">
           <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tithes">Tithes</TabsTrigger>
             <TabsTrigger value="offerings">Offerings</TabsTrigger>
-            <TabsTrigger value="special-giving">Special Giving</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
+            
+            
+            
           </TabsList>
           
           <TabsContent value="overview">
@@ -275,19 +376,19 @@ const RegionalFinances: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="h-[250px]">
-                        <PieChart
-                          data={[
-                            { category: "Tithes", value: 15000 },
-                            { category: "Offerings", value: 7500 },
-                            { category: "Special Giving", value: 3500 },
-                            { category: "Other", value: 1500 },
-                          ]}
-                          index="category"
-                          categories={["value"]}
-                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
+                        <PieChart data={[{
+                        category: "Tithes",
+                        value: 15000
+                      }, {
+                        category: "Offerings",
+                        value: 7500
+                      }, {
+                        category: "Special Giving",
+                        value: 3500
+                      }, {
+                        category: "Other",
+                        value: 1500
+                      }]} index="category" categories={["value"]} colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]} valueFormatter={value => `$${value.toLocaleString()}`} className="h-full" />
                       </div>
                     </CardContent>
                   </Card>
@@ -301,20 +402,22 @@ const RegionalFinances: React.FC = () => {
                     </CardHeader>
                     <CardContent>
                       <div className="h-[250px]">
-                        <PieChart
-                          data={[
-                            { category: "Staffing", value: 12000 },
-                            { category: "Facilities", value: 4500 },
-                            { category: "Ministries", value: 3250 },
-                            { category: "Administration", value: 1500 },
-                            { category: "Outreach", value: 1500 },
-                          ]}
-                          index="category"
-                          categories={["value"]}
-                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
+                        <PieChart data={[{
+                        category: "Staffing",
+                        value: 12000
+                      }, {
+                        category: "Facilities",
+                        value: 4500
+                      }, {
+                        category: "Ministries",
+                        value: 3250
+                      }, {
+                        category: "Administration",
+                        value: 1500
+                      }, {
+                        category: "Outreach",
+                        value: 1500
+                      }]} index="category" categories={["value"]} colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]} valueFormatter={value => `$${value.toLocaleString()}`} className="h-full" />
                       </div>
                     </CardContent>
                   </Card>
@@ -329,27 +432,55 @@ const RegionalFinances: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="h-[300px]">
-                      <LineChart
-                        data={[
-                          { month: "Nov", income: 25000, expenses: 20500 },
-                          { month: "Dec", income: 27500, expenses: 22000 },
-                          { month: "Jan", income: 24500, expenses: 21000 },
-                          { month: "Feb", income: 25000, expenses: 20500 },
-                          { month: "Mar", income: 26000, expenses: 21500 },
-                          { month: "Apr", income: 25500, expenses: 21000 },
-                          { month: "May", income: 26500, expenses: 22000 },
-                          { month: "Jun", income: 27000, expenses: 22500 },
-                          { month: "Jul", income: 26000, expenses: 21500 },
-                          { month: "Aug", income: 26500, expenses: 22000 },
-                          { month: "Sep", income: 27000, expenses: 22500 },
-                          { month: "Oct", income: 27500, expenses: 22750 },
-                        ]}
-                        index="month"
-                        categories={["income", "expenses"]}
-                        colors={["#8b5cf6", "#e11d48"]}
-                        valueFormatter={(value) => `$${value.toLocaleString()}`}
-                        className="h-full"
-                      />
+                      <LineChart data={[{
+                      month: "Nov",
+                      income: 25000,
+                      expenses: 20500
+                    }, {
+                      month: "Dec",
+                      income: 27500,
+                      expenses: 22000
+                    }, {
+                      month: "Jan",
+                      income: 24500,
+                      expenses: 21000
+                    }, {
+                      month: "Feb",
+                      income: 25000,
+                      expenses: 20500
+                    }, {
+                      month: "Mar",
+                      income: 26000,
+                      expenses: 21500
+                    }, {
+                      month: "Apr",
+                      income: 25500,
+                      expenses: 21000
+                    }, {
+                      month: "May",
+                      income: 26500,
+                      expenses: 22000
+                    }, {
+                      month: "Jun",
+                      income: 27000,
+                      expenses: 22500
+                    }, {
+                      month: "Jul",
+                      income: 26000,
+                      expenses: 21500
+                    }, {
+                      month: "Aug",
+                      income: 26500,
+                      expenses: 22000
+                    }, {
+                      month: "Sep",
+                      income: 27000,
+                      expenses: 22500
+                    }, {
+                      month: "Oct",
+                      income: 27500,
+                      expenses: 22750
+                    }]} index="month" categories={["income", "expenses"]} colors={["#8b5cf6", "#e11d48"]} valueFormatter={value => `$${value.toLocaleString()}`} className="h-full" />
                     </div>
                   </CardContent>
                 </Card>
@@ -358,528 +489,573 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="tithes">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Tithe Transactions</CardTitle>
-                    <CardDescription>
-                      Manage and view all tithe records from members.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setRecordTitheDialogOpen(true)}>
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Record Tithe
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Search and Filter Controls */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search by member name or reference..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="shrink-0"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                    {hasActiveFilters && (
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        Active
-                      </Badge>
-                    )}
-                  </Button>
-                </div>
-
-                {/* Filter Panel */}
-                {showFilters && (
-                  <Card className="border-dashed">
-                    <CardContent className="pt-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Payment Method Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Payment Method</label>
-                          <div className="space-y-2">
-                            {paymentMethods.map((method) => (
-                              <div key={method} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={method}
-                                  checked={selectedMethods.includes(method)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedMethods([...selectedMethods, method]);
-                                    } else {
-                                      setSelectedMethods(selectedMethods.filter(m => m !== method));
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={method} className="text-sm">
-                                  {method}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Amount Range Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Amount Range</label>
-                          <div className="flex space-x-2">
-                            <Input
-                              type="number"
-                              placeholder="Min"
-                              value={amountRange.min}
-                              onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
-                            />
-                            <Input
-                              type="number"
-                              placeholder="Max"
-                              value={amountRange.max}
-                              onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Date Range Filter */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Date Range</label>
-                          <div className="flex space-x-2">
-                            <Input
-                              type="date"
-                              value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
-                              onChange={(e) => setDateRange({
-                                ...dateRange,
-                                from: e.target.value ? new Date(e.target.value) : undefined
-                              })}
-                            />
-                            <Input
-                              type="date"
-                              value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
-                              onChange={(e) => setDateRange({
-                                ...dateRange,
-                                to: e.target.value ? new Date(e.target.value) : undefined
-                              })}
-                            />
-                          </div>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Record Tithe</CardTitle>
+                  <CardDescription>
+                    Record a new tithe payment from a member.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...titheForm}>
+                    <form onSubmit={titheForm.handleSubmit(onTitheSubmit)} className="space-y-4">
+                      <FormField control={titheForm.control} name="date" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={titheForm.control} name="memberId" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Member</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select a member</option>
+                              <option value="1">John Smith</option>
+                              <option value="2">Sarah Johnson</option>
+                              <option value="3">Michael Brown</option>
+                              <option value="4">Emily Wilson</option>
+                              <option value="5">David Lee</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={titheForm.control} name="amount" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Amount ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={titheForm.control} name="method" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Payment Method</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select payment method</option>
+                              <option value="cash">Cash</option>
+                              <option value="check">Check</option>
+                              <option value="bank_transfer">Bank Transfer</option>
+                              <option value="credit_card">Credit Card</option>
+                              <option value="mobile_payment">Mobile Payment</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={titheForm.control} name="notes" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Any additional information" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Record Tithe
+                        </Button>
                       </div>
-
-                      {/* Filter Actions */}
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                          Showing {filteredTithes.length} of {mockTithes.length} transactions
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={clearFilters}>
-                            <X className="h-4 w-4 mr-1" />
-                            Clear All
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Active Filter Chips */}
-                {hasActiveFilters && (
-                  <div className="flex flex-wrap gap-2">
-                    {selectedMethods.map((method) => (
-                      <Badge key={method} variant="secondary" className="gap-1">
-                        <CreditCard className="h-3 w-3" />
-                        {method}
-                        <button
-                          onClick={() => setSelectedMethods(selectedMethods.filter(m => m !== method))}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                    {(amountRange.min || amountRange.max) && (
-                      <Badge variant="secondary" className="gap-1">
-                        <DollarSign className="h-3 w-3" />
-                        {amountRange.min && `$${amountRange.min}`}
-                        {amountRange.min && amountRange.max && ' - '}
-                        {amountRange.max && `$${amountRange.max}`}
-                        <button
-                          onClick={() => setAmountRange({ min: '', max: '' })}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
-                    {(dateRange.from || dateRange.to) && (
-                      <Badge variant="secondary" className="gap-1">
-                        <CalendarDays className="h-3 w-3" />
-                        {dateRange.from && dateRange.from.toLocaleDateString()}
-                        {dateRange.from && dateRange.to && ' - '}
-                        {dateRange.to && dateRange.to.toLocaleDateString()}
-                        <button
-                          onClick={() => setDateRange({})}
-                          className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    )}
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Tithes</CardTitle>
+                  <CardDescription>
+                    View and manage recent tithe records.
+                  </CardDescription>
+                  <div className="mt-4">
+                    <Input type="search" placeholder="Search tithes..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
-                )}
-
-                {/* Table Controls */}
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">Show</span>
-                    <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-                      setItemsPerPage(parseInt(value));
-                      setCurrentPage(1);
-                    }}>
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="5">5</SelectItem>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-muted-foreground">per page</span>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-
-                {/* Scrollable Table */}
-                <div className="rounded-md border">
-                  <div className="max-h-[500px] overflow-auto">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background">
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Member</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Method</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedTithes.length > 0 ? (
-                          paginatedTithes.map((tithe) => (
-                            <TableRow key={tithe.id}>
-                              <TableCell className="font-mono text-xs">
-                                {new Date(tithe.date).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell className="font-medium">{tithe.member}</TableCell>
-                              <TableCell className="font-semibold text-green-600">
-                                ${tithe.amount.toLocaleString()}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="text-xs">
-                                  {tithe.method}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">
-                                {tithe.reference}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
-                              <div className="flex flex-col items-center justify-center space-y-2">
-                                <Search className="h-8 w-8 text-muted-foreground" />
-                                <p className="text-muted-foreground">
-                                  {hasActiveFilters ? 'No tithes match your filters' : 'No tithes found'}
-                                </p>
-                                {hasActiveFilters && (
-                                  <Button variant="link" size="sm" onClick={clearFilters}>
-                                    Clear filters
-                                  </Button>
-                                )}
-                              </div>
-                            </TableCell>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Member</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Method</TableHead>
+                            <TableHead>Reference</TableHead>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTithes.length)} of {filteredTithes.length} transactions
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-                      <div className="flex items-center space-x-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                          .filter(page => 
-                            page === 1 || 
-                            page === totalPages || 
-                            Math.abs(page - currentPage) <= 1
-                          )
-                          .map((page, index, array) => (
-                            <React.Fragment key={page}>
-                              {index > 0 && array[index - 1] !== page - 1 && (
-                                <span className="px-2 text-muted-foreground">...</span>
-                              )}
-                              <Button
-                                variant={currentPage === page ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setCurrentPage(page)}
-                                className="w-8 h-8 p-0"
-                              >
-                                {page}
-                              </Button>
-                            </React.Fragment>
-                          ))
-                        }
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                        </TableHeader>
+                        <TableBody>
+                          {mockTithes.length > 0 ? mockTithes.map(tithe => <TableRow key={tithe.id}>
+                                <TableCell>{tithe.date}</TableCell>
+                                <TableCell>{tithe.member}</TableCell>
+                                <TableCell>${tithe.amount.toLocaleString()}</TableCell>
+                                <TableCell>{tithe.method}</TableCell>
+                                <TableCell>{tithe.reference}</TableCell>
+                              </TableRow>) : <TableRow>
+                              <TableCell colSpan={5} className="text-center h-24">
+                                No tithes found
+                              </TableCell>
+                            </TableRow>}
+                        </TableBody>
+                      </Table>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline">
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      View All Tithes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="offerings">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Record Offering</CardTitle>
+                  <CardDescription>
+                    Record a new offering collection.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...offeringForm}>
+                    <form onSubmit={offeringForm.handleSubmit(onOfferingSubmit)} className="space-y-4">
+                      <FormField control={offeringForm.control} name="date" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={offeringForm.control} name="service" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Service/Event</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select service/event</option>
+                              <option value="sunday_morning">Sunday Morning</option>
+                              <option value="sunday_evening">Sunday Evening</option>
+                              <option value="midweek">Midweek Service</option>
+                              <option value="prayer_meeting">Prayer Meeting</option>
+                              <option value="special_event">Special Event</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={offeringForm.control} name="amount" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Amount ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={offeringForm.control} name="category" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select category</option>
+                              <option value="general">General</option>
+                              <option value="missions">Missions</option>
+                              <option value="building">Building Fund</option>
+                              <option value="youth">Youth Ministry</option>
+                              <option value="children">Children's Ministry</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={offeringForm.control} name="notes" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Any additional information" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Record Offering
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
                   <CardTitle>Recent Offerings</CardTitle>
                   <CardDescription>
-                    View and manage recent offering records.
+                    View and manage recent offering collections.
                   </CardDescription>
-                </div>
-                <Button onClick={() => setOfferingDialogOpen(true)}>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Record Offering
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="w-4 h-4" />
-                    <Input
-                      placeholder="Search offerings..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
-                    />
+                  <div className="mt-4">
+                    <Input type="search" placeholder="Search offerings..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
-
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Service</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockOfferings.length > 0 ? (
-                          mockOfferings.map((offering) => (
-                            <TableRow key={offering.id}>
-                              <TableCell>{offering.date}</TableCell>
-                              <TableCell>{offering.service}</TableCell>
-                              <TableCell>${offering.amount.toLocaleString()}</TableCell>
-                              <TableCell>{offering.category}</TableCell>
-                              <TableCell>{offering.reference}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
-                              No offerings found
-                            </TableCell>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Reference</TableHead>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {mockOfferings.length > 0 ? mockOfferings.map(offering => <TableRow key={offering.id}>
+                                <TableCell>{offering.date}</TableCell>
+                                <TableCell>{offering.service}</TableCell>
+                                <TableCell>${offering.amount.toLocaleString()}</TableCell>
+                                <TableCell>{offering.category}</TableCell>
+                                <TableCell>{offering.reference}</TableCell>
+                              </TableRow>) : <TableRow>
+                              <TableCell colSpan={5} className="text-center h-24">
+                                No offerings found
+                              </TableCell>
+                            </TableRow>}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-
-                  <Button variant="outline" className="w-full">
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    View All Offerings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline">
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      View All Offerings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="special-giving">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Recent Special Giving</CardTitle>
-                    <CardDescription>
-                      View and manage recent special donations.
-                    </CardDescription>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Record Special Giving</CardTitle>
+                  <CardDescription>
+                    Record a new special donation or contribution.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...specialGivingForm}>
+                    <form onSubmit={specialGivingForm.handleSubmit(onSpecialGivingSubmit)} className="space-y-4">
+                      <FormField control={specialGivingForm.control} name="date" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={specialGivingForm.control} name="fund" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Fund/Project</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select fund/project</option>
+                              <option value="building_fund">Building Fund</option>
+                              <option value="missions">Mission Fund</option>
+                              <option value="youth_camp">Youth Camp</option>
+                              <option value="community_outreach">Community Outreach</option>
+                              <option value="benevolence">Benevolence Fund</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={specialGivingForm.control} name="amount" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Amount ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={specialGivingForm.control} name="isAnonymous" render={({
+                      field
+                    }) => <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl>
+                              <input type="checkbox" checked={field.value} onChange={e => {
+                          field.onChange(e.target.checked);
+                        }} className="h-4 w-4 mt-1" />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Anonymous Donor</FormLabel>
+                              <FormDescription>
+                                Check if the donor wishes to remain anonymous
+                              </FormDescription>
+                            </div>
+                          </FormItem>} />
+                      
+                      {!specialGivingForm.watch("isAnonymous") && <FormField control={specialGivingForm.control} name="donorId" render={({
+                      field
+                    }) => <FormItem>
+                              <FormLabel>Donor</FormLabel>
+                              <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                                <option value="">Select a donor</option>
+                                <option value="1">John Smith</option>
+                                <option value="2">Sarah Johnson</option>
+                                <option value="3">Michael Brown</option>
+                                <option value="4">Emily Wilson</option>
+                                <option value="5">David Lee</option>
+                                <option value="custom">Enter custom name</option>
+                              </select>
+                              <FormMessage />
+                            </FormItem>} />}
+                      
+                      <FormField control={specialGivingForm.control} name="notes" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Any additional information" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Record Special Giving
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Special Giving</CardTitle>
+                  <CardDescription>
+                    View and manage recent special donations.
+                  </CardDescription>
+                  <div className="mt-4">
+                    <Input type="search" placeholder="Search special giving..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
-                  <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
-                    <PiggyBank className="mr-2 h-4 w-4" />
-                    Record Special Giving
-                  </Button>
-                </div>
-                <div className="mt-4">
-                  <Input
-                    type="search"
-                    placeholder="Search special giving..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Fund</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Donor</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockSpecialGiving.length > 0 ? (
-                          mockSpecialGiving.map((giving) => (
-                            <TableRow key={giving.id}>
-                              <TableCell>{giving.date}</TableCell>
-                              <TableCell>{giving.fund}</TableCell>
-                              <TableCell>${giving.amount.toLocaleString()}</TableCell>
-                              <TableCell>{giving.donor}</TableCell>
-                              <TableCell>{giving.reference}</TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
-                              No special giving found
-                            </TableCell>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Fund/Project</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Donor</TableHead>
+                            <TableHead>Reference</TableHead>
                           </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {mockSpecialGiving.length > 0 ? mockSpecialGiving.map(giving => <TableRow key={giving.id}>
+                                <TableCell>{giving.date}</TableCell>
+                                <TableCell>{giving.fund}</TableCell>
+                                <TableCell>${giving.amount.toLocaleString()}</TableCell>
+                                <TableCell>{giving.donor}</TableCell>
+                                <TableCell>{giving.reference}</TableCell>
+                              </TableRow>) : <TableRow>
+                              <TableCell colSpan={5} className="text-center h-24">
+                                No special giving found
+                              </TableCell>
+                            </TableRow>}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <Button variant="outline">
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    View All Special Giving
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline">
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      View All Special Giving
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="expenses">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Record Expense</CardTitle>
+                  <CardDescription>
+                    Record a new expense or payment.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...expenseForm}>
+                    <form onSubmit={expenseForm.handleSubmit(onExpenseSubmit)} className="space-y-4">
+                      <FormField control={expenseForm.control} name="date" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Date</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="category" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" {...field}>
+                              <option value="">Select category</option>
+                              <option value="utilities">Utilities</option>
+                              <option value="maintenance">Maintenance</option>
+                              <option value="office">Office Supplies</option>
+                              <option value="ministry">Ministry Expenses</option>
+                              <option value="staffing">Staff & Salaries</option>
+                              <option value="equipment">Equipment</option>
+                              <option value="outreach">Outreach</option>
+                              <option value="other">Other</option>
+                            </select>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="description" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Electricity Bill" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="amount" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Amount ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="payee" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Payee/Vendor</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Power Company" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="receiptImage" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Receipt (Optional)</FormLabel>
+                            <FormControl>
+                              <Input type="file" className="cursor-pointer" />
+                            </FormControl>
+                            <FormDescription>
+                              Upload an image of the receipt
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <FormField control={expenseForm.control} name="notes" render={({
+                      field
+                    }) => <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                              <textarea className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" placeholder="Any additional information" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>} />
+                      
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          <Receipt className="mr-2 h-4 w-4" />
+                          Record Expense
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
                   <CardTitle>Recent Expenses</CardTitle>
                   <CardDescription>
-                    View and manage recent expense records.
+                    View and manage recent expenses.
                   </CardDescription>
-                </div>
-                <Button onClick={() => setRecordExpenseDialogOpen(true)} size="sm">
-                  <Receipt className="w-4 h-4 mr-2" />
-                  Record Expense
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4 text-gray-400" />
-                    <Input 
-                      placeholder="Search expenses..." 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
-                    />
+                  <div className="mt-4">
+                    <Input type="search" placeholder="Search expenses..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                   </div>
-                  
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockExpenses
-                          .filter(expense => 
-                            expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            expense.category.toLowerCase().includes(searchTerm.toLowerCase())
-                          )
-                          .slice(0, 5)
-                          .map((expense) => (
-                            <TableRow key={expense.id}>
-                              <TableCell>{expense.date}</TableCell>
-                              <TableCell>{expense.description}</TableCell>
-                              <TableCell>
-                                <span className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs">
-                                  {expense.category}
-                                </span>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Payee</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {mockExpenses.length > 0 ? mockExpenses.map(expense => <TableRow key={expense.id}>
+                                <TableCell>{expense.date}</TableCell>
+                                <TableCell>{expense.category}</TableCell>
+                                <TableCell>{expense.description}</TableCell>
+                                <TableCell>${expense.amount.toLocaleString()}</TableCell>
+                                <TableCell>{expense.payee}</TableCell>
+                              </TableRow>) : <TableRow>
+                              <TableCell colSpan={5} className="text-center h-24">
+                                No expenses found
                               </TableCell>
-                              <TableCell className="font-medium text-destructive">
-                                -${expense.amount.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
+                            </TableRow>}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-                  
-                  <Button variant="outline" className="w-full">
-                    <ArrowUpRight className="w-4 h-4 mr-2" />
-                    View All Expenses
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                  <div className="flex justify-end mt-4">
+                    <Button variant="outline">
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      View All Expenses
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="reports">
@@ -887,218 +1063,239 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Financial Reports</CardTitle>
                 <CardDescription>
-                  Generate and view detailed financial reports
+                  Generate and view detailed financial reports.
                 </CardDescription>
+                <div className="flex flex-col md:flex-row gap-4 justify-between items-center mt-4">
+                  <div className="flex gap-2">
+                    <Button variant={dateFilter === "month" ? "default" : "outline"} onClick={() => setDateFilter("month")}>
+                      Month
+                    </Button>
+                    <Button variant={dateFilter === "quarter" ? "default" : "outline"} onClick={() => setDateFilter("quarter")}>
+                      Quarter
+                    </Button>
+                    <Button variant={dateFilter === "year" ? "default" : "outline"} onClick={() => setDateFilter("year")}>
+                      Year
+                    </Button>
+                    <Button variant={dateFilter === "custom" ? "default" : "outline"} onClick={() => setDateFilter("custom")}>
+                      Custom
+                    </Button>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button variant="outline">
+                      <Filter className="mr-2 h-4 w-4" />
+                      Filters
+                    </Button>
+                    <Button variant="outline">
+                      <Download className="mr-2 h-4 w-4" />
+                      Export
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Income Statement</CardTitle>
+                      <CardTitle>Income Statement</CardTitle>
                       <CardDescription>
-                        Current month financial summary
+                        Summary of income and expenses for the selected period
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Total Income</span>
-                          <span className="text-sm font-bold text-green-600">$27,500</span>
-                        </div>
-                        <div className="pl-4 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Tithes</span>
-                            <span>$15,000</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Offerings</span>
-                            <span>$7,500</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Special Giving</span>
-                            <span>$3,500</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Other Income</span>
-                            <span>$1,500</span>
-                          </div>
-                        </div>
-                        
-                        <hr />
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm font-medium">Total Expenses</span>
-                          <span className="text-sm font-bold text-red-600">$22,750</span>
-                        </div>
-                        <div className="pl-4 space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span>Staffing</span>
-                            <span>$12,000</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Facilities</span>
-                            <span>$4,500</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Ministries</span>
-                            <span>$3,250</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Administration</span>
-                            <span>$1,500</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Outreach</span>
-                            <span>$1,500</span>
-                          </div>
-                        </div>
-                        
-                        <hr />
-                        
-                        <div className="flex justify-between">
-                          <span className="font-semibold">Net Income</span>
-                          <span className="font-bold text-green-600">$4,750</span>
+                      <div className="rounded-md border overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="font-bold">Category</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-right">% of Total</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell colSpan={3} className="font-semibold bg-gray-50">Income</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Tithes</TableCell>
+                                <TableCell className="text-right">$15,000.00</TableCell>
+                                <TableCell className="text-right">54.5%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Offerings</TableCell>
+                                <TableCell className="text-right">$7,500.00</TableCell>
+                                <TableCell className="text-right">27.3%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Special Giving</TableCell>
+                                <TableCell className="text-right">$3,500.00</TableCell>
+                                <TableCell className="text-right">12.7%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Other Income</TableCell>
+                                <TableCell className="text-right">$1,500.00</TableCell>
+                                <TableCell className="text-right">5.5%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-semibold">Total Income</TableCell>
+                                <TableCell className="text-right font-semibold">$27,500.00</TableCell>
+                                <TableCell className="text-right font-semibold">100%</TableCell>
+                              </TableRow>
+                              
+                              <TableRow>
+                                <TableCell colSpan={3} className="font-semibold bg-gray-50">Expenses</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Staff & Salaries</TableCell>
+                                <TableCell className="text-right">$12,000.00</TableCell>
+                                <TableCell className="text-right">52.7%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Facilities</TableCell>
+                                <TableCell className="text-right">$4,500.00</TableCell>
+                                <TableCell className="text-right">19.8%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Ministries</TableCell>
+                                <TableCell className="text-right">$3,250.00</TableCell>
+                                <TableCell className="text-right">14.3%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Administration</TableCell>
+                                <TableCell className="text-right">$1,500.00</TableCell>
+                                <TableCell className="text-right">6.6%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="pl-6">Outreach</TableCell>
+                                <TableCell className="text-right">$1,500.00</TableCell>
+                                <TableCell className="text-right">6.6%</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-semibold">Total Expenses</TableCell>
+                                <TableCell className="text-right font-semibold">$22,750.00</TableCell>
+                                <TableCell className="text-right font-semibold">100%</TableCell>
+                              </TableRow>
+                              
+                              <TableRow>
+                                <TableCell className="font-bold">Net Income</TableCell>
+                                <TableCell className="text-right font-bold">$4,750.00</TableCell>
+                                <TableCell className="text-right font-bold">17.3%</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                   
-                  <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Quick Actions</CardTitle>
+                        <CardTitle>Income Trends</CardTitle>
+                        <CardDescription>
+                          Monthly income for the current year
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        <Button variant="outline" className="w-full justify-start">
-                          <Download className="mr-2 h-4 w-4" />
-                          Download Monthly Report
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          Generate Custom Report
-                        </Button>
-                        <Button variant="outline" className="w-full justify-start">
-                          <TrendingUp className="mr-2 h-4 w-4" />
-                          View Year-to-Date Summary
-                        </Button>
+                      <CardContent>
+                        <div className="h-[300px]">
+                          <LineChart data={[{
+                          month: "Jan",
+                          tithes: 12500,
+                          offerings: 7500,
+                          specialGiving: 2000
+                        }, {
+                          month: "Feb",
+                          tithes: 13000,
+                          offerings: 8000,
+                          specialGiving: 1500
+                        }, {
+                          month: "Mar",
+                          tithes: 12800,
+                          offerings: 7800,
+                          specialGiving: 3000
+                        }, {
+                          month: "Apr",
+                          tithes: 13200,
+                          offerings: 8200,
+                          specialGiving: 2500
+                        }, {
+                          month: "May",
+                          tithes: 14000,
+                          offerings: 8500,
+                          specialGiving: 4000
+                        }, {
+                          month: "Jun",
+                          tithes: 13500,
+                          offerings: 8000,
+                          specialGiving: 2000
+                        }, {
+                          month: "Jul",
+                          tithes: 13800,
+                          offerings: 8200,
+                          specialGiving: 1800
+                        }, {
+                          month: "Aug",
+                          tithes: 14200,
+                          offerings: 8300,
+                          specialGiving: 2200
+                        }, {
+                          month: "Sep",
+                          tithes: 14500,
+                          offerings: 8600,
+                          specialGiving: 5000
+                        }, {
+                          month: "Oct",
+                          tithes: 15000,
+                          offerings: 9000,
+                          specialGiving: 3500
+                        }]} index="month" categories={["tithes", "offerings", "specialGiving"]} colors={["#8b5cf6", "#a78bfa", "#c4b5fd"]} valueFormatter={value => `$${value.toLocaleString()}`} className="h-full" />
+                        </div>
                       </CardContent>
                     </Card>
                     
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Report Filters</CardTitle>
+                        <CardTitle>Expense Breakdown</CardTitle>
+                        <CardDescription>
+                          Distribution by expense category
+                        </CardDescription>
                       </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Date Range</label>
-                          <select className="w-full p-2 border rounded">
-                            <option>This Month</option>
-                            <option>Last Month</option>
-                            <option>This Quarter</option>
-                            <option>This Year</option>
-                            <option>Custom Range</option>
-                          </select>
+                      <CardContent>
+                        <div className="h-[300px]">
+                          <PieChart data={[{
+                          category: "Staffing",
+                          value: 12000
+                        }, {
+                          category: "Facilities",
+                          value: 4500
+                        }, {
+                          category: "Ministries",
+                          value: 3250
+                        }, {
+                          category: "Administration",
+                          value: 1500
+                        }, {
+                          category: "Outreach",
+                          value: 1500
+                        }]} index="category" categories={["value"]} colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]} valueFormatter={value => `$${value.toLocaleString()}`} className="h-full" />
                         </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Report Type</label>
-                          <select className="w-full p-2 border rounded">
-                            <option>All Transactions</option>
-                            <option>Income Only</option>
-                            <option>Expenses Only</option>
-                            <option>By Category</option>
-                          </select>
-                        </div>
-                        <Button className="w-full">
-                          <Filter className="mr-2 h-4 w-4" />
-                          Apply Filters
-                        </Button>
                       </CardContent>
                     </Card>
                   </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Income Trends</CardTitle>
-                      <CardDescription>
-                        Monthly income over the past 6 months
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <LineChart
-                          data={[
-                            { month: "May", income: 25500 },
-                            { month: "Jun", income: 27000 },
-                            { month: "Jul", income: 26000 },
-                            { month: "Aug", income: 26500 },
-                            { month: "Sep", income: 27000 },
-                            { month: "Oct", income: 27500 },
-                          ]}
-                          index="month"
-                          categories={["income"]}
-                          colors={["#8b5cf6"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
                   
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Expense Breakdown</CardTitle>
-                      <CardDescription>
-                        Current month expense distribution
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <BarChart
-                          data={[
-                            { category: "Staffing", amount: 12000 },
-                            { category: "Facilities", amount: 4500 },
-                            { category: "Ministries", amount: 3250 },
-                            { category: "Admin", amount: 1500 },
-                            { category: "Outreach", amount: 1500 },
-                          ]}
-                          index="category"
-                          categories={["amount"]}
-                          colors={["#8b5cf6"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex justify-end">
+                    <Button>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Full Report
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      
-      <RecordTitheDialog 
-        open={recordTitheDialogOpen} 
-        onOpenChange={setRecordTitheDialogOpen} 
-      />
-      <RecordOfferingDialog 
-        open={offeringDialogOpen} 
-        onOpenChange={setOfferingDialogOpen} 
-      />
-      <RecordSpecialGivingDialog 
-        open={recordSpecialGivingDialogOpen} 
-        onOpenChange={setRecordSpecialGivingDialogOpen} 
-      />
-      
-      <RecordExpenseDialog
-        open={recordExpenseDialogOpen}
-        onOpenChange={setRecordExpenseDialogOpen}
-        onSubmit={onExpenseSubmit}
-      />
-    </RegionalAdminLayout>
-  );
+    </RegionalAdminLayout>;
 };
-
 export default RegionalFinances;
