@@ -121,6 +121,21 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
         if (sessionError) {
           console.error('Failed to create DCG session:', sessionError);
         }
+
+        // Add the leader as a member of the DCG
+        const { error: memberError } = await supabase
+          .from('dcg_members')
+          .insert({
+            dcg_id: dcg.id,
+            member_id: selectedMember.id,
+            role: 'Leader',
+            joined_date: new Date().toISOString().split('T')[0],
+            is_active: true
+          });
+
+        if (memberError) {
+          console.error('Failed to add leader as DCG member:', memberError);
+        }
       }
       
       toast.success('DCG and location created successfully!');
