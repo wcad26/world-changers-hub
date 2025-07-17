@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search } from "lucide-react";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
+import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
 
 // Mock data for demonstration
 const mockTithes = [
@@ -76,6 +77,7 @@ const RegionalFinances: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
+  const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -385,173 +387,71 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="offerings">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Record Offering</CardTitle>
-                  <CardDescription>
-                    Record a new offering collection.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...offeringForm}>
-                    <form onSubmit={offeringForm.handleSubmit(onOfferingSubmit)} className="space-y-4">
-                      <FormField
-                        control={offeringForm.control}
-                        name="date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={offeringForm.control}
-                        name="service"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Service</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select a service</option>
-                              <option value="sunday_morning">Sunday Morning</option>
-                              <option value="sunday_evening">Sunday Evening</option>
-                              <option value="midweek">Midweek Service</option>
-                              <option value="special">Special Service</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={offeringForm.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Category</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select a category</option>
-                              <option value="general">General Offering</option>
-                              <option value="missions">Missions</option>
-                              <option value="building">Building Fund</option>
-                              <option value="special">Special Collection</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={offeringForm.control}
-                        name="amount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Total Amount ($)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={offeringForm.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
-                            <FormControl>
-                              <textarea 
-                                placeholder="Additional notes about this offering..." 
-                                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button type="submit" className="w-full">
-                        <Receipt className="mr-2 h-4 w-4" />
-                        Record Offering
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
                   <CardTitle>Recent Offerings</CardTitle>
                   <CardDescription>
                     View and manage recent offering records.
                   </CardDescription>
-                  <div className="mt-4">
+                </div>
+                <Button onClick={() => setOfferingDialogOpen(true)}>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Record Offering
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Search className="w-4 h-4" />
                     <Input
-                      type="search"
                       placeholder="Search offerings..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1"
                     />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Service</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Reference</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockOfferings.length > 0 ? (
-                            mockOfferings.map((offering) => (
-                              <TableRow key={offering.id}>
-                                <TableCell>{offering.date}</TableCell>
-                                <TableCell>{offering.service}</TableCell>
-                                <TableCell>${offering.amount.toLocaleString()}</TableCell>
-                                <TableCell>{offering.category}</TableCell>
-                                <TableCell>{offering.reference}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center h-24">
-                                No offerings found
-                              </TableCell>
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Service</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Reference</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mockOfferings.length > 0 ? (
+                          mockOfferings.map((offering) => (
+                            <TableRow key={offering.id}>
+                              <TableCell>{offering.date}</TableCell>
+                              <TableCell>{offering.service}</TableCell>
+                              <TableCell>${offering.amount.toLocaleString()}</TableCell>
+                              <TableCell>{offering.category}</TableCell>
+                              <TableCell>{offering.reference}</TableCell>
                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">
+                              No offerings found
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="outline">
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
-                      View All Offerings
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+
+                  <Button variant="outline" className="w-full">
+                    <ArrowUpRight className="mr-2 h-4 w-4" />
+                    View All Offerings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="special-giving">
@@ -1151,6 +1051,10 @@ const RegionalFinances: React.FC = () => {
       <RecordTitheDialog 
         open={recordTitheDialogOpen} 
         onOpenChange={setRecordTitheDialogOpen} 
+      />
+      <RecordOfferingDialog 
+        open={offeringDialogOpen} 
+        onOpenChange={setOfferingDialogOpen} 
       />
     </RegionalAdminLayout>
   );
