@@ -1128,32 +1128,32 @@ const RegionalFinances: React.FC = () => {
                     <table className="w-full">
                       <thead className="sticky top-0 bg-background z-10 border-b">
                         <tr className="border-b">
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Fund</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Donor</th>
-                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Donor</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Fund</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
                         </tr>
                       </thead>
                       <tbody>
                         {paginatedSpecialGiving.length > 0 ? (
                           paginatedSpecialGiving.map((giving) => (
                             <tr key={giving.id} className="border-b transition-colors hover:bg-muted/50">
-                              <td className="p-4 align-middle font-mono text-xs">
-                                {giving.date}
-                              </td>
-                              <td className="p-4 align-middle">
-                                <Badge variant="outline" className="text-xs">
-                                  {giving.fund}
-                                </Badge>
-                              </td>
-                              <td className="p-4 align-middle font-semibold text-green-600">
-                                ${giving.amount.toLocaleString()}
-                              </td>
-                              <td className="p-4 align-middle font-medium">{giving.donor}</td>
-                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
-                                {giving.reference}
-                              </td>
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {giving.date}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{giving.donor}</td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {giving.fund}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-green-600">
+                                 ${giving.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {giving.reference}
+                               </td>
                             </tr>
                           ))
                         ) : (
