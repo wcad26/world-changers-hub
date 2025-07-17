@@ -484,7 +484,6 @@ const RegionalFinances: React.FC = () => {
           <TabsContent value="overview">
             <Card>
               <CardHeader>
-                <CardTitle>Financial Overview</CardTitle>
                 <CardDescription>
                 </CardDescription>
               </CardHeader>
