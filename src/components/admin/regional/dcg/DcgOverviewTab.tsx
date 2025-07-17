@@ -11,11 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AddDcgDialog } from "./AddDcgDialog";
 import { useToast } from "@/hooks/use-toast";
+import { useRegionalDcgStats, useRecentDcgActivity } from "@/hooks/useRegionalStats";
 
 const DcgOverviewTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDcgDialogOpen, setAddDcgDialogOpen] = useState(false);
   const { data: dcgs, isLoading, isError, error } = useDcgs();
+  const { data: regionalStats, isLoading: statsLoading } = useRegionalDcgStats();
+  const { data: recentActivity, isLoading: activityLoading } = useRecentDcgActivity();
   const deleteDcg = useDeleteDcg();
   const { toast } = useToast();
 
@@ -62,9 +65,8 @@ const DcgOverviewTab = () => {
 
   // Calculate metrics from real data
   const totalDcgs = dcgs?.length || 0;
-  const totalMembers = 0; // Will be updated when member count is available
-  const avgAttendance = 82; // Placeholder until attendance data is available
-  const totalOfferings = 1245; // Placeholder until financial data is available
+  const totalMembers = regionalStats?.totalDcgMembers || 0;
+  const avgAttendance = regionalStats?.averageAttendance || 0;
 
   return (
     <div className="space-y-6">
@@ -76,57 +78,44 @@ const DcgOverviewTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg shadow p-4 border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Total DCGs</p>
-                  <p className="text-2xl font-bold">{totalDcgs}</p>
+                  <p className="text-2xl font-bold">{statsLoading ? "..." : totalDcgs}</p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-full">
                   <Home className="h-6 w-6 text-blue-500" />
                 </div>
               </div>
-              <p className="text-xs text-green-500 mt-2">+2 from last month</p>
+              <p className="text-xs text-green-500 mt-2">Active DCGs in region</p>
             </div>
             
             <div className="bg-white rounded-lg shadow p-4 border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Total Members</p>
-                  <p className="text-2xl font-bold">{totalMembers}</p>
+                  <p className="text-2xl font-bold">{statsLoading ? "..." : totalMembers}</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-full">
                   <Users className="h-6 w-6 text-purple-500" />
                 </div>
               </div>
-              <p className="text-xs text-green-500 mt-2">+5 from last month</p>
+              <p className="text-xs text-green-500 mt-2">Across all DCGs</p>
             </div>
             
             <div className="bg-white rounded-lg shadow p-4 border">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-500">Avg. Attendance</p>
-                  <p className="text-2xl font-bold">{avgAttendance}%</p>
+                  <p className="text-2xl font-bold">{statsLoading ? "..." : avgAttendance}%</p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-full">
                   <Calendar className="h-6 w-6 text-green-500" />
                 </div>
               </div>
-              <p className="text-xs text-green-500 mt-2">+3% from last month</p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4 border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total Offerings</p>
-                  <p className="text-2xl font-bold">${totalOfferings}</p>
-                </div>
-                <div className="p-3 bg-yellow-100 rounded-full">
-                  <DollarSign className="h-6 w-6 text-yellow-500" />
-                </div>
-              </div>
-              <p className="text-xs text-green-500 mt-2">+$120 from last month</p>
+              <p className="text-xs text-green-500 mt-2">Regional average</p>
             </div>
           </div>
         </CardContent>
@@ -267,18 +256,41 @@ const DcgOverviewTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">Victory DCG</TableCell>
-                    <TableCell>Weekly Meeting</TableCell>
-                    <TableCell>Yesterday</TableCell>
-                    <TableCell><span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Completed</span></TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">Faith DCG</TableCell>
-                    <TableCell>Outreach Program</TableCell>
-                    <TableCell>2 days ago</TableCell>
-                    <TableCell><span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Completed</span></TableCell>
-                  </TableRow>
+                  {activityLoading && (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={`activity-skeleton-${i}`}>
+                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                  {!activityLoading && recentActivity && recentActivity.length > 0 ? (
+                    recentActivity.map((activity, index) => (
+                      <TableRow key={`activity-${index}`}>
+                        <TableCell className="font-medium">{activity.dcgName}</TableCell>
+                        <TableCell>{activity.activity}</TableCell>
+                        <TableCell>{activity.date}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            activity.status === 'Completed' 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {activity.status}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : null}
+                  {!activityLoading && (!recentActivity || recentActivity.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center h-24">
+                        No recent activity found.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
