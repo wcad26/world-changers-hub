@@ -905,31 +905,6 @@ const RegionalFinances: React.FC = () => {
                     </Card>
                   )}
 
-                  {/* Items per page and total count */}
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-muted-foreground">Show</span>
-                      <Select
-                        value={offeringItemsPerPage.toString()}
-                        onValueChange={(value) => {
-                          setOfferingItemsPerPage(parseInt(value));
-                          setOfferingCurrentPage(1);
-                        }}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-sm text-muted-foreground">
-                        entries of {filteredOfferings.length} total
-                      </span>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Scrollable Table Section */}
@@ -968,12 +943,35 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pagination */}
-                {offeringTotalPages > 1 && (
-                  <div className="flex justify-between items-center mt-4 flex-shrink-0">
-                    <div className="text-sm text-muted-foreground">
-                      Showing {offeringStartIndex + 1} to {Math.min(offeringStartIndex + offeringItemsPerPage, filteredOfferings.length)} of {filteredOfferings.length} entries
-                    </div>
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {offeringStartIndex + 1} to {Math.min(offeringStartIndex + offeringItemsPerPage, filteredOfferings.length)} of {filteredOfferings.length} entries
+                  </div>
+                  
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={offeringItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setOfferingItemsPerPage(parseInt(value));
+                        setOfferingCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  
+                  {offeringTotalPages > 1 ? (
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
@@ -1021,8 +1019,10 @@ const RegionalFinances: React.FC = () => {
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div></div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
