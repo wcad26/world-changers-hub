@@ -14,6 +14,7 @@ import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
 import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecialGivingDialog";
+import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog";
 
 // Mock data for demonstration
 const mockTithes = [
@@ -80,6 +81,7 @@ const RegionalFinances: React.FC = () => {
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
   const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
+  const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
 
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
@@ -144,19 +146,10 @@ const RegionalFinances: React.FC = () => {
     });
   }
 
-  function onExpenseSubmit(values: z.infer<typeof expenseSchema>) {
+  function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
     console.log(values);
     // In a real app, this would save the expense to a database
     alert("Expense recorded successfully!");
-    expenseForm.reset({
-      date: new Date().toISOString().split('T')[0],
-      category: "",
-      description: "",
-      amount: "",
-      payee: "",
-      receiptImage: "",
-      notes: "",
-    });
   }
 
   return (
@@ -526,199 +519,73 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="expenses">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Record Expense</CardTitle>
-                  <CardDescription>
-                    Record a new expense or payment.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Form {...expenseForm}>
-                    <form onSubmit={expenseForm.handleSubmit(onExpenseSubmit)} className="space-y-4">
-                      <FormField
-                        control={expenseForm.control}
-                        name="date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="category"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Category</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select a category</option>
-                              <option value="utilities">Utilities</option>
-                              <option value="maintenance">Maintenance & Repairs</option>
-                              <option value="office">Office Supplies</option>
-                              <option value="ministry">Ministry Supplies</option>
-                              <option value="travel">Travel & Transportation</option>
-                              <option value="other">Other</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Brief description of the expense" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="amount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Amount ($)</FormLabel>
-                            <FormControl>
-                              <Input type="number" step="0.01" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="payee"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Payee</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Who was paid" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="receiptImage"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Receipt Image (Optional)</FormLabel>
-                            <FormControl>
-                              <Input type="file" accept="image/*" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                              Upload a photo of the receipt for your records
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={expenseForm.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Notes (Optional)</FormLabel>
-                            <FormControl>
-                              <textarea 
-                                placeholder="Additional notes about this expense..." 
-                                className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button type="submit" className="w-full">
-                        <Receipt className="mr-2 h-4 w-4" />
-                        Record Expense
-                      </Button>
-                    </form>
-                  </Form>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <div>
                   <CardTitle>Recent Expenses</CardTitle>
                   <CardDescription>
                     View and manage recent expense records.
                   </CardDescription>
-                  <div className="mt-4">
-                    <Input
-                      type="search"
-                      placeholder="Search expenses..."
+                </div>
+                <Button onClick={() => setRecordExpenseDialogOpen(true)} size="sm">
+                  <Receipt className="w-4 h-4 mr-2" />
+                  Record Expense
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-4 w-4 text-gray-400" />
+                    <Input 
+                      placeholder="Search expenses..." 
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-1"
                     />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-md border overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Category</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Payee</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {mockExpenses.length > 0 ? (
-                            mockExpenses.map((expense) => (
-                              <TableRow key={expense.id}>
-                                <TableCell>{expense.date}</TableCell>
-                                <TableCell>{expense.category}</TableCell>
-                                <TableCell>{expense.description}</TableCell>
-                                <TableCell>${expense.amount.toLocaleString()}</TableCell>
-                                <TableCell>{expense.payee}</TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center h-24">
-                                No expenses found
+                  
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {mockExpenses
+                          .filter(expense => 
+                            expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            expense.category.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map((expense) => (
+                            <TableRow key={expense.id}>
+                              <TableCell>{expense.date}</TableCell>
+                              <TableCell>{expense.description}</TableCell>
+                              <TableCell>
+                                <span className="px-2 py-1 bg-secondary text-secondary-foreground rounded text-xs">
+                                  {expense.category}
+                                </span>
+                              </TableCell>
+                              <TableCell className="font-medium text-destructive">
+                                -${expense.amount.toFixed(2)}
                               </TableCell>
                             </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
+                          ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                  <div className="flex justify-end mt-4">
-                    <Button variant="outline">
-                      <ArrowUpRight className="mr-2 h-4 w-4" />
-                      View All Expenses
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  
+                  <Button variant="outline" className="w-full">
+                    <ArrowUpRight className="w-4 h-4 mr-2" />
+                    View All Expenses
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
           
           <TabsContent value="reports">
@@ -929,6 +796,12 @@ const RegionalFinances: React.FC = () => {
       <RecordSpecialGivingDialog 
         open={recordSpecialGivingDialogOpen} 
         onOpenChange={setRecordSpecialGivingDialogOpen} 
+      />
+      
+      <RecordExpenseDialog
+        open={recordExpenseDialogOpen}
+        onOpenChange={setRecordExpenseDialogOpen}
+        onSubmit={onExpenseSubmit}
       />
     </RegionalAdminLayout>
   );
