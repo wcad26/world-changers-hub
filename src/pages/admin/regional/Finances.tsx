@@ -95,6 +95,16 @@ const RegionalFinances: React.FC = () => {
   const [amountRange, setAmountRange] = useState({ min: "", max: "" });
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
 
+  // Offering filtering and pagination state
+  const [offeringSearchTerm, setOfferingSearchTerm] = useState("");
+  const [offeringCurrentPage, setOfferingCurrentPage] = useState(1);
+  const [offeringItemsPerPage, setOfferingItemsPerPage] = useState(10);
+  const [showOfferingFilters, setShowOfferingFilters] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [offeringAmountRange, setOfferingAmountRange] = useState({ min: "", max: "" });
+  const [offeringDateRange, setOfferingDateRange] = useState<{ from?: Date; to?: Date }>({});
+
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
     defaultValues: {
@@ -190,6 +200,59 @@ const RegionalFinances: React.FC = () => {
     dateRange.from || 
     dateRange.to ||
     searchTerm;
+
+  // Filter and pagination logic for offerings
+  const serviceTypes = ["Sunday Morning", "Sunday Evening", "Midweek", "Special Event"];
+  const offeringCategories = ["General", "Building", "Mission", "Youth", "Special"];
+  
+  const filteredOfferings = mockOfferings.filter((offering) => {
+    // Search filter
+    const matchesSearch = 
+      offering.service.toLowerCase().includes(offeringSearchTerm.toLowerCase()) ||
+      offering.category.toLowerCase().includes(offeringSearchTerm.toLowerCase()) ||
+      offering.reference.toLowerCase().includes(offeringSearchTerm.toLowerCase());
+    
+    // Service type filter
+    const matchesService = selectedServices.length === 0 || selectedServices.includes(offering.service);
+    
+    // Category filter
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(offering.category);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!offeringAmountRange.min || offering.amount >= parseFloat(offeringAmountRange.min)) &&
+      (!offeringAmountRange.max || offering.amount <= parseFloat(offeringAmountRange.max));
+    
+    // Date range filter
+    const offeringDate = new Date(offering.date);
+    const matchesDate = 
+      (!offeringDateRange.from || offeringDate >= offeringDateRange.from) &&
+      (!offeringDateRange.to || offeringDate <= offeringDateRange.to);
+    
+    return matchesSearch && matchesService && matchesCategory && matchesAmount && matchesDate;
+  });
+
+  const offeringTotalPages = Math.ceil(filteredOfferings.length / offeringItemsPerPage);
+  const offeringStartIndex = (offeringCurrentPage - 1) * offeringItemsPerPage;
+  const paginatedOfferings = filteredOfferings.slice(offeringStartIndex, offeringStartIndex + offeringItemsPerPage);
+
+  const clearOfferingFilters = () => {
+    setSelectedServices([]);
+    setSelectedCategories([]);
+    setOfferingAmountRange({ min: "", max: "" });
+    setOfferingDateRange({});
+    setOfferingSearchTerm("");
+    setOfferingCurrentPage(1);
+  };
+
+  const hasActiveOfferingFilters = 
+    selectedServices.length > 0 || 
+    selectedCategories.length > 0 ||
+    offeringAmountRange.min || 
+    offeringAmountRange.max || 
+    offeringDateRange.from || 
+    offeringDateRange.to ||
+    offeringSearchTerm;
 
   function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
     console.log(values);
@@ -657,32 +720,189 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="offerings">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <div>
-                  <CardTitle>Recent Offerings</CardTitle>
-                  <CardDescription>
-                    View and manage recent offering records.
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setOfferingDialogOpen(true)}>
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Record Offering
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="w-4 h-4" />
-                    <Input
-                      placeholder="Search offerings..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="flex-1"
-                    />
+            <Card className="h-[calc(100vh-8rem)]">
+              <CardContent className="p-6 h-full flex flex-col">
+                {/* Fixed Controls Section */}
+                <div className="space-y-4 flex-shrink-0 mb-4">
+                  {/* Search and Filter Controls */}
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by service, category, or reference..."
+                          value={offeringSearchTerm}
+                          onChange={(e) => setOfferingSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={showOfferingFilters ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowOfferingFilters(!showOfferingFilters)}
+                        className="relative"
+                      >
+                        <Filter className="h-4 w-4" />
+                        Filter
+                        {hasActiveOfferingFilters && (
+                          <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                            !
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button onClick={() => setOfferingDialogOpen(true)}>
+                        <Receipt className="mr-2 h-4 w-4" />
+                        Record Offering
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="rounded-md border">
+                  {/* Filter Panel */}
+                  {showOfferingFilters && (
+                    <Card className="border-dashed">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* Service Type Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Service Type</label>
+                            <div className="space-y-2">
+                              {serviceTypes.map((service) => (
+                                <div key={service} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`service-${service}`}
+                                    checked={selectedServices.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedServices([...selectedServices, service]);
+                                      } else {
+                                        setSelectedServices(selectedServices.filter(s => s !== service));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`service-${service}`} className="text-sm">
+                                    {service}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Category Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Category</label>
+                            <div className="space-y-2">
+                              {offeringCategories.map((category) => (
+                                <div key={category} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`category-${category}`}
+                                    checked={selectedCategories.includes(category)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedCategories([...selectedCategories, category]);
+                                      } else {
+                                        setSelectedCategories(selectedCategories.filter(c => c !== category));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`category-${category}`} className="text-sm">
+                                    {category}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Amount Range Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Amount Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="number"
+                                placeholder="Min"
+                                value={offeringAmountRange.min}
+                                onChange={(e) => setOfferingAmountRange({ ...offeringAmountRange, min: e.target.value })}
+                              />
+                              <Input
+                                type="number"
+                                placeholder="Max"
+                                value={offeringAmountRange.max}
+                                onChange={(e) => setOfferingAmountRange({ ...offeringAmountRange, max: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Date Range Filter */}
+                          <div className="space-y-2 w-2/3">
+                            <label className="text-sm font-medium">Date Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="date"
+                                value={offeringDateRange.from ? offeringDateRange.from.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setOfferingDateRange({ 
+                                  ...offeringDateRange, 
+                                  from: e.target.value ? new Date(e.target.value) : undefined 
+                                })}
+                              />
+                              <Input
+                                type="date"
+                                value={offeringDateRange.to ? offeringDateRange.to.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setOfferingDateRange({ 
+                                  ...offeringDateRange, 
+                                  to: e.target.value ? new Date(e.target.value) : undefined 
+                                })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {hasActiveOfferingFilters && (
+                          <div className="mt-4 pt-4 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={clearOfferingFilters}
+                              className="text-muted-foreground"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Clear All Filters
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Items per page and total count */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">Show</span>
+                      <Select
+                        value={offeringItemsPerPage.toString()}
+                        onValueChange={(value) => {
+                          setOfferingItemsPerPage(parseInt(value));
+                          setOfferingCurrentPage(1);
+                        }}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">
+                        entries of {filteredOfferings.length} total
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scrollable Table Section */}
+                <div className="flex-1 overflow-hidden">
+                  <div className="overflow-auto h-full">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -694,8 +914,8 @@ const RegionalFinances: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {mockOfferings.length > 0 ? (
-                          mockOfferings.map((offering) => (
+                        {paginatedOfferings.length > 0 ? (
+                          paginatedOfferings.map((offering) => (
                             <TableRow key={offering.id}>
                               <TableCell>{offering.date}</TableCell>
                               <TableCell>{offering.service}</TableCell>
@@ -714,12 +934,63 @@ const RegionalFinances: React.FC = () => {
                       </TableBody>
                     </Table>
                   </div>
-
-                  <Button variant="outline" className="w-full">
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    View All Offerings
-                  </Button>
                 </div>
+
+                {/* Pagination */}
+                {offeringTotalPages > 1 && (
+                  <div className="flex justify-between items-center mt-4 flex-shrink-0">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {offeringStartIndex + 1} to {Math.min(offeringStartIndex + offeringItemsPerPage, filteredOfferings.length)} of {filteredOfferings.length} entries
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOfferingCurrentPage(Math.max(1, offeringCurrentPage - 1))}
+                        disabled={offeringCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, offeringTotalPages) }, (_, i) => {
+                          let page;
+                          if (offeringTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (offeringCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (offeringCurrentPage >= offeringTotalPages - 2) {
+                            page = offeringTotalPages - 4 + i;
+                          } else {
+                            page = offeringCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={offeringCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setOfferingCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOfferingCurrentPage(Math.min(offeringTotalPages, offeringCurrentPage + 1))}
+                        disabled={offeringCurrentPage === offeringTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
