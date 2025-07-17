@@ -924,11 +924,21 @@ const RegionalFinances: React.FC = () => {
                         {paginatedOfferings.length > 0 ? (
                           paginatedOfferings.map((offering) => (
                             <tr key={offering.id} className="border-b transition-colors hover:bg-muted/50">
-                              <td className="p-4 align-middle">{offering.date}</td>
-                              <td className="p-4 align-middle">{offering.service}</td>
-                              <td className="p-4 align-middle">${offering.amount.toLocaleString()}</td>
-                              <td className="p-4 align-middle">{offering.category}</td>
-                              <td className="p-4 align-middle">{offering.reference}</td>
+                              <td className="p-4 align-middle font-mono text-xs">
+                                {offering.date}
+                              </td>
+                              <td className="p-4 align-middle font-medium">{offering.service}</td>
+                              <td className="p-4 align-middle font-semibold text-green-600">
+                                ${offering.amount.toLocaleString()}
+                              </td>
+                              <td className="p-4 align-middle">
+                                <Badge variant="outline" className="text-xs">
+                                  {offering.category}
+                                </Badge>
+                              </td>
+                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                {offering.reference}
+                              </td>
                             </tr>
                           ))
                         ) : (
