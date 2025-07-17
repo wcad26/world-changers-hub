@@ -373,6 +373,40 @@ const Finances = () => {
               </Card>
             </div>
             
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Monthly Financial Trends</CardTitle>
+                <CardDescription>
+                  Income vs. expenses over the past 12 months
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <LineChart
+                    data={[
+                      { month: "Nov", income: 25000, expenses: 20500 },
+                      { month: "Dec", income: 27500, expenses: 22000 },
+                      { month: "Jan", income: 24500, expenses: 21000 },
+                      { month: "Feb", income: 25000, expenses: 20500 },
+                      { month: "Mar", income: 26000, expenses: 21500 },
+                      { month: "Apr", income: 25500, expenses: 21000 },
+                      { month: "May", income: 26500, expenses: 22000 },
+                      { month: "Jun", income: 27000, expenses: 22500 },
+                      { month: "Jul", income: 26000, expenses: 21500 },
+                      { month: "Aug", income: 26500, expenses: 22000 },
+                      { month: "Sep", income: 27000, expenses: 22500 },
+                      { month: "Oct", income: 27500, expenses: 22750 },
+                    ]}
+                    index="month"
+                    categories={["income", "expenses"]}
+                    colors={["#8b5cf6", "#e11d48"]}
+                    valueFormatter={(value) => `$${value.toLocaleString()}`}
+                    className="h-full"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
@@ -423,40 +457,6 @@ const Finances = () => {
                 </CardContent>
               </Card>
             </div>
-
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Monthly Financial Trends</CardTitle>
-                <CardDescription>
-                  Income vs. expenses over the past 12 months
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px]">
-                  <LineChart
-                    data={[
-                      { month: "Nov", income: 25000, expenses: 20500 },
-                      { month: "Dec", income: 27500, expenses: 22000 },
-                      { month: "Jan", income: 24500, expenses: 21000 },
-                      { month: "Feb", income: 25000, expenses: 20500 },
-                      { month: "Mar", income: 26000, expenses: 21500 },
-                      { month: "Apr", income: 25500, expenses: 21000 },
-                      { month: "May", income: 26500, expenses: 22000 },
-                      { month: "Jun", income: 27000, expenses: 22500 },
-                      { month: "Jul", income: 26000, expenses: 21500 },
-                      { month: "Aug", income: 26500, expenses: 22000 },
-                      { month: "Sep", income: 27000, expenses: 22500 },
-                      { month: "Oct", income: 27500, expenses: 22750 },
-                    ]}
-                    index="month"
-                    categories={["income", "expenses"]}
-                    colors={["#8b5cf6", "#e11d48"]}
-                    valueFormatter={(value) => `$${value.toLocaleString()}`}
-                    className="h-full"
-                  />
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
           
           <TabsContent value="tithes">
