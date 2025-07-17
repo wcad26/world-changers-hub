@@ -354,17 +354,11 @@ const RegionalFinances: React.FC = () => {
           <TabsContent value="tithes">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Tithe Transactions</CardTitle>
-                    <CardDescription>
-                      Manage and view all tithe records from members.
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => setRecordTitheDialogOpen(true)}>
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Record Tithe
-                  </Button>
+                <div>
+                  <CardTitle>Tithe Transactions</CardTitle>
+                  <CardDescription>
+                    Manage and view all tithe records from members.
+                  </CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -381,19 +375,25 @@ const RegionalFinances: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="shrink-0"
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                    {hasActiveFilters && (
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        Active
-                      </Badge>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="shrink-0"
+                    >
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filters
+                      {hasActiveFilters && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          Active
+                        </Badge>
+                      )}
+                    </Button>
+                    <Button onClick={() => setRecordTitheDialogOpen(true)}>
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Record Tithe
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Filter Panel */}
