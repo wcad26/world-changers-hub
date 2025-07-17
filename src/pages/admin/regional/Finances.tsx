@@ -136,6 +136,11 @@ const RegionalFinances: React.FC = () => {
   const [offeringAmountRange, setOfferingAmountRange] = useState({ min: "", max: "" });
   const [offeringDateRange, setOfferingDateRange] = useState<{ from?: Date; to?: Date }>({});
 
+  // Special giving filtering and pagination state
+  const [specialGivingSearchTerm, setSpecialGivingSearchTerm] = useState("");
+  const [specialGivingCurrentPage, setSpecialGivingCurrentPage] = useState(1);
+  const [specialGivingItemsPerPage, setSpecialGivingItemsPerPage] = useState(10);
+
   const offeringForm = useForm<z.infer<typeof offeringSchema>>({
     resolver: zodResolver(offeringSchema),
     defaultValues: {
@@ -284,6 +289,20 @@ const RegionalFinances: React.FC = () => {
     offeringDateRange.from || 
     offeringDateRange.to ||
     offeringSearchTerm;
+
+  // Special giving filtering and pagination
+  const filteredSpecialGiving = mockSpecialGiving.filter((giving) => {
+    const matchesSearch = 
+      giving.fund.toLowerCase().includes(specialGivingSearchTerm.toLowerCase()) ||
+      giving.donor.toLowerCase().includes(specialGivingSearchTerm.toLowerCase()) ||
+      giving.reference.toLowerCase().includes(specialGivingSearchTerm.toLowerCase());
+    
+    return matchesSearch;
+  });
+
+  const specialGivingTotalPages = Math.ceil(filteredSpecialGiving.length / specialGivingItemsPerPage);
+  const specialGivingStartIndex = (specialGivingCurrentPage - 1) * specialGivingItemsPerPage;
+  const paginatedSpecialGiving = filteredSpecialGiving.slice(specialGivingStartIndex, specialGivingStartIndex + specialGivingItemsPerPage);
 
   function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
     console.log(values);
@@ -1056,47 +1075,129 @@ const RegionalFinances: React.FC = () => {
                   <Input
                     type="search"
                     placeholder="Search special giving..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    value={specialGivingSearchTerm}
+                    onChange={(e) => setSpecialGivingSearchTerm(e.target.value)}
                   />
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border overflow-hidden">
                   <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Fund</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Donor</TableHead>
-                          <TableHead>Reference</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockSpecialGiving.length > 0 ? (
-                          mockSpecialGiving.map((giving) => (
-                            <TableRow key={giving.id}>
-                              <TableCell>{giving.date}</TableCell>
-                              <TableCell>{giving.fund}</TableCell>
-                              <TableCell>${giving.amount.toLocaleString()}</TableCell>
-                              <TableCell>{giving.donor}</TableCell>
-                              <TableCell>{giving.reference}</TableCell>
-                            </TableRow>
+                    <table className="w-full caption-bottom text-sm">
+                      <thead className="[&_tr]:border-b">
+                        <tr className="border-b transition-colors hover:bg-muted/50 sticky top-0 z-10 bg-background">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Date</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Fund</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Amount</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Donor</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody className="[&_tr:last-child]:border-0">
+                        {paginatedSpecialGiving.length > 0 ? (
+                          paginatedSpecialGiving.map((giving) => (
+                            <tr key={giving.id} className="border-b transition-colors hover:bg-muted/50">
+                              <td className="p-4 align-middle font-mono text-xs">
+                                {giving.date}
+                              </td>
+                              <td className="p-4 align-middle">
+                                <Badge variant="outline" className="text-xs">
+                                  {giving.fund}
+                                </Badge>
+                              </td>
+                              <td className="p-4 align-middle font-semibold text-green-600">
+                                ${giving.amount.toLocaleString()}
+                              </td>
+                              <td className="p-4 align-middle font-medium">{giving.donor}</td>
+                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                {giving.reference}
+                              </td>
+                            </tr>
                           ))
                         ) : (
-                          <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">
+                          <tr>
+                            <td colSpan={5} className="p-4 align-middle text-center h-24">
                               No special giving found
-                            </TableCell>
-                          </TableRow>
+                            </td>
+                          </tr>
                         )}
-                      </TableBody>
-                    </Table>
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-                <div className="flex justify-end mt-4">
+                
+                {/* Pagination */}
+                <div className="flex items-center justify-between mt-4">
+                  {specialGivingTotalPages > 1 ? (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSpecialGivingCurrentPage(Math.max(1, specialGivingCurrentPage - 1))}
+                        disabled={specialGivingCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: Math.min(5, specialGivingTotalPages) }, (_, i) => {
+                          let page: number;
+                          if (specialGivingTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (specialGivingCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (specialGivingCurrentPage >= specialGivingTotalPages - 2) {
+                            page = specialGivingTotalPages - 4 + i;
+                          } else {
+                            page = specialGivingCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={specialGivingCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setSpecialGivingCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSpecialGivingCurrentPage(Math.min(specialGivingTotalPages, specialGivingCurrentPage + 1))}
+                        disabled={specialGivingCurrentPage === specialGivingTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div></div>
+                  )}
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Rows per page</span>
+                    <Select value={specialGivingItemsPerPage.toString()} onValueChange={(value) => {
+                      setSpecialGivingItemsPerPage(parseInt(value));
+                      setSpecialGivingCurrentPage(1);
+                    }}>
+                      <SelectTrigger className="w-16 h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button variant="outline">
                     <ArrowUpRight className="mr-2 h-4 w-4" />
                     View All Special Giving
