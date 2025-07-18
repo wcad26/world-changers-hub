@@ -745,14 +745,14 @@ const Finances = () => {
                       
                       {/* Category Filter */}
                       <Select 
-                        value={offeringCategoryFilter || ""} 
-                        onValueChange={(value) => setOfferingCategoryFilter(value || null)}
+                        value={offeringCategoryFilter || "all"} 
+                        onValueChange={(value) => setOfferingCategoryFilter(value === "all" ? null : value)}
                       >
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="All Categories" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all">All Categories</SelectItem>
                           {offeringCategories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
@@ -1001,14 +1001,14 @@ const Finances = () => {
                       
                       {/* Fund Filter */}
                       <Select 
-                        value={specialGivingFundFilter || ""} 
-                        onValueChange={(value) => setSpecialGivingFundFilter(value || null)}
+                        value={specialGivingFundFilter || "all"} 
+                        onValueChange={(value) => setSpecialGivingFundFilter(value === "all" ? null : value)}
                       >
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="All Funds" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Funds</SelectItem>
+                          <SelectItem value="all">All Funds</SelectItem>
                           {specialGivingFunds.map((fund) => (
                             <SelectItem key={fund} value={fund}>
                               {fund}
@@ -1257,14 +1257,14 @@ const Finances = () => {
                       
                       {/* Category Filter */}
                       <Select 
-                        value={expenseCategoryFilter || ""} 
-                        onValueChange={(value) => setExpenseCategoryFilter(value || null)}
+                        value={expenseCategoryFilter || "all"} 
+                        onValueChange={(value) => setExpenseCategoryFilter(value === "all" ? null : value)}
                       >
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="All Categories" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all">All Categories</SelectItem>
                           {expenseCategories.map((category) => (
                             <SelectItem key={category} value={category}>
                               {category}
