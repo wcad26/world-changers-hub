@@ -528,31 +528,6 @@ const RegionalFinances: React.FC = () => {
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Income Distribution</CardTitle>
-                      <CardDescription>
-                        Breakdown of monthly income by category
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[250px]">
-                        <PieChart
-                          data={[
-                            { category: "Tithes", value: 15000 },
-                            { category: "Offerings", value: 7500 },
-                            { category: "Special Giving", value: 3500 },
-                            { category: "Other", value: 1500 },
-                          ]}
-                          index="category"
-                          categories={["value"]}
-                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
                   
                   <Card>
                     <CardHeader>
