@@ -9,7 +9,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard, Plus, BarChart3, TrendingDown } from "lucide-react";
+import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, ChevronLeft, ChevronRight, X, CalendarDays, CreditCard, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -171,158 +171,308 @@ const mockExpenses = [
   { id: 35, date: "2023-07-22", category: "Transportation", description: "Bus Maintenance", amount: 290, payee: "Bus Service", reference: "E2023-0211" },
 ];
 
-const Finances = () => {
-  // Tab state
-  const [activeTab, setActiveTab] = useState("overview");
+// Form schema for offering recording
+const offeringSchema = z.object({
+  date: z.string().min(1, { message: "Date is required" }),
+  service: z.string().min(1, { message: "Please select a service" }),
+  amount: z.string().min(1, { message: "Amount is required" }),
+  category: z.string().min(1, { message: "Please select a category" }),
+  notes: z.string().optional(),
+});
 
-  // Pagination states
-  const [currentTithePage, setCurrentTithePage] = useState(1);
-  const [currentOfferingPage, setCurrentOfferingPage] = useState(1);
-  const [currentSpecialGivingPage, setCurrentSpecialGivingPage] = useState(1);
-  const [currentExpensePage, setCurrentExpensePage] = useState(1);
-  
-  const itemsPerPage = 10;
-  
-  // Date filter states
-  const [titheStartDate, setTitheStartDate] = useState<Date | null>(null);
-  const [titheEndDate, setTitheEndDate] = useState<Date | null>(null);
-  const [offeringStartDate, setOfferingStartDate] = useState<Date | null>(null);
-  const [offeringEndDate, setOfferingEndDate] = useState<Date | null>(null);
-  const [specialStartDate, setSpecialStartDate] = useState<Date | null>(null);
-  const [specialEndDate, setSpecialEndDate] = useState<Date | null>(null);
-  const [expenseStartDate, setExpenseStartDate] = useState<Date | null>(null);
-  const [expenseEndDate, setExpenseEndDate] = useState<Date | null>(null);
-  
-  // Search states
-  const [titheSearch, setTitheSearch] = useState("");
-  const [offeringSearch, setOfferingSearch] = useState("");
-  const [specialGivingSearch, setSpecialGivingSearch] = useState("");
-  const [expenseSearch, setExpenseSearch] = useState("");
-  
-  // Category filters
-  const [offeringCategoryFilter, setOfferingCategoryFilter] = useState<string | null>(null);
-  const [specialGivingFundFilter, setSpecialGivingFundFilter] = useState<string | null>(null);
-  const [expenseCategoryFilter, setExpenseCategoryFilter] = useState<string | null>(null);
-  
-  // Dialog states
-  const [titheDialogOpen, setTitheDialogOpen] = useState(false);
+// Form schema for special giving recording
+const specialGivingSchema = z.object({
+  date: z.string().min(1, { message: "Date is required" }),
+  fund: z.string().min(1, { message: "Please select a fund" }),
+  amount: z.string().min(1, { message: "Amount is required" }),
+  donorId: z.string().optional(),
+  isAnonymous: z.boolean().default(false),
+  notes: z.string().optional(),
+});
+
+const RegionalFinances: React.FC = () => {
+  // State for dialogs
+  const [searchTerm, setSearchTerm] = useState("");
+  const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
-  const [specialGivingDialogOpen, setSpecialGivingDialogOpen] = useState(false);
-  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
+  const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
   
-  // Prepare data for financial overview
-  const totalIncome = mockTithes.reduce((sum, tithe) => sum + tithe.amount, 0) +
-                    mockOfferings.reduce((sum, offering) => sum + offering.amount, 0) +
-                    mockSpecialGiving.reduce((sum, giving) => sum + giving.amount, 0);
-  
-  const totalExpenses = mockExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  
-  const netBalance = totalIncome - totalExpenses;
-  
-  // Filter unique categories for offering, special giving, and expenses
-  const offeringCategories = Array.from(new Set(mockOfferings.map((offering) => offering.category)));
-  const specialGivingFunds = Array.from(new Set(mockSpecialGiving.map((giving) => giving.fund)));
-  const expenseCategories = Array.from(new Set(mockExpenses.map((expense) => expense.category)));
-  
-  // Filtered data based on search and date filters
-  const filteredTithes = mockTithes.filter((tithe) => {
-    const matchesSearch = tithe.member.toLowerCase().includes(titheSearch.toLowerCase());
-    const matchesDateFilter = (!titheStartDate || new Date(tithe.date) >= titheStartDate) &&
-                            (!titheEndDate || new Date(tithe.date) <= titheEndDate);
-    return matchesSearch && matchesDateFilter;
+  // Tithe filtering and pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedMethods, setSelectedMethods] = useState<string[]>([]);
+  const [amountRange, setAmountRange] = useState({ min: "", max: "" });
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+
+  // Offering filtering and pagination state
+  const [offeringSearchTerm, setOfferingSearchTerm] = useState("");
+  const [offeringCurrentPage, setOfferingCurrentPage] = useState(1);
+  const [offeringItemsPerPage, setOfferingItemsPerPage] = useState(10);
+  const [showOfferingFilters, setShowOfferingFilters] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [offeringAmountRange, setOfferingAmountRange] = useState({ min: "", max: "" });
+  const [offeringDateRange, setOfferingDateRange] = useState<{ from?: Date; to?: Date }>({});
+
+  // Special giving filtering and pagination state
+  const [specialGivingSearchTerm, setSpecialGivingSearchTerm] = useState("");
+  const [specialGivingCurrentPage, setSpecialGivingCurrentPage] = useState(1);
+  const [specialGivingItemsPerPage, setSpecialGivingItemsPerPage] = useState(10);
+
+  // Expense filtering and pagination state
+  const [expenseSearchQuery, setExpenseSearchQuery] = useState("");
+  const [expenseCurrentPage, setExpenseCurrentPage] = useState(1);
+  const [expenseItemsPerPage, setExpenseItemsPerPage] = useState(10);
+  const [showExpenseFilters, setShowExpenseFilters] = useState(false);
+  const [expenseFilters, setExpenseFilters] = useState({
+    categories: [] as string[],
+    minAmount: '',
+    maxAmount: '',
+    startDate: '',
+    endDate: '',
+    payee: ''
   });
+  const [showRecordExpenseDialog, setShowRecordExpenseDialog] = useState(false);
+
+  const offeringForm = useForm<z.infer<typeof offeringSchema>>({
+    resolver: zodResolver(offeringSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      service: "",
+      amount: "",
+      category: "",
+      notes: "",
+    },
+  });
+
+  const specialGivingForm = useForm<z.infer<typeof specialGivingSchema>>({
+    resolver: zodResolver(specialGivingSchema),
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      fund: "",
+      amount: "",
+      donorId: "",
+      isAnonymous: false,
+      notes: "",
+    },
+  });
+
+  function onOfferingSubmit(values: z.infer<typeof offeringSchema>) {
+    console.log(values);
+    // In a real app, this would save the offering to a database
+    alert("Offering recorded successfully!");
+    offeringForm.reset({
+      date: new Date().toISOString().split('T')[0],
+      service: "",
+      amount: "",
+      category: "",
+      notes: "",
+    });
+  }
+
+  function onSpecialGivingSubmit(values: z.infer<typeof specialGivingSchema>) {
+    console.log(values);
+    // In a real app, this would save the special giving to a database
+    alert("Special giving recorded successfully!");
+    specialGivingForm.reset({
+      date: new Date().toISOString().split('T')[0],
+      fund: "",
+      amount: "",
+      donorId: "",
+      isAnonymous: false,
+      notes: "",
+    });
+  }
+
+  // Filter and pagination logic for tithes
+  const paymentMethods = ["Bank Transfer", "Cash", "Credit Card"];
+  
+  const filteredTithes = mockTithes.filter((tithe) => {
+    // Search filter
+    const matchesSearch = 
+      tithe.member.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tithe.reference.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Payment method filter
+    const matchesMethod = selectedMethods.length === 0 || selectedMethods.includes(tithe.method);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!amountRange.min || tithe.amount >= parseFloat(amountRange.min)) &&
+      (!amountRange.max || tithe.amount <= parseFloat(amountRange.max));
+    
+    // Date range filter
+    const titheDate = new Date(tithe.date);
+    const matchesDate = 
+      (!dateRange.from || titheDate >= dateRange.from) &&
+      (!dateRange.to || titheDate <= dateRange.to);
+    
+    return matchesSearch && matchesMethod && matchesAmount && matchesDate;
+  });
+
+  const totalPages = Math.ceil(filteredTithes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedTithes = filteredTithes.slice(startIndex, startIndex + itemsPerPage);
+
+  const clearFilters = () => {
+    setSelectedMethods([]);
+    setAmountRange({ min: "", max: "" });
+    setDateRange({});
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = 
+    selectedMethods.length > 0 || 
+    amountRange.min || 
+    amountRange.max || 
+    dateRange.from || 
+    dateRange.to ||
+    searchTerm;
+
+  // Filter and pagination logic for offerings
+  const serviceTypes = ["Sunday Morning", "Sunday Evening", "Midweek", "Special Event"];
+  const offeringCategories = ["General", "Building", "Mission", "Youth", "Special"];
   
   const filteredOfferings = mockOfferings.filter((offering) => {
-    const matchesSearch = offering.service.toLowerCase().includes(offeringSearch.toLowerCase());
-    const matchesDateFilter = (!offeringStartDate || new Date(offering.date) >= offeringStartDate) &&
-                            (!offeringEndDate || new Date(offering.date) <= offeringEndDate);
-    const matchesCategory = !offeringCategoryFilter || offering.category === offeringCategoryFilter;
-    return matchesSearch && matchesDateFilter && matchesCategory;
+    // Search filter
+    const matchesSearch = 
+      offering.service.toLowerCase().includes(offeringSearchTerm.toLowerCase()) ||
+      offering.category.toLowerCase().includes(offeringSearchTerm.toLowerCase()) ||
+      offering.reference.toLowerCase().includes(offeringSearchTerm.toLowerCase());
+    
+    // Service type filter
+    const matchesService = selectedServices.length === 0 || selectedServices.includes(offering.service);
+    
+    // Category filter
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(offering.category);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!offeringAmountRange.min || offering.amount >= parseFloat(offeringAmountRange.min)) &&
+      (!offeringAmountRange.max || offering.amount <= parseFloat(offeringAmountRange.max));
+    
+    // Date range filter
+    const offeringDate = new Date(offering.date);
+    const matchesDate = 
+      (!offeringDateRange.from || offeringDate >= offeringDateRange.from) &&
+      (!offeringDateRange.to || offeringDate <= offeringDateRange.to);
+    
+    return matchesSearch && matchesService && matchesCategory && matchesAmount && matchesDate;
   });
-  
+
+  const offeringTotalPages = Math.ceil(filteredOfferings.length / offeringItemsPerPage);
+  const offeringStartIndex = (offeringCurrentPage - 1) * offeringItemsPerPage;
+  const paginatedOfferings = filteredOfferings.slice(offeringStartIndex, offeringStartIndex + offeringItemsPerPage);
+
+  const clearOfferingFilters = () => {
+    setSelectedServices([]);
+    setSelectedCategories([]);
+    setOfferingAmountRange({ min: "", max: "" });
+    setOfferingDateRange({});
+    setOfferingSearchTerm("");
+    setOfferingCurrentPage(1);
+  };
+
+  const hasActiveOfferingFilters = 
+    selectedServices.length > 0 || 
+    selectedCategories.length > 0 ||
+    offeringAmountRange.min || 
+    offeringAmountRange.max || 
+    offeringDateRange.from || 
+    offeringDateRange.to ||
+    offeringSearchTerm;
+
+  // Special giving filtering and pagination
   const filteredSpecialGiving = mockSpecialGiving.filter((giving) => {
-    const matchesSearch = giving.donor.toLowerCase().includes(specialGivingSearch.toLowerCase());
-    const matchesDateFilter = (!specialStartDate || new Date(giving.date) >= specialStartDate) &&
-                            (!specialEndDate || new Date(giving.date) <= specialEndDate);
-    const matchesFund = !specialGivingFundFilter || giving.fund === specialGivingFundFilter;
-    return matchesSearch && matchesDateFilter && matchesFund;
+    const matchesSearch = 
+      giving.fund.toLowerCase().includes(specialGivingSearchTerm.toLowerCase()) ||
+      giving.donor.toLowerCase().includes(specialGivingSearchTerm.toLowerCase()) ||
+      giving.reference.toLowerCase().includes(specialGivingSearchTerm.toLowerCase());
+    
+    return matchesSearch;
   });
-  
+
+  const specialGivingTotalPages = Math.ceil(filteredSpecialGiving.length / specialGivingItemsPerPage);
+  const specialGivingStartIndex = (specialGivingCurrentPage - 1) * specialGivingItemsPerPage;
+  const paginatedSpecialGiving = filteredSpecialGiving.slice(specialGivingStartIndex, specialGivingStartIndex + specialGivingItemsPerPage);
+
+  // Expense filtering and pagination logic
   const filteredExpenses = mockExpenses.filter((expense) => {
-    const matchesSearch = expense.description.toLowerCase().includes(expenseSearch.toLowerCase());
-    const matchesDateFilter = (!expenseStartDate || new Date(expense.date) >= expenseStartDate) &&
-                            (!expenseEndDate || new Date(expense.date) <= expenseEndDate);
-    const matchesCategory = !expenseCategoryFilter || expense.category === expenseCategoryFilter;
-    return matchesSearch && matchesDateFilter && matchesCategory;
+    // Search filter
+    const matchesSearch = 
+      expense.description.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.category.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.payee.toLowerCase().includes(expenseSearchQuery.toLowerCase()) ||
+      expense.reference.toLowerCase().includes(expenseSearchQuery.toLowerCase());
+    
+    // Category filter
+    const matchesCategory = expenseFilters.categories.length === 0 || expenseFilters.categories.includes(expense.category);
+    
+    // Amount range filter
+    const matchesAmount = 
+      (!expenseFilters.minAmount || expense.amount >= parseFloat(expenseFilters.minAmount)) &&
+      (!expenseFilters.maxAmount || expense.amount <= parseFloat(expenseFilters.maxAmount));
+    
+    // Date range filter
+    const expenseDate = new Date(expense.date);
+    const matchesDate = 
+      (!expenseFilters.startDate || expenseDate >= new Date(expenseFilters.startDate)) &&
+      (!expenseFilters.endDate || expenseDate <= new Date(expenseFilters.endDate));
+    
+    // Payee filter
+    const matchesPayee = !expenseFilters.payee || expense.payee.toLowerCase().includes(expenseFilters.payee.toLowerCase());
+    
+    return matchesSearch && matchesCategory && matchesAmount && matchesDate && matchesPayee;
   });
-  
-  // Pagination calculations
-  const tithePages = Math.ceil(filteredTithes.length / itemsPerPage);
-  const offeringPages = Math.ceil(filteredOfferings.length / itemsPerPage);
-  const specialGivingPages = Math.ceil(filteredSpecialGiving.length / itemsPerPage);
-  const expensePages = Math.ceil(filteredExpenses.length / itemsPerPage);
-  
-  const tithesForPage = filteredTithes.slice((currentTithePage - 1) * itemsPerPage, currentTithePage * itemsPerPage);
-  const offeringsForPage = filteredOfferings.slice((currentOfferingPage - 1) * itemsPerPage, currentOfferingPage * itemsPerPage);
-  const specialGivingForPage = filteredSpecialGiving.slice((currentSpecialGivingPage - 1) * itemsPerPage, currentSpecialGivingPage * itemsPerPage);
-  const expensesForPage = filteredExpenses.slice((currentExpensePage - 1) * itemsPerPage, currentExpensePage * itemsPerPage);
-  
-  // Combine all financial data for reports
-  const financialData = [
-    ...mockTithes.map(tithe => ({ 
-      type: 'Tithe', 
-      date: tithe.date, 
-      amount: tithe.amount, 
-      details: `From: ${tithe.member}`,
-      category: 'Tithe'
-    })),
-    ...mockOfferings.map(offering => ({ 
-      type: 'Offering', 
-      date: offering.date, 
-      amount: offering.amount, 
-      details: `${offering.service} Service`,
-      category: offering.category
-    })),
-    ...mockSpecialGiving.map(giving => ({ 
-      type: 'Special Giving', 
-      date: giving.date, 
-      amount: giving.amount, 
-      details: `From: ${giving.donor}`,
-      category: giving.fund
-    })),
-    ...mockExpenses.map(expense => ({ 
-      type: 'Expense', 
-      date: expense.date, 
-      amount: -expense.amount, 
-      details: expense.description,
-      category: expense.category
-    })),
-  ];
-  
-  // Sort financial data by date (newest first)
-  financialData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  
-  // Create data for pie charts
-  const incomeDistribution = [
-    { name: 'Tithes', value: mockTithes.reduce((sum, tithe) => sum + tithe.amount, 0) },
-    { name: 'Offerings', value: mockOfferings.reduce((sum, offering) => sum + offering.amount, 0) },
-    { name: 'Special Giving', value: mockSpecialGiving.reduce((sum, giving) => sum + giving.amount, 0) },
-  ];
-  
-  const expenseDistribution = expenseCategories.map(category => ({
-    name: category,
-    value: mockExpenses
-      .filter(expense => expense.category === category)
-      .reduce((sum, expense) => sum + expense.amount, 0)
-  }));
-  
-  const COLORS = ['#8884d8', '#83a6ed', '#8dd1e1', '#82ca9d', '#a4de6c', '#d0ed57', '#ffc658'];
+
+  const expenseTotalPages = Math.ceil(filteredExpenses.length / expenseItemsPerPage);
+  const getExpenseStartIndex = () => (expenseCurrentPage - 1) * expenseItemsPerPage;
+  const getCurrentExpenseItems = () => filteredExpenses.slice(getExpenseStartIndex(), getExpenseStartIndex() + expenseItemsPerPage);
+
+  const getExpensePageNumbers = () => {
+    const pages = [];
+    const totalPages = expenseTotalPages;
+    const current = expenseCurrentPage;
+    
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (current <= 4) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (current >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  function onExpenseSubmit(values: { date: Date; amount: string; category: string; notes?: string; description: string; payee: string; }) {
+    console.log(values);
+    // In a real app, this would save the expense to a database
+    alert("Expense recorded successfully!");
+  }
 
   return (
     <RegionalAdminLayout>
-      <div className="container mx-auto py-6">
-        <Tabs defaultValue="overview" className="w-full" onValueChange={(value) => setActiveTab(value)}>
-          <TabsList className="mb-6">
+      <div className="-mt-4">
+        <Tabs defaultValue="overview">
+          <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tithes">Tithes</TabsTrigger>
             <TabsTrigger value="offerings">Offerings</TabsTrigger>
@@ -332,129 +482,141 @@ const Finances = () => {
           </TabsList>
           
           <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Income (Monthly)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$27,500</div>
-                  <p className="text-xs text-muted-foreground mt-1">↑ $1,250 from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Expenses (Monthly)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$22,750</div>
-                  <p className="text-xs text-muted-foreground mt-1">↑ $950 from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Net Balance (Monthly)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$4,750</div>
-                  <p className="text-xs text-muted-foreground mt-1">17.3% of total income</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Current Account Balance</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">$42,500</div>
-                  <p className="text-xs text-muted-foreground mt-1">↑ $4,750 from last month</p>
-                </CardContent>
-              </Card>
-            </div>
-            
-            <Card className="mb-6">
+            <Card>
               <CardHeader>
-                <CardTitle>Monthly Financial Trends</CardTitle>
                 <CardDescription>
-                  Income vs. expenses over the past 12 months
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
-                  <LineChart
-                    data={[
-                      { month: "Nov", income: 25000, expenses: 20500 },
-                      { month: "Dec", income: 27500, expenses: 22000 },
-                      { month: "Jan", income: 24500, expenses: 21000 },
-                      { month: "Feb", income: 25000, expenses: 20500 },
-                      { month: "Mar", income: 26000, expenses: 21500 },
-                      { month: "Apr", income: 25500, expenses: 21000 },
-                      { month: "May", income: 26500, expenses: 22000 },
-                      { month: "Jun", income: 27000, expenses: 22500 },
-                      { month: "Jul", income: 26000, expenses: 21500 },
-                      { month: "Aug", income: 26500, expenses: 22000 },
-                      { month: "Sep", income: 27000, expenses: 22500 },
-                      { month: "Oct", income: 27500, expenses: 22750 },
-                    ]}
-                    index="month"
-                    categories={["income", "expenses"]}
-                    colors={["#8b5cf6", "#e11d48"]}
-                    valueFormatter={(value) => `$${value.toLocaleString()}`}
-                    className="h-full"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Total Income (Monthly)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">$27,500</div>
+                      <p className="text-xs text-muted-foreground mt-1">↑ $1,250 from last month</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Total Expenses (Monthly)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">$22,750</div>
+                      <p className="text-xs text-muted-foreground mt-1">↑ $950 from last month</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Net Balance (Monthly)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">$4,750</div>
+                      <p className="text-xs text-muted-foreground mt-1">17.3% of total income</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium">Current Account Balance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">$42,500</div>
+                      <p className="text-xs text-muted-foreground mt-1">↑ $4,750 from last month</p>
+                    </CardContent>
+                  </Card>
                 </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Income Distribution</CardTitle>
+                      <CardDescription>
+                        Breakdown of monthly income by category
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[250px]">
+                        <PieChart
+                          data={[
+                            { category: "Tithes", value: 15000 },
+                            { category: "Offerings", value: 7500 },
+                            { category: "Special Giving", value: 3500 },
+                            { category: "Other", value: 1500 },
+                          ]}
+                          index="category"
+                          categories={["value"]}
+                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Expense Distribution</CardTitle>
+                      <CardDescription>
+                        Breakdown of monthly expenses by category
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[250px]">
+                        <PieChart
+                          data={[
+                            { category: "Staffing", value: 12000 },
+                            { category: "Facilities", value: 4500 },
+                            { category: "Ministries", value: 3250 },
+                            { category: "Administration", value: 1500 },
+                            { category: "Outreach", value: 1500 },
+                          ]}
+                          index="category"
+                          categories={["value"]}
+                          colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Monthly Financial Trends</CardTitle>
+                    <CardDescription>
+                      Income vs. expenses over the past 12 months
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      <LineChart
+                        data={[
+                          { month: "Nov", income: 25000, expenses: 20500 },
+                          { month: "Dec", income: 27500, expenses: 22000 },
+                          { month: "Jan", income: 24500, expenses: 21000 },
+                          { month: "Feb", income: 25000, expenses: 20500 },
+                          { month: "Mar", income: 26000, expenses: 21500 },
+                          { month: "Apr", income: 25500, expenses: 21000 },
+                          { month: "May", income: 26500, expenses: 22000 },
+                          { month: "Jun", income: 27000, expenses: 22500 },
+                          { month: "Jul", income: 26000, expenses: 21500 },
+                          { month: "Aug", income: 26500, expenses: 22000 },
+                          { month: "Sep", income: 27000, expenses: 22500 },
+                          { month: "Oct", income: 27500, expenses: 22750 },
+                        ]}
+                        index="month"
+                        categories={["income", "expenses"]}
+                        colors={["#8b5cf6", "#e11d48"]}
+                        valueFormatter={(value) => `$${value.toLocaleString()}`}
+                        className="h-full"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Income Distribution</CardTitle>
-                  <CardDescription>
-                    Breakdown of monthly income by category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    <PieChart
-                      data={[
-                        { category: "Tithes", value: 18000 },
-                        { category: "Offerings", value: 6000 },
-                        { category: "Special Giving", value: 3000 },
-                      ]}
-                      index="category"
-                      categories={["value"]}
-                      colors={["#8b5cf6", "#a855f7", "#c084fc"]}
-                      valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Expense Distribution</CardTitle>
-                  <CardDescription>
-                    Breakdown of monthly expenses by category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[250px]">
-                    <PieChart
-                      data={[
-                        { category: "Operations", value: 15000 },
-                        { category: "Utilities", value: 4000 },
-                        { category: "Programs", value: 3750 },
-                      ]}
-                      index="category"
-                      categories={["value"]}
-                      colors={["#e11d48", "#f43f5e", "#fb7185"]}
-                      valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
           </TabsContent>
           
           <TabsContent value="tithes">
@@ -464,221 +626,304 @@ const Finances = () => {
                 <div className="space-y-4 flex-shrink-0 mb-4">
                   {/* Search and Filter Controls */}
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search members..."
-                        value={titheSearch}
-                        onChange={(e) => setTitheSearch(e.target.value)}
-                        className="pl-8"
-                      />
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by member name or reference..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                    
                     <div className="flex gap-2">
-                      {/* Date Filter Popover */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Date Filter</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4">
-                          <div className="space-y-4">
-                            <h4 className="font-medium">Filter by Date</h4>
-                            <div className="flex flex-col gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="tithe-start-date">Start Date</Label>
-                                <input
-                                  id="tithe-start-date"
-                                  type="date"
-                                  onChange={(e) => setTitheStartDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="tithe-end-date">End Date</Label>
-                                <input
-                                  id="tithe-end-date"
-                                  type="date"
-                                  onChange={(e) => setTitheEndDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setTitheStartDate(null);
-                                  setTitheEndDate(null);
-                                }}
-                              >
-                                Clear Filter
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      
-                      {/* Add Tithe Button */}
-                      <Button onClick={() => setTitheDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="shrink-0"
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filters
+                        {hasActiveFilters && (
+                          <Badge variant="secondary" className="ml-2 text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </Button>
+                      <Button onClick={() => setRecordTitheDialogOpen(true)}>
+                        <DollarSign className="h-4 w-4 mr-2" />
                         Record Tithe
                       </Button>
                     </div>
                   </div>
-                  
-                  {/* Active Filters Display */}
-                  {(titheStartDate || titheEndDate) && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Filters:</span>
-                      {titheStartDate && titheEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>{format(titheStartDate, "MMM d, yyyy")} - {format(titheEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => {
-                              setTitheStartDate(null);
-                              setTitheEndDate(null);
-                            }}
-                          />
+
+                  {/* Filter Panel */}
+                  {showFilters && (
+                    <Card className="border-dashed">
+                      <CardContent className="pt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {/* Payment Method Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Payment Method</label>
+                            <div className="space-y-2">
+                              {paymentMethods.map((method) => (
+                                <div key={method} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={method}
+                                    checked={selectedMethods.includes(method)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedMethods([...selectedMethods, method]);
+                                      } else {
+                                        setSelectedMethods(selectedMethods.filter(m => m !== method));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={method} className="text-sm">
+                                    {method}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Amount Range Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Amount Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="number"
+                                placeholder="Min"
+                                value={amountRange.min}
+                                onChange={(e) => setAmountRange({...amountRange, min: e.target.value})}
+                              />
+                              <Input
+                                type="number"
+                                placeholder="Max"
+                                value={amountRange.max}
+                                onChange={(e) => setAmountRange({...amountRange, max: e.target.value})}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Date Range Filter */}
+                          <div className="space-y-2 w-2/3">
+                            <label className="text-sm font-medium">Date Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="date"
+                                value={dateRange.from ? dateRange.from.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setDateRange({
+                                  ...dateRange,
+                                  from: e.target.value ? new Date(e.target.value) : undefined
+                                })}
+                              />
+                              <Input
+                                type="date"
+                                value={dateRange.to ? dateRange.to.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setDateRange({
+                                  ...dateRange,
+                                  to: e.target.value ? new Date(e.target.value) : undefined
+                                })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Filter Actions */}
+                        <div className="flex justify-between items-center mt-4 pt-4 border-t">
+                          <div className="text-sm text-muted-foreground">
+                            Showing {filteredTithes.length} of {mockTithes.length} transactions
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" onClick={clearFilters}>
+                              <X className="h-4 w-4 mr-1" />
+                              Clear All
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Active Filter Chips */}
+                  {hasActiveFilters && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedMethods.map((method) => (
+                        <Badge key={method} variant="secondary" className="gap-1">
+                          <CreditCard className="h-3 w-3" />
+                          {method}
+                          <button
+                            onClick={() => setSelectedMethods(selectedMethods.filter(m => m !== method))}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      {(amountRange.min || amountRange.max) && (
+                        <Badge variant="secondary" className="gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          {amountRange.min && `$${amountRange.min}`}
+                          {amountRange.min && amountRange.max && ' - '}
+                          {amountRange.max && `$${amountRange.max}`}
+                          <button
+                            onClick={() => setAmountRange({ min: '', max: '' })}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </Badge>
                       )}
-                      {titheStartDate && !titheEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
+                      {(dateRange.from || dateRange.to) && (
+                        <Badge variant="secondary" className="gap-1">
                           <CalendarDays className="h-3 w-3" />
-                          <span>From {format(titheStartDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setTitheStartDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      {!titheStartDate && titheEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>Until {format(titheEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setTitheEndDate(null)}
-                          />
+                          {dateRange.from && dateRange.from.toLocaleDateString()}
+                          {dateRange.from && dateRange.to && ' - '}
+                          {dateRange.to && dateRange.to.toLocaleDateString()}
+                          <button
+                            onClick={() => setDateRange({})}
+                            className="ml-1 hover:bg-destructive/20 rounded-full p-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </Badge>
                       )}
                     </div>
                   )}
                 </div>
-                
-                {/* Table */}
-                <div className="overflow-y-auto flex-grow">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Member</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Method</TableHead>
-                        <TableHead>Reference</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tithesForPage.map((tithe) => (
-                        <TableRow key={tithe.id}>
-                          <TableCell>{format(new Date(tithe.date), "MMM d, yyyy")}</TableCell>
-                          <TableCell>{tithe.member}</TableCell>
-                          <TableCell>₦{tithe.amount.toLocaleString()}</TableCell>
-                          <TableCell>{tithe.method}</TableCell>
-                          <TableCell>{tithe.reference}</TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {tithesForPage.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            {titheSearch || titheStartDate || titheEndDate ? 
-                              "No tithes match your search criteria" : 
-                              "No tithes recorded yet"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+
+                {/* Scrollable Table Container */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Member</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Method</th>
+                          <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedTithes.length > 0 ? (
+                          paginatedTithes.map((tithe) => (
+                            <tr key={tithe.id} className="border-b transition-colors hover:bg-muted/50">
+                              <td className="p-4 align-middle font-mono text-xs">
+                                {new Date(tithe.date).toLocaleDateString()}
+                              </td>
+                              <td className="p-4 align-middle font-medium">{tithe.member}</td>
+                              <td className="p-4 align-middle font-semibold text-green-600">
+                                ${tithe.amount.toLocaleString()}
+                              </td>
+                              <td className="p-4 align-middle">
+                                <Badge variant="outline" className="text-xs">
+                                  {tithe.method}
+                                </Badge>
+                              </td>
+                              <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                {tithe.reference}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
+                              <div className="flex flex-col items-center justify-center space-y-2">
+                                <Search className="h-8 w-8 text-muted-foreground" />
+                                <p className="text-muted-foreground">
+                                  {hasActiveFilters ? 'No tithes match your filters' : 'No tithes found'}
+                                </p>
+                                {hasActiveFilters && (
+                                  <Button variant="link" size="sm" onClick={clearFilters}>
+                                    Clear filters
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                
-                {/* Pagination */}
-                {tithePages > 1 && (
-                  <div className="flex justify-end mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTithePage(Math.max(1, currentTithePage - 1));
-                            }}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: tithePages }).map((_, index) => {
-                          const page = index + 1;
-                          // Show nearby pages and first/last pages
-                          if (
+
+                {/* Fixed Pagination Section */}
+                {totalPages > 1 && (
+                  <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredTithes.length)} of {filteredTithes.length} transactions
+                    </div>
+                    
+                    {/* Items per page control - centered */}
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">Show</span>
+                      <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+                        setItemsPerPage(parseInt(value));
+                        setCurrentPage(1);
+                      }}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="10">10</SelectItem>
+                           <SelectItem value="25">25</SelectItem>
+                           <SelectItem value="50">50</SelectItem>
+                         </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">per page</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center space-x-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(page => 
                             page === 1 || 
-                            page === tithePages || 
-                            (page >= currentTithePage - 1 && page <= currentTithePage + 1)
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationLink 
-                                  href="#"
-                                  isActive={page === currentTithePage}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setCurrentTithePage(page);
-                                  }}
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          // Show ellipsis for gaps
-                          if (
-                            page === currentTithePage - 2 || 
-                            page === currentTithePage + 2
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          return null;
-                        })}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentTithePage(Math.min(tithePages, currentTithePage + 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+                            page === totalPages || 
+                            Math.abs(page - currentPage) <= 1
+                          )
+                          .map((page, index, array) => (
+                            <React.Fragment key={page}>
+                              {index > 0 && array[index - 1] !== page - 1 && (
+                                <span className="px-2 text-muted-foreground">...</span>
+                              )}
+                              <Button
+                                variant={currentPage === page ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          ))
+                        }
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
-            
-            {/* Record Tithe Dialog */}
-            <RecordTitheDialog 
-              open={titheDialogOpen} 
-              onOpenChange={setTitheDialogOpen} 
-            />
           </TabsContent>
           
           <TabsContent value="offerings">
@@ -688,253 +933,284 @@ const Finances = () => {
                 <div className="space-y-4 flex-shrink-0 mb-4">
                   {/* Search and Filter Controls */}
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search services..."
-                        value={offeringSearch}
-                        onChange={(e) => setOfferingSearch(e.target.value)}
-                        className="pl-8"
-                      />
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by service, category, or reference..."
+                          value={offeringSearchTerm}
+                          onChange={(e) => setOfferingSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                    
-                    <div className="flex gap-2 flex-wrap">
-                      {/* Date Filter Popover */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Date</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4">
-                          <div className="space-y-4">
-                            <h4 className="font-medium">Filter by Date</h4>
-                            <div className="flex flex-col gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="offering-start-date">Start Date</Label>
-                                <input
-                                  id="offering-start-date"
-                                  type="date"
-                                  onChange={(e) => setOfferingStartDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="offering-end-date">End Date</Label>
-                                <input
-                                  id="offering-end-date"
-                                  type="date"
-                                  onChange={(e) => setOfferingEndDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setOfferingStartDate(null);
-                                  setOfferingEndDate(null);
-                                }}
-                              >
-                                Clear Filter
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      
-                      {/* Category Filter */}
-                      <Select 
-                        value={offeringCategoryFilter || "all"} 
-                        onValueChange={(value) => setOfferingCategoryFilter(value === "all" ? null : value)}
+                    <div className="flex gap-2">
+                      <Button
+                        variant={showOfferingFilters ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setShowOfferingFilters(!showOfferingFilters)}
+                        className="relative"
                       >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="All Categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Categories</SelectItem>
-                          {offeringCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Add Offering Button */}
+                        <Filter className="h-4 w-4" />
+                        Filter
+                        {hasActiveOfferingFilters && (
+                          <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs">
+                            !
+                          </Badge>
+                        )}
+                      </Button>
                       <Button onClick={() => setOfferingDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Receipt className="mr-2 h-4 w-4" />
                         Record Offering
                       </Button>
                     </div>
                   </div>
+
+                  {/* Filter Panel */}
+                  {showOfferingFilters && (
+                    <Card className="border-dashed">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                          {/* Service Type Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Service Type</label>
+                            <div className="space-y-2">
+                              {serviceTypes.map((service) => (
+                                <div key={service} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`service-${service}`}
+                                    checked={selectedServices.includes(service)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedServices([...selectedServices, service]);
+                                      } else {
+                                        setSelectedServices(selectedServices.filter(s => s !== service));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`service-${service}`} className="text-sm">
+                                    {service}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Category Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Category</label>
+                            <div className="space-y-2">
+                              {offeringCategories.map((category) => (
+                                <div key={category} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`category-${category}`}
+                                    checked={selectedCategories.includes(category)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedCategories([...selectedCategories, category]);
+                                      } else {
+                                        setSelectedCategories(selectedCategories.filter(c => c !== category));
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`category-${category}`} className="text-sm">
+                                    {category}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Amount Range Filter */}
+                          <div className="space-y-2 w-3/4">
+                            <label className="text-sm font-medium">Amount Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="number"
+                                placeholder="Min"
+                                value={offeringAmountRange.min}
+                                onChange={(e) => setOfferingAmountRange({ ...offeringAmountRange, min: e.target.value })}
+                              />
+                              <Input
+                                type="number"
+                                placeholder="Max"
+                                value={offeringAmountRange.max}
+                                onChange={(e) => setOfferingAmountRange({ ...offeringAmountRange, max: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Date Range Filter */}
+                          <div className="space-y-2 w-2/3">
+                            <label className="text-sm font-medium">Date Range</label>
+                            <div className="flex space-x-2">
+                              <Input
+                                type="date"
+                                value={offeringDateRange.from ? offeringDateRange.from.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setOfferingDateRange({ 
+                                  ...offeringDateRange, 
+                                  from: e.target.value ? new Date(e.target.value) : undefined 
+                                })}
+                              />
+                              <Input
+                                type="date"
+                                value={offeringDateRange.to ? offeringDateRange.to.toISOString().split('T')[0] : ''}
+                                onChange={(e) => setOfferingDateRange({ 
+                                  ...offeringDateRange, 
+                                  to: e.target.value ? new Date(e.target.value) : undefined 
+                                })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {hasActiveOfferingFilters && (
+                          <div className="mt-4 pt-4 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={clearOfferingFilters}
+                              className="text-muted-foreground"
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Clear All Filters
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                </div>
+
+                {/* Scrollable Table Section */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Service</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedOfferings.length > 0 ? (
+                          paginatedOfferings.map((offering) => (
+                            <tr key={offering.id} className="border-b transition-colors hover:bg-muted/50">
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {offering.date}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{offering.service}</td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {offering.category}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-green-600">
+                                 ${offering.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {offering.reference}
+                               </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
+                              No offerings found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {offeringStartIndex + 1} to {Math.min(offeringStartIndex + offeringItemsPerPage, filteredOfferings.length)} of {filteredOfferings.length} entries
+                  </div>
                   
-                  {/* Active Filters Display */}
-                  {(offeringStartDate || offeringEndDate || offeringCategoryFilter) && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-muted-foreground">Filters:</span>
-                      
-                      {offeringStartDate && offeringEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>{format(offeringStartDate, "MMM d, yyyy")} - {format(offeringEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => {
-                              setOfferingStartDate(null);
-                              setOfferingEndDate(null);
-                            }}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {offeringStartDate && !offeringEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>From {format(offeringStartDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setOfferingStartDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {!offeringStartDate && offeringEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>Until {format(offeringEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setOfferingEndDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {offeringCategoryFilter && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <Filter className="h-3 w-3" />
-                          <span>{offeringCategoryFilter}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setOfferingCategoryFilter(null)}
-                          />
-                        </Badge>
-                      )}
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={offeringItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setOfferingItemsPerPage(parseInt(value));
+                        setOfferingCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  
+                  {offeringTotalPages > 1 ? (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOfferingCurrentPage(Math.max(1, offeringCurrentPage - 1))}
+                        disabled={offeringCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, offeringTotalPages) }, (_, i) => {
+                          let page;
+                          if (offeringTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (offeringCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (offeringCurrentPage >= offeringTotalPages - 2) {
+                            page = offeringTotalPages - 4 + i;
+                          } else {
+                            page = offeringCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={offeringCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setOfferingCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setOfferingCurrentPage(Math.min(offeringTotalPages, offeringCurrentPage + 1))}
+                        disabled={offeringCurrentPage === offeringTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
+                  ) : (
+                    <div></div>
                   )}
                 </div>
-                
-                {/* Table */}
-                <div className="overflow-y-auto flex-grow">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Service</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Reference</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {offeringsForPage.map((offering) => (
-                        <TableRow key={offering.id}>
-                          <TableCell>{format(new Date(offering.date), "MMM d, yyyy")}</TableCell>
-                          <TableCell>{offering.service}</TableCell>
-                          <TableCell>₦{offering.amount.toLocaleString()}</TableCell>
-                          <TableCell>{offering.category}</TableCell>
-                          <TableCell>{offering.reference}</TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {offeringsForPage.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            {offeringSearch || offeringStartDate || offeringEndDate || offeringCategoryFilter ? 
-                              "No offerings match your search criteria" : 
-                              "No offerings recorded yet"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                
-                {/* Pagination */}
-                {offeringPages > 1 && (
-                  <div className="flex justify-end mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentOfferingPage(Math.max(1, currentOfferingPage - 1));
-                            }}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: offeringPages }).map((_, index) => {
-                          const page = index + 1;
-                          // Show nearby pages and first/last pages
-                          if (
-                            page === 1 || 
-                            page === offeringPages || 
-                            (page >= currentOfferingPage - 1 && page <= currentOfferingPage + 1)
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationLink 
-                                  href="#"
-                                  isActive={page === currentOfferingPage}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setCurrentOfferingPage(page);
-                                  }}
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          // Show ellipsis for gaps
-                          if (
-                            page === currentOfferingPage - 2 || 
-                            page === currentOfferingPage + 2
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          return null;
-                        })}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentOfferingPage(Math.min(offeringPages, currentOfferingPage + 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
               </CardContent>
             </Card>
-            
-            {/* Record Offering Dialog */}
-            <RecordOfferingDialog 
-              open={offeringDialogOpen} 
-              onOpenChange={setOfferingDialogOpen} 
-            />
           </TabsContent>
           
           <TabsContent value="special-giving">
@@ -944,567 +1220,642 @@ const Finances = () => {
                 <div className="space-y-4 flex-shrink-0 mb-4">
                   {/* Search and Filter Controls */}
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search donors..."
-                        value={specialGivingSearch}
-                        onChange={(e) => setSpecialGivingSearch(e.target.value)}
-                        className="pl-8"
-                      />
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by fund, donor, or reference..."
+                          value={specialGivingSearchTerm}
+                          onChange={(e) => setSpecialGivingSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
                     </div>
-                    
-                    <div className="flex gap-2 flex-wrap">
-                      {/* Date Filter Popover */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Date</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4">
-                          <div className="space-y-4">
-                            <h4 className="font-medium">Filter by Date</h4>
-                            <div className="flex flex-col gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="special-start-date">Start Date</Label>
-                                <input
-                                  id="special-start-date"
-                                  type="date"
-                                  onChange={(e) => setSpecialStartDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="special-end-date">End Date</Label>
-                                <input
-                                  id="special-end-date"
-                                  type="date"
-                                  onChange={(e) => setSpecialEndDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setSpecialStartDate(null);
-                                  setSpecialEndDate(null);
-                                }}
-                              >
-                                Clear Filter
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      
-                      {/* Fund Filter */}
-                      <Select 
-                        value={specialGivingFundFilter || "all"} 
-                        onValueChange={(value) => setSpecialGivingFundFilter(value === "all" ? null : value)}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="relative"
                       >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="All Funds" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Funds</SelectItem>
-                          {specialGivingFunds.map((fund) => (
-                            <SelectItem key={fund} value={fund}>
-                              {fund}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      {/* Add Special Giving Button */}
-                      <Button onClick={() => setSpecialGivingDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
+                        <Filter className="h-4 w-4" />
+                        Filter
+                      </Button>
+                      <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
+                        <PiggyBank className="mr-2 h-4 w-4" />
                         Record Special Giving
                       </Button>
                     </div>
                   </div>
+                </div>
+
+                {/* Scrollable Table Section */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Donor</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Fund</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedSpecialGiving.length > 0 ? (
+                          paginatedSpecialGiving.map((giving) => (
+                            <tr key={giving.id} className="border-b transition-colors hover:bg-muted/50">
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {giving.date}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{giving.donor}</td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {giving.fund}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-green-600">
+                                 ${giving.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {giving.reference}
+                               </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
+                              No special giving found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {specialGivingStartIndex + 1} to {Math.min(specialGivingStartIndex + specialGivingItemsPerPage, filteredSpecialGiving.length)} of {filteredSpecialGiving.length} entries
+                  </div>
                   
-                  {/* Active Filters Display */}
-                  {(specialStartDate || specialEndDate || specialGivingFundFilter) && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-muted-foreground">Filters:</span>
-                      
-                      {specialStartDate && specialEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>{format(specialStartDate, "MMM d, yyyy")} - {format(specialEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => {
-                              setSpecialStartDate(null);
-                              setSpecialEndDate(null);
-                            }}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {specialStartDate && !specialEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>From {format(specialStartDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setSpecialStartDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {!specialStartDate && specialEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>Until {format(specialEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setSpecialEndDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {specialGivingFundFilter && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <Filter className="h-3 w-3" />
-                          <span>{specialGivingFundFilter}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setSpecialGivingFundFilter(null)}
-                          />
-                        </Badge>
-                      )}
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={specialGivingItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setSpecialGivingItemsPerPage(parseInt(value));
+                        setSpecialGivingCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  
+                  {specialGivingTotalPages > 1 ? (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSpecialGivingCurrentPage(Math.max(1, specialGivingCurrentPage - 1))}
+                        disabled={specialGivingCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, specialGivingTotalPages) }, (_, i) => {
+                          let page;
+                          if (specialGivingTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (specialGivingCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (specialGivingCurrentPage >= specialGivingTotalPages - 2) {
+                            page = specialGivingTotalPages - 4 + i;
+                          } else {
+                            page = specialGivingCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={specialGivingCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setSpecialGivingCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSpecialGivingCurrentPage(Math.min(specialGivingTotalPages, specialGivingCurrentPage + 1))}
+                        disabled={specialGivingCurrentPage === specialGivingTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
+                  ) : (
+                    <div></div>
                   )}
                 </div>
-                
-                {/* Table */}
-                <div className="overflow-y-auto flex-grow">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Fund</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Donor</TableHead>
-                        <TableHead>Reference</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {specialGivingForPage.map((giving) => (
-                        <TableRow key={giving.id}>
-                          <TableCell>{format(new Date(giving.date), "MMM d, yyyy")}</TableCell>
-                          <TableCell>{giving.fund}</TableCell>
-                          <TableCell>₦{giving.amount.toLocaleString()}</TableCell>
-                          <TableCell>{giving.donor}</TableCell>
-                          <TableCell>{giving.reference}</TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {specialGivingForPage.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            {specialGivingSearch || specialStartDate || specialEndDate || specialGivingFundFilter ? 
-                              "No special giving match your search criteria" : 
-                              "No special giving recorded yet"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                
-                {/* Pagination */}
-                {specialGivingPages > 1 && (
-                  <div className="flex justify-end mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentSpecialGivingPage(Math.max(1, currentSpecialGivingPage - 1));
-                            }}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: specialGivingPages }).map((_, index) => {
-                          const page = index + 1;
-                          // Show nearby pages and first/last pages
-                          if (
-                            page === 1 || 
-                            page === specialGivingPages || 
-                            (page >= currentSpecialGivingPage - 1 && page <= currentSpecialGivingPage + 1)
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationLink 
-                                  href="#"
-                                  isActive={page === currentSpecialGivingPage}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setCurrentSpecialGivingPage(page);
-                                  }}
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          // Show ellipsis for gaps
-                          if (
-                            page === currentSpecialGivingPage - 2 || 
-                            page === currentSpecialGivingPage + 2
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          return null;
-                        })}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentSpecialGivingPage(Math.min(specialGivingPages, currentSpecialGivingPage + 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
               </CardContent>
             </Card>
-            
-            {/* Record Special Giving Dialog */}
-            <RecordSpecialGivingDialog 
-              open={specialGivingDialogOpen} 
-              onOpenChange={setSpecialGivingDialogOpen} 
-            />
           </TabsContent>
           
           <TabsContent value="expenses">
             <Card className="h-[calc(100vh-8rem)]">
               <CardContent className="p-6 h-full flex flex-col">
                 {/* Search and Action Bar */}
-                <div className="space-y-4 flex-shrink-0 mb-4">
-                  {/* Search and Filter Controls */}
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+                  <div className="flex-1 w-full sm:max-w-md">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
-                        placeholder="Search description..."
-                        value={expenseSearch}
-                        onChange={(e) => setExpenseSearch(e.target.value)}
-                        className="pl-8"
+                        placeholder="Search by description, category, or reference..."
+                        value={expenseSearchQuery}
+                        onChange={(e) => setExpenseSearchQuery(e.target.value)}
+                        className="pl-10"
                       />
                     </div>
-                    
-                    <div className="flex gap-2 flex-wrap">
-                      {/* Date Filter Popover */}
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="flex gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>Date</span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-4">
-                          <div className="space-y-4">
-                            <h4 className="font-medium">Filter by Date</h4>
-                            <div className="flex flex-col gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="expense-start-date">Start Date</Label>
-                                <input
-                                  id="expense-start-date"
-                                  type="date"
-                                  onChange={(e) => setExpenseStartDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="expense-end-date">End Date</Label>
-                                <input
-                                  id="expense-end-date"
-                                  type="date"
-                                  onChange={(e) => setExpenseEndDate(e.target.value ? new Date(e.target.value) : null)}
-                                  className="w-full p-2 border rounded"
-                                />
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setExpenseStartDate(null);
-                                  setExpenseEndDate(null);
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowExpenseFilters(!showExpenseFilters)}
+                      className="flex items-center gap-2"
+                    >
+                      <Filter className="h-4 w-4" />
+                      Filter
+                    </Button>
+                    <Button className="flex items-center gap-2" onClick={() => setShowRecordExpenseDialog(true)}>
+                      <Plus className="h-4 w-4" />
+                      Record Expense
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Filter Panel */}
+                {showExpenseFilters && (
+                  <div className="mb-6 p-4 border rounded-lg bg-muted/50">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Category</Label>
+                        <div className="space-y-2">
+                          {['Utilities', 'Office Supplies', 'Maintenance', 'Transportation', 'Equipment', 'Programs'].map((category) => (
+                            <div key={category} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`expense-category-${category}`}
+                                checked={expenseFilters.categories.includes(category)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setExpenseFilters(prev => ({
+                                      ...prev,
+                                      categories: [...prev.categories, category]
+                                    }));
+                                  } else {
+                                    setExpenseFilters(prev => ({
+                                      ...prev,
+                                      categories: prev.categories.filter(c => c !== category)
+                                    }));
+                                  }
                                 }}
-                              >
-                                Clear Filter
-                              </Button>
+                              />
+                              <Label htmlFor={`expense-category-${category}`} className="text-sm">
+                                {category}
+                              </Label>
                             </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                      
-                      {/* Category Filter */}
-                      <Select 
-                        value={expenseCategoryFilter || "all"} 
-                        onValueChange={(value) => setExpenseCategoryFilter(value === "all" ? null : value)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="All Categories" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Categories</SelectItem>
-                          {expenseCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </div>
+                      </div>
                       
-                      {/* Add Expense Button */}
-                      <Button onClick={() => setExpenseDialogOpen(true)}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Record Expense
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Amount Range</Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="number"
+                            placeholder="Min amount"
+                            value={expenseFilters.minAmount}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, minAmount: e.target.value }))}
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Max amount"
+                            value={expenseFilters.maxAmount}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, maxAmount: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Date Range</Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="date"
+                            value={expenseFilters.startDate}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                          />
+                          <Input
+                            type="date"
+                            value={expenseFilters.endDate}
+                            onChange={(e) => setExpenseFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm font-medium mb-2 block">Payee</Label>
+                        <Input
+                          placeholder="Search payee..."
+                          value={expenseFilters.payee}
+                          onChange={(e) => setExpenseFilters(prev => ({ ...prev, payee: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end mt-4">
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setExpenseFilters({
+                            categories: [],
+                            minAmount: '',
+                            maxAmount: '',
+                            startDate: '',
+                            endDate: '',
+                            payee: ''
+                          });
+                        }}
+                      >
+                        Clear Filters
                       </Button>
                     </div>
                   </div>
+                )}
+
+                {/* Scrollable Table Section */}
+                <div className="flex-1 min-h-0 rounded-md border">
+                  <div className="h-full overflow-auto">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-background z-10 border-b">
+                        <tr className="border-b">
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Date</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Description</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Payee</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getCurrentExpenseItems().length > 0 ? (
+                          getCurrentExpenseItems().map((expense) => (
+                            <tr key={expense.id} className="border-b transition-colors hover:bg-muted/50">
+                               <td className="p-4 align-middle font-mono text-xs">
+                                 {format(new Date(expense.date), 'yyyy-MM-dd')}
+                               </td>
+                               <td className="p-4 align-middle font-medium">{expense.description}</td>
+                               <td className="p-4 align-middle">
+                                 <Badge variant="outline" className="text-xs">
+                                   {expense.category}
+                                 </Badge>
+                               </td>
+                               <td className="p-4 align-middle font-semibold text-red-600">
+                                 ${expense.amount.toLocaleString()}
+                               </td>
+                               <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
+                                 {expense.payee}
+                               </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="text-center h-24 p-4">
+                              No expenses found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Fixed Pagination Section */}
+                <div className="flex-shrink-0 flex items-center justify-between pt-4 border-t bg-background">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {getExpenseStartIndex() + 1} to {Math.min(getExpenseStartIndex() + expenseItemsPerPage, filteredExpenses.length)} of {filteredExpenses.length} entries
+                  </div>
                   
-                  {/* Active Filters Display */}
-                  {(expenseStartDate || expenseEndDate || expenseCategoryFilter) && (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-muted-foreground">Filters:</span>
-                      
-                      {expenseStartDate && expenseEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>{format(expenseStartDate, "MMM d, yyyy")} - {format(expenseEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => {
-                              setExpenseStartDate(null);
-                              setExpenseEndDate(null);
-                            }}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {expenseStartDate && !expenseEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>From {format(expenseStartDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setExpenseStartDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {!expenseStartDate && expenseEndDate && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <CalendarDays className="h-3 w-3" />
-                          <span>Until {format(expenseEndDate, "MMM d, yyyy")}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setExpenseEndDate(null)}
-                          />
-                        </Badge>
-                      )}
-                      
-                      {expenseCategoryFilter && (
-                        <Badge variant="outline" className="flex gap-1 items-center">
-                          <Filter className="h-3 w-3" />
-                          <span>{expenseCategoryFilter}</span>
-                          <X 
-                            className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setExpenseCategoryFilter(null)}
-                          />
-                        </Badge>
-                      )}
+                  {/* Items per page control - centered */}
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select
+                      value={expenseItemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setExpenseItemsPerPage(parseInt(value));
+                        setExpenseCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+                  
+                  {expenseTotalPages > 1 ? (
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpenseCurrentPage(Math.max(1, expenseCurrentPage - 1))}
+                        disabled={expenseCurrentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                      <div className="flex space-x-1">
+                        {Array.from({ length: Math.min(5, expenseTotalPages) }, (_, i) => {
+                          let page;
+                          if (expenseTotalPages <= 5) {
+                            page = i + 1;
+                          } else if (expenseCurrentPage <= 3) {
+                            page = i + 1;
+                          } else if (expenseCurrentPage >= expenseTotalPages - 2) {
+                            page = expenseTotalPages - 4 + i;
+                          } else {
+                            page = expenseCurrentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <React.Fragment key={page}>
+                              <Button
+                                variant={expenseCurrentPage === page ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => setExpenseCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          )
+                        })}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpenseCurrentPage(Math.min(expenseTotalPages, expenseCurrentPage + 1))}
+                        disabled={expenseCurrentPage === expenseTotalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
                     </div>
+                  ) : (
+                    <div></div>
                   )}
                 </div>
-                
-                {/* Table */}
-                <div className="overflow-y-auto flex-grow">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Payee</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {expensesForPage.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell>{format(new Date(expense.date), "MMM d, yyyy")}</TableCell>
-                          <TableCell>{expense.category}</TableCell>
-                          <TableCell>{expense.description}</TableCell>
-                          <TableCell>₦{expense.amount.toLocaleString()}</TableCell>
-                          <TableCell>{expense.payee}</TableCell>
-                        </TableRow>
-                      ))}
-                      
-                      {expensesForPage.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                            {expenseSearch || expenseStartDate || expenseEndDate || expenseCategoryFilter ? 
-                              "No expenses match your search criteria" : 
-                              "No expenses recorded yet"}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                
-                {/* Pagination */}
-                {expensePages > 1 && (
-                  <div className="flex justify-end mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentExpensePage(Math.max(1, currentExpensePage - 1));
-                            }}
-                          />
-                        </PaginationItem>
-                        
-                        {Array.from({ length: expensePages }).map((_, index) => {
-                          const page = index + 1;
-                          // Show nearby pages and first/last pages
-                          if (
-                            page === 1 || 
-                            page === expensePages || 
-                            (page >= currentExpensePage - 1 && page <= currentExpensePage + 1)
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationLink 
-                                  href="#"
-                                  isActive={page === currentExpensePage}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setCurrentExpensePage(page);
-                                  }}
-                                >
-                                  {page}
-                                </PaginationLink>
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          // Show ellipsis for gaps
-                          if (
-                            page === currentExpensePage - 2 || 
-                            page === currentExpensePage + 2
-                          ) {
-                            return (
-                              <PaginationItem key={page}>
-                                <PaginationEllipsis />
-                              </PaginationItem>
-                            );
-                          }
-                          
-                          return null;
-                        })}
-                        
-                        <PaginationItem>
-                          <PaginationNext 
-                            href="#" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentExpensePage(Math.min(expensePages, currentExpensePage + 1));
-                            }}
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
               </CardContent>
             </Card>
-            
-            {/* Record Expense Dialog */}
-            <RecordExpenseDialog 
-              open={expenseDialogOpen} 
-              onOpenChange={setExpenseDialogOpen}
-              onSubmit={(expenseData) => {
-                console.log('Expense recorded:', expenseData);
-                setExpenseDialogOpen(false);
-              }}
-            />
           </TabsContent>
           
           <TabsContent value="reports">
             <Card>
               <CardHeader>
-                <CardTitle>Financial Transaction History</CardTitle>
-                <CardDescription>All financial transactions ordered by date</CardDescription>
+                <CardTitle>Financial Reports</CardTitle>
+                <CardDescription>
+                  Generate and view detailed financial reports
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[calc(100vh-16rem)] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Details</TableHead>
-                        <TableHead>Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {financialData.map((transaction, i) => (
-                        <TableRow key={i}>
-                          <TableCell>{format(new Date(transaction.date), "MMM d, yyyy")}</TableCell>
-                          <TableCell>
-                            <Badge variant={transaction.type === 'Expense' ? "destructive" : "default"}>
-                              {transaction.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{transaction.category}</TableCell>
-                          <TableCell>{transaction.details}</TableCell>
-                          <TableCell className={transaction.amount < 0 ? "text-red-500" : "text-green-500"}>
-                            ₦{Math.abs(transaction.amount).toLocaleString()}
-                            {transaction.amount > 0 ? " +" : " -"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Income Statement</CardTitle>
+                      <CardDescription>
+                        Current month financial summary
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Income</span>
+                          <span className="text-sm font-bold text-green-600">$27,500</span>
+                        </div>
+                        <div className="pl-4 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Tithes</span>
+                            <span>$15,000</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Offerings</span>
+                            <span>$7,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Special Giving</span>
+                            <span>$3,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Other Income</span>
+                            <span>$1,500</span>
+                          </div>
+                        </div>
+                        
+                        <hr />
+                        
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium">Total Expenses</span>
+                          <span className="text-sm font-bold text-red-600">$22,750</span>
+                        </div>
+                        <div className="pl-4 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Staffing</span>
+                            <span>$12,000</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Facilities</span>
+                            <span>$4,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Ministries</span>
+                            <span>$3,250</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Administration</span>
+                            <span>$1,500</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Outreach</span>
+                            <span>$1,500</span>
+                          </div>
+                        </div>
+                        
+                        <hr />
+                        
+                        <div className="flex justify-between">
+                          <span className="font-semibold">Net Income</span>
+                          <span className="font-bold text-green-600">$4,750</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button variant="outline" className="w-full justify-start">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download Monthly Report
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          Generate Custom Report
+                        </Button>
+                        <Button variant="outline" className="w-full justify-start">
+                          <TrendingUp className="mr-2 h-4 w-4" />
+                          View Year-to-Date Summary
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Report Filters</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Date Range</label>
+                          <select className="w-full p-2 border rounded">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                            <option>This Quarter</option>
+                            <option>This Year</option>
+                            <option>Custom Range</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Report Type</label>
+                          <select className="w-full p-2 border rounded">
+                            <option>All Transactions</option>
+                            <option>Income Only</option>
+                            <option>Expenses Only</option>
+                            <option>By Category</option>
+                          </select>
+                        </div>
+                        <Button className="w-full">
+                          <Filter className="mr-2 h-4 w-4" />
+                          Apply Filters
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
                 
-                <div className="flex justify-end mt-4">
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span>Export Report</span>
-                  </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Income Trends</CardTitle>
+                      <CardDescription>
+                        Monthly income over the past 6 months
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px]">
+                        <LineChart
+                          data={[
+                            { month: "May", income: 25500 },
+                            { month: "Jun", income: 27000 },
+                            { month: "Jul", income: 26000 },
+                            { month: "Aug", income: 26500 },
+                            { month: "Sep", income: 27000 },
+                            { month: "Oct", income: 27500 },
+                          ]}
+                          index="month"
+                          categories={["income"]}
+                          colors={["#8b5cf6"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Expense Breakdown</CardTitle>
+                      <CardDescription>
+                        Current month expense distribution
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[200px]">
+                        <BarChart
+                          data={[
+                            { category: "Staffing", amount: 12000 },
+                            { category: "Facilities", amount: 4500 },
+                            { category: "Ministries", amount: 3250 },
+                            { category: "Admin", amount: 1500 },
+                            { category: "Outreach", amount: 1500 },
+                          ]}
+                          index="category"
+                          categories={["amount"]}
+                          colors={["#8b5cf6"]}
+                          valueFormatter={(value) => `$${value.toLocaleString()}`}
+                          className="h-full"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+      
+      <RecordTitheDialog 
+        open={recordTitheDialogOpen} 
+        onOpenChange={setRecordTitheDialogOpen} 
+      />
+      <RecordOfferingDialog 
+        open={offeringDialogOpen} 
+        onOpenChange={setOfferingDialogOpen} 
+      />
+      <RecordSpecialGivingDialog 
+        open={recordSpecialGivingDialogOpen} 
+        onOpenChange={setRecordSpecialGivingDialogOpen} 
+      />
+      
+      <RecordExpenseDialog
+        open={showRecordExpenseDialog}
+        onOpenChange={setShowRecordExpenseDialog}
+        onSubmit={onExpenseSubmit}
+      />
     </RegionalAdminLayout>
   );
 };
 
-export default Finances;
+export default RegionalFinances;
