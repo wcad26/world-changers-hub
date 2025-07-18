@@ -321,8 +321,6 @@ const Finances = () => {
   return (
     <RegionalAdminLayout>
       <div className="container mx-auto py-6">
-        <h1 className="text-3xl font-bold mb-6">Financial Management</h1>
-        
         <Tabs defaultValue="overview" className="w-full" onValueChange={(value) => setActiveTab(value)}>
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
