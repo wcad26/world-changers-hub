@@ -1521,7 +1521,7 @@ const RegionalFinances: React.FC = () => {
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Description</th>
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Category</th>
                            <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Amount</th>
-                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Payee</th>
+                           <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground bg-background">Reference</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1541,7 +1541,7 @@ const RegionalFinances: React.FC = () => {
                                  ${expense.amount.toLocaleString()}
                                </td>
                                <td className="p-4 align-middle font-mono text-xs text-muted-foreground">
-                                 {expense.payee}
+                                 {expense.reference}
                                </td>
                             </tr>
                           ))
