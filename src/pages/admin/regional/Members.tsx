@@ -273,64 +273,6 @@ const Members: React.FC = () => {
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                  <Users className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalMembers}</div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">{activeMembers} active</p>
-                    <PercentageIndicator percentage={growthTrends.memberGrowth} />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
-                  <Users className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalVisitors}</div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">{inactiveVisitors} inactive visitors</p>
-                    <PercentageIndicator percentage={growthTrends.visitorGrowth} />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Avg. Event Attendance</CardTitle>
-                  <CalendarCheck2 className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{attendanceSummary.avgAttendance}</div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {attendanceHistory ? `${attendanceHistory.length} events recorded` : 'No events recorded'}
-                    </p>
-                    <PercentageIndicator percentage={growthTrends.avgAttendanceGrowth} />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Last Event Turnout</CardTitle>
-                  <BarChartHorizontal className="h-4 w-4 text-orange-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.total_present || 0}</div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">
-                      {attendanceSummary.lastEvent ? `on ${new Date(attendanceSummary.lastEvent.event_date).toLocaleDateString()}` : 'N/A'}
-                    </p>
-                    <PercentageIndicator percentage={growthTrends.lastEventGrowth} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
             
             <Card>
               <CardHeader>
