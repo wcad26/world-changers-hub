@@ -496,7 +496,7 @@ const RegionalFinances: React.FC = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <div className="p-3 space-y-2">
+                  <div className="p-1.5 space-y-1">
                     <Button variant="ghost" className="w-full justify-start" size="sm">
                       Last 30 days
                     </Button>
