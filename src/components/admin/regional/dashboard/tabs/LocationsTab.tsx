@@ -8,7 +8,8 @@ import { Eye, Edit, MapPin, Users, Phone, Plus } from 'lucide-react';
 import { useLocations } from '@/hooks/useLocations';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertCircle, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import type { DashboardFilters } from '../DashboardFilters';
 
 interface LocationsTabProps {

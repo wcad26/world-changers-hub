@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Eye, Edit, Calendar, Users } from 'lucide-react';
 import { useRegionalEvents } from '@/hooks/useEvents';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertCircle, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import type { DashboardFilters } from '../DashboardFilters';
 import { format } from 'date-fns';
 

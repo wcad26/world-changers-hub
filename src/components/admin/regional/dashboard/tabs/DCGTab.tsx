@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Eye, Edit, Users, Home, Plus } from 'lucide-react';
 import { useDcgs } from '@/hooks/useDCGs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertCircle, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import type { DashboardFilters } from '../DashboardFilters';
 
 interface DCGTabProps {

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, TrendingUp, TrendingDown, Plus } from 'lucide-react';
 import { useFinancialTransactions, useFinancialSummary } from '@/hooks/useFinancials';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertCircle, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import type { DashboardFilters } from '../DashboardFilters';
 import { format } from 'date-fns';
 
