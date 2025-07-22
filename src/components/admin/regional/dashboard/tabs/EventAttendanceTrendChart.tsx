@@ -97,11 +97,7 @@ const EventAttendanceTrendChart: React.FC = () => {
                   borderRadius: '6px'
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value, name, props) => [
-                  value,
-                  name,
-                  { payload: { eventName: props.payload?.eventName } }
-                ]}
+                formatter={(value, name) => [value, name]}
                 labelFormatter={(label, payload) => 
                   payload && payload[0] ? `${payload[0].payload.eventName} (${label})` : label
                 }
