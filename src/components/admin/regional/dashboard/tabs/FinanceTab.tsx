@@ -42,13 +42,15 @@ const FinanceTab: React.FC = () => {
 
   if (transactionsError || summaryError) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading financial data</AlertTitle>
-        <AlertDescription>
-          {transactionsError instanceof Error ? transactionsError.message : 'An unknown error occurred'}
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading financial data</AlertTitle>
+          <AlertDescription>
+            {transactionsError instanceof Error ? transactionsError.message : 'An unknown error occurred'}
+          </AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
