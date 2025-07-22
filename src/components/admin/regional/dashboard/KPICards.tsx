@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Calendar, DollarSign, Home, MapPin, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, Calendar, DollarSign, Home, MapPin, TrendingUp, TrendingDown, Banknote } from 'lucide-react';
 
 interface KPIData {
   members: {
@@ -39,9 +39,10 @@ interface KPIData {
 interface KPICardsProps {
   data: KPIData;
   activeTab: string;
+  bankBalance: number;
 }
 
-const KPICards: React.FC<KPICardsProps> = ({ data, activeTab }) => {
+const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
@@ -231,8 +232,33 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab }) => {
 
   const cards = getTabSpecificCards();
 
+  // Bank Balance card that always shows
+  const bankBalanceCard = {
+    title: "Bank Balance",
+    value: formatCurrency(bankBalance),
+    description: "Current available balance",
+    icon: Banknote,
+    trend: null,
+    color: "text-emerald-600"
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {/* Bank Balance - Always shown first */}
+      <Card key="bank-balance">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">{bankBalanceCard.title}</CardTitle>
+          <bankBalanceCard.icon className={`h-4 w-4 ${bankBalanceCard.color}`} />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{bankBalanceCard.value}</div>
+          <div className="flex items-center text-xs text-muted-foreground">
+            <span>{bankBalanceCard.description}</span>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Tab-specific cards */}
       {cards.map((card, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
