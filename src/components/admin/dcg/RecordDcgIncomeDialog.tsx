@@ -71,7 +71,10 @@ export const RecordDcgIncomeDialog: React.FC<RecordDcgIncomeDialogProps> = ({
     },
   });
 
-  const incomeCategories = categories?.filter(cat => cat.type === "Income") || [];
+  const incomeCategories = categories?.filter(cat => 
+    cat.type === "Income" && 
+    (cat.name?.includes("Offering") || cat.name?.includes("Special"))
+  ) || [];
 
   const onSubmit = async (data: IncomeFormData) => {
     if (!userDcg) {
@@ -112,7 +115,7 @@ export const RecordDcgIncomeDialog: React.FC<RecordDcgIncomeDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Record DCG Income</DialogTitle>
           <DialogDescription>
-            Record income for your DCG (tithes, offerings, special giving)
+            Record income for your DCG (offerings, special giving)
           </DialogDescription>
         </DialogHeader>
 

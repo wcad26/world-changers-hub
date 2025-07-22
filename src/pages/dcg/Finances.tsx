@@ -68,10 +68,9 @@ const DcgFinances: React.FC = () => {
   const dcgIncome = transactions.filter(t => t.category?.type === 'Income').reduce((sum, t) => sum + Number(t.amount), 0);
   const dcgExpenses = transactions.filter(t => t.category?.type === 'Expense').reduce((sum, t) => sum + Number(t.amount), 0);
   const dcgNetBalance = dcgIncome - dcgExpenses;
-  const dcgTithes = transactions.filter(t => t.category?.name === 'Tithes').reduce((sum, t) => sum + Number(t.amount), 0);
+  const dcgOfferings = transactions.filter(t => t.category?.name?.includes('Offering')).reduce((sum, t) => sum + Number(t.amount), 0);
 
   // Filter transactions by type for different tabs
-  const tithes = transactions.filter(t => t.category?.name === 'Tithes');
   const offerings = transactions.filter(t => t.category?.name?.includes('Offering'));
   const specialGiving = transactions.filter(t => 
     ['Building Fund', 'Mission Fund', 'Youth Fund', 'Benevolence Fund'].includes(t.category?.name || '')
@@ -110,7 +109,7 @@ const DcgFinances: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">DCG Financial Management</h1>
             <p className="text-muted-foreground">
-              Track and manage DCG finances, tithes, offerings and expenses
+              Track and manage DCG finances, offerings and expenses
             </p>
           </div>
           <div className="flex gap-2">
@@ -181,11 +180,11 @@ const DcgFinances: React.FC = () => {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tithes</CardTitle>
+              <CardTitle className="text-sm font-medium">Offerings</CardTitle>
               <PiggyBank className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(dcgTithes)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(dcgOfferings)}</div>
               <p className="text-xs text-muted-foreground">
                 For {selectedPeriod.toLowerCase()}
               </p>
@@ -197,7 +196,6 @@ const DcgFinances: React.FC = () => {
         <Tabs defaultValue="transactions" className="space-y-4">
           <TabsList>
             <TabsTrigger value="transactions">All Transactions</TabsTrigger>
-            <TabsTrigger value="tithes">Tithes</TabsTrigger>
             <TabsTrigger value="offerings">Offerings</TabsTrigger>
             <TabsTrigger value="special">Special Giving</TabsTrigger>
             <TabsTrigger value="expenses">Expenses</TabsTrigger>
@@ -250,42 +248,6 @@ const DcgFinances: React.FC = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="tithes" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>DCG Tithes</CardTitle>
-                <CardDescription>
-                  Member tithes collected through DCG for {selectedPeriod.toLowerCase()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tithes.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No tithes recorded for this period.
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {tithes.map((tithe) => (
-                        <TableRow key={tithe.id}>
-                          <TableCell>{format(new Date(tithe.transaction_date), 'MMM dd, yyyy')}</TableCell>
-                          <TableCell>{tithe.description || 'Tithe payment'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(tithe.amount))}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="offerings" className="space-y-4">
             <Card>
