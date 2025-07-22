@@ -210,14 +210,89 @@ const EventsTab: React.FC<EventsTabProps> = ({ filters }) => {
           </CardContent>
         </Card>
 
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrilldownEvent('upcoming')}>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrilldownEvent('turnout_expectation')}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Event Turnout Expectation</CardTitle>
+            <BarChart2 className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingEvents.length}</div>
-            <p className="text-xs text-muted-foreground">Next 30 days</p>
+            <div className="text-2xl font-bold">
+              {React.useMemo(() => {
+                if (!events || !attendanceData || events.length === 0) return '0%';
+                
+                const eventsWithCapacity = events.filter(event => event.capacity && event.capacity > 0);
+                if (eventsWithCapacity.length === 0) return 'N/A';
+                
+                const totalExpected = eventsWithCapacity.reduce((sum, event) => sum + (event.capacity || 0), 0);
+                const totalActual = attendanceData
+                  .filter(attendance => eventsWithCapacity.some(event => event.name === attendance.event_name))
+                  .reduce((sum, attendance) => sum + attendance.total_present, 0);
+                
+                if (totalExpected === 0) return '0%';
+                
+                const expectationPercentage = Math.round((totalActual / totalExpected) * 100);
+                return `${expectationPercentage}%`;
+              }, [events, attendanceData])}
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">vs expected capacity</p>
+              <div className={`flex items-center gap-1 ${
+                React.useMemo(() => {
+                  if (!events || !attendanceData || events.length === 0) return 'text-primary';
+                  
+                  const eventsWithCapacity = events.filter(event => event.capacity && event.capacity > 0);
+                  if (eventsWithCapacity.length === 0) return 'text-primary';
+                  
+                  const totalExpected = eventsWithCapacity.reduce((sum, event) => sum + (event.capacity || 0), 0);
+                  const totalActual = attendanceData
+                    .filter(attendance => eventsWithCapacity.some(event => event.name === attendance.event_name))
+                    .reduce((sum, attendance) => sum + attendance.total_present, 0);
+                  
+                  const expectationPercentage = totalExpected > 0 ? (totalActual / totalExpected) * 100 : 0;
+                  
+                  if (expectationPercentage >= 80) return 'text-green-600';
+                  if (expectationPercentage >= 60) return 'text-orange-600';
+                  return 'text-red-600';
+                }, [events, attendanceData])
+              }`}>
+                {React.useMemo(() => {
+                  if (!events || !attendanceData || events.length === 0) return null;
+                  
+                  const eventsWithCapacity = events.filter(event => event.capacity && event.capacity > 0);
+                  if (eventsWithCapacity.length === 0) return null;
+                  
+                  const totalExpected = eventsWithCapacity.reduce((sum, event) => sum + (event.capacity || 0), 0);
+                  const totalActual = attendanceData
+                    .filter(attendance => eventsWithCapacity.some(event => event.name === attendance.event_name))
+                    .reduce((sum, attendance) => sum + attendance.total_present, 0);
+                  
+                  const expectationPercentage = totalExpected > 0 ? (totalActual / totalExpected) * 100 : 0;
+                  
+                  if (expectationPercentage >= 80) return <TrendingUp className="h-3 w-3" />;
+                  if (expectationPercentage >= 60) return <BarChart2 className="h-3 w-3" />;
+                  return <TrendingDown className="h-3 w-3" />;
+                }, [events, attendanceData])}
+                <span className="text-xs font-medium">
+                  {React.useMemo(() => {
+                    if (!events || !attendanceData || events.length === 0) return 'tracking';
+                    
+                    const eventsWithCapacity = events.filter(event => event.capacity && event.capacity > 0);
+                    if (eventsWithCapacity.length === 0) return 'no data';
+                    
+                    const totalExpected = eventsWithCapacity.reduce((sum, event) => sum + (event.capacity || 0), 0);
+                    const totalActual = attendanceData
+                      .filter(attendance => eventsWithCapacity.some(event => event.name === attendance.event_name))
+                      .reduce((sum, attendance) => sum + attendance.total_present, 0);
+                    
+                    const expectationPercentage = totalExpected > 0 ? (totalActual / totalExpected) * 100 : 0;
+                    
+                    if (expectationPercentage >= 80) return 'excellent';
+                    if (expectationPercentage >= 60) return 'good';
+                    return 'needs improvement';
+                  }, [events, attendanceData])}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
