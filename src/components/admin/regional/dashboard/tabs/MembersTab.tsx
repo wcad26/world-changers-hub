@@ -264,16 +264,14 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Event Turnout</CardTitle>
-            <BarChartHorizontal className="h-4 w-4 text-orange-600" />
+            <CardTitle className="text-sm font-medium">Member Growth Rate</CardTitle>
+            <TrendingUp className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{attendanceSummary.lastEvent?.total_present || 0}</div>
+            <div className="text-2xl font-bold">{growthTrends.memberGrowth}%</div>
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                {attendanceSummary.lastEvent ? `on ${new Date(attendanceSummary.lastEvent.event_date).toLocaleDateString()}` : 'N/A'}
-              </p>
-              <PercentageIndicator percentage={growthTrends.lastEventGrowth} />
+              <p className="text-xs text-muted-foreground">vs previous period</p>
+              <PercentageIndicator percentage={growthTrends.memberGrowth} />
             </div>
           </CardContent>
         </Card>
