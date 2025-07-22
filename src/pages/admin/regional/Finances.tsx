@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -198,6 +198,10 @@ const RegionalFinances: React.FC = () => {
   const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
   const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
   
+  // Period filter state
+  const [selectedPeriod, setSelectedPeriod] = useState("Last 6 months");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  
   // Tithe filtering and pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -285,6 +289,76 @@ const RegionalFinances: React.FC = () => {
       notes: "",
     });
   }
+
+  // Helper function to get date range based on selected period
+  const getDateRangeFromPeriod = (period: string) => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    switch (period) {
+      case "Last 30 days":
+        return {
+          start: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+          end: now
+        };
+      case "Last 3 months":
+        return {
+          start: new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()),
+          end: now
+        };
+      case "Last 6 months":
+        return {
+          start: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()),
+          end: now
+        };
+      case "Last 12 months":
+        return {
+          start: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()),
+          end: now
+        };
+      case "This year":
+        return {
+          start: new Date(currentYear, 0, 1),
+          end: now
+        };
+      default:
+        return {
+          start: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()),
+          end: now
+        };
+    }
+  };
+
+  // Helper function to filter data by date range
+  const filterDataByPeriod = (data: any[], dateField: string = 'date') => {
+    const { start, end } = getDateRangeFromPeriod(selectedPeriod);
+    return data.filter(item => {
+      const itemDate = new Date(item[dateField]);
+      return itemDate >= start && itemDate <= end;
+    });
+  };
+
+  // Calculate filtered totals based on selected period
+  const periodFilteredTithes = useMemo(() => filterDataByPeriod(mockTithes), [selectedPeriod]);
+  const periodFilteredOfferings = useMemo(() => filterDataByPeriod(mockOfferings), [selectedPeriod]);
+  const periodFilteredSpecialGiving = useMemo(() => filterDataByPeriod(mockSpecialGiving), [selectedPeriod]);
+  const periodFilteredExpenses = useMemo(() => filterDataByPeriod(mockExpenses), [selectedPeriod]);
+
+  // Calculate totals for cards
+  const totalIncome = useMemo(() => {
+    const titheTotal = periodFilteredTithes.reduce((sum, tithe) => sum + tithe.amount, 0);
+    const offeringTotal = periodFilteredOfferings.reduce((sum, offering) => sum + offering.amount, 0);
+    const specialGivingTotal = periodFilteredSpecialGiving.reduce((sum, item) => sum + item.amount, 0);
+    return titheTotal + offeringTotal + specialGivingTotal;
+  }, [periodFilteredTithes, periodFilteredOfferings, periodFilteredSpecialGiving]);
+
+  const totalExpense = useMemo(() => {
+    return periodFilteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  }, [periodFilteredExpenses]);
+
+  const netBalance = useMemo(() => {
+    return totalIncome - totalExpense;
+  }, [totalIncome, totalExpense]);
 
   // Filter and pagination logic for tithes
   const paymentMethods = ["Bank Transfer", "Cash", "Credit Card"];
@@ -484,35 +558,43 @@ const RegionalFinances: React.FC = () => {
             
             <div className="flex items-center gap-2">
               <Label htmlFor="period-filter" className="text-sm font-medium">Period:</Label>
-              <Popover>
+              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     id="period-filter"
                     variant="outline"
                     className="w-[187px] justify-start text-left font-normal"
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    <span>Last 6 months</span>
+                    <span>{selectedPeriod}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-0" align="start">
                   <div className="p-1.5 space-y-1">
-                    <Button variant="ghost" className="w-full justify-start" size="sm">
-                      Last 30 days
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start" size="sm">
-                      Last 3 months
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start bg-accent" size="sm">
-                      Last 6 months
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start" size="sm">
-                      Last 12 months
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start" size="sm">
-                      This year
-                    </Button>
-                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                    {["Last 30 days", "Last 3 months", "Last 6 months", "Last 12 months", "This year"].map((period) => (
+                      <Button 
+                        key={period}
+                        variant="ghost" 
+                        className={`w-full justify-start ${selectedPeriod === period ? 'bg-accent' : ''}`} 
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPeriod(period);
+                          setIsFilterOpen(false);
+                        }}
+                      >
+                        {period}
+                      </Button>
+                    ))}
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start" 
+                      size="sm"
+                      onClick={() => {
+                        // Custom range functionality can be added later
+                        alert("Custom range functionality coming soon!");
+                      }}
+                    >
                       Custom range
                     </Button>
                   </div>
@@ -528,8 +610,8 @@ const RegionalFinances: React.FC = () => {
                   <CardTitle className="text-sm font-medium">Total Income</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$0.00</div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                  <div className="text-2xl font-bold">${totalIncome.toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedPeriod}</p>
                 </CardContent>
               </Card>
               
@@ -538,8 +620,8 @@ const RegionalFinances: React.FC = () => {
                   <CardTitle className="text-sm font-medium">Total Expense</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$0.00</div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                  <div className="text-2xl font-bold">${totalExpense.toLocaleString()}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedPeriod}</p>
                 </CardContent>
               </Card>
               
@@ -548,8 +630,10 @@ const RegionalFinances: React.FC = () => {
                   <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">$0.00</div>
-                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                  <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ${netBalance.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">{selectedPeriod}</p>
                 </CardContent>
               </Card>
               
@@ -569,7 +653,7 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Financial Trends</CardTitle>
                   <CardDescription>
-                    Monthly income and expense trends over the past 6 months
+                    Monthly income and expense trends for {selectedPeriod.toLowerCase()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -599,18 +683,17 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Income Breakdown</CardTitle>
                   <CardDescription>
-                    Current month income distribution
+                    Income distribution for {selectedPeriod.toLowerCase()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[200px]">
-                    <BarChart
-                      data={[
-                        { category: "Tithes", amount: 15000 },
-                        { category: "Offerings", amount: 8000 },
-                        { category: "Special Giving", amount: 3500 },
-                        { category: "Events", amount: 1000 },
-                      ]}
+                     <BarChart
+                       data={[
+                         { category: "Tithes", amount: periodFilteredTithes.reduce((sum, item) => sum + item.amount, 0) },
+                         { category: "Offerings", amount: periodFilteredOfferings.reduce((sum, item) => sum + item.amount, 0) },
+                         { category: "Special Giving", amount: periodFilteredSpecialGiving.reduce((sum, item) => sum + item.amount, 0) },
+                       ]}
                       index="category"
                       categories={["amount"]}
                       colors={["#10b981"]}
@@ -625,7 +708,7 @@ const RegionalFinances: React.FC = () => {
                 <CardHeader>
                   <CardTitle>Expense Breakdown</CardTitle>
                   <CardDescription>
-                    Current month expense distribution
+                    Expense distribution for {selectedPeriod.toLowerCase()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
