@@ -1,303 +1,206 @@
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Calendar, DollarSign, Home, ArrowUp, ArrowDown, ChevronUp, AlertCircle } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRegionalReports } from "@/hooks/useReports";
+import { useMembers } from "@/hooks/useMembers";
+import { useRegionalEvents } from "@/hooks/useEvents";
+import { useFinancialSummary } from "@/hooks/useFinancials";
+import { useDcgs } from "@/hooks/useDCGs";
+import { useLocations } from "@/hooks/useLocations";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+// Import our new dashboard components
+import DashboardFilters, { DashboardFilters as DashboardFiltersType } from "@/components/admin/regional/dashboard/DashboardFilters";
+import KPICards from "@/components/admin/regional/dashboard/KPICards";
+import MembersTab from "@/components/admin/regional/dashboard/tabs/MembersTab";
+import EventsTab from "@/components/admin/regional/dashboard/tabs/EventsTab";
+import FinanceTab from "@/components/admin/regional/dashboard/tabs/FinanceTab";
+import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
+import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
 
 const RegionalDashboard: React.FC = () => {
-  const { data: reports, isLoading, isError, error } = useRegionalReports();
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
-  };
+  const { userRegion } = useAuth();
+  const [activeTab, setActiveTab] = useState("overview");
   
-  const calculatePercentageChange = (current: number, previous: number) => {
-    if (previous === 0) {
-      return current > 0 ? { value: 100, isPositive: true } : { value: 0, isPositive: null };
-    }
-    const change = ((current - previous) / previous) * 100;
-    return { value: Math.abs(change), isPositive: change >= 0 };
+  // Initialize filters state
+  const [filters, setFilters] = useState<DashboardFiltersType>({
+    dateRange: { from: undefined, to: undefined },
+    quickDateRange: 'this-month',
+    search: '',
+    status: 'all',
+    category: 'all'
+  });
+
+  // Fetch all data
+  const { data: reports, isLoading: reportsLoading, isError: reportsError, error: reportsErrorDetail } = useRegionalReports();
+  const { data: members, isLoading: membersLoading } = useMembers(userRegion?.id);
+  const { data: events, isLoading: eventsLoading } = useRegionalEvents();
+  const { data: financialSummary, isLoading: financialsLoading } = useFinancialSummary();
+  const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
+  const { data: locations, isLoading: locationsLoading } = useLocations(userRegion?.id);
+
+  // Handle filter changes
+  const handleFiltersChange = (newFilters: Partial<DashboardFiltersType>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  const allIncomeCategories = React.useMemo(() => {
-    if (!reports?.financialSummary) return [];
-    const categories = new Set([
-      ...Object.keys(reports.financialSummary.thisMonth.incomeByCategory),
-      ...Object.keys(reports.financialSummary.lastMonth.incomeByCategory)
-    ]);
-    return Array.from(categories).sort();
-  }, [reports]);
+  // Calculate KPI data based on fetched data
+  const kpiData = useMemo(() => {
+    const now = new Date();
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    // Members data
+    const totalMembers = members?.length || 0;
+    const newMembers = members?.filter(m => 
+      m.created_at && new Date(m.created_at) >= thisMonth
+    ).length || 0;
+    const activeMembers = members?.filter(m => m.status === 'active').length || totalMembers;
+    const lastMonthMembers = members?.filter(m => 
+      m.created_at && new Date(m.created_at) >= lastMonth && new Date(m.created_at) < thisMonth
+    ).length || 0;
+    const memberGrowth = lastMonthMembers > 0 ? ((newMembers - lastMonthMembers) / lastMonthMembers) * 100 : 0;
+
+    // Events data
+    const totalEvents = events?.length || 0;
+    const upcomingEvents = events?.filter(e => new Date(e.start_datetime) > now).length || 0;
+    const avgAttendance = reports?.kpis?.averageAttendance || 0;
+    const completionRate = totalEvents > 0 ? 
+      ((totalEvents - upcomingEvents) / totalEvents) * 100 : 0;
+
+    // Finance data
+    const totalIncome = financialSummary?.total_income || 0;
+    const totalExpenses = financialSummary?.total_expenses || 0;
+    const netBalance = financialSummary?.net_balance || 0;
+    const financeGrowth = reports?.kpis?.totalIncome || 0;
+
+    // DCG data
+    const totalDcgs = dcgs?.length || 0;
+    const activeDcgs = dcgs?.filter(d => d.is_active).length || 0;
+    const dcgMembers = dcgs?.reduce((sum, dcg) => sum + (dcg.member_count || 0), 0) || 0;
+    const dcgAttendance = 85; // Mock data - would need attendance tracking
+
+    // Locations data
+    const totalLocations = locations?.length || 0;
+    const activeLocations = locations?.filter(l => l.status === 'Active').length || 0;
+    const totalCapacity = locations?.reduce((sum, loc) => sum + (loc.capacity || 0), 0) || 0;
+    const utilizationRate = 75; // Mock data - would need utilization tracking
+
+    return {
+      members: {
+        total: totalMembers,
+        new: newMembers,
+        active: activeMembers,
+        growth: memberGrowth
+      },
+      events: {
+        total: totalEvents,
+        upcoming: upcomingEvents,
+        attendance: avgAttendance,
+        completion: completionRate
+      },
+      finance: {
+        income: totalIncome,
+        expenses: totalExpenses,
+        balance: netBalance,
+        growth: financeGrowth
+      },
+      dcg: {
+        total: totalDcgs,
+        active: activeDcgs,
+        members: dcgMembers,
+        attendance: dcgAttendance
+      },
+      locations: {
+        total: totalLocations,
+        active: activeLocations,
+        capacity: totalCapacity,
+        utilization: utilizationRate
+      }
+    };
+  }, [members, events, financialSummary, dcgs, locations, reports]);
+
+  const isLoading = reportsLoading || membersLoading || eventsLoading || 
+                   financialsLoading || dcgsLoading || locationsLoading;
+
+  if (reportsError) {
+    return (
+      <RegionalAdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading dashboard</AlertTitle>
+          <AlertDescription>
+            {reportsErrorDetail instanceof Error ? reportsErrorDetail.message : "An unknown error occurred."}
+          </AlertDescription>
+        </Alert>
+      </RegionalAdminLayout>
+    );
+  }
 
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
+        {/* Filters */}
+        <DashboardFilters 
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          activeTab={activeTab}
+        />
 
+        {/* KPI Cards */}
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
-          </div>
-        ) : isError ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error loading dashboard</AlertTitle>
-            <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-          </Alert>
-        ) : reports ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{reports.kpis.totalMembers}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500 flex items-center">
-                    <ChevronUp className="mr-1 h-4 w-4" /> +{reports.kpis.newMembersLast30Days} in last 30 days
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Upcoming Events</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">5</div>
-                <p className="text-xs text-muted-foreground">Next: Prayer Convention</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Income (This Month)</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(reports.kpis.totalIncome)}</div>
-                <p className="text-xs text-muted-foreground">
-                   {(() => {
-                      const change = calculatePercentageChange(reports.financialSummary.thisMonth.totalIncome, reports.financialSummary.lastMonth.totalIncome);
-                      if (change.isPositive === null) return <span>&nbsp;</span>;
-                      return (
-                        <span className={`${change.isPositive ? 'text-green-500' : 'text-red-500'} flex items-center`}>
-                          {change.isPositive ? <ArrowUp className="mr-1 h-4 w-4" /> : <ArrowDown className="mr-1 h-4 w-4" />}
-                          {change.value.toFixed(1)}% from last month
-                        </span>
-                      );
-                   })()}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
-                <Home className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{reports.kpis.totalDcgs}</div>
-                <p className="text-xs text-muted-foreground">+3 new this quarter</p>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
           </div>
         ) : (
-          <p>No data available for your region.</p>
+          <KPICards data={kpiData} activeTab={activeTab} />
         )}
 
-        <Tabs defaultValue="financial-overview">
-          <TabsList>
-            <TabsTrigger value="recent-activities">Recent Activities</TabsTrigger>
-            <TabsTrigger value="financial-overview">Financial Overview</TabsTrigger>
-            <TabsTrigger value="dcg-overview">DCG Overview</TabsTrigger>
+        {/* Main Content Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
+            <TabsTrigger value="events">Events</TabsTrigger>
+            <TabsTrigger value="finance">Finance</TabsTrigger>
+            <TabsTrigger value="dcg">DCG</TabsTrigger>
+            <TabsTrigger value="locations">Locations</TabsTrigger>
           </TabsList>
-          <TabsContent value="recent-activities" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Activities</CardTitle>
-                <CardDescription>
-                  Your region's most recent events and activities.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Attendance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>May 12, 2023</TableCell>
-                      <TableCell>Sunday Service</TableCell>
-                      <TableCell>Worship</TableCell>
-                      <TableCell>345</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>May 10, 2023</TableCell>
-                      <TableCell>Prayer Meeting</TableCell>
-                      <TableCell>Prayer</TableCell>
-                      <TableCell>125</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>May 8, 2023</TableCell>
-                      <TableCell>Youth Fellowship</TableCell>
-                      <TableCell>Fellowship</TableCell>
-                      <TableCell>78</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>May 5, 2023</TableCell>
-                      <TableCell>DCG Leadership Training</TableCell>
-                      <TableCell>Training</TableCell>
-                      <TableCell>42</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Showing 4 of 24 recent activities
-                </p>
-              </CardFooter>
-            </Card>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Overview cards would go here - simplified for now */}
+              <div className="text-center py-12 text-muted-foreground">
+                <h3 className="text-lg font-medium mb-2">Dashboard Overview</h3>
+                <p>Switch between tabs to view detailed reports for each area.</p>
+              </div>
+            </div>
           </TabsContent>
-          <TabsContent value="financial-overview" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Overview</CardTitle>
-                <CardDescription>
-                  Your region's income summary for the current month vs. last month.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-48 w-full" /> : isError ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>Could not load financial overview.</AlertDescription>
-                  </Alert>
-                ) : reports ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="text-right">This Month</TableHead>
-                      <TableHead className="text-right">Last Month</TableHead>
-                      <TableHead className="text-right">Change</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allIncomeCategories.length > 0 ? allIncomeCategories.map(category => {
-                      const thisMonthAmount = reports.financialSummary.thisMonth.incomeByCategory[category] || 0;
-                      const lastMonthAmount = reports.financialSummary.lastMonth.incomeByCategory[category] || 0;
-                      const change = calculatePercentageChange(thisMonthAmount, lastMonthAmount);
-                      
-                      return (
-                        <TableRow key={category}>
-                          <TableCell className="font-medium">{category}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(thisMonthAmount)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(lastMonthAmount)}</TableCell>
-                          <TableCell className={`text-right ${change.isPositive === null ? '' : change.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                            {change.isPositive !== null ? (
-                              <span className="flex items-center justify-end">
-                                {change.isPositive ? <ArrowUp className="mr-1 h-4 w-4" /> : <ArrowDown className="mr-1 h-4 w-4" />}
-                                {change.value.toFixed(1)}%
-                              </span>
-                            ) : <span>-</span>}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    }) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24">No income recorded this month or last month.</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                ) : null}
-              </CardContent>
-              <CardFooter>
-                {reports && !isLoading && (
-                  <p className="text-sm text-muted-foreground">
-                    Total Income: {formatCurrency(reports.financialSummary.thisMonth.totalIncome)}
-                    {(() => {
-                      const change = calculatePercentageChange(reports.financialSummary.thisMonth.totalIncome, reports.financialSummary.lastMonth.totalIncome);
-                      if (change.isPositive === null) return null;
-                      return (
-                        <span className={`ml-2 ${change.isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                          ({change.isPositive ? '+' : ''}{change.value.toFixed(1)}% from last month)
-                        </span>
-                      );
-                   })()}
-                  </p>
-                 )}
-              </CardFooter>
-            </Card>
+
+          <TabsContent value="members">
+            <MembersTab filters={filters} />
           </TabsContent>
-          <TabsContent value="dcg-overview" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>DCG Overview</CardTitle>
-                <CardDescription>
-                  Summary of your region's Discipleship Cell Groups.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>DCG Name</TableHead>
-                      <TableHead>Leader</TableHead>
-                      <TableHead>Members</TableHead>
-                      <TableHead>Last Meeting</TableHead>
-                      <TableHead>Attendance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>Living Waters</TableCell>
-                      <TableCell>John Doe</TableCell>
-                      <TableCell>18</TableCell>
-                      <TableCell>May 11, 2023</TableCell>
-                      <TableCell>15 (83%)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Faith Builders</TableCell>
-                      <TableCell>Jane Smith</TableCell>
-                      <TableCell>22</TableCell>
-                      <TableCell>May 10, 2023</TableCell>
-                      <TableCell>19 (86%)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Grace Fellowship</TableCell>
-                      <TableCell>Michael Johnson</TableCell>
-                      <TableCell>15</TableCell>
-                      <TableCell>May 9, 2023</TableCell>
-                      <TableCell>12 (80%)</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Hope Carriers</TableCell>
-                      <TableCell>Sarah Williams</TableCell>
-                      <TableCell>20</TableCell>
-                      <TableCell>May 12, 2023</TableCell>
-                      <TableCell>17 (85%)</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Showing 4 of 27 DCGs. Overall attendance rate: 84%
-                </p>
-              </CardFooter>
-            </Card>
+
+          <TabsContent value="events">
+            <EventsTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="finance">
+            <FinanceTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="dcg">
+            <DCGTab filters={filters} />
+          </TabsContent>
+
+          <TabsContent value="locations">
+            <LocationsTab filters={filters} />
           </TabsContent>
         </Tabs>
       </div>
