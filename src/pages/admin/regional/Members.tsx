@@ -83,24 +83,6 @@ const Members: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Register Member
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Register New Member</DialogTitle>
-                <DialogDescription>
-                  Fill out the form below to register a new member. An invitation email will be sent to them to complete their account setup.
-                </DialogDescription>
-              </DialogHeader>
-              <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        </div>
 
         {/* Edit Member Dialog */}
         <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
@@ -133,8 +115,28 @@ const Members: React.FC = () => {
           <TabsContent value="overview" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Member List</CardTitle>
-                <CardDescription>A list of all members in your region.</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Member List</CardTitle>
+                    <CardDescription>A list of all members in your region.</CardDescription>
+                  </div>
+                  <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Register Member
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Register New Member</DialogTitle>
+                        <DialogDescription>
+                          Fill out the form below to register a new member. An invitation email will be sent to them to complete their account setup.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <div className="flex justify-between items-center pt-4">
                     <div className="relative w-full max-w-sm">
                         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
