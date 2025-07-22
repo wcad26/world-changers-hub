@@ -1,24 +1,14 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Eye, Edit, UserPlus, Users, CalendarCheck2, BarChartHorizontal, TrendingUp, TrendingDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, CalendarCheck2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import type { DashboardFilters } from '../DashboardFilters';
 
-interface MembersTabProps {
-  filters: DashboardFilters;
-}
-
-const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
+const MemberCards: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: members, isLoading, error } = useMembers(userRegion?.id);
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
@@ -156,52 +146,12 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
     };
   }, [attendanceWithTypes]);
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: { variant: 'default' as const, label: 'Active' },
-      inactive: { variant: 'secondary' as const, label: 'Inactive' },
-      new: { variant: 'outline' as const, label: 'New' },
-      visitor: { variant: 'outline' as const, label: 'Visitor' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
-  const filteredMembers = React.useMemo(() => {
-    if (!members) return [];
-    
-    return members.filter(member => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const fullName = `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.toLowerCase();
-        const email = member.profiles?.email?.toLowerCase() || '';
-        if (!fullName.includes(searchTerm) && !email.includes(searchTerm) && !member.member_id.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (member.status !== filters.status) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [members, filters]);
-
   if (isLoading || isLoadingHistory || isLoadingWithTypes) {
     return (
-      <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-        <Skeleton className="h-96" />
+      <div className="grid gap-4 md:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-32" />
+        ))}
       </div>
     );
   }
@@ -219,10 +169,63 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Member-specific content moved to main dashboard */}
+    <div className="grid gap-4 md:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Members</CardTitle>
+          <Users className="h-4 w-4 text-primary" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{totalMembers}</div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+            <PercentageIndicator percentage={growthTrends.memberGrowth} />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
+          <Users className="h-4 w-4 text-blue-600" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{totalVisitors}</div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">{inactiveVisitors} inactive visitors</p>
+            <PercentageIndicator percentage={growthTrends.visitorGrowth} />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Avg. Event Attendance</CardTitle>
+          <CalendarCheck2 className="h-4 w-4 text-green-600" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{attendanceSummary.avgAttendance}</div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              {attendanceHistory ? `${attendanceHistory.length} events recorded` : 'No events recorded'}
+            </p>
+            <PercentageIndicator percentage={growthTrends.avgAttendanceGrowth} />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Member Growth Rate</CardTitle>
+          <TrendingUp className="h-4 w-4 text-purple-600" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{growthTrends.memberGrowth}%</div>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">vs previous period</p>
+            <PercentageIndicator percentage={growthTrends.memberGrowth} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
 
-export default MembersTab;
+export default MemberCards;
