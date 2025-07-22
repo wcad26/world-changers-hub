@@ -28,8 +28,11 @@ const RegionalDashboard: React.FC = () => {
   
   // Initialize filters state
   const [filters, setFilters] = useState<DashboardFiltersType>({
-    dateRange: { from: undefined, to: undefined },
-    quickDateRange: 'this-month',
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month',
     search: '',
     status: 'all',
     category: 'all'
