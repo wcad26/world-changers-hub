@@ -557,6 +557,32 @@ const RegionalFinances: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
+                  <CardTitle>Income Breakdown</CardTitle>
+                  <CardDescription>
+                    Current month income distribution
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[200px]">
+                    <BarChart
+                      data={[
+                        { category: "Tithes", amount: 15000 },
+                        { category: "Offerings", amount: 8000 },
+                        { category: "Special Giving", amount: 3500 },
+                        { category: "Events", amount: 1000 },
+                      ]}
+                      index="category"
+                      categories={["amount"]}
+                      colors={["#10b981"]}
+                      valueFormatter={(value) => `$${value.toLocaleString()}`}
+                      className="h-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
                   <CardTitle>Expense Breakdown</CardTitle>
                   <CardDescription>
                     Current month expense distribution
