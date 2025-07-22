@@ -12,13 +12,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import EventAttendanceTrendChart from './EventAttendanceTrendChart';
-import type { DashboardFilters } from '../DashboardFilters';
+import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-interface EventsTabProps {
-  filters: DashboardFilters;
-}
-
-const EventsTab: React.FC<EventsTabProps> = ({ filters }) => {
+const EventsTab: React.FC = () => {
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { toast } = useToast();
@@ -31,34 +34,9 @@ const EventsTab: React.FC<EventsTabProps> = ({ filters }) => {
     'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'DCG Meeting', 'Other'
   ] as const;
 
-  const filteredEvents = React.useMemo(() => {
-    if (!events) return [];
-    
-    return events.filter(event => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        if (!event.name.toLowerCase().includes(searchTerm) &&
-            !event.category?.toLowerCase().includes(searchTerm) &&
-            !event.location_name?.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        const isUpcoming = new Date(event.start_datetime) > new Date();
-        if (filters.status === 'upcoming' && !isUpcoming) return false;
-        if (filters.status === 'completed' && isUpcoming) return false;
-      }
-
-      return true;
-    });
-  }, [events, filters]);
-
   const upcomingEvents = React.useMemo(() => 
-    filteredEvents.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled'), 
-    [filteredEvents]
+    events ? events.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled') : [], 
+    [events]
   );
 
   // Analytics calculations using real data
@@ -159,6 +137,12 @@ const EventsTab: React.FC<EventsTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <PeriodFilter 
+        filters={filters} 
+        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+      />
+      
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrilldownEvent('total')}>

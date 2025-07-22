@@ -13,7 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 // Import our dashboard components
-import DashboardFilters, { DashboardFilters as DashboardFiltersType } from "@/components/admin/regional/dashboard/DashboardFilters";
+// Import our dashboard components
 import KPICards from "@/components/admin/regional/dashboard/KPICards";
 import MembersTab from "@/components/admin/regional/dashboard/tabs/MembersTab";
 import EventsTab from "@/components/admin/regional/dashboard/tabs/EventsTab";
@@ -24,19 +24,7 @@ import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
 
 const RegionalDashboard: React.FC = () => {
   const { userRegion } = useAuth();
-  const [activeTab, setActiveTab] = useState("overview");
-  
-  // Initialize filters state
-  const [filters, setFilters] = useState<DashboardFiltersType>({
-    dateRange: { 
-      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
-      to: new Date()
-    },
-    quickDateRange: '1-month',
-    search: '',
-    status: 'all',
-    category: 'all'
-  });
+  const [activeTab, setActiveTab] = useState('members');
 
   // Fetch all data
   const { data: reports, isLoading: reportsLoading, isError: reportsError, error: reportsErrorDetail } = useRegionalReports();
@@ -46,10 +34,6 @@ const RegionalDashboard: React.FC = () => {
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: locations, isLoading: locationsLoading } = useLocations(userRegion?.id);
 
-  // Handle filter changes
-  const handleFiltersChange = (newFilters: Partial<DashboardFiltersType>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
-  };
 
   // Calculate KPI data based on fetched data
   const kpiData = useMemo(() => {
@@ -147,13 +131,6 @@ const RegionalDashboard: React.FC = () => {
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
-        {/* Filters */}
-        <DashboardFilters 
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          activeTab={activeTab}
-        />
-
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-6">
@@ -190,23 +167,23 @@ const RegionalDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="members">
-            <MembersTab filters={filters} />
+            <MembersTab />
           </TabsContent>
 
           <TabsContent value="events">
-            <EventsTab filters={filters} />
+            <EventsTab />
           </TabsContent>
 
           <TabsContent value="finance">
-            <FinanceTab filters={filters} />
+            <FinanceTab />
           </TabsContent>
 
           <TabsContent value="dcg">
-            <DCGTab filters={filters} />
+            <DCGTab />
           </TabsContent>
 
           <TabsContent value="locations">
-            <LocationsTab filters={filters} />
+            <LocationsTab />
           </TabsContent>
         </Tabs>
       </div>

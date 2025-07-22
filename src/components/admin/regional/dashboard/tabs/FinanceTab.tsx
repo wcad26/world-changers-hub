@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +10,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import FinancialTrendChart from './FinancialTrendChart';
-import type { DashboardFilters } from '../DashboardFilters';
 import { format } from 'date-fns';
+import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-interface FinanceTabProps {
-  filters: DashboardFilters;
-}
-
-const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
+const FinanceTab: React.FC = () => {
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useFinancialTransactions();
   const { data: summary, isLoading: summaryLoading, error: summaryError } = useFinancialSummary();
 
@@ -36,29 +39,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
     );
   };
 
-  const filteredTransactions = React.useMemo(() => {
-    if (!transactions) return [];
-    
-    return transactions.filter(transaction => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        if (!transaction.description?.toLowerCase().includes(searchTerm) &&
-            !transaction.category?.name?.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Category filter (Income/Expense)
-      if (filters.category && filters.category !== 'all') {
-        if (transaction.category?.type?.toLowerCase() !== filters.category.toLowerCase()) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [transactions, filters]);
 
   if (transactionsLoading || summaryLoading) {
     return (
@@ -87,6 +67,12 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <PeriodFilter 
+        filters={filters} 
+        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+      />
+      
       {/* Financial Trend Chart - only shown in Finance tab */}
       <FinancialTrendChart />
     </div>

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -10,13 +10,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import type { DashboardFilters } from '../DashboardFilters';
+import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-interface LocationsTabProps {
-  filters: DashboardFilters;
-}
-
-const LocationsTab: React.FC<LocationsTabProps> = ({ filters }) => {
+const LocationsTab: React.FC = () => {
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
   const { userRegion } = useAuth();
   const { data: locations, isLoading, error } = useLocations(userRegion?.id);
 
@@ -36,37 +39,6 @@ const LocationsTab: React.FC<LocationsTabProps> = ({ filters }) => {
     );
   };
 
-  const filteredLocations = React.useMemo(() => {
-    if (!locations) return [];
-    
-    return locations.filter(location => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        if (!location.name.toLowerCase().includes(searchTerm) &&
-            !location.address.toLowerCase().includes(searchTerm) &&
-            !location.city.toLowerCase().includes(searchTerm) &&
-            !location.contact_person?.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Category filter (Location Type)
-      if (filters.category && filters.category !== 'all') {
-        if (location.type !== filters.category) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (filters.status === 'active' && location.status !== 'Active') return false;
-        if (filters.status === 'inactive' && location.status === 'Active') return false;
-      }
-
-      return true;
-    });
-  }, [locations, filters]);
 
   if (isLoading) {
     return (
@@ -90,6 +62,11 @@ const LocationsTab: React.FC<LocationsTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <PeriodFilter 
+        filters={filters} 
+        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+      />
     </div>
   );
 };

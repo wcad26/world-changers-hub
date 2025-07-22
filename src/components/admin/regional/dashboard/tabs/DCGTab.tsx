@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +11,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import DcgAttendanceTrendChart from './DcgAttendanceTrendChart';
-import type { DashboardFilters } from '../DashboardFilters';
+import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-interface DCGTabProps {
-  filters: DashboardFilters;
-}
-
-const DCGTab: React.FC<DCGTabProps> = ({ filters }) => {
+const DCGTab: React.FC = () => {
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
   const { data: dcgs, isLoading, error } = useDcgs();
 
   const getStatusBadge = (isActive: boolean) => {
@@ -28,35 +31,6 @@ const DCGTab: React.FC<DCGTabProps> = ({ filters }) => {
     );
   };
 
-  const filteredDcgs = React.useMemo(() => {
-    if (!dcgs) return [];
-    
-    return dcgs.filter(dcg => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const leaderName = dcg.leader?.profiles 
-          ? `${dcg.leader.profiles.first_name || ''} ${dcg.leader.profiles.last_name || ''}`.toLowerCase()
-          : '';
-        
-        if (!dcg.name.toLowerCase().includes(searchTerm) &&
-            !dcg.description?.toLowerCase().includes(searchTerm) &&
-            !leaderName.includes(searchTerm) &&
-            !dcg.location?.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        const isActive = dcg.is_active;
-        if (filters.status === 'active' && !isActive) return false;
-        if (filters.status === 'inactive' && isActive) return false;
-      }
-
-      return true;
-    });
-  }, [dcgs, filters]);
 
   if (isLoading) {
     return (
@@ -80,6 +54,12 @@ const DCGTab: React.FC<DCGTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <PeriodFilter 
+        filters={filters} 
+        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+      />
+      
       {/* DCG Attendance Trend Chart - only shown in DCG tab */}
       <DcgAttendanceTrendChart />
     </div>

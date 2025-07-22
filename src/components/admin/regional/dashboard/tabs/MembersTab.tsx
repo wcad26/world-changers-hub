@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -12,13 +12,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import TrendChart from '../TrendChart';
-import type { DashboardFilters } from '../DashboardFilters';
+import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-interface MembersTabProps {
-  filters: DashboardFilters;
-}
-
-const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
+const MembersTab: React.FC = () => {
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
   const { userRegion } = useAuth();
   const { data: members, isLoading, error } = useMembers(userRegion?.id);
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
@@ -168,30 +171,6 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const filteredMembers = React.useMemo(() => {
-    if (!members) return [];
-    
-    return members.filter(member => {
-      // Search filter
-      if (filters.search) {
-        const searchTerm = filters.search.toLowerCase();
-        const fullName = `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.toLowerCase();
-        const email = member.profiles?.email?.toLowerCase() || '';
-        if (!fullName.includes(searchTerm) && !email.includes(searchTerm) && !member.member_id.toLowerCase().includes(searchTerm)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (filters.status && filters.status !== 'all') {
-        if (member.status !== filters.status) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [members, filters]);
 
   if (isLoading || isLoadingHistory || isLoadingWithTypes) {
     return (
@@ -220,6 +199,12 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Period Filter */}
+      <PeriodFilter 
+        filters={filters} 
+        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+      />
+      
       {/* Member/Visitor Trend Chart - only shown in Members tab */}
       <TrendChart />
     </div>
