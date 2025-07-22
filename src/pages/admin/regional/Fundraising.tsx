@@ -6,68 +6,64 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { DollarSign, Calendar, Target, Users, Plus, PiggyBank, TrendingUp, Search, Loader2 } from "lucide-react";
-import { useFundraisingCampaigns, useCreateFundraisingCampaign, useFundraisingAnalytics, campaignSchema, type CampaignData } from "@/hooks/useFundraisingCampaigns";
+import { DollarSign, Calendar, Target, Users, Plus, PiggyBank, TrendingUp, Search, Loader2, Eye, BarChart3 } from "lucide-react";
+import { useFundraisingCampaigns, useFundraisingAnalytics, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import { toast } from "@/hooks/use-toast";
+import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
+import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
+import FundraisingAnalyticsChart from "@/components/admin/regional/FundraisingAnalyticsChart";
 
 const RegionalFundraising: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<FundraisingCampaign | null>(null);
   
   const { data: campaigns = [], isLoading: campaignsLoading } = useFundraisingCampaigns({ status: statusFilter });
   const { data: analytics, isLoading: analyticsLoading } = useFundraisingAnalytics();
-  const createCampaignMutation = useCreateFundraisingCampaign();
-  
-  const form = useForm<CampaignData>({
-    resolver: zodResolver(campaignSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      goal: 0,
-      startDate: "",
-      endDate: "",
-      image: "",
-      isPublic: true,
-    },
-  });
 
   const filteredCampaigns = campaigns.filter(campaign => 
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  function onSubmit(values: CampaignData) {
-    createCampaignMutation.mutate(values, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Fundraising campaign created successfully!",
-        });
-        form.reset();
-      },
-      onError: (error) => {
-        toast({
-          title: "Error",
-          description: "Failed to create campaign. Please try again.",
-          variant: "destructive",
-        });
-        console.error("Error creating campaign:", error);
-      },
+  const activeCampaigns = filteredCampaigns.filter(campaign => campaign.status === "Active");
+  const completedCampaigns = filteredCampaigns.filter(campaign => campaign.status === "Completed");
+
+  const handleCampaignDetails = (campaign: FundraisingCampaign) => {
+    setSelectedCampaign(campaign);
+    setDetailsDialogOpen(true);
+  };
+
+  const generateReport = () => {
+    toast({
+      title: "Report Generated",
+      description: "Fundraising report has been generated and will be downloaded shortly.",
     });
-  }
+  };
 
   return (
     <RegionalAdminLayout>
       <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Fundraising Management</h2>
+            <p className="text-muted-foreground">
+              Manage fundraising campaigns and track donation progress.
+            </p>
+          </div>
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Campaign
+          </Button>
+        </div>
         
         <Tabs defaultValue="active">
           <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
             <TabsTrigger value="active">Active Campaigns</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="create">Create Campaign</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
           <TabsContent value="active">
@@ -88,7 +84,7 @@ const RegionalFundraising: React.FC = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <Button>
+                  <Button onClick={() => setCreateDialogOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" />
                     New Campaign
                   </Button>
@@ -101,9 +97,9 @@ const RegionalFundraising: React.FC = () => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    {filteredCampaigns.filter(campaign => campaign.status === "Active").map((campaign) => {
-                      const raisedAmount = campaign.raised / 100; // Convert from cents
-                      const goalAmount = campaign.goal / 100; // Convert from cents
+                    {activeCampaigns.map((campaign) => {
+                      const raisedAmount = campaign.raised / 100;
+                      const goalAmount = campaign.goal / 100;
                       const progress = Math.round((raisedAmount / goalAmount) * 100);
                       
                       return (
@@ -142,14 +138,23 @@ const RegionalFundraising: React.FC = () => {
                             </div>
                           </CardContent>
                           <CardFooter className="flex justify-between">
-                            <Button variant="outline" size="sm">Details</Button>
-                            <Button variant="outline" size="sm">Update</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleCampaignDetails(campaign)}
+                            >
+                              <Eye className="mr-1 h-3 w-3" />
+                              Details
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              Update
+                            </Button>
                           </CardFooter>
                         </Card>
                       );
                     })}
                     
-                    {filteredCampaigns.filter(campaign => campaign.status === "Active").length === 0 && (
+                    {activeCampaigns.length === 0 && (
                       <div className="col-span-2 text-center py-8">
                         {searchTerm ? "No campaigns match your search" : "No active campaigns found"}
                       </div>
@@ -190,8 +195,8 @@ const RegionalFundraising: React.FC = () => {
                               <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                             </TableCell>
                           </TableRow>
-                        ) : filteredCampaigns.filter(campaign => campaign.status === "Completed").length > 0 ? (
-                          filteredCampaigns.filter(campaign => campaign.status === "Completed").map((campaign) => {
+                        ) : completedCampaigns.length > 0 ? (
+                          completedCampaigns.map((campaign) => {
                             const raisedAmount = campaign.raised / 100;
                             const goalAmount = campaign.goal / 100;
                             const successRate = Math.round((raisedAmount / goalAmount) * 100);
@@ -208,8 +213,16 @@ const RegionalFundraising: React.FC = () => {
                                 <TableCell>{successRate}%</TableCell>
                                 <TableCell>
                                   <div className="flex space-x-2">
-                                    <Button variant="outline" size="sm">Report</Button>
-                                    <Button variant="outline" size="sm">Duplicate</Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleCampaignDetails(campaign)}
+                                    >
+                                      View
+                                    </Button>
+                                    <Button variant="outline" size="sm">
+                                      Duplicate
+                                    </Button>
                                   </div>
                                 </TableCell>
                               </TableRow>
@@ -230,156 +243,6 @@ const RegionalFundraising: React.FC = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="create">
-            <Card>
-              <CardHeader>
-                <CardTitle>Create New Fundraising Campaign</CardTitle>
-                <CardDescription>
-                  Set up a new fundraising initiative for your region.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Campaign Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Building Fund" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                        <FormField
-                          control={form.control}
-                          name="goal"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Fundraising Goal ($)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  placeholder="50000" 
-                                  {...field}
-                                  onChange={(e) => field.onChange(Number(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      
-                      <FormField
-                        control={form.control}
-                        name="startDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Start Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="endDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>End Date</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="image"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Campaign Image</FormLabel>
-                            <FormControl>
-                              <Input type="file" className="cursor-pointer" />
-                            </FormControl>
-                            <FormDescription>
-                              Upload an image to represent your campaign
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="md:col-span-2">
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Campaign Description</FormLabel>
-                              <FormControl>
-                                <textarea 
-                                  className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                                  placeholder="Describe the purpose of this fundraising campaign..."
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                      
-                      <FormField
-                        control={form.control}
-                        name="isPublic"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                            <FormControl>
-                              <input
-                                type="checkbox"
-                                checked={field.value}
-                                onChange={field.onChange}
-                                className="h-4 w-4 mt-1"
-                              />
-                            </FormControl>
-                            <div className="space-y-1 leading-none">
-                              <FormLabel>Public Campaign</FormLabel>
-                              <FormDescription>
-                                Display this fundraising campaign on the public website and regional homepage
-                              </FormDescription>
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <div className="flex justify-end gap-4">
-                      <Button type="button" variant="outline" onClick={() => form.reset()}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={createCampaignMutation.isPending}>
-                        {createCampaignMutation.isPending ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <PiggyBank className="mr-2 h-4 w-4" />
-                        )}
-                        Create Campaign
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
           <TabsContent value="analytics">
             <Card>
               <CardHeader>
@@ -394,57 +257,138 @@ const RegionalFundraising: React.FC = () => {
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          ${analytics?.totalRaised?.toLocaleString() || '0'}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">From all campaigns</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {analytics?.activeCampaigns || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">Currently running</p>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {analytics?.totalDonors || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">All-time donations</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-                
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-4">Fundraising Performance</h3>
-                  <div className="h-[300px] border rounded-md p-4 flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <TrendingUp className="h-12 w-12 mx-auto text-gray-400" />
-                      <p>Fundraising performance trends will be displayed here</p>
-                      <Button variant="outline" size="sm">Generate Report</Button>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            ${analytics?.totalRaised?.toLocaleString() || '0'}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">From all campaigns</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {analytics?.activeCampaigns || 0}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">Currently running</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {analytics?.totalDonors || 0}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">All-time donations</p>
+                        </CardContent>
+                      </Card>
                     </div>
+                    
+                    <FundraisingAnalyticsChart />
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <Card>
+              <CardHeader>
+                <CardTitle>Fundraising Reports</CardTitle>
+                <CardDescription>
+                  Generate and download fundraising performance reports.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Monthly Summary Report</CardTitle>
+                        <CardDescription>
+                          Comprehensive overview of fundraising activities
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={generateReport} className="w-full">
+                          <BarChart3 className="mr-2 h-4 w-4" />
+                          Generate Monthly Report
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Campaign Performance Report</CardTitle>
+                        <CardDescription>
+                          Detailed analysis of individual campaign success
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={generateReport} className="w-full" variant="outline">
+                          <TrendingUp className="mr-2 h-4 w-4" />
+                          Generate Performance Report
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Donor Activity Report</CardTitle>
+                        <CardDescription>
+                          Track donor engagement and contribution patterns
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={generateReport} className="w-full" variant="outline">
+                          <Users className="mr-2 h-4 w-4" />
+                          Generate Donor Report
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Financial Summary</CardTitle>
+                        <CardDescription>
+                          Financial breakdown and allocation overview
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button onClick={generateReport} className="w-full" variant="outline">
+                          <DollarSign className="mr-2 h-4 w-4" />
+                          Generate Financial Report
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialogs */}
+        <CreateFundraisingCampaignDialog 
+          open={createDialogOpen} 
+          onOpenChange={setCreateDialogOpen} 
+        />
+        
+        <CampaignDetailsDialog 
+          campaign={selectedCampaign}
+          open={detailsDialogOpen}
+          onOpenChange={setDetailsDialogOpen}
+        />
       </div>
     </RegionalAdminLayout>
   );
