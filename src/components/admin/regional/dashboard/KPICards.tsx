@@ -171,6 +171,14 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => 
             icon: TrendingUp,
             trend: data.dcg.attendance - 80,
             color: "text-green-600"
+          },
+          {
+            title: "DCG Growth Rate",
+            value: `+${Math.max(0, Math.round((data.dcg.total - data.dcg.active) * 0.1))}%`,
+            description: "New DCGs this period",
+            icon: TrendingUp,
+            trend: Math.max(0, Math.round((data.dcg.total - data.dcg.active) * 0.1)),
+            color: "text-purple-600"
           }
         ];
       case 'locations':
