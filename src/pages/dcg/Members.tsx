@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, Search, Mail, Phone, MoreHorizontal, UserPlus, Users, Loader2, Calendar } from 'lucide-react';
+import { Plus, Search, Mail, Phone, MoreHorizontal, UserPlus, Users, Loader2, Calendar, Trash2 } from 'lucide-react';
 import { useDcgMembers, useUpdateDcgMemberRole, useRemoveMemberFromDcg } from '@/hooks/useDcgMembers';
 import { useAuth } from '@/hooks/useAuth';
 import AddExistingMemberDialog from '@/components/admin/dcg/AddExistingMemberDialog';
@@ -103,7 +103,6 @@ const DcgMembers = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Member ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Type</TableHead>
@@ -119,9 +118,6 @@ const DcgMembers = () => {
                     
                     return (
                       <TableRow key={dcgMember.id}>
-                        <TableCell className="font-medium">
-                          {member.member_id}
-                        </TableCell>
                         <TableCell>
                           <div className="font-medium">
                             {member.profiles?.first_name} {member.profiles?.last_name}
@@ -171,22 +167,15 @@ const DcgMembers = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem
-                                onClick={() => handleRemoveMember(dcgMember.id)}
-                                className="text-destructive"
-                                disabled={removeMember.isPending}
-                              >
-                                Remove from DCG
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveMember(dcgMember.id)}
+                            disabled={removeMember.isPending}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
