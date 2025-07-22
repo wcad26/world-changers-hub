@@ -110,18 +110,6 @@ const RegionalFinances: React.FC = () => {
         </div>
 
         {/* Period Filter */}
-        <div className="flex gap-2">
-          {periods.map((period) => (
-            <Button
-              key={period}
-              variant={selectedPeriod === period ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedPeriod(period)}
-            >
-              {period}
-            </Button>
-          ))}
-        </div>
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
