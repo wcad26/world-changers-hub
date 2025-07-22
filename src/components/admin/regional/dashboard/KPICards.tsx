@@ -255,11 +255,11 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selec
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="flex gap-4 overflow-x-auto">
       {cards.map((card, index) => {
         const IconComponent = card.icon;
         return (
-          <Card key={index}>
+          <Card key={index} className="min-w-64 flex-shrink-0">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
               <IconComponent className={`h-4 w-4 ${card.color}`} />
