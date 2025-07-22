@@ -103,7 +103,7 @@ const RegionalFinances: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Financial Management</h1>
             <p className="text-muted-foreground">
-              Track and manage church finances, tithes, offerings, and expenses
+              Track and manage finances, tithes, offerings and expenses
             </p>
           </div>
           <div className="flex gap-2">
