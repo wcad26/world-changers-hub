@@ -21,18 +21,12 @@ import FinanceTab from "@/components/admin/regional/dashboard/tabs/FinanceTab";
 import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
 import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
 import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
-import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const RegionalDashboard: React.FC = () => {
   const { userRegion } = useAuth();
   const [activeTab, setActiveTab] = useState('members');
-  const [filters, setFilters] = useState<PeriodFilters>({
-    dateRange: { 
-      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
-      to: new Date()
-    },
-    quickDateRange: '1-month'
-  });
+  const [selectedPeriod, setSelectedPeriod] = useState('1-month');
 
   // Fetch all data
   const { data: reports, isLoading: reportsLoading, isError: reportsError, error: reportsErrorDetail } = useRegionalReports();
@@ -141,20 +135,31 @@ const RegionalDashboard: React.FC = () => {
       <div className="space-y-6">
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="events">Events</TabsTrigger>
-            <TabsTrigger value="finance">Finance</TabsTrigger>
-            <TabsTrigger value="dcg">DCG</TabsTrigger>
-            <TabsTrigger value="locations">Locations</TabsTrigger>
-          </TabsList>
-
-          {/* Period Filter - positioned after tabs */}
-          <PeriodFilter 
-            filters={filters} 
-            onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
-          />
+          <div className="flex items-center justify-between">
+            <TabsList className="grid grid-cols-6 w-fit">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              <TabsTrigger value="events">Events</TabsTrigger>
+              <TabsTrigger value="finance">Finance</TabsTrigger>
+              <TabsTrigger value="dcg">DCG</TabsTrigger>
+              <TabsTrigger value="locations">Locations</TabsTrigger>
+            </TabsList>
+            
+            {/* Period Filter Dropdown */}
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1-month">1 Month</SelectItem>
+                <SelectItem value="3-months">3 Months</SelectItem>
+                <SelectItem value="6-months">6 Months</SelectItem>
+                <SelectItem value="1-year">1 Year</SelectItem>
+                <SelectItem value="last-year">Last Year</SelectItem>
+                <SelectItem value="custom">Custom Period</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* KPI Cards */}
           {isLoading ? (
