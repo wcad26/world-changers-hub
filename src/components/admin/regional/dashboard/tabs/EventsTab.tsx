@@ -14,7 +14,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import EventAttendanceTrendChart from './EventAttendanceTrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-const EventsTab: React.FC = () => {
+interface EventsTabProps {
+  selectedPeriod: string;
+}
+
+const EventsTab: React.FC<EventsTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
     dateRange: { 
       from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),

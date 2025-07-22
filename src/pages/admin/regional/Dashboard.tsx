@@ -186,23 +186,23 @@ const RegionalDashboard: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="members">
-            <MembersTab />
+            <MembersTab selectedPeriod={selectedPeriod} />
           </TabsContent>
 
           <TabsContent value="events">
-            <EventsTab />
+            <EventsTab selectedPeriod={selectedPeriod} />
           </TabsContent>
 
           <TabsContent value="finance">
-            <FinanceTab />
+            <FinanceTab selectedPeriod={selectedPeriod} />
           </TabsContent>
 
           <TabsContent value="dcg">
-            <DCGTab />
+            <DCGTab selectedPeriod={selectedPeriod} />
           </TabsContent>
 
           <TabsContent value="locations">
-            <LocationsTab />
+            <LocationsTab selectedPeriod={selectedPeriod} />
           </TabsContent>
         </Tabs>
       </div>

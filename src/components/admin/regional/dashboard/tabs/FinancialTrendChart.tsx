@@ -9,7 +9,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
-const FinancialTrendChart: React.FC = () => {
+interface FinancialTrendChartProps {
+  selectedPeriod: string;
+}
+
+const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod }) => {
   const { data: transactions, isLoading, error } = useFinancialTransactions();
 
   // Transform data for the chart - group by month

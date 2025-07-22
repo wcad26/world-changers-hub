@@ -14,7 +14,11 @@ import { AlertCircle } from 'lucide-react';
 import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-const MembersTab: React.FC = () => {
+interface MembersTabProps {
+  selectedPeriod: string;
+}
+
+const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
     dateRange: { 
       from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),

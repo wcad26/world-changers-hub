@@ -13,7 +13,11 @@ import { AlertCircle } from 'lucide-react';
 import DcgAttendanceTrendChart from './DcgAttendanceTrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-const DCGTab: React.FC = () => {
+interface DCGTabProps {
+  selectedPeriod: string;
+}
+
+const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
     dateRange: { 
       from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),

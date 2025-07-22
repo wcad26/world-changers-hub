@@ -12,7 +12,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 
-const LocationsTab: React.FC = () => {
+interface LocationsTabProps {
+  selectedPeriod: string;
+}
+
+const LocationsTab: React.FC<LocationsTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
     dateRange: { 
       from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
