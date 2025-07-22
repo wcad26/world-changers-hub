@@ -71,10 +71,17 @@ export const RecordDcgIncomeDialog: React.FC<RecordDcgIncomeDialogProps> = ({
     },
   });
 
-  const incomeCategories = categories?.filter(cat => 
+  // Filter for DCG-specific income categories
+  const dcgIncomeCategories = categories?.filter(cat => 
     cat.type === "Income" && 
-    (cat.name?.includes("Offering") || cat.name?.includes("Special"))
+    (cat.name === "Offerings" || cat.name === "Special Giving")
   ) || [];
+
+  // If the specific categories don't exist, create them for display
+  const incomeCategories = dcgIncomeCategories.length > 0 ? dcgIncomeCategories : [
+    { id: "offerings", name: "Offerings", type: "Income" },
+    { id: "special_giving", name: "Special Giving", type: "Income" }
+  ];
 
   const onSubmit = async (data: IncomeFormData) => {
     if (!userDcg) {
