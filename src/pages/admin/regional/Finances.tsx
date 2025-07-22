@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, Plus, ChevronDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears } from "date-fns";
+import { format } from "date-fns";
 import { useFinancialTransactions, useFinancialSummary } from "@/hooks/useFinancials";
 import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog";
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
@@ -22,48 +22,12 @@ const RegionalFinances: React.FC = () => {
   const [recordSpecialGivingDialogOpen, setRecordSpecialGivingDialogOpen] = useState(false);
   const [recordExpenseDialogOpen, setRecordExpenseDialogOpen] = useState(false);
   
-  // Period filter state
-  const [selectedPeriod, setSelectedPeriod] = useState("Last 6 months");
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Calculate date range based on selected period
-  const dateFilters = useMemo(() => {
-    const now = new Date();
-    switch (selectedPeriod) {
-      case "Last 30 days":
-        return {
-          from: format(new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'),
-          to: format(now, 'yyyy-MM-dd')
-        };
-      case "Last 3 months":
-        return {
-          from: format(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()), 'yyyy-MM-dd'),
-          to: format(now, 'yyyy-MM-dd')
-        };
-      case "Last 6 months":
-        return {
-          from: format(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()), 'yyyy-MM-dd'),
-          to: format(now, 'yyyy-MM-dd')
-        };
-      case "This year":
-        return {
-          from: format(startOfYear(now), 'yyyy-MM-dd'),
-          to: format(endOfYear(now), 'yyyy-MM-dd')
-        };
-      case "Last year":
-        const lastYear = subYears(now, 1);
-        return {
-          from: format(startOfYear(lastYear), 'yyyy-MM-dd'),
-          to: format(endOfYear(lastYear), 'yyyy-MM-dd')
-        };
-      default:
-        return {};
-    }
-  }, [selectedPeriod]);
-
   // Fetch financial data from database
-  const { data: transactions = [], isLoading: transactionsLoading } = useFinancialTransactions(dateFilters);
-  const { data: summary, isLoading: summaryLoading } = useFinancialSummary(dateFilters);
+  const { data: transactions = [], isLoading: transactionsLoading } = useFinancialTransactions();
+  const { data: summary, isLoading: summaryLoading } = useFinancialSummary();
 
   // Use the real financial summary data from the database
   const totalIncome = summary?.total_income || 0;
@@ -97,7 +61,7 @@ const RegionalFinances: React.FC = () => {
     setRecordExpenseDialogOpen(false);
   };
 
-  const periods = ["Last 30 days", "Last 3 months", "Last 6 months", "This year", "Last year"];
+  
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -131,7 +95,7 @@ const RegionalFinances: React.FC = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
               <p className="text-xs text-muted-foreground">
-                For {selectedPeriod.toLowerCase()}
+                Total income
               </p>
             </CardContent>
           </Card>
@@ -143,7 +107,7 @@ const RegionalFinances: React.FC = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(totalExpense)}</div>
               <p className="text-xs text-muted-foreground">
-                For {selectedPeriod.toLowerCase()}
+                Total expenses
               </p>
             </CardContent>
           </Card>
@@ -157,7 +121,7 @@ const RegionalFinances: React.FC = () => {
                 {formatCurrency(netBalance)}
               </div>
               <p className="text-xs text-muted-foreground">
-                For {selectedPeriod.toLowerCase()}
+                Net balance
               </p>
             </CardContent>
           </Card>
@@ -169,7 +133,7 @@ const RegionalFinances: React.FC = () => {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(totalTithes)}</div>
               <p className="text-xs text-muted-foreground">
-                For {selectedPeriod.toLowerCase()}
+                Total tithes
               </p>
             </CardContent>
           </Card>
@@ -231,7 +195,7 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>All Transactions</CardTitle>
                 <CardDescription>
-                  Complete list of financial transactions for {selectedPeriod.toLowerCase()}
+                  Complete list of financial transactions
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -274,7 +238,7 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Tithes</CardTitle>
                 <CardDescription>
-                  Member tithes for {selectedPeriod.toLowerCase()}
+                  Member tithes
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -307,7 +271,7 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Offerings</CardTitle>
                 <CardDescription>
-                  Service offerings for {selectedPeriod.toLowerCase()}
+                  Service offerings
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -340,7 +304,7 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Special Giving</CardTitle>
                 <CardDescription>
-                  Special donations and fund contributions for {selectedPeriod.toLowerCase()}
+                  Special donations and fund contributions
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -373,7 +337,7 @@ const RegionalFinances: React.FC = () => {
               <CardHeader>
                 <CardTitle>Expenses</CardTitle>
                 <CardDescription>
-                  Church expenses for {selectedPeriod.toLowerCase()}
+                  Church expenses
                 </CardDescription>
               </CardHeader>
               <CardContent>
