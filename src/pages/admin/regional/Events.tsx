@@ -518,7 +518,7 @@ const RegionalEvents: React.FC = () => {
                   name="capacity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Expected Capacity</FormLabel>
+                      <FormLabel>Expected turnout</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="100" {...field} value={field.value || ''} />
                       </FormControl>
