@@ -78,53 +78,6 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
-      {/* Financial Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summary?.total_income || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Tithes: {formatCurrency(summary?.total_tithes || 0)}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(summary?.total_expenses || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Operating expenses
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-            <DollarSign className={`h-4 w-4 ${(summary?.net_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${(summary?.net_balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(summary?.net_balance || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Income - Expenses
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Transactions Table */}
       <Card>
