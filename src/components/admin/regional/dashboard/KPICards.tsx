@@ -40,9 +40,10 @@ interface KPICardsProps {
   data: KPIData;
   activeTab: string;
   bankBalance: number;
+  selectedPeriod: string;
 }
 
-const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => {
+const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selectedPeriod }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
@@ -279,7 +280,10 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => 
               {card.trend === null && <span>{card.description}</span>}
             </div>
             {card.trend !== null && (
-              <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{card.description}</p>
+                <p className="text-xs text-muted-foreground">Period: {selectedPeriod}</p>
+              </div>
             )}
           </CardContent>
         </Card>

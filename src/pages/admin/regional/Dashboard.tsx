@@ -170,7 +170,7 @@ const RegionalDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="mt-6 space-y-6">
-              <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} />
+              <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} selectedPeriod={selectedPeriod} />
               {activeTab === 'members' && <MemberCards />}
             </div>
           )}
