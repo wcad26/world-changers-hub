@@ -1,159 +1,91 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, DollarSign } from 'lucide-react';
-import { useFinancialTransactions } from '@/hooks/useFinancials';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { TrendingUp } from 'lucide-react';
 
 interface FinancialTrendChartProps {
   selectedPeriod: string;
 }
 
 const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod }) => {
-  const { data: transactions, isLoading, error } = useFinancialTransactions();
+  // Mock financial data for demonstration
+  const mockFinancialData = [
+    { month: 'Jan 2024', income: 45000, expenses: 32000, net: 13000 },
+    { month: 'Feb 2024', income: 52000, expenses: 35000, net: 17000 },
+    { month: 'Mar 2024', income: 48000, expenses: 31000, net: 17000 },
+    { month: 'Apr 2024', income: 55000, expenses: 38000, net: 17000 },
+    { month: 'May 2024', income: 61000, expenses: 42000, net: 19000 },
+    { month: 'Jun 2024', income: 58000, expenses: 39000, net: 19000 },
+    { month: 'Jul 2024', income: 63000, expenses: 41000, net: 22000 }
+  ];
 
-  // Transform data for the chart - group by month
-  const chartData = React.useMemo(() => {
-    if (!transactions || transactions.length === 0) return [];
-    
-    // Get last 6 months of data
-    const months = [];
-    const now = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
-      const monthDate = subMonths(now, i);
-      const monthStart = startOfMonth(monthDate);
-      const monthEnd = endOfMonth(monthDate);
-      
-      const monthTransactions = transactions.filter(t => {
-        const transactionDate = new Date(t.transaction_date);
-        return transactionDate >= monthStart && transactionDate <= monthEnd;
-      });
-      
-      const income = monthTransactions
-        .filter(t => t.category?.type?.toLowerCase() === 'income')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-        
-      const expenses = monthTransactions
-        .filter(t => t.category?.type?.toLowerCase() === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
-      
-      months.push({
-        month: format(monthDate, 'MMM yyyy'),
-        shortMonth: format(monthDate, 'MMM'),
-        Income: income,
-        Expenses: expenses,
-        NetBalance: income - expenses
-      });
-    }
-    
-    return months;
-  }, [transactions]);
-
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-4 w-72" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-80 w-full" />
-        </CardContent>
-      </Card>
-    );
-  }
-
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div>
-          <CardTitle className="text-lg font-semibold">Financial Trends</CardTitle>
-          <CardDescription>
-            Income vs Expenses over the last 6 months
-          </CardDescription>
-        </div>
-        <DollarSign className="h-5 w-5 text-primary" />
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5" />
+          Financial Trends
+        </CardTitle>
+        <CardDescription>
+          Income vs Expenses over time ({selectedPeriod})
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chartData}
-              margin={{
-                top: 5,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <LineChart data={mockFinancialData}>
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
-                dataKey="shortMonth" 
-                className="text-xs text-muted-foreground"
-                tick={{ fontSize: 12 }}
+                dataKey="month" 
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
               />
               <YAxis 
-                className="text-xs text-muted-foreground"
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `$${value.toLocaleString()}`}
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `$${value / 1000}k`}
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }}
-                labelStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-                labelFormatter={(label, payload) => 
-                  payload && payload[0] ? payload[0].payload.month : label
-                }
+                formatter={(value, name) => [formatCurrency(Number(value)), name]}
+                labelStyle={{ color: '#000' }}
               />
               <Legend />
               <Line 
                 type="monotone" 
-                dataKey="Income" 
-                stroke="hsl(142, 76%, 36%)" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
+                dataKey="income" 
+                stroke="#22c55e" 
+                strokeWidth={3}
+                name="Income"
+                dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
               />
               <Line 
                 type="monotone" 
-                dataKey="Expenses" 
-                stroke="hsl(0, 72%, 51%)" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(0, 72%, 51%)', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
+                dataKey="expenses" 
+                stroke="#ef4444" 
+                strokeWidth={3}
+                name="Expenses"
+                dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
               />
               <Line 
                 type="monotone" 
-                dataKey="NetBalance" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6 }}
+                dataKey="net" 
+                stroke="#3b82f6" 
+                strokeWidth={3}
+                name="Net Balance"
+                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
-        
-        {chartData.length === 0 && (
-          <div className="flex items-center justify-center h-80 text-muted-foreground">
-            <div className="text-center">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">No financial data available</p>
-              <p className="text-sm">Start recording transactions to see trends</p>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
