@@ -1,18 +1,21 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarCheck2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, CalendarCheck2, TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
+import { useCurrentMemberTarget } from '@/hooks/useMemberTargets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 
 const MemberCards: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: members, isLoading, error } = useMembers(userRegion?.id);
   const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: currentTarget, isLoading: isLoadingTarget } = useCurrentMemberTarget();
 
   // Component for percentage indicator
   const PercentageIndicator = ({ percentage }: { percentage: number }) => {
@@ -198,16 +201,55 @@ const MemberCards: React.FC = () => {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Avg. Event Attendance</CardTitle>
-          <CalendarCheck2 className="h-4 w-4 text-green-600" />
+          <CardTitle className="text-sm font-medium">Total Member Target</CardTitle>
+          <Target className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{attendanceSummary.avgAttendance}</div>
+          <div className="text-2xl font-bold">
+            {currentTarget ? (
+              `${Math.round((totalMembers / currentTarget.target_members) * 100)}%`
+            ) : (
+              'No Target'
+            )}
+          </div>
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              {attendanceHistory ? `${attendanceHistory.length} events recorded` : 'No events recorded'}
+              {currentTarget ? (
+                <>
+                  {totalMembers} of {currentTarget.target_members} members
+                </>
+              ) : (
+                'Set a target to track progress'
+              )}
             </p>
-            <PercentageIndicator percentage={growthTrends.avgAttendanceGrowth} />
+            <div className={`flex items-center gap-1 ${
+              currentTarget ? (
+                (() => {
+                  const progress = (totalMembers / currentTarget.target_members) * 100;
+                  const daysLeft = differenceInDays(new Date(currentTarget.target_date), new Date());
+                  
+                  if (progress >= 100) return 'text-green-600';
+                  if (daysLeft < 0) return 'text-red-600';
+                  if (daysLeft < 30) return 'text-orange-600';
+                  return 'text-blue-600';
+                })()
+              ) : 'text-muted-foreground'
+            }`}>
+              {currentTarget && (
+                <>
+                  <Calendar className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {(() => {
+                      const daysLeft = differenceInDays(new Date(currentTarget.target_date), new Date());
+                      if (daysLeft < 0) return 'Overdue';
+                      if (daysLeft === 0) return 'Due today';
+                      if (daysLeft === 1) return '1 day left';
+                      return `${daysLeft} days left`;
+                    })()}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

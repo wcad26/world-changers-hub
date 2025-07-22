@@ -796,6 +796,42 @@ export type Database = {
           },
         ]
       }
+      member_targets: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          region_id: string
+          target_date: string
+          target_members: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          region_id: string
+          target_date: string
+          target_members: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          region_id?: string
+          target_date?: string
+          target_members?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           baptism_date: string | null
