@@ -114,6 +114,14 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => 
       case 'finance':
         return [
           {
+            title: "Bank Balance",
+            value: formatCurrency(bankBalance),
+            description: "Current available balance",
+            icon: Banknote,
+            trend: null,
+            color: "text-emerald-600"
+          },
+          {
             title: "Total Income",
             value: formatCurrency(data.finance.income),
             description: "This period",
@@ -232,34 +240,8 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => 
 
   const cards = getTabSpecificCards();
 
-  // Bank Balance card that always shows
-  const bankBalanceCard = {
-    title: "Bank Balance",
-    value: formatCurrency(bankBalance),
-    description: "Current available balance",
-    icon: Banknote,
-    trend: null,
-    color: "text-emerald-600"
-  };
-
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-      {/* Bank Balance - Always shown first */}
-      <Card key="bank-balance">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">{bankBalanceCard.title}</CardTitle>
-          <bankBalanceCard.icon className={`h-4 w-4 ${bankBalanceCard.color}`} />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{bankBalanceCard.value}</div>
-          <div className="flex items-center text-xs text-muted-foreground">
-            <span>{bankBalanceCard.description}</span>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Tab-specific cards */}
-      {cards.map((card, index) => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{cards.map((card, index) => (
         <Card key={index}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
