@@ -254,7 +254,32 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selec
     return null;
   }
 
-  return null;
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {cards.map((card, index) => {
+        const IconComponent = card.icon;
+        return (
+          <Card key={index}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{card.title}</CardTitle>
+              <IconComponent className={`h-4 w-4 ${card.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{card.value}</div>
+              <p className="text-xs text-muted-foreground">
+                {card.description}
+              </p>
+              {card.trend !== null && (
+                <div className={`text-xs mt-1 ${card.trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {card.trend >= 0 ? '↗' : '↘'} {Math.abs(card.trend).toFixed(1)}%
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
 };
 
 export default KPICards;
