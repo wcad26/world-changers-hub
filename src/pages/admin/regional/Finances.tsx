@@ -489,7 +489,7 @@ const RegionalFinances: React.FC = () => {
                   <Button
                     id="period-filter"
                     variant="outline"
-                    className="w-[140px] justify-start text-left font-normal"
+                    className="w-[280px] justify-start text-left font-normal"
                   >
                     <CalendarDays className="mr-2 h-4 w-4" />
                     <span>Last 6 months</span>
