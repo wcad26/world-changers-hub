@@ -38,6 +38,15 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
   const { data: existingRecords } = useEventAttendanceRecords(event.id);
   const saveAttendance = useSaveEventAttendance();
 
+  // Helper function to get display name
+  const getDisplayName = (dcgMember: any) => {
+    const profile = dcgMember.members?.profiles;
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    }
+    return dcgMember.members?.member_id || 'Unknown Member';
+  };
+
   // Load existing attendance records
   useEffect(() => {
     if (existingRecords) {
@@ -90,14 +99,6 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
     } catch (error) {
       console.error('Error recording attendance:', error);
     }
-  };
-
-  const getDisplayName = (dcgMember: any) => {
-    const profile = dcgMember.members?.profiles;
-    if (profile?.first_name || profile?.last_name) {
-      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
-    }
-    return dcgMember.members?.member_id || 'Unknown Member';
   };
 
   return (
