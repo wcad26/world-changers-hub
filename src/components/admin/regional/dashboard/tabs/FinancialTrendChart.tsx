@@ -68,17 +68,6 @@ const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPerio
     );
   }
 
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading financial data</AlertTitle>
-        <AlertDescription>
-          {error instanceof Error ? error.message : 'An unknown error occurred'}
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
     <Card>
