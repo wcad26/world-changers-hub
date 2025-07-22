@@ -16,6 +16,7 @@ import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecial
 import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog";
 
 const RegionalFinances: React.FC = () => {
+  console.log('RegionalFinances component loaded successfully');
   // State for dialogs
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
@@ -61,8 +62,6 @@ const RegionalFinances: React.FC = () => {
     setRecordExpenseDialogOpen(false);
   };
 
-  
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -82,8 +81,6 @@ const RegionalFinances: React.FC = () => {
             </p>
           </div>
         </div>
-
-        {/* Period Filter */}
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
