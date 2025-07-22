@@ -533,7 +533,7 @@ const RegionalFinances: React.FC = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[200px]">
+                  <div className="h-[200px] w-full">
                     <LineChart
                       data={[
                         { month: "May", income: 25500 },
@@ -547,7 +547,7 @@ const RegionalFinances: React.FC = () => {
                       categories={["income"]}
                       colors={["#8b5cf6"]}
                       valueFormatter={(value) => `$${value.toLocaleString()}`}
-                      className="h-full"
+                      className="h-full w-full"
                     />
                   </div>
                 </CardContent>
