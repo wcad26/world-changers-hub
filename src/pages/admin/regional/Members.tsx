@@ -3,11 +3,12 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import {
@@ -23,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import DiscipleshipTab from "@/components/admin/regional/discipleship/DiscipleshipTab";
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -97,84 +99,101 @@ const Members: React.FC = () => {
           </DialogContent>
         </Dialog>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Member List</CardTitle>
-            <CardDescription>A list of all members in your region.</CardDescription>
-            <div className="flex justify-between items-center pt-4">
-                <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Search by name, email, or phone..." 
-                        className="pl-8" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+        
+        <Tabs defaultValue="overview">
+          <TabsList>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="discipleship">
+              <Heart className="mr-2 h-4 w-4" />
+              Discipleship
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Member List</CardTitle>
+                <CardDescription>A list of all members in your region.</CardDescription>
+                <div className="flex justify-between items-center pt-4">
+                    <div className="relative w-full max-w-sm">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="Search by name, email, or phone..." 
+                            className="pl-8" 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <Button variant="outline">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                    </Button>
                 </div>
-                <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Join Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingMembers ? (
-                    <TableRow><TableCell colSpan={6} className="text-center">Loading members...</TableCell></TableRow>
-                  ) : membersError ? (
-                     <TableRow><TableCell colSpan={6} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
-                   ) : filteredMembers.length > 0 ? (
-                    filteredMembers.map(member => (
-                      <TableRow 
-                        key={member.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/admin/regional/members/${member.id}`)}
-                      >
-                        <TableCell className="font-medium">
-                          {member.profiles?.first_name} {member.profiles?.last_name}
-                        </TableCell>
-                        <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
-                        <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(member.status || 'new')}>
-                            {member.status || 'new'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditMember(member);
-                            }}
-                          >
-                            <Pen className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Join Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow><TableCell colSpan={6} className="text-center">No members found.</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoadingMembers ? (
+                        <TableRow><TableCell colSpan={6} className="text-center">Loading members...</TableCell></TableRow>
+                      ) : membersError ? (
+                         <TableRow><TableCell colSpan={6} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
+                       ) : filteredMembers.length > 0 ? (
+                        filteredMembers.map(member => (
+                          <TableRow 
+                            key={member.id} 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                          >
+                            <TableCell className="font-medium">
+                              {member.profiles?.first_name} {member.profiles?.last_name}
+                            </TableCell>
+                            <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
+                            <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(member.status || 'new')}>
+                                {member.status || 'new'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
+                            <TableCell>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditMember(member);
+                                }}
+                              >
+                                <Pen className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow><TableCell colSpan={6} className="text-center">No members found.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="discipleship">
+            <DiscipleshipTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </RegionalAdminLayout>
   );
