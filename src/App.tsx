@@ -31,6 +31,7 @@ import RegionalFundraising from "./pages/admin/regional/Fundraising";
 import RegionalLocations from "./pages/admin/regional/Locations";
 import RegionalFinances from "./pages/admin/regional/Finances";
 import RegionalDCG from "./pages/admin/regional/DCG";
+import DcgProfile from "./pages/admin/regional/DcgProfile";
 import RegionalReports from "./pages/admin/regional/Reports";
 import RegionalCommunication from "./pages/admin/regional/Communication";
 
@@ -167,6 +168,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
                   <RegionalDCG />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/dcg/:dcgId" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <DcgProfile />
                 </ProtectedRoute>
               } 
             />

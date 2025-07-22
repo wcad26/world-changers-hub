@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ const DcgOverviewTab = () => {
   const { data: recentActivity, isLoading: activityLoading } = useRecentDcgActivity();
   const deleteDcg = useDeleteDcg();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const filteredDcgs = (dcgs || []).filter(dcg =>
     dcg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -203,7 +205,7 @@ const DcgOverviewTab = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-background border shadow-md z-50">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/admin/regional/dcg/${dcg.id}`)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
