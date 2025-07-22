@@ -77,7 +77,7 @@ const DcgProfile: React.FC = () => {
             onClick={() => navigate("/admin/regional/dcg")}
             className="mb-2"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-2 text-primary" />
             Back to DCG Management
           </Button>
         </div>
@@ -99,28 +99,28 @@ const DcgProfile: React.FC = () => {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Leader:</span>
                   <span className="text-sm">{getLeaderName(dcg)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <MapPin className="h-4 w-4 text-accent" />
                   <span className="text-sm font-medium">Location:</span>
                   <span className="text-sm">{dcg.location || "Not set"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Calendar className="h-4 w-4 text-secondary" />
                   <span className="text-sm font-medium">Meeting Day:</span>
                   <span className="text-sm">{dcg.meeting_day || "Not set"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Clock className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Time:</span>
                   <span className="text-sm">{formatMeetingTime(dcg.meeting_time)}</span>
                 </div>
                 {dcg.contact_phone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <Phone className="h-4 w-4 text-accent" />
                     <span className="text-sm font-medium">Contact:</span>
                     <span className="text-sm">{dcg.contact_phone}</span>
                   </div>
@@ -134,7 +134,7 @@ const DcgProfile: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{activeMembers.length}</div>
@@ -143,7 +143,7 @@ const DcgProfile: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                <div className="h-4 w-4 text-muted-foreground">₦</div>
+                <div className="h-4 w-4 text-secondary font-bold">₦</div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₦{totalIncome.toLocaleString()}</div>
@@ -152,7 +152,7 @@ const DcgProfile: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <div className="h-4 w-4 text-muted-foreground">₦</div>
+                <div className="h-4 w-4 text-accent font-bold">₦</div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₦{totalExpenses.toLocaleString()}</div>
@@ -161,7 +161,7 @@ const DcgProfile: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-                <div className="h-4 w-4 text-muted-foreground">₦</div>
+                <div className="h-4 w-4 text-primary font-bold">₦</div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">₦{(totalIncome - totalExpenses).toLocaleString()}</div>
