@@ -15,8 +15,20 @@ export const transactionSchema = z.object({
   description: z.string().optional().nullable(),
   transaction_date: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid date'),
   dcg_id: z.string().uuid().optional().nullable(),
+  member_id: z.string().uuid().optional().nullable(),
+  reference_number: z.string().optional().nullable(),
 });
 export type TransactionData = z.infer<typeof transactionSchema>;
+
+// Financial summary type
+export type FinancialSummary = {
+  total_income: number;
+  total_expenses: number;
+  net_balance: number;
+  total_tithes: number;
+  total_offerings: number;
+  total_special_giving: number;
+};
 
 // Hook to fetch financial transactions
 export const useFinancialTransactions = (filters?: { from?: string, to?: string }) => {
@@ -29,7 +41,7 @@ export const useFinancialTransactions = (filters?: { from?: string, to?: string 
       if (!regionId) return [];
       let query = supabase
         .from('financial_transactions')
-        .select('*, category:financial_transaction_categories(name, type), dcg:dcgs(name)')
+        .select('*, category:financial_transaction_categories(name, type), dcg:dcgs(name), member:members(member_id, profile:profiles(first_name, last_name))')
         .eq('region_id', regionId);
       
       if (filters?.from) query = query.gte('transaction_date', filters.from);
@@ -58,6 +70,80 @@ export const useFinancialCategories = () => {
       if (error) throw error;
       return data;
     },
+  });
+};
+
+// Hook to fetch financial summary
+export const useFinancialSummary = (filters?: { from?: string, to?: string }) => {
+  const { userRegion } = useAuth();
+  const regionId = userRegion?.id;
+
+  return useQuery({
+    queryKey: ['financial_summary', regionId, filters],
+    queryFn: async (): Promise<FinancialSummary> => {
+      if (!regionId) return {
+        total_income: 0,
+        total_expenses: 0,
+        net_balance: 0,
+        total_tithes: 0,
+        total_offerings: 0,
+        total_special_giving: 0,
+      };
+
+      // Build dynamic SQL query for financial summary
+      let query = supabase
+        .from('financial_transactions')
+        .select('amount, category:financial_transaction_categories(name, type)')
+        .eq('region_id', regionId);
+      
+      if (filters?.from) query = query.gte('transaction_date', filters.from);
+      if (filters?.to) query = query.lte('transaction_date', filters.to);
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      
+      // Calculate summary from transaction data
+      const summary = data?.reduce((acc, transaction) => {
+        const amount = Number(transaction.amount);
+        const categoryName = transaction.category?.name || '';
+        const categoryType = transaction.category?.type || '';
+
+        if (categoryType?.toLowerCase() === 'income') {
+          acc.total_income += amount;
+          
+          if (categoryName === 'Tithes') {
+            acc.total_tithes += amount;
+          } else if (categoryName.includes('Offering')) {
+            acc.total_offerings += amount;
+          } else if (['Building Fund', 'Mission Fund', 'Youth Fund', 'Benevolence Fund'].includes(categoryName)) {
+            acc.total_special_giving += amount;
+          }
+        } else if (categoryType?.toLowerCase() === 'expense') {
+          acc.total_expenses += amount;
+        }
+
+        return acc;
+      }, {
+        total_income: 0,
+        total_expenses: 0,
+        total_tithes: 0,
+        total_offerings: 0,
+        total_special_giving: 0,
+      }) || {
+        total_income: 0,
+        total_expenses: 0,
+        total_tithes: 0,
+        total_offerings: 0,
+        total_special_giving: 0,
+      };
+
+      return {
+        ...summary,
+        net_balance: summary.total_income - summary.total_expenses,
+      };
+    },
+    enabled: !!regionId,
   });
 };
 
@@ -93,6 +179,7 @@ export const useCreateFinancialTransaction = () => {
     onSuccess: () => {
       if (userRegion?.id) {
         queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion.id] });
+        queryClient.invalidateQueries({ queryKey: ['financial_summary', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['regionalReports', userRegion.id] });
       }
     },
