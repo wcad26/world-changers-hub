@@ -240,6 +240,11 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance }) => 
 
   const cards = getTabSpecificCards();
 
+  // Don't render KPI cards for events tab
+  if (activeTab === 'events') {
+    return null;
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{cards.map((card, index) => (
         <Card key={index}>
