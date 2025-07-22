@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,6 +11,7 @@ import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hoo
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import TrendChart from '../TrendChart';
 import type { DashboardFilters } from '../DashboardFilters';
 
 interface MembersTabProps {
@@ -220,7 +220,8 @@ const MembersTab: React.FC<MembersTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
-      {/* Member-specific content moved to main dashboard */}
+      {/* Member/Visitor Trend Chart - only shown in Members tab */}
+      <TrendChart />
     </div>
   );
 };

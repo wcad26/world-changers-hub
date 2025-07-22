@@ -10,6 +10,7 @@ import { useDcgs } from '@/hooks/useDCGs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import DcgAttendanceTrendChart from './DcgAttendanceTrendChart';
 import type { DashboardFilters } from '../DashboardFilters';
 
 interface DCGTabProps {
@@ -79,6 +80,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* DCG Attendance Trend Chart - only shown in DCG tab */}
+      <DcgAttendanceTrendChart />
     </div>
   );
 };

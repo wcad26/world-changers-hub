@@ -9,6 +9,7 @@ import { useFinancialTransactions, useFinancialSummary } from '@/hooks/useFinanc
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import FinancialTrendChart from './FinancialTrendChart';
 import type { DashboardFilters } from '../DashboardFilters';
 import { format } from 'date-fns';
 
@@ -73,12 +74,21 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
   }
 
   if (transactionsError || summaryError) {
-    return null;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error loading financial data</AlertTitle>
+        <AlertDescription>
+          {transactionsError instanceof Error ? transactionsError.message : 'An unknown error occurred'}
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
     <div className="space-y-6">
-      {/* Finance tab content - KPI cards handled by parent component */}
+      {/* Financial Trend Chart - only shown in Finance tab */}
+      <FinancialTrendChart />
     </div>
   );
 };

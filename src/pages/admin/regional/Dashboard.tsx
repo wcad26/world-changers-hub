@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
-// Import our new dashboard components
+// Import our dashboard components
 import DashboardFilters, { DashboardFilters as DashboardFiltersType } from "@/components/admin/regional/dashboard/DashboardFilters";
 import KPICards from "@/components/admin/regional/dashboard/KPICards";
 import MembersTab from "@/components/admin/regional/dashboard/tabs/MembersTab";
@@ -21,7 +20,6 @@ import EventsTab from "@/components/admin/regional/dashboard/tabs/EventsTab";
 import FinanceTab from "@/components/admin/regional/dashboard/tabs/FinanceTab";
 import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
 import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
-import TrendChart from "@/components/admin/regional/dashboard/TrendChart";
 import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
 
 const RegionalDashboard: React.FC = () => {
@@ -175,7 +173,6 @@ const RegionalDashboard: React.FC = () => {
             <div className="mt-6 space-y-6">
               <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} />
               {activeTab === 'members' && <MemberCards />}
-              <TrendChart />
             </div>
           )}
 

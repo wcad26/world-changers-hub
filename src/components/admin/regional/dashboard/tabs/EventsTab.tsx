@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import EventAttendanceTrendChart from './EventAttendanceTrendChart';
 import type { DashboardFilters } from '../DashboardFilters';
 
 interface EventsTabProps {
@@ -158,6 +159,9 @@ const EventsTab: React.FC<EventsTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
+      {/* Event Attendance Trend Chart - only shown in Events tab */}
+      <EventAttendanceTrendChart />
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrilldownEvent('total')}>
