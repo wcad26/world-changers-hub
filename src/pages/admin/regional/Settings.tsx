@@ -1,4 +1,5 @@
 import React from "react";
+import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,8 @@ import {
 
 const Settings = () => {
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <RegionalAdminLayout>
+      <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <SettingsIcon className="h-6 w-6 text-primary" />
         <h1 className="text-3xl font-bold">Settings</h1>
@@ -406,7 +408,8 @@ const Settings = () => {
         <Button variant="outline">Cancel</Button>
         <Button>Save Changes</Button>
       </div>
-    </div>
+      </div>
+    </RegionalAdminLayout>
   );
 };
 
