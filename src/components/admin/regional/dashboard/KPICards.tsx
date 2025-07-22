@@ -255,7 +255,7 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selec
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto">
+    <div className="flex gap-4 justify-between w-full">
       {cards.map((card, index) => {
         const IconComponent = card.icon;
         return (
