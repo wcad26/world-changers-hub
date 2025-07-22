@@ -524,7 +524,7 @@ const RegionalFinances: React.FC = () => {
               </Card>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Income Trends</CardTitle>
@@ -552,7 +552,9 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
                   <CardTitle>Expense Breakdown</CardTitle>
