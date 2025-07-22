@@ -20,6 +20,7 @@ import EventsTab from "@/components/admin/regional/dashboard/tabs/EventsTab";
 import FinanceTab from "@/components/admin/regional/dashboard/tabs/FinanceTab";
 import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
 import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
+import FundraisingTab from "@/components/admin/regional/dashboard/tabs/FundraisingTab";
 import DiscipleshipTab from "@/components/admin/regional/discipleship/DiscipleshipTab";
 
 import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
@@ -138,13 +139,14 @@ const RegionalDashboard: React.FC = () => {
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex items-center justify-between">
-            <TabsList className="grid grid-cols-7 w-fit">
+            <TabsList className="grid grid-cols-8 w-fit">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="members">Members</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="finance">Finance</TabsTrigger>
               <TabsTrigger value="dcg">DCG</TabsTrigger>
               <TabsTrigger value="locations">Locations</TabsTrigger>
+              <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
               <TabsTrigger value="discipleship">Discipleship</TabsTrigger>
             </TabsList>
             
@@ -206,6 +208,10 @@ const RegionalDashboard: React.FC = () => {
 
           <TabsContent value="locations">
             <LocationsTab selectedPeriod={selectedPeriod} />
+          </TabsContent>
+
+          <TabsContent value="fundraising">
+            <FundraisingTab selectedPeriod={selectedPeriod} />
           </TabsContent>
 
           <TabsContent value="discipleship">
