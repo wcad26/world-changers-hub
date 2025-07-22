@@ -10,7 +10,8 @@ import {
   PiggyBank, 
   Home, 
   BarChart2, 
-  MessageSquare 
+  MessageSquare,
+  Settings
 } from "lucide-react";
 
 interface RegionalAdminLayoutProps {
@@ -28,6 +29,7 @@ const menuItems = [
   { title: "DCG Management", path: "/admin/regional/dcg", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Settings", path: "/admin/regional/settings", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
 ];
 
 const RegionalAdminLayout: React.FC<RegionalAdminLayoutProps> = ({ children }) => {
