@@ -73,13 +73,23 @@ const RegionalFinances: React.FC = () => {
   const totalOfferings = summary?.total_offerings || 0;
   const totalSpecialGiving = summary?.total_special_giving || 0;
 
-  // Filter transactions by type for different tabs
-  const tithes = transactions.filter(t => t.category?.name === 'Tithes');
-  const offerings = transactions.filter(t => t.category?.name?.includes('Offering'));
-  const specialGiving = transactions.filter(t => 
+  // Filter transactions by search term and type
+  const filteredTransactions = transactions.filter(transaction => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      transaction.category?.name?.toLowerCase().includes(searchLower) ||
+      transaction.description?.toLowerCase().includes(searchLower) ||
+      transaction.amount.toString().includes(searchTerm)
+    );
+  });
+
+  const tithes = filteredTransactions.filter(t => t.category?.name === 'Tithes');
+  const offerings = filteredTransactions.filter(t => t.category?.name?.includes('Offering'));
+  const specialGiving = filteredTransactions.filter(t => 
     ['Building Fund', 'Mission Fund', 'Youth Fund', 'Benevolence Fund'].includes(t.category?.name || '')
   );
-  const expenses = transactions.filter(t => t.category?.type?.toLowerCase() === 'expense');
+  const expenses = filteredTransactions.filter(t => t.category?.type?.toLowerCase() === 'expense');
 
   // Handle expense form submission
   const handleExpenseSubmit = async (data: any) => {
@@ -175,7 +185,18 @@ const RegionalFinances: React.FC = () => {
               <TabsTrigger value="expenses">Expenses</TabsTrigger>
             </TabsList>
             
-            <DropdownMenu>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search transactions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 w-64"
+                />
+              </div>
+              
+              <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
                   <Plus className="mr-2 h-4 w-4" />
@@ -200,8 +221,9 @@ const RegionalFinances: React.FC = () => {
                   <Receipt className="mr-2 h-4 w-4" />
                   Record Expense
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+               </DropdownMenuContent>
+             </DropdownMenu>
+            </div>
           </div>
 
           <TabsContent value="transactions" className="space-y-4">
@@ -226,8 +248,8 @@ const RegionalFinances: React.FC = () => {
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {transactions.map((transaction) => (
+                     <TableBody>
+                       {filteredTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>{format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{transaction.category?.name}</TableCell>
