@@ -21,10 +21,18 @@ import FinanceTab from "@/components/admin/regional/dashboard/tabs/FinanceTab";
 import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
 import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
 import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
+import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 
 const RegionalDashboard: React.FC = () => {
   const { userRegion } = useAuth();
   const [activeTab, setActiveTab] = useState('members');
+  const [filters, setFilters] = useState<PeriodFilters>({
+    dateRange: { 
+      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
+      to: new Date()
+    },
+    quickDateRange: '1-month'
+  });
 
   // Fetch all data
   const { data: reports, isLoading: reportsLoading, isError: reportsError, error: reportsErrorDetail } = useRegionalReports();
@@ -141,6 +149,12 @@ const RegionalDashboard: React.FC = () => {
             <TabsTrigger value="dcg">DCG</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
           </TabsList>
+
+          {/* Period Filter - positioned after tabs */}
+          <PeriodFilter 
+            filters={filters} 
+            onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
+          />
 
           {/* KPI Cards */}
           {isLoading ? (

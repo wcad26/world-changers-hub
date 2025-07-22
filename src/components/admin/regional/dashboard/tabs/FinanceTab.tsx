@@ -67,12 +67,6 @@ const FinanceTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Filter */}
-      <PeriodFilter 
-        filters={filters} 
-        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
-      />
-      
       {/* Financial Trend Chart - only shown in Finance tab */}
       <FinancialTrendChart />
     </div>

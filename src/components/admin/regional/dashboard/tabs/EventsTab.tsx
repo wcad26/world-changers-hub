@@ -137,12 +137,6 @@ const EventsTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Period Filter */}
-      <PeriodFilter 
-        filters={filters} 
-        onFiltersChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))} 
-      />
-      
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setDrilldownEvent('total')}>
