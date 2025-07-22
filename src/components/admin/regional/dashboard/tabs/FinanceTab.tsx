@@ -73,17 +73,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
   }
 
   if (transactionsError || summaryError) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading financial data</AlertTitle>
-        <AlertDescription>
-          {(transactionsError || summaryError) instanceof Error 
-            ? (transactionsError || summaryError)?.message 
-            : 'An unknown error occurred'}
-        </AlertDescription>
-      </Alert>
-    );
+    return null;
   }
 
   return (
