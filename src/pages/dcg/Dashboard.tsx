@@ -193,9 +193,9 @@ const DcgDashboard = () => {
           ))}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-4">
           {/* Recent Activities */}
-          <Card className="col-span-4">
+          <Card className="col-span-full">
             <CardHeader>
               <CardTitle>Recent Activities</CardTitle>
               <CardDescription>
@@ -247,34 +247,6 @@ const DcgDashboard = () => {
                     </div>
                   </>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="col-span-3">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Common tasks for DCG management
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {quickActions.map((action, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-full justify-start h-auto p-3"
-                    onClick={action.action}
-                  >
-                    <action.icon className="h-4 w-4 mr-3" />
-                    <div className="text-left">
-                      <div className="font-medium">{action.title}</div>
-                      <div className="text-xs text-muted-foreground">{action.description}</div>
-                    </div>
-                  </Button>
-                ))}
               </div>
             </CardContent>
           </Card>
