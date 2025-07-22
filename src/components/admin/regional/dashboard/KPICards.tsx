@@ -249,8 +249,8 @@ const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selec
 
   const cards = getTabSpecificCards();
 
-  // Don't render KPI cards for events and members tabs
-  if (activeTab === 'events' || activeTab === 'members') {
+  // Don't render KPI cards for events, members, and discipleship tabs
+  if (activeTab === 'events' || activeTab === 'members' || activeTab === 'discipleship') {
     return null;
   }
 
