@@ -6,8 +6,7 @@ import {
   Calendar, 
   DollarSign, 
   BarChart2, 
-  MessageSquare,
-  UserCheck
+  MessageSquare
 } from "lucide-react";
 
 interface DcgAdminLayoutProps {
@@ -18,7 +17,6 @@ interface DcgAdminLayoutProps {
 const menuItems = [
   { title: "Dashboard", path: "/dcg/dashboard", icon: LayoutDashboard as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Members", path: "/dcg/members", icon: Users as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Attendance", path: "/dcg/attendance", icon: UserCheck as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Events", path: "/dcg/events", icon: Calendar as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Finances", path: "/dcg/finances", icon: DollarSign as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/dcg/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },

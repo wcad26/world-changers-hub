@@ -49,7 +49,7 @@ import SuperCommunication from "./pages/admin/super/Communication";
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
 import DcgMembers from "./pages/dcg/Members";
-import DcgAttendance from "./pages/dcg/Attendance";
+
 import DcgEvents from "./pages/dcg/Events";
 import DcgFinances from "./pages/dcg/Finances";
 import DcgReports from "./pages/dcg/Reports";
@@ -285,14 +285,6 @@ const App = () => {
               element={
                 <DcgProtectedRoute>
                   <DcgMembers />
-                </DcgProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/dcg/attendance" 
-              element={
-                <DcgProtectedRoute>
-                  <DcgAttendance />
                 </DcgProtectedRoute>
               } 
             />
