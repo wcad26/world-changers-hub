@@ -151,17 +151,6 @@ const RegionalDashboard: React.FC = () => {
           activeTab={activeTab}
         />
 
-        {/* KPI Cards */}
-        {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-        ) : (
-          <KPICards data={kpiData} activeTab={activeTab} />
-        )}
-
         {/* Main Content Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-6">
@@ -172,6 +161,19 @@ const RegionalDashboard: React.FC = () => {
             <TabsTrigger value="dcg">DCG</TabsTrigger>
             <TabsTrigger value="locations">Locations</TabsTrigger>
           </TabsList>
+
+          {/* KPI Cards */}
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-32" />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-6">
+              <KPICards data={kpiData} activeTab={activeTab} />
+            </div>
+          )}
 
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
