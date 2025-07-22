@@ -78,69 +78,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ filters }) => {
 
   return (
     <div className="space-y-6">
-
-      {/* Transactions Table */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Financial Transactions</CardTitle>
-            <CardDescription>
-              {filteredTransactions.length} of {transactions?.length || 0} transactions
-            </CardDescription>
-          </div>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Record Transaction
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>DCG</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell>
-                    {format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-32 truncate">
-                      {transaction.description || 'No description'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {transaction.category?.name || 'Uncategorized'}
-                  </TableCell>
-                  <TableCell>
-                    {getTransactionBadge(transaction.category?.type || '')}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`font-medium ${
-                      transaction.category?.type?.toLowerCase() === 'income' 
-                        ? 'text-green-600' 
-                        : 'text-red-600'
-                    }`}>
-                      {transaction.category?.type?.toLowerCase() === 'expense' ? '-' : '+'}
-                      {formatCurrency(Number(transaction.amount))}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    {transaction.dcg?.name || 'Regional'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      {/* Finance tab content - KPI cards handled by parent component */}
     </div>
   );
 };
