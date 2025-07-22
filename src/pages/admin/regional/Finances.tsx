@@ -165,45 +165,44 @@ const RegionalFinances: React.FC = () => {
           </Card>
         </div>
 
-        {/* Detailed Tables */}
-        <div className="flex justify-between items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-                <Plus className="mr-2 h-4 w-4" />
-                Record Transaction
-                <ChevronDown className="ml-2 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              <DropdownMenuItem onClick={() => setRecordTitheDialogOpen(true)} className="cursor-pointer">
-                <PiggyBank className="mr-2 h-4 w-4" />
-                Record Tithe
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setOfferingDialogOpen(true)} className="cursor-pointer">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Record Offering
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRecordSpecialGivingDialogOpen(true)} className="cursor-pointer">
-                <ArrowUpRight className="mr-2 h-4 w-4" />
-                Record Special Giving
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setRecordExpenseDialogOpen(true)} className="cursor-pointer">
-                <Receipt className="mr-2 h-4 w-4" />
-                Record Expense
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        
         <Tabs defaultValue="transactions" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="transactions">All Transactions</TabsTrigger>
-            <TabsTrigger value="tithes">Tithes</TabsTrigger>
-            <TabsTrigger value="offerings">Offerings</TabsTrigger>
-            <TabsTrigger value="special">Special Giving</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+              <TabsTrigger value="tithes">Tithes</TabsTrigger>
+              <TabsTrigger value="offerings">Offerings</TabsTrigger>
+              <TabsTrigger value="special">Special Giving</TabsTrigger>
+              <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            </TabsList>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Record Transaction
+                  <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuItem onClick={() => setRecordTitheDialogOpen(true)} className="cursor-pointer">
+                  <PiggyBank className="mr-2 h-4 w-4" />
+                  Record Tithe
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setOfferingDialogOpen(true)} className="cursor-pointer">
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  Record Offering
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRecordSpecialGivingDialogOpen(true)} className="cursor-pointer">
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  Record Special Giving
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setRecordExpenseDialogOpen(true)} className="cursor-pointer">
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Record Expense
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <TabsContent value="transactions" className="space-y-4">
             <Card>
