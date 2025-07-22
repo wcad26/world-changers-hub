@@ -523,6 +523,63 @@ const RegionalFinances: React.FC = () => {
                 </CardContent>
               </Card>
             </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Income Trends</CardTitle>
+                  <CardDescription>
+                    Monthly income over the past 6 months
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[200px]">
+                    <LineChart
+                      data={[
+                        { month: "May", income: 25500 },
+                        { month: "Jun", income: 27000 },
+                        { month: "Jul", income: 26000 },
+                        { month: "Aug", income: 26500 },
+                        { month: "Sep", income: 27000 },
+                        { month: "Oct", income: 27500 },
+                      ]}
+                      index="month"
+                      categories={["income"]}
+                      colors={["#8b5cf6"]}
+                      valueFormatter={(value) => `$${value.toLocaleString()}`}
+                      className="h-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Expense Breakdown</CardTitle>
+                  <CardDescription>
+                    Current month expense distribution
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[200px]">
+                    <BarChart
+                      data={[
+                        { category: "Staffing", amount: 12000 },
+                        { category: "Facilities", amount: 4500 },
+                        { category: "Ministries", amount: 3250 },
+                        { category: "Admin", amount: 1500 },
+                        { category: "Outreach", amount: 1500 },
+                      ]}
+                      index="category"
+                      categories={["amount"]}
+                      colors={["#8b5cf6"]}
+                      valueFormatter={(value) => `$${value.toLocaleString()}`}
+                      className="h-full"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="tithes">
@@ -1680,62 +1737,6 @@ const RegionalFinances: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Income Trends</CardTitle>
-                      <CardDescription>
-                        Monthly income over the past 6 months
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <LineChart
-                          data={[
-                            { month: "May", income: 25500 },
-                            { month: "Jun", income: 27000 },
-                            { month: "Jul", income: 26000 },
-                            { month: "Aug", income: 26500 },
-                            { month: "Sep", income: 27000 },
-                            { month: "Oct", income: 27500 },
-                          ]}
-                          index="month"
-                          categories={["income"]}
-                          colors={["#8b5cf6"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Expense Breakdown</CardTitle>
-                      <CardDescription>
-                        Current month expense distribution
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[200px]">
-                        <BarChart
-                          data={[
-                            { category: "Staffing", amount: 12000 },
-                            { category: "Facilities", amount: 4500 },
-                            { category: "Ministries", amount: 3250 },
-                            { category: "Admin", amount: 1500 },
-                            { category: "Outreach", amount: 1500 },
-                          ]}
-                          index="category"
-                          categories={["amount"]}
-                          colors={["#8b5cf6"]}
-                          valueFormatter={(value) => `$${value.toLocaleString()}`}
-                          className="h-full"
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
