@@ -527,25 +527,25 @@ const RegionalFinances: React.FC = () => {
             <div className="grid grid-cols-1 gap-6 mb-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Income Trends</CardTitle>
+                  <CardTitle>Financial Trends</CardTitle>
                   <CardDescription>
-                    Monthly income over the past 6 months
+                    Monthly income and expense trends over the past 6 months
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[200px] w-full">
                     <LineChart
                       data={[
-                        { month: "May", income: 25500 },
-                        { month: "Jun", income: 27000 },
-                        { month: "Jul", income: 26000 },
-                        { month: "Aug", income: 26500 },
-                        { month: "Sep", income: 27000 },
-                        { month: "Oct", income: 27500 },
+                        { month: "May", income: 25500, expenses: 21000 },
+                        { month: "Jun", income: 27000, expenses: 22500 },
+                        { month: "Jul", income: 26000, expenses: 21500 },
+                        { month: "Aug", income: 26500, expenses: 22000 },
+                        { month: "Sep", income: 27000, expenses: 22500 },
+                        { month: "Oct", income: 27500, expenses: 22750 },
                       ]}
                       index="month"
-                      categories={["income"]}
-                      colors={["#8b5cf6"]}
+                      categories={["income", "expenses"]}
+                      colors={["#10b981", "#ef4444"]}
                       valueFormatter={(value) => `$${value.toLocaleString()}`}
                       className="h-full w-full"
                     />
