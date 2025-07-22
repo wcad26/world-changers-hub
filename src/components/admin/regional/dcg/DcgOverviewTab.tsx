@@ -72,56 +72,6 @@ const DcgOverviewTab = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>DCG Overview</CardTitle>
-          <CardDescription>
-            At-a-glance summary of your region's DCGs.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow p-4 border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total DCGs</p>
-                  <p className="text-2xl font-bold">{statsLoading ? "..." : totalDcgs}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <Home className="h-6 w-6 text-blue-500" />
-                </div>
-              </div>
-              <p className="text-xs text-green-500 mt-2">Active DCGs in region</p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4 border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Total Members</p>
-                  <p className="text-2xl font-bold">{statsLoading ? "..." : totalMembers}</p>
-                </div>
-                <div className="p-3 bg-purple-100 rounded-full">
-                  <Users className="h-6 w-6 text-purple-500" />
-                </div>
-              </div>
-              <p className="text-xs text-green-500 mt-2">Across all DCGs</p>
-            </div>
-            
-            <div className="bg-white rounded-lg shadow p-4 border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-500">Avg. Attendance</p>
-                  <p className="text-2xl font-bold">{statsLoading ? "..." : avgAttendance}%</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <Calendar className="h-6 w-6 text-green-500" />
-                </div>
-              </div>
-              <p className="text-xs text-green-500 mt-2">Regional average</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
