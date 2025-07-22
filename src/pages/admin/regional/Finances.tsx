@@ -472,14 +472,54 @@ const RegionalFinances: React.FC = () => {
     <RegionalAdminLayout>
       <div className="-mt-4">
         <Tabs defaultValue="overview">
-          <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="tithes">Tithes</TabsTrigger>
-            <TabsTrigger value="offerings">Offerings</TabsTrigger>
-            <TabsTrigger value="special-giving">Special Giving</TabsTrigger>
-            <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <TabsList className="grid grid-cols-1 md:grid-cols-6 w-full max-w-4xl">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="tithes">Tithes</TabsTrigger>
+              <TabsTrigger value="offerings">Offerings</TabsTrigger>
+              <TabsTrigger value="special-giving">Special Giving</TabsTrigger>
+              <TabsTrigger value="expenses">Expenses</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
+            </TabsList>
+            
+            <div className="flex items-center gap-2">
+              <Label htmlFor="period-filter" className="text-sm font-medium">Period:</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="period-filter"
+                    variant="outline"
+                    className="w-[280px] justify-start text-left font-normal"
+                  >
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    <span>Last 6 months</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-3 space-y-2">
+                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                      Last 30 days
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                      Last 3 months
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start bg-accent" size="sm">
+                      Last 6 months
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                      Last 12 months
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                      This year
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" size="sm">
+                      Custom range
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
           
           <TabsContent value="overview">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
