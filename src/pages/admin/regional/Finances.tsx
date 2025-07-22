@@ -482,6 +482,47 @@ const RegionalFinances: React.FC = () => {
           </TabsList>
           
           <TabsContent value="overview">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Income</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">$0.00</div>
+                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Expense</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">$0.00</div>
+                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">$0.00</div>
+                  <p className="text-xs text-muted-foreground mt-1">This month</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Current Account Balance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">$0.00</div>
+                  <p className="text-xs text-muted-foreground mt-1">Available funds</p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="tithes">
