@@ -54,8 +54,9 @@ const DcgProfile: React.FC = () => {
   };
 
   const getLeaderName = (dcg: any): string => {
-    if (!dcg.leader) return "No leader assigned";
-    return `${dcg.leader.first_name || ""} ${dcg.leader.last_name || ""}`.trim() || dcg.leader.email || "Unknown";
+    if (!dcg.leader || !dcg.leader.profiles) return "No leader assigned";
+    const profile = dcg.leader.profiles;
+    return `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Unknown leader";
   };
 
   const activeMembers = members?.filter(m => m.is_active) || [];
