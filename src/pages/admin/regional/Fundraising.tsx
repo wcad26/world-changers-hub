@@ -6,12 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign, Calendar, Target, Users, Plus, PiggyBank, TrendingUp, Search, Loader2, Eye, BarChart3 } from "lucide-react";
-import { useFundraisingCampaigns, useFundraisingAnalytics, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
-import { toast } from "@/hooks/use-toast";
+import { DollarSign, Users, Plus, Search, Loader2, Eye } from "lucide-react";
+import { useFundraisingCampaigns, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
 import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
-import FundraisingAnalyticsChart from "@/components/admin/regional/FundraisingAnalyticsChart";
 
 const RegionalFundraising: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -21,7 +19,6 @@ const RegionalFundraising: React.FC = () => {
   const [selectedCampaign, setSelectedCampaign] = useState<FundraisingCampaign | null>(null);
   
   const { data: campaigns = [], isLoading: campaignsLoading } = useFundraisingCampaigns({ status: statusFilter });
-  const { data: analytics, isLoading: analyticsLoading } = useFundraisingAnalytics();
 
   const filteredCampaigns = campaigns.filter(campaign => 
     campaign.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,13 +30,6 @@ const RegionalFundraising: React.FC = () => {
   const handleCampaignDetails = (campaign: FundraisingCampaign) => {
     setSelectedCampaign(campaign);
     setDetailsDialogOpen(true);
-  };
-
-  const generateReport = () => {
-    toast({
-      title: "Report Generated",
-      description: "Fundraising report has been generated and will be downloaded shortly.",
-    });
   };
 
   return (
@@ -59,11 +49,9 @@ const RegionalFundraising: React.FC = () => {
         </div>
         
         <Tabs defaultValue="active">
-          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-1 md:grid-cols-2 w-full max-w-md">
             <TabsTrigger value="active">Active Campaigns</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
           
           <TabsContent value="active">
@@ -237,140 +225,6 @@ const RegionalFundraising: React.FC = () => {
                         )}
                       </TableBody>
                     </Table>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Fundraising Analytics</CardTitle>
-                <CardDescription>
-                  Track and analyze fundraising performance metrics.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {analyticsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">
-                            ${analytics?.totalRaised?.toLocaleString() || '0'}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">From all campaigns</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">
-                            {analytics?.activeCampaigns || 0}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Currently running</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium">Total Donors</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">
-                            {analytics?.totalDonors || 0}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">All-time donations</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                    
-                    <FundraisingAnalyticsChart />
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Fundraising Reports</CardTitle>
-                <CardDescription>
-                  Generate and download fundraising performance reports.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Monthly Summary Report</CardTitle>
-                        <CardDescription>
-                          Comprehensive overview of fundraising activities
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={generateReport} className="w-full">
-                          <BarChart3 className="mr-2 h-4 w-4" />
-                          Generate Monthly Report
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Campaign Performance Report</CardTitle>
-                        <CardDescription>
-                          Detailed analysis of individual campaign success
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={generateReport} className="w-full" variant="outline">
-                          <TrendingUp className="mr-2 h-4 w-4" />
-                          Generate Performance Report
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Donor Activity Report</CardTitle>
-                        <CardDescription>
-                          Track donor engagement and contribution patterns
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={generateReport} className="w-full" variant="outline">
-                          <Users className="mr-2 h-4 w-4" />
-                          Generate Donor Report
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Financial Summary</CardTitle>
-                        <CardDescription>
-                          Financial breakdown and allocation overview
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <Button onClick={generateReport} className="w-full" variant="outline">
-                          <DollarSign className="mr-2 h-4 w-4" />
-                          Generate Financial Report
-                        </Button>
-                      </CardContent>
-                    </Card>
                   </div>
                 </div>
               </CardContent>
