@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers } from "@/hooks/useDcgMembers";
-import { useFinancialTransactions } from "@/hooks/useFinancials";
+import { useFinancialTransactions } from "@/hooks/useFinancials"; // Fixed import
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
