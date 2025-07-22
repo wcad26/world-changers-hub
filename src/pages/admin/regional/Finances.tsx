@@ -5,7 +5,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, Plus } from "lucide-react";
+import { DollarSign, Calendar, Receipt, PiggyBank, Download, ArrowUpRight, Filter, TrendingUp, Search, Plus, ChevronDown } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears } from "date-fns";
 import { useFinancialTransactions, useFinancialSummary } from "@/hooks/useFinancials";
@@ -106,24 +107,6 @@ const RegionalFinances: React.FC = () => {
               Track and manage finances, tithes, offerings and expenses
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setRecordTitheDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Record Tithe
-            </Button>
-            <Button onClick={() => setOfferingDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Record Offering
-            </Button>
-            <Button onClick={() => setRecordSpecialGivingDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Record Special Giving
-            </Button>
-            <Button onClick={() => setRecordExpenseDialogOpen(true)} variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Record Expense
-            </Button>
-          </div>
         </div>
 
         {/* Period Filter */}
@@ -195,6 +178,36 @@ const RegionalFinances: React.FC = () => {
         </div>
 
         {/* Detailed Tables */}
+        <div className="flex justify-between items-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Plus className="mr-2 h-4 w-4" />
+                Record Transaction
+                <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              <DropdownMenuItem onClick={() => setRecordTitheDialogOpen(true)} className="cursor-pointer">
+                <PiggyBank className="mr-2 h-4 w-4" />
+                Record Tithe
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setOfferingDialogOpen(true)} className="cursor-pointer">
+                <DollarSign className="mr-2 h-4 w-4" />
+                Record Offering
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRecordSpecialGivingDialogOpen(true)} className="cursor-pointer">
+                <ArrowUpRight className="mr-2 h-4 w-4" />
+                Record Special Giving
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setRecordExpenseDialogOpen(true)} className="cursor-pointer">
+                <Receipt className="mr-2 h-4 w-4" />
+                Record Expense
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        
         <Tabs defaultValue="transactions" className="space-y-4">
           <TabsList>
             <TabsTrigger value="transactions">All Transactions</TabsTrigger>
