@@ -21,6 +21,7 @@ const DCGTab: React.FC = () => {
     },
     quickDateRange: '1-month'
   });
+  
   const { data: dcgs, isLoading, error } = useDcgs();
 
   const getStatusBadge = (isActive: boolean) => {
