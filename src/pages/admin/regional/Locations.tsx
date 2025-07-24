@@ -17,6 +17,7 @@ import { useMembers } from "@/hooks/useMembers";
 import { useToast } from "@/hooks/use-toast";
 import type { Database } from "@/integrations/supabase/types";
 import GoogleMap from "@/components/ui/GoogleMap";
+import LocationCoordinatePicker from "@/components/ui/LocationCoordinatePicker";
 
 type Location = Database['public']['Tables']['locations']['Row'];
 
@@ -27,6 +28,7 @@ const RegionalLocations: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{lat: number, lng: number, address: string} | null>(null);
+  const [editSelectedLocation, setEditSelectedLocation] = useState<{lat: number, lng: number, address: string} | null>(null);
   const { toast } = useToast();
   const { userRegion } = useAuth();
   
@@ -132,6 +134,18 @@ const RegionalLocations: React.FC = () => {
       contact_person: location.contact_person || "",
       contact_phone: location.contact_phone || "",
     });
+    
+    // Set edit coordinates
+    if (location.latitude && location.longitude) {
+      setEditSelectedLocation({
+        lat: location.latitude,
+        lng: location.longitude,
+        address: location.address
+      });
+    } else {
+      setEditSelectedLocation(null);
+    }
+    
     setIsEditDialogOpen(true);
   }
 
@@ -326,27 +340,20 @@ const RegionalLocations: React.FC = () => {
                          />
                       </div>
                       
-                      <div className="mt-6 border rounded-md p-4">
-                        <h3 className="text-sm font-medium mb-2">Location Map</h3>
-                        <GoogleMap
-                          height="300px"
-                          onLocationSelect={(lat, lng, address) => {
+                      <div className="mt-6">
+                        <h3 className="text-sm font-medium mb-4">Location Coordinates</h3>
+                        <LocationCoordinatePicker
+                          latitude={selectedLocation?.lat}
+                          longitude={selectedLocation?.lng}
+                          onCoordinateSelect={(lat, lng, address) => {
                             setSelectedLocation({ lat, lng, address });
                             form.setValue('latitude', lat);
                             form.setValue('longitude', lng);
-                            // Optionally update address field
                             if (address && !form.getValues('address')) {
                               form.setValue('address', address);
                             }
                           }}
                         />
-                        {selectedLocation && (
-                          <div className="mt-2 p-2 bg-muted rounded-sm">
-                            <p className="text-xs text-muted-foreground">
-                              Selected: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
-                            </p>
-                          </div>
-                        )}
                       </div>
                       
                        <div className="flex justify-end gap-4">
@@ -506,9 +513,26 @@ const RegionalLocations: React.FC = () => {
                              </FormItem>
                            )}
                          />
-                      </div>
-                      
-                       <div className="flex justify-end gap-4">
+                       </div>
+                       
+                       <div className="mt-6">
+                         <h3 className="text-sm font-medium mb-4">Location Coordinates</h3>
+                         <LocationCoordinatePicker
+                           latitude={editSelectedLocation?.lat}
+                           longitude={editSelectedLocation?.lng}
+                           initialAddress={editSelectedLocation?.address}
+                           onCoordinateSelect={(lat, lng, address) => {
+                             setEditSelectedLocation({ lat, lng, address });
+                             editForm.setValue('latitude', lat);
+                             editForm.setValue('longitude', lng);
+                             if (address && !editForm.getValues('address')) {
+                               editForm.setValue('address', address);
+                             }
+                           }}
+                         />
+                       </div>
+                       
+                        <div className="flex justify-end gap-4">
                          <Button type="button" variant="outline" disabled={updateLocation.isPending} onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
                          <Button type="submit" disabled={updateLocation.isPending}>
                            {updateLocation.isPending ? (

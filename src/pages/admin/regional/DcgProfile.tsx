@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, Calendar, MapPin, Phone, Clock } from "lucide-react";
+import { ArrowLeft, Users, Calendar, MapPin, Phone, Clock, Edit } from "lucide-react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,13 +8,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers } from "@/hooks/useDcgMembers";
-import { useFinancialTransactions } from "@/hooks/useFinancials"; // Fixed import
+import { useFinancialTransactions } from "@/hooks/useFinancials";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
 
 const DcgProfile: React.FC = () => {
   const { dcgId } = useParams<{ dcgId: string }>();
   const navigate = useNavigate();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: members, isLoading: membersLoading } = useDcgMembers(dcgId || "");
@@ -91,9 +93,19 @@ const DcgProfile: React.FC = () => {
                   <CardTitle className="text-2xl">{dcg.name}</CardTitle>
                   <p className="text-muted-foreground mt-2">{dcg.description}</p>
                 </div>
-                <Badge variant={dcg.is_active ? "default" : "secondary"}>
-                  {dcg.is_active ? "Active" : "Inactive"}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditDialogOpen(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Location
+                  </Button>
+                  <Badge variant={dcg.is_active ? "default" : "secondary"}>
+                    {dcg.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -270,6 +282,13 @@ const DcgProfile: React.FC = () => {
             </TabsContent>
           </Tabs>
         </div>
+        
+        {/* Edit DCG Dialog */}
+        <EditDcgDialog
+          open={isEditDialogOpen}
+          setOpen={setIsEditDialogOpen}
+          dcg={dcg}
+        />
       </div>
     </RegionalAdminLayout>
   );

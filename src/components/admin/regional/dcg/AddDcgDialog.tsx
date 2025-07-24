@@ -19,6 +19,7 @@ import { useCreateLocation } from '@/hooks/useLocations';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import LocationCoordinatePicker from '@/components/ui/LocationCoordinatePicker';
 
 interface AddDcgDialogProps {
   open: boolean;
@@ -34,6 +35,8 @@ const enhancedDcgSchema = dcgSchema.extend({
   city: z.string().min(2, "Please enter a city."),
   state: z.string().min(2, "Please enter a state/region/province."),
   zip: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => {
@@ -43,6 +46,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
   const createLocationMutation = useCreateLocation();
   const { data: members = [] } = useMembers(userRegion?.id);
   const [leaderOpen, setLeaderOpen] = useState(false);
+  const [selectedCoordinates, setSelectedCoordinates] = useState<{lat: number, lng: number, address?: string} | null>(null);
 
   const form = useForm<z.infer<typeof enhancedDcgSchema>>({
     resolver: zodResolver(enhancedDcgSchema),
@@ -58,6 +62,8 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
       city: '',
       state: '',
       zip: '',
+      latitude: undefined,
+      longitude: undefined,
     },
   });
 
@@ -77,6 +83,8 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
         city: values.city,
         state: values.state,
         zip: values.zip,
+        latitude: values.latitude,
+        longitude: values.longitude,
         contact_person: selectedMember.profiles?.first_name && selectedMember.profiles?.last_name 
           ? `${selectedMember.profiles.first_name} ${selectedMember.profiles.last_name}`
           : undefined,
@@ -390,6 +398,24 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+              </div>
+              
+              {/* Location Coordinate Picker */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Location Coordinates</h3>
+                <LocationCoordinatePicker
+                  latitude={selectedCoordinates?.lat}
+                  longitude={selectedCoordinates?.lng}
+                  initialAddress={selectedCoordinates?.address}
+                  onCoordinateSelect={(lat, lng, address) => {
+                    setSelectedCoordinates({ lat, lng, address });
+                    form.setValue('latitude', lat);
+                    form.setValue('longitude', lng);
+                    if (address && !form.getValues('address')) {
+                      form.setValue('address', address);
+                    }
+                  }}
                 />
               </div>
             </form>
