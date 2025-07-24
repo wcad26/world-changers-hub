@@ -11,6 +11,7 @@ export interface PublicLocation extends Location {
   region?: Region;
   dcg?: DCG & {
     leader?: Profile;
+    member_count?: number;
   };
 }
 
@@ -34,7 +35,7 @@ export const usePublicLocations = () => {
         throw locationsError;
       }
 
-      // Get DCG information for DCG locations
+      // Get DCG information for DCG locations with enhanced data
       const dcgLocationNames = locations
         ?.filter(loc => loc.type === 'DCG Location')
         .map(loc => loc.name.replace(' - DCG Location', ''));
@@ -46,13 +47,29 @@ export const usePublicLocations = () => {
           .select(`
             id,
             name,
+            description,
             contact_phone,
-            region_id
+            meeting_day,
+            meeting_time,
+            region_id,
+            leader:profiles!dcgs_leader_id_fkey(*)
           `)
           .in('name', dcgLocationNames);
 
-        if (!dcgError) {
-          dcgData = dcgs || [];
+        if (!dcgError && dcgs) {
+          // Get member counts for each DCG
+          const dcgIds = dcgs.map(dcg => dcg.id);
+          const { data: memberCounts } = await supabase
+            .from('dcg_members')
+            .select('dcg_id')
+            .in('dcg_id', dcgIds)
+            .eq('is_active', true);
+
+          // Map member counts to DCGs
+          dcgData = dcgs.map(dcg => ({
+            ...dcg,
+            member_count: memberCounts?.filter(m => m.dcg_id === dcg.id).length || 0
+          }));
         } else {
           console.error('Error fetching DCG data:', dcgError);
         }
