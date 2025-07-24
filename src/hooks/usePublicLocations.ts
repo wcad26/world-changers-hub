@@ -4,16 +4,22 @@ import type { Database } from '@/integrations/supabase/types';
 
 type Location = Database['public']['Tables']['locations']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
+type DCG = Database['public']['Tables']['dcgs']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export interface PublicLocation extends Location {
   region?: Region;
+  dcg?: DCG & {
+    leader?: Profile;
+  };
 }
 
 export const usePublicLocations = () => {
   return useQuery({
     queryKey: ['public-locations'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get locations with regions
+      const { data: locations, error: locationsError } = await supabase
         .from('locations')
         .select(`
           *,
@@ -23,12 +29,45 @@ export const usePublicLocations = () => {
         .order('is_featured', { ascending: false })
         .order('name');
 
-      if (error) {
-        console.error('Error fetching public locations:', error);
-        throw error;
+      if (locationsError) {
+        console.error('Error fetching public locations:', locationsError);
+        throw locationsError;
       }
 
-      return data as PublicLocation[];
+      // Get DCG information for DCG locations
+      const dcgLocationNames = locations
+        ?.filter(loc => loc.type === 'DCG Location')
+        .map(loc => loc.name.replace(' - DCG Location', ''));
+
+      let dcgData: any[] = [];
+      if (dcgLocationNames && dcgLocationNames.length > 0) {
+        const { data: dcgs, error: dcgError } = await supabase
+          .from('dcgs')
+          .select(`
+            id,
+            name,
+            contact_phone,
+            region_id,
+            leader:profiles!dcgs_leader_id_fkey(phone)
+          `)
+          .in('name', dcgLocationNames);
+
+        if (!dcgError) {
+          dcgData = dcgs || [];
+        }
+      }
+
+      // Map DCG data to locations
+      const enrichedLocations = locations?.map(location => {
+        if (location.type === 'DCG Location') {
+          const dcgName = location.name.replace(' - DCG Location', '');
+          const dcg = dcgData.find(d => d.name === dcgName && d.region_id === location.region_id);
+          return { ...location, dcg };
+        }
+        return location;
+      });
+
+      return enrichedLocations as PublicLocation[];
     },
   });
 };
