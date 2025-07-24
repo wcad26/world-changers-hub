@@ -47,13 +47,14 @@ export const usePublicLocations = () => {
             id,
             name,
             contact_phone,
-            region_id,
-            leader:profiles!dcgs_leader_id_fkey(phone)
+            region_id
           `)
           .in('name', dcgLocationNames);
 
         if (!dcgError) {
           dcgData = dcgs || [];
+        } else {
+          console.error('Error fetching DCG data:', dcgError);
         }
       }
 
