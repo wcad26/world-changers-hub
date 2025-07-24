@@ -54,7 +54,10 @@ const Locations = () => {
 
   // Helper function to format region name for URL
   const formatRegionForUrl = (region: string) => {
-    return region.toLowerCase().replace(/\s+/g, '-');
+    // Convert region name to URL-friendly format
+    return region.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, ''); // Remove special characters
   };
 
   return (
