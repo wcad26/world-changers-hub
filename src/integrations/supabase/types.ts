@@ -737,7 +737,10 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           facilities: string | null
+          fellowship_times: Json | null
           id: string
+          image_url: string | null
+          is_featured: boolean | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -746,6 +749,8 @@ export type Database = {
           status: string
           type: string
           updated_at: string
+          website_url: string | null
+          whatsapp_link: string | null
           zip: string
         }
         Insert: {
@@ -756,7 +761,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           facilities?: string | null
+          fellowship_times?: Json | null
           id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -765,6 +773,8 @@ export type Database = {
           status?: string
           type: string
           updated_at?: string
+          website_url?: string | null
+          whatsapp_link?: string | null
           zip: string
         }
         Update: {
@@ -775,7 +785,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           facilities?: string | null
+          fellowship_times?: Json | null
           id?: string
+          image_url?: string | null
+          is_featured?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string
@@ -784,6 +797,8 @@ export type Database = {
           status?: string
           type?: string
           updated_at?: string
+          website_url?: string | null
+          whatsapp_link?: string | null
           zip?: string
         }
         Relationships: [

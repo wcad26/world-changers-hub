@@ -16,6 +16,16 @@ export const locationSchema = z.object({
   longitude: z.number().optional(),
   contact_person: z.string().optional(),
   contact_phone: z.string().optional(),
+  image_url: z.string().url().optional().or(z.literal("")),
+  website_url: z.string().url().optional().or(z.literal("")),
+  whatsapp_link: z.string().url().optional().or(z.literal("")),
+  fellowship_times: z.array(z.object({
+    day: z.string(),
+    time: z.string(),
+    type: z.string()
+  })).optional(),
+  capacity: z.number().positive().optional(),
+  facilities: z.string().optional(),
 });
 
 export type NewLocationData = z.infer<typeof locationSchema>;
@@ -67,6 +77,12 @@ export const useCreateLocation = () => {
         longitude: newLocation.longitude || null,
         contact_person: newLocation.contact_person || null,
         contact_phone: newLocation.contact_phone || null,
+        image_url: newLocation.image_url || null,
+        website_url: newLocation.website_url || null,
+        whatsapp_link: newLocation.whatsapp_link || null,
+        fellowship_times: newLocation.fellowship_times || [],
+        capacity: newLocation.capacity || null,
+        facilities: newLocation.facilities || null,
         region_id: userRegion.id,
       };
 

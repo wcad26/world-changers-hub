@@ -4,166 +4,53 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { MapPin, Clock, ExternalLink, Phone, Search, ChevronDown } from 'lucide-react';
-
-// Mock data for WCA centers and DCG homes
-const locations = [
-  {
-    id: 1,
-    type: "center",
-    name: "WCA Main Center",
-    region: "North East",
-    address: "123 Transformation Ave, New York, NY 10001",
-    city: "New York",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2075&q=80",
-    phone: "+1 (234) 567-890",
-    fellowshipTimes: [
-      "Sunday: 10:00 AM - 12:00 PM",
-      "Wednesday: 6:30 PM - 8:00 PM",
-      "Friday: 7:00 PM - 9:00 PM"
-    ],
-    coordinates: {
-      lat: 40.7128,
-      lng: -74.0060
-    }
-  },
-  {
-    id: 2,
-    type: "center",
-    name: "WCA Eastside Branch",
-    region: "Mid West",
-    address: "456 Vision St, Chicago, IL 60601",
-    city: "Chicago",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    phone: "+1 (345) 678-901",
-    fellowshipTimes: [
-      "Sunday: 11:00 AM - 1:00 PM",
-      "Tuesday: 7:00 PM - 8:30 PM"
-    ],
-    coordinates: {
-      lat: 41.8781,
-      lng: -87.6298
-    }
-  },
-  {
-    id: 3,
-    type: "dcg",
-    name: "Bright Light DCG",
-    region: "North East",
-    address: "789 Community Rd, Los Angeles, CA 90001",
-    city: "Los Angeles",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1570129477492-45c003edd2be?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    phone: "+1 (456) 789-012",
-    fellowshipTimes: [
-      "Thursday: 7:00 PM - 8:30 PM",
-      "Saturday: 5:00 PM - 7:00 PM"
-    ],
-    coordinates: {
-      lat: 34.0522,
-      lng: -118.2437
-    }
-  },
-  {
-    id: 4,
-    type: "dcg",
-    name: "New Life DCG",
-    region: "Mid West",
-    address: "101 Hope Lane, Houston, TX 77001",
-    city: "Houston",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
-    phone: "+1 (567) 890-123",
-    fellowshipTimes: [
-      "Monday: 6:30 PM - 8:00 PM",
-      "Friday: 7:00 PM - 9:00 PM"
-    ],
-    coordinates: {
-      lat: 29.7604,
-      lng: -95.3698
-    }
-  },
-  {
-    id: 5,
-    type: "center",
-    name: "WCA Downtown Center",
-    region: "South East",
-    address: "222 Faith Blvd, Miami, FL 33101",
-    city: "Miami",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80",
-    phone: "+1 (678) 901-234",
-    fellowshipTimes: [
-      "Sunday: 9:00 AM - 11:00 AM",
-      "Wednesday: 7:00 PM - 8:30 PM"
-    ],
-    coordinates: {
-      lat: 25.7617,
-      lng: -80.1918
-    }
-  },
-  {
-    id: 6,
-    type: "dcg",
-    name: "Grace Covenant DCG",
-    region: "South East",
-    address: "333 Blessing Ave, Phoenix, AZ 85001",
-    city: "Phoenix",
-    country: "United States",
-    image: "https://images.unsplash.com/photo-1598228723793-52759bba239c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80",
-    phone: "+1 (789) 012-345",
-    fellowshipTimes: [
-      "Tuesday: 7:00 PM - 8:30 PM",
-      "Saturday: 10:00 AM - 12:00 PM"
-    ],
-    coordinates: {
-      lat: 33.4484,
-      lng: -112.0740
-    }
-  },
-];
+import { usePublicLocations } from '@/hooks/usePublicLocations';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const Locations = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredLocations, setFilteredLocations] = useState(locations);
-  const [countries, setCountries] = useState<string[]>([]);
   const [selectedCountry, setSelectedCountry] = useState('all');
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    
-    // Extract unique countries
-    const uniqueCountries = [...new Set(locations.map(location => location.country))];
-    setCountries(uniqueCountries);
-  }, []);
-
-  useEffect(() => {
-    let result = locations;
-    
+  
+  const { data: locations = [], isLoading, error } = usePublicLocations();
+  
+  // Extract unique countries from real data
+  const countries = [...new Set(locations.map(location => location.region?.name || 'Unknown').filter(Boolean))];
+  
+  // Filter locations based on user selections
+  const filteredLocations = locations.filter(location => {
     // Filter by type
     if (activeFilter !== 'all') {
-      result = result.filter(location => location.type === activeFilter);
+      const filterType = activeFilter === 'center' ? 'WCA Center' : 'DCG Location';
+      if (location.type !== filterType) return false;
     }
     
-    // Filter by country
+    // Filter by region/country
     if (selectedCountry !== 'all') {
-      result = result.filter(location => location.country === selectedCountry);
+      if (location.region?.name !== selectedCountry) return false;
     }
     
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      result = result.filter(location => 
-        location.name.toLowerCase().includes(query) || 
-        location.address.toLowerCase().includes(query) ||
-        location.city.toLowerCase().includes(query)
-      );
+      const searchFields = [
+        location.name,
+        location.address,
+        location.city,
+        location.region?.name || ''
+      ].join(' ').toLowerCase();
+      
+      if (!searchFields.includes(query)) return false;
     }
     
-    setFilteredLocations(result);
-  }, [activeFilter, searchQuery, selectedCountry]);
+    return true;
+  });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Helper function to format region name for URL
   const formatRegionForUrl = (region: string) => {
@@ -262,7 +149,24 @@ const Locations = () => {
         {/* Locations Grid */}
         <section className="py-16">
           <div className="container-custom">
-            {filteredLocations.length === 0 ? (
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-4">
+                    <Skeleton className="h-48 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to load locations. Please try again later.
+                </AlertDescription>
+              </Alert>
+            ) : filteredLocations.length === 0 ? (
               <div className="text-center py-12">
                 <h3 className="text-xl font-medium mb-2">No locations found</h3>
                 <p className="text-gray-600 dark:text-gray-400">
@@ -275,24 +179,24 @@ const Locations = () => {
                   <GlassCard key={location.id} className="overflow-hidden">
                     <div className="h-48 relative overflow-hidden">
                       <img 
-                        src={location.image} 
+                        src={location.image_url || '/placeholder.svg'} 
                         alt={location.name} 
                         className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                         loading="lazy"
                       />
                       <div className="absolute top-4 right-4">
                         <span className={`text-xs font-medium px-3 py-1 rounded-full ${
-                          location.type === 'center' 
+                          location.type === 'WCA Center' 
                             ? 'bg-wca-purple text-white' 
                             : 'bg-wca-teal text-white'
                         }`}>
-                          {location.type === 'center' ? 'WCA Center' : 'DCG Home'}
+                          {location.type}
                         </span>
                       </div>
-                      {location.type === 'center' && location.region && (
+                      {location.type === 'WCA Center' && location.region && (
                         <div className="absolute top-4 left-4">
                           <span className="text-xs font-medium px-3 py-1 rounded-full bg-white/80 text-gray-800">
-                            {location.region} Region
+                            {location.region.name} Region
                           </span>
                         </div>
                       )}
@@ -303,56 +207,64 @@ const Locations = () => {
                         <MapPin size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
                         <span className="text-sm">{location.address}</span>
                       </div>
-                      <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
-                        <Phone size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                        <span className="text-sm">{location.phone}</span>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <div className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-2">
-                          <Clock size={16} className="mr-2 text-wca-purple" />
-                          <span>Fellowship Times</span>
+                      {location.contact_phone && (
+                        <div className="flex items-start text-gray-600 dark:text-gray-300 mb-4">
+                          <Phone size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
+                          <span className="text-sm">{location.contact_phone}</span>
                         </div>
-                        <ul className="space-y-1 pl-7">
-                          {location.fellowshipTimes.map((time, index) => (
-                            <li key={index} className="text-sm text-gray-600 dark:text-gray-300">
-                              {time}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      )}
+                      
+                      {location.fellowship_times && Array.isArray(location.fellowship_times) && location.fellowship_times.length > 0 && (
+                        <div className="mb-4">
+                          <div className="flex items-center text-gray-700 dark:text-gray-200 font-medium mb-2">
+                            <Clock size={16} className="mr-2 text-wca-purple" />
+                            <span>Fellowship Times</span>
+                          </div>
+                          <ul className="space-y-1 pl-7">
+                            {(location.fellowship_times as any[]).map((time: any, index: number) => (
+                              <li key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                                {typeof time === 'string' ? time : `${time.day}: ${time.time} - ${time.type}`}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                       
                       <div className="flex flex-col gap-3 mt-6">
-                        {location.type === 'center' && location.region && (
+                        {location.type === 'WCA Center' && location.region && (
                           <Link 
-                            to={`/locations/${formatRegionForUrl(location.region)}`}
+                            to={`/locations/${formatRegionForUrl(location.region.name)}`}
                             className="flex items-center justify-center bg-wca-purple hover:bg-wca-violet text-white rounded-md px-4 py-2 text-sm font-medium transition-colors"
                           >
                             Visit Regional Page
                           </Link>
                         )}
-                        <a 
-                          href={`https://maps.google.com/?q=${location.coordinates.lat},${location.coordinates.lng}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center text-wca-purple hover:text-wca-violet transition-colors border border-wca-purple hover:border-wca-violet rounded-md px-4 py-2 text-sm font-medium"
-                        >
-                          <MapPin size={16} className="mr-2" />
-                          View on Google Maps
-                          <ExternalLink size={14} className="ml-1" />
-                        </a>
+                        {(location.latitude && location.longitude) && (
+                          <a 
+                            href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center text-wca-purple hover:text-wca-violet transition-colors border border-wca-purple hover:border-wca-violet rounded-md px-4 py-2 text-sm font-medium"
+                          >
+                            <MapPin size={16} className="mr-2" />
+                            View on Google Maps
+                            <ExternalLink size={14} className="ml-1" />
+                          </a>
+                        )}
                         
-                        <a 
-                          href={`https://wa.me/${location.phone.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                          </svg>
-                          Chat on WhatsApp
-                        </a>
+                        {(location.whatsapp_link || location.contact_phone) && (
+                          <a 
+                            href={location.whatsapp_link || `https://wa.me/${location.contact_phone?.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-md px-4 py-2 text-sm font-medium transition-colors"
+                          >
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                            Chat on WhatsApp
+                          </a>
+                        )}
                         
                         <button className="flex items-center justify-center bg-wca-purple hover:bg-wca-violet text-white rounded-md px-4 py-2 text-sm font-medium transition-colors">
                           Donate to this Location
