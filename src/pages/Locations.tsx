@@ -3,18 +3,16 @@ import { Link } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { WCACenterCard, DCGLocationCard, LocationCardSkeleton } from '@/components/ui/LocationCards';
-import { Search, ChevronDown, MapPin, Filter, X } from 'lucide-react';
+import { Search, ChevronDown, MapPin, Filter, Globe, Users, Calendar, Heart } from 'lucide-react';
 import { usePublicLocations } from '@/hooks/usePublicLocations';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { GlassCard } from '@/components/ui/GlassPanels';
 
 const Locations = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('all');
-  const [showFilters, setShowFilters] = useState(false);
   
   const { data: locations = [], isLoading, error } = usePublicLocations();
   const isMobile = useIsMobile();
@@ -55,109 +53,137 @@ const Locations = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  // Helper function to format region name for URL
-  const formatRegionForUrl = (region: string) => {
-    // Convert region name to URL-friendly format
-    return region.toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, ''); // Remove special characters
-  };
+  // Stats for hero section
+  const totalLocations = locations.length;
+  const wcaCenters = locations.filter(l => l.type === 'WCA Center').length;
+  const dcgHomes = locations.filter(l => l.type === 'DCG Location').length;
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen font-inter">
       <Navbar />
       
       <main className="flex-grow pt-16">
-        {/* Hero Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-          <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
-          <div className="relative container-custom py-20 lg:py-28">
-            <div className="text-center max-w-4xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary font-medium text-sm mb-6 animate-fade-in">
-                <MapPin className="w-4 h-4" />
-                Our Locations
+        {/* Hero Section - Magazine Style */}
+        <section className="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-900 via-violet-800 to-indigo-900 overflow-hidden">
+          {/* Background Elements */}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+          <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-400/10 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-pink-400/10 rounded-full blur-3xl animate-float"></div>
+          
+          <div className="relative container-custom text-center z-10">
+            <div className="max-w-5xl mx-auto">
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white font-medium text-sm mb-8 animate-fade-up">
+                <Globe className="w-4 h-4" />
+                Global Network
               </div>
-              <h1 className="font-bold text-4xl lg:text-6xl mb-6 animate-fade-in">
-                <span className="text-gradient bg-gradient-to-r from-primary via-primary-accent to-secondary bg-clip-text text-transparent">
-                  Find Your Community
+              
+              {/* Main Title */}
+              <h1 className="font-crimson text-5xl md:text-7xl lg:text-8xl font-semibold text-white mb-8 leading-tight animate-fade-up">
+                Discover Your
+                <span className="block text-transparent bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 bg-clip-text">
+                  Spiritual Home
                 </span>
               </h1>
-              <p className="text-xl lg:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto animate-fade-in">
-                Connect with World Changers Association centers and Discipleship Group homes in your area.
+              
+              {/* Subtitle */}
+              <p className="text-xl md:text-2xl text-white/80 mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-up">
+                Connect with vibrant communities across the globe. Find WCA Centers and DCG Homes where faith, fellowship, and transformation happen daily.
               </p>
+              
+              {/* Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 animate-fade-up">
+                <div className="text-center">
+                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{totalLocations}</div>
+                  <div className="text-white/70 font-medium">Total Locations</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{wcaCenters}</div>
+                  <div className="text-white/70 font-medium">WCA Centers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{dcgHomes}</div>
+                  <div className="text-white/70 font-medium">DCG Homes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+            <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
+              <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-pulse"></div>
             </div>
           </div>
         </section>
 
-        {/* Search and Filter Section */}
-        <section className="relative -mt-10 mb-16">
+        {/* Search Section - Floating Card */}
+        <section className="relative -mt-20 mb-20 z-20">
           <div className="container-custom">
-            <GlassCard className="max-w-4xl mx-auto p-6 lg:p-8">
+            <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800">
               <div className="space-y-6">
+                {/* Search Title */}
+                <div className="text-center mb-8">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Find Your Community</h2>
+                  <p className="text-gray-600 dark:text-gray-400">Search and filter to discover locations near you</p>
+                </div>
+                
                 {/* Search Bar */}
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+                  <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
                     placeholder="Search by name, city, or region..."
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-border bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-lg transition-all"
+                    className="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 text-lg transition-all duration-300"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
-                  {/* Type Filter */}
-                  <div className="flex flex-wrap gap-2">
+                {/* Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4">
+                  {/* Type Filters */}
+                  <div className="flex flex-wrap gap-3 lg:flex-1">
                     {[
-                      { key: 'all', label: 'All Locations', icon: MapPin },
-                      { key: 'center', label: 'WCA Centers', icon: MapPin },
-                      { key: 'dcg', label: 'DCG Homes', icon: MapPin }
-                    ].map(({ key, label, icon: Icon }) => (
+                      { key: 'all', label: 'All Locations', icon: MapPin, color: 'purple' },
+                      { key: 'center', label: 'WCA Centers', icon: Users, color: 'blue' },
+                      { key: 'dcg', label: 'DCG Homes', icon: Heart, color: 'pink' }
+                    ].map(({ key, label, icon: Icon, color }) => (
                       <button
                         key={key}
                         onClick={() => setActiveFilter(key)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 ${
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
                           activeFilter === key
-                            ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                            : 'bg-secondary/80 text-secondary-foreground hover:bg-secondary hover:scale-105'
+                            ? `bg-${color}-500 text-white shadow-lg scale-105`
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
-                        {label}
+                        {isMobile ? label.split(' ')[0] : label}
                       </button>
                     ))}
                   </div>
 
                   {/* Region Filter */}
-                  <div className="relative lg:ml-auto min-w-48">
+                  <div className="relative lg:w-64">
                     <select
                       value={selectedCountry}
                       onChange={(e) => setSelectedCountry(e.target.value)}
-                      className="w-full appearance-none pl-4 pr-10 py-2.5 rounded-lg bg-secondary/80 border border-border focus:outline-none focus:ring-2 focus:ring-primary/20 text-foreground"
+                      className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-transparent focus:outline-none focus:border-purple-500 text-gray-700 dark:text-gray-300 font-medium cursor-pointer transition-all"
                     >
                       <option value="all">All Regions</option>
                       {countries.map((country, index) => (
                         <option key={index} value={country}>{country}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Results Count */}
-                <div className="flex items-center justify-between pt-4 border-t border-border">
-                  <p className="text-muted-foreground">
-                    {isLoading ? 'Loading...' : `${filteredLocations.length} location${filteredLocations.length !== 1 ? 's' : ''} found`}
+                {/* Results Summary */}
+                <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">
+                    {isLoading ? 'Searching...' : `${filteredLocations.length} ${filteredLocations.length === 1 ? 'location' : 'locations'} found`}
                   </p>
                   {(searchQuery || activeFilter !== 'all' || selectedCountry !== 'all') && (
                     <button
@@ -166,14 +192,15 @@ const Locations = () => {
                         setActiveFilter('all');
                         setSelectedCountry('all');
                       }}
-                      className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+                      className="text-purple-600 hover:text-purple-700 font-semibold transition-colors flex items-center gap-2"
                     >
+                      <Filter className="w-4 h-4" />
                       Clear filters
                     </button>
                   )}
                 </div>
               </div>
-            </GlassCard>
+            </div>
           </div>
         </section>
 
@@ -188,20 +215,20 @@ const Locations = () => {
               </div>
             ) : error ? (
               <div className="flex justify-center">
-                <GlassCard className="p-8 max-w-md text-center">
-                  <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Unable to load locations</h3>
-                  <p className="text-muted-foreground">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-8 max-w-md text-center">
+                  <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">Unable to load locations</h3>
+                  <p className="text-red-700 dark:text-red-400">
                     There was an error loading the locations. Please try again later.
                   </p>
-                </GlassCard>
+                </div>
               </div>
             ) : filteredLocations.length === 0 ? (
               <div className="flex justify-center">
-                <GlassCard className="p-12 max-w-lg text-center">
-                  <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-                  <h3 className="text-2xl font-semibold mb-4">No locations found</h3>
-                  <p className="text-muted-foreground mb-6">
+                <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 max-w-lg text-center">
+                  <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+                  <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">No locations found</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
                     We couldn't find any locations matching your criteria. Try adjusting your search or filter settings.
                   </p>
                   <button
@@ -210,31 +237,31 @@ const Locations = () => {
                       setActiveFilter('all');
                       setSelectedCountry('all');
                     }}
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-300 hover:scale-105 font-semibold"
                   >
-                    <X className="w-4 h-4" />
-                    Clear all filters
+                    <Filter className="w-5 h-5" />
+                    Show all locations
                   </button>
-                </GlassCard>
+                </div>
               </div>
             ) : (
               <div className="space-y-8">
-                {/* Results header */}
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-semibold">
+                {/* Section Header */}
+                <div className="text-center">
+                  <h2 className="font-crimson text-4xl md:text-5xl font-semibold text-gray-900 dark:text-white mb-4">
                     {activeFilter === 'all' 
-                      ? 'All Locations' 
+                      ? 'Our Global Locations' 
                       : activeFilter === 'center' 
                         ? 'WCA Centers' 
                         : 'DCG Homes'
                     }
                   </h2>
-                  <div className="text-muted-foreground">
+                  <p className="text-xl text-gray-600 dark:text-gray-400">
                     Showing {filteredLocations.length} of {locations.length} locations
-                  </div>
+                  </p>
                 </div>
                 
-                {/* Location cards grid */}
+                {/* Cards Grid */}
                 <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {filteredLocations.map((location, index) => {
                     const handleDonate = () => {
@@ -242,7 +269,11 @@ const Locations = () => {
                     };
 
                     return (
-                      <div key={location.id} className="animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <div 
+                        key={location.id} 
+                        className="animate-fade-up" 
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
                         {location.type === 'WCA Center' ? (
                           <WCACenterCard 
                             location={location} 
@@ -264,33 +295,31 @@ const Locations = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-secondary/20 via-background to-primary/10">
-          <div className="absolute inset-0 bg-grid-pattern opacity-[0.02]"></div>
-          <div className="relative container-custom py-20">
-            <GlassCard className="max-w-4xl mx-auto p-12 text-center">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-                <span className="text-gradient bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Can't Find a Location Near You?
-                </span>
+        <section className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSIyIi8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
+          <div className="relative container-custom py-20 text-center">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="font-crimson text-4xl md:text-6xl font-semibold text-white mb-6">
+                Don't See Your Area?
               </h2>
-              <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-                We're expanding our network globally. Contact us to learn about upcoming locations or how to start a WCA community in your area.
+              <p className="text-xl md:text-2xl text-white/90 mb-12 max-w-3xl mx-auto">
+                We're expanding our global network every day. Contact us to learn about upcoming locations or discover how to bring WCA to your community.
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <div className="flex flex-col sm:flex-row justify-center gap-6">
                 <Link 
                   to="/contact" 
-                  className="inline-flex items-center justify-center px-8 py-4 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all duration-200 hover:scale-105 shadow-lg shadow-primary/25 font-semibold"
+                  className="inline-flex items-center justify-center px-10 py-5 bg-white text-purple-600 rounded-2xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-xl font-bold text-lg"
                 >
-                  Get In Touch
+                  Start the Conversation
                 </Link>
                 <Link 
                   to="/events" 
-                  className="inline-flex items-center justify-center px-8 py-4 bg-secondary/80 text-secondary-foreground rounded-xl hover:bg-secondary transition-all duration-200 hover:scale-105 font-semibold"
+                  className="inline-flex items-center justify-center px-10 py-5 bg-transparent border-2 border-white text-white rounded-2xl hover:bg-white hover:text-purple-600 transition-all duration-300 hover:scale-105 font-bold text-lg"
                 >
                   Explore Events
                 </Link>
               </div>
-            </GlassCard>
+            </div>
           </div>
         </section>
       </main>
