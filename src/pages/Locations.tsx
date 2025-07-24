@@ -265,8 +265,10 @@ const Locations = () => {
                             contactPhone = location.dcg.contact_phone || location.dcg.leader?.phone || contactPhone;
                           }
                           
-                          // Show WhatsApp button for all locations that have any contact info
-                          return (whatsappLink || contactPhone) && (
+                          // Show WhatsApp button for all DCG locations (they always have leader contact) or locations with contact info
+                          const shouldShowWhatsApp = location.type === 'DCG Location' || whatsappLink || contactPhone;
+                          
+                          return shouldShowWhatsApp && (
                             <a 
                               href={whatsappLink || `https://wa.me/${contactPhone?.replace(/\D/g, '')}`}
                               target="_blank"
