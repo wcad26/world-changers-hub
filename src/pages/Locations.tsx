@@ -242,18 +242,25 @@ const Locations = () => {
                             Visit Regional Page
                           </Link>
                         )}
-                        {(location.latitude && location.longitude) && (
-                          <a 
-                            href={`https://maps.google.com/?q=${location.latitude},${location.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center text-wca-purple hover:text-wca-violet transition-colors border border-wca-purple hover:border-wca-violet rounded-md px-4 py-2 text-sm font-medium"
-                          >
-                            <MapPin size={16} className="mr-2" />
-                            View on Google Maps
-                            <ExternalLink size={14} className="ml-1" />
-                          </a>
-                        )}
+                        <a 
+                          href={(() => {
+                            // Use GPS coordinates if available, otherwise fall back to address
+                            if (location.latitude && location.longitude) {
+                              return `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+                            } else {
+                              // Use address for Google Maps search
+                              const searchQuery = encodeURIComponent(`${location.name} ${location.address}`);
+                              return `https://maps.google.com/maps?q=${searchQuery}`;
+                            }
+                          })()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center text-wca-purple hover:text-wca-violet transition-colors border border-wca-purple hover:border-wca-violet rounded-md px-4 py-2 text-sm font-medium"
+                        >
+                          <MapPin size={16} className="mr-2" />
+                          View on Google Maps
+                          <ExternalLink size={14} className="ml-1" />
+                        </a>
                         
                         {(() => {
                           // Determine contact phone for WhatsApp
