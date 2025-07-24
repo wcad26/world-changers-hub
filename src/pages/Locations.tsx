@@ -136,7 +136,7 @@ const Locations = () => {
                       onChange={(e) => setSelectedCountry(e.target.value)}
                       className="appearance-none pl-4 pr-10 py-2 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-wca-purple/50 text-gray-600 dark:text-gray-300"
                     >
-                      <option value="all">All Countries</option>
+                      <option value="all">All Regions</option>
                       {countries.map((country, index) => (
                         <option key={index} value={country}>{country}</option>
                       ))}
