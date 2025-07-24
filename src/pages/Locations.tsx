@@ -17,10 +17,10 @@ const Locations = () => {
   const { data: locations = [], isLoading, error } = usePublicLocations();
   
   // Extract unique countries from real data
-  const countries = [...new Set(locations.map(location => location.region?.name || 'Unknown').filter(Boolean))];
+  const countries = [...new Set((locations || []).map(location => location.region?.name || 'Unknown').filter(Boolean))];
   
   // Filter locations based on user selections
-  const filteredLocations = locations.filter(location => {
+  const filteredLocations = (locations || []).filter(location => {
     // Filter by type
     if (activeFilter !== 'all') {
       const filterType = activeFilter === 'center' ? 'WCA Center' : 'DCG Location';
@@ -220,13 +220,13 @@ const Locations = () => {
                             <Clock size={16} className="mr-2 text-wca-purple" />
                             <span>Fellowship Times</span>
                           </div>
-                          <ul className="space-y-1 pl-7">
-                            {(location.fellowship_times as any[]).map((time: any, index: number) => (
-                              <li key={index} className="text-sm text-gray-600 dark:text-gray-300">
-                                {typeof time === 'string' ? time : `${time.day}: ${time.time} - ${time.type}`}
-                              </li>
-                            ))}
-                          </ul>
+                           <ul className="space-y-1 pl-7">
+                             {(location.fellowship_times || []).map((time: any, index: number) => (
+                               <li key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                                 {typeof time === 'string' ? time : `${time.day}: ${time.time} - ${time.type}`}
+                               </li>
+                             ))}
+                           </ul>
                         </div>
                       )}
                       
