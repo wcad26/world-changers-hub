@@ -56,11 +56,7 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
       
       const { data, error } = await supabase
         .from('dcgs')
-        .select(`
-          *,
-          leader:profiles!dcgs_leader_id_fkey(*),
-          member_count:dcg_members(count)
-        `)
+        .select('*')
         .eq('region_id', regionId)
         .eq('is_active', true)
         .order('name');
@@ -70,13 +66,47 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
         throw error;
       }
 
-      // Transform the data to get member count as number
+      // Get leader information separately for DCGs that have leaders
+      const leaderIds = data?.filter(dcg => dcg.leader_id).map(dcg => dcg.leader_id) || [];
+      let leaders: { [key: string]: Profile } = {};
+      
+      if (leaderIds.length > 0) {
+        const { data: leaderData } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', leaderIds);
+        
+        leaders = (leaderData || []).reduce((acc, leader) => {
+          acc[leader.id] = leader;
+          return acc;
+        }, {} as { [key: string]: Profile });
+      }
+
+      // Get member counts separately for each DCG
+      const dcgIds = data?.map(dcg => dcg.id) || [];
+      let memberCounts: { [key: string]: number } = {};
+      
+      if (dcgIds.length > 0) {
+        const { data: memberData } = await supabase
+          .from('dcg_members')
+          .select('dcg_id')
+          .in('dcg_id', dcgIds)
+          .eq('is_active', true);
+        
+        memberCounts = (memberData || []).reduce((acc, member) => {
+          acc[member.dcg_id] = (acc[member.dcg_id] || 0) + 1;
+          return acc;
+        }, {} as { [key: string]: number });
+      }
+
+      // Transform the data to include leader and member counts
       const transformedData = data?.map(dcg => ({
         ...dcg,
-        member_count: dcg.member_count?.[0]?.count || 0
+        leader: dcg.leader_id ? leaders[dcg.leader_id] : undefined,
+        member_count: memberCounts[dcg.id] || 0
       })) || [];
 
-      return transformedData as unknown as RegionalDCG[];
+      return transformedData as RegionalDCG[];
     },
     enabled: !!regionId,
   });
