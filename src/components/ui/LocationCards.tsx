@@ -150,8 +150,8 @@ export const DCGLocationCard: React.FC<LocationCardProps> = ({ location, onDonat
   };
 
   const getContactInfo = () => {
-    // Prioritize DCG contact, then DCG leader contact, then location contact
-    const phone = dcg?.contact_phone || dcg?.leader?.phone || location.contact_phone;
+    // Prioritize DCG leader contact, then DCG contact, then location contact
+    const phone = dcg?.leader?.phone || dcg?.contact_phone || location.contact_phone;
     const name = dcg?.leader ? `${dcg.leader.first_name} ${dcg.leader.last_name}` : location.contact_person;
     return { phone, name };
   };
@@ -256,9 +256,9 @@ export const DCGLocationCard: React.FC<LocationCardProps> = ({ location, onDonat
               Directions
             </a>
             
-            {contactPhone && (
+            {(contactPhone || dcg?.contact_phone || location.contact_phone) && (
               <a 
-                href={`https://wa.me/${contactPhone.replace(/\D/g, '')}`}
+                href={`https://wa.me/${(contactPhone || dcg?.contact_phone || location.contact_phone)?.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-target"
