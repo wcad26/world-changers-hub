@@ -8,18 +8,20 @@ import { usePublicLocations } from '@/hooks/usePublicLocations';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
-
 const Locations = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('all');
-  
-  const { data: locations = [], isLoading, error } = usePublicLocations();
+  const {
+    data: locations = [],
+    isLoading,
+    error
+  } = usePublicLocations();
   const isMobile = useIsMobile();
-  
+
   // Extract unique countries from real data
   const countries = [...new Set((locations || []).map(location => location.region?.name || 'Unknown').filter(Boolean))];
-  
+
   // Filter locations based on user selections
   const filteredLocations = (locations || []).filter(location => {
     // Filter by type
@@ -27,28 +29,20 @@ const Locations = () => {
       const filterType = activeFilter === 'center' ? 'WCA Center' : 'DCG Location';
       if (location.type !== filterType) return false;
     }
-    
+
     // Filter by region/country
     if (selectedCountry !== 'all') {
       if (location.region?.name !== selectedCountry) return false;
     }
-    
+
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const searchFields = [
-        location.name,
-        location.address,
-        location.city,
-        location.region?.name || ''
-      ].join(' ').toLowerCase();
-      
+      const searchFields = [location.name, location.address, location.city, location.region?.name || ''].join(' ').toLowerCase();
       if (!searchFields.includes(query)) return false;
     }
-    
     return true;
   });
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -57,9 +51,7 @@ const Locations = () => {
   const totalLocations = locations.length;
   const wcaCenters = locations.filter(l => l.type === 'WCA Center').length;
   const dcgHomes = locations.filter(l => l.type === 'DCG Location').length;
-
-  return (
-    <div className="flex flex-col min-h-screen font-inter">
+  return <div className="flex flex-col min-h-screen font-inter">
       <Navbar />
       
       <main className="flex-grow pt-16">
@@ -118,7 +110,7 @@ const Locations = () => {
         </section>
 
         {/* Search Section - Floating Card */}
-        <section className="relative -mt-20 mb-20 z-20">
+        <section className="relative -mt-20 mb-20 z-20 my-0">
           <div className="container-custom">
             <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 border border-gray-100 dark:border-gray-800">
               <div className="space-y-6">
@@ -131,50 +123,44 @@ const Locations = () => {
                 {/* Search Bar */}
                 <div className="relative">
                   <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, city, or region..."
-                    className="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 text-lg transition-all duration-300"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <input type="text" placeholder="Search by name, city, or region..." className="w-full pl-14 pr-6 py-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:border-purple-500 focus:bg-white dark:focus:bg-gray-900 text-lg transition-all duration-300" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
 
                 {/* Filters Row */}
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Type Filters */}
                   <div className="flex flex-wrap gap-3 lg:flex-1">
-                    {[
-                      { key: 'all', label: 'All Locations', icon: MapPin, color: 'purple' },
-                      { key: 'center', label: 'WCA Centers', icon: Users, color: 'blue' },
-                      { key: 'dcg', label: 'DCG Homes', icon: Heart, color: 'pink' }
-                    ].map(({ key, label, icon: Icon, color }) => (
-                      <button
-                        key={key}
-                        onClick={() => setActiveFilter(key)}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                          activeFilter === key
-                            ? `bg-${color}-500 text-white shadow-lg scale-105`
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'
-                        }`}
-                      >
+                    {[{
+                    key: 'all',
+                    label: 'All Locations',
+                    icon: MapPin,
+                    color: 'purple'
+                  }, {
+                    key: 'center',
+                    label: 'WCA Centers',
+                    icon: Users,
+                    color: 'blue'
+                  }, {
+                    key: 'dcg',
+                    label: 'DCG Homes',
+                    icon: Heart,
+                    color: 'pink'
+                  }].map(({
+                    key,
+                    label,
+                    icon: Icon,
+                    color
+                  }) => <button key={key} onClick={() => setActiveFilter(key)} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${activeFilter === key ? `bg-${color}-500 text-white shadow-lg scale-105` : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'}`}>
                         <Icon className="w-4 h-4" />
                         {isMobile ? label.split(' ')[0] : label}
-                      </button>
-                    ))}
+                      </button>)}
                   </div>
 
                   {/* Region Filter */}
                   <div className="relative lg:w-64">
-                    <select
-                      value={selectedCountry}
-                      onChange={(e) => setSelectedCountry(e.target.value)}
-                      className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-transparent focus:outline-none focus:border-purple-500 text-gray-700 dark:text-gray-300 font-medium cursor-pointer transition-all"
-                    >
+                    <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-transparent focus:outline-none focus:border-purple-500 text-gray-700 dark:text-gray-300 font-medium cursor-pointer transition-all">
                       <option value="all">All Regions</option>
-                      {countries.map((country, index) => (
-                        <option key={index} value={country}>{country}</option>
-                      ))}
+                      {countries.map((country, index) => <option key={index} value={country}>{country}</option>)}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                   </div>
@@ -185,19 +171,14 @@ const Locations = () => {
                   <p className="text-gray-600 dark:text-gray-400 font-medium">
                     {isLoading ? 'Searching...' : `${filteredLocations.length} ${filteredLocations.length === 1 ? 'location' : 'locations'} found`}
                   </p>
-                  {(searchQuery || activeFilter !== 'all' || selectedCountry !== 'all') && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery('');
-                        setActiveFilter('all');
-                        setSelectedCountry('all');
-                      }}
-                      className="text-purple-600 hover:text-purple-700 font-semibold transition-colors flex items-center gap-2"
-                    >
+                  {(searchQuery || activeFilter !== 'all' || selectedCountry !== 'all') && <button onClick={() => {
+                  setSearchQuery('');
+                  setActiveFilter('all');
+                  setSelectedCountry('all');
+                }} className="text-purple-600 hover:text-purple-700 font-semibold transition-colors flex items-center gap-2">
                       <Filter className="w-4 h-4" />
                       Clear filters
-                    </button>
-                  )}
+                    </button>}
                 </div>
               </div>
             </div>
@@ -207,14 +188,9 @@ const Locations = () => {
         {/* Locations Grid */}
         <section className="pb-20">
           <div className="container-custom">
-            {isLoading ? (
-              <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                {[...Array(6)].map((_, i) => (
-                  <LocationCardSkeleton key={i} />
-                ))}
-              </div>
-            ) : error ? (
-              <div className="flex justify-center">
+            {isLoading ? <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                {[...Array(6)].map((_, i) => <LocationCardSkeleton key={i} />)}
+              </div> : error ? <div className="flex justify-center">
                 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-8 max-w-md text-center">
                   <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-red-900 dark:text-red-300 mb-2">Unable to load locations</h3>
@@ -222,39 +198,27 @@ const Locations = () => {
                     There was an error loading the locations. Please try again later.
                   </p>
                 </div>
-              </div>
-            ) : filteredLocations.length === 0 ? (
-              <div className="flex justify-center">
+              </div> : filteredLocations.length === 0 ? <div className="flex justify-center">
                 <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-12 max-w-lg text-center">
                   <MapPin className="w-16 h-16 text-gray-400 mx-auto mb-6" />
                   <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">No locations found</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
                     We couldn't find any locations matching your criteria. Try adjusting your search or filter settings.
                   </p>
-                  <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setActiveFilter('all');
-                      setSelectedCountry('all');
-                    }}
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-300 hover:scale-105 font-semibold"
-                  >
+                  <button onClick={() => {
+                setSearchQuery('');
+                setActiveFilter('all');
+                setSelectedCountry('all');
+              }} className="inline-flex items-center gap-2 px-8 py-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all duration-300 hover:scale-105 font-semibold">
                     <Filter className="w-5 h-5" />
                     Show all locations
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-8">
+              </div> : <div className="space-y-8">
                 {/* Section Header */}
                 <div className="text-center">
                   <h2 className="font-crimson text-4xl md:text-5xl font-semibold text-gray-900 dark:text-white mb-4">
-                    {activeFilter === 'all' 
-                      ? 'Our Global Locations' 
-                      : activeFilter === 'center' 
-                        ? 'WCA Centers' 
-                        : 'DCG Homes'
-                    }
+                    {activeFilter === 'all' ? 'Our Global Locations' : activeFilter === 'center' ? 'WCA Centers' : 'DCG Homes'}
                   </h2>
                   <p className="text-xl text-gray-600 dark:text-gray-400">
                     Showing {filteredLocations.length} of {locations.length} locations
@@ -264,33 +228,17 @@ const Locations = () => {
                 {/* Cards Grid */}
                 <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                   {filteredLocations.map((location, index) => {
-                    const handleDonate = () => {
-                      console.log('Donate to:', location.name);
-                    };
-
-                    return (
-                      <div 
-                        key={location.id} 
-                        className="animate-fade-up" 
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        {location.type === 'WCA Center' ? (
-                          <WCACenterCard 
-                            location={location} 
-                            onDonate={handleDonate}
-                          />
-                        ) : (
-                          <DCGLocationCard 
-                            location={location} 
-                            onDonate={handleDonate}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
+                const handleDonate = () => {
+                  console.log('Donate to:', location.name);
+                };
+                return <div key={location.id} className="animate-fade-up" style={{
+                  animationDelay: `${index * 0.1}s`
+                }}>
+                        {location.type === 'WCA Center' ? <WCACenterCard location={location} onDonate={handleDonate} /> : <DCGLocationCard location={location} onDonate={handleDonate} />}
+                      </div>;
+              })}
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </section>
 
@@ -306,16 +254,10 @@ const Locations = () => {
                 We're expanding our global network every day. Contact us to learn about upcoming locations or discover how to bring WCA to your community.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-6">
-                <Link 
-                  to="/contact" 
-                  className="inline-flex items-center justify-center px-10 py-5 bg-white text-purple-600 rounded-2xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-xl font-bold text-lg"
-                >
+                <Link to="/contact" className="inline-flex items-center justify-center px-10 py-5 bg-white text-purple-600 rounded-2xl hover:bg-gray-100 transition-all duration-300 hover:scale-105 shadow-xl font-bold text-lg">
                   Start the Conversation
                 </Link>
-                <Link 
-                  to="/events" 
-                  className="inline-flex items-center justify-center px-10 py-5 bg-transparent border-2 border-white text-white rounded-2xl hover:bg-white hover:text-purple-600 transition-all duration-300 hover:scale-105 font-bold text-lg"
-                >
+                <Link to="/events" className="inline-flex items-center justify-center px-10 py-5 bg-transparent border-2 border-white text-white rounded-2xl hover:bg-white hover:text-purple-600 transition-all duration-300 hover:scale-105 font-bold text-lg">
                   Explore Events
                 </Link>
               </div>
@@ -325,8 +267,6 @@ const Locations = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Locations;
