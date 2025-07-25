@@ -186,7 +186,7 @@ const Locations = () => {
         </section>
 
         {/* Locations Grid */}
-        <section className="pb-20">
+        <section className="pb-20 py-0">
           <div className="container-custom">
             {isLoading ? <div className="grid gap-8 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                 {[...Array(6)].map((_, i) => <LocationCardSkeleton key={i} />)}
