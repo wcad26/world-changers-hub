@@ -27,15 +27,27 @@ export const useRegionBySlug = (slug: string | undefined) => {
       if (!slug) return null;
       
       const possibleNames = slugToRegionName(slug);
+      console.log('Searching for region with slug:', slug, 'Possible names:', possibleNames);
       
       // Try to find region by various name formats
-      const { data, error } = await supabase
+      // First try exact match with the most likely candidate
+      let { data, error } = await supabase
         .from('regions')
         .select('*')
-        .or(possibleNames.map(name => `name.ilike.%${name}%`).join(','))
+        .ilike('name', possibleNames[0])
         .eq('is_active', true)
-        .limit(1)
-        .single();
+        .maybeSingle();
+
+      // If no exact match, try partial matches
+      if (!data && !error) {
+        ({ data, error } = await supabase
+          .from('regions')
+          .select('*')
+          .or(possibleNames.map(name => `name.ilike.%${name}%`).join(','))
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle());
+      }
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching region by slug:', error);
