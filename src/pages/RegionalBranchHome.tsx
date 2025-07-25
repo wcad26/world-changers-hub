@@ -6,6 +6,7 @@ import { useRegionalLocations, useRegionalDCGs, useRegionalEvents } from '@/hook
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -97,27 +98,14 @@ const RegionalBranchHome = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Breadcrumb */}
-      <div className="bg-muted/30 border-b">
-        <div className="container mx-auto px-4 py-4">
-          <nav className="flex items-center space-x-2 text-sm">
-            <Link to="/" className="text-muted-foreground hover:text-primary transition-colors flex items-center">
-              <Home className="w-4 h-4" />
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <Link to="/locations" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              Locations
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-semibold">{region.name}</span>
-          </nav>
-        </div>
-      </div>
-
       {/* Hero Section - Full Width with Image Slider */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background Image Slider */}
-        <Carousel className="absolute inset-0 w-full h-full" opts={{ align: "start", loop: true }}>
+        <Carousel 
+          className="absolute inset-0 w-full h-full" 
+          opts={{ align: "start", loop: true }}
+          plugins={[Autoplay({ delay: 6000 })]}
+        >
           <CarouselContent className="h-full">
             {heroImages.map((image, index) => (
               <CarouselItem key={index} className="h-full relative">
