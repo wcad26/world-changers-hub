@@ -77,297 +77,367 @@ const RegionalBranchHome = () => {
       <Navbar />
       
       {/* Breadcrumb */}
-      <div className="border-b bg-muted/30">
-        <div className="container mx-auto px-4 py-3">
-          <nav className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-foreground transition-colors">
+      <div className="bg-muted/30 border-b">
+        <div className="container mx-auto px-4 py-4">
+          <nav className="flex items-center space-x-2 text-sm">
+            <Link to="/" className="text-muted-foreground hover:text-primary transition-colors flex items-center">
               <Home className="w-4 h-4" />
             </Link>
-            <span>/</span>
-            <Link to="/locations" className="hover:text-foreground transition-colors">Locations</Link>
-            <span>/</span>
-            <span className="text-foreground">{region.name}</span>
+            <span className="text-muted-foreground">/</span>
+            <Link to="/locations" className="text-muted-foreground hover:text-primary transition-colors font-medium">
+              Locations
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-foreground font-semibold">{region.name}</span>
           </nav>
         </div>
       </div>
 
-      {/* Hero Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/5 to-secondary/5">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+      {/* Hero Section - Full Width with Overlay */}
+      <section className="relative min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)] opacity-30"></div>
+        
+        {/* Content */}
+        <div className="relative z-10 container mx-auto px-4 text-center text-white">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-fade-up">
               {region.name}
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-3xl mx-auto animate-fade-up" style={{animationDelay: '0.2s'}}>
               {region.description || `Welcome to ${region.name}, where faith meets community and purpose drives our mission.`}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="px-8">
-                Visit Us
-                <ArrowRight className="w-4 h-4 ml-2" />
+            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{animationDelay: '0.4s'}}>
+              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold">
+                Visit Us Today
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button variant="outline" size="lg" className="px-8">
-                View Events
+              <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/30 text-white hover:bg-white/10">
+                Explore Events
               </Button>
             </div>
           </div>
         </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-pulse"></div>
+          </div>
+        </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="py-8 border-b bg-white">
+      {/* Stats Section - Full Width */}
+      <section className="py-16 bg-white border-b">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-primary mb-1">
+              <div key={index} className="text-center group">
+                <div className="text-4xl md:text-5xl font-bold text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-muted-foreground font-medium uppercase tracking-wide text-sm">
+                  {stat.label}
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-3 gap-12">
-          {/* Left Column */}
-          <div className="lg:col-span-2 space-y-12">
-            
-            {/* About Section */}
-            <section>
-              <h2 className="text-2xl font-semibold mb-6">About Our Community</h2>
-              <div className="prose prose-gray max-w-none">
-                <p className="text-muted-foreground leading-relaxed">
-                  {region.description || `Discover the vibrant community of ${region.name}, where faith meets fellowship and purpose drives our mission. We are committed to building strong relationships and making a positive impact in our community.`}
-                </p>
-              </div>
-            </section>
+      {/* About Section - Full Width */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
+              About Our Community
+            </h2>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              {region.description || `Discover the vibrant community of ${region.name}, where faith meets fellowship and purpose drives our mission. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship.`}
+            </p>
+          </div>
+        </div>
+      </section>
 
-            {/* Events Section */}
-            <section>
-              <h2 className="text-2xl font-semibold mb-6">Upcoming Events</h2>
-              
-              {eventsLoading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <Card key={i} className="animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : events && events.length > 0 ? (
-                <div className="space-y-4">
-                  {events.slice(0, 3).map((event) => (
-                    <Card key={event.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-semibold text-lg">{event.name}</h3>
-                          <span className="text-sm text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {new Date(event.start_datetime).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </span>
-                        </div>
-                        
-                        {event.description && (
-                          <p className="text-muted-foreground mb-3 line-clamp-2">
-                            {event.description}
-                          </p>
-                        )}
-                        
-                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                          <div className="flex items-center space-x-1">
-                            <Clock className="w-4 h-4" />
-                            <span>
-                              {new Date(event.start_datetime).toLocaleTimeString('en-US', { 
-                                hour: 'numeric', 
-                                minute: '2-digit',
-                                hour12: true 
-                              })}
-                            </span>
-                          </div>
-                          {event.address && (
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="w-4 h-4" />
-                              <span className="truncate">{event.address}</span>
-                            </div>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {events.length > 3 && (
-                    <Button variant="outline" className="w-full">
-                      View All Events
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">No upcoming events at this time.</p>
+      {/* Events Section - Full Width */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Upcoming Events
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Join us for inspiring gatherings, worship services, and community events
+            </p>
+          </div>
+          
+          {eventsLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
                 </Card>
-              )}
-            </section>
-
-            {/* DCG Section */}
-            <section>
-              <h2 className="text-2xl font-semibold mb-6">Destiny Care Groups</h2>
-              <p className="text-muted-foreground mb-6">
-                Connect with others through our intimate small group gatherings designed to foster deep relationships and spiritual growth.
-              </p>
-              
-              {dcgsLoading ? (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => (
-                    <Card key={i} className="animate-pulse">
-                      <CardContent className="p-6">
-                        <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-muted rounded w-1/2"></div>
-                      </CardContent>
-                    </Card>
-                  ))}
+              ))}
+            </div>
+          ) : events && events.length > 0 ? (
+            <div className="max-w-6xl mx-auto">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {events.slice(0, 6).map((event, index) => (
+                  <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between mb-4">
+                            <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                              {event.name}
+                            </h3>
+                            <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
+                              {new Date(event.start_datetime).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </div>
+                          </div>
+                          
+                          {event.description && (
+                            <p className="text-muted-foreground mb-4 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                          
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-2">
+                              <Clock className="w-4 h-4 text-primary" />
+                              <span>
+                                {new Date(event.start_datetime).toLocaleTimeString('en-US', { 
+                                  hour: 'numeric', 
+                                  minute: '2-digit',
+                                  hour12: true 
+                                })}
+                              </span>
+                            </div>
+                            {event.address && (
+                              <div className="flex items-center space-x-2">
+                                <MapPin className="w-4 h-4 text-primary" />
+                                <span className="truncate">{event.address}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              {events.length > 6 && (
+                <div className="text-center">
+                  <Button variant="outline" size="lg" className="px-8">
+                    View All Events
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
                 </div>
-              ) : dcgs && dcgs.length > 0 ? (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {dcgs.slice(0, 4).map((dcg) => (
-                    <Card key={dcg.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <h3 className="font-semibold">{dcg.name}</h3>
-                          <span className="text-xs bg-muted px-2 py-1 rounded">
+              )}
+            </div>
+          ) : (
+            <Card className="max-w-2xl mx-auto">
+              <CardContent className="p-12 text-center">
+                <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
+                <p className="text-muted-foreground">Check back soon for upcoming events and gatherings.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </section>
+
+      {/* DCG Section - Full Width */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Destiny Care Groups
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Connect with others through our intimate small group gatherings designed to foster deep relationships and spiritual growth in a welcoming environment.
+            </p>
+          </div>
+          
+          {dcgsLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : dcgs && dcgs.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {dcgs.map((dcg) => (
+                <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
+                      <div className="relative z-10">
+                        <div className="flex items-start justify-between mb-4">
+                          <h3 className="font-bold text-lg text-foreground group-hover:text-secondary transition-colors">
+                            {dcg.name}
+                          </h3>
+                          <div className="bg-secondary/20 text-secondary px-3 py-1 rounded-full text-sm font-semibold">
                             {dcg.member_count} {dcg.member_count === 1 ? 'member' : 'members'}
-                          </span>
+                          </div>
                         </div>
                         
                         {dcg.meeting_day && dcg.meeting_time && (
-                          <div className="flex items-center space-x-1 text-sm text-muted-foreground mb-3">
-                            <Clock className="w-4 h-4" />
-                            <span>{dcg.meeting_day} at {dcg.meeting_time}</span>
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+                            <Clock className="w-4 h-4 text-secondary" />
+                            <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
                           </div>
                         )}
                         
                         {dcg.leader && (
-                          <div className="flex items-center space-x-2 pt-3 border-t">
-                            <div className="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
-                              <Users className="w-3 h-3 text-primary" />
+                          <div className="flex items-center space-x-3 pt-4 border-t border-border/50">
+                            <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
+                              <Users className="w-5 h-5 text-secondary" />
                             </div>
-                            <div className="text-sm">
-                              <p className="font-medium">
+                            <div>
+                              <p className="font-semibold text-foreground">
                                 {dcg.leader ? `${dcg.leader.first_name} ${dcg.leader.last_name}` : 'DCG Leader'}
                               </p>
+                              <p className="text-sm text-muted-foreground">Group Leader</p>
                             </div>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-muted-foreground">DCG information will be available soon.</p>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              )}
-            </section>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-8">
-            
-            {/* Contact Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {region.contact_email && (
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{region.contact_email}</p>
-                    </div>
-                  </div>
-                )}
-                {region.contact_phone && (
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">{region.contact_phone}</p>
-                    </div>
-                  </div>
-                )}
-                {region.address && (
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Address</p>
-                      <p className="font-medium">{region.address}</p>
-                    </div>
-                  </div>
-                )}
+              ))}
+            </div>
+          ) : (
+            <Card className="max-w-2xl mx-auto">
+              <CardContent className="p-12 text-center">
+                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">DCG Information Coming Soon</h3>
+                <p className="text-muted-foreground">We're setting up our Destiny Care Groups. Check back soon for updates.</p>
               </CardContent>
             </Card>
+          )}
+        </div>
+      </section>
 
-            {/* Leadership Card */}
-            {region.regional_pastor && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Leadership</CardTitle>
+      {/* Contact & Info Section - Full Width */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Get in Touch
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                We'd love to connect with you and answer any questions you might have
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {/* Contact Information */}
+              <Card className="lg:col-span-2 shadow-lg border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">Contact Information</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{region.regional_pastor}</p>
-                      <p className="text-sm text-muted-foreground">Regional Pastor</p>
-                    </div>
+                <CardContent className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {region.contact_email && (
+                      <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Mail className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Email Address</p>
+                          <p className="font-semibold text-foreground">{region.contact_email}</p>
+                        </div>
+                      </div>
+                    )}
+                    {region.contact_phone && (
+                      <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Phone className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-1">Phone Number</p>
+                          <p className="font-semibold text-foreground">{region.contact_phone}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  {region.address && (
+                    <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Address</p>
+                        <p className="font-semibold text-foreground">{region.address}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Leadership */}
+                  {region.regional_pastor && (
+                    <div className="pt-6 border-t">
+                      <h3 className="font-semibold text-foreground mb-4">Regional Leadership</h3>
+                      <div className="flex items-center space-x-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
+                          <Users className="w-8 h-8 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg text-foreground">{region.regional_pastor}</p>
+                          <p className="text-muted-foreground">Regional Pastor</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
 
-            {/* Newsletter Signup */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Stay Connected</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Subscribe to our newsletter for updates on events and community news.
-                </p>
-                <form onSubmit={handleSubscribe} className="space-y-3">
-                  <Input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" className="w-full">
-                    Subscribe
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+              {/* Newsletter Signup */}
+              <Card className="shadow-lg border-0">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl">Stay Connected</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-6">
+                    Subscribe to our newsletter for updates on events, community news, and spiritual insights.
+                  </p>
+                  <form onSubmit={handleSubscribe} className="space-y-4">
+                    <Input
+                      type="email"
+                      placeholder="Enter your email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-12"
+                    />
+                    <Button type="submit" className="w-full h-12 font-semibold">
+                      Subscribe Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </form>
+                  <p className="text-xs text-muted-foreground mt-4 text-center">
+                    We respect your privacy and will never spam you.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <Footer />
     </div>
