@@ -5,6 +5,7 @@ import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useRegionalLocations, useRegionalDCGs, useRegionalEvents } from '@/hooks/useRegionalData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,26 @@ const RegionalBranchHome = () => {
   const { data: events, isLoading: eventsLoading } = useRegionalEvents(region?.id || '');
 
   const [email, setEmail] = useState('');
+
+  // Hero slider images
+  const heroImages = [
+    {
+      url: `https://images.unsplash.com/photo-1438032005730-c779502df39b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      alt: 'Community worship gathering'
+    },
+    {
+      url: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      alt: 'Church fellowship'
+    },
+    {
+      url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      alt: 'Community service'
+    },
+    {
+      url: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      alt: 'Prayer and worship'
+    }
+  ];
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,26 +114,44 @@ const RegionalBranchHome = () => {
         </div>
       </div>
 
-      {/* Hero Section - Full Width with Overlay */}
-      <section className="relative min-h-[60vh] flex items-center justify-center bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_50%)] opacity-30"></div>
+      {/* Hero Section - Full Width with Image Slider */}
+      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+        {/* Background Image Slider */}
+        <Carousel className="absolute inset-0 w-full h-full" opts={{ align: "start", loop: true }}>
+          <CarouselContent className="h-full">
+            {heroImages.map((image, index) => (
+              <CarouselItem key={index} className="h-full relative">
+                <div className="h-full w-full relative">
+                  <img 
+                    src={image.url} 
+                    alt={image.alt}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Dark overlay */}
+                  <div className="absolute inset-0 bg-black/50"></div>
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+          <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
+        </Carousel>
         
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <div className="max-w-4xl mx-auto space-y-8">
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-fade-up">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-fade-up drop-shadow-lg">
               {region.name}
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 leading-relaxed max-w-3xl mx-auto animate-fade-up" style={{animationDelay: '0.2s'}}>
+            <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto animate-fade-up drop-shadow-md" style={{animationDelay: '0.2s'}}>
               {region.description || `Welcome to ${region.name}, where faith meets community and purpose drives our mission.`}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{animationDelay: '0.4s'}}>
-              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold">
+              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold shadow-lg">
                 Visit Us Today
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/30 text-white hover:bg-white/10">
+              <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/50 text-white hover:bg-white/20 backdrop-blur-sm">
                 Explore Events
               </Button>
             </div>
@@ -121,8 +160,8 @@ const RegionalBranchHome = () => {
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-            <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-pulse"></div>
+          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center backdrop-blur-sm bg-white/10">
+            <div className="w-1 h-3 bg-white/80 rounded-full mt-2 animate-pulse"></div>
           </div>
         </div>
       </section>
