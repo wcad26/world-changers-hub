@@ -254,7 +254,7 @@ const RegionalBranchHome = () => {
                 <div key={event.id} className="card-soft group">
                   <div className="flex items-start justify-between mb-4">
                     <Badge variant="secondary" className="px-3 py-1 rounded-full text-fluid-xs">
-                      {new Date(event.start_date || event.date || new Date()).toLocaleDateString('en-US', { 
+                      {new Date(event.start_datetime).toLocaleDateString('en-US', { 
                         month: 'short', 
                         day: 'numeric' 
                       })}
@@ -278,7 +278,7 @@ const RegionalBranchHome = () => {
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4" />
                       <span>
-                        {new Date(event.start_date || event.date || new Date()).toLocaleTimeString('en-US', { 
+                        {new Date(event.start_datetime).toLocaleTimeString('en-US', { 
                           hour: 'numeric', 
                           minute: '2-digit',
                           hour12: true 
