@@ -256,9 +256,9 @@ export const DCGLocationCard: React.FC<LocationCardProps> = ({ location, onDonat
               Directions
             </a>
             
-            {(contactPhone || dcg?.contact_phone || location.contact_phone) && (
+            {(dcg?.leader?.phone || dcg?.contact_phone || location.contact_phone) && (
               <a 
-                href={`https://wa.me/${(contactPhone || dcg?.contact_phone || location.contact_phone)?.replace(/\D/g, '')}`}
+                href={`https://wa.me/${(dcg?.leader?.phone || dcg?.contact_phone || location.contact_phone)?.replace(/\D/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white rounded-lg px-3 py-2 text-sm font-medium transition-colors touch-target"
