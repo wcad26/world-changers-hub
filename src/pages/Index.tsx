@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import Navbar from '@/components/layout/Navbar';
+import MobileNavbar from '@/components/layout/MobileNavbar';
 import Footer from '@/components/layout/Footer';
 import Hero from '@/components/home/Hero';
 import Mission from '@/components/home/Mission';
@@ -61,7 +61,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Navbar />
+      <MobileNavbar />
       
       <main className="flex-grow">
         <Hero />
