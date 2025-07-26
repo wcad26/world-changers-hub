@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Phone, Mail } from 'lucide-react';
+import { Menu, Phone, Mail, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 const Header = () => {
   return (
@@ -50,9 +51,72 @@ const Header = () => {
             </Button>
 
             {/* Mobile Menu Button */}
-            <Button variant="ghost" size="sm" className="md:hidden">
-              <Menu className="w-5 h-5" />
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="md:hidden">
+                  <Menu className="w-5 h-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-80">
+                <div className="flex flex-col space-y-6 mt-6">
+                  {/* Navigation Links */}
+                  <nav className="flex flex-col space-y-4">
+                    <Link 
+                      to="/" 
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                    >
+                      Home
+                    </Link>
+                    <Link 
+                      to="/locations" 
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                    >
+                      Locations
+                    </Link>
+                    <Link 
+                      to="/events" 
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                    >
+                      Events
+                    </Link>
+                    <Link 
+                      to="/about" 
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                    >
+                      About
+                    </Link>
+                  </nav>
+
+                  {/* Contact Information */}
+                  <div className="space-y-4 pt-4">
+                    <h3 className="font-semibold text-foreground">Contact Us</h3>
+                    <div className="space-y-3">
+                      <a 
+                        href="tel:+1234567890" 
+                        className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Phone className="w-5 h-5" />
+                        <span>+1 (234) 567-890</span>
+                      </a>
+                      <a 
+                        href="mailto:info@wca.org" 
+                        className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <Mail className="w-5 h-5" />
+                        <span>info@wca.org</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* CTA Button */}
+                  <div className="pt-4">
+                    <Button className="w-full">
+                      Visit Us
+                    </Button>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </div>
