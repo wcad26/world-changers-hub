@@ -355,12 +355,12 @@ const Store = () => {
                     {/* Tablet and Mobile version - dropdowns */}
                     <div className="lg:hidden flex gap-3">
                       <div className="flex-1">
-                        <Select value={selectedCategory || ""} onValueChange={(value) => setSelectedCategory(value || null)}>
+                        <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Category" />
                           </SelectTrigger>
                           <SelectContent className="z-50 bg-white dark:bg-gray-900">
-                            <SelectItem value="">All Categories</SelectItem>
+                            <SelectItem value="all">All Categories</SelectItem>
                             {categories.map(category => (
                               <SelectItem key={category} value={category}>
                                 {category}
@@ -371,12 +371,12 @@ const Store = () => {
                       </div>
                       
                       <div className="flex-1">
-                        <Select value={selectedType || ""} onValueChange={(value) => setSelectedType(value || null)}>
+                        <Select value={selectedType || "all"} onValueChange={(value) => setSelectedType(value === "all" ? null : value)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Type" />
                           </SelectTrigger>
                           <SelectContent className="z-50 bg-white dark:bg-gray-900">
-                            <SelectItem value="">All Types</SelectItem>
+                            <SelectItem value="all">All Types</SelectItem>
                             {types.map(type => (
                               <SelectItem key={type} value={type}>
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
