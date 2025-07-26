@@ -3,6 +3,8 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { Users, Target, Shield, Award, Check } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 const values = [{
   icon: <Users className="w-8 h-8 text-wca-purple" />,
   title: "Community",
@@ -59,6 +61,10 @@ const milestones = [{
   description: "Expanded to 10 countries with over 50 centers and homes worldwide."
 }];
 const About = () => {
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const isMobileOrTablet = isMobile || isTablet;
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -163,16 +169,16 @@ const About = () => {
               
               {/* Timeline items */}
               <div className="space-y-20">
-                {milestones.map((milestone, index) => <div key={index} className={`relative flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-                    <div className="w-1/2"></div>
+                {milestones.map((milestone, index) => <div key={index} className={`relative flex items-center ${isMobileOrTablet ? 'flex-row' : (index % 2 === 0 ? 'flex-row' : 'flex-row-reverse')}`}>
+                    <div className={isMobileOrTablet ? 'w-0' : 'w-1/2'}></div>
                     
                     {/* Timeline dot */}
-                    <div className="absolute left-1/2 transform -translate-x-1/2 w-8 h-8 bg-white dark:bg-gray-900 rounded-full border-4 border-wca-purple z-10 flex items-center justify-center">
+                    <div className={`absolute ${isMobileOrTablet ? 'left-6' : 'left-1/2 transform -translate-x-1/2'} w-8 h-8 bg-white dark:bg-gray-900 rounded-full border-4 border-wca-purple z-10 flex items-center justify-center`}>
                       <div className="w-2 h-2 bg-wca-violet rounded-full"></div>
                     </div>
                     
                     {/* Content */}
-                    <div className={`w-1/2 ${index % 2 === 0 ? 'pl-12' : 'pr-12'}`}>
+                    <div className={isMobileOrTablet ? 'w-full pl-20' : `w-1/2 ${index % 2 === 0 ? 'pl-12' : 'pr-12'}`}>
                       <GlassCard className="p-6">
                         <div className="text-sm font-semibold text-wca-teal mb-2">{milestone.year}</div>
                         <h3 className="text-xl font-semibold mb-3">{milestone.title}</h3>
