@@ -202,10 +202,10 @@ const Counseling = () => {
                 </div>
               </div>
               
-              <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto">
+              <div className="flex items-center gap-2 w-full md:w-auto">
                 <Popover open={specialtyOpen} onOpenChange={setSpecialtyOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={specialtyOpen} className="justify-between min-w-[180px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
+                    <Button variant="outline" role="combobox" aria-expanded={specialtyOpen} className="justify-between min-w-[120px] h-12 px-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Heart size={16} className="text-gray-400 dark:text-gray-500" />
                         <span className="text-gray-700 dark:text-gray-200 hover:text-white">
@@ -245,7 +245,7 @@ const Counseling = () => {
                 
                 <Popover open={dayOpen} onOpenChange={setDayOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" role="combobox" aria-expanded={dayOpen} className="justify-between min-w-[150px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
+                    <Button variant="outline" role="combobox" aria-expanded={dayOpen} className="justify-between min-w-[100px] h-12 px-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Calendar size={16} className="text-gray-400 dark:text-gray-500" />
                         <span className="text-gray-700 dark:text-gray-200 hover:text-white">
