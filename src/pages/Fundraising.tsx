@@ -774,7 +774,7 @@ const Fundraising = () => {
                   </div>
                   <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-2">One-Time Donations</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 text-justify text-sm">
                       Make a one-time gift to support a specific project or our general fund. Every contribution makes a difference.
                     </p>
                     <Button className="w-full bg-wca-purple hover:bg-wca-purple/90">
@@ -789,7 +789,7 @@ const Fundraising = () => {
                   </div>
                   <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-2">Recurring Giving</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 text-justify text-sm">
                       Set up a monthly or quarterly donation to provide sustainable support for our ongoing initiatives.
                     </p>
                     <Button className="w-full bg-wca-violet hover:bg-wca-violet/90">
@@ -804,7 +804,7 @@ const Fundraising = () => {
                   </div>
                   <CardContent className="p-6">
                     <h3 className="font-bold text-lg mb-2">Volunteer Your Time</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 text-justify text-sm">
                       Contribute your skills and time to our projects. We have many volunteer opportunities available.
                     </p>
                     <Button className="w-full bg-wca-teal hover:bg-wca-teal/90">
