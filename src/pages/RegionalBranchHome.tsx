@@ -35,6 +35,61 @@ const RegionalBranchHome = () => {
     data: allEvents,
     isLoading: allEventsLoading
   } = useAllRegionalEvents(region?.id || '');
+  
+  // Mock events data for preview
+  const mockEvents = [
+    {
+      id: '1',
+      name: 'Sunday Worship Service',
+      description: 'Join us for our weekly worship service filled with praise, worship, and powerful messages.',
+      start_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+      address: '123 Church Street, Douala, Cameroon',
+      dcg: { name: 'Victory DCG' }
+    },
+    {
+      id: '2',
+      name: 'Youth Conference 2024',
+      description: 'An inspiring conference for young people with guest speakers, workshops, and fellowship.',
+      start_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
+      address: 'Community Center Hall, Douala',
+      dcg: null
+    },
+    {
+      id: '3',
+      name: 'Prayer & Fasting',
+      description: 'Join our community for a time of prayer, fasting, and seeking God\'s presence.',
+      start_datetime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+      address: 'Main Church Sanctuary',
+      dcg: { name: 'Faith DCG' }
+    },
+    {
+      id: '4',
+      name: 'Community Outreach',
+      description: 'Serving our local community with food distribution and medical assistance.',
+      start_datetime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now
+      address: 'Central Market Area, Douala',
+      dcg: null
+    },
+    {
+      id: '5',
+      name: 'Bible Study Fellowship',
+      description: 'Deep dive into God\'s word with interactive discussions and fellowship.',
+      start_datetime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+      address: 'Church Fellowship Hall',
+      dcg: { name: 'Hope DCG' }
+    },
+    {
+      id: '6',
+      name: 'Marriage Enrichment Seminar',
+      description: 'Strengthening marriages through biblical principles and practical wisdom.',
+      start_datetime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks from now
+      address: 'Conference Room A, Church Building',
+      dcg: null
+    }
+  ];
+  
+  // Use mock data if no real events or for preview
+  const displayEvents = allEvents && allEvents.length > 0 ? allEvents : mockEvents;
   const [email, setEmail] = useState('');
 
   // Hero slider images - mobile-optimized vertical images
@@ -285,7 +340,7 @@ const RegionalBranchHome = () => {
                 </Card>)}
             </div> : <div className="w-full">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {allEvents && allEvents.length > 0 ? allEvents.slice(0, 12).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                {displayEvents && displayEvents.length > 0 ? displayEvents.slice(0, 12).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                     <CardContent className="p-0">
                       <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
@@ -340,7 +395,7 @@ const RegionalBranchHome = () => {
                     </Card>
                   </div>}
               </div>
-              {allEvents && allEvents.length > 12 && <div className="text-center">
+              {displayEvents && displayEvents.length > 12 && <div className="text-center">
                   <Button variant="outline" size="lg" className="px-8">
                     View All Events
                     <ArrowRight className="w-4 h-4 ml-2" />
