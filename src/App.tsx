@@ -35,6 +35,7 @@ import DcgProfile from "./pages/admin/regional/DcgProfile";
 import RegionalReports from "./pages/admin/regional/Reports";
 import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
+import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 
 // Super Admin Portal Routes
 import SuperDashboard from "./pages/admin/super/Dashboard";
@@ -193,6 +194,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
                   <RegionalCommunication />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/branch-settings" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                  <RegionalBranchSettings />
                 </ProtectedRoute>
               } 
             />

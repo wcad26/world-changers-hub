@@ -11,7 +11,8 @@ import {
   Home, 
   BarChart2, 
   MessageSquare,
-  Settings
+  Settings,
+  Building2
 } from "lucide-react";
 
 interface RegionalAdminLayoutProps {
@@ -29,6 +30,7 @@ const menuItems = [
   { title: "DCG Management", path: "/admin/regional/dcg", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Branch Settings", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Settings", path: "/admin/regional/settings", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
 ];
 
