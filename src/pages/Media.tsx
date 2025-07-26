@@ -143,7 +143,7 @@ const Media = () => {
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
       
-      <main className="flex-grow pt-20 md:pt-24 pb-16">
+      <main className="flex-grow pt-0 pb-16">
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-10 md:py-16">
           <div className="container px-4 mx-auto">
             <div className="flex flex-col items-center text-center mb-8 md:mb-12">
