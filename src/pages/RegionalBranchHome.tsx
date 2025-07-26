@@ -159,6 +159,73 @@ const RegionalBranchHome = () => {
         </div>
       </section>
 
+      {/* Regional Information Section - Full Width */}
+      <section className="bg-white border-b py-[20px]">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Regional Information</h2>
+              <p className="text-muted-foreground">Get to know our regional branch</p>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+              {/* Established Year */}
+              <div className="text-center p-6 bg-primary/5 rounded-lg">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {region.established_date ? new Date(region.established_date).getFullYear() : '2020'}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Established
+                </div>
+              </div>
+
+              {/* DCG Homes Count */}
+              <div className="text-center p-6 bg-secondary/5 rounded-lg">
+                <div className="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-6 h-6 text-secondary" />
+                </div>
+                <div className="text-3xl font-bold text-secondary mb-2">
+                  {dcgs?.length || 0}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  DCG Homes
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="text-center p-6 bg-accent/5 rounded-lg">
+                <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-6 h-6 text-accent" />
+                </div>
+                <div className="text-sm font-semibold text-foreground mb-2">
+                  {region.address || 'Address Available Soon'}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Address
+                </div>
+              </div>
+
+              {/* Contact */}
+              <div className="text-center p-6 bg-primary/5 rounded-lg">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-6 h-6 text-primary" />
+                </div>
+                <div className="mb-2">
+                  {region.contact_phone && <div className="text-sm font-semibold text-foreground">
+                      {region.contact_phone}
+                    </div>}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Contact
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* About Section - Full Width */}
       <section className="py-20 bg-muted/30">
