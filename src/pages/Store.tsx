@@ -181,7 +181,7 @@ const Store = () => {
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
           <div className="container-custom">
             <div className="flex flex-col items-center text-center mb-12">
-              <div className="flex justify-between items-center w-full max-w-4xl mb-8">
+              <div className="flex justify-between items-center w-full max-w-4xl mb-8 sticky top-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm z-10 py-4 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
                   <button 
                     className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
