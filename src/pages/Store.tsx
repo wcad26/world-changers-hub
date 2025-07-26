@@ -401,46 +401,6 @@ const Store = () => {
                     </div>
                   </div>
 
-                  {activeTab === "store" && <div>
-                      <h3 className="font-medium text-lg flex items-center gap-2 mb-4">
-                        <ShoppingCart size={18} />
-                        <span>Cart ({totalItems} items)</span>
-                      </h3>
-                      
-                      {cartItems.length === 0 ? <p className="text-gray-500 dark:text-gray-400 text-sm">Your cart is empty</p> : <div>
-                          <div className="space-y-3 mb-4">
-                            {cartItems.map(item => {
-                        const storeItem = storeItems.find(i => i.id === item.id);
-                        return storeItem ? <div key={item.id} className="flex justify-between items-center">
-                                  <div className="flex-1">
-                                    <p className="text-sm font-medium truncate">{storeItem.title}</p>
-                                    <p className="text-xs text-gray-500">${storeItem.price.toFixed(2)} × {item.quantity}</p>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => removeFromCart(item.id)}>
-                                      <Minus size={12} />
-                                    </Button>
-                                    <span className="text-sm w-4 text-center">{item.quantity}</span>
-                                    <Button size="icon" variant="outline" className="h-6 w-6" onClick={() => addToCart(item.id)}>
-                                      <Plus size={12} />
-                                    </Button>
-                                  </div>
-                                </div> : null;
-                      })}
-                          </div>
-                          
-                          <div className="border-t pt-3 mb-4">
-                            <div className="flex justify-between items-center font-medium">
-                              <span>Total:</span>
-                              <span>${totalPrice.toFixed(2)}</span>
-                            </div>
-                          </div>
-                          
-                          <Button className="w-full bg-wca-teal hover:bg-wca-teal/90">
-                            Checkout
-                          </Button>
-                        </div>}
-                    </div>}
                 </GlassPanel>
               </div>
               
