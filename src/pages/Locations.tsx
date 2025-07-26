@@ -162,7 +162,7 @@ const Locations = () => {
 
                   {/* Region Filter */}
                   <div className="relative lg:w-64">
-                    <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 border-2 border-transparent focus:outline-none focus:border-purple-500 text-gray-700 dark:text-gray-300 font-medium cursor-pointer transition-all">
+                    <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-gray-900 dark:text-gray-100 font-medium cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md hover:border-purple-400 dark:hover:border-purple-400">
                       <option value="all">All Regions</option>
                       {countries.map((country, index) => <option key={index} value={country}>{country}</option>)}
                     </select>
