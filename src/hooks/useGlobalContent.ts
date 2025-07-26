@@ -60,6 +60,8 @@ export const useGlobalContent = (pageType: string = 'about_us') => {
           page_type: pageType,
           content: content as any,
           updated_by: (await supabase.auth.getUser()).data.user?.id
+        }, {
+          onConflict: 'page_type'
         })
         .select()
         .single();
