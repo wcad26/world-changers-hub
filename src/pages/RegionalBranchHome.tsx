@@ -160,7 +160,7 @@ const RegionalBranchHome = () => {
       </section>
 
       {/* Regional Information Section - Full Width */}
-      <section className="py-16 bg-white border-b">
+      <section className="bg-white border-b py-[20px]">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
