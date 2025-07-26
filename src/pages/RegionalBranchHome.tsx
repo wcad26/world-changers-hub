@@ -12,50 +12,57 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Input } from '@/components/ui/input';
 import { toast } from "@/hooks/use-toast";
-
 const RegionalBranchHome = () => {
-  const { slug } = useParams<{ slug: string }>();
-  const { data: region, isLoading: regionLoading, error: regionError } = useRegionBySlug(slug || '');
-  const { data: locations, isLoading: locationsLoading } = useRegionalLocations(region?.id || '');
-  const { data: dcgs, isLoading: dcgsLoading } = useRegionalDCGs(region?.id || '');
-  const { data: events, isLoading: eventsLoading } = useRegionalEvents(region?.id || '');
-
+  const {
+    slug
+  } = useParams<{
+    slug: string;
+  }>();
+  const {
+    data: region,
+    isLoading: regionLoading,
+    error: regionError
+  } = useRegionBySlug(slug || '');
+  const {
+    data: locations,
+    isLoading: locationsLoading
+  } = useRegionalLocations(region?.id || '');
+  const {
+    data: dcgs,
+    isLoading: dcgsLoading
+  } = useRegionalDCGs(region?.id || '');
+  const {
+    data: events,
+    isLoading: eventsLoading
+  } = useRegionalEvents(region?.id || '');
   const [email, setEmail] = useState('');
 
   // Hero slider images - mobile-optimized vertical images
-  const heroImages = [
-    {
-      url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
-      alt: 'Community worship gathering'
-    },
-    {
-      url: `https://images.unsplash.com/photo-1519491050282-cf00c82424b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
-      alt: 'Church fellowship'
-    },
-    {
-      url: `https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
-      alt: 'Community service'
-    },
-    {
-      url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
-      alt: 'Prayer and worship'
-    }
-  ];
-
+  const heroImages = [{
+    url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
+    alt: 'Community worship gathering'
+  }, {
+    url: `https://images.unsplash.com/photo-1519491050282-cf00c82424b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
+    alt: 'Church fellowship'
+  }, {
+    url: `https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
+    alt: 'Community service'
+  }, {
+    url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
+    alt: 'Prayer and worship'
+  }];
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
       toast({
         title: "Successfully subscribed!",
-        description: "Thank you for subscribing to our newsletter.",
+        description: "Thank you for subscribing to our newsletter."
       });
       setEmail('');
     }
   };
-
   if (regionLoading) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="space-y-4 text-center">
@@ -63,13 +70,10 @@ const RegionalBranchHome = () => {
             <p className="text-muted-foreground">Loading regional information...</p>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (regionError || !region) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Navbar />
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center space-y-4">
@@ -85,42 +89,38 @@ const RegionalBranchHome = () => {
             </Link>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  const stats = [
-    { label: 'Established', value: region.established_date ? new Date(region.established_date).getFullYear() : '2020' },
-    { label: 'DCG Homes', value: dcgs?.length || 0 },
-    { label: 'Locations', value: locations?.length || 0 }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const stats = [{
+    label: 'Established',
+    value: region.established_date ? new Date(region.established_date).getFullYear() : '2020'
+  }, {
+    label: 'DCG Homes',
+    value: dcgs?.length || 0
+  }, {
+    label: 'Locations',
+    value: locations?.length || 0
+  }];
+  return <div className="min-h-screen bg-background">
       <Header />
       
       {/* Hero Section - Full Width with Image Slider */}
       <section className="relative h-screen md:h-screen min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image Slider */}
-        <Carousel 
-          className="absolute inset-0 w-full h-full" 
-          opts={{ align: "start", loop: true }}
-          plugins={[Autoplay({ delay: 6000 })]}
-        >
+        <Carousel className="absolute inset-0 w-full h-full" opts={{
+        align: "start",
+        loop: true
+      }} plugins={[Autoplay({
+        delay: 6000
+      })]}>
           <CarouselContent className="h-full -ml-0">
-            {heroImages.map((image, index) => (
-              <CarouselItem key={index} className="h-full relative pl-0">
+            {heroImages.map((image, index) => <CarouselItem key={index} className="h-full relative pl-0">
                 <div className="h-full w-full relative">
-                  <img 
-                    src={image.url} 
-                    alt={image.alt}
-                    className="w-full h-full object-cover object-center"
-                  />
+                  <img src={image.url} alt={image.alt} className="w-full h-full object-cover object-center" />
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-black/50"></div>
                 </div>
-              </CarouselItem>
-            ))}
+              </CarouselItem>)}
           </CarouselContent>
           <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
           <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 border-white/30 text-white hover:bg-white/30" />
@@ -132,10 +132,14 @@ const RegionalBranchHome = () => {
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-fade-up drop-shadow-lg">
               {region.name}
             </h1>
-            <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto animate-fade-up drop-shadow-md" style={{animationDelay: '0.2s'}}>
+            <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto animate-fade-up drop-shadow-md" style={{
+            animationDelay: '0.2s'
+          }}>
               {region.description || `Welcome to ${region.name}, where faith meets community and purpose drives our mission.`}
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{animationDelay: '0.4s'}}>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
+            animationDelay: '0.4s'
+          }}>
               <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold shadow-lg">
                 Visit Us Today
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -210,16 +214,10 @@ const RegionalBranchHome = () => {
                   <Phone className="w-6 h-6 text-primary" />
                 </div>
                 <div className="space-y-1 mb-2">
-                  {region.contact_phone && (
-                    <div className="text-sm font-semibold text-foreground">
+                  {region.contact_phone && <div className="text-sm font-semibold text-foreground">
                       {region.contact_phone}
-                    </div>
-                  )}
-                  {region.contact_email && (
-                    <div className="text-xs text-muted-foreground">
-                      {region.contact_email}
-                    </div>
-                  )}
+                    </div>}
+                  {region.contact_email}
                 </div>
                 <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
                   Contact
@@ -256,22 +254,16 @@ const RegionalBranchHome = () => {
             </p>
           </div>
           
-          {eventsLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
+          {eventsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
                     <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : events && events.length > 0 ? (
-            <div className="max-w-6xl mx-auto">
+                </Card>)}
+            </div> : events && events.length > 0 ? <div className="max-w-6xl mx-auto">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {events.slice(0, 6).map((event, index) => (
-                  <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                {events.slice(0, 6).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                     <CardContent className="p-0">
                       <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
@@ -281,61 +273,51 @@ const RegionalBranchHome = () => {
                               {event.name}
                             </h3>
                             <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
-                              {new Date(event.start_datetime).toLocaleDateString('en-US', { 
-                                month: 'short', 
-                                day: 'numeric' 
-                              })}
+                              {new Date(event.start_datetime).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
                             </div>
                           </div>
                           
-                          {event.description && (
-                            <p className="text-muted-foreground mb-4 line-clamp-2">
+                          {event.description && <p className="text-muted-foreground mb-4 line-clamp-2">
                               {event.description}
-                            </p>
-                          )}
+                            </p>}
                           
                           <div className="space-y-2 text-sm text-muted-foreground">
                             <div className="flex items-center space-x-2">
                               <Clock className="w-4 h-4 text-primary" />
                               <span>
-                                {new Date(event.start_datetime).toLocaleTimeString('en-US', { 
-                                  hour: 'numeric', 
-                                  minute: '2-digit',
-                                  hour12: true 
-                                })}
+                                {new Date(event.start_datetime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
                               </span>
                             </div>
-                            {event.address && (
-                              <div className="flex items-center space-x-2">
+                            {event.address && <div className="flex items-center space-x-2">
                                 <MapPin className="w-4 h-4 text-primary" />
                                 <span className="truncate">{event.address}</span>
-                              </div>
-                            )}
+                              </div>}
                           </div>
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                  </Card>)}
               </div>
-              {events.length > 6 && (
-                <div className="text-center">
+              {events.length > 6 && <div className="text-center">
                   <Button variant="outline" size="lg" className="px-8">
                     View All Events
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Card className="max-w-2xl mx-auto">
+                </div>}
+            </div> : <Card className="max-w-2xl mx-auto">
               <CardContent className="p-12 text-center">
                 <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
                 <p className="text-muted-foreground">Check back soon for upcoming events and gatherings.</p>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </section>
 
@@ -351,21 +333,15 @@ const RegionalBranchHome = () => {
             </p>
           </div>
           
-          {dcgsLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="animate-pulse">
+          {dcgsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
                     <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : dcgs && dcgs.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {dcgs.map((dcg) => (
-                <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
+                </Card>)}
+            </div> : dcgs && dcgs.length > 0 ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {dcgs.map(dcg => <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
                   <CardContent className="p-0">
                     <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
@@ -379,15 +355,12 @@ const RegionalBranchHome = () => {
                           </div>
                         </div>
                         
-                        {dcg.meeting_day && dcg.meeting_time && (
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+                        {dcg.meeting_day && dcg.meeting_time && <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
                             <Clock className="w-4 h-4 text-secondary" />
                             <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
-                          </div>
-                        )}
+                          </div>}
                         
-                        {dcg.leader && (
-                          <div className="flex items-center space-x-3 pt-4 border-t border-border/50">
+                        {dcg.leader && <div className="flex items-center space-x-3 pt-4 border-t border-border/50">
                             <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
                               <Users className="w-5 h-5 text-secondary" />
                             </div>
@@ -397,23 +370,18 @@ const RegionalBranchHome = () => {
                               </p>
                               <p className="text-sm text-muted-foreground">Group Leader</p>
                             </div>
-                          </div>
-                        )}
+                          </div>}
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="max-w-2xl mx-auto">
+                </Card>)}
+            </div> : <Card className="max-w-2xl mx-auto">
               <CardContent className="p-12 text-center">
                 <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">DCG Information Coming Soon</h3>
                 <p className="text-muted-foreground">We're setting up our Destiny Care Groups. Check back soon for updates.</p>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </div>
       </section>
 
@@ -438,8 +406,7 @@ const RegionalBranchHome = () => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
-                    {region.contact_email && (
-                      <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                    {region.contact_email && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
                         <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
                           <Mail className="w-6 h-6 text-primary" />
                         </div>
@@ -447,10 +414,8 @@ const RegionalBranchHome = () => {
                           <p className="text-sm text-muted-foreground mb-1">Email Address</p>
                           <p className="font-semibold text-foreground">{region.contact_email}</p>
                         </div>
-                      </div>
-                    )}
-                    {region.contact_phone && (
-                      <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                      </div>}
+                    {region.contact_phone && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
                         <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
                           <Phone className="w-6 h-6 text-primary" />
                         </div>
@@ -458,11 +423,9 @@ const RegionalBranchHome = () => {
                           <p className="text-sm text-muted-foreground mb-1">Phone Number</p>
                           <p className="font-semibold text-foreground">{region.contact_phone}</p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                   </div>
-                  {region.address && (
-                    <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
+                  {region.address && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
                       <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
                         <MapPin className="w-6 h-6 text-primary" />
                       </div>
@@ -470,12 +433,10 @@ const RegionalBranchHome = () => {
                         <p className="text-sm text-muted-foreground mb-1">Address</p>
                         <p className="font-semibold text-foreground">{region.address}</p>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
                   {/* Leadership */}
-                  {region.regional_pastor && (
-                    <div className="pt-6 border-t">
+                  {region.regional_pastor && <div className="pt-6 border-t">
                       <h3 className="font-semibold text-foreground mb-4">Regional Leadership</h3>
                       <div className="flex items-center space-x-4 p-4 bg-muted/30 rounded-lg">
                         <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
@@ -486,8 +447,7 @@ const RegionalBranchHome = () => {
                           <p className="text-muted-foreground">Regional Pastor</p>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
 
@@ -501,14 +461,7 @@ const RegionalBranchHome = () => {
                     Subscribe to our newsletter for updates on events, community news, and spiritual insights.
                   </p>
                   <form onSubmit={handleSubscribe} className="space-y-4">
-                    <Input
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="h-12"
-                    />
+                    <Input type="email" placeholder="Enter your email address" value={email} onChange={e => setEmail(e.target.value)} required className="h-12" />
                     <Button type="submit" className="w-full h-12 font-semibold">
                       Subscribe Now
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -525,8 +478,6 @@ const RegionalBranchHome = () => {
       </section>
 
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default RegionalBranchHome;
