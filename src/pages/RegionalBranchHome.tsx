@@ -370,7 +370,7 @@ const RegionalBranchHome = () => {
               {/* Left Side - Leader's Word */}
               <div className="space-y-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  A word from our regional leader
+                  ABOUT {region.name}
                 </h2>
                 <div className="prose prose-lg text-muted-foreground">
                   <p className="leading-relaxed">
