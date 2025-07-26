@@ -189,18 +189,17 @@ const Store = () => {
       </div>
       
       <main className="flex-grow pt-32 pb-16 py-[75px]">
-        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
+        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-0">
           <div className="container-custom">
-            <Carousel 
-              className="w-full max-w-6xl mx-auto" 
-              plugins={[Autoplay({ delay: 4000 })]}
-            >
+            <Carousel className="w-full max-w-6xl mx-auto" plugins={[Autoplay({
+            delay: 4000
+          })]}>
               <CarouselContent>
-                {activeTab === "store" ? (
-                  <>
+                {activeTab === "store" ? <>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -215,8 +214,9 @@ const Store = () => {
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -231,8 +231,9 @@ const Store = () => {
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1621351183012-e2110f0dd754?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1621351183012-e2110f0dd754?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -246,12 +247,11 @@ const Store = () => {
                         </div>
                       </div>
                     </CarouselItem>
-                  </>
-                ) : (
-                  <>
+                  </> : <>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -266,8 +266,9 @@ const Store = () => {
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -282,8 +283,9 @@ const Store = () => {
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
-                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"}}>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" style={{
+                    backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"
+                  }}>
                         <div className="absolute inset-0 bg-black/40"></div>
                         <div className="relative z-10 flex flex-col items-center justify-center h-full">
                           <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -297,8 +299,7 @@ const Store = () => {
                         </div>
                       </div>
                     </CarouselItem>
-                  </>
-                )}
+                  </>}
               </CarouselContent>
               <CarouselPrevious />
               <CarouselNext />
