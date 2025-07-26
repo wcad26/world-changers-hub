@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, Phone, Mail, ArrowRight, ChevronLeft, Home } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useRegionalLocations, useRegionalDCGs, useAllRegionalEvents } from '@/hooks/useRegionalData';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -18,6 +20,10 @@ const RegionalBranchHome = () => {
   } = useParams<{
     slug: string;
   }>();
+  
+  // Responsive hooks for screen size detection
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const {
     data: region,
     isLoading: regionLoading,
@@ -350,9 +356,14 @@ const RegionalBranchHome = () => {
                 
                 <CarouselContent className="-ml-4">
                   {displayEvents && displayEvents.length > 0 ? (() => {
-                    // Events per slide: 2 rows max
-                    const eventsPerSlide = 6; // 3 cols × 2 rows on desktop, responsive grid handles other sizes
+                    // Calculate events per slide based on screen size (2 rows max)
+                    const getEventsPerSlide = () => {
+                      if (isMobile) return 2; // 1 column × 2 rows
+                      if (isTablet) return 4; // 2 columns × 2 rows  
+                      return 6; // 3 columns × 2 rows (desktop)
+                    };
                     
+                    const eventsPerSlide = getEventsPerSlide();
                     const slides = [];
                     const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide);
                     
@@ -364,8 +375,8 @@ const RegionalBranchHome = () => {
                       
                       slides.push(
                         <CarouselItem key={i} className="pl-4 basis-full">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-auto max-h-fit">
-                            {slideEvents.slice(0, 6).map((event, eventIndex) => (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {slideEvents.map((event, eventIndex) => (
                               <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                                 <CardContent className="p-0">
                                   <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
