@@ -129,7 +129,7 @@ const Locations = () => {
                 {/* Filters Row */}
                 <div className="flex flex-col lg:flex-row gap-4">
                   {/* Type Filters */}
-                  <div className="flex flex-wrap gap-3 lg:flex-1">
+                  <div className="flex gap-2 lg:gap-3 lg:flex-1">
                     {[{
                     key: 'all',
                     label: 'All Locations',
