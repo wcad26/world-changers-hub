@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { MapPin, User, Phone, Mail, Calendar, FileText, Upload, Loader2 } from "lucide-react";
+import { MapPin, User, Phone, Mail, Calendar, FileText, Upload, Loader2, Images, X, Image } from "lucide-react";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
 import { useRegions } from "@/hooks/useRegions";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,10 @@ const regionalBranchSchema = z.object({
   regional_president: z.string().optional(),
   regional_president_photo: z.string().optional(),
   established_date: z.string().optional(),
+  hero_slide_images: z.array(z.object({
+    url: z.string(),
+    alt: z.string(),
+  })).optional(),
 });
 
 type RegionalBranchFormData = z.infer<typeof regionalBranchSchema>;
@@ -43,6 +47,8 @@ const RegionalBranchForm = () => {
   const { updateRegion } = useRegionMutations();
   const { toast } = useToast();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [slideImages, setSlideImages] = useState<Array<{url: string, alt: string}>>([]);
+  const [isUploadingSlides, setIsUploadingSlides] = useState(false);
 
   // Get the user's region
   const userRegion = regions?.find(region => 
@@ -67,6 +73,18 @@ const RegionalBranchForm = () => {
   // Populate form with current region data
   useEffect(() => {
     if (userRegion) {
+        // Type-safe parsing of slide images data
+        let slideImagesData: Array<{url: string, alt: string}> = [];
+        if (userRegion.hero_slide_images && Array.isArray(userRegion.hero_slide_images)) {
+          slideImagesData = userRegion.hero_slide_images.filter((item): item is {url: string, alt: string} => 
+            typeof item === 'object' && item !== null && 
+            typeof (item as any).url === 'string' && 
+            typeof (item as any).alt === 'string'
+          );
+        }
+        
+        setSlideImages(slideImagesData);
+        
         form.reset({
           name: userRegion.name || "",
           code: userRegion.code || "",
@@ -77,6 +95,7 @@ const RegionalBranchForm = () => {
           regional_president: userRegion.regional_president || "",
           regional_president_photo: userRegion.regional_president_photo || "",
           established_date: userRegion.established_date || "",
+          hero_slide_images: slideImagesData,
         });
     }
   }, [userRegion, form]);
@@ -96,6 +115,7 @@ const RegionalBranchForm = () => {
         regional_president: data.regional_president || null,
         regional_president_photo: data.regional_president_photo || null,
         established_date: data.established_date || null,
+        hero_slide_images: slideImages.length > 0 ? slideImages : null,
       },
     });
   };
@@ -172,6 +192,124 @@ const RegionalBranchForm = () => {
     } finally {
       setIsUploadingPhoto(false);
     }
+  };
+
+  const handleSlideUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !userRegion) return;
+
+    // Check if adding new files would exceed the 4 slide limit
+    if (slideImages.length + files.length > 4) {
+      toast({
+        title: "Too many slides",
+        description: "You can only have up to 4 hero slide images",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingSlides(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not an image`);
+        }
+        
+        // Validate file size (max 10MB for slides)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large (max 10MB)`);
+        }
+
+        // Create unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `slide_${userRegion.id}_${Date.now()}_${index}.${fileExt}`;
+        const filePath = `${userRegion.id}/slides/${fileName}`;
+
+        // Upload file
+        const { error: uploadError } = await supabase.storage
+          .from('member-photos')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('member-photos')
+          .getPublicUrl(filePath);
+
+        return {
+          url: publicUrl,
+          alt: `Hero slide image ${slideImages.length + index + 1}`
+        };
+      });
+
+      const newSlides = await Promise.all(uploadPromises);
+      const updatedSlides = [...slideImages, ...newSlides];
+      
+      setSlideImages(updatedSlides);
+      form.setValue("hero_slide_images", updatedSlides);
+
+      toast({
+        title: "Slides uploaded",
+        description: `${files.length} slide image(s) uploaded successfully`
+      });
+
+    } catch (error) {
+      console.error('Error uploading slides:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload slides. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingSlides(false);
+      // Clear the input
+      event.target.value = '';
+    }
+  };
+
+  const removeSlide = async (index: number) => {
+    const slide = slideImages[index];
+    if (!slide || !userRegion) return;
+
+    try {
+      // Extract filename from URL for deletion
+      const urlParts = slide.url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `${userRegion.id}/slides/${fileName}`;
+
+      // Delete from storage
+      await supabase.storage
+        .from('member-photos')
+        .remove([filePath]);
+
+      // Update state
+      const updatedSlides = slideImages.filter((_, i) => i !== index);
+      setSlideImages(updatedSlides);
+      form.setValue("hero_slide_images", updatedSlides);
+
+      toast({
+        title: "Slide removed",
+        description: "Slide image has been removed successfully"
+      });
+
+    } catch (error) {
+      console.error('Error removing slide:', error);
+      toast({
+        title: "Removal failed",
+        description: "Failed to remove slide. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateSlideAlt = (index: number, alt: string) => {
+    const updatedSlides = slideImages.map((slide, i) => 
+      i === index ? { ...slide, alt } : slide
+    );
+    setSlideImages(updatedSlides);
+    form.setValue("hero_slide_images", updatedSlides);
   };
 
   if (isLoading) {
@@ -432,6 +570,90 @@ const RegionalBranchForm = () => {
                 </FormItem>
               )}
             />
+
+            {/* Hero Slide Images Section */}
+            <div className="space-y-4">
+              <div className="border-t pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Images className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Hero Slide Images</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload up to 4 images for the hero slider on your regional branch page. Images will automatically rotate to showcase your community.
+                </p>
+                
+                {/* Upload Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleSlideUpload}
+                      disabled={isUploadingSlides || slideImages.length >= 4}
+                      className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                    />
+                    {isUploadingSlides && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading slides...
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    • Select up to {4 - slideImages.length} more images
+                    • Recommended size: 1920x1080px or 16:9 aspect ratio
+                    • Maximum file size: 10MB per image
+                    • Supported formats: JPG, PNG, WebP
+                  </p>
+                </div>
+
+                {/* Current Slides Display */}
+                {slideImages.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">Current Slide Images ({slideImages.length}/4)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {slideImages.map((slide, index) => (
+                        <div key={index} className="relative group border rounded-lg overflow-hidden bg-muted">
+                          <div className="aspect-video relative">
+                            <img
+                              src={slide.url}
+                              alt={slide.alt}
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Delete button */}
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeSlide(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Alt text input */}
+                          <div className="p-3">
+                            <Label htmlFor={`slide-alt-${index}`} className="text-xs text-muted-foreground">
+                              Image Description
+                            </Label>
+                            <Input
+                              id={`slide-alt-${index}`}
+                              value={slide.alt}
+                              onChange={(e) => updateSlideAlt(index, e.target.value)}
+                              placeholder="Describe this image..."
+                              className="mt-1 text-sm h-8"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="flex justify-end space-x-4 pt-6">
               <Button 

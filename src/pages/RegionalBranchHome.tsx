@@ -179,8 +179,8 @@ const RegionalBranchHome = () => {
   const displayDcgs = mockDcgs;
   const [email, setEmail] = useState('');
 
-  // Hero slider images - mobile-optimized vertical images
-  const heroImages = [{
+  // Default hero slider images - fallback if no custom slides
+  const defaultHeroImages = [{
     url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
     alt: 'Community worship gathering'
   }, {
@@ -193,6 +193,19 @@ const RegionalBranchHome = () => {
     url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
     alt: 'Prayer and worship'
   }];
+
+  // Use custom slide images if available, otherwise use default images
+  const heroImages = React.useMemo(() => {
+    if (region?.hero_slide_images && Array.isArray(region.hero_slide_images) && region.hero_slide_images.length > 0) {
+      // Type-safe filtering of slide images
+      return region.hero_slide_images.filter((item): item is {url: string, alt: string} => 
+        typeof item === 'object' && item !== null && 
+        typeof (item as any).url === 'string' && 
+        typeof (item as any).alt === 'string'
+      );
+    }
+    return defaultHeroImages;
+  }, [region?.hero_slide_images]);
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
