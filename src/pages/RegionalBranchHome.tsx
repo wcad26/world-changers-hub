@@ -639,14 +639,6 @@ const RegionalBranchHome = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Contact Information */}
-              <Card className="lg:col-span-2 shadow-lg border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent>
-                </CardContent>
-              </Card>
 
               {/* Newsletter Signup */}
               <Card className="shadow-lg border-0">
