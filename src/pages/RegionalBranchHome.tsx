@@ -640,56 +640,7 @@ const RegionalBranchHome = () => {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {/* Contact Information */}
-              <Card className="lg:col-span-2 shadow-lg border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Contact Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {region.contact_email && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
-                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Mail className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Email Address</p>
-                          <p className="font-semibold text-foreground">{region.contact_email}</p>
-                        </div>
-                      </div>}
-                    {region.contact_phone && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
-                        <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Phone className="w-6 h-6 text-primary" />
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Phone Number</p>
-                          <p className="font-semibold text-foreground">{region.contact_phone}</p>
-                        </div>
-                      </div>}
-                  </div>
-                  {region.address && <div className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg">
-                      <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <MapPin className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Address</p>
-                        <p className="font-semibold text-foreground">{region.address}</p>
-                      </div>
-                    </div>}
-                  
-                  {/* Leadership */}
-                  {region.regional_pastor && <div className="pt-6 border-t">
-                      <h3 className="font-semibold text-foreground mb-4">Regional Leadership</h3>
-                      <div className="flex items-center space-x-4 p-4 bg-muted/30 rounded-lg">
-                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center">
-                          <Users className="w-8 h-8 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg text-foreground">{region.regional_pastor}</p>
-                          <p className="text-muted-foreground">Regional Pastor</p>
-                        </div>
-                      </div>
-                    </div>}
-                </CardContent>
-              </Card>
+              
 
               {/* Newsletter Signup */}
               <Card className="shadow-lg border-0">
