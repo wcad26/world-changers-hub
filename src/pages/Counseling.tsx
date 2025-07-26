@@ -93,14 +93,14 @@ const counselors: Counselor[] = [
 ];
 
 const Counseling = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [appointmentFormOpen, setAppointmentFormOpen] = useState<boolean>(false);
-  const [specialtyOpen, setSpecialtyOpen] = useState(false);
-  const [dayOpen, setDayOpen] = useState(false);
+  const [specialtyOpen, setSpecialtyOpen] = useState<boolean>(false);
+  const [dayOpen, setDayOpen] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
