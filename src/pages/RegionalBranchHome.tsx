@@ -33,7 +33,7 @@ const RegionalBranchHome = () => {
   } = useRegionalDCGs(region?.id || '');
   const {
     data: allEvents,
-    isLoading: eventsLoading
+    isLoading: allEventsLoading
   } = useAllRegionalEvents(region?.id || '');
   const [email, setEmail] = useState('');
 
@@ -249,7 +249,7 @@ const RegionalBranchHome = () => {
             </p>
           </div>
           
-          {eventsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+          {allEventsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
               {[1, 2, 3, 4, 5, 6].map(i => <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
                     <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
