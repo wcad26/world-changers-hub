@@ -625,6 +625,63 @@ const RegionalBranchHome = () => {
         </div>
       </section>
 
+      {/* Newsletter Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Stay Updated With Us
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                We'd love to connect with you and answer any questions you might have
+              </p>
+            </div>
+
+            <Card className="shadow-lg border-0 max-w-2xl mx-auto">
+              <CardContent className="p-8">
+                <form onSubmit={handleSubscribe} className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                        Email Address
+                      </label>
+                      <Input 
+                        id="email"
+                        type="email" 
+                        placeholder="Enter your email address" 
+                        value={email} 
+                        onChange={e => setEmail(e.target.value)} 
+                        required 
+                        className="h-12" 
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+                        Phone Number
+                      </label>
+                      <Input 
+                        id="phone"
+                        type="tel" 
+                        placeholder="Enter your phone number" 
+                        className="h-12" 
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full h-12 font-semibold">
+                    Send
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </form>
+                <p className="text-xs text-muted-foreground mt-6 text-center">
+                  We respect your privacy and will never spam you.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
 
       <Footer />
     </div>;
