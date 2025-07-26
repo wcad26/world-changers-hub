@@ -370,7 +370,7 @@ const Blog = () => {
             {featuredPosts.length > 0 && (
               <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-6">Featured Posts</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                   {featuredPosts.slice(0, 2).map(post => (
                     <GlassCard key={post.id} className="overflow-hidden">
                       <div className="relative h-64">
