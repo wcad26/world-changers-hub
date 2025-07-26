@@ -223,8 +223,29 @@ const RegionalBranchHome = () => {
       }
       // Fallback to default mobile images
       return defaultMobileHeroImages;
+    } else if (isTablet) {
+      // For tablet devices, use tablet-specific images if available
+      if ((region as any)?.hero_slide_images_tablet && Array.isArray((region as any).hero_slide_images_tablet) && (region as any).hero_slide_images_tablet.length > 0) {
+        const tabletImages = (region as any).hero_slide_images_tablet.filter((item): item is {url: string, alt: string} => 
+          typeof item === 'object' && item !== null && 
+          typeof (item as any).url === 'string' && 
+          typeof (item as any).alt === 'string'
+        );
+        if (tabletImages.length > 0) return tabletImages;
+      }
+      // Fallback to desktop images for tablets if no tablet-specific images
+      if (region?.hero_slide_images && Array.isArray(region.hero_slide_images) && region.hero_slide_images.length > 0) {
+        const desktopImages = region.hero_slide_images.filter((item): item is {url: string, alt: string} => 
+          typeof item === 'object' && item !== null && 
+          typeof (item as any).url === 'string' && 
+          typeof (item as any).alt === 'string'
+        );
+        if (desktopImages.length > 0) return desktopImages;
+      }
+      // Final fallback to default desktop images
+      return defaultHeroImages;
     } else {
-      // For desktop/tablet, use regular hero images
+      // For desktop, use regular hero images
       if (region?.hero_slide_images && Array.isArray(region.hero_slide_images) && region.hero_slide_images.length > 0) {
         const desktopImages = region.hero_slide_images.filter((item): item is {url: string, alt: string} => 
           typeof item === 'object' && item !== null && 
@@ -236,7 +257,7 @@ const RegionalBranchHome = () => {
       // Fallback to default desktop images
       return defaultHeroImages;
     }
-  }, [region?.hero_slide_images, (region as any)?.hero_slide_images_mobile, isMobile]);
+  }, [region?.hero_slide_images, (region as any)?.hero_slide_images_mobile, (region as any)?.hero_slide_images_tablet, isMobile, isTablet]);
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
