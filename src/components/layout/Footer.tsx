@@ -14,7 +14,7 @@ export default function Footer() {
               <img 
                 src="/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png" 
                 alt="World Changers Association" 
-                className="w-full md:h-12 md:w-auto"
+                className="w-full md:h-16 md:w-auto"
               />
             </Link>
             <p className="text-gray-600 dark:text-gray-400 max-w-md">
