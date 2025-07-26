@@ -347,7 +347,7 @@ const RegionalBranchHome = () => {
             </div> : <div className="w-full">
               {/* Events Carousel */}
               <Carousel className="w-full" opts={{ align: "start", loop: false }}>
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-center items-center mb-6">
                   <div className="flex space-x-2">
                     <CarouselPrevious className="relative translate-y-0 left-0" />
                     <CarouselNext className="relative translate-y-0 right-0" />
