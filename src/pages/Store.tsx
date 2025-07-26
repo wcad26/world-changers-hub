@@ -185,18 +185,14 @@ const Store = () => {
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
               </div>
               
-              {activeTab === "store" && (
-                <div className="relative">
+              {activeTab === "store" && <div className="relative">
                   <button className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                     <ShoppingCart size={20} />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-wca-purple text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {totalItems > 0 && <span className="absolute -top-1 -right-1 bg-wca-purple text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                         {totalItems}
-                      </span>
-                    )}
+                      </span>}
                   </button>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
         </div>
@@ -322,7 +318,7 @@ const Store = () => {
         </section>
 
         <section className="py-12">
-          <div className="container-custom">
+          <div className="container-custom mx-0 px-0">
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="lg:w-1/4">
                  <GlassPanel className="p-6 sticky top-40">
@@ -368,33 +364,29 @@ const Store = () => {
                     {/* Tablet and Mobile version - dropdowns */}
                     <div className="lg:hidden flex gap-3">
                       <div className="flex-1">
-                        <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}>
+                        <Select value={selectedCategory || "all"} onValueChange={value => setSelectedCategory(value === "all" ? null : value)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Category" />
                           </SelectTrigger>
                           <SelectContent className="z-50 bg-white dark:bg-gray-900">
                             <SelectItem value="all">All Categories</SelectItem>
-                            {categories.map(category => (
-                              <SelectItem key={category} value={category}>
+                            {categories.map(category => <SelectItem key={category} value={category}>
                                 {category}
-                              </SelectItem>
-                            ))}
+                              </SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
                       
                       <div className="flex-1">
-                        <Select value={selectedType || "all"} onValueChange={(value) => setSelectedType(value === "all" ? null : value)}>
+                        <Select value={selectedType || "all"} onValueChange={value => setSelectedType(value === "all" ? null : value)}>
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Type" />
                           </SelectTrigger>
                           <SelectContent className="z-50 bg-white dark:bg-gray-900">
                             <SelectItem value="all">All Types</SelectItem>
-                            {types.map(type => (
-                              <SelectItem key={type} value={type}>
+                            {types.map(type => <SelectItem key={type} value={type}>
                                 {type.charAt(0).toUpperCase() + type.slice(1)}
-                              </SelectItem>
-                            ))}
+                              </SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
