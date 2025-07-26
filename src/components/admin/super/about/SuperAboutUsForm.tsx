@@ -70,33 +70,56 @@ const SuperAboutUsForm = () => {
   const handleImageUpload = async (file: File, teamIndex: number) => {
     try {
       setUploading(true);
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select a valid image file');
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error('File size must be less than 5MB');
+      }
+      
       const fileExt = file.name.split('.').pop();
-      const fileName = `team-${Date.now()}.${fileExt}`;
+      const fileName = `team-${teamIndex}-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Starting upload:', fileName);
+      
+      const { data, error: uploadError } = await supabase.storage
         .from('member-photos')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', data);
 
       const { data: { publicUrl } } = supabase.storage
         .from('member-photos')
         .getPublicUrl(filePath);
 
+      console.log('Public URL:', publicUrl);
+
       const currentTeam = form.getValues('team');
       currentTeam[teamIndex].image = publicUrl;
       form.setValue('team', currentTeam);
+      
+      // Trigger form validation to update the display
+      await form.trigger(`team.${teamIndex}.image`);
 
       toast({
         title: "Success",
         description: "Image uploaded successfully!",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
       toast({
         title: "Error",
-        description: "Failed to upload image. Please try again.",
+        description: error.message || "Failed to upload image. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -448,25 +471,25 @@ const SuperAboutUsForm = () => {
                                 const file = e.target.files?.[0];
                                 if (file) {
                                   handleImageUpload(file, index);
+                                  // Clear the input value to allow selecting the same file again
+                                  e.target.value = '';
                                 }
                               }}
                               className="hidden"
                               id={`team-photo-${index}`}
                             />
-                            <label htmlFor={`team-photo-${index}`}>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="cursor-pointer"
-                                disabled={uploading}
-                                asChild
-                              >
-                                <span>
-                                  <Upload className="h-4 w-4 mr-2" />
-                                  {uploading ? 'Uploading...' : 'Upload Photo'}
-                                </span>
-                              </Button>
-                            </label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="cursor-pointer"
+                              disabled={uploading}
+                              onClick={() => {
+                                document.getElementById(`team-photo-${index}`)?.click();
+                              }}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              {uploading ? 'Uploading...' : 'Upload Photo'}
+                            </Button>
                           </div>
                         </div>
                       </div>
