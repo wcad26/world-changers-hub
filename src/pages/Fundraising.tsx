@@ -309,21 +309,27 @@ const Fundraising = () => {
               
               <div className="flex flex-nowrap items-center gap-3 w-full md:w-auto">
                 <div className="relative">
-                  <select className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-auto min-w-[180px]" value={selectedCategory || ""} onChange={e => setSelectedCategory(e.target.value || null)}>
+                  <select className="pl-10 pr-8 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-wca-purple/20 focus:border-wca-purple/40 appearance-none w-full md:w-auto min-w-[180px] transition-all duration-300 text-sm font-medium text-gray-700 dark:text-gray-200" value={selectedCategory || ""} onChange={e => setSelectedCategory(e.target.value || null)}>
                     <option value="">All Categories</option>
                     {categories.map(category => <option key={category} value={category}>{category}</option>)}
                   </select>
-                  <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  <Filter size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 transition-colors duration-200" />
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
                 
                 <div className="relative">
-                  <select className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-auto min-w-[150px]" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value as "all" | "active" | "completed" | "upcoming")}>
+                  <select className="pl-10 pr-8 py-3 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-wca-purple/20 focus:border-wca-purple/40 appearance-none w-full md:w-auto min-w-[150px] transition-all duration-300 text-sm font-medium text-gray-700 dark:text-gray-200" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value as "all" | "active" | "completed" | "upcoming")}>
                     <option value="all">All Projects</option>
                     <option value="active">Active</option>
                     <option value="completed">Completed</option>
                     <option value="upcoming">Upcoming</option>
                   </select>
-                  <Target size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  <Target size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 transition-colors duration-200" />
+                  <svg className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
               </div>
             </div>
