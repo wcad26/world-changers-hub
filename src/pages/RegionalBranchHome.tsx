@@ -389,7 +389,23 @@ const RegionalBranchHome = () => {
               <div className="flex justify-center md:justify-end">
                 <div className="relative">
                   <div className="w-80 h-96 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg overflow-hidden shadow-xl">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80" alt={region.regional_president || "Regional President"} className="w-full h-full object-cover" />
+                    {region.regional_president_photo ? (
+                      <img 
+                        src={region.regional_president_photo} 
+                        alt={region.regional_president || "Regional President"} 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => {
+                          // Fallback to default image if uploaded photo fails to load
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80";
+                        }}
+                      />
+                    ) : (
+                      <img 
+                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80" 
+                        alt={region.regional_president || "Regional President"} 
+                        className="w-full h-full object-cover" 
+                      />
+                    )}
                   </div>
                   {/* Decorative background circle */}
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full -z-10"></div>

@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -21,7 +22,9 @@ const slugToRegionName = (slug: string): string[] => {
 };
 
 export const useRegionBySlug = (slug: string | undefined) => {
-  return useQuery({
+  const queryClient = useQueryClient();
+  
+  const query = useQuery({
     queryKey: ['region-by-slug', slug],
     queryFn: async () => {
       if (!slug) return null;
@@ -58,4 +61,35 @@ export const useRegionBySlug = (slug: string | undefined) => {
     },
     enabled: !!slug
   });
+
+  // Set up real-time subscription for region updates
+  useEffect(() => {
+    if (!query.data?.id) return;
+
+    const channel = supabase
+      .channel('region-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'regions',
+          filter: `id=eq.${query.data.id}`
+        },
+        (payload) => {
+          console.log('Region updated:', payload);
+          // Update the cache with new data
+          queryClient.setQueryData(['region-by-slug', slug], payload.new);
+          // Also invalidate regions query to keep consistency
+          queryClient.invalidateQueries({ queryKey: ['regions'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [query.data?.id, queryClient, slug]);
+
+  return query;
 };
