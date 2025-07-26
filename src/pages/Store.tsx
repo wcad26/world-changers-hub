@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -177,42 +176,47 @@ const Store = () => {
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
       
-      <main className="flex-grow pt-0 pb-16">
+      {/* Fixed header bar */}
+      <div className="fixed top-16 left-0 right-0 z-20 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 py-4">
+        <div className="container-custom">
+          <div className="flex justify-between items-center w-full">
+            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+              <button 
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
+                onClick={() => setActiveTab("store")}
+              >
+                <ShoppingCart size={18} />
+                <span>Store</span>
+              </button>
+              <button 
+                className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`}
+                onClick={() => setActiveTab("library")}
+              >
+                <Book size={18} />
+                <span>Library</span>
+              </button>
+            </div>
+            
+            <div className="relative flex-1 max-w-md">
+              <div className="relative">
+                <input 
+                  type="text" 
+                  placeholder="Search items..." 
+                  className="pl-10 pr-4 py-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple border-2 border-wca-purple/30 focus:border-wca-purple"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <main className="flex-grow pt-32 pb-16">
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
           <div className="container-custom">
             <div className="flex flex-col items-center text-center mb-12">
-              <div className="flex justify-between items-center w-full max-w-4xl mb-8 sticky top-0 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm z-10 py-4 border-b border-gray-200 dark:border-gray-800">
-                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
-                  <button 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
-                    onClick={() => setActiveTab("store")}
-                  >
-                    <ShoppingCart size={18} />
-                    <span>Store</span>
-                  </button>
-                  <button 
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`}
-                    onClick={() => setActiveTab("library")}
-                  >
-                    <Book size={18} />
-                    <span>Library</span>
-                  </button>
-                </div>
-                
-                <div className="relative flex-1 max-w-md">
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      placeholder="Search items..." 
-                      className="pl-10 pr-4 py-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple border-2 border-wca-purple/30 focus:border-wca-purple"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                  </div>
-                </div>
-              </div>
-              
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
                 <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
                   {activeTab === "store" ? "WCA Store" : "WCA Library"}
@@ -231,7 +235,7 @@ const Store = () => {
           <div className="container-custom">
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="lg:w-1/4">
-                <GlassPanel className="p-6 sticky top-24">
+                <GlassPanel className="p-6 sticky top-40">
                   <div className="mb-6">
                     <h3 className="font-medium text-lg flex items-center gap-2 mb-4">
                       <Filter size={18} />
