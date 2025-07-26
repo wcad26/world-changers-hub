@@ -131,7 +131,7 @@ const Media = () => {
           </div>
         </section>
 
-        <section className="py-8 md:py-12">
+        <section className="py-8 md:py-0">
           <div className="container px-4 mx-auto">
             <GlassPanel className="p-4 md:p-8 mb-8 md:mb-12">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 mb-6">
