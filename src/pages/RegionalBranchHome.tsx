@@ -272,12 +272,12 @@ const RegionalBranchHome = () => {
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <div className="max-w-4xl mx-auto space-y-8">
             <h1 className="tracking-tight leading-tight animate-fade-up drop-shadow-lg">
-              <span className="text-4xl md:text-7xl font-light block my-[20px]">Welcome to</span>
-              <span className="text-5xl md:text-8xl lg:text-9xl font-bold block">{region.name}</span>
+              <span className="text-5xl md:text-7xl font-light block my-0">Welcome to</span>
+              <span className="text-4xl md:text-8xl lg:text-9xl font-bold block">{region.name}</span>
             </h1>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
+            <div style={{
             animationDelay: '0.4s'
-          }}>
+          }} className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up py-[30px]">
               <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold shadow-lg">
                 Visit Us Today
                 <ArrowRight className="w-5 h-5 ml-2" />
@@ -370,7 +370,7 @@ const RegionalBranchHome = () => {
               {/* Left Side - Leader's Word */}
               <div className="space-y-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  About {region.name}
+                  A word from our regional leader
                 </h2>
                 <div className="prose prose-lg text-muted-foreground">
                   <p className="leading-relaxed">
