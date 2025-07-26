@@ -84,18 +84,18 @@ const Locations = () => {
               </p>
               
               {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 animate-fade-up">
+              <div className="grid grid-cols-3 gap-4 md:gap-8 mb-12 animate-fade-up">
                 <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{totalLocations}</div>
-                  <div className="text-white/70 font-medium">Total Locations</div>
+                  <div className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2">{totalLocations}</div>
+                  <div className="text-white/70 font-medium text-sm md:text-base">Total Locations</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{wcaCenters}</div>
-                  <div className="text-white/70 font-medium">WCA Centers</div>
+                  <div className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2">{wcaCenters}</div>
+                  <div className="text-white/70 font-medium text-sm md:text-base">WCA Centers</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{dcgHomes}</div>
-                  <div className="text-white/70 font-medium">DCG Homes</div>
+                  <div className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2">{dcgHomes}</div>
+                  <div className="text-white/70 font-medium text-sm md:text-base">DCG Homes</div>
                 </div>
               </div>
             </div>
