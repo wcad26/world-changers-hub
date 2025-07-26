@@ -98,7 +98,6 @@ const RegionalBranchHome = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <Navbar />
       
       {/* Hero Section - Full Width with Image Slider */}
       <section className="relative h-screen md:h-screen min-h-screen flex items-center justify-center overflow-hidden">
