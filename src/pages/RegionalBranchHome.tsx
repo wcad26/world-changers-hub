@@ -130,7 +130,8 @@ const RegionalBranchHome = () => {
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <div className="max-w-4xl mx-auto space-y-8">
             <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-tight animate-fade-up drop-shadow-lg">
-              Welcome to {region.name}
+              Welcome to<br />
+              {region.name}
             </h1>
             <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto animate-fade-up drop-shadow-md" style={{
             animationDelay: '0.2s'
