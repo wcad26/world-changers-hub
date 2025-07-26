@@ -166,19 +166,19 @@ const Store = () => {
       {/* Fixed header bar */}
       <div className="fixed top-16 left-0 right-0 z-20 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800 py-4">
         <div className="container-custom">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
-              <button className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`} onClick={() => setActiveTab("store")}>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center w-full gap-4 md:gap-0">
+            <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1 w-full md:w-auto">
+              <button className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all flex-1 md:flex-initial justify-center md:justify-start ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`} onClick={() => setActiveTab("store")}>
                 <ShoppingCart size={18} />
                 <span>Store</span>
               </button>
-              <button className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`} onClick={() => setActiveTab("library")}>
+              <button className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all flex-1 md:flex-initial justify-center md:justify-start ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`} onClick={() => setActiveTab("library")}>
                 <Book size={18} />
                 <span>Library</span>
               </button>
             </div>
             
-            <div className="w-2/3">
+            <div className="w-full md:w-2/3">
               <div className="relative">
                 <input type="text" placeholder="Search items..." className="pl-10 pr-4 py-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple border-2 border-wca-purple/30 focus:border-wca-purple" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
