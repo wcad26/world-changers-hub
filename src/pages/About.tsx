@@ -109,7 +109,7 @@ const About = () => {
               </div>
               <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
                 <div className="relative">
-                  <div className="w-full max-w-2xl aspect-[4/3] rounded-2xl overflow-hidden">
+                  <div className="w-full max-w-2xl aspect-[16/9] rounded-2xl overflow-hidden">
                     <img src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" alt="World Changers Association Logo" className="w-full h-full object-contain" loading="lazy" />
                   </div>
                   {/* Decorative elements */}
