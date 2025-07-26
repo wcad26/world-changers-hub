@@ -16,7 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { MapPin, User, Phone, Mail, Calendar, FileText } from "lucide-react";
+import { MapPin, User, Phone, Mail, Calendar, FileText, Upload } from "lucide-react";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
 import { useRegions } from "@/hooks/useRegions";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +28,8 @@ const regionalBranchSchema = z.object({
   address: z.string().optional(),
   contact_phone: z.string().optional(),
   contact_email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  regional_pastor: z.string().optional(),
+  regional_president: z.string().optional(),
+  regional_president_photo: z.string().optional(),
   established_date: z.string().optional(),
 });
 
@@ -53,7 +54,8 @@ const RegionalBranchForm = () => {
       address: "",
       contact_phone: "",
       contact_email: "",
-      regional_pastor: "",
+      regional_president: "",
+      regional_president_photo: "",
       established_date: "",
     },
   });
@@ -61,16 +63,17 @@ const RegionalBranchForm = () => {
   // Populate form with current region data
   useEffect(() => {
     if (userRegion) {
-      form.reset({
-        name: userRegion.name || "",
-        code: userRegion.code || "",
-        description: userRegion.description || "",
-        address: userRegion.address || "",
-        contact_phone: userRegion.contact_phone || "",
-        contact_email: userRegion.contact_email || "",
-        regional_pastor: userRegion.regional_pastor || "",
-        established_date: userRegion.established_date || "",
-      });
+        form.reset({
+          name: userRegion.name || "",
+          code: userRegion.code || "",
+          description: userRegion.description || "",
+          address: userRegion.address || "",
+          contact_phone: userRegion.contact_phone || "",
+          contact_email: userRegion.contact_email || "",
+          regional_president: userRegion.regional_pastor || "",
+          regional_president_photo: userRegion.regional_president_photo || "",
+          established_date: userRegion.established_date || "",
+        });
     }
   }, [userRegion, form]);
 
@@ -86,10 +89,20 @@ const RegionalBranchForm = () => {
         address: data.address || null,
         contact_phone: data.contact_phone || null,
         contact_email: data.contact_email || null,
-        regional_pastor: data.regional_pastor || null,
+        regional_pastor: data.regional_president || null,
+        regional_president_photo: data.regional_president_photo || null,
         established_date: data.established_date || null,
       },
     });
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // For now, we'll just store the file name
+      // In a real implementation, you'd upload to storage and get a URL
+      form.setValue("regional_president_photo", file.name);
+    }
   };
 
   if (isLoading) {
@@ -259,18 +272,18 @@ const RegionalBranchForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="regional_pastor"
+                name="regional_president"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <User className="h-4 w-4" />
-                      Regional Pastor
+                      Regional President
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter pastor's name" {...field} />
+                      <Input placeholder="Enter president's name" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Name of the regional pastor
+                      Name of the regional president
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -279,27 +292,59 @@ const RegionalBranchForm = () => {
 
               <FormField
                 control={form.control}
-                name="established_date"
+                name="regional_president_photo"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Established Date
+                      <Upload className="h-4 w-4" />
+                      Regional President Photo
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        type="date" 
-                        {...field} 
-                      />
+                      <div className="space-y-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        />
+                        {field.value && (
+                          <p className="text-sm text-muted-foreground">
+                            Current: {field.value}
+                          </p>
+                        )}
+                      </div>
                     </FormControl>
                     <FormDescription>
-                      When this branch was established
+                      Upload a portrait photo of the regional president
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="established_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Established Date
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    When this branch was established
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex justify-end space-x-4 pt-6">
               <Button 
