@@ -194,7 +194,7 @@ const Blog = () => {
       <Navbar />
       
       <main className="flex-grow pt-0 pb-0">
-        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
+        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-0">
           <div className="container-custom">
             <div className="flex flex-col items-center text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
