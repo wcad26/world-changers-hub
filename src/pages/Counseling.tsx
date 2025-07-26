@@ -202,7 +202,7 @@ const Counseling = () => {
                 </div>
               </div>
               
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+              <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto">
                 <Popover open={specialtyOpen} onOpenChange={setSpecialtyOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" role="combobox" aria-expanded={specialtyOpen} className="justify-between min-w-[180px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
