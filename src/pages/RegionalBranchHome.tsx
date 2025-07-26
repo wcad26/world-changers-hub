@@ -164,7 +164,7 @@ const RegionalBranchHome = () => {
               <p className="text-muted-foreground">Get to know our regional branch</p>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {/* Established Year */}
               <div className="text-center p-6 bg-primary/5 rounded-lg">
                 <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
