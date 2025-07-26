@@ -21,7 +21,7 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
     address: '',
     contact_phone: '',
     contact_email: '',
-    regional_pastor: '',
+    regional_president: '',
     established_date: ''
   });
 
@@ -47,7 +47,7 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
           address: '',
           contact_phone: '',
           contact_email: '',
-          regional_pastor: '',
+          regional_president: '',
           established_date: ''
         });
       }
@@ -139,12 +139,12 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="regional_pastor">Regional Pastor</Label>
+              <Label htmlFor="regional_president">Regional President</Label>
               <Input
-                id="regional_pastor"
-                value={formData.regional_pastor}
-                onChange={(e) => handleInputChange('regional_pastor', e.target.value)}
-                placeholder="Pastor John Doe"
+                id="regional_president"
+                value={formData.regional_president}
+                onChange={(e) => handleInputChange('regional_president', e.target.value)}
+                placeholder="President John Doe"
               />
             </div>
             <div className="space-y-2">

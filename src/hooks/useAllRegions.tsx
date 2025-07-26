@@ -34,7 +34,7 @@ export const useAllRegions = (options: UseAllRegionsOptions = {}) => {
 
       // Search functionality
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,regional_pastor.ilike.%${searchTerm}%`);
+        query = query.or(`name.ilike.%${searchTerm}%,code.ilike.%${searchTerm}%,regional_president.ilike.%${searchTerm}%`);
       }
 
       // Sorting

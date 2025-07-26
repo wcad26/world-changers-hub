@@ -102,7 +102,7 @@ const RegionsTable: React.FC = () => {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Code</TableHead>
-              <TableHead>Regional Pastor</TableHead>
+              <TableHead>Regional President</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Established</TableHead>
@@ -125,7 +125,7 @@ const RegionsTable: React.FC = () => {
                 <TableCell>
                   <Badge variant="outline">{region.code}</Badge>
                 </TableCell>
-                <TableCell>{region.regional_pastor || 'Not assigned'}</TableCell>
+                <TableCell>{region.regional_president || 'Not assigned'}</TableCell>
                 <TableCell>
                   <div className="text-sm">
                     {region.contact_email && (

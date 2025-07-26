@@ -70,7 +70,7 @@ const RegionalBranchForm = () => {
           address: userRegion.address || "",
           contact_phone: userRegion.contact_phone || "",
           contact_email: userRegion.contact_email || "",
-          regional_president: userRegion.regional_pastor || "",
+          regional_president: userRegion.regional_president || "",
           regional_president_photo: userRegion.regional_president_photo || "",
           established_date: userRegion.established_date || "",
         });
@@ -89,7 +89,7 @@ const RegionalBranchForm = () => {
         address: data.address || null,
         contact_phone: data.contact_phone || null,
         contact_email: data.contact_email || null,
-        regional_pastor: data.regional_president || null,
+        regional_president: data.regional_president || null,
         regional_president_photo: data.regional_president_photo || null,
         established_date: data.established_date || null,
       },

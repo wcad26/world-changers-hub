@@ -376,11 +376,11 @@ const RegionalBranchHome = () => {
                   <p className="leading-relaxed">
                     {region.description || `Welcome to our vibrant community of ${region.name}. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship. Our mission is to create an environment where faith meets fellowship and purpose drives our calling.`}
                   </p>
-                  {region.regional_pastor && <div className="mt-6 pt-6 border-t border-border">
+                  {region.regional_president && <div className="mt-6 pt-6 border-t border-border">
                       <p className="font-semibold text-foreground text-lg">
-                        {region.regional_pastor}
+                        {region.regional_president}
                       </p>
-                      <p className="text-sm text-muted-foreground">Regional Pastor</p>
+                      <p className="text-sm text-muted-foreground">Regional President</p>
                     </div>}
                 </div>
               </div>
@@ -389,7 +389,7 @@ const RegionalBranchHome = () => {
               <div className="flex justify-center md:justify-end">
                 <div className="relative">
                   <div className="w-80 h-96 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg overflow-hidden shadow-xl">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80" alt={region.regional_pastor || "Regional Pastor"} className="w-full h-full object-cover" />
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80" alt={region.regional_president || "Regional President"} className="w-full h-full object-cover" />
                   </div>
                   {/* Decorative background circle */}
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full -z-10"></div>
