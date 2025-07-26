@@ -199,78 +199,102 @@ const Store = () => {
                 {activeTab === "store" ? (
                   <>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                            WCA Store
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Browse our collection of books, courses, and merchandise to support your spiritual journey.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              WCA Store
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Browse our collection of books, courses, and merchandise to support your spiritual journey.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
-                            Featured Collection
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Discover our bestselling books and courses handpicked by spiritual leaders.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              Featured Collection
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Discover our bestselling books and courses handpicked by spiritual leaders.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-violet to-wca-teal bg-clip-text text-transparent">
-                            New Arrivals
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Check out the latest additions to our spiritual growth resources.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1621351183012-e2110f0dd754?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              New Arrivals
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Check out the latest additions to our spiritual growth resources.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                   </>
                 ) : (
                   <>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                            WCA Library
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Borrow resources from our extensive library to enrich your knowledge and growth.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              WCA Library
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Borrow resources from our extensive library to enrich your knowledge and growth.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
-                            Digital Resources
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Access our digital collection of books, courses, and audio content.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              Digital Resources
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Access our digital collection of books, courses, and audio content.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                     <CarouselItem>
-                      <div className="flex flex-col items-center text-center p-8">
-                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                          <span className="text-gradient bg-gradient-to-r from-wca-violet to-wca-teal bg-clip-text text-transparent">
-                            Research Hub
-                          </span>
-                        </h1>
-                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                          Dive deep into our academic and research materials for advanced study.
-                        </p>
+                      <div className="relative flex flex-col items-center text-center p-8 h-96 bg-cover bg-center bg-no-repeat rounded-lg overflow-hidden" 
+                           style={{backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1200&auto=format&fit=crop&q=80')"}}>
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <div className="relative z-10 flex flex-col items-center justify-center h-full">
+                          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                            <span className="text-white">
+                              Research Hub
+                            </span>
+                          </h1>
+                          <p className="text-lg text-white/90 max-w-2xl">
+                            Dive deep into our academic and research materials for advanced study.
+                          </p>
+                        </div>
                       </div>
                     </CarouselItem>
                   </>
