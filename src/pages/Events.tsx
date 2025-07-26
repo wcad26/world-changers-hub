@@ -15,6 +15,70 @@ const categories = [
   "Community Service", "Bible Study", "Retreat", "Seminar", "DCG Meeting", "Other"
 ];
 
+// Mock featured events data for demonstration
+const mockFeaturedEvents: Event[] = [
+  {
+    id: "mock-1",
+    name: "Annual WCA Conference 2024",
+    description: "Join us for our biggest annual gathering featuring inspiring speakers, worship sessions, and networking opportunities. This three-day conference will transform your spiritual journey.",
+    start_datetime: "2024-09-15T09:00:00Z",
+    end_datetime: "2024-09-17T18:00:00Z",
+    location_name: "WCA Main Auditorium",
+    address: "123 Conference Center Blvd, City Center",
+    category: "Conference",
+    is_public: true,
+    is_featured: true,
+    status: "Upcoming",
+    capacity: 500,
+    image_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    region_id: null,
+    dcg_id: null,
+    created_by: null
+  },
+  {
+    id: "mock-2", 
+    name: "Youth Revival Night",
+    description: "A powerful evening of worship and testimony designed for young people. Experience breakthrough, healing, and spiritual renewal in an atmosphere of faith and community.",
+    start_datetime: "2024-08-20T19:00:00Z",
+    end_datetime: "2024-08-20T22:00:00Z",
+    location_name: "Downtown Community Center",
+    address: "456 Youth Street, Downtown District",
+    category: "Revival",
+    is_public: true,
+    is_featured: true,
+    status: "Upcoming",
+    capacity: 200,
+    image_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    region_id: null,
+    dcg_id: null,
+    created_by: null
+  },
+  {
+    id: "mock-3",
+    name: "Leadership Training Workshop", 
+    description: "Develop your leadership skills through practical workshops, mentorship sessions, and collaborative learning. Perfect for current and aspiring ministry leaders.",
+    start_datetime: "2024-08-25T10:00:00Z",
+    end_datetime: "2024-08-25T16:00:00Z",
+    location_name: "WCA Training Center",
+    address: "789 Leadership Ave, Training District",
+    category: "Training",
+    is_public: true,
+    is_featured: true,
+    status: "Upcoming",
+    capacity: 75,
+    image_url: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    region_id: null,
+    dcg_id: null,
+    created_by: null
+  }
+];
+
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -27,9 +91,10 @@ const Events = () => {
   }, []);
 
   useEffect(() => {
-    if (!allEvents) return;
+    // Combine real events with mock featured events for demonstration
+    const eventsToProcess = allEvents ? [...allEvents, ...mockFeaturedEvents] : mockFeaturedEvents;
     
-    let result = allEvents;
+    let result = eventsToProcess;
     
     if (selectedCategory !== 'All') {
       result = result.filter(event => event.category === selectedCategory);
