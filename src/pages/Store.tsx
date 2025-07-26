@@ -323,7 +323,7 @@ const Store = () => {
               <div className="lg:w-1/4">
                  <GlassPanel className="p-6 sticky top-40">
                   <div className="mb-6">
-                    <h3 className="font-medium text-lg flex items-center gap-2 mb-4">
+                    <h3 className="font-medium text-lg flex items-center gap-2 mb-4 hidden lg:flex">
                       <Filter size={18} />
                       <span>Filters</span>
                     </h3>
