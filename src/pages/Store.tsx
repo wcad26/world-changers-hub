@@ -435,7 +435,7 @@ const Store = () => {
                                   </Button>
                                 </div> : <Button size="sm" onClick={() => addToCart(item.id)} className="bg-wca-purple hover:bg-wca-purple/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
                                   <ShoppingCart size={10} className="mr-0.5 sm:mr-1 sm:w-3.5 sm:h-3.5" />
-                                  <span className="hidden sm:inline">Add to Cart</span>
+                                  <span className="hidden sm:inline">Add</span>
                                   <span className="sm:hidden">Add</span>
                                 </Button> : <Button size="sm" className="bg-wca-teal hover:bg-wca-teal/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
                                 <Book size={10} className="mr-0.5 sm:mr-1 sm:w-3.5 sm:h-3.5" />
