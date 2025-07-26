@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Phone, Mail, ArrowRight, ChevronLeft, Home } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Phone, Mail, ArrowRight, ChevronLeft, Home, Bell } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useRegionalLocations, useRegionalDCGs, useAllRegionalEvents } from '@/hooks/useRegionalData';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -626,58 +626,37 @@ const RegionalBranchHome = () => {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-20 bg-background">
+      <section className="py-20 bg-gradient-to-br from-primary to-secondary">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Stay Updated With Us
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                We'd love to connect with you and answer any questions you might have
-              </p>
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <Bell size={40} className="mx-auto mb-8 animate-bounce" />
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Stay Updated With Us</h2>
+            <p className="text-white/90 mb-8 max-w-2xl mx-auto">
+              We'd love to connect with you and answer any questions you might have
+            </p>
+            <div className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto">
+              <input 
+                type="email" 
+                placeholder="Enter your email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-1"
+              />
+              <input 
+                type="tel" 
+                placeholder="Enter your phone number"
+                className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-1"
+              />
+              <button 
+                onClick={handleSubscribe}
+                className="bg-white text-primary font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap"
+              >
+                Send
+              </button>
             </div>
-
-            <Card className="shadow-lg border-0 max-w-2xl mx-auto">
-              <CardContent className="p-8">
-                <form onSubmit={handleSubscribe} className="space-y-6">
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                        Email Address
-                      </label>
-                      <Input 
-                        id="email"
-                        type="email" 
-                        placeholder="Enter your email address" 
-                        value={email} 
-                        onChange={e => setEmail(e.target.value)} 
-                        required 
-                        className="h-12" 
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-                        Phone Number
-                      </label>
-                      <Input 
-                        id="phone"
-                        type="tel" 
-                        placeholder="Enter your phone number" 
-                        className="h-12" 
-                      />
-                    </div>
-                  </div>
-                  <Button type="submit" className="w-full h-12 font-semibold">
-                    Send
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </form>
-                <p className="text-xs text-muted-foreground mt-6 text-center">
-                  We respect your privacy and will never spam you.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="text-xs text-white/70 mt-4">
+              We respect your privacy and will never spam you.
+            </p>
           </div>
         </div>
       </section>
