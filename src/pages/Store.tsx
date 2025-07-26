@@ -199,12 +199,12 @@ const Store = () => {
                   </button>
                 </div>
                 
-                <div className="relative">
+                <div className="relative flex-1 max-w-md">
                   <div className="relative">
                     <input 
                       type="text" 
                       placeholder="Search items..." 
-                      className="pl-10 pr-4 py-2 w-64 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple"
+                      className="pl-10 pr-4 py-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple border-2 border-wca-purple/30 focus:border-wca-purple"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
