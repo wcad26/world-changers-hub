@@ -181,18 +181,7 @@ const Store = () => {
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
           <div className="container-custom">
             <div className="flex flex-col items-center text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                  {activeTab === "store" ? "WCA Store" : "WCA Library"}
-                </span>
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-8">
-                {activeTab === "store" 
-                  ? "Browse our collection of books, courses, and merchandise to support your spiritual journey." 
-                  : "Borrow resources from our extensive library to enrich your knowledge and growth."}
-              </p>
-              
-              <div className="flex justify-between items-center w-full max-w-4xl">
+              <div className="flex justify-between items-center w-full max-w-4xl mb-8">
                 <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
                   <button 
                     className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
@@ -223,6 +212,17 @@ const Store = () => {
                   </div>
                 </div>
               </div>
+              
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                  {activeTab === "store" ? "WCA Store" : "WCA Library"}
+                </span>
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                {activeTab === "store" 
+                  ? "Browse our collection of books, courses, and merchandise to support your spiritual journey." 
+                  : "Borrow resources from our extensive library to enrich your knowledge and growth."}
+              </p>
             </div>
           </div>
         </section>
