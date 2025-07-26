@@ -5,6 +5,7 @@ import { GlassPanel } from "@/components/ui/GlassPanels";
 import { ShoppingCart, Book, Search, Filter, Star, Plus, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 interface Item {
   id: number;
   title: string;
@@ -189,16 +190,91 @@ const Store = () => {
       <main className="flex-grow pt-32 pb-16 py-[75px]">
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
           <div className="container-custom">
-            <div className="flex flex-col items-center text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                  {activeTab === "store" ? "WCA Store" : "WCA Library"}
-                </span>
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
-                {activeTab === "store" ? "Browse our collection of books, courses, and merchandise to support your spiritual journey." : "Borrow resources from our extensive library to enrich your knowledge and growth."}
-              </p>
-            </div>
+            <Carousel className="w-full max-w-6xl mx-auto">
+              <CarouselContent>
+                {activeTab === "store" ? (
+                  <>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                            WCA Store
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Browse our collection of books, courses, and merchandise to support your spiritual journey.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
+                            Featured Collection
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Discover our bestselling books and courses handpicked by spiritual leaders.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-violet to-wca-teal bg-clip-text text-transparent">
+                            New Arrivals
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Check out the latest additions to our spiritual growth resources.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                  </>
+                ) : (
+                  <>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                            WCA Library
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Borrow resources from our extensive library to enrich your knowledge and growth.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
+                            Digital Resources
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Access our digital collection of books, courses, and audio content.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                    <CarouselItem>
+                      <div className="flex flex-col items-center text-center p-8">
+                        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                          <span className="text-gradient bg-gradient-to-r from-wca-violet to-wca-teal bg-clip-text text-transparent">
+                            Research Hub
+                          </span>
+                        </h1>
+                        <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+                          Dive deep into our academic and research materials for advanced study.
+                        </p>
+                      </div>
+                    </CarouselItem>
+                  </>
+                )}
+              </CarouselContent>
+              <CarouselPrevious />
+              <CarouselNext />
+            </Carousel>
           </div>
         </section>
 
