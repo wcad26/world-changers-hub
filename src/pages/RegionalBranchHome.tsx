@@ -554,63 +554,115 @@ const RegionalBranchHome = () => {
                     <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
                 </Card>)}
-            </div> : displayDcgs && displayDcgs.length > 0 ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {displayDcgs.map(dcg => <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
-                      <div className="relative z-10 space-y-4">
-                        {/* DCG Name */}
-                        <h3 className="font-bold text-xl text-foreground group-hover:text-secondary transition-colors">
-                          {dcg.name}
-                        </h3>
-                        
-                        {/* Address */}
-                        {dcg.location && (
-                          <div className="flex items-start space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
-                            <span>{dcg.location}</span>
+            </div> : displayDcgs && displayDcgs.length > 0 ? <div className="w-full">
+              {/* DCG Carousel */}
+              <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+                <div className="flex justify-center items-center mb-6">
+                  <div className="flex space-x-2">
+                    <CarouselPrevious className="relative translate-y-0 left-0" />
+                    <CarouselNext className="relative translate-y-0 right-0" />
+                  </div>
+                </div>
+                
+                <CarouselContent className="-ml-4">
+                  {displayDcgs && displayDcgs.length > 0 ? (() => {
+                    // Calculate DCGs per slide based on screen size (2 rows max)
+                    const getDcgsPerSlide = () => {
+                      if (isMobile) return 2; // 1 column × 2 rows
+                      if (isTablet) return 4; // 2 columns × 2 rows  
+                      return 6; // 3 columns × 2 rows (desktop)
+                    };
+                    
+                    const dcgsPerSlide = getDcgsPerSlide();
+                    const slides = [];
+                    const totalSlides = Math.ceil(displayDcgs.length / dcgsPerSlide);
+                    
+                    for (let i = 0; i < totalSlides; i++) {
+                      const slideDcgs = displayDcgs.slice(
+                        i * dcgsPerSlide, 
+                        (i + 1) * dcgsPerSlide
+                      );
+                      
+                      slides.push(
+                        <CarouselItem key={i} className="pl-4 basis-full">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {slideDcgs.map((dcg) => (
+                              <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
+                                <CardContent className="p-0">
+                                  <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
+                                    <div className="relative z-10 space-y-4">
+                                      {/* DCG Name */}
+                                      <h3 className="font-bold text-xl text-foreground group-hover:text-secondary transition-colors">
+                                        {dcg.name}
+                                      </h3>
+                                      
+                                      {/* Address */}
+                                      {dcg.location && (
+                                        <div className="flex items-start space-x-2 text-sm text-muted-foreground">
+                                          <MapPin className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
+                                          <span>{dcg.location}</span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Day and Time */}
+                                      {dcg.meeting_day && dcg.meeting_time && (
+                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                          <Clock className="w-4 h-4 text-secondary" />
+                                          <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Action Buttons */}
+                                      <div className="flex space-x-2 pt-2">
+                                        {/* Google Maps Button */}
+                                        {dcg.location && (
+                                          <Button 
+                                            size="sm" 
+                                            className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary"
+                                            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}
+                                          >
+                                            <MapPin className="w-3 h-3 mr-1" />
+                                            Map
+                                          </Button>
+                                        )}
+                                        
+                                        {/* WhatsApp Button */}
+                                        {dcg.contact_phone && (
+                                          <Button 
+                                            size="sm" 
+                                            className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent"
+                                            onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                                          >
+                                            <Phone className="w-3 h-3 mr-1" />
+                                            WhatsApp
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
-                        )}
-                        
-                        {/* Day and Time */}
-                        {dcg.meeting_day && dcg.meeting_time && (
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <Clock className="w-4 h-4 text-secondary" />
-                            <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
-                          </div>
-                        )}
-                        
-                        {/* Action Buttons */}
-                        <div className="flex space-x-2 pt-2">
-                          {/* Google Maps Button */}
-                          {dcg.location && (
-                            <Button 
-                              size="sm" 
-                              className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary"
-                              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}
-                            >
-                              <MapPin className="w-3 h-3 mr-1" />
-                              Map
-                            </Button>
-                          )}
-                          
-                          {/* WhatsApp Button */}
-                          {dcg.contact_phone && (
-                            <Button 
-                              size="sm" 
-                              className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent"
-                              onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
-                            >
-                              <Phone className="w-3 h-3 mr-1" />
-                              WhatsApp
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>)}
+                        </CarouselItem>
+                      );
+                    }
+                    
+                    return slides;
+                  })() : (
+                    <CarouselItem className="pl-4">
+                      <Card className="w-full">
+                        <CardContent className="p-12 text-center">
+                          <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">No DCGs Available</h3>
+                          <p className="text-muted-foreground">Check back soon for DCG information and meeting details.</p>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+              </Carousel>
             </div> : <Card className="max-w-2xl mx-auto">
               <CardContent className="p-12 text-center">
                 <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
