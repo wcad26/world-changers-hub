@@ -20,7 +20,7 @@ const RegionalBranchHome = () => {
   } = useParams<{
     slug: string;
   }>();
-  
+
   // Responsive hooks for screen size detection
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
@@ -41,149 +41,142 @@ const RegionalBranchHome = () => {
     data: allEvents,
     isLoading: allEventsLoading
   } = useAllRegionalEvents(region?.id || '');
-  
+
   // Mock events data for preview
-  const mockEvents = [
-    {
-      id: '1',
-      name: 'Sunday Worship Service',
-      description: 'Join us for our weekly worship service filled with praise, worship, and powerful messages.',
-      start_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-      address: '123 Church Street, Douala, Cameroon',
-      dcg: { name: 'Victory DCG' }
-    },
-    {
-      id: '2',
-      name: 'Youth Conference 2024',
-      description: 'An inspiring conference for young people with guest speakers, workshops, and fellowship.',
-      start_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week from now
-      address: 'Community Center Hall, Douala',
-      dcg: null
-    },
-    {
-      id: '3',
-      name: 'Prayer & Fasting',
-      description: 'Join our community for a time of prayer, fasting, and seeking God\'s presence.',
-      start_datetime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
-      address: 'Main Church Sanctuary',
-      dcg: { name: 'Faith DCG' }
-    },
-    {
-      id: '4',
-      name: 'Community Outreach',
-      description: 'Serving our local community with food distribution and medical assistance.',
-      start_datetime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days from now
-      address: 'Central Market Area, Douala',
-      dcg: null
-    },
-    {
-      id: '5',
-      name: 'Bible Study Fellowship',
-      description: 'Deep dive into God\'s word with interactive discussions and fellowship.',
-      start_datetime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-      address: 'Church Fellowship Hall',
-      dcg: { name: 'Hope DCG' }
-    },
-    {
-      id: '6',
-      name: 'Marriage Enrichment Seminar',
-      description: 'Strengthening marriages through biblical principles and practical wisdom.',
-      start_datetime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks from now
-      address: 'Conference Room A, Church Building',
-      dcg: null
+  const mockEvents = [{
+    id: '1',
+    name: 'Sunday Worship Service',
+    description: 'Join us for our weekly worship service filled with praise, worship, and powerful messages.',
+    start_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    // 2 days from now
+    address: '123 Church Street, Douala, Cameroon',
+    dcg: {
+      name: 'Victory DCG'
     }
-  ];
-  
+  }, {
+    id: '2',
+    name: 'Youth Conference 2024',
+    description: 'An inspiring conference for young people with guest speakers, workshops, and fellowship.',
+    start_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    // 1 week from now
+    address: 'Community Center Hall, Douala',
+    dcg: null
+  }, {
+    id: '3',
+    name: 'Prayer & Fasting',
+    description: 'Join our community for a time of prayer, fasting, and seeking God\'s presence.',
+    start_datetime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    // 3 days from now
+    address: 'Main Church Sanctuary',
+    dcg: {
+      name: 'Faith DCG'
+    }
+  }, {
+    id: '4',
+    name: 'Community Outreach',
+    description: 'Serving our local community with food distribution and medical assistance.',
+    start_datetime: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    // 10 days from now
+    address: 'Central Market Area, Douala',
+    dcg: null
+  }, {
+    id: '5',
+    name: 'Bible Study Fellowship',
+    description: 'Deep dive into God\'s word with interactive discussions and fellowship.',
+    start_datetime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    // 5 days from now
+    address: 'Church Fellowship Hall',
+    dcg: {
+      name: 'Hope DCG'
+    }
+  }, {
+    id: '6',
+    name: 'Marriage Enrichment Seminar',
+    description: 'Strengthening marriages through biblical principles and practical wisdom.',
+    start_datetime: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    // 2 weeks from now
+    address: 'Conference Room A, Church Building',
+    dcg: null
+  }];
+
   // Use mock data if no real events or for preview
   const displayEvents = allEvents && allEvents.length > 0 ? allEvents : mockEvents;
-  
+
   // Mock DCG data for preview
-  const mockDcgs = [
-    {
-      id: '1',
-      name: 'Victory DCG',
-      location: 'Bonapriso, Douala',
-      meeting_day: 'Wednesday',
-      meeting_time: '6:00 PM',
-      contact_phone: '+237123456789'
-    },
-    {
-      id: '2',
-      name: 'Faith DCG',
-      location: 'Bonanjo, Douala',
-      meeting_day: 'Thursday',
-      meeting_time: '5:30 PM',
-      contact_phone: '+237123456790'
-    },
-    {
-      id: '3',
-      name: 'Hope DCG',
-      location: 'Akwa, Douala',
-      meeting_day: 'Friday',
-      meeting_time: '6:30 PM',
-      contact_phone: '+237123456791'
-    },
-    {
-      id: '4',
-      name: 'Grace DCG',
-      location: 'Deido, Douala',
-      meeting_day: 'Saturday',
-      meeting_time: '4:00 PM',
-      contact_phone: '+237123456792'
-    },
-    {
-      id: '5',
-      name: 'Love DCG',
-      location: 'New Bell, Douala',
-      meeting_day: 'Sunday',
-      meeting_time: '3:00 PM',
-      contact_phone: '+237123456793'
-    },
-    {
-      id: '6',
-      name: 'Peace DCG',
-      location: 'Bassa, Douala',
-      meeting_day: 'Monday',
-      meeting_time: '6:00 PM',
-      contact_phone: '+237123456794'
-    },
-    {
-      id: '7',
-      name: 'Joy DCG',
-      location: 'Logpom, Douala',
-      meeting_day: 'Tuesday',
-      meeting_time: '5:45 PM',
-      contact_phone: '+237123456795'
-    },
-    {
-      id: '8',
-      name: 'Wisdom DCG',
-      location: 'Makepe, Douala',
-      meeting_day: 'Wednesday',
-      meeting_time: '7:00 PM',
-      contact_phone: '+237123456796'
-    },
-    {
-      id: '9',
-      name: 'Strength DCG',
-      location: 'Kotto, Douala',
-      meeting_day: 'Thursday',
-      meeting_time: '6:15 PM',
-      contact_phone: '+237123456797'
-    },
-    {
-      id: '10',
-      name: 'Covenant DCG',
-      location: 'Village, Douala',
-      meeting_day: 'Friday',
-      meeting_time: '5:00 PM',
-      contact_phone: '+237123456798'
-    }
-  ];
-  
+  const mockDcgs = [{
+    id: '1',
+    name: 'Victory DCG',
+    location: 'Bonapriso, Douala',
+    meeting_day: 'Wednesday',
+    meeting_time: '6:00 PM',
+    contact_phone: '+237123456789'
+  }, {
+    id: '2',
+    name: 'Faith DCG',
+    location: 'Bonanjo, Douala',
+    meeting_day: 'Thursday',
+    meeting_time: '5:30 PM',
+    contact_phone: '+237123456790'
+  }, {
+    id: '3',
+    name: 'Hope DCG',
+    location: 'Akwa, Douala',
+    meeting_day: 'Friday',
+    meeting_time: '6:30 PM',
+    contact_phone: '+237123456791'
+  }, {
+    id: '4',
+    name: 'Grace DCG',
+    location: 'Deido, Douala',
+    meeting_day: 'Saturday',
+    meeting_time: '4:00 PM',
+    contact_phone: '+237123456792'
+  }, {
+    id: '5',
+    name: 'Love DCG',
+    location: 'New Bell, Douala',
+    meeting_day: 'Sunday',
+    meeting_time: '3:00 PM',
+    contact_phone: '+237123456793'
+  }, {
+    id: '6',
+    name: 'Peace DCG',
+    location: 'Bassa, Douala',
+    meeting_day: 'Monday',
+    meeting_time: '6:00 PM',
+    contact_phone: '+237123456794'
+  }, {
+    id: '7',
+    name: 'Joy DCG',
+    location: 'Logpom, Douala',
+    meeting_day: 'Tuesday',
+    meeting_time: '5:45 PM',
+    contact_phone: '+237123456795'
+  }, {
+    id: '8',
+    name: 'Wisdom DCG',
+    location: 'Makepe, Douala',
+    meeting_day: 'Wednesday',
+    meeting_time: '7:00 PM',
+    contact_phone: '+237123456796'
+  }, {
+    id: '9',
+    name: 'Strength DCG',
+    location: 'Kotto, Douala',
+    meeting_day: 'Thursday',
+    meeting_time: '6:15 PM',
+    contact_phone: '+237123456797'
+  }, {
+    id: '10',
+    name: 'Covenant DCG',
+    location: 'Village, Douala',
+    meeting_day: 'Friday',
+    meeting_time: '5:00 PM',
+    contact_phone: '+237123456798'
+  }];
+
   // Use mock data for demonstration (replace with real data when ready)
   const displayDcgs = mockDcgs;
-  
   const [email, setEmail] = useState('');
 
   // Hero slider images - mobile-optimized vertical images
@@ -279,7 +272,7 @@ const RegionalBranchHome = () => {
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
           <div className="max-w-4xl mx-auto space-y-8">
             <h1 className="tracking-tight leading-tight animate-fade-up drop-shadow-lg">
-              <span className="text-5xl md:text-7xl font-light block">Welcome to</span>
+              <span className="text-5xl md:text-7xl font-light block my-[20px]">Welcome to</span>
               <span className="text-7xl md:text-8xl lg:text-9xl font-bold block">{region.name}</span>
             </h1>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
@@ -383,14 +376,12 @@ const RegionalBranchHome = () => {
                   <p className="leading-relaxed">
                     {region.description || `Welcome to our vibrant community of ${region.name}. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship. Our mission is to create an environment where faith meets fellowship and purpose drives our calling.`}
                   </p>
-                  {region.regional_pastor && (
-                    <div className="mt-6 pt-6 border-t border-border">
+                  {region.regional_pastor && <div className="mt-6 pt-6 border-t border-border">
                       <p className="font-semibold text-foreground text-lg">
                         {region.regional_pastor}
                       </p>
                       <p className="text-sm text-muted-foreground">Regional Pastor</p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
               
@@ -398,11 +389,7 @@ const RegionalBranchHome = () => {
               <div className="flex justify-center md:justify-end">
                 <div className="relative">
                   <div className="w-80 h-96 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg overflow-hidden shadow-xl">
-                    <img 
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80"
-                      alt={region.regional_pastor || "Regional Pastor"}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80" alt={region.regional_pastor || "Regional Pastor"} className="w-full h-full object-cover" />
                   </div>
                   {/* Decorative background circle */}
                   <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full -z-10"></div>
@@ -435,7 +422,10 @@ const RegionalBranchHome = () => {
                 </Card>)}
             </div> : <div className="w-full">
               {/* Events Carousel */}
-              <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+              <Carousel className="w-full" opts={{
+            align: "start",
+            loop: false
+          }}>
                 <div className="flex justify-center items-center mb-6">
                   <div className="flex space-x-2">
                     <CarouselPrevious className="relative translate-y-0 left-0" />
@@ -445,28 +435,20 @@ const RegionalBranchHome = () => {
                 
                 <CarouselContent className="-ml-4">
                   {displayEvents && displayEvents.length > 0 ? (() => {
-                    // Calculate events per slide based on screen size (2 rows max)
-                    const getEventsPerSlide = () => {
-                      if (isMobile) return 2; // 1 column × 2 rows
-                      if (isTablet) return 4; // 2 columns × 2 rows  
-                      return 6; // 3 columns × 2 rows (desktop)
-                    };
-                    
-                    const eventsPerSlide = getEventsPerSlide();
-                    const slides = [];
-                    const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide);
-                    
-                    for (let i = 0; i < totalSlides; i++) {
-                      const slideEvents = displayEvents.slice(
-                        i * eventsPerSlide, 
-                        (i + 1) * eventsPerSlide
-                      );
-                      
-                      slides.push(
-                        <CarouselItem key={i} className="pl-4 basis-full">
+                // Calculate events per slide based on screen size (2 rows max)
+                const getEventsPerSlide = () => {
+                  if (isMobile) return 2; // 1 column × 2 rows
+                  if (isTablet) return 4; // 2 columns × 2 rows  
+                  return 6; // 3 columns × 2 rows (desktop)
+                };
+                const eventsPerSlide = getEventsPerSlide();
+                const slides = [];
+                const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide);
+                for (let i = 0; i < totalSlides; i++) {
+                  const slideEvents = displayEvents.slice(i * eventsPerSlide, (i + 1) * eventsPerSlide);
+                  slides.push(<CarouselItem key={i} className="pl-4 basis-full">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {slideEvents.map((event, eventIndex) => (
-                              <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                            {slideEvents.map((event, eventIndex) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                                 <CardContent className="p-0">
                                   <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
@@ -482,9 +464,9 @@ const RegionalBranchHome = () => {
                                         </div>
                                         <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
                                           {new Date(event.start_datetime).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric'
-                                      })}
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
                                         </div>
                                       </div>
                                       
@@ -497,10 +479,10 @@ const RegionalBranchHome = () => {
                                           <Clock className="w-4 h-4 text-primary" />
                                           <span>
                                             {new Date(event.start_datetime).toLocaleTimeString('en-US', {
-                                        hour: 'numeric',
-                                        minute: '2-digit',
-                                        hour12: true
-                                      })}
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
                                           </span>
                                         </div>
                                         {event.address && <div className="flex items-center space-x-2">
@@ -511,16 +493,12 @@ const RegionalBranchHome = () => {
                                     </div>
                                   </div>
                                 </CardContent>
-                              </Card>
-                            ))}
+                              </Card>)}
                           </div>
-                        </CarouselItem>
-                      );
-                    }
-                    
-                    return slides;
-                  })() : (
-                    <CarouselItem className="pl-4">
+                        </CarouselItem>);
+                }
+                return slides;
+              })() : <CarouselItem className="pl-4">
                       <Card className="w-full">
                         <CardContent className="p-12 text-center">
                           <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -528,8 +506,7 @@ const RegionalBranchHome = () => {
                           <p className="text-muted-foreground">Check back soon for upcoming events and gatherings from our regional branch and DCG groups.</p>
                         </CardContent>
                       </Card>
-                    </CarouselItem>
-                  )}
+                    </CarouselItem>}
                 </CarouselContent>
               </Carousel>
             </div>}
@@ -557,7 +534,10 @@ const RegionalBranchHome = () => {
                 </Card>)}
             </div> : displayDcgs && displayDcgs.length > 0 ? <div className="w-full">
               {/* DCG Carousel */}
-              <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+              <Carousel className="w-full" opts={{
+            align: "start",
+            loop: false
+          }}>
                 <div className="flex justify-center items-center mb-6">
                   <div className="flex space-x-2">
                     <CarouselPrevious className="relative translate-y-0 left-0" />
@@ -567,28 +547,20 @@ const RegionalBranchHome = () => {
                 
                 <CarouselContent className="-ml-4">
                   {displayDcgs && displayDcgs.length > 0 ? (() => {
-                    // Calculate DCGs per slide based on screen size (2 rows max)
-                    const getDcgsPerSlide = () => {
-                      if (isMobile) return 2; // 1 column × 2 rows
-                      if (isTablet) return 4; // 2 columns × 2 rows  
-                      return 6; // 3 columns × 2 rows (desktop)
-                    };
-                    
-                    const dcgsPerSlide = getDcgsPerSlide();
-                    const slides = [];
-                    const totalSlides = Math.ceil(displayDcgs.length / dcgsPerSlide);
-                    
-                    for (let i = 0; i < totalSlides; i++) {
-                      const slideDcgs = displayDcgs.slice(
-                        i * dcgsPerSlide, 
-                        (i + 1) * dcgsPerSlide
-                      );
-                      
-                      slides.push(
-                        <CarouselItem key={i} className="pl-4 basis-full">
+                // Calculate DCGs per slide based on screen size (2 rows max)
+                const getDcgsPerSlide = () => {
+                  if (isMobile) return 2; // 1 column × 2 rows
+                  if (isTablet) return 4; // 2 columns × 2 rows  
+                  return 6; // 3 columns × 2 rows (desktop)
+                };
+                const dcgsPerSlide = getDcgsPerSlide();
+                const slides = [];
+                const totalSlides = Math.ceil(displayDcgs.length / dcgsPerSlide);
+                for (let i = 0; i < totalSlides; i++) {
+                  const slideDcgs = displayDcgs.slice(i * dcgsPerSlide, (i + 1) * dcgsPerSlide);
+                  slides.push(<CarouselItem key={i} className="pl-4 basis-full">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {slideDcgs.map((dcg) => (
-                              <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
+                            {slideDcgs.map(dcg => <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
                                 <CardContent className="p-0">
                                   <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
@@ -599,60 +571,40 @@ const RegionalBranchHome = () => {
                                       </h3>
                                       
                                       {/* Address */}
-                                      {dcg.location && (
-                                        <div className="flex items-start space-x-2 text-sm text-muted-foreground">
+                                      {dcg.location && <div className="flex items-start space-x-2 text-sm text-muted-foreground">
                                           <MapPin className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
                                           <span>{dcg.location}</span>
-                                        </div>
-                                      )}
+                                        </div>}
                                       
                                       {/* Day and Time */}
-                                      {dcg.meeting_day && dcg.meeting_time && (
-                                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                                      {dcg.meeting_day && dcg.meeting_time && <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                                           <Clock className="w-4 h-4 text-secondary" />
                                           <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
-                                        </div>
-                                      )}
+                                        </div>}
                                       
                                       {/* Action Buttons */}
                                       <div className="flex space-x-2 pt-2">
                                         {/* Google Maps Button */}
-                                        {dcg.location && (
-                                          <Button 
-                                            size="sm" 
-                                            className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary"
-                                            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}
-                                          >
+                                        {dcg.location && <Button size="sm" className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}>
                                             <MapPin className="w-3 h-3 mr-1" />
                                             Map
-                                          </Button>
-                                        )}
+                                          </Button>}
                                         
                                         {/* WhatsApp Button */}
-                                        {dcg.contact_phone && (
-                                          <Button 
-                                            size="sm" 
-                                            className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent"
-                                            onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
-                                          >
+                                        {dcg.contact_phone && <Button size="sm" className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent" onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}>
                                             <Phone className="w-3 h-3 mr-1" />
                                             WhatsApp
-                                          </Button>
-                                        )}
+                                          </Button>}
                                       </div>
                                     </div>
                                   </div>
                                 </CardContent>
-                              </Card>
-                            ))}
+                              </Card>)}
                           </div>
-                        </CarouselItem>
-                      );
-                    }
-                    
-                    return slides;
-                  })() : (
-                    <CarouselItem className="pl-4">
+                        </CarouselItem>);
+                }
+                return slides;
+              })() : <CarouselItem className="pl-4">
                       <Card className="w-full">
                         <CardContent className="p-12 text-center">
                           <Users className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
@@ -660,8 +612,7 @@ const RegionalBranchHome = () => {
                           <p className="text-muted-foreground">Check back soon for DCG information and meeting details.</p>
                         </CardContent>
                       </Card>
-                    </CarouselItem>
-                  )}
+                    </CarouselItem>}
                 </CarouselContent>
               </Carousel>
             </div> : <Card className="max-w-2xl mx-auto">
