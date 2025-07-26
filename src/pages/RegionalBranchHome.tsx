@@ -99,7 +99,7 @@ const RegionalBranchHome = () => {
       <Navbar />
       
       {/* Hero Section - Full Width with Image Slider */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen md:h-screen min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image Slider */}
         <Carousel 
           className="absolute inset-0 w-full h-full" 
