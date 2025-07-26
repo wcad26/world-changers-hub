@@ -6,6 +6,7 @@ import { Video, Mic, PlayCircle, Calendar, Clock, Search, Filter } from "lucide-
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 interface MediaItem {
@@ -155,21 +156,16 @@ const Media = () => {
                     <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                   </div>
                   
-                  {isMobile ? <Sheet>
-                      <SheetTrigger asChild>
+                  {isMobile ? <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon" className="flex-shrink-0">
                           <Filter size={18} />
                         </Button>
-                      </SheetTrigger>
-                      <SheetContent>
-                        <SheetHeader>
-                          <SheetTitle>Filter Media</SheetTitle>
-                        </SheetHeader>
-                        <div className="py-4">
-                          <FilterContent />
-                        </div>
-                      </SheetContent>
-                    </Sheet> : <div className="ml-4 hidden md:block">
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-72 p-4">
+                        <FilterContent />
+                      </DropdownMenuContent>
+                    </DropdownMenu> : <div className="ml-4 hidden md:block">
                       <FilterContent />
                     </div>}
                 </div>
