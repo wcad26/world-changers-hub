@@ -37,6 +37,10 @@ const regionalBranchSchema = z.object({
     url: z.string(),
     alt: z.string(),
   })).optional(),
+  hero_slide_images_tablet: z.array(z.object({
+    url: z.string(),
+    alt: z.string(),
+  })).optional(),
   hero_slide_images_mobile: z.array(z.object({
     url: z.string(),
     alt: z.string(),
@@ -52,8 +56,10 @@ const RegionalBranchForm = () => {
   const { toast } = useToast();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [slideImages, setSlideImages] = useState<Array<{url: string, alt: string}>>([]);
+  const [slideImagesTablet, setSlideImagesTablet] = useState<Array<{url: string, alt: string}>>([]);
   const [slideImagesMobile, setSlideImagesMobile] = useState<Array<{url: string, alt: string}>>([]);
   const [isUploadingSlides, setIsUploadingSlides] = useState(false);
+  const [isUploadingSlidesTablet, setIsUploadingSlidesTablet] = useState(false);
   const [isUploadingSlidesMobile, setIsUploadingSlidesMobile] = useState(false);
 
   // Get the user's region
@@ -89,6 +95,16 @@ const RegionalBranchForm = () => {
           );
         }
 
+        // Type-safe parsing of tablet slide images data
+        let slideImagesTabletData: Array<{url: string, alt: string}> = [];
+        if ((userRegion as any).hero_slide_images_tablet && Array.isArray((userRegion as any).hero_slide_images_tablet)) {
+          slideImagesTabletData = (userRegion as any).hero_slide_images_tablet.filter((item): item is {url: string, alt: string} => 
+            typeof item === 'object' && item !== null && 
+            typeof (item as any).url === 'string' && 
+            typeof (item as any).alt === 'string'
+          );
+        }
+
         // Type-safe parsing of mobile slide images data
         let slideImagesMobileData: Array<{url: string, alt: string}> = [];
         if ((userRegion as any).hero_slide_images_mobile && Array.isArray((userRegion as any).hero_slide_images_mobile)) {
@@ -100,6 +116,7 @@ const RegionalBranchForm = () => {
         }
         
         setSlideImages(slideImagesData);
+        setSlideImagesTablet(slideImagesTabletData);
         setSlideImagesMobile(slideImagesMobileData);
         
         form.reset({
@@ -113,6 +130,7 @@ const RegionalBranchForm = () => {
           regional_president_photo: userRegion.regional_president_photo || "",
           established_date: userRegion.established_date || "",
           hero_slide_images: slideImagesData,
+          hero_slide_images_tablet: slideImagesTabletData,
           hero_slide_images_mobile: slideImagesMobileData,
         });
     }
@@ -134,6 +152,7 @@ const RegionalBranchForm = () => {
         regional_president_photo: data.regional_president_photo || null,
         established_date: data.established_date || null,
         hero_slide_images: slideImages.length > 0 ? slideImages : null,
+        hero_slide_images_tablet: slideImagesTablet.length > 0 ? slideImagesTablet : null,
         hero_slide_images_mobile: slideImagesMobile.length > 0 ? slideImagesMobile : null,
       },
     });
@@ -447,6 +466,124 @@ const RegionalBranchForm = () => {
     );
     setSlideImagesMobile(updatedSlides);
     form.setValue("hero_slide_images_mobile", updatedSlides);
+  };
+
+  const handleTabletSlideUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !userRegion) return;
+
+    // Check if adding new files would exceed the 4 slide limit
+    if (slideImagesTablet.length + files.length > 4) {
+      toast({
+        title: "Too many tablet slides",
+        description: "You can only have up to 4 tablet hero slide images",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingSlidesTablet(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not an image`);
+        }
+        
+        // Validate file size (max 10MB for slides)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large (max 10MB)`);
+        }
+
+        // Create unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `tablet_slide_${userRegion.id}_${Date.now()}_${index}.${fileExt}`;
+        const filePath = `${userRegion.id}/slides/tablet/${fileName}`;
+
+        // Upload file
+        const { error: uploadError } = await supabase.storage
+          .from('member-photos')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('member-photos')
+          .getPublicUrl(filePath);
+
+        return {
+          url: publicUrl,
+          alt: `Tablet hero slide image ${slideImagesTablet.length + index + 1}`
+        };
+      });
+
+      const newSlides = await Promise.all(uploadPromises);
+      const updatedSlides = [...slideImagesTablet, ...newSlides];
+      
+      setSlideImagesTablet(updatedSlides);
+      form.setValue("hero_slide_images_tablet", updatedSlides);
+
+      toast({
+        title: "Tablet slides uploaded",
+        description: `${files.length} tablet slide image(s) uploaded successfully`
+      });
+
+    } catch (error) {
+      console.error('Error uploading tablet slides:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload tablet slides. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingSlidesTablet(false);
+      // Clear the input
+      event.target.value = '';
+    }
+  };
+
+  const removeTabletSlide = async (index: number) => {
+    const slide = slideImagesTablet[index];
+    if (!slide || !userRegion) return;
+
+    try {
+      // Extract filename from URL for deletion
+      const urlParts = slide.url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `${userRegion.id}/slides/tablet/${fileName}`;
+
+      // Delete from storage
+      await supabase.storage
+        .from('member-photos')
+        .remove([filePath]);
+
+      // Update state
+      const updatedSlides = slideImagesTablet.filter((_, i) => i !== index);
+      setSlideImagesTablet(updatedSlides);
+      form.setValue("hero_slide_images_tablet", updatedSlides);
+
+      toast({
+        title: "Tablet slide removed",
+        description: "Tablet slide image has been removed successfully"
+      });
+
+    } catch (error) {
+      console.error('Error removing tablet slide:', error);
+      toast({
+        title: "Removal failed",
+        description: "Failed to remove tablet slide. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateTabletSlideAlt = (index: number, alt: string) => {
+    const updatedSlides = slideImagesTablet.map((slide, i) => 
+      i === index ? { ...slide, alt } : slide
+    );
+    setSlideImagesTablet(updatedSlides);
+    form.setValue("hero_slide_images_tablet", updatedSlides);
   };
 
   if (isLoading) {
@@ -781,6 +918,89 @@ const RegionalBranchForm = () => {
                               id={`slide-alt-${index}`}
                               value={slide.alt}
                               onChange={(e) => updateSlideAlt(index, e.target.value)}
+                              placeholder="Describe this image..."
+                              className="mt-1 text-sm h-8"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tablet Images */}
+              <div className="border-t pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Images className="h-5 w-5 text-accent" />
+                  <h3 className="text-lg font-semibold">Hero Slide Images (Tablet)</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload up to 4 landscape images specifically optimized for tablet devices. These images will be used on tablets and provide a better viewing experience than desktop images.
+                </p>
+                
+                {/* Upload Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleTabletSlideUpload}
+                      disabled={isUploadingSlidesTablet || slideImagesTablet.length >= 4}
+                      className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-accent/10 file:text-accent hover:file:bg-accent/20"
+                    />
+                    {isUploadingSlidesTablet && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading tablet slides...
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    • Select up to {4 - slideImagesTablet.length} more images
+                    • Recommended size: 1920x1080px or 1280x800px (landscape, tablet-optimized)
+                    • Maximum file size: 10MB per image
+                    • Supported formats: JPG, PNG, WebP
+                    • These images will be used specifically for tablet devices
+                  </p>
+                </div>
+
+                {/* Current Tablet Slides Display */}
+                {slideImagesTablet.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">Current Tablet Images ({slideImagesTablet.length}/4)</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {slideImagesTablet.map((slide, index) => (
+                        <div key={index} className="relative group border rounded-lg overflow-hidden bg-muted">
+                          <div className="aspect-video relative">
+                            <img
+                              src={slide.url}
+                              alt={slide.alt}
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Delete button */}
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeTabletSlide(index)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Alt text input */}
+                          <div className="p-3">
+                            <Label htmlFor={`tablet-slide-alt-${index}`} className="text-xs text-muted-foreground">
+                              Image Description
+                            </Label>
+                            <Input
+                              id={`tablet-slide-alt-${index}`}
+                              value={slide.alt}
+                              onChange={(e) => updateTabletSlideAlt(index, e.target.value)}
                               placeholder="Describe this image..."
                               className="mt-1 text-sm h-8"
                             />
