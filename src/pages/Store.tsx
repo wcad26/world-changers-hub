@@ -398,7 +398,7 @@ const Store = () => {
               
               <div className="lg:w-3/4">
                 <GlassPanel className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-6">
                     {filteredItems.map(item => <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                         <div className="relative">
                           <img src={item.imageUrl} alt={item.title} className="w-full h-32 sm:h-48 object-cover" />
