@@ -37,6 +37,10 @@ const regionalBranchSchema = z.object({
     url: z.string(),
     alt: z.string(),
   })).optional(),
+  hero_slide_images_mobile: z.array(z.object({
+    url: z.string(),
+    alt: z.string(),
+  })).optional(),
 });
 
 type RegionalBranchFormData = z.infer<typeof regionalBranchSchema>;
@@ -48,7 +52,9 @@ const RegionalBranchForm = () => {
   const { toast } = useToast();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [slideImages, setSlideImages] = useState<Array<{url: string, alt: string}>>([]);
+  const [slideImagesMobile, setSlideImagesMobile] = useState<Array<{url: string, alt: string}>>([]);
   const [isUploadingSlides, setIsUploadingSlides] = useState(false);
+  const [isUploadingSlidesMobile, setIsUploadingSlidesMobile] = useState(false);
 
   // Get the user's region
   const userRegion = regions?.find(region => 
@@ -82,8 +88,19 @@ const RegionalBranchForm = () => {
             typeof (item as any).alt === 'string'
           );
         }
+
+        // Type-safe parsing of mobile slide images data
+        let slideImagesMobileData: Array<{url: string, alt: string}> = [];
+        if ((userRegion as any).hero_slide_images_mobile && Array.isArray((userRegion as any).hero_slide_images_mobile)) {
+          slideImagesMobileData = (userRegion as any).hero_slide_images_mobile.filter((item): item is {url: string, alt: string} => 
+            typeof item === 'object' && item !== null && 
+            typeof (item as any).url === 'string' && 
+            typeof (item as any).alt === 'string'
+          );
+        }
         
         setSlideImages(slideImagesData);
+        setSlideImagesMobile(slideImagesMobileData);
         
         form.reset({
           name: userRegion.name || "",
@@ -96,6 +113,7 @@ const RegionalBranchForm = () => {
           regional_president_photo: userRegion.regional_president_photo || "",
           established_date: userRegion.established_date || "",
           hero_slide_images: slideImagesData,
+          hero_slide_images_mobile: slideImagesMobileData,
         });
     }
   }, [userRegion, form]);
@@ -116,6 +134,7 @@ const RegionalBranchForm = () => {
         regional_president_photo: data.regional_president_photo || null,
         established_date: data.established_date || null,
         hero_slide_images: slideImages.length > 0 ? slideImages : null,
+        hero_slide_images_mobile: slideImagesMobile.length > 0 ? slideImagesMobile : null,
       },
     });
   };
@@ -310,6 +329,124 @@ const RegionalBranchForm = () => {
     );
     setSlideImages(updatedSlides);
     form.setValue("hero_slide_images", updatedSlides);
+  };
+
+  const handleMobileSlideUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !userRegion) return;
+
+    // Check if adding new files would exceed the 4 slide limit
+    if (slideImagesMobile.length + files.length > 4) {
+      toast({
+        title: "Too many mobile slides",
+        description: "You can only have up to 4 mobile hero slide images",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingSlidesMobile(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          throw new Error(`File ${file.name} is not an image`);
+        }
+        
+        // Validate file size (max 10MB for slides)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`File ${file.name} is too large (max 10MB)`);
+        }
+
+        // Create unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `mobile_slide_${userRegion.id}_${Date.now()}_${index}.${fileExt}`;
+        const filePath = `${userRegion.id}/slides/mobile/${fileName}`;
+
+        // Upload file
+        const { error: uploadError } = await supabase.storage
+          .from('member-photos')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('member-photos')
+          .getPublicUrl(filePath);
+
+        return {
+          url: publicUrl,
+          alt: `Mobile hero slide image ${slideImagesMobile.length + index + 1}`
+        };
+      });
+
+      const newSlides = await Promise.all(uploadPromises);
+      const updatedSlides = [...slideImagesMobile, ...newSlides];
+      
+      setSlideImagesMobile(updatedSlides);
+      form.setValue("hero_slide_images_mobile", updatedSlides);
+
+      toast({
+        title: "Mobile slides uploaded",
+        description: `${files.length} mobile slide image(s) uploaded successfully`
+      });
+
+    } catch (error) {
+      console.error('Error uploading mobile slides:', error);
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload mobile slides. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingSlidesMobile(false);
+      // Clear the input
+      event.target.value = '';
+    }
+  };
+
+  const removeMobileSlide = async (index: number) => {
+    const slide = slideImagesMobile[index];
+    if (!slide || !userRegion) return;
+
+    try {
+      // Extract filename from URL for deletion
+      const urlParts = slide.url.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `${userRegion.id}/slides/mobile/${fileName}`;
+
+      // Delete from storage
+      await supabase.storage
+        .from('member-photos')
+        .remove([filePath]);
+
+      // Update state
+      const updatedSlides = slideImagesMobile.filter((_, i) => i !== index);
+      setSlideImagesMobile(updatedSlides);
+      form.setValue("hero_slide_images_mobile", updatedSlides);
+
+      toast({
+        title: "Mobile slide removed",
+        description: "Mobile slide image has been removed successfully"
+      });
+
+    } catch (error) {
+      console.error('Error removing mobile slide:', error);
+      toast({
+        title: "Removal failed",
+        description: "Failed to remove mobile slide. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const updateMobileSlideAlt = (index: number, alt: string) => {
+    const updatedSlides = slideImagesMobile.map((slide, i) => 
+      i === index ? { ...slide, alt } : slide
+    );
+    setSlideImagesMobile(updatedSlides);
+    form.setValue("hero_slide_images_mobile", updatedSlides);
   };
 
   if (isLoading) {
@@ -572,14 +709,15 @@ const RegionalBranchForm = () => {
             />
 
             {/* Hero Slide Images Section */}
-            <div className="space-y-4">
+            <div className="space-y-8">
+              {/* Desktop/Tablet Images */}
               <div className="border-t pt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Images className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Hero Slide Images</h3>
+                  <h3 className="text-lg font-semibold">Hero Slide Images (Desktop & Tablet)</h3>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Upload up to 4 images for the hero slider on your regional branch page. Images will automatically rotate to showcase your community.
+                  Upload up to 4 landscape images for the hero slider on desktop and tablet devices. These images will be displayed in 16:9 aspect ratio.
                 </p>
                 
                 {/* Upload Section */}
@@ -603,7 +741,7 @@ const RegionalBranchForm = () => {
                   
                   <p className="text-xs text-muted-foreground">
                     • Select up to {4 - slideImages.length} more images
-                    • Recommended size: 1920x1080px or 16:9 aspect ratio
+                    • Recommended size: 1920x1080px (landscape, 16:9 aspect ratio)
                     • Maximum file size: 10MB per image
                     • Supported formats: JPG, PNG, WebP
                   </p>
@@ -612,7 +750,7 @@ const RegionalBranchForm = () => {
                 {/* Current Slides Display */}
                 {slideImages.length > 0 && (
                   <div className="mt-6">
-                    <h4 className="text-sm font-medium mb-3">Current Slide Images ({slideImages.length}/4)</h4>
+                    <h4 className="text-sm font-medium mb-3">Current Desktop/Tablet Images ({slideImages.length}/4)</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {slideImages.map((slide, index) => (
                         <div key={index} className="relative group border rounded-lg overflow-hidden bg-muted">
@@ -643,6 +781,89 @@ const RegionalBranchForm = () => {
                               id={`slide-alt-${index}`}
                               value={slide.alt}
                               onChange={(e) => updateSlideAlt(index, e.target.value)}
+                              placeholder="Describe this image..."
+                              className="mt-1 text-sm h-8"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mobile Images */}
+              <div className="border-t pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Image className="h-5 w-5 text-secondary" />
+                  <h3 className="text-lg font-semibold">Hero Slide Images (Mobile)</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upload up to 4 portrait images optimized for mobile devices. These images will ensure the hero section looks great on phones and fill the entire screen vertically.
+                </p>
+                
+                {/* Upload Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleMobileSlideUpload}
+                      disabled={isUploadingSlidesMobile || slideImagesMobile.length >= 4}
+                      className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20"
+                    />
+                    {isUploadingSlidesMobile && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Uploading mobile slides...
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-muted-foreground">
+                    • Select up to {4 - slideImagesMobile.length} more images
+                    • Recommended size: 1080x1920px (portrait, 9:16 aspect ratio)
+                    • Maximum file size: 10MB per image
+                    • Supported formats: JPG, PNG, WebP
+                    • These images will be used specifically for mobile devices
+                  </p>
+                </div>
+
+                {/* Current Mobile Slides Display */}
+                {slideImagesMobile.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-3">Current Mobile Images ({slideImagesMobile.length}/4)</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {slideImagesMobile.map((slide, index) => (
+                        <div key={index} className="relative group border rounded-lg overflow-hidden bg-muted">
+                          <div className="aspect-[9/16] relative">
+                            <img
+                              src={slide.url}
+                              alt={slide.alt}
+                              className="w-full h-full object-cover"
+                            />
+                            {/* Delete button */}
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeMobileSlide(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          
+                          {/* Alt text input */}
+                          <div className="p-2">
+                            <Label htmlFor={`mobile-slide-alt-${index}`} className="text-xs text-muted-foreground">
+                              Image Description
+                            </Label>
+                            <Input
+                              id={`mobile-slide-alt-${index}`}
+                              value={slide.alt}
+                              onChange={(e) => updateMobileSlideAlt(index, e.target.value)}
                               placeholder="Describe this image..."
                               className="mt-1 text-sm h-8"
                             />

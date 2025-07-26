@@ -181,6 +181,21 @@ const RegionalBranchHome = () => {
 
   // Default hero slider images - fallback if no custom slides
   const defaultHeroImages = [{
+    url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080&q=80`,
+    alt: 'Community worship gathering'
+  }, {
+    url: `https://images.unsplash.com/photo-1519491050282-cf00c82424b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080&q=80`,
+    alt: 'Church fellowship'
+  }, {
+    url: `https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080&q=80`,
+    alt: 'Community service'
+  }, {
+    url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080&q=80`,
+    alt: 'Prayer and worship'
+  }];
+
+  // Default mobile hero images - portrait orientation for mobile
+  const defaultMobileHeroImages = [{
     url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
     alt: 'Community worship gathering'
   }, {
@@ -194,18 +209,34 @@ const RegionalBranchHome = () => {
     alt: 'Prayer and worship'
   }];
 
-  // Use custom slide images if available, otherwise use default images
+  // Use appropriate slide images based on device type
   const heroImages = React.useMemo(() => {
-    if (region?.hero_slide_images && Array.isArray(region.hero_slide_images) && region.hero_slide_images.length > 0) {
-      // Type-safe filtering of slide images
-      return region.hero_slide_images.filter((item): item is {url: string, alt: string} => 
-        typeof item === 'object' && item !== null && 
-        typeof (item as any).url === 'string' && 
-        typeof (item as any).alt === 'string'
-      );
+    if (isMobile) {
+      // For mobile devices, use mobile-specific images if available
+      if ((region as any)?.hero_slide_images_mobile && Array.isArray((region as any).hero_slide_images_mobile) && (region as any).hero_slide_images_mobile.length > 0) {
+        const mobileImages = (region as any).hero_slide_images_mobile.filter((item): item is {url: string, alt: string} => 
+          typeof item === 'object' && item !== null && 
+          typeof (item as any).url === 'string' && 
+          typeof (item as any).alt === 'string'
+        );
+        if (mobileImages.length > 0) return mobileImages;
+      }
+      // Fallback to default mobile images
+      return defaultMobileHeroImages;
+    } else {
+      // For desktop/tablet, use regular hero images
+      if (region?.hero_slide_images && Array.isArray(region.hero_slide_images) && region.hero_slide_images.length > 0) {
+        const desktopImages = region.hero_slide_images.filter((item): item is {url: string, alt: string} => 
+          typeof item === 'object' && item !== null && 
+          typeof (item as any).url === 'string' && 
+          typeof (item as any).alt === 'string'
+        );
+        if (desktopImages.length > 0) return desktopImages;
+      }
+      // Fallback to default desktop images
+      return defaultHeroImages;
     }
-    return defaultHeroImages;
-  }, [region?.hero_slide_images]);
+  }, [region?.hero_slide_images, (region as any)?.hero_slide_images_mobile, isMobile]);
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
     if (email) {
@@ -271,7 +302,7 @@ const RegionalBranchHome = () => {
           <CarouselContent className="h-full -ml-0">
             {heroImages.map((image, index) => <CarouselItem key={index} className="h-full relative pl-0">
                 <div className="h-full w-full relative">
-                  <img src={image.url} alt={image.alt} className="w-full h-full object-cover object-center sm:object-center object-top" />
+                  <img src={image.url} alt={image.alt} className="w-full h-full object-cover object-center" />
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-black/50"></div>
                 </div>
