@@ -339,7 +339,7 @@ const Fundraising = () => {
                               setSelectedCategory(null);
                               setCategoryOpen(false);
                             }}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-colors duration-200 rounded-lg mx-1"
+                            className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
                           >
                             <span className="text-sm font-medium">All Categories</span>
                             {!selectedCategory && <Check size={14} className="text-wca-purple" />}
@@ -352,10 +352,10 @@ const Fundraising = () => {
                                 setSelectedCategory(category);
                                 setCategoryOpen(false);
                               }}
-                              className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-colors duration-200 rounded-lg mx-1"
+                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
                             >
                               <span className="text-sm font-medium">{category}</span>
-                              {selectedCategory === category && <Check size={14} className="text-wca-purple" />}
+                              {selectedCategory === category && <Check size={14} className="text-wca-purple hover:text-white" />}
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -398,7 +398,7 @@ const Fundraising = () => {
                                 setSelectedStatus(status.value as "all" | "active" | "completed" | "upcoming");
                                 setStatusOpen(false);
                               }}
-                              className="flex items-center justify-between px-3 py-2.5 hover:bg-gray-100/80 dark:hover:bg-gray-700/50 transition-colors duration-200 rounded-lg mx-1"
+                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
                             >
                               <span className="text-sm font-medium">{status.label}</span>
                               {selectedStatus === status.value && <Check size={14} className="text-wca-purple" />}
