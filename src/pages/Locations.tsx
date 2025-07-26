@@ -4,6 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { WCACenterCard, DCGLocationCard, LocationCardSkeleton } from '@/components/ui/LocationCards';
 import { Search, ChevronDown, MapPin, Filter, Globe, Users, Calendar, Heart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePublicLocations } from '@/hooks/usePublicLocations';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -161,12 +162,20 @@ const Locations = () => {
                   </div>
 
                   {/* Region Filter */}
-                  <div className="relative lg:w-64">
-                    <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="w-full appearance-none pl-6 pr-12 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 text-gray-900 dark:text-gray-100 font-medium cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md hover:border-purple-400 dark:hover:border-purple-400">
-                      <option value="all">All Regions</option>
-                      {countries.map((country, index) => <option key={index} value={country}>{country}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
+                  <div className="lg:w-64">
+                    <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                      <SelectTrigger className="w-full h-12 px-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-sm hover:shadow-md focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all duration-300 hover:border-purple-400 dark:hover:border-purple-400">
+                        <SelectValue placeholder="All Regions" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50">
+                        <SelectItem value="all" className="hover:bg-purple-50 dark:hover:bg-purple-900/20 focus:bg-purple-50 dark:focus:bg-purple-900/20 rounded-lg">All Regions</SelectItem>
+                        {countries.map((country, index) => (
+                          <SelectItem key={index} value={country} className="hover:bg-purple-50 dark:hover:bg-purple-900/20 focus:bg-purple-50 dark:focus:bg-purple-900/20 rounded-lg">
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
