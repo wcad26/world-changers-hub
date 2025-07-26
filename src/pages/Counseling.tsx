@@ -3,9 +3,11 @@ import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassPanel, GlassCard } from "@/components/ui/GlassPanels";
-import { Calendar, Clock, User, Heart, CheckCircle, Search, Filter, Phone, Mail, MessageSquare } from "lucide-react";
+import { Calendar, Clock, User, Heart, CheckCircle, Search, Filter, Phone, Mail, MessageSquare, ChevronDown, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
 
 interface Counselor {
   id: number;
@@ -97,6 +99,8 @@ const Counseling = () => {
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [appointmentFormOpen, setAppointmentFormOpen] = useState<boolean>(false);
+  const [specialtyOpen, setSpecialtyOpen] = useState(false);
+  const [dayOpen, setDayOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -199,33 +203,85 @@ const Counseling = () => {
               </div>
               
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="relative">
-                  <select 
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44"
-                    value={selectedSpecialty || ""}
-                    onChange={(e) => setSelectedSpecialty(e.target.value || null)}
-                  >
-                    <option value="">All Specialties</option>
-                    {allSpecialties.map(specialty => (
-                      <option key={specialty} value={specialty}>{specialty}</option>
-                    ))}
-                  </select>
-                  <Heart size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                </div>
+                <Popover open={specialtyOpen} onOpenChange={setSpecialtyOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={specialtyOpen} className="justify-between min-w-[180px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <Heart size={16} className="text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-700 dark:text-gray-200 hover:text-white">
+                          {selectedSpecialty || "All Specialties"}
+                        </span>
+                      </div>
+                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{
+                        transform: specialtyOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                      }} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-xl">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem value="" onSelect={() => {
+                            setSelectedSpecialty(null);
+                            setSpecialtyOpen(false);
+                          }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1">
+                            <span className="text-sm font-medium group-hover:text-white">All Specialties</span>
+                            {!selectedSpecialty && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                          {allSpecialties.map(specialty => (
+                            <CommandItem key={specialty} value={specialty} onSelect={() => {
+                              setSelectedSpecialty(specialty);
+                              setSpecialtyOpen(false);
+                            }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1">
+                              <span className="text-sm font-medium">{specialty}</span>
+                              {selectedSpecialty === specialty && <Check size={14} className="text-wca-purple hover:text-white" />}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 
-                <div className="relative">
-                  <select 
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44"
-                    value={selectedDay || ""}
-                    onChange={(e) => setSelectedDay(e.target.value || null)}
-                  >
-                    <option value="">All Days</option>
-                    {allDays.map(day => (
-                      <option key={day} value={day}>{day}</option>
-                    ))}
-                  </select>
-                  <Calendar size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                </div>
+                <Popover open={dayOpen} onOpenChange={setDayOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" role="combobox" aria-expanded={dayOpen} className="justify-between min-w-[150px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-700 dark:text-gray-200 hover:text-white">
+                          {selectedDay || "All Days"}
+                        </span>
+                      </div>
+                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{
+                        transform: dayOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                      }} />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[180px] p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-xl">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem value="" onSelect={() => {
+                            setSelectedDay(null);
+                            setDayOpen(false);
+                          }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1">
+                            <span className="text-sm font-medium group-hover:text-white">All Days</span>
+                            {!selectedDay && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                          {allDays.map(day => (
+                            <CommandItem key={day} value={day} onSelect={() => {
+                              setSelectedDay(day);
+                              setDayOpen(false);
+                            }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1">
+                              <span className="text-sm font-medium">{day}</span>
+                              {selectedDay === day && <Check size={14} className="text-wca-purple hover:text-white" />}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
