@@ -728,6 +728,36 @@ export type Database = {
           },
         ]
       }
+      global_content: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          page_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          page_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       locations: {
         Row: {
           address: string
