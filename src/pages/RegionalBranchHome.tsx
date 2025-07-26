@@ -21,22 +21,22 @@ const RegionalBranchHome = () => {
 
   const [email, setEmail] = useState('');
 
-  // Hero slider images
+  // Hero slider images - mobile-optimized vertical images
   const heroImages = [
     {
-      url: `https://images.unsplash.com/photo-1438032005730-c779502df39b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      url: `https://images.unsplash.com/photo-1507692049790-de58290a4334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
       alt: 'Community worship gathering'
     },
     {
-      url: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      url: `https://images.unsplash.com/photo-1519491050282-cf00c82424b4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
       alt: 'Church fellowship'
     },
     {
-      url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      url: `https://images.unsplash.com/photo-1528605248644-14dd04022da1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
       alt: 'Community service'
     },
     {
-      url: `https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80`,
+      url: `https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1080&h=1920&q=80`,
       alt: 'Prayer and worship'
     }
   ];
