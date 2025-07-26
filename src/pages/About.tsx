@@ -1,93 +1,71 @@
-
 import { useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { Users, Target, Shield, Award, Check } from 'lucide-react';
-
-const values = [
-  {
-    icon: <Users className="w-8 h-8 text-wca-purple" />,
-    title: "Community",
-    description: "We believe in the power of community to transform lives and societies."
-  },
-  {
-    icon: <Target className="w-8 h-8 text-wca-violet" />,
-    title: "Excellence",
-    description: "We pursue excellence in all we do, aiming to honor God with our best."
-  },
-  {
-    icon: <Shield className="w-8 h-8 text-wca-teal" />,
-    title: "Integrity",
-    description: "We uphold transparency and honesty in all areas of leadership and service."
-  },
-  {
-    icon: <Award className="w-8 h-8 text-wca-purple" />,
-    title: "Empowerment",
-    description: "We equip and empower individuals to reach their full potential."
-  }
-];
-
-const team = [
-  {
-    name: "Dr. John Smith",
-    role: "Founder & President",
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
-    bio: "Dr. Smith has over 20 years of experience in ministry and leadership development."
-  },
-  {
-    name: "Sarah Johnson",
-    role: "Executive Director",
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=988&q=80",
-    bio: "Sarah oversees the daily operations and strategic initiatives of WCA."
-  },
-  {
-    name: "Pastor Michael Chen",
-    role: "Director of Ministries",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
-    bio: "Pastor Chen leads our spiritual development programs and outreach efforts."
-  },
-  {
-    name: "Dr. Grace Williams",
-    role: "Director of Education",
-    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1061&q=80",
-    bio: "Dr. Williams heads our leadership training and educational initiatives."
-  }
-];
-
-const milestones = [
-  {
-    year: "2005",
-    title: "Foundation",
-    description: "WCA was established with the vision to transform lives and communities."
-  },
-  {
-    year: "2010",
-    title: "First Center",
-    description: "Our first official center was opened, providing a home for our growing community."
-  },
-  {
-    year: "2015",
-    title: "Leadership Academy",
-    description: "Launched our comprehensive leadership development program."
-  },
-  {
-    year: "2020",
-    title: "Global Expansion",
-    description: "Expanded to 10 countries with over 50 centers and homes worldwide."
-  }
-];
-
+const values = [{
+  icon: <Users className="w-8 h-8 text-wca-purple" />,
+  title: "Community",
+  description: "We believe in the power of community to transform lives and societies."
+}, {
+  icon: <Target className="w-8 h-8 text-wca-violet" />,
+  title: "Excellence",
+  description: "We pursue excellence in all we do, aiming to honor God with our best."
+}, {
+  icon: <Shield className="w-8 h-8 text-wca-teal" />,
+  title: "Integrity",
+  description: "We uphold transparency and honesty in all areas of leadership and service."
+}, {
+  icon: <Award className="w-8 h-8 text-wca-purple" />,
+  title: "Empowerment",
+  description: "We equip and empower individuals to reach their full potential."
+}];
+const team = [{
+  name: "Dr. John Smith",
+  role: "Founder & President",
+  image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
+  bio: "Dr. Smith has over 20 years of experience in ministry and leadership development."
+}, {
+  name: "Sarah Johnson",
+  role: "Executive Director",
+  image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=988&q=80",
+  bio: "Sarah oversees the daily operations and strategic initiatives of WCA."
+}, {
+  name: "Pastor Michael Chen",
+  role: "Director of Ministries",
+  image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80",
+  bio: "Pastor Chen leads our spiritual development programs and outreach efforts."
+}, {
+  name: "Dr. Grace Williams",
+  role: "Director of Education",
+  image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1061&q=80",
+  bio: "Dr. Williams heads our leadership training and educational initiatives."
+}];
+const milestones = [{
+  year: "2005",
+  title: "Foundation",
+  description: "WCA was established with the vision to transform lives and communities."
+}, {
+  year: "2010",
+  title: "First Center",
+  description: "Our first official center was opened, providing a home for our growing community."
+}, {
+  year: "2015",
+  title: "Leadership Academy",
+  description: "Launched our comprehensive leadership development program."
+}, {
+  year: "2020",
+  title: "Global Expansion",
+  description: "Expanded to 10 countries with over 50 centers and homes worldwide."
+}];
 const About = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  return (
-    <div className="flex flex-col min-h-screen">
+  return <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <main className="flex-grow pt-20">
+      <main className="flex-grow pt-20 py-0">
         {/* Hero Section */}
         <section className="relative py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
           <div className="container-custom">
@@ -132,12 +110,7 @@ const About = () => {
               <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
                 <div className="relative">
                   <div className="w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden">
-                    <img 
-                      src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2370&q=80" 
-                      alt="WCA Community" 
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+                    <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2370&q=80" alt="WCA Community" className="w-full h-full object-cover" loading="lazy" />
                   </div>
                   {/* Decorative elements */}
                   <div className="absolute -top-4 -right-4 w-40 h-40 bg-wca-purple/10 rounded-full -z-10"></div>
@@ -161,15 +134,13 @@ const About = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {values.map((value, index) => (
-                <GlassCard key={index} className="p-6">
+              {values.map((value, index) => <GlassCard key={index} className="p-6">
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-full w-16 h-16 flex items-center justify-center mb-6">
                     {value.icon}
                   </div>
                   <h3 className="text-xl font-semibold mb-3">{value.title}</h3>
                   <p className="text-gray-600 dark:text-gray-300">{value.description}</p>
-                </GlassCard>
-              ))}
+                </GlassCard>)}
             </div>
           </div>
         </section>
@@ -192,8 +163,7 @@ const About = () => {
               
               {/* Timeline items */}
               <div className="space-y-20">
-                {milestones.map((milestone, index) => (
-                  <div key={index} className={`relative flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
+                {milestones.map((milestone, index) => <div key={index} className={`relative flex items-center ${index % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
                     <div className="w-1/2"></div>
                     
                     {/* Timeline dot */}
@@ -209,8 +179,7 @@ const About = () => {
                         <p className="text-gray-600 dark:text-gray-300">{milestone.description}</p>
                       </GlassCard>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
             </div>
           </div>
@@ -229,23 +198,16 @@ const About = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {team.map((member, index) => (
-                <GlassCard key={index} className="overflow-hidden">
+              {team.map((member, index) => <GlassCard key={index} className="overflow-hidden">
                   <div className="aspect-square overflow-hidden">
-                    <img 
-                      src={member.image} 
-                      alt={member.name} 
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                      loading="lazy"
-                    />
+                    <img src={member.image} alt={member.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" />
                   </div>
                   <div className="p-6">
                     <h3 className="font-semibold text-xl">{member.name}</h3>
                     <p className="text-wca-teal font-medium text-sm mb-3">{member.role}</p>
                     <p className="text-gray-600 dark:text-gray-300 text-sm">{member.bio}</p>
                   </div>
-                </GlassCard>
-              ))}
+                </GlassCard>)}
             </div>
           </div>
         </section>
@@ -273,8 +235,6 @@ const About = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default About;
