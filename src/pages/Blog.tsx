@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassPanel, GlassCard } from "@/components/ui/GlassPanels";
-import { Newspaper, MessageCircle, Calendar, Clock, User, ChevronRight, Tag, Search } from "lucide-react";
+import { Newspaper, MessageCircle, Calendar, Clock, User, ChevronRight, Tag, Search, ChevronDown, Check } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandList, CommandGroup, CommandItem } from "@/components/ui/command";
 
 interface BlogPost {
   id: number;
@@ -151,6 +153,7 @@ const Blog = () => {
   const [activeTab, setActiveTab] = useState<"all" | "news" | "testimonies" | "articles">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const filteredPosts = blogPosts.filter(post => {
     // Filter by tab
@@ -176,6 +179,16 @@ const Blog = () => {
   // Get all unique tags
   const allTags = Array.from(new Set(blogPosts.flatMap(post => post.tags)));
 
+  const getTabDisplayName = (tab: typeof activeTab) => {
+    switch (tab) {
+      case "all": return "All";
+      case "news": return "News";
+      case "testimonies": return "Testimonies";
+      case "articles": return "Articles";
+      default: return "All";
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
@@ -199,7 +212,100 @@ const Blog = () => {
         <section className="py-12">
           <div className="container-custom">
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
-              <div className="flex items-center gap-3 overflow-x-auto pb-2 w-full md:w-auto">
+              {/* Mobile Dropdown */}
+              <div className="md:hidden w-full">
+                <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      role="combobox" 
+                      aria-expanded={dropdownOpen} 
+                      className="w-full justify-between h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Newspaper size={18} className="text-gray-400 dark:text-gray-500" />
+                        <span className="text-gray-700 dark:text-gray-200">
+                          {getTabDisplayName(activeTab)}
+                        </span>
+                      </div>
+                      <ChevronDown 
+                        size={16} 
+                        className="text-gray-400 dark:text-gray-500 transition-transform duration-200" 
+                        style={{
+                          transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                        }} 
+                      />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-xl z-50">
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          <CommandItem 
+                            value="all" 
+                            onSelect={() => {
+                              setActiveTab("all");
+                              setDropdownOpen(false);
+                            }} 
+                            className="flex items-center justify-between px-3 py-3 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Newspaper size={16} className="text-gray-400 group-hover:text-white" />
+                              <span className="text-sm font-medium group-hover:text-white">All</span>
+                            </div>
+                            {activeTab === "all" && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                          <CommandItem 
+                            value="news" 
+                            onSelect={() => {
+                              setActiveTab("news");
+                              setDropdownOpen(false);
+                            }} 
+                            className="flex items-center justify-between px-3 py-3 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Newspaper size={16} className="text-gray-400 group-hover:text-white" />
+                              <span className="text-sm font-medium group-hover:text-white">News</span>
+                            </div>
+                            {activeTab === "news" && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                          <CommandItem 
+                            value="testimonies" 
+                            onSelect={() => {
+                              setActiveTab("testimonies");
+                              setDropdownOpen(false);
+                            }} 
+                            className="flex items-center justify-between px-3 py-3 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
+                          >
+                            <div className="flex items-center gap-2">
+                              <MessageCircle size={16} className="text-gray-400 group-hover:text-white" />
+                              <span className="text-sm font-medium group-hover:text-white">Testimonies</span>
+                            </div>
+                            {activeTab === "testimonies" && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                          <CommandItem 
+                            value="articles" 
+                            onSelect={() => {
+                              setActiveTab("articles");
+                              setDropdownOpen(false);
+                            }} 
+                            className="flex items-center justify-between px-3 py-3 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Newspaper size={16} className="text-gray-400 group-hover:text-white" />
+                              <span className="text-sm font-medium group-hover:text-white">Articles</span>
+                            </div>
+                            {activeTab === "articles" && <Check size={14} className="text-wca-purple group-hover:text-white" />}
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Desktop Buttons */}
+              <div className="hidden md:flex items-center gap-3 overflow-x-auto pb-2 w-auto">
                 <button 
                   className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${activeTab === "all" ? "bg-wca-purple text-white" : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                   onClick={() => setActiveTab("all")}
