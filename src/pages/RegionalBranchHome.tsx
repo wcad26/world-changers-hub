@@ -302,7 +302,7 @@ const RegionalBranchHome = () => {
           <CarouselContent className="h-full -ml-0">
             {heroImages.map((image, index) => <CarouselItem key={index} className="h-full relative pl-0">
                 <div className="h-full w-full relative">
-                  <img src={image.url} alt={image.alt} className="w-full h-full object-cover object-center" />
+                  <img src={image.url} alt={image.alt} className="w-full h-full object-cover object-center md:object-fill lg:object-cover" />
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-black/50"></div>
                 </div>
