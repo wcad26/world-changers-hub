@@ -989,6 +989,7 @@ export type Database = {
           established_date: string | null
           hero_slide_images: Json | null
           hero_slide_images_mobile: Json | null
+          hero_slide_images_tablet: Json | null
           id: string
           is_active: boolean | null
           name: string
@@ -1006,6 +1007,7 @@ export type Database = {
           established_date?: string | null
           hero_slide_images?: Json | null
           hero_slide_images_mobile?: Json | null
+          hero_slide_images_tablet?: Json | null
           id?: string
           is_active?: boolean | null
           name: string
@@ -1023,6 +1025,7 @@ export type Database = {
           established_date?: string | null
           hero_slide_images?: Json | null
           hero_slide_images_mobile?: Json | null
+          hero_slide_images_tablet?: Json | null
           id?: string
           is_active?: boolean | null
           name?: string
