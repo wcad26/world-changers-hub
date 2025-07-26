@@ -163,7 +163,10 @@ const RegionalBranchHome = () => {
       <section className="bg-white border-b py-[20px]">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            
+            <div className="text-center mb-12">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Regional Information</h2>
+              <p className="text-muted-foreground">Get to know our regional branch</p>
+            </div>
             
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
               {/* Established Year */}
