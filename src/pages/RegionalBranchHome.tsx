@@ -228,7 +228,7 @@ const RegionalBranchHome = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
-              About Our Community
+              About {region.name}
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
               {region.description || `Discover the vibrant community of ${region.name}, where faith meets fellowship and purpose drives our mission. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship.`}
