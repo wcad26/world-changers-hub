@@ -371,8 +371,7 @@ const RegionalBranchHome = () => {
                           {dcg.location && (
                             <Button 
                               size="sm" 
-                              variant="outline" 
-                              className="flex-1 text-xs"
+                              className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary"
                               onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}
                             >
                               <MapPin className="w-3 h-3 mr-1" />
@@ -384,8 +383,7 @@ const RegionalBranchHome = () => {
                           {dcg.contact_phone && (
                             <Button 
                               size="sm" 
-                              variant="outline" 
-                              className="flex-1 text-xs"
+                              className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary"
                               onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
                             >
                               <Phone className="w-3 h-3 mr-1" />
