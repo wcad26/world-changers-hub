@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, Phone, Mail, ArrowRight, ChevronLeft, Home } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
-import { useRegionalLocations, useRegionalDCGs, useRegionalEvents } from '@/hooks/useRegionalData';
+import { useRegionalLocations, useRegionalDCGs, useAllRegionalEvents } from '@/hooks/useRegionalData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
@@ -32,9 +32,9 @@ const RegionalBranchHome = () => {
     isLoading: dcgsLoading
   } = useRegionalDCGs(region?.id || '');
   const {
-    data: events,
+    data: allEvents,
     isLoading: eventsLoading
-  } = useRegionalEvents(region?.id || '');
+  } = useAllRegionalEvents(region?.id || '');
   const [email, setEmail] = useState('');
 
   // Hero slider images - mobile-optimized vertical images
@@ -249,24 +249,29 @@ const RegionalBranchHome = () => {
             </p>
           </div>
           
-          {eventsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
+          {eventsLoading ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+              {[1, 2, 3, 4, 5, 6].map(i => <Card key={i} className="animate-pulse">
                   <CardContent className="p-6">
                     <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
                     <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
                 </Card>)}
-            </div> : events && events.length > 0 ? <div className="max-w-6xl mx-auto">
+            </div> : <div className="w-full">
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {events.slice(0, 6).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                {allEvents && allEvents.length > 0 ? allEvents.slice(0, 12).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                     <CardContent className="p-0">
                       <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-4">
-                            <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
-                              {event.name}
-                            </h3>
+                            <div>
+                              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                                {event.name}
+                              </h3>
+                              {event.dcg && <div className="text-xs text-secondary mt-1 font-medium">
+                                  DCG: {event.dcg.name}
+                                </div>}
+                            </div>
                             <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
                               {new Date(event.start_datetime).toLocaleDateString('en-US', {
                           month: 'short',
@@ -298,21 +303,23 @@ const RegionalBranchHome = () => {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>)}
+                  </Card>) : <div className="col-span-full">
+                    <Card className="w-full">
+                      <CardContent className="p-12 text-center">
+                        <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
+                        <p className="text-muted-foreground">Check back soon for upcoming events and gatherings from our regional branch and DCG groups.</p>
+                      </CardContent>
+                    </Card>
+                  </div>}
               </div>
-              {events.length > 6 && <div className="text-center">
+              {allEvents && allEvents.length > 12 && <div className="text-center">
                   <Button variant="outline" size="lg" className="px-8">
                     View All Events
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </div>}
-            </div> : <Card className="max-w-2xl mx-auto">
-              <CardContent className="p-12 text-center">
-                <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
-                <p className="text-muted-foreground">Check back soon for upcoming events and gatherings.</p>
-              </CardContent>
-            </Card>}
+            </div>}
         </div>
       </section>
 

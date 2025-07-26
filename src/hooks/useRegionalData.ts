@@ -112,6 +112,37 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
   });
 };
 
+// Hook to get all events for a region (both regional and DCG events)
+export const useAllRegionalEvents = (regionId: string | undefined) => {
+  return useQuery({
+    queryKey: ['all-regional-events', regionId],
+    queryFn: async () => {
+      if (!regionId) return [];
+      
+      const { data, error } = await supabase
+        .from('events')
+        .select(`
+          *,
+          region:regions(*),
+          dcg:dcgs(name)
+        `)
+        .eq('region_id', regionId)
+        .eq('is_public', true)
+        .gte('start_datetime', new Date().toISOString())
+        .order('start_datetime')
+        .limit(20);
+
+      if (error) {
+        console.error('Error fetching all regional events:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!regionId,
+  });
+};
+
 export const useRegionalEvents = (regionId: string | undefined) => {
   return useQuery({
     queryKey: ['regional-events', regionId],
