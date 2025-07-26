@@ -6,6 +6,7 @@ import { ShoppingCart, Book, Search, Filter, Star, Plus, Minus } from "lucide-re
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 interface Item {
   id: number;
   title: string;
@@ -190,7 +191,10 @@ const Store = () => {
       <main className="flex-grow pt-32 pb-16 py-[75px]">
         <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
           <div className="container-custom">
-            <Carousel className="w-full max-w-6xl mx-auto">
+            <Carousel 
+              className="w-full max-w-6xl mx-auto" 
+              plugins={[Autoplay({ delay: 4000 })]}
+            >
               <CarouselContent>
                 {activeTab === "store" ? (
                   <>
