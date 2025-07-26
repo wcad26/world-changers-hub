@@ -53,11 +53,15 @@ export const useRegionMutations = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error updating region:', error);
         throw error;
+      }
+      
+      if (!data) {
+        throw new Error('Region not found or update failed');
       }
       
       return data;
