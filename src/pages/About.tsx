@@ -212,7 +212,7 @@ const About = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {team.map((member, index) => <GlassCard key={index} className="overflow-hidden">
                   <div className="aspect-square overflow-hidden">
                     <img src={member.image} alt={member.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" />
