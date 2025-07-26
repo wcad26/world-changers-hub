@@ -196,7 +196,7 @@ const Counseling = () => {
         <section className="py-[2px]">
           <div className="container-custom">
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-6 mb-12 py-[10px]">
-              <div className="w-full md:w-auto relative">
+              <div className="w-full md:w-1/2 relative">
                 <div className="relative">
                   <input type="text" placeholder="Search counselors..." className="pl-10 pr-4 py-2 w-full md:w-80 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                   <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
