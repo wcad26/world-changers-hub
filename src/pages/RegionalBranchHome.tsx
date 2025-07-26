@@ -213,11 +213,10 @@ const RegionalBranchHome = () => {
                 <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Phone className="w-6 h-6 text-primary" />
                 </div>
-                <div className="space-y-1 mb-2">
+                <div className="mb-2">
                   {region.contact_phone && <div className="text-sm font-semibold text-foreground">
                       {region.contact_phone}
                     </div>}
-                  {region.contact_email}
                 </div>
                 <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
                   Contact
