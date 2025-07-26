@@ -133,11 +133,6 @@ const RegionalBranchHome = () => {
               Welcome to<br />
               {region.name}
             </h1>
-            <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto animate-fade-up drop-shadow-md" style={{
-            animationDelay: '0.2s'
-          }}>
-              {region.description || `Welcome to ${region.name}, where faith meets community and purpose drives our mission.`}
-            </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
             animationDelay: '0.4s'
           }}>
