@@ -158,16 +158,17 @@ const Media = () => {
                   
                   {isMobile ? <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" className="flex-shrink-0">
+                        <Button variant="outline" className="flex-shrink-0 flex items-center gap-2">
                           <Filter size={18} />
+                          <span>Category</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-72 p-4">
                         <FilterContent />
                       </DropdownMenuContent>
                     </DropdownMenu> : <div className="ml-4 hidden md:block">
-                      <FilterContent />
-                    </div>}
+                       <FilterContent />
+                     </div>}
                 </div>
               </div>
 
