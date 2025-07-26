@@ -10,11 +10,12 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">W</span>
-            </div>
-            <span className="font-bold text-xl text-foreground">WCA</span>
+          <Link to="/" className="flex items-center">
+            <img 
+              src="/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png" 
+              alt="World Changers Association" 
+              className="h-10 w-auto"
+            />
           </Link>
 
           {/* Navigation Links - Desktop */}
