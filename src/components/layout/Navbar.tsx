@@ -1,9 +1,15 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, Phone, Mail, X } from 'lucide-react';
+import { Menu, Phone, Mail, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   return (
@@ -24,15 +30,39 @@ const Navbar = () => {
             <Link to="/" className="text-muted-foreground hover:text-primary transition-colors font-medium">
               Home
             </Link>
+            <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors font-medium">
+              About Us
+            </Link>
             <Link to="/locations" className="text-muted-foreground hover:text-primary transition-colors font-medium">
               Locations
             </Link>
             <Link to="/events" className="text-muted-foreground hover:text-primary transition-colors font-medium">
               Events
             </Link>
-            <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              About
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-muted-foreground hover:text-primary transition-colors font-medium p-0 h-auto">
+                  Resources <ChevronDown className="ml-1 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="bg-background border shadow-lg">
+                <DropdownMenuItem asChild>
+                  <Link to="/media" className="w-full">Media & Sermons</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/store" className="w-full">Store/Library</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/blog" className="w-full">News & Blog</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/counseling" className="w-full">Counselling</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/fundraising" className="w-full">Fundraising</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Contact Info & Actions */}
@@ -70,6 +100,12 @@ const Navbar = () => {
                       Home
                     </Link>
                     <Link 
+                      to="/about" 
+                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
+                    >
+                      About Us
+                    </Link>
+                    <Link 
                       to="/locations" 
                       className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
                     >
@@ -81,12 +117,43 @@ const Navbar = () => {
                     >
                       Events
                     </Link>
-                    <Link 
-                      to="/about" 
-                      className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50"
-                    >
-                      About
-                    </Link>
+                    
+                    {/* Resources Section */}
+                    <div className="py-2 border-b border-border/50">
+                      <h4 className="text-lg font-medium text-foreground mb-3">Resources</h4>
+                      <div className="flex flex-col space-y-2 pl-4">
+                        <Link 
+                          to="/media" 
+                          className="text-base text-muted-foreground hover:text-primary transition-colors py-1"
+                        >
+                          Media & Sermons
+                        </Link>
+                        <Link 
+                          to="/store" 
+                          className="text-base text-muted-foreground hover:text-primary transition-colors py-1"
+                        >
+                          Store/Library
+                        </Link>
+                        <Link 
+                          to="/blog" 
+                          className="text-base text-muted-foreground hover:text-primary transition-colors py-1"
+                        >
+                          News & Blog
+                        </Link>
+                        <Link 
+                          to="/counseling" 
+                          className="text-base text-muted-foreground hover:text-primary transition-colors py-1"
+                        >
+                          Counselling
+                        </Link>
+                        <Link 
+                          to="/fundraising" 
+                          className="text-base text-muted-foreground hover:text-primary transition-colors py-1"
+                        >
+                          Fundraising
+                        </Link>
+                      </div>
+                    </div>
                   </nav>
 
                   {/* Contact Information */}
