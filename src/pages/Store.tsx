@@ -4,6 +4,7 @@ import Footer from "@/components/layout/Footer";
 import { GlassPanel } from "@/components/ui/GlassPanels";
 import { ShoppingCart, Book, Search, Filter, Star, Plus, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
@@ -311,40 +312,78 @@ const Store = () => {
           <div className="container-custom">
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="lg:w-1/4">
-                <GlassPanel className="p-6 sticky top-40">
+                 <GlassPanel className="p-6 sticky top-40">
                   <div className="mb-6">
                     <h3 className="font-medium text-lg flex items-center gap-2 mb-4">
                       <Filter size={18} />
                       <span>Filters</span>
                     </h3>
                     
-                    <div className="mb-4">
-                      <h4 className="font-medium mb-2">Categories</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center">
-                          <input type="radio" id="all-categories" name="category" checked={selectedCategory === null} onChange={() => setSelectedCategory(null)} className="mr-2" />
-                          <label htmlFor="all-categories">All Categories</label>
+                    {/* Desktop version - radio buttons */}
+                    <div className="hidden lg:block">
+                      <div className="mb-4">
+                        <h4 className="font-medium mb-2">Categories</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center">
+                            <input type="radio" id="all-categories" name="category" checked={selectedCategory === null} onChange={() => setSelectedCategory(null)} className="mr-2" />
+                            <label htmlFor="all-categories">All Categories</label>
+                          </div>
+                          {categories.map(category => <div key={category} className="flex items-center">
+                              <input type="radio" id={`category-${category}`} name="category" checked={selectedCategory === category} onChange={() => setSelectedCategory(category)} className="mr-2" />
+                              <label htmlFor={`category-${category}`}>{category}</label>
+                            </div>)}
                         </div>
-                        {categories.map(category => <div key={category} className="flex items-center">
-                            <input type="radio" id={`category-${category}`} name="category" checked={selectedCategory === category} onChange={() => setSelectedCategory(category)} className="mr-2" />
-                            <label htmlFor={`category-${category}`}>{category}</label>
-                          </div>)}
+                      </div>
+                      
+                      <div>
+                        <h4 className="font-medium mb-2">Type</h4>
+                        <div className="space-y-2">
+                          <div className="flex items-center">
+                            <input type="radio" id="all-types" name="type" checked={selectedType === null} onChange={() => setSelectedType(null)} className="mr-2" />
+                            <label htmlFor="all-types">All Types</label>
+                          </div>
+                          {types.map(type => <div key={type} className="flex items-center">
+                              <input type="radio" id={`type-${type}`} name="type" checked={selectedType === type} onChange={() => setSelectedType(type)} className="mr-2" />
+                              <label htmlFor={`type-${type}`}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </label>
+                            </div>)}
+                        </div>
                       </div>
                     </div>
                     
-                    <div>
-                      <h4 className="font-medium mb-2">Type</h4>
-                      <div className="space-y-2">
-                        <div className="flex items-center">
-                          <input type="radio" id="all-types" name="type" checked={selectedType === null} onChange={() => setSelectedType(null)} className="mr-2" />
-                          <label htmlFor="all-types">All Types</label>
-                        </div>
-                        {types.map(type => <div key={type} className="flex items-center">
-                            <input type="radio" id={`type-${type}`} name="type" checked={selectedType === type} onChange={() => setSelectedType(type)} className="mr-2" />
-                            <label htmlFor={`type-${type}`}>
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </label>
-                          </div>)}
+                    {/* Tablet and Mobile version - dropdowns */}
+                    <div className="lg:hidden flex gap-3">
+                      <div className="flex-1">
+                        <Select value={selectedCategory || ""} onValueChange={(value) => setSelectedCategory(value || null)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Category" />
+                          </SelectTrigger>
+                          <SelectContent className="z-50 bg-white dark:bg-gray-900">
+                            <SelectItem value="">All Categories</SelectItem>
+                            {categories.map(category => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex-1">
+                        <Select value={selectedType || ""} onValueChange={(value) => setSelectedType(value || null)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Type" />
+                          </SelectTrigger>
+                          <SelectContent className="z-50 bg-white dark:bg-gray-900">
+                            <SelectItem value="">All Types</SelectItem>
+                            {types.map(type => (
+                              <SelectItem key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
