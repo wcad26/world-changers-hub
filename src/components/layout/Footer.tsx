@@ -11,9 +11,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           <div className="space-y-4">
             <Link to="/" className="inline-block">
-              <h2 className="text-2xl font-bold">
-                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">WCA</span>
-              </h2>
+              <img 
+                src="/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png" 
+                alt="World Changers Association" 
+                className="h-12 w-auto"
+              />
             </Link>
             <p className="text-gray-600 dark:text-gray-400 max-w-md">
               Building a network of fellowships that are spiritually, intellectually and economically empowered to transform lives.
