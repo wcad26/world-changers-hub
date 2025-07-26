@@ -87,7 +87,7 @@ const Locations = () => {
               <div className="grid grid-cols-3 gap-4 md:gap-8 mb-12 animate-fade-up">
                 <div className="text-center">
                   <div className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2">{totalLocations}</div>
-                  <div className="text-white/70 font-medium text-sm md:text-base">Total Locations</div>
+                  <div className="text-white/70 font-medium text-sm md:text-base">Locations</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-2">{wcaCenters}</div>
