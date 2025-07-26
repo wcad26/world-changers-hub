@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import Autoplay from 'embla-carousel-autoplay';
 import Navbar from '@/components/layout/Navbar';
+import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Input } from '@/components/ui/input';
 import { toast } from "@/hooks/use-toast";
@@ -96,6 +97,7 @@ const RegionalBranchHome = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <Navbar />
       
       {/* Hero Section - Full Width with Image Slider */}
