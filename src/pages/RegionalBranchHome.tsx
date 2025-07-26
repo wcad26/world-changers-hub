@@ -219,16 +219,47 @@ const RegionalBranchHome = () => {
         </div>
       </section>
 
-      {/* About Section - Full Width */}
+      {/* Regional Leader Section - Full Width */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">
-              About {region.name}
-            </h2>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              {region.description || `Discover the vibrant community of ${region.name}, where faith meets fellowship and purpose drives our mission. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship.`}
-            </p>
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Left Side - Leader's Word */}
+              <div className="space-y-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                  A word from our regional leader
+                </h2>
+                <div className="prose prose-lg text-muted-foreground">
+                  <p className="leading-relaxed">
+                    {region.description || `Welcome to our vibrant community of ${region.name}. We are committed to building strong relationships and making a positive impact in our community through worship, service, and discipleship. Our mission is to create an environment where faith meets fellowship and purpose drives our calling.`}
+                  </p>
+                  {region.regional_pastor && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <p className="font-semibold text-foreground text-lg">
+                        {region.regional_pastor}
+                      </p>
+                      <p className="text-sm text-muted-foreground">Regional Pastor</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right Side - Leader's Portrait */}
+              <div className="flex justify-center md:justify-end">
+                <div className="relative">
+                  <div className="w-80 h-96 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg overflow-hidden shadow-xl">
+                    <img 
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=1000&q=80"
+                      alt={region.regional_pastor || "Regional Pastor"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* Decorative background circle */}
+                  <div className="absolute -top-4 -right-4 w-24 h-24 bg-primary/20 rounded-full -z-10"></div>
+                  <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-secondary/20 rounded-full -z-10"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
