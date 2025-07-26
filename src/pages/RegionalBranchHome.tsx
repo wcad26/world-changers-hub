@@ -155,20 +155,77 @@ const RegionalBranchHome = () => {
         </div>
       </section>
 
-      {/* Stats Section - Full Width */}
+      {/* Regional Information Section - Full Width */}
       <section className="py-16 bg-white border-b">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center group">
-                <div className="text-4xl md:text-5xl font-bold text-primary mb-2 group-hover:scale-110 transition-transform duration-300">
-                  {stat.value}
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Regional Information</h2>
+              <p className="text-muted-foreground">Get to know our regional branch</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Established Year */}
+              <div className="text-center p-6 bg-primary/5 rounded-lg">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-6 h-6 text-primary" />
                 </div>
-                <div className="text-muted-foreground font-medium uppercase tracking-wide text-sm">
-                  {stat.label}
+                <div className="text-3xl font-bold text-primary mb-2">
+                  {region.established_date ? new Date(region.established_date).getFullYear() : '2020'}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Established
                 </div>
               </div>
-            ))}
+
+              {/* DCG Homes Count */}
+              <div className="text-center p-6 bg-secondary/5 rounded-lg">
+                <div className="w-12 h-12 bg-secondary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-6 h-6 text-secondary" />
+                </div>
+                <div className="text-3xl font-bold text-secondary mb-2">
+                  {dcgs?.length || 0}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  DCG Homes
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="text-center p-6 bg-accent/5 rounded-lg">
+                <div className="w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-6 h-6 text-accent" />
+                </div>
+                <div className="text-sm font-semibold text-foreground mb-2">
+                  {region.address || 'Address Available Soon'}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Address
+                </div>
+              </div>
+
+              {/* Contact */}
+              <div className="text-center p-6 bg-primary/5 rounded-lg">
+                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Phone className="w-6 h-6 text-primary" />
+                </div>
+                <div className="space-y-1 mb-2">
+                  {region.contact_phone && (
+                    <div className="text-sm font-semibold text-foreground">
+                      {region.contact_phone}
+                    </div>
+                  )}
+                  {region.contact_email && (
+                    <div className="text-xs text-muted-foreground">
+                      {region.contact_email}
+                    </div>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground font-medium uppercase tracking-wide">
+                  Contact
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
