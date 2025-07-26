@@ -106,14 +106,14 @@ const RegionalBranchHome = () => {
           opts={{ align: "start", loop: true }}
           plugins={[Autoplay({ delay: 6000 })]}
         >
-          <CarouselContent className="h-full">
+          <CarouselContent className="h-full -ml-0">
             {heroImages.map((image, index) => (
-              <CarouselItem key={index} className="h-full relative">
+              <CarouselItem key={index} className="h-full relative pl-0">
                 <div className="h-full w-full relative">
                   <img 
                     src={image.url} 
                     alt={image.alt}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                   {/* Dark overlay */}
                   <div className="absolute inset-0 bg-black/50"></div>
