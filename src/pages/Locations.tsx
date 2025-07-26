@@ -168,9 +168,9 @@ const Locations = () => {
                         <SelectValue placeholder="All Regions" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-lg z-50">
-                        <SelectItem value="all" className="hover:bg-purple-50 dark:hover:bg-purple-900/20 focus:bg-purple-50 dark:focus:bg-purple-900/20 rounded-lg">All Regions</SelectItem>
+                        <SelectItem value="all" className="hover:bg-purple-50 hover:text-gray-900 dark:hover:bg-purple-900/20 dark:hover:text-white focus:bg-purple-50 focus:text-gray-900 dark:focus:bg-purple-900/20 dark:focus:text-white rounded-lg">All Regions</SelectItem>
                         {countries.map((country, index) => (
-                          <SelectItem key={index} value={country} className="hover:bg-purple-50 dark:hover:bg-purple-900/20 focus:bg-purple-50 dark:focus:bg-purple-900/20 rounded-lg">
+                          <SelectItem key={index} value={country} className="hover:bg-purple-50 hover:text-gray-900 dark:hover:bg-purple-900/20 dark:hover:text-white focus:bg-purple-50 focus:text-gray-900 dark:focus:bg-purple-900/20 dark:focus:text-white rounded-lg">
                             {country}
                           </SelectItem>
                         ))}
