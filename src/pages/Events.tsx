@@ -145,7 +145,7 @@ const Events = () => {
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      <main className="flex-grow pt-20">
+      <main className="flex-grow pt-0">
         {/* Hero Section */}
         <section className="relative py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
           <div className="container-custom">
