@@ -273,7 +273,7 @@ const RegionalBranchHome = () => {
           <div className="max-w-4xl mx-auto space-y-8">
             <h1 className="tracking-tight leading-tight animate-fade-up drop-shadow-lg">
               <span className="text-3xl md:text-7xl font-light block my-[20px]">Welcome to</span>
-              <span className="text-4xl md:text-8xl lg:text-9xl font-bold block">{region.name}</span>
+              <span className="text-5xl md:text-8xl lg:text-9xl font-bold block">{region.name}</span>
             </h1>
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
             animationDelay: '0.4s'
