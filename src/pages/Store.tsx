@@ -186,49 +186,49 @@ const Store = () => {
                   {activeTab === "store" ? "WCA Store" : "WCA Library"}
                 </span>
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl">
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mb-8">
                 {activeTab === "store" 
                   ? "Browse our collection of books, courses, and merchandise to support your spiritual journey." 
                   : "Borrow resources from our extensive library to enrich your knowledge and growth."}
               </p>
+              
+              <div className="flex justify-between items-center w-full max-w-4xl">
+                <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
+                  <button 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
+                    onClick={() => setActiveTab("store")}
+                  >
+                    <ShoppingCart size={18} />
+                    <span>Store</span>
+                  </button>
+                  <button 
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`}
+                    onClick={() => setActiveTab("library")}
+                  >
+                    <Book size={18} />
+                    <span>Library</span>
+                  </button>
+                </div>
+                
+                <div className="relative">
+                  <div className="relative">
+                    <input 
+                      type="text" 
+                      placeholder="Search items..." 
+                      className="pl-10 pr-4 py-2 w-64 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         <section className="py-12">
           <div className="container-custom">
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-full p-1">
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "store" ? "bg-wca-purple text-white" : ""}`}
-                  onClick={() => setActiveTab("store")}
-                >
-                  <ShoppingCart size={18} />
-                  <span>Store</span>
-                </button>
-                <button 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${activeTab === "library" ? "bg-wca-purple text-white" : ""}`}
-                  onClick={() => setActiveTab("library")}
-                >
-                  <Book size={18} />
-                  <span>Library</span>
-                </button>
-              </div>
-              
-              <div className="relative">
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Search items..." 
-                    className="pl-10 pr-4 py-2 w-64 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
-                </div>
-              </div>
-            </div>
-
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="lg:w-1/4">
                 <GlassPanel className="p-6 sticky top-24">
