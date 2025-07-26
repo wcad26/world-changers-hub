@@ -165,7 +165,7 @@ const About = () => {
 
             <div className="relative max-w-4xl mx-auto">
               {/* Timeline line */}
-              <div className={`absolute ${isMobileOrTablet ? 'left-6' : 'left-1/2 transform -translate-x-1/2'} h-full w-0.5 bg-gradient-to-b from-wca-purple via-wca-violet to-wca-teal`}></div>
+              <div className={`absolute ${isMobileOrTablet ? 'left-10' : 'left-1/2 transform -translate-x-1/2'} h-full w-0.5 bg-gradient-to-b from-wca-purple via-wca-violet to-wca-teal`}></div>
               
               {/* Timeline items */}
               <div className="space-y-20">
