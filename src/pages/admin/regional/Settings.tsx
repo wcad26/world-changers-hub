@@ -19,8 +19,10 @@ import {
   Calendar,
   DollarSign,
   Shield,
-  Clock
+  Clock,
+  MapPin
 } from "lucide-react";
+import RegionalBranchForm from "@/components/admin/regional/RegionalBranchForm";
 
 const Settings = () => {
   return (
@@ -32,8 +34,9 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="regional" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="regional">Regional Portal</TabsTrigger>
+          <TabsTrigger value="branch">Branch Details</TabsTrigger>
           <TabsTrigger value="dcg">DCG Management</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
@@ -160,6 +163,10 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="branch" className="space-y-6">
+          <RegionalBranchForm />
         </TabsContent>
 
         <TabsContent value="dcg" className="space-y-6">
