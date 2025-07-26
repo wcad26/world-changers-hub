@@ -350,26 +350,22 @@ const RegionalBranchHome = () => {
                 
                 <CarouselContent className="-ml-4">
                   {displayEvents && displayEvents.length > 0 ? (() => {
-                    // Group events into slides of 2 rows
-                    const eventsPerSlide = {
-                      mobile: 2,    // 1 column, 2 rows
-                      tablet: 4,    // 2 columns, 2 rows  
-                      desktop: 6    // 3 columns, 2 rows
-                    };
+                    // Events per slide: 2 rows max
+                    const eventsPerSlide = 6; // 3 cols × 2 rows on desktop, responsive grid handles other sizes
                     
                     const slides = [];
-                    const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide.desktop);
+                    const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide);
                     
                     for (let i = 0; i < totalSlides; i++) {
                       const slideEvents = displayEvents.slice(
-                        i * eventsPerSlide.desktop, 
-                        (i + 1) * eventsPerSlide.desktop
+                        i * eventsPerSlide, 
+                        (i + 1) * eventsPerSlide
                       );
                       
                       slides.push(
                         <CarouselItem key={i} className="pl-4 basis-full">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-6 h-auto">
-                            {slideEvents.map((event, eventIndex) => (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-auto max-h-fit">
+                            {slideEvents.slice(0, 6).map((event, eventIndex) => (
                               <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
                                 <CardContent className="p-0">
                                   <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
