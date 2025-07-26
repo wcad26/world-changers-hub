@@ -514,7 +514,7 @@ const RegionalBranchHome = () => {
       </section>
 
       {/* DCG Section - Full Width */}
-      <section className="py-20 bg-muted/30">
+      <section className="bg-muted/30 py-[30px]">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
