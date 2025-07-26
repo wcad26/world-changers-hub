@@ -339,10 +339,10 @@ const Fundraising = () => {
                               setSelectedCategory(null);
                               setCategoryOpen(false);
                             }}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
+                            className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
                           >
-                            <span className="text-sm font-medium">All Categories</span>
-                            {!selectedCategory && <Check size={14} className="text-wca-purple" />}
+                            <span className="text-sm font-medium group-hover:text-white">All Categories</span>
+                            {!selectedCategory && <Check size={14} className="text-wca-purple group-hover:text-white" />}
                           </CommandItem>
                           {categories.map((category) => (
                             <CommandItem
@@ -398,10 +398,10 @@ const Fundraising = () => {
                                 setSelectedStatus(status.value as "all" | "active" | "completed" | "upcoming");
                                 setStatusOpen(false);
                               }}
-                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
+                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
                             >
-                              <span className="text-sm font-medium">{status.label}</span>
-                              {selectedStatus === status.value && <Check size={14} className="text-wca-purple" />}
+                              <span className="text-sm font-medium group-hover:text-white">{status.label}</span>
+                              {selectedStatus === status.value && <Check size={14} className="text-wca-purple group-hover:text-white" />}
                             </CommandItem>
                           ))}
                         </CommandGroup>
