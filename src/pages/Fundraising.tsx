@@ -314,50 +314,36 @@ const Fundraising = () => {
               <div className="flex flex-nowrap items-center gap-3 w-full md:w-auto">
                 <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={categoryOpen}
-                      className="justify-between min-w-[180px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium"
-                    >
+                    <Button variant="outline" role="combobox" aria-expanded={categoryOpen} className="justify-between min-w-[180px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Filter size={16} className="text-gray-400 dark:text-gray-500" />
                         <span className="text-gray-700 dark:text-gray-200 hover:text-white">
                           {selectedCategory || "All Categories"}
                         </span>
                       </div>
-                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{ transform: categoryOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{
+                      transform: categoryOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                    }} />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[200px] p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-xl">
                     <Command>
                       <CommandList>
                         <CommandGroup>
-                          <CommandItem
-                            value=""
-                            onSelect={() => {
-                              setSelectedCategory(null);
-                              setCategoryOpen(false);
-                            }}
-                            className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
-                          >
+                          <CommandItem value="" onSelect={() => {
+                          setSelectedCategory(null);
+                          setCategoryOpen(false);
+                        }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1">
                             <span className="text-sm font-medium group-hover:text-white">All Categories</span>
                             {!selectedCategory && <Check size={14} className="text-wca-purple group-hover:text-white" />}
                           </CommandItem>
-                          {categories.map((category) => (
-                            <CommandItem
-                              key={category}
-                              value={category}
-                              onSelect={() => {
-                                setSelectedCategory(category);
-                                setCategoryOpen(false);
-                              }}
-                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1"
-                            >
+                          {categories.map(category => <CommandItem key={category} value={category} onSelect={() => {
+                          setSelectedCategory(category);
+                          setCategoryOpen(false);
+                        }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple hover:text-white transition-colors duration-200 rounded-lg mx-1">
                               <span className="text-sm font-medium">{category}</span>
                               {selectedCategory === category && <Check size={14} className="text-wca-purple hover:text-white" />}
-                            </CommandItem>
-                          ))}
+                            </CommandItem>)}
                         </CommandGroup>
                       </CommandList>
                     </Command>
@@ -366,44 +352,41 @@ const Fundraising = () => {
                 
                 <Popover open={statusOpen} onOpenChange={setStatusOpen}>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={statusOpen}
-                      className="justify-between min-w-[150px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium"
-                    >
+                    <Button variant="outline" role="combobox" aria-expanded={statusOpen} className="justify-between min-w-[150px] h-12 px-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <Target size={16} className="text-gray-400 dark:text-gray-500" />
                         <span className="text-gray-700 dark:text-gray-200 hover:text-white">
                           {selectedStatus === "all" ? "All Projects" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
                         </span>
                       </div>
-                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{ transform: statusOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                      <ChevronDown size={16} className="text-gray-400 dark:text-gray-500 transition-transform duration-200" style={{
+                      transform: statusOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+                    }} />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[180px] p-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 shadow-xl rounded-xl">
                     <Command>
                       <CommandList>
                         <CommandGroup>
-                          {[
-                            { value: "all", label: "All Projects" },
-                            { value: "active", label: "Active" },
-                            { value: "completed", label: "Completed" },
-                            { value: "upcoming", label: "Upcoming" }
-                          ].map((status) => (
-                            <CommandItem
-                              key={status.value}
-                              value={status.value}
-                              onSelect={() => {
-                                setSelectedStatus(status.value as "all" | "active" | "completed" | "upcoming");
-                                setStatusOpen(false);
-                              }}
-                              className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1"
-                            >
+                          {[{
+                          value: "all",
+                          label: "All Projects"
+                        }, {
+                          value: "active",
+                          label: "Active"
+                        }, {
+                          value: "completed",
+                          label: "Completed"
+                        }, {
+                          value: "upcoming",
+                          label: "Upcoming"
+                        }].map(status => <CommandItem key={status.value} value={status.value} onSelect={() => {
+                          setSelectedStatus(status.value as "all" | "active" | "completed" | "upcoming");
+                          setStatusOpen(false);
+                        }} className="flex items-center justify-between px-3 py-2.5 hover:bg-wca-purple group transition-colors duration-200 rounded-lg mx-1">
                               <span className="text-sm font-medium group-hover:text-white">{status.label}</span>
                               {selectedStatus === status.value && <Check size={14} className="text-wca-purple group-hover:text-white" />}
-                            </CommandItem>
-                          ))}
+                            </CommandItem>)}
                         </CommandGroup>
                       </CommandList>
                     </Command>
