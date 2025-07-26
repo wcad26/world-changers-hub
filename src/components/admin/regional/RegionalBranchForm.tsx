@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,10 +16,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { MapPin, User, Phone, Mail, Calendar, FileText, Upload } from "lucide-react";
+import { MapPin, User, Phone, Mail, Calendar, FileText, Upload, Loader2 } from "lucide-react";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
 import { useRegions } from "@/hooks/useRegions";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const regionalBranchSchema = z.object({
   name: z.string().min(2, "Region name must be at least 2 characters"),
@@ -39,6 +41,8 @@ const RegionalBranchForm = () => {
   const { user } = useAuth();
   const { data: regions, isLoading } = useRegions();
   const { updateRegion } = useRegionMutations();
+  const { toast } = useToast();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Get the user's region
   const userRegion = regions?.find(region => 
@@ -96,12 +100,77 @@ const RegionalBranchForm = () => {
     });
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      // For now, we'll just store the file name
-      // In a real implementation, you'd upload to storage and get a URL
-      form.setValue("regional_president_photo", file.name);
+    if (!file || !userRegion) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `regional_president_${userRegion.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${userRegion.id}/${fileName}`;
+
+      // Delete old photo if exists
+      const currentPhotoUrl = form.getValues("regional_president_photo");
+      if (currentPhotoUrl) {
+        const oldPath = currentPhotoUrl.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('member-photos')
+            .remove([`${userRegion.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new photo
+      const { error: uploadError } = await supabase.storage
+        .from('member-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('member-photos')
+        .getPublicUrl(filePath);
+
+      // Update form field with the public URL
+      form.setValue("regional_president_photo", publicUrl);
+
+      toast({
+        title: "Photo uploaded",
+        description: "Regional president photo has been uploaded successfully"
+      });
+
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload photo. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploadingPhoto(false);
     }
   };
 
@@ -305,12 +374,30 @@ const RegionalBranchForm = () => {
                           type="file"
                           accept="image/*"
                           onChange={handleImageUpload}
+                          disabled={isUploadingPhoto}
                           className="file:mr-4 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                         />
-                        {field.value && (
-                          <p className="text-sm text-muted-foreground">
-                            Current: {field.value}
-                          </p>
+                        {isUploadingPhoto && (
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Uploading photo...
+                          </div>
+                        )}
+                        {field.value && !isUploadingPhoto && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                              Photo uploaded successfully
+                            </p>
+                            {field.value.startsWith('http') && (
+                              <div className="w-20 h-20 rounded-md overflow-hidden bg-muted">
+                                <img 
+                                  src={field.value} 
+                                  alt="Regional president" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                     </FormControl>
@@ -356,7 +443,7 @@ const RegionalBranchForm = () => {
               </Button>
               <Button 
                 type="submit"
-                disabled={updateRegion.isPending}
+                disabled={updateRegion.isPending || isUploadingPhoto}
               >
                 {updateRegion.isPending ? "Saving..." : "Save Changes"}
               </Button>
