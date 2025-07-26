@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Users, Target, Shield, Award, Check } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
@@ -115,9 +116,17 @@ const About = () => {
               </div>
               <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
                 <div className="relative">
-                  <div className="w-full max-w-2xl aspect-[16/9] rounded-2xl overflow-hidden">
-                    <img src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" alt="World Changers Association Logo" className="w-full h-full object-contain" loading="lazy" />
-                  </div>
+                  <Carousel className="w-full max-w-2xl">
+                    <CarouselContent>
+                      <CarouselItem>
+                        <div className="aspect-[16/9] rounded-2xl overflow-hidden">
+                          <img src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" alt="World Changers Association Logo" className="w-full h-full object-contain" loading="lazy" />
+                        </div>
+                      </CarouselItem>
+                    </CarouselContent>
+                    <CarouselPrevious />
+                    <CarouselNext />
+                  </Carousel>
                   {/* Decorative elements */}
                   <div className="absolute -top-4 -right-4 w-40 h-40 bg-wca-purple/10 rounded-full -z-10"></div>
                   <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-wca-teal/10 rounded-full -z-10"></div>
