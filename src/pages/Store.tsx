@@ -406,47 +406,49 @@ const Store = () => {
               
               <div className="lg:w-3/4">
                 <GlassPanel className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
                     {filteredItems.map(item => <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                         <div className="relative">
-                          <img src={item.imageUrl} alt={item.title} className="w-full h-48 object-cover" />
-                          {item.bestseller && <div className="absolute top-3 left-3 bg-wca-teal text-white px-2 py-1 rounded text-xs">
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-32 sm:h-48 object-cover" />
+                          {item.bestseller && <div className="absolute top-1 left-1 sm:top-3 sm:left-3 bg-wca-teal text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs">
                               Bestseller
                             </div>}
-                          <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
-                            <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                            {item.rating}
+                          <div className="absolute top-1 right-1 sm:top-3 sm:right-3 bg-black/70 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-xs flex items-center gap-1">
+                            <Star size={10} className="fill-yellow-400 text-yellow-400 sm:w-3 sm:h-3" />
+                            <span className="text-xs">{item.rating}</span>
                           </div>
                         </div>
-                        <CardContent className="p-4">
-                          <div className="mb-3">
-                            <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded">
+                        <CardContent className="p-2 sm:p-4">
+                          <div className="mb-2 sm:mb-3">
+                            <span className="inline-block px-1 sm:px-2 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded">
                               {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                             </span>
-                            <span className="inline-block px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded ml-1">
+                            <span className="inline-block px-1 sm:px-2 py-0.5 sm:py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded ml-1">
                               {item.category}
                             </span>
                           </div>
-                          <h3 className="font-bold text-lg mb-1">{item.title}</h3>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{item.author}</p>
+                          <h3 className="font-bold text-sm sm:text-lg mb-1 line-clamp-2">{item.title}</h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-1">{item.author}</p>
                           
-                          <div className="flex items-center justify-between mt-4">
-                            <span className="font-bold text-lg">${item.price.toFixed(2)}</span>
+                          <div className="flex items-center justify-between mt-2 sm:mt-4">
+                            <span className="font-bold text-sm sm:text-lg">${item.price.toFixed(2)}</span>
                             
-                            {activeTab === "store" ? getItemQuantity(item.id) > 0 ? <div className="flex items-center gap-2">
-                                  <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => removeFromCart(item.id)}>
-                                    <Minus size={14} />
+                            {activeTab === "store" ? getItemQuantity(item.id) > 0 ? <div className="flex items-center gap-1 sm:gap-2">
+                                  <Button size="icon" variant="outline" className="h-6 w-6 sm:h-8 sm:w-8" onClick={() => removeFromCart(item.id)}>
+                                    <Minus size={10} className="sm:w-3.5 sm:h-3.5" />
                                   </Button>
-                                  <span className="text-sm min-w-8 text-center">{getItemQuantity(item.id)}</span>
-                                  <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => addToCart(item.id)}>
-                                    <Plus size={14} />
+                                  <span className="text-xs sm:text-sm min-w-4 sm:min-w-8 text-center">{getItemQuantity(item.id)}</span>
+                                  <Button size="icon" variant="outline" className="h-6 w-6 sm:h-8 sm:w-8" onClick={() => addToCart(item.id)}>
+                                    <Plus size={10} className="sm:w-3.5 sm:h-3.5" />
                                   </Button>
-                                </div> : <Button size="sm" onClick={() => addToCart(item.id)} className="bg-wca-purple hover:bg-wca-purple/90">
-                                  <ShoppingCart size={14} className="mr-1" />
-                                  Add to Cart
-                                </Button> : <Button size="sm" className="bg-wca-teal hover:bg-wca-teal/90">
-                                <Book size={14} className="mr-1" />
-                                Borrow
+                                </div> : <Button size="sm" onClick={() => addToCart(item.id)} className="bg-wca-purple hover:bg-wca-purple/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                                  <ShoppingCart size={10} className="mr-0.5 sm:mr-1 sm:w-3.5 sm:h-3.5" />
+                                  <span className="hidden sm:inline">Add to Cart</span>
+                                  <span className="sm:hidden">Add</span>
+                                </Button> : <Button size="sm" className="bg-wca-teal hover:bg-wca-teal/90 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2">
+                                <Book size={10} className="mr-0.5 sm:mr-1 sm:w-3.5 sm:h-3.5" />
+                                <span className="hidden sm:inline">Borrow</span>
+                                <span className="sm:hidden">Borrow</span>
                               </Button>}
                           </div>
                         </CardContent>
