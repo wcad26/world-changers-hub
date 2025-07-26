@@ -54,7 +54,7 @@ const Locations = () => {
   return <div className="flex flex-col min-h-screen font-inter">
       <Navbar />
       
-      <main className="flex-grow pt-16">
+      <main className="flex-grow pt-16 py-0">
         {/* Hero Section - Magazine Style */}
         <section className="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-900 via-violet-800 to-indigo-900 overflow-hidden">
           {/* Background Elements */}
@@ -153,21 +153,10 @@ const Locations = () => {
                       if (key === 'dcg') return 'bg-pink-500 text-white shadow-lg scale-105';
                       return '';
                     };
-                    
-                    return (
-                      <button 
-                        key={key} 
-                        onClick={() => setActiveFilter(key)} 
-                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                          activeFilter === key 
-                            ? getActiveClasses()
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'
-                        }`}
-                      >
+                    return <button key={key} onClick={() => setActiveFilter(key)} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${activeFilter === key ? getActiveClasses() : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'}`}>
                         <Icon className="w-4 h-4" />
                         {isMobile ? label.split(' ')[0] : label}
-                      </button>
-                    );
+                      </button>;
                   })}
                   </div>
 
