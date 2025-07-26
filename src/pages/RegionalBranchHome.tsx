@@ -144,7 +144,7 @@ const RegionalBranchHome = () => {
                 Visit Us Today
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/50 text-white hover:bg-white/20 backdrop-blur-sm">
+              <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/50 text-foreground hover:bg-white/20 backdrop-blur-sm">
                 Explore Events
               </Button>
             </div>
