@@ -383,7 +383,7 @@ const RegionalBranchHome = () => {
                           {dcg.contact_phone && (
                             <Button 
                               size="sm" 
-                              className="flex-1 text-xs bg-green-600 text-white hover:bg-transparent hover:border-green-600 hover:text-green-600 border border-green-600"
+                              className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent"
                               onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
                             >
                               <Phone className="w-3 h-3 mr-1" />
