@@ -153,8 +153,8 @@ const Locations = () => {
                       if (key === 'dcg') return 'bg-pink-500 text-white shadow-lg scale-105';
                       return '';
                     };
-                    return <button key={key} onClick={() => setActiveFilter(key)} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${activeFilter === key ? getActiveClasses() : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'}`}>
-                        <Icon className="w-4 h-4" />
+                    return <button key={key} onClick={() => setActiveFilter(key)} className={`flex items-center gap-1 lg:gap-2 px-3 py-2 lg:px-6 lg:py-3 rounded-xl font-semibold text-xs lg:text-base transition-all duration-300 ${activeFilter === key ? getActiveClasses() : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-105'}`}>
+                        <Icon className="w-3 h-3 lg:w-4 lg:h-4" />
                         {isMobile ? label.split(' ')[0] : label}
                       </button>;
                   })}
