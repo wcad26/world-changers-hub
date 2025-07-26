@@ -214,7 +214,7 @@ const Blog = () => {
             <div className="flex flex-col gap-6 mb-12">
               <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
                 {/* Mobile Dropdown */}
-                <div className="lg:hidden w-full">
+                <div className="md:hidden w-full">
                   <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
                     <PopoverTrigger asChild>
                       <Button 
@@ -306,7 +306,7 @@ const Blog = () => {
                 </div>
 
                 {/* Desktop Buttons */}
-                <div className="hidden lg:flex items-center gap-3 w-auto">
+                <div className="hidden md:flex items-center gap-3 w-auto">
                   <button 
                     className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all ${activeTab === "all" ? "bg-wca-purple text-white" : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
                     onClick={() => setActiveTab("all")}
