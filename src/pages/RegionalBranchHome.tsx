@@ -96,6 +96,94 @@ const RegionalBranchHome = () => {
   
   // Use mock data if no real events or for preview
   const displayEvents = allEvents && allEvents.length > 0 ? allEvents : mockEvents;
+  
+  // Mock DCG data for preview
+  const mockDcgs = [
+    {
+      id: '1',
+      name: 'Victory DCG',
+      location: 'Bonapriso, Douala',
+      meeting_day: 'Wednesday',
+      meeting_time: '6:00 PM',
+      contact_phone: '+237123456789'
+    },
+    {
+      id: '2',
+      name: 'Faith DCG',
+      location: 'Bonanjo, Douala',
+      meeting_day: 'Thursday',
+      meeting_time: '5:30 PM',
+      contact_phone: '+237123456790'
+    },
+    {
+      id: '3',
+      name: 'Hope DCG',
+      location: 'Akwa, Douala',
+      meeting_day: 'Friday',
+      meeting_time: '6:30 PM',
+      contact_phone: '+237123456791'
+    },
+    {
+      id: '4',
+      name: 'Grace DCG',
+      location: 'Deido, Douala',
+      meeting_day: 'Saturday',
+      meeting_time: '4:00 PM',
+      contact_phone: '+237123456792'
+    },
+    {
+      id: '5',
+      name: 'Love DCG',
+      location: 'New Bell, Douala',
+      meeting_day: 'Sunday',
+      meeting_time: '3:00 PM',
+      contact_phone: '+237123456793'
+    },
+    {
+      id: '6',
+      name: 'Peace DCG',
+      location: 'Bassa, Douala',
+      meeting_day: 'Monday',
+      meeting_time: '6:00 PM',
+      contact_phone: '+237123456794'
+    },
+    {
+      id: '7',
+      name: 'Joy DCG',
+      location: 'Logpom, Douala',
+      meeting_day: 'Tuesday',
+      meeting_time: '5:45 PM',
+      contact_phone: '+237123456795'
+    },
+    {
+      id: '8',
+      name: 'Wisdom DCG',
+      location: 'Makepe, Douala',
+      meeting_day: 'Wednesday',
+      meeting_time: '7:00 PM',
+      contact_phone: '+237123456796'
+    },
+    {
+      id: '9',
+      name: 'Strength DCG',
+      location: 'Kotto, Douala',
+      meeting_day: 'Thursday',
+      meeting_time: '6:15 PM',
+      contact_phone: '+237123456797'
+    },
+    {
+      id: '10',
+      name: 'Covenant DCG',
+      location: 'Village, Douala',
+      meeting_day: 'Friday',
+      meeting_time: '5:00 PM',
+      contact_phone: '+237123456798'
+    }
+  ];
+  
+  // Use mock data if no real DCGs or for preview
+  const displayDcgs = dcgs && dcgs.length > 0 ? dcgs : mockDcgs;
+  
   const [email, setEmail] = useState('');
 
   // Hero slider images - mobile-optimized vertical images
@@ -466,8 +554,8 @@ const RegionalBranchHome = () => {
                     <div className="h-3 bg-muted rounded w-1/2"></div>
                   </CardContent>
                 </Card>)}
-            </div> : dcgs && dcgs.length > 0 ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {dcgs.map(dcg => <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
+            </div> : displayDcgs && displayDcgs.length > 0 ? <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {displayDcgs.map(dcg => <Card key={dcg.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg overflow-hidden">
                   <CardContent className="p-0">
                     <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
