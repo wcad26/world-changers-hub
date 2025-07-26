@@ -625,46 +625,6 @@ const RegionalBranchHome = () => {
         </div>
       </section>
 
-      {/* Contact & Info Section - Full Width */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Stay Updated With Us</h2>
-              <p className="text-lg text-muted-foreground">
-                We'd love to connect with you and answer any questions you might have
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Contact Information */}
-              
-
-              {/* Newsletter Signup */}
-              <Card className="shadow-lg border-0">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">Stay Connected</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-6">
-                    Subscribe to our newsletter for updates on events, community news, and spiritual insights.
-                  </p>
-                  <form onSubmit={handleSubscribe} className="space-y-4">
-                    <Input type="email" placeholder="Enter your email address" value={email} onChange={e => setEmail(e.target.value)} required className="h-12" />
-                    <Button type="submit" className="w-full h-12 font-semibold">
-                      Subscribe Now
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </form>
-                  <p className="text-xs text-muted-foreground mt-4 text-center">
-                    We respect your privacy and will never spam you.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>;
