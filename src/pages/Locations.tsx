@@ -54,7 +54,7 @@ const Locations = () => {
   return <div className="flex flex-col min-h-screen font-inter">
       <Navbar />
       
-      <main className="flex-grow pt-16 py-0">
+      <main className="flex-grow pt-0 py-0">
         {/* Hero Section - Magazine Style */}
         <section className="relative min-h-[80vh] flex items-center justify-center bg-gradient-to-br from-purple-900 via-violet-800 to-indigo-900 overflow-hidden">
           {/* Background Elements */}
