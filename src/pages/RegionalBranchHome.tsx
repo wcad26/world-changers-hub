@@ -181,8 +181,8 @@ const RegionalBranchHome = () => {
     }
   ];
   
-  // Use mock data if no real DCGs or for preview
-  const displayDcgs = dcgs && dcgs.length > 0 ? dcgs : mockDcgs;
+  // Use mock data for demonstration (replace with real data when ready)
+  const displayDcgs = mockDcgs;
   
   const [email, setEmail] = useState('');
 
