@@ -322,7 +322,7 @@ const Fundraising = () => {
                     >
                       <div className="flex items-center gap-2">
                         <Filter size={16} className="text-gray-400 dark:text-gray-500" />
-                        <span className="text-gray-700 dark:text-gray-200">
+                        <span className="text-gray-700 dark:text-gray-200 hover:text-white">
                           {selectedCategory || "All Categories"}
                         </span>
                       </div>
@@ -374,7 +374,7 @@ const Fundraising = () => {
                     >
                       <div className="flex items-center gap-2">
                         <Target size={16} className="text-gray-400 dark:text-gray-500" />
-                        <span className="text-gray-700 dark:text-gray-200">
+                        <span className="text-gray-700 dark:text-gray-200 hover:text-white">
                           {selectedStatus === "all" ? "All Projects" : selectedStatus.charAt(0).toUpperCase() + selectedStatus.slice(1)}
                         </span>
                       </div>
