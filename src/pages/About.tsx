@@ -110,7 +110,7 @@ const About = () => {
               <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
                 <div className="relative">
                   <div className="w-full max-w-md aspect-[4/3] rounded-2xl overflow-hidden">
-                    <img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2370&q=80" alt="WCA Community" className="w-full h-full object-cover" loading="lazy" />
+                    <img src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" alt="World Changers Association Logo" className="w-full h-full object-contain" loading="lazy" />
                   </div>
                   {/* Decorative elements */}
                   <div className="absolute -top-4 -right-4 w-40 h-40 bg-wca-purple/10 rounded-full -z-10"></div>
