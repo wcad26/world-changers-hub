@@ -1,28 +1,10 @@
-
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassPanel, GlassCard } from "@/components/ui/GlassPanels";
-import { 
-  PiggyBank, 
-  Calendar, 
-  Users, 
-  Target, 
-  DollarSign, 
-  Search, 
-  Filter,
-  Heart,
-  CheckCircle,
-  ArrowRight,
-  AlertCircle,
-  Clock,
-  CreditCard,
-  HandCoins,
-  Info
-} from "lucide-react";
+import { PiggyBank, Calendar, Users, Target, DollarSign, Search, Filter, Heart, CheckCircle, ArrowRight, AlertCircle, Clock, CreditCard, HandCoins, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
 interface Project {
   id: number;
   title: string;
@@ -44,203 +26,175 @@ interface Project {
   }[];
   featured: boolean;
 }
-
-const projects: Project[] = [
-  {
-    id: 1,
-    title: "New Youth Center Construction",
-    description: "We're building a state-of-the-art youth center to provide a safe space for young people in our community to learn, grow, and develop their leadership potential. The center will include classrooms, a recreation area, a multimedia lab, and counseling rooms.",
-    shortDescription: "Building a state-of-the-art youth center to empower the next generation of leaders.",
-    imageUrl: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 250000,
-    raisedAmount: 175000,
-    startDate: "January 15, 2023",
-    endDate: "December 31, 2023",
-    category: "Building Project",
-    location: "Main Campus",
-    status: "active",
-    supporters: 342,
-    updates: [
-      {
-        date: "October 10, 2023",
-        title: "Foundation Completed",
-        content: "We're excited to announce that the foundation for the new youth center has been completed ahead of schedule!"
-      },
-      {
-        date: "August 5, 2023",
-        title: "Building Permits Approved",
-        content: "After months of planning, all building permits have been approved and construction will begin next week."
-      }
-    ],
-    featured: true
-  },
-  {
-    id: 2,
-    title: "Community Outreach Program",
-    description: "Our community outreach program aims to provide essential services to underserved neighborhoods, including food distribution, health screenings, educational resources, and mentoring programs. This initiative will help us extend our impact beyond our walls.",
-    shortDescription: "Providing essential services to underserved neighborhoods through comprehensive outreach programs.",
-    imageUrl: "https://images.unsplash.com/photo-1593113598332-cd59a93f9dd4?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 75000,
-    raisedAmount: 45000,
-    startDate: "March 1, 2023",
-    endDate: "February 28, 2024",
-    category: "Community Service",
-    location: "Multiple Locations",
-    status: "active",
-    supporters: 189,
-    updates: [
-      {
-        date: "September 15, 2023",
-        title: "New Outreach Location Added",
-        content: "We've expanded our outreach program to include the Riverside district, bringing our total service areas to 5."
-      }
-    ],
-    featured: false
-  },
-  {
-    id: 3,
-    title: "Leadership Training Scholarships",
-    description: "We're raising funds to provide scholarships for promising leaders who cannot afford to attend our advanced leadership training programs. These scholarships will cover tuition, materials, and in some cases, travel expenses for participants.",
-    shortDescription: "Providing scholarships for promising leaders to attend our advanced leadership training programs.",
-    imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 50000,
-    raisedAmount: 32500,
-    startDate: "April 1, 2023",
-    endDate: "March 31, 2024",
-    category: "Education",
-    location: "Online & Main Campus",
-    status: "active",
-    supporters: 215,
-    updates: [
-      {
-        date: "July 20, 2023",
-        title: "First Scholarship Recipients Selected",
-        content: "We're pleased to announce the first 10 scholarship recipients who will begin their leadership training next month."
-      }
-    ],
-    featured: true
-  },
-  {
-    id: 4,
-    title: "New Worship Equipment",
-    description: "We're upgrading our sound, lighting, and multimedia equipment to enhance the worship experience for our congregation and enable us to produce high-quality recordings of services and events for those unable to attend in person.",
-    shortDescription: "Upgrading our worship technology to enhance the worship experience and expand our digital reach.",
-    imageUrl: "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 85000,
-    raisedAmount: 85000,
-    startDate: "February 15, 2023",
-    endDate: "June 30, 2023",
-    category: "Equipment",
-    location: "Main Campus",
-    status: "completed",
-    supporters: 278,
-    updates: [
-      {
-        date: "June 25, 2023",
-        title: "Goal Reached!",
-        content: "Thanks to your generous support, we've reached our fundraising goal and have ordered all the new equipment!"
-      },
-      {
-        date: "May 10, 2023",
-        title: "80% Milestone Reached",
-        content: "We're 80% of the way to our goal and have begun ordering some of the critical components."
-      }
-    ],
-    featured: false
-  },
-  {
-    id: 5,
-    title: "Global Missions Support",
-    description: "This fund supports our missionary partners around the world who are working in education, healthcare, church planting, and community development. Your contributions will help provide them with living expenses, project funding, and emergency assistance.",
-    shortDescription: "Supporting our missionary partners around the world in their vital work in education, healthcare, and community development.",
-    imageUrl: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 120000,
-    raisedAmount: 68000,
-    startDate: "January 1, 2023",
-    endDate: "December 31, 2023",
-    category: "Missions",
-    location: "Global",
-    status: "active",
-    supporters: 304,
-    updates: [
-      {
-        date: "August 30, 2023",
-        title: "New Medical Clinic Opens",
-        content: "Our partners in Kenya have opened a new medical clinic that will serve thousands of patients annually, thanks to your support."
-      }
-    ],
-    featured: true
-  },
-  {
-    id: 6,
-    title: "Children's Ministry Expansion",
-    description: "We're expanding our children's ministry spaces and programs to accommodate our growing number of families and enhance the learning experience for children of all ages. This includes new classrooms, interactive learning tools, and play areas.",
-    shortDescription: "Expanding our children's ministry spaces and programs to better serve our growing number of families.",
-    imageUrl: "https://images.unsplash.com/photo-1560541919-eb5c2da6a5a3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 95000,
-    raisedAmount: 25000,
-    startDate: "November 1, 2023",
-    endDate: "October 31, 2024",
-    category: "Building Project",
-    location: "Main Campus",
-    status: "active",
-    supporters: 127,
-    updates: [
-      {
-        date: "November 15, 2023",
-        title: "Project Kickoff",
-        content: "We've officially launched our children's ministry expansion project with a special ceremony during Sunday service."
-      }
-    ],
-    featured: false
-  },
-  {
-    id: 7,
-    title: "Digital Media Initiative",
-    description: "This project will fund the creation of a digital media team and studio to produce high-quality videos, podcasts, and other digital content that shares our message with a broader audience and engages people where they are—online.",
-    shortDescription: "Creating a digital media team and studio to expand our reach through high-quality online content.",
-    imageUrl: "https://images.unsplash.com/photo-1533228876829-65c94e7b5025?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 65000,
-    raisedAmount: 0,
-    startDate: "January 15, 2024",
-    endDate: "December 31, 2024",
-    category: "Technology",
-    location: "Main Campus",
-    status: "upcoming",
-    supporters: 0,
-    updates: [],
-    featured: false
-  },
-  {
-    id: 8,
-    title: "Disaster Relief Fund",
-    description: "This ongoing fund allows us to respond quickly to natural disasters and other emergencies both locally and globally. Your contributions ensure we can provide immediate assistance when crises occur, including food, shelter, medical aid, and long-term recovery support.",
-    shortDescription: "Providing immediate and long-term assistance to those affected by natural disasters and other emergencies.",
-    imageUrl: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-    goalAmount: 100000,
-    raisedAmount: 78500,
-    startDate: "January 1, 2023",
-    endDate: "Ongoing",
-    category: "Emergency Relief",
-    location: "Global",
-    status: "active",
-    supporters: 412,
-    updates: [
-      {
-        date: "September 5, 2023",
-        title: "Hurricane Relief Efforts",
-        content: "We've deployed a team to assist with hurricane recovery efforts in coastal communities, providing meals, supplies, and cleanup assistance."
-      },
-      {
-        date: "June 12, 2023",
-        title: "Flood Response",
-        content: "Thanks to this fund, we were able to provide immediate assistance to 45 families affected by recent flooding."
-      }
-    ],
-    featured: true
-  }
-];
-
+const projects: Project[] = [{
+  id: 1,
+  title: "New Youth Center Construction",
+  description: "We're building a state-of-the-art youth center to provide a safe space for young people in our community to learn, grow, and develop their leadership potential. The center will include classrooms, a recreation area, a multimedia lab, and counseling rooms.",
+  shortDescription: "Building a state-of-the-art youth center to empower the next generation of leaders.",
+  imageUrl: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 250000,
+  raisedAmount: 175000,
+  startDate: "January 15, 2023",
+  endDate: "December 31, 2023",
+  category: "Building Project",
+  location: "Main Campus",
+  status: "active",
+  supporters: 342,
+  updates: [{
+    date: "October 10, 2023",
+    title: "Foundation Completed",
+    content: "We're excited to announce that the foundation for the new youth center has been completed ahead of schedule!"
+  }, {
+    date: "August 5, 2023",
+    title: "Building Permits Approved",
+    content: "After months of planning, all building permits have been approved and construction will begin next week."
+  }],
+  featured: true
+}, {
+  id: 2,
+  title: "Community Outreach Program",
+  description: "Our community outreach program aims to provide essential services to underserved neighborhoods, including food distribution, health screenings, educational resources, and mentoring programs. This initiative will help us extend our impact beyond our walls.",
+  shortDescription: "Providing essential services to underserved neighborhoods through comprehensive outreach programs.",
+  imageUrl: "https://images.unsplash.com/photo-1593113598332-cd59a93f9dd4?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 75000,
+  raisedAmount: 45000,
+  startDate: "March 1, 2023",
+  endDate: "February 28, 2024",
+  category: "Community Service",
+  location: "Multiple Locations",
+  status: "active",
+  supporters: 189,
+  updates: [{
+    date: "September 15, 2023",
+    title: "New Outreach Location Added",
+    content: "We've expanded our outreach program to include the Riverside district, bringing our total service areas to 5."
+  }],
+  featured: false
+}, {
+  id: 3,
+  title: "Leadership Training Scholarships",
+  description: "We're raising funds to provide scholarships for promising leaders who cannot afford to attend our advanced leadership training programs. These scholarships will cover tuition, materials, and in some cases, travel expenses for participants.",
+  shortDescription: "Providing scholarships for promising leaders to attend our advanced leadership training programs.",
+  imageUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 50000,
+  raisedAmount: 32500,
+  startDate: "April 1, 2023",
+  endDate: "March 31, 2024",
+  category: "Education",
+  location: "Online & Main Campus",
+  status: "active",
+  supporters: 215,
+  updates: [{
+    date: "July 20, 2023",
+    title: "First Scholarship Recipients Selected",
+    content: "We're pleased to announce the first 10 scholarship recipients who will begin their leadership training next month."
+  }],
+  featured: true
+}, {
+  id: 4,
+  title: "New Worship Equipment",
+  description: "We're upgrading our sound, lighting, and multimedia equipment to enhance the worship experience for our congregation and enable us to produce high-quality recordings of services and events for those unable to attend in person.",
+  shortDescription: "Upgrading our worship technology to enhance the worship experience and expand our digital reach.",
+  imageUrl: "https://images.unsplash.com/photo-1470019693664-1d202d2c0907?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 85000,
+  raisedAmount: 85000,
+  startDate: "February 15, 2023",
+  endDate: "June 30, 2023",
+  category: "Equipment",
+  location: "Main Campus",
+  status: "completed",
+  supporters: 278,
+  updates: [{
+    date: "June 25, 2023",
+    title: "Goal Reached!",
+    content: "Thanks to your generous support, we've reached our fundraising goal and have ordered all the new equipment!"
+  }, {
+    date: "May 10, 2023",
+    title: "80% Milestone Reached",
+    content: "We're 80% of the way to our goal and have begun ordering some of the critical components."
+  }],
+  featured: false
+}, {
+  id: 5,
+  title: "Global Missions Support",
+  description: "This fund supports our missionary partners around the world who are working in education, healthcare, church planting, and community development. Your contributions will help provide them with living expenses, project funding, and emergency assistance.",
+  shortDescription: "Supporting our missionary partners around the world in their vital work in education, healthcare, and community development.",
+  imageUrl: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 120000,
+  raisedAmount: 68000,
+  startDate: "January 1, 2023",
+  endDate: "December 31, 2023",
+  category: "Missions",
+  location: "Global",
+  status: "active",
+  supporters: 304,
+  updates: [{
+    date: "August 30, 2023",
+    title: "New Medical Clinic Opens",
+    content: "Our partners in Kenya have opened a new medical clinic that will serve thousands of patients annually, thanks to your support."
+  }],
+  featured: true
+}, {
+  id: 6,
+  title: "Children's Ministry Expansion",
+  description: "We're expanding our children's ministry spaces and programs to accommodate our growing number of families and enhance the learning experience for children of all ages. This includes new classrooms, interactive learning tools, and play areas.",
+  shortDescription: "Expanding our children's ministry spaces and programs to better serve our growing number of families.",
+  imageUrl: "https://images.unsplash.com/photo-1560541919-eb5c2da6a5a3?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 95000,
+  raisedAmount: 25000,
+  startDate: "November 1, 2023",
+  endDate: "October 31, 2024",
+  category: "Building Project",
+  location: "Main Campus",
+  status: "active",
+  supporters: 127,
+  updates: [{
+    date: "November 15, 2023",
+    title: "Project Kickoff",
+    content: "We've officially launched our children's ministry expansion project with a special ceremony during Sunday service."
+  }],
+  featured: false
+}, {
+  id: 7,
+  title: "Digital Media Initiative",
+  description: "This project will fund the creation of a digital media team and studio to produce high-quality videos, podcasts, and other digital content that shares our message with a broader audience and engages people where they are—online.",
+  shortDescription: "Creating a digital media team and studio to expand our reach through high-quality online content.",
+  imageUrl: "https://images.unsplash.com/photo-1533228876829-65c94e7b5025?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 65000,
+  raisedAmount: 0,
+  startDate: "January 15, 2024",
+  endDate: "December 31, 2024",
+  category: "Technology",
+  location: "Main Campus",
+  status: "upcoming",
+  supporters: 0,
+  updates: [],
+  featured: false
+}, {
+  id: 8,
+  title: "Disaster Relief Fund",
+  description: "This ongoing fund allows us to respond quickly to natural disasters and other emergencies both locally and globally. Your contributions ensure we can provide immediate assistance when crises occur, including food, shelter, medical aid, and long-term recovery support.",
+  shortDescription: "Providing immediate and long-term assistance to those affected by natural disasters and other emergencies.",
+  imageUrl: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  goalAmount: 100000,
+  raisedAmount: 78500,
+  startDate: "January 1, 2023",
+  endDate: "Ongoing",
+  category: "Emergency Relief",
+  location: "Global",
+  status: "active",
+  supporters: 412,
+  updates: [{
+    date: "September 5, 2023",
+    title: "Hurricane Relief Efforts",
+    content: "We've deployed a team to assist with hurricane recovery efforts in coastal communities, providing meals, supplies, and cleanup assistance."
+  }, {
+    date: "June 12, 2023",
+    title: "Flood Response",
+    content: "Thanks to this fund, we were able to provide immediate assistance to 45 families affected by recent flooding."
+  }],
+  featured: true
+}];
 const Fundraising = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -261,28 +215,23 @@ const Fundraising = () => {
   // Filter projects
   const filteredProjects = projects.filter(project => {
     // Filter by search
-    if (searchQuery && !project.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !project.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+    if (searchQuery && !project.title.toLowerCase().includes(searchQuery.toLowerCase()) && !project.description.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    
+
     // Filter by category
     if (selectedCategory && project.category !== selectedCategory) return false;
-    
+
     // Filter by status
     if (selectedStatus !== "all" && project.status !== selectedStatus) return false;
-    
     return true;
   });
-
   const featuredProjects = filteredProjects.filter(project => project.featured);
   const otherProjects = filteredProjects.filter(project => !project.featured);
-
   const handleDonationAmountClick = (amount: number) => {
     setDonationAmount(amount);
     setCustomAmount("");
   };
-
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
@@ -295,15 +244,18 @@ const Fundraising = () => {
       }
     }
   };
-
   const handleDonorInfoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const {
+      name,
+      value,
+      type,
+      checked
+    } = e.target;
     setDonorInfo({
       ...donorInfo,
       [name]: type === "checkbox" ? checked : value
     });
   };
-
   const handleSubmitDonation = () => {
     // In a real application, this would submit payment details to a payment processor
     console.log({
@@ -311,7 +263,7 @@ const Fundraising = () => {
       amount: donationAmount,
       donorInfo
     });
-    
+
     // Reset form
     setDonationStep(1);
     setDonationAmount(50);
@@ -322,17 +274,15 @@ const Fundraising = () => {
       anonymous: false
     });
     setSelectedProject(null);
-    
+
     // This would be replaced with proper form submission and payment processing
     alert(`Thank you for your donation of $${donationAmount.toFixed(2)} to ${selectedProject?.title}!`);
   };
-
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
+  return <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
       <Navbar />
       
       <main className="flex-grow pt-0 pb-16">
-        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-16">
+        <section className="bg-gradient-to-b from-gray-100 to-white dark:from-gray-900 dark:to-gray-950 py-[30px]">
           <div className="container-custom">
             <div className="flex flex-col items-center text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
@@ -352,38 +302,22 @@ const Fundraising = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
               <div className="w-full md:w-auto relative">
                 <div className="relative">
-                  <input 
-                    type="text" 
-                    placeholder="Search projects..." 
-                    className="pl-10 pr-4 py-2 w-full md:w-64 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
+                  <input type="text" placeholder="Search projects..." className="pl-10 pr-4 py-2 w-full md:w-64 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                   <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                 </div>
               </div>
               
               <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                 <div className="relative">
-                  <select 
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44"
-                    value={selectedCategory || ""}
-                    onChange={(e) => setSelectedCategory(e.target.value || null)}
-                  >
+                  <select className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44" value={selectedCategory || ""} onChange={e => setSelectedCategory(e.target.value || null)}>
                     <option value="">All Categories</option>
-                    {categories.map(category => (
-                      <option key={category} value={category}>{category}</option>
-                    ))}
+                    {categories.map(category => <option key={category} value={category}>{category}</option>)}
                   </select>
                   <Filter size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400" />
                 </div>
                 
                 <div className="relative">
-                  <select 
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44"
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value as "all" | "active" | "completed" | "upcoming")}
-                  >
+                  <select className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-full focus:outline-none focus:ring-2 focus:ring-wca-purple appearance-none w-full md:w-44" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value as "all" | "active" | "completed" | "upcoming")}>
                     <option value="all">All Projects</option>
                     <option value="active">Active</option>
                     <option value="completed">Completed</option>
@@ -394,25 +328,15 @@ const Fundraising = () => {
               </div>
             </div>
 
-            {featuredProjects.length > 0 && (
-              <div className="mb-16">
+            {featuredProjects.length > 0 && <div className="mb-16">
                 <h2 className="text-2xl font-bold mb-6">Featured Projects</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {featuredProjects.slice(0, 2).map(project => (
-                    <GlassCard key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
+                  {featuredProjects.slice(0, 2).map(project => <GlassCard key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                       <div className="relative h-64">
-                        <img 
-                          src={project.imageUrl} 
-                          alt={project.title} 
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
                         <div className="absolute top-4 left-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-white text-xs font-medium ${
-                            project.status === "active" ? "bg-green-500" : 
-                            project.status === "completed" ? "bg-blue-500" : "bg-amber-500"
-                          }`}>
-                            {project.status === "active" ? "Active" : 
-                             project.status === "completed" ? "Completed" : "Upcoming"}
+                          <span className={`inline-block px-3 py-1 rounded-full text-white text-xs font-medium ${project.status === "active" ? "bg-green-500" : project.status === "completed" ? "bg-blue-500" : "bg-amber-500"}`}>
+                            {project.status === "active" ? "Active" : project.status === "completed" ? "Completed" : "Upcoming"}
                           </span>
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
@@ -440,13 +364,12 @@ const Fundraising = () => {
                         <div className="mb-4">
                           <div className="flex justify-between text-sm mb-1">
                             <span>Progress</span>
-                            <span className="font-medium">{Math.round((project.raisedAmount / project.goalAmount) * 100)}%</span>
+                            <span className="font-medium">{Math.round(project.raisedAmount / project.goalAmount * 100)}%</span>
                           </div>
                           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                            <div 
-                              className="bg-gradient-to-r from-wca-purple to-wca-violet h-2.5 rounded-full" 
-                              style={{ width: `${Math.min(100, Math.round((project.raisedAmount / project.goalAmount) * 100))}%` }}
-                            ></div>
+                            <div className="bg-gradient-to-r from-wca-purple to-wca-violet h-2.5 rounded-full" style={{
+                        width: `${Math.min(100, Math.round(project.raisedAmount / project.goalAmount * 100))}%`
+                      }}></div>
                           </div>
                           <div className="flex justify-between text-sm mt-1">
                             <span>${project.raisedAmount.toLocaleString()} raised</span>
@@ -457,45 +380,27 @@ const Fundraising = () => {
                         <p className="text-gray-600 dark:text-gray-300 mb-6">{project.shortDescription}</p>
                         
                         <div className="flex gap-3">
-                          <Button 
-                            className="flex-1 bg-wca-purple hover:bg-wca-purple/90"
-                            onClick={() => setSelectedProject(project)}
-                          >
+                          <Button className="flex-1 bg-wca-purple hover:bg-wca-purple/90" onClick={() => setSelectedProject(project)}>
                             <Heart size={16} className="mr-1" />
                             Donate Now
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => setSelectedProject(project)}
-                          >
+                          <Button variant="outline" className="flex-1" onClick={() => setSelectedProject(project)}>
                             View Details
                           </Button>
                         </div>
                       </div>
-                    </GlassCard>
-                  ))}
+                    </GlassCard>)}
                 </div>
-              </div>
-            )}
+              </div>}
 
             <h2 className="text-2xl font-bold mb-6">All Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-              {otherProjects.map(project => (
-                <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
+              {otherProjects.map(project => <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300">
                   <div className="relative h-48">
-                    <img 
-                      src={project.imageUrl} 
-                      alt={project.title} 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={project.imageUrl} alt={project.title} className="w-full h-full object-cover" />
                     <div className="absolute top-3 left-3">
-                      <span className={`inline-block px-2 py-1 rounded-full text-white text-xs ${
-                        project.status === "active" ? "bg-green-500" : 
-                        project.status === "completed" ? "bg-blue-500" : "bg-amber-500"
-                      }`}>
-                        {project.status === "active" ? "Active" : 
-                         project.status === "completed" ? "Completed" : "Upcoming"}
+                      <span className={`inline-block px-2 py-1 rounded-full text-white text-xs ${project.status === "active" ? "bg-green-500" : project.status === "completed" ? "bg-blue-500" : "bg-amber-500"}`}>
+                        {project.status === "active" ? "Active" : project.status === "completed" ? "Completed" : "Upcoming"}
                       </span>
                     </div>
                   </div>
@@ -509,13 +414,12 @@ const Fundraising = () => {
                     <div className="mb-4">
                       <div className="flex justify-between text-xs mb-1">
                         <span>Progress</span>
-                        <span className="font-medium">{Math.round((project.raisedAmount / project.goalAmount) * 100)}%</span>
+                        <span className="font-medium">{Math.round(project.raisedAmount / project.goalAmount * 100)}%</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-wca-purple to-wca-violet h-2 rounded-full" 
-                          style={{ width: `${Math.min(100, Math.round((project.raisedAmount / project.goalAmount) * 100))}%` }}
-                        ></div>
+                        <div className="bg-gradient-to-r from-wca-purple to-wca-violet h-2 rounded-full" style={{
+                      width: `${Math.min(100, Math.round(project.raisedAmount / project.goalAmount * 100))}%`
+                    }}></div>
                       </div>
                       <div className="flex justify-between text-xs mt-1">
                         <span>${project.raisedAmount.toLocaleString()}</span>
@@ -535,69 +439,45 @@ const Fundraising = () => {
                     </div>
                     
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        className="flex-1 bg-wca-purple hover:bg-wca-purple/90"
-                        onClick={() => setSelectedProject(project)}
-                        disabled={project.status === "completed" || project.status === "upcoming"}
-                      >
+                      <Button size="sm" className="flex-1 bg-wca-purple hover:bg-wca-purple/90" onClick={() => setSelectedProject(project)} disabled={project.status === "completed" || project.status === "upcoming"}>
                         <Heart size={14} className="mr-1" />
                         Donate
                       </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => setSelectedProject(project)}
-                      >
+                      <Button size="sm" variant="outline" className="flex-1" onClick={() => setSelectedProject(project)}>
                         Details
                       </Button>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
+                </Card>)}
             </div>
 
-            {filteredProjects.length === 0 && (
-              <div className="text-center py-12">
+            {filteredProjects.length === 0 && <div className="text-center py-12">
                 <p className="text-lg text-gray-500 dark:text-gray-400">No projects found matching your criteria.</p>
-              </div>
-            )}
+              </div>}
             
-            {selectedProject && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            {selectedProject && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 <div className="bg-white dark:bg-gray-900 rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
-                  {donationStep === 1 && (
-                    <div className="p-6 md:p-8">
+                  {donationStep === 1 && <div className="p-6 md:p-8">
                       <div className="flex justify-between items-start mb-6">
                         <h2 className="text-2xl font-bold">{selectedProject.title}</h2>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setSelectedProject(null)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setSelectedProject(null)}>
                           Close
                         </Button>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                          <img 
-                            src={selectedProject.imageUrl} 
-                            alt={selectedProject.title} 
-                            className="w-full rounded-lg mb-6"
-                          />
+                          <img src={selectedProject.imageUrl} alt={selectedProject.title} className="w-full rounded-lg mb-6" />
                           
                           <div className="mb-6">
                             <div className="flex justify-between text-sm mb-1">
                               <span>Progress</span>
-                              <span className="font-medium">{Math.round((selectedProject.raisedAmount / selectedProject.goalAmount) * 100)}%</span>
+                              <span className="font-medium">{Math.round(selectedProject.raisedAmount / selectedProject.goalAmount * 100)}%</span>
                             </div>
                             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                              <div 
-                                className="bg-gradient-to-r from-wca-purple to-wca-violet h-2.5 rounded-full" 
-                                style={{ width: `${Math.min(100, Math.round((selectedProject.raisedAmount / selectedProject.goalAmount) * 100))}%` }}
-                              ></div>
+                              <div className="bg-gradient-to-r from-wca-purple to-wca-violet h-2.5 rounded-full" style={{
+                          width: `${Math.min(100, Math.round(selectedProject.raisedAmount / selectedProject.goalAmount * 100))}%`
+                        }}></div>
                             </div>
                             <div className="flex justify-between text-sm mt-1">
                               <span>${selectedProject.raisedAmount.toLocaleString()} raised</span>
@@ -633,69 +513,44 @@ const Fundraising = () => {
                             <p className="text-gray-600 dark:text-gray-300">{selectedProject.description}</p>
                           </div>
                           
-                          {selectedProject.updates.length > 0 && (
-                            <div className="mb-6">
+                          {selectedProject.updates.length > 0 && <div className="mb-6">
                               <h3 className="font-bold text-lg mb-3">Project Updates</h3>
                               <div className="space-y-4">
-                                {selectedProject.updates.map((update, index) => (
-                                  <div key={index} className="border-l-2 border-wca-purple pl-4">
+                                {selectedProject.updates.map((update, index) => <div key={index} className="border-l-2 border-wca-purple pl-4">
                                     <div className="flex items-center gap-2 mb-1">
                                       <Calendar size={14} className="text-wca-purple" />
                                       <span className="text-sm text-gray-500 dark:text-gray-400">{update.date}</span>
                                     </div>
                                     <h4 className="font-medium mb-1">{update.title}</h4>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">{update.content}</p>
-                                  </div>
-                                ))}
+                                  </div>)}
                               </div>
-                            </div>
-                          )}
+                            </div>}
                           
-                          {selectedProject.status === "active" && (
-                            <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
+                          {selectedProject.status === "active" && <div className="bg-gray-100 dark:bg-gray-800 p-6 rounded-lg">
                               <h3 className="font-bold text-lg mb-4 text-center">Make a Donation</h3>
                               
                               <div className="grid grid-cols-3 gap-3 mb-4">
-                                {[25, 50, 100].map(amount => (
-                                  <Button 
-                                    key={amount}
-                                    variant={donationAmount === amount && !customAmount ? "default" : "outline"}
-                                    className={donationAmount === amount && !customAmount ? "bg-wca-purple" : ""}
-                                    onClick={() => handleDonationAmountClick(amount)}
-                                  >
+                                {[25, 50, 100].map(amount => <Button key={amount} variant={donationAmount === amount && !customAmount ? "default" : "outline"} className={donationAmount === amount && !customAmount ? "bg-wca-purple" : ""} onClick={() => handleDonationAmountClick(amount)}>
                                     ${amount}
-                                  </Button>
-                                ))}
+                                  </Button>)}
                               </div>
                               
                               <div className="mb-6">
                                 <label htmlFor="custom-amount" className="block text-sm font-medium mb-1">Custom Amount</label>
                                 <div className="relative">
                                   <DollarSign size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-                                  <input
-                                    type="text"
-                                    id="custom-amount"
-                                    className="pl-10 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                                    placeholder="Enter amount"
-                                    value={customAmount}
-                                    onChange={handleCustomAmountChange}
-                                  />
+                                  <input type="text" id="custom-amount" className="pl-10 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="Enter amount" value={customAmount} onChange={handleCustomAmountChange} />
                                 </div>
                               </div>
                               
-                              <Button 
-                                className="w-full bg-wca-teal hover:bg-wca-teal/90"
-                                onClick={() => setDonationStep(2)}
-                                disabled={donationAmount <= 0}
-                              >
+                              <Button className="w-full bg-wca-teal hover:bg-wca-teal/90" onClick={() => setDonationStep(2)} disabled={donationAmount <= 0}>
                                 <HandCoins size={16} className="mr-1" />
                                 Donate ${donationAmount.toFixed(2)}
                               </Button>
-                            </div>
-                          )}
+                            </div>}
                           
-                          {selectedProject.status === "completed" && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+                          {selectedProject.status === "completed" && <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
                               <div className="flex items-start gap-3">
                                 <Info size={20} className="text-blue-500 mt-0.5" />
                                 <div>
@@ -705,11 +560,9 @@ const Fundraising = () => {
                                   </p>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            </div>}
                           
-                          {selectedProject.status === "upcoming" && (
-                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
+                          {selectedProject.status === "upcoming" && <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 rounded-lg">
                               <div className="flex items-start gap-3">
                                 <Clock size={20} className="text-amber-500 mt-0.5" />
                                 <div>
@@ -719,23 +572,16 @@ const Fundraising = () => {
                                   </p>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            </div>}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {donationStep === 2 && (
-                    <div className="p-6 md:p-8">
+                  {donationStep === 2 && <div className="p-6 md:p-8">
                       <div className="mb-6">
                         <div className="flex justify-between items-center">
                           <h2 className="text-2xl font-bold">Donor Information</h2>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setDonationStep(1)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => setDonationStep(1)}>
                             Back
                           </Button>
                         </div>
@@ -747,73 +593,38 @@ const Fundraising = () => {
                       <div className="space-y-6">
                         <div>
                           <label htmlFor="name" className="block text-sm font-medium mb-1">Full Name</label>
-                          <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                            placeholder="Your name"
-                            value={donorInfo.name}
-                            onChange={handleDonorInfoChange}
-                            required
-                          />
+                          <input type="text" id="name" name="name" className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="Your name" value={donorInfo.name} onChange={handleDonorInfoChange} required />
                         </div>
                         
                         <div>
                           <label htmlFor="email" className="block text-sm font-medium mb-1">Email Address</label>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                            placeholder="Your email"
-                            value={donorInfo.email}
-                            onChange={handleDonorInfoChange}
-                            required
-                          />
+                          <input type="email" id="email" name="email" className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="Your email" value={donorInfo.email} onChange={handleDonorInfoChange} required />
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             We'll send your donation receipt to this email address.
                           </p>
                         </div>
                         
                         <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="anonymous"
-                            name="anonymous"
-                            checked={donorInfo.anonymous}
-                            onChange={handleDonorInfoChange}
-                            className="mr-2"
-                          />
+                          <input type="checkbox" id="anonymous" name="anonymous" checked={donorInfo.anonymous} onChange={handleDonorInfoChange} className="mr-2" />
                           <label htmlFor="anonymous" className="text-sm">
                             Make my donation anonymous
                           </label>
                         </div>
                         
                         <div className="pt-4">
-                          <Button 
-                            className="w-full bg-wca-teal hover:bg-wca-teal/90"
-                            onClick={() => setDonationStep(3)}
-                            disabled={!donorInfo.name || !donorInfo.email}
-                          >
+                          <Button className="w-full bg-wca-teal hover:bg-wca-teal/90" onClick={() => setDonationStep(3)} disabled={!donorInfo.name || !donorInfo.email}>
                             <ArrowRight size={16} className="mr-1" />
                             Continue to Payment
                           </Button>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                   
-                  {donationStep === 3 && (
-                    <div className="p-6 md:p-8">
+                  {donationStep === 3 && <div className="p-6 md:p-8">
                       <div className="mb-6">
                         <div className="flex justify-between items-center">
                           <h2 className="text-2xl font-bold">Payment Details</h2>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setDonationStep(2)}
-                          >
+                          <Button variant="outline" size="sm" onClick={() => setDonationStep(2)}>
                             Back
                           </Button>
                         </div>
@@ -844,12 +655,7 @@ const Fundraising = () => {
                         <div>
                           <label htmlFor="card-number" className="block text-sm font-medium mb-1">Card Number</label>
                           <div className="relative">
-                            <input
-                              type="text"
-                              id="card-number"
-                              className="pl-10 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                              placeholder="**** **** **** ****"
-                            />
+                            <input type="text" id="card-number" className="pl-10 w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="**** **** **** ****" />
                             <CreditCard size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
                           </div>
                         </div>
@@ -857,40 +663,22 @@ const Fundraising = () => {
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label htmlFor="expiry" className="block text-sm font-medium mb-1">Expiry Date</label>
-                            <input
-                              type="text"
-                              id="expiry"
-                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                              placeholder="MM/YY"
-                            />
+                            <input type="text" id="expiry" className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="MM/YY" />
                           </div>
                           
                           <div>
                             <label htmlFor="cvc" className="block text-sm font-medium mb-1">CVC</label>
-                            <input
-                              type="text"
-                              id="cvc"
-                              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                              placeholder="123"
-                            />
+                            <input type="text" id="cvc" className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="123" />
                           </div>
                         </div>
                         
                         <div>
                           <label htmlFor="name-on-card" className="block text-sm font-medium mb-1">Name on Card</label>
-                          <input
-                            type="text"
-                            id="name-on-card"
-                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple"
-                            placeholder="Name as it appears on card"
-                          />
+                          <input type="text" id="name-on-card" className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-wca-purple" placeholder="Name as it appears on card" />
                         </div>
                         
                         <div className="pt-4">
-                          <Button 
-                            className="w-full bg-wca-teal hover:bg-wca-teal/90"
-                            onClick={handleSubmitDonation}
-                          >
+                          <Button className="w-full bg-wca-teal hover:bg-wca-teal/90" onClick={handleSubmitDonation}>
                             <CheckCircle size={16} className="mr-1" />
                             Complete Donation
                           </Button>
@@ -900,11 +688,9 @@ const Fundraising = () => {
                           Your payment information is encrypted and secure. We never store your full card details.
                         </p>
                       </div>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-              </div>
-            )}
+              </div>}
             
             <GlassPanel className="p-8">
               <div className="text-center mb-10">
@@ -966,8 +752,6 @@ const Fundraising = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Fundraising;
