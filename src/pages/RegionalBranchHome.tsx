@@ -339,68 +339,103 @@ const RegionalBranchHome = () => {
                   </CardContent>
                 </Card>)}
             </div> : <div className="w-full">
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                {displayEvents && displayEvents.length > 0 ? displayEvents.slice(0, 12).map((event, index) => <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
-                    <CardContent className="p-0">
-                      <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
-                        <div className="relative z-10">
-                          <div className="flex items-start justify-between mb-4">
-                            <div>
-                              <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
-                                {event.name}
-                              </h3>
-                              {event.dcg && <div className="text-xs text-secondary mt-1 font-medium">
-                                  DCG: {event.dcg.name}
-                                </div>}
-                            </div>
-                            <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
-                              {new Date(event.start_datetime).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                            </div>
+              {/* Events Carousel */}
+              <Carousel className="w-full" opts={{ align: "start", loop: false }}>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex space-x-2">
+                    <CarouselPrevious className="relative translate-y-0 left-0" />
+                    <CarouselNext className="relative translate-y-0 right-0" />
+                  </div>
+                </div>
+                
+                <CarouselContent className="-ml-4">
+                  {displayEvents && displayEvents.length > 0 ? (() => {
+                    // Group events into slides of 2 rows
+                    const eventsPerSlide = {
+                      mobile: 2,    // 1 column, 2 rows
+                      tablet: 4,    // 2 columns, 2 rows  
+                      desktop: 6    // 3 columns, 2 rows
+                    };
+                    
+                    const slides = [];
+                    const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide.desktop);
+                    
+                    for (let i = 0; i < totalSlides; i++) {
+                      const slideEvents = displayEvents.slice(
+                        i * eventsPerSlide.desktop, 
+                        (i + 1) * eventsPerSlide.desktop
+                      );
+                      
+                      slides.push(
+                        <CarouselItem key={i} className="pl-4 basis-full">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-6 h-auto">
+                            {slideEvents.map((event, eventIndex) => (
+                              <Card key={event.id} className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-0 shadow-lg overflow-hidden">
+                                <CardContent className="p-0">
+                                  <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full -mr-10 -mt-10"></div>
+                                    <div className="relative z-10">
+                                      <div className="flex items-start justify-between mb-4">
+                                        <div>
+                                          <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">
+                                            {event.name}
+                                          </h3>
+                                          {event.dcg && <div className="text-xs text-secondary mt-1 font-medium">
+                                              DCG: {event.dcg.name}
+                                            </div>}
+                                        </div>
+                                        <div className="bg-primary/20 text-primary px-3 py-1 rounded-full text-sm font-semibold">
+                                          {new Date(event.start_datetime).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric'
+                                      })}
+                                        </div>
+                                      </div>
+                                      
+                                      {event.description && <p className="text-muted-foreground mb-4 line-clamp-2">
+                                          {event.description}
+                                        </p>}
+                                      
+                                      <div className="space-y-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center space-x-2">
+                                          <Clock className="w-4 h-4 text-primary" />
+                                          <span>
+                                            {new Date(event.start_datetime).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                          </span>
+                                        </div>
+                                        {event.address && <div className="flex items-center space-x-2">
+                                            <MapPin className="w-4 h-4 text-primary" />
+                                            <span className="truncate">{event.address}</span>
+                                          </div>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
                           </div>
-                          
-                          {event.description && <p className="text-muted-foreground mb-4 line-clamp-2">
-                              {event.description}
-                            </p>}
-                          
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            <div className="flex items-center space-x-2">
-                              <Clock className="w-4 h-4 text-primary" />
-                              <span>
-                                {new Date(event.start_datetime).toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                              </span>
-                            </div>
-                            {event.address && <div className="flex items-center space-x-2">
-                                <MapPin className="w-4 h-4 text-primary" />
-                                <span className="truncate">{event.address}</span>
-                              </div>}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>) : <div className="col-span-full">
-                    <Card className="w-full">
-                      <CardContent className="p-12 text-center">
-                        <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
-                        <p className="text-muted-foreground">Check back soon for upcoming events and gatherings from our regional branch and DCG groups.</p>
-                      </CardContent>
-                    </Card>
-                  </div>}
-              </div>
-              {displayEvents && displayEvents.length > 12 && <div className="text-center">
-                  <Button variant="outline" size="lg" className="px-8">
-                    View All Events
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </div>}
+                        </CarouselItem>
+                      );
+                    }
+                    
+                    return slides;
+                  })() : (
+                    <CarouselItem className="pl-4">
+                      <Card className="w-full">
+                        <CardContent className="p-12 text-center">
+                          <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">No Events Scheduled</h3>
+                          <p className="text-muted-foreground">Check back soon for upcoming events and gatherings from our regional branch and DCG groups.</p>
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+              </Carousel>
             </div>}
         </div>
       </section>
