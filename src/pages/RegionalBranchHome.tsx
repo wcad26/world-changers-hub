@@ -343,32 +343,56 @@ const RegionalBranchHome = () => {
                   <CardContent className="p-0">
                     <div className="bg-gradient-to-br from-secondary/10 to-accent/10 p-6 relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-20 h-20 bg-secondary/10 rounded-full -mr-10 -mt-10"></div>
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between mb-4">
-                          <h3 className="font-bold text-lg text-foreground group-hover:text-secondary transition-colors">
-                            {dcg.name}
-                          </h3>
-                          <div className="bg-secondary/20 text-secondary px-3 py-1 rounded-full text-sm font-semibold">
-                            {dcg.member_count} {dcg.member_count === 1 ? 'member' : 'members'}
-                          </div>
-                        </div>
+                      <div className="relative z-10 space-y-4">
+                        {/* DCG Name */}
+                        <h3 className="font-bold text-xl text-foreground group-hover:text-secondary transition-colors">
+                          {dcg.name}
+                        </h3>
                         
-                        {dcg.meeting_day && dcg.meeting_time && <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-4">
+                        {/* Address */}
+                        {dcg.location && (
+                          <div className="flex items-start space-x-2 text-sm text-muted-foreground">
+                            <MapPin className="w-4 h-4 text-secondary mt-0.5 flex-shrink-0" />
+                            <span>{dcg.location}</span>
+                          </div>
+                        )}
+                        
+                        {/* Day and Time */}
+                        {dcg.meeting_day && dcg.meeting_time && (
+                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                             <Clock className="w-4 h-4 text-secondary" />
                             <span className="font-medium">{dcg.meeting_day} at {dcg.meeting_time}</span>
-                          </div>}
+                          </div>
+                        )}
                         
-                        {dcg.leader && <div className="flex items-center space-x-3 pt-4 border-t border-border/50">
-                            <div className="w-10 h-10 bg-secondary/20 rounded-full flex items-center justify-center">
-                              <Users className="w-5 h-5 text-secondary" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">
-                                {dcg.leader ? `${dcg.leader.first_name} ${dcg.leader.last_name}` : 'DCG Leader'}
-                              </p>
-                              <p className="text-sm text-muted-foreground">Group Leader</p>
-                            </div>
-                          </div>}
+                        {/* Action Buttons */}
+                        <div className="flex space-x-2 pt-2">
+                          {/* Google Maps Button */}
+                          {dcg.location && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 text-xs"
+                              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}
+                            >
+                              <MapPin className="w-3 h-3 mr-1" />
+                              Map
+                            </Button>
+                          )}
+                          
+                          {/* WhatsApp Button */}
+                          {dcg.contact_phone && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1 text-xs"
+                              onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}
+                            >
+                              <Phone className="w-3 h-3 mr-1" />
+                              WhatsApp
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
