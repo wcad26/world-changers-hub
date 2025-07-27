@@ -1,5 +1,6 @@
 import { ArrowRight, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { GlassPanel } from '../ui/GlassPanels';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
@@ -59,14 +60,18 @@ export default function Hero() {
                     <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed text-justify">
                       {slide.description}
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                      <Link to={slide.primaryButton.link} className="button-primary">
-                        {slide.primaryButton.text}
-                        <ArrowRight size={20} className="ml-2" />
+                    <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
+                      <Link to={slide.primaryButton.link}>
+                        <Button size="lg" className="bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                          {slide.primaryButton.text}
+                          <ArrowRight size={20} className="ml-2" />
+                        </Button>
                       </Link>
-                      <Link to={slide.secondaryButton.link} className="button-outline">
-                        {slide.secondaryButton.text}
-                        <MapPin size={20} className="ml-2" />
+                      <Link to={slide.secondaryButton.link}>
+                        <Button variant="outline" size="lg" className="border-2 border-wca-purple/30 bg-white/10 backdrop-blur-sm text-wca-purple hover:bg-wca-purple hover:text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                          {slide.secondaryButton.text}
+                          <MapPin size={20} className="ml-2" />
+                        </Button>
                       </Link>
                     </div>
                   </div>
