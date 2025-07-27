@@ -53,8 +53,9 @@ export default function Hero() {
                       {slide.subtitle}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent block sm:inline">
-                        {slide.title}
+                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                        <span className="block sm:inline">Welcome to World</span>
+                        <span className="block sm:inline"> Changers Association</span>
                       </span>
                     </h1>
                     <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed text-justify">
