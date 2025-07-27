@@ -53,7 +53,7 @@ export default function Hero() {
                       {slide.subtitle}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent block sm:inline">
                         {slide.title}
                       </span>
                     </h1>
