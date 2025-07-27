@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, Phone, Mail, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -12,8 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
+  const location = useLocation();
+  const isHomepage = location.pathname === '/';
+  
   return (
-    <header className="bg-background border-b sticky top-0 z-50 backdrop-blur-sm bg-background/95">
+    <header className={`sticky top-0 z-50 backdrop-blur-sm ${
+      isHomepage 
+        ? 'bg-transparent border-transparent' 
+        : 'bg-background border-b bg-background/95'
+    }`}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}
