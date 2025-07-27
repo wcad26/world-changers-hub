@@ -69,23 +69,23 @@ export default function Features() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 xl:grid-cols-3 gap-4 lg:gap-3">
           {features.features.map((feature: any, index: number) => (
             <GlassCard 
               key={index} 
-              className="p-6 flex flex-col h-full"
+              className="p-4 lg:p-3 xl:p-6 flex flex-col h-full"
             >
-              <div className="mb-6">
-                {renderIcon(feature.icon, `w-10 h-10 ${iconColors[index % iconColors.length]}`)}
+              <div className="mb-4 lg:mb-3 xl:mb-6">
+                {renderIcon(feature.icon, `w-8 h-8 lg:w-6 lg:h-6 xl:w-10 xl:h-10 ${iconColors[index % iconColors.length]}`)}
               </div>
-              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">{feature.description}</p>
+              <h3 className="text-lg lg:text-sm xl:text-xl font-semibold mb-2 lg:mb-1 xl:mb-3">{feature.title}</h3>
+              <p className="text-sm lg:text-xs xl:text-base text-gray-600 dark:text-gray-300 mb-4 lg:mb-3 xl:mb-6">{feature.description}</p>
               <Link 
                 to={feature.link} 
-                className="mt-auto text-wca-purple hover:text-wca-violet font-medium inline-flex items-center transition-colors"
+                className="mt-auto text-wca-purple hover:text-wca-violet font-medium inline-flex items-center transition-colors text-sm lg:text-xs xl:text-base"
               >
                 Learn More
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 lg:h-2 lg:w-2 xl:h-4 xl:w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </Link>
