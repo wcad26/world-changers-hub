@@ -454,24 +454,29 @@ export default function HomepageSettings() {
 
           <TabsContent value="mission">
             <Card>
-              <CardHeader>
-                <CardTitle>Mission Section</CardTitle>
-                <CardDescription>
-                  Configure the mission section content
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Section Title</Label>
-                  <Input
-                    value={formData.mission.title}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      mission: { ...prev.mission, title: e.target.value }
-                    }))}
-                    placeholder="Enter mission section title"
-                  />
-                </div>
+               <CardHeader>
+                 <CardTitle>Mission Section</CardTitle>
+                 <CardDescription>
+                   Configure the mission section content. Note: The main heading "OUR MISSION" is fixed and cannot be changed here.
+                 </CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                 <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                   <p className="text-sm text-blue-700 dark:text-blue-300">
+                     <strong>Main Heading:</strong> "OUR MISSION" (Fixed heading that appears at the top of the section)
+                   </p>
+                 </div>
+                 <div>
+                   <Label>Section Title</Label>
+                   <Input
+                     value={formData.mission.title}
+                     onChange={(e) => setFormData(prev => ({
+                       ...prev,
+                       mission: { ...prev.mission, title: e.target.value }
+                     }))}
+                     placeholder="Enter mission section title"
+                   />
+                 </div>
                 <div>
                   <Label>Section Description</Label>
                   <Textarea
