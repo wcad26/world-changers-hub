@@ -46,7 +46,7 @@ export default function Mission() {
                 OUR VISION
               </span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 text-justify sm:text-left">
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               {mission.description}
             </p>
           </div>
@@ -63,7 +63,7 @@ export default function Mission() {
         <div className="container-custom relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent text-5xl">
+              <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent text-4xl">
                 OUR MISSION
               </span>
             </h2>
