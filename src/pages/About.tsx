@@ -206,7 +206,7 @@ const About = () => {
                       <GlassCard className="p-6">
                         <div className="text-sm font-semibold text-wca-teal mb-2">{milestone.year}</div>
                         <h3 className="text-xl font-semibold mb-3">{milestone.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-300">{milestone.description}</p>
+                        <p className="text-gray-600 dark:text-gray-300 text-justify">{milestone.description}</p>
                       </GlassCard>
                     </div>
                   </div>
