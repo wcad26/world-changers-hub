@@ -160,7 +160,7 @@ const About = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {(pageContent.values || fallbackData.values).map((value, index) => (
                 <GlassCard key={index} className="p-4">
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-full w-12 h-12 flex items-center justify-center mb-4">
