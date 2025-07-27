@@ -59,7 +59,7 @@ export default function Features() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-3 gap-8">
           {features.features.map((feature: any, index: number) => <GlassCard key={index} className="p-6 flex flex-col h-full">
               <div className="mb-6">
                 {renderIcon(feature.icon, `w-10 h-10 ${iconColors[index % iconColors.length]}`)}
