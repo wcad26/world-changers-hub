@@ -48,6 +48,7 @@ import SuperRegions from "./pages/admin/super/Regions";
 import SuperReports from "./pages/admin/super/Reports";
 import SuperCommunication from "./pages/admin/super/Communication";
 import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
+import SuperUserManagement from "./pages/admin/super/UserManagement";
 
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
@@ -285,6 +286,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <SuperCommunication />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/user-management" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperUserManagement />
                 </ProtectedRoute>
               } 
             />
