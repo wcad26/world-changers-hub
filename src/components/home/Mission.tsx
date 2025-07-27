@@ -33,7 +33,7 @@ export default function Mission() {
   const iconColors = ['text-wca-purple', 'text-wca-violet', 'text-wca-teal'];
   return <>
       {/* Mission Intro Section */}
-      <section id="mission" className="relative py-[40px]">
+      <section className="relative py-20" id="mission">
         {/* Background Elements */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950"></div>
@@ -63,7 +63,7 @@ export default function Mission() {
         <div className="container-custom relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-              <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent text-4xl">
+              <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent text-5xl">
                 OUR MISSION
               </span>
             </h2>

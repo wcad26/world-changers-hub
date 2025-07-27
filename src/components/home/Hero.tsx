@@ -53,7 +53,7 @@ export default function Hero() {
                       {slide.subtitle}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent text-3xl">
+                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
                         {slide.title}
                       </span>
                     </h1>
@@ -80,7 +80,7 @@ export default function Hero() {
                     <GlassPanel className="p-6 max-w-sm">
                       <div className="text-center space-y-4">
                         <div className="w-full h-48 bg-gradient-to-br from-wca-purple/20 to-wca-teal/20 rounded-lg overflow-hidden">
-                          <img src={slide.image} alt="Community gathering" className="w-full h-full object-cover" loading="lazy" />
+                          <img src={slide.image} alt="Community gathering" className="w-full h-full object-contain" loading="lazy" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-2">{tagline}</h3>
