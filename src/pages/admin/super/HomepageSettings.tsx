@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Trash2, Upload, Eye, Save } from 'lucide-react';
+import { Plus, Trash2, Upload, Eye, Save, Loader2 } from 'lucide-react';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
 import { HomepageContentData } from '@/hooks/useGlobalContent';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { supabase } from '@/integrations/supabase/client';
 
 const defaultHomepageContent: HomepageContentData = {
   hero: {
@@ -169,6 +170,7 @@ export default function HomepageSettings() {
   const { data: contentData, updateContent, isUpdating } = useHomepageContent();
   const { toast } = useToast();
   const [formData, setFormData] = useState<HomepageContentData>(defaultHomepageContent);
+  const [uploadingSlides, setUploadingSlides] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (contentData?.content) {
@@ -225,6 +227,68 @@ export default function HomepageSettings() {
         )
       }
     }));
+  };
+
+  const handleImageUpload = async (slideId: string, file: File) => {
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadingSlides(prev => ({ ...prev, [slideId]: true }));
+
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `homepage_slide_${slideId}_${Date.now()}.${fileExt}`;
+      const filePath = `homepage/slides/${fileName}`;
+
+      // Upload file
+      const { error: uploadError } = await supabase.storage
+        .from('member-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('member-photos')
+        .getPublicUrl(filePath);
+
+      // Update slide image
+      updateSlide(slideId, 'image', publicUrl);
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully!",
+      });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingSlides(prev => ({ ...prev, [slideId]: false }));
+    }
   };
 
   return (
@@ -302,12 +366,56 @@ export default function HomepageSettings() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div>
-                          <Label>Image URL</Label>
-                          <Input
-                            value={slide.image}
-                            onChange={(e) => updateSlide(slide.id, 'image', e.target.value)}
-                            placeholder="Enter image URL"
-                          />
+                          <Label>Hero Image</Label>
+                          <div className="space-y-3">
+                            {slide.image && (
+                              <div className="relative w-full h-32 bg-gray-100 rounded-lg overflow-hidden">
+                                <img 
+                                  src={slide.image} 
+                                  alt="Current slide image"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageUpload(slide.id, file);
+                                  }
+                                }}
+                                disabled={uploadingSlides[slide.id]}
+                                className="hidden"
+                                id={`image-upload-${slide.id}`}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => document.getElementById(`image-upload-${slide.id}`)?.click()}
+                                disabled={uploadingSlides[slide.id]}
+                              >
+                                {uploadingSlides[slide.id] ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Uploading...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    Upload Image
+                                  </>
+                                )}
+                              </Button>
+                              {slide.image && (
+                                <span className="text-sm text-muted-foreground">
+                                  Image uploaded successfully
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
