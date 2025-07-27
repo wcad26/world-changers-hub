@@ -180,6 +180,11 @@ const Index = () => {
                   placeholder={homepageData?.newsletter?.placeholder || 'Enter your email'}
                   className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 w-full"
                 />
+                <input 
+                  type="tel" 
+                  placeholder="Phone number"
+                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 w-full"
+                />
                 <button className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap">
                   {homepageData?.newsletter?.buttonText || 'Subscribe'}
                 </button>
