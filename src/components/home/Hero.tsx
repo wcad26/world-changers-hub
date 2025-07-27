@@ -47,8 +47,8 @@ export default function Hero() {
       }}>
           <CarouselContent>
             {slides.map((slide: any) => <CarouselItem key={slide.id}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                  <div className="space-y-6 text-center lg:text-left animate-fade-up">
+                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-center">
+                  <div className="lg:col-span-6 space-y-6 text-center lg:text-left animate-fade-up">
                     <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm">
                       {slide.subtitle}
                     </div>
@@ -76,7 +76,7 @@ export default function Hero() {
                     </div>
                   </div>
                   
-                  <div className="flex justify-center lg:justify-end animate-fade-up animation-delay-300">
+                  <div className="lg:col-span-4 flex justify-center lg:justify-end animate-fade-up animation-delay-300">
                     <GlassPanel className="p-6 max-w-sm">
                       <div className="text-center space-y-4">
                         <div className="w-full h-48 bg-gradient-to-br from-wca-purple/20 to-wca-teal/20 rounded-lg overflow-hidden">
