@@ -38,7 +38,7 @@ export default function Hero() {
         <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-wca-violet/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
       </div>
 
-      <div className="container-custom relative z-10 pt-20 md:pt-24 lg:pt-16">
+      <div className="container-custom relative z-10 pt-20 md:pt-24 lg:pt-16 py-0">
         <Carousel plugins={[Autoplay({
         delay: 5000
       })]} className="w-full" opts={{
