@@ -4,29 +4,31 @@ import { GlassPanel } from '../ui/GlassPanels';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
 import Autoplay from 'embla-carousel-autoplay';
-
 export default function Hero() {
-  const { data: contentData } = useHomepageContent();
+  const {
+    data: contentData
+  } = useHomepageContent();
   const heroData = contentData?.content as any;
 
   // Default slides if no content data
-  const defaultSlides = [
-    {
-      id: '1',
-      image: '/public/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png',
-      title: 'Welcome to World Christian Assembly',
-      subtitle: 'Building Tomorrow\'s Leaders Today',
-      description: 'Empowering communities through spiritual growth, leadership development, and transformative service worldwide.',
-      primaryButton: { text: 'Learn More', link: '/about' },
-      secondaryButton: { text: 'Find a Location', link: '/locations' }
+  const defaultSlides = [{
+    id: '1',
+    image: '/public/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png',
+    title: 'Welcome to World Christian Assembly',
+    subtitle: 'Building Tomorrow\'s Leaders Today',
+    description: 'Empowering communities through spiritual growth, leadership development, and transformative service worldwide.',
+    primaryButton: {
+      text: 'Learn More',
+      link: '/about'
+    },
+    secondaryButton: {
+      text: 'Find a Location',
+      link: '/locations'
     }
-  ];
-
+  }];
   const slides = heroData?.hero?.slides || defaultSlides;
   const tagline = heroData?.hero?.tagline || 'Join our community of purpose-driven leaders';
-
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden -mt-16">
+  return <section className="relative min-h-screen flex items-center overflow-hidden -mt-16">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-wca-purple/10 via-transparent to-wca-teal/10 opacity-50"></div>
@@ -36,23 +38,16 @@ export default function Hero() {
       </div>
 
       <div className="container-custom relative z-10 pt-20 md:pt-24 lg:pt-16">
-        <Carousel
-          plugins={[
-            Autoplay({
-              delay: 5000,
-            }),
-          ]}
-          className="w-full"
-          opts={{
-            align: "start",
-            loop: true,
-          }}
-        >
+        <Carousel plugins={[Autoplay({
+        delay: 5000
+      })]} className="w-full" opts={{
+        align: "start",
+        loop: true
+      }}>
           <CarouselContent>
-            {slides.map((slide: any) => (
-              <CarouselItem key={slide.id}>
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-10 items-center">
-                  <div className="space-y-6 text-center lg:text-left animate-fade-up lg:col-span-6">
+            {slides.map((slide: any) => <CarouselItem key={slide.id}>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+                  <div className="space-y-6 text-center lg:text-left animate-fade-up">
                     <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm">
                       {slide.subtitle}
                     </div>
@@ -61,37 +56,26 @@ export default function Hero() {
                         {slide.title}
                       </span>
                     </h1>
-                    <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed">
+                    <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed text-justify">
                       {slide.description}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                      <Link 
-                        to={slide.primaryButton.link}
-                        className="button-primary"
-                      >
+                      <Link to={slide.primaryButton.link} className="button-primary">
                         {slide.primaryButton.text}
                         <ArrowRight size={20} className="ml-2" />
                       </Link>
-                      <Link 
-                        to={slide.secondaryButton.link}
-                        className="button-outline"
-                      >
+                      <Link to={slide.secondaryButton.link} className="button-outline">
                         {slide.secondaryButton.text}
                         <MapPin size={20} className="ml-2" />
                       </Link>
                     </div>
                   </div>
                   
-                  <div className="flex justify-center lg:justify-end animate-fade-up animation-delay-300 lg:col-span-4">
+                  <div className="flex justify-center lg:justify-end animate-fade-up animation-delay-300">
                     <GlassPanel className="p-6 max-w-sm">
                       <div className="text-center space-y-4">
                         <div className="w-full h-48 bg-gradient-to-br from-wca-purple/20 to-wca-teal/20 rounded-lg overflow-hidden">
-                          <img 
-                            src={slide.image} 
-                            alt="Community gathering"
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                          <img src={slide.image} alt="Community gathering" className="w-full h-full object-cover" loading="lazy" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-2">{tagline}</h3>
@@ -106,18 +90,14 @@ export default function Hero() {
                     </GlassPanel>
                   </div>
                 </div>
-              </CarouselItem>
-            ))}
+              </CarouselItem>)}
           </CarouselContent>
           
-          {slides.length > 1 && (
-            <>
+          {slides.length > 1 && <>
               <CarouselPrevious className="left-4" />
               <CarouselNext className="right-4" />
-            </>
-          )}
+            </>}
         </Carousel>
       </div>
-    </section>
-  );
+    </section>;
 }
