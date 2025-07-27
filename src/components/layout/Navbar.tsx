@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, Phone, Mail, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,21 @@ import {
 const Navbar = () => {
   const location = useLocation();
   const isHomepage = location.pathname === '/';
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   
   return (
-    <header className={`sticky top-0 z-50 backdrop-blur-sm ${
+    <header className={`sticky top-0 z-50 backdrop-blur-sm transition-all duration-300 ${
       isHomepage 
-        ? 'bg-transparent border-transparent' 
+        ? (isScrolled ? 'bg-white border-b' : 'bg-transparent border-transparent')
         : 'bg-background border-b bg-background/95'
     }`}>
       <div className="container mx-auto px-4">
