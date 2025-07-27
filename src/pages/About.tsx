@@ -167,7 +167,7 @@ const About = () => {
                     {renderIcon(value.icon, "w-6 h-6 text-wca-purple")}
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{value.description}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 text-justify">{value.description}</p>
                 </GlassCard>
               ))}
             </div>
