@@ -74,75 +74,89 @@ const About = () => {
           <div className="container-custom">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1 animate-fade-up">
+                {/* Dynamic subtitle from first slide */}
                 <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm mb-4">
                   {pageContent.hero?.slides?.[0]?.subtitle || "About Us"}
                 </div>
+                
+                {/* Dynamic title from first slide */}
                 <h1 className="font-bold mb-4">
-                  <span className="block">
-                    {pageContent.hero?.slides?.[0]?.title || "Our Story and"}
-                  </span>
                   <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                    Our Vision for Change
+                    {pageContent.hero?.slides?.[0]?.title || "Our Story and Vision for Change"}
                   </span>
                 </h1>
+                
+                {/* Dynamic description from first slide */}
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 text-justify">
                   {pageContent.hero?.slides?.[0]?.description || "World Changers Association (WCA) is dedicated to building a network of fellowships that are spiritually, intellectually, and economically empowered to rescue the lost, transform them into effective leaders that will bring positive change in the economy, legislature, judiciary, and administration of nations."}
                 </p>
-                <div className="space-y-4">
-                  {pageContent.hero?.mission_points?.map((point, index) => (
-                    <div key={index} className="flex items-start">
-                      <Check className="w-5 h-5 text-wca-teal mr-3 mt-1" />
-                      <p className="text-gray-600 dark:text-gray-300">
-                        {point}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                
+                {/* Dynamic mission points */}
+                {pageContent.hero?.mission_points && pageContent.hero.mission_points.length > 0 && (
+                  <div className="space-y-4">
+                    {pageContent.hero.mission_points.map((point, index) => (
+                      <div key={index} className="flex items-start">
+                        <Check className="w-5 h-5 text-wca-teal mr-3 mt-1 flex-shrink-0" />
+                        <p className="text-gray-600 dark:text-gray-300">
+                          {point}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+              
               <div className="order-1 lg:order-2 flex justify-center animate-fade-in">
                 <div className="relative">
-                  <Carousel className="w-full max-w-2xl">
-                    <CarouselContent>
-                      {pageContent.hero?.slides?.map((slide, index) => (
-                        <CarouselItem key={slide.id || index}>
-                          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
-                            <img 
-                              src={slide.image} 
-                              alt={slide.title} 
-                              className="w-full h-full object-cover" 
-                              loading="lazy" 
-                            />
-                            {/* Slide overlay with title and description */}
-                            {(slide.title || slide.description) && (
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
-                                <div className="p-6 text-white w-full">
-                                  {slide.title && (
-                                    <h3 className="font-semibold text-lg mb-2">{slide.title}</h3>
-                                  )}
-                                  {slide.description && (
-                                    <p className="text-sm text-white/90 line-clamp-2">{slide.description}</p>
-                                  )}
+                  {/* Hero slides carousel */}
+                  {pageContent.hero?.slides && pageContent.hero.slides.length > 0 ? (
+                    <Carousel className="w-full max-w-2xl">
+                      <CarouselContent>
+                        {pageContent.hero.slides.map((slide, index) => (
+                          <CarouselItem key={slide.id || index}>
+                            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
+                              <img 
+                                src={slide.image} 
+                                alt={slide.title || `Slide ${index + 1}`} 
+                                className="w-full h-full object-cover" 
+                                loading="lazy" 
+                              />
+                              {/* Slide overlay with title and description for carousel slides */}
+                              {(slide.title || slide.description) && (
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
+                                  <div className="p-6 text-white w-full">
+                                    {slide.title && (
+                                      <h3 className="font-semibold text-lg mb-2">{slide.title}</h3>
+                                    )}
+                                    {slide.description && (
+                                      <p className="text-sm text-white/90 line-clamp-2">{slide.description}</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        </CarouselItem>
-                      )) || (
-                        <CarouselItem>
-                          <div className="aspect-[16/9] rounded-2xl overflow-hidden">
-                            <img 
-                              src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" 
-                              alt="World Changers Association Logo" 
-                              className="w-full h-full object-contain" 
-                              loading="lazy" 
-                            />
-                          </div>
-                        </CarouselItem>
+                              )}
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      {pageContent.hero.slides.length > 1 && (
+                        <>
+                          <CarouselPrevious />
+                          <CarouselNext />
+                        </>
                       )}
-                    </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
-                  </Carousel>
+                    </Carousel>
+                  ) : (
+                    /* Fallback image when no slides are configured */
+                    <div className="aspect-[16/9] rounded-2xl overflow-hidden max-w-2xl">
+                      <img 
+                        src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" 
+                        alt="World Changers Association Logo" 
+                        className="w-full h-full object-contain" 
+                        loading="lazy" 
+                      />
+                    </div>
+                  )}
+                  
                   {/* Decorative elements */}
                   <div className="absolute -top-4 -right-4 w-40 h-40 bg-wca-purple/10 rounded-full -z-10"></div>
                   <div className="absolute -bottom-4 -left-4 w-40 h-40 bg-wca-teal/10 rounded-full -z-10"></div>
