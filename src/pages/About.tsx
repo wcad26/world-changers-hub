@@ -160,14 +160,14 @@ const About = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-4 gap-4">
               {(pageContent.values || fallbackData.values).map((value, index) => (
-                <GlassCard key={index} className="p-6">
-                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-full w-16 h-16 flex items-center justify-center mb-6">
-                    {renderIcon(value.icon, "w-8 h-8 text-wca-purple")}
+                <GlassCard key={index} className="p-4">
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    {renderIcon(value.icon, "w-6 h-6 text-wca-purple")}
                   </div>
-                  <h3 className="text-xl font-semibold mb-3">{value.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-300">{value.description}</p>
+                  <h3 className="text-lg font-semibold mb-2">{value.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{value.description}</p>
                 </GlassCard>
               ))}
             </div>
