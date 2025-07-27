@@ -108,8 +108,8 @@ const About = () => {
         {/* Hero Section */}
         <section className="relative py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
           <div className="container-custom">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-center">
-              <div className="order-2 lg:order-1 lg:col-span-2 animate-fade-up">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className="order-2 lg:order-1 animate-fade-up">
                 <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm mb-4">
                   About Us
                 </div>
