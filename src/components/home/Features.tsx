@@ -56,7 +56,7 @@ export default function Features() {
   const iconColors = ['text-wca-purple', 'text-wca-violet', 'text-wca-teal'];
 
   return (
-    <section className="py-20">
+    <section className="py-10">
       <div className="container-custom">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <h2 className="font-bold mb-4">
