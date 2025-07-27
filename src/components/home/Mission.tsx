@@ -46,7 +46,7 @@ export default function Mission() {
                 OUR VISION
               </span>
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
+            <p className="text-lg text-gray-600 dark:text-gray-300 text-justify sm:text-center">
               {mission.description}
             </p>
           </div>
