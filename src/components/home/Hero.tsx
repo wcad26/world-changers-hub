@@ -5,7 +5,7 @@ import { GlassPanel } from '../ui/GlassPanels';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
+    <section className="relative min-h-screen flex items-center overflow-hidden -mt-16">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-wca-purple/10 via-transparent to-wca-teal/10 opacity-50"></div>
@@ -14,7 +14,7 @@ export default function Hero() {
         <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-wca-violet/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
       </div>
 
-      <div className="container-custom relative z-10">
+      <div className="container-custom relative z-10 pt-20 md:pt-24 lg:pt-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
           <div className="space-y-6 text-center lg:text-left animate-fade-up">
             <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm">
