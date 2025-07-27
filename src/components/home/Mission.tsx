@@ -79,7 +79,7 @@ export default function Mission() {
                 {renderIcon(missionItem.icon, `w-10 h-10 ${iconColors[index % iconColors.length]}`)}
               </div>
               <h3 className="text-xl font-semibold mb-3">{missionItem.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-4 text-center">{missionItem.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-4 text-left">{missionItem.description}</p>
               <ul className="mt-auto space-y-2">
                 {missionItem.points.map((point: string, i: number) => (
                   <li key={i} className="flex items-start">
