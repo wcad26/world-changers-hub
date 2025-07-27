@@ -12,7 +12,8 @@ import {
   BarChart2, 
   MessageSquare,
   Info,
-  UserPlus
+  UserPlus,
+  Home
 } from "lucide-react";
 
 interface SuperAdminLayoutProps {
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Regions", path: "/admin/super/regions", icon: Globe as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/admin/super/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/super/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Homepage Settings", path: "/admin/super/homepage-settings", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
   { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
 ];
 

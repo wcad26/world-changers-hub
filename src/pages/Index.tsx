@@ -8,6 +8,7 @@ import Features from '@/components/home/Features';
 import { ArrowRight, MapPin, Calendar, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/ui/GlassPanels';
+import { useHomepageContent } from '@/hooks/useHomepageContent';
 
 const upcomingEvents = [
   {
@@ -55,6 +56,9 @@ const testimonials = [
 ];
 
 const Index = () => {
+  const { data: contentData } = useHomepageContent();
+  const homepageData = contentData?.content as any;
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -74,10 +78,12 @@ const Index = () => {
             <div className="flex flex-col md:flex-row items-center justify-between mb-12">
               <div>
                 <h2 className="font-bold text-center md:text-left">
-                  Upcoming <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">Events</span>
+                  <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                    {homepageData?.events?.title || 'Upcoming Events'}
+                  </span>
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 mt-2 text-center md:text-left">
-                  Join us at our upcoming events and be part of our growing community.
+                  {homepageData?.events?.description || 'Join us at our upcoming events and be part of our growing community.'}
                 </p>
               </div>
               <Link to="/events" className="button-outline mt-4 md:mt-0">
@@ -87,7 +93,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {upcomingEvents.map((event) => (
+              {(homepageData?.events?.events || upcomingEvents).map((event: any) => (
                 <GlassCard key={event.id} className="overflow-hidden">
                   <div className="h-48 relative overflow-hidden">
                     <img 
@@ -128,15 +134,17 @@ const Index = () => {
                 Testimonials
               </div>
               <h2 className="font-bold">
-                Stories of <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">Transformation</span>
+                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
+                  {homepageData?.testimonials?.title || 'Stories of Transformation'}
+                </span>
               </h2>
               <p className="text-gray-600 dark:text-gray-300 mt-4">
-                Hear from members of our community whose lives have been changed through our programs and fellowships.
+                {homepageData?.testimonials?.description || 'Hear from members of our community whose lives have been changed through our programs and fellowships.'}
               </p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial) => (
+              {(homepageData?.testimonials?.testimonials || testimonials).map((testimonial: any) => (
                 <GlassCard key={testimonial.id} className="p-6">
                   <div className="flex justify-center mb-4">
                     <div className="text-4xl text-wca-purple">"</div>
@@ -160,22 +168,24 @@ const Index = () => {
           <div className="container-custom">
             <div className="max-w-4xl mx-auto text-center text-white">
               <Bell size={40} className="mx-auto mb-8 animate-float" />
-              <h2 className="font-bold mb-4">Stay Updated With WCA</h2>
+              <h2 className="font-bold mb-4">
+                {homepageData?.newsletter?.title || 'Stay Updated With WCA'}
+              </h2>
               <p className="text-white/90 mb-8 max-w-2xl mx-auto">
-                Subscribe to our newsletter to receive updates about events, resources, and opportunities to get involved.
+                {homepageData?.newsletter?.description || 'Subscribe to our newsletter to receive updates about events, resources, and opportunities to get involved.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
                 <input 
                   type="email" 
-                  placeholder="Enter your email"
+                  placeholder={homepageData?.newsletter?.placeholder || 'Enter your email'}
                   className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 w-full"
                 />
                 <button className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap">
-                  Subscribe
+                  {homepageData?.newsletter?.buttonText || 'Subscribe'}
                 </button>
               </div>
               <p className="text-xs text-white/70 mt-4">
-                We respect your privacy. Unsubscribe at any time.
+                {homepageData?.newsletter?.disclaimer || 'We respect your privacy. Unsubscribe at any time.'}
               </p>
             </div>
           </div>

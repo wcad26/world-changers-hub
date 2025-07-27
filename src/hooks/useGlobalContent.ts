@@ -30,6 +30,69 @@ export interface GlobalContentData {
   };
 }
 
+export interface HomepageContentData {
+  hero: {
+    slides: Array<{
+      id: string;
+      image: string;
+      title: string;
+      subtitle: string;
+      description: string;
+      primaryButton: { text: string; link: string };
+      secondaryButton: { text: string; link: string };
+    }>;
+    tagline: string;
+  };
+  mission: {
+    title: string;
+    description: string;
+    missions: Array<{
+      icon: string;
+      title: string;
+      description: string;
+      points: string[];
+    }>;
+  };
+  features: {
+    title: string;
+    description: string;
+    features: Array<{
+      icon: string;
+      title: string;
+      description: string;
+      link: string;
+    }>;
+  };
+  events: {
+    title: string;
+    description: string;
+    events: Array<{
+      id: string;
+      title: string;
+      date: string;
+      location: string;
+      image: string;
+    }>;
+  };
+  testimonials: {
+    title: string;
+    description: string;
+    testimonials: Array<{
+      id: string;
+      quote: string;
+      author: string;
+      role: string;
+    }>;
+  };
+  newsletter: {
+    title: string;
+    description: string;
+    placeholder: string;
+    buttonText: string;
+    disclaimer: string;
+  };
+}
+
 export const useGlobalContent = (pageType: string = 'about_us') => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
