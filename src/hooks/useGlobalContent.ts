@@ -4,8 +4,13 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface GlobalContentData {
   hero: {
-    title: string;
-    description: string;
+    slides: Array<{
+      id: string;
+      image: string;
+      title: string;
+      subtitle: string;
+      description: string;
+    }>;
     mission_points: string[];
   };
   values: Array<{

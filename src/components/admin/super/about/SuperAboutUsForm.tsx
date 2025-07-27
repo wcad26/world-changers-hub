@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,46 +13,21 @@ import { Plus, Trash2, Upload, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-const globalContentSchema = z.object({
-  hero: z.object({
-    title: z.string().min(1, 'Title is required'),
-    description: z.string().min(1, 'Description is required'),
-    mission_points: z.array(z.string().min(1, 'Mission point cannot be empty')),
-  }),
-  values: z.array(z.object({
-    icon: z.string().min(1, 'Icon is required'),
-    title: z.string().min(1, 'Title is required'),
-    description: z.string().min(1, 'Description is required'),
-  })),
-  milestones: z.array(z.object({
-    year: z.string().min(1, 'Year is required'),
-    title: z.string().min(1, 'Title is required'),
-    description: z.string().min(1, 'Description is required'),
-  })),
-  team: z.array(z.object({
-    name: z.string().min(1, 'Name is required'),
-    role: z.string().min(1, 'Role is required'),
-    image: z.string().min(1, 'Image is required'),
-    bio: z.string().min(1, 'Bio is required'),
-  })),
-  cta: z.object({
-    title: z.string().min(1, 'Title is required'),
-    description: z.string().min(1, 'Description is required'),
-  }),
-});
-
 const SuperAboutUsForm = () => {
-  const { data: globalContent, isLoading, updateContent, isUpdating } = useGlobalContent();
+  const { data, isLoading, updateContent, isUpdating } = useGlobalContent();
   const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
 
   const form = useForm<GlobalContentData>({
-    resolver: zodResolver(globalContentSchema),
     defaultValues: {
       hero: {
-        title: '',
-        description: '',
-        mission_points: [''],
+        slides: [{
+          id: "1",
+          image: "",
+          title: "",
+          subtitle: "",
+          description: "",
+        }],
+        mission_points: [""],
       },
       values: [{ icon: '', title: '', description: '' }],
       milestones: [{ year: '', title: '', description: '' }],
@@ -62,68 +37,54 @@ const SuperAboutUsForm = () => {
   });
 
   useEffect(() => {
-    if (globalContent?.content) {
-      form.reset(globalContent.content as any as GlobalContentData);
+    if (data?.content) {
+      const content = data.content as any as GlobalContentData;
+      if (!content.hero?.slides || content.hero.slides.length === 0) {
+        content.hero = {
+          ...content.hero,
+          slides: [{
+            id: "1",
+            image: "",
+            title: "",
+            subtitle: "",
+            description: "",
+          }]
+        };
+      }
+      form.reset(content);
     }
-  }, [globalContent, form]);
+  }, [data, form]);
 
-  const handleImageUpload = async (file: File, teamIndex: number) => {
+  const handleHeroImageUpload = async (file: File, slideIndex: number) => {
     try {
-      setUploading(true);
-      
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        throw new Error('Please select a valid image file');
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('File size must be less than 5MB');
-      }
-      
       const fileExt = file.name.split('.').pop();
-      const fileName = `team-${teamIndex}-${Date.now()}.${fileExt}`;
+      const fileName = `hero-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log('Starting upload:', fileName);
-      
-      const { data, error: uploadError } = await supabase.storage
-        .from('member-photos')
+      const { error: uploadError } = await supabase.storage
+        .from('about-hero-images')
         .upload(filePath, file);
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('Upload successful:', data);
+      if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('member-photos')
+        .from('about-hero-images')
         .getPublicUrl(filePath);
 
-      console.log('Public URL:', publicUrl);
-
-      const currentTeam = form.getValues('team');
-      currentTeam[teamIndex].image = publicUrl;
-      form.setValue('team', currentTeam);
-      
-      // Trigger form validation to update the display
-      await form.trigger(`team.${teamIndex}.image`);
+      const currentSlides = form.getValues("hero.slides");
+      currentSlides[slideIndex].image = publicUrl;
+      form.setValue("hero.slides", currentSlides);
 
       toast({
         title: "Success",
-        description: "Image uploaded successfully!",
+        description: "Hero image uploaded successfully!",
       });
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
+    } catch (error) {
       toast({
         title: "Error",
-        description: error.message || "Failed to upload image. Please try again.",
+        description: "Failed to upload hero image. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -131,9 +92,7 @@ const SuperAboutUsForm = () => {
     updateContent(data);
   };
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <Form {...form}>
@@ -147,84 +106,117 @@ const SuperAboutUsForm = () => {
             <TabsTrigger value="cta">Call to Action</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="hero" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hero Section Content</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="hero.title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="hero.description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} rows={3} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="space-y-2">
-                  <FormLabel>Mission Points</FormLabel>
-                  {form.watch('hero.mission_points').map((_, index) => (
-                    <div key={index} className="flex gap-2">
-                      <FormField
-                        control={form.control}
-                        name={`hero.mission_points.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="flex-1">
-                            <FormControl>
-                              <Input {...field} placeholder="Mission point" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {form.watch('hero.mission_points').length > 1 && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            const points = form.getValues('hero.mission_points');
-                            points.splice(index, 1);
-                            form.setValue('hero.mission_points', points);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const points = form.getValues('hero.mission_points');
-                      form.setValue('hero.mission_points', [...points, '']);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Mission Point
-                  </Button>
+          <TabsContent value="hero" className="space-y-6">
+            <div className="space-y-4">
+              <FormLabel>Hero Slides</FormLabel>
+              {form.watch('hero.slides')?.map((slide, index) => (
+                <div key={index} className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-medium">Slide {index + 1}</h4>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const slides = form.getValues('hero.slides');
+                        slides.splice(index, 1);
+                        form.setValue('hero.slides', slides);
+                      }}
+                      disabled={form.watch('hero.slides')?.length === 1}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name={`hero.slides.${index}.image`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slide Image</FormLabel>
+                        <FormControl>
+                          <div className="space-y-2">
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleHeroImageUpload(file, index);
+                              }}
+                            />
+                            {field.value && (
+                              <img 
+                                src={field.value} 
+                                alt={`Slide ${index + 1}`}
+                                className="h-32 w-full object-cover rounded border"
+                              />
+                            )}
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`hero.slides.${index}.subtitle`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subtitle</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter slide subtitle" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`hero.slides.${index}.title`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter slide title" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`hero.slides.${index}.description`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Enter slide description" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              ))}
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const slides = form.getValues('hero.slides') || [];
+                  form.setValue('hero.slides', [...slides, {
+                    id: `slide-${Date.now()}`,
+                    image: "",
+                    title: "",
+                    subtitle: "",
+                    description: "",
+                  }]);
+                }}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Slide
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="values" className="space-y-4">
@@ -233,25 +225,20 @@ const SuperAboutUsForm = () => {
                 <CardTitle>Values Section</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {form.watch('values').map((_, index) => (
-                  <Card key={index}>
+                {valuesFields.map((field, index) => (
+                  <Card key={field.id}>
                     <CardContent className="pt-6 space-y-4">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">Value {index + 1}</h4>
-                        {form.watch('values').length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const values = form.getValues('values');
-                              values.splice(index, 1);
-                              form.setValue('values', values);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeValue(index)}
+                          disabled={valuesFields.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
@@ -300,10 +287,7 @@ const SuperAboutUsForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const values = form.getValues('values');
-                    form.setValue('values', [...values, { icon: '', title: '', description: '' }]);
-                  }}
+                  onClick={() => appendValue({ icon: '', title: '', description: '' })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Value
@@ -318,25 +302,20 @@ const SuperAboutUsForm = () => {
                 <CardTitle>Timeline Milestones</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {form.watch('milestones').map((_, index) => (
-                  <Card key={index}>
+                {milestonesFields.map((field, index) => (
+                  <Card key={field.id}>
                     <CardContent className="pt-6 space-y-4">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">Milestone {index + 1}</h4>
-                        {form.watch('milestones').length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const milestones = form.getValues('milestones');
-                              milestones.splice(index, 1);
-                              form.setValue('milestones', milestones);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeMilestone(index)}
+                          disabled={milestonesFields.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
@@ -385,10 +364,7 @@ const SuperAboutUsForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const milestones = form.getValues('milestones');
-                    form.setValue('milestones', [...milestones, { year: '', title: '', description: '' }]);
-                  }}
+                  onClick={() => appendMilestone({ year: '', title: '', description: '' })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Milestone
@@ -403,25 +379,20 @@ const SuperAboutUsForm = () => {
                 <CardTitle>Leadership Team</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {form.watch('team').map((member, index) => (
-                  <Card key={index}>
+                {teamFields.map((field, index) => (
+                  <Card key={field.id}>
                     <CardContent className="pt-6 space-y-4">
                       <div className="flex justify-between items-center">
                         <h4 className="font-medium">Team Member {index + 1}</h4>
-                        {form.watch('team').length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const team = form.getValues('team');
-                              team.splice(index, 1);
-                              form.setValue('team', team);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeTeam(index)}
+                          disabled={teamFields.length === 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -453,46 +424,39 @@ const SuperAboutUsForm = () => {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <FormLabel>Photo</FormLabel>
-                        <div className="flex items-center gap-4">
-                          {member.image && (
-                            <img
-                              src={member.image}
-                              alt={member.name}
-                              className="w-16 h-16 rounded-full object-cover"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  handleImageUpload(file, index);
-                                  // Clear the input value to allow selecting the same file again
-                                  e.target.value = '';
-                                }
-                              }}
-                              className="hidden"
-                              id={`team-photo-${index}`}
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className="cursor-pointer"
-                              disabled={uploading}
-                              onClick={() => {
-                                document.getElementById(`team-photo-${index}`)?.click();
-                              }}
-                            >
-                              <Upload className="h-4 w-4 mr-2" />
-                              {uploading ? 'Uploading...' : 'Upload Photo'}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+                      <FormField
+                        control={form.control}
+                        name={`team.${index}.image`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Profile Image</FormLabel>
+                            <FormControl>
+                              <div className="space-y-2">
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(file, index);
+                                    }
+                                  }}
+                                />
+                                {field.value && (
+                                  <div className="mt-2">
+                                    <img 
+                                      src={field.value} 
+                                      alt="Team member"
+                                      className="h-32 w-32 object-cover rounded border"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
                       <FormField
                         control={form.control}
@@ -513,10 +477,7 @@ const SuperAboutUsForm = () => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    const team = form.getValues('team');
-                    form.setValue('team', [...team, { name: '', role: '', image: '', bio: '' }]);
-                  }}
+                  onClick={() => appendTeam({ name: '', role: '', image: '', bio: '' })}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Add Team Member
@@ -564,7 +525,7 @@ const SuperAboutUsForm = () => {
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? 'Saving...' : 'Save Changes'}
+            {isUpdating ? "Updating..." : "Save Changes"}
           </Button>
         </div>
       </form>
