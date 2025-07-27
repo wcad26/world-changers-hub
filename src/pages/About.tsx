@@ -75,18 +75,18 @@ const About = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div className="order-2 lg:order-1 animate-fade-up">
                 <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm mb-4">
-                  About Us
+                  {pageContent.hero?.slides?.[0]?.subtitle || "About Us"}
                 </div>
                 <h1 className="font-bold mb-4">
                   <span className="block">
-                    Our Story and
+                    {pageContent.hero?.slides?.[0]?.title || "Our Story and"}
                   </span>
                   <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
                     Our Vision for Change
                   </span>
                 </h1>
                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 text-justify">
-                  World Changers Association (WCA) is dedicated to building a network of fellowships that are spiritually, intellectually, and economically empowered to rescue the lost, transform them into effective leaders that will bring positive change in the economy, legislature, judiciary, and administration of nations.
+                  {pageContent.hero?.slides?.[0]?.description || "World Changers Association (WCA) is dedicated to building a network of fellowships that are spiritually, intellectually, and economically empowered to rescue the lost, transform them into effective leaders that will bring positive change in the economy, legislature, judiciary, and administration of nations."}
                 </p>
                 <div className="space-y-4">
                   {pageContent.hero?.mission_points?.map((point, index) => (
@@ -105,13 +105,26 @@ const About = () => {
                     <CarouselContent>
                       {pageContent.hero?.slides?.map((slide, index) => (
                         <CarouselItem key={slide.id || index}>
-                          <div className="aspect-[16/9] rounded-2xl overflow-hidden">
+                          <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
                             <img 
                               src={slide.image} 
                               alt={slide.title} 
                               className="w-full h-full object-cover" 
                               loading="lazy" 
                             />
+                            {/* Slide overlay with title and description */}
+                            {(slide.title || slide.description) && (
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex items-end">
+                                <div className="p-6 text-white w-full">
+                                  {slide.title && (
+                                    <h3 className="font-semibold text-lg mb-2">{slide.title}</h3>
+                                  )}
+                                  {slide.description && (
+                                    <p className="text-sm text-white/90 line-clamp-2">{slide.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </CarouselItem>
                       )) || (
