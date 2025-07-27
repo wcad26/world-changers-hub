@@ -9,13 +9,47 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGlobalContent, GlobalContentData } from '@/hooks/useGlobalContent';
-import { Plus, Trash2, Upload, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+const globalContentSchema = z.object({
+  hero: z.object({
+    slides: z.array(z.object({
+      id: z.string(),
+      image: z.string().min(1, "Image is required"),
+      title: z.string().min(1, "Title is required"),
+      subtitle: z.string().min(1, "Subtitle is required"),
+      description: z.string().min(1, "Description is required"),
+    })).min(1, "At least one slide is required"),
+    mission_points: z.array(z.string().min(1, "Mission point cannot be empty")).min(1, "At least one mission point is required"),
+  }),
+  values: z.array(z.object({
+    icon: z.string().min(1, 'Icon is required'),
+    title: z.string().min(1, 'Title is required'),
+    description: z.string().min(1, 'Description is required'),
+  })),
+  milestones: z.array(z.object({
+    year: z.string().min(1, 'Year is required'),
+    title: z.string().min(1, 'Title is required'),
+    description: z.string().min(1, 'Description is required'),
+  })),
+  team: z.array(z.object({
+    name: z.string().min(1, 'Name is required'),
+    role: z.string().min(1, 'Role is required'),
+    image: z.string().min(1, 'Image is required'),
+    bio: z.string().min(1, 'Bio is required'),
+  })),
+  cta: z.object({
+    title: z.string().min(1, 'Title is required'),
+    description: z.string().min(1, 'Description is required'),
+  }),
+});
 
 const SuperAboutUsForm = () => {
   const { data, isLoading, updateContent, isUpdating } = useGlobalContent();
   const { toast } = useToast();
+  const [uploading, setUploading] = useState(false);
 
   const form = useForm<GlobalContentData>({
     defaultValues: {
@@ -34,6 +68,28 @@ const SuperAboutUsForm = () => {
       team: [{ name: '', role: '', image: '', bio: '' }],
       cta: { title: '', description: '' },
     },
+  });
+
+  // Field arrays for dynamic sections
+  const { fields: slidesFields, append: appendSlide, remove: removeSlide } = useFieldArray({
+    control: form.control,
+    name: "hero.slides"
+  });
+
+
+  const { fields: valuesFields, append: appendValue, remove: removeValue } = useFieldArray({
+    control: form.control,
+    name: "values"
+  });
+
+  const { fields: milestonesFields, append: appendMilestone, remove: removeMilestone } = useFieldArray({
+    control: form.control,
+    name: "milestones"
+  });
+
+  const { fields: teamFields, append: appendTeam, remove: removeTeam } = useFieldArray({
+    control: form.control,
+    name: "team"
   });
 
   useEffect(() => {
@@ -57,6 +113,7 @@ const SuperAboutUsForm = () => {
 
   const handleHeroImageUpload = async (file: File, slideIndex: number) => {
     try {
+      setUploading(true);
       const fileExt = file.name.split('.').pop();
       const fileName = `hero-${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -85,6 +142,44 @@ const SuperAboutUsForm = () => {
         description: "Failed to upload hero image. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File, teamIndex: number) => {
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `team-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('member-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('member-photos')
+        .getPublicUrl(filePath);
+
+      const currentTeam = form.getValues("team");
+      currentTeam[teamIndex].image = publicUrl;
+      form.setValue("team", currentTeam);
+
+      toast({
+        title: "Success",
+        description: "Team member image uploaded successfully!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload image. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -109,20 +204,16 @@ const SuperAboutUsForm = () => {
           <TabsContent value="hero" className="space-y-6">
             <div className="space-y-4">
               <FormLabel>Hero Slides</FormLabel>
-              {form.watch('hero.slides')?.map((slide, index) => (
-                <div key={index} className="border rounded-lg p-4 space-y-4">
+              {slidesFields.map((field, index) => (
+                <div key={field.id} className="border rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-medium">Slide {index + 1}</h4>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        const slides = form.getValues('hero.slides');
-                        slides.splice(index, 1);
-                        form.setValue('hero.slides', slides);
-                      }}
-                      disabled={form.watch('hero.slides')?.length === 1}
+                      onClick={() => removeSlide(index)}
+                      disabled={slidesFields.length === 1}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -143,6 +234,7 @@ const SuperAboutUsForm = () => {
                                 const file = e.target.files?.[0];
                                 if (file) handleHeroImageUpload(file, index);
                               }}
+                              disabled={uploading}
                             />
                             {field.value && (
                               <img 
@@ -153,6 +245,7 @@ const SuperAboutUsForm = () => {
                             )}
                           </div>
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -166,6 +259,7 @@ const SuperAboutUsForm = () => {
                         <FormControl>
                           <Input placeholder="Enter slide subtitle" {...field} />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -179,6 +273,7 @@ const SuperAboutUsForm = () => {
                         <FormControl>
                           <Input placeholder="Enter slide title" {...field} />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -190,8 +285,13 @@ const SuperAboutUsForm = () => {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Enter slide description" {...field} />
+                          <Textarea 
+                            placeholder="Enter slide description" 
+                            className="min-h-[80px]"
+                            {...field} 
+                          />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -201,20 +301,62 @@ const SuperAboutUsForm = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => {
-                  const slides = form.getValues('hero.slides') || [];
-                  form.setValue('hero.slides', [...slides, {
-                    id: `slide-${Date.now()}`,
-                    image: "",
-                    title: "",
-                    subtitle: "",
-                    description: "",
-                  }]);
-                }}
+                onClick={() => appendSlide({
+                  id: `slide-${Date.now()}`,
+                  image: "",
+                  title: "",
+                  subtitle: "",
+                  description: "",
+                })}
                 className="w-full"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Slide
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <FormLabel>Mission Points</FormLabel>
+              {form.watch('hero.mission_points')?.map((_, index) => (
+                <div key={index} className="flex gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`hero.mission_points.${index}`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input placeholder="Enter mission point" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const points = form.getValues('hero.mission_points');
+                      points.splice(index, 1);
+                      form.setValue('hero.mission_points', points);
+                    }}
+                    disabled={form.watch('hero.mission_points')?.length === 1}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  const points = form.getValues('hero.mission_points') || [];
+                  form.setValue('hero.mission_points', [...points, ""]);
+                }}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Mission Point
               </Button>
             </div>
           </TabsContent>
@@ -437,19 +579,16 @@ const SuperAboutUsForm = () => {
                                   accept="image/*"
                                   onChange={(e) => {
                                     const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleImageUpload(file, index);
-                                    }
+                                    if (file) handleImageUpload(file, index);
                                   }}
+                                  disabled={uploading}
                                 />
                                 {field.value && (
-                                  <div className="mt-2">
-                                    <img 
-                                      src={field.value} 
-                                      alt="Team member"
-                                      className="h-32 w-32 object-cover rounded border"
-                                    />
-                                  </div>
+                                  <img 
+                                    src={field.value} 
+                                    alt="Team member"
+                                    className="h-32 w-32 object-cover rounded border"
+                                  />
                                 )}
                               </div>
                             </FormControl>
@@ -524,8 +663,8 @@ const SuperAboutUsForm = () => {
         </Tabs>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={isUpdating}>
-            {isUpdating ? "Updating..." : "Save Changes"}
+          <Button type="submit" disabled={isUpdating || uploading}>
+            {isUpdating ? "Updating..." : uploading ? "Uploading..." : "Save Changes"}
           </Button>
         </div>
       </form>
