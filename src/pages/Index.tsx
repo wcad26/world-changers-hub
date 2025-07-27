@@ -174,16 +174,16 @@ const Index = () => {
               <p className="text-white/90 mb-8 max-w-2xl mx-auto">
                 {homepageData?.newsletter?.description || 'Subscribe to our newsletter to receive updates about events, resources, and opportunities to get involved.'}
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto justify-center">
                 <input 
                   type="email" 
                   placeholder={homepageData?.newsletter?.placeholder || 'Enter your email'}
-                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-[2]"
+                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 w-80"
                 />
                 <input 
                   type="tel" 
                   placeholder="Phone number"
-                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-1"
+                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 w-full"
                 />
                 <button className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap">
                   {homepageData?.newsletter?.buttonText || 'Subscribe'}
