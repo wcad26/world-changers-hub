@@ -237,15 +237,15 @@ const About = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {(pageContent.team || fallbackData.team).map((member, index) => (
                 <GlassCard key={index} className="overflow-hidden">
                   <div className="aspect-square overflow-hidden">
                     <img src={member.image} alt={member.name} className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110" loading="lazy" />
                   </div>
-                  <div className="p-6">
-                    <h3 className="font-semibold text-xl">{member.name}</h3>
-                    <p className="text-wca-teal font-medium text-sm mb-3">{member.role}</p>
+                  <div className="p-4 lg:p-3">
+                    <h3 className="font-semibold text-lg lg:text-base">{member.name}</h3>
+                    <p className="text-wca-teal font-medium text-xs lg:text-xs mb-3">{member.role}</p>
                     <Collapsible open={openDetails[index]} onOpenChange={() => toggleDetails(index)}>
                       <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
                         <span className="text-sm font-medium text-wca-purple">Show Details</span>
