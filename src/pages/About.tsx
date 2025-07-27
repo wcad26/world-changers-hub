@@ -232,7 +232,7 @@ const About = () => {
               {(pageContent.team || fallbackData.team).map((member, index) => (
                 <GlassCard key={index} className="overflow-hidden">
                   <div className="aspect-square overflow-hidden">
-                    <img src={member.image} alt={member.name} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" loading="lazy" />
+                    <img src={member.image} alt={member.name} className="w-full h-full object-cover object-top transition-transform duration-500 hover:scale-110" loading="lazy" />
                   </div>
                   <div className="p-6">
                     <h3 className="font-semibold text-xl">{member.name}</h3>
