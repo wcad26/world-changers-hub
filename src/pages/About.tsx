@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Check } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Check, ChevronDown } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
 import { useGlobalContent } from '@/hooks/useGlobalContent';
@@ -83,8 +84,16 @@ const About = () => {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const isMobileOrTablet = isMobile || isTablet;
+  const [openDetails, setOpenDetails] = useState<Record<number, boolean>>({});
   
   const { data: content, isLoading } = useGlobalContent('about_us');
+
+  const toggleDetails = (index: number) => {
+    setOpenDetails(prev => ({
+      ...prev,
+      [index]: !prev[index]
+    }));
+  };
   
   // Use dynamic content if available, otherwise fall back to static content
   const pageContent = (content?.content as typeof fallbackData) || fallbackData;
@@ -237,7 +246,15 @@ const About = () => {
                   <div className="p-6">
                     <h3 className="font-semibold text-xl">{member.name}</h3>
                     <p className="text-wca-teal font-medium text-sm mb-3">{member.role}</p>
-                    <p className="text-gray-600 dark:text-gray-300 text-sm">{member.bio}</p>
+                    <Collapsible open={openDetails[index]} onOpenChange={() => toggleDetails(index)}>
+                      <CollapsibleTrigger className="flex items-center justify-between w-full text-left">
+                        <span className="text-sm font-medium text-wca-purple">Show Details</span>
+                        <ChevronDown className={`w-4 h-4 text-wca-purple transition-transform duration-200 ${openDetails[index] ? 'rotate-180' : ''}`} />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">{member.bio}</p>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                 </GlassCard>
               ))}
