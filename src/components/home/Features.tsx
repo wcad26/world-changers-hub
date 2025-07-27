@@ -79,7 +79,7 @@ export default function Features() {
                 {renderIcon(feature.icon, `w-10 h-10 ${iconColors[index % iconColors.length]}`)}
               </div>
               <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-              <p className="text-gray-600 dark:text-gray-300 mb-6">{feature.description}</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">{feature.description}</p>
               <Link 
                 to={feature.link} 
                 className="mt-auto text-wca-purple hover:text-wca-violet font-medium inline-flex items-center transition-colors"
