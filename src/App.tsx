@@ -19,6 +19,8 @@ import Auth from "./pages/Auth";
 import RegionalAuth from "./pages/RegionalAuth";
 import SuperAuth from "./pages/SuperAuth";
 import DcgAuth from "./pages/DcgAuth";
+import RegionSelect from "./pages/RegionSelect";
+import RegionSpecificAuth from "./components/auth/RegionSpecificAuth";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
 
@@ -103,6 +105,8 @@ const App = () => {
             {/* Authentication Routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/regional" element={<RegionalAuth />} />
+            <Route path="/auth/regions" element={<RegionSelect />} />
+            <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/dcg-auth" element={<DcgAuth />} />
             
