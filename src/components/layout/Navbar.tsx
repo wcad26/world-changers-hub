@@ -178,18 +178,18 @@ const Navbar = () => {
                     <h3 className="font-semibold text-foreground">Contact Us</h3>
                     <div className="space-y-3">
                       <a 
-                        href="tel:+1234567890" 
+                        href="tel:+23767568130" 
                         className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
                       >
                         <Phone className="w-5 h-5" />
-                        <span>+1 (234) 567-890</span>
+                        <span>+237 675 6813-10</span>
                       </a>
                       <a 
-                        href="mailto:info@wca.org" 
+                        href="mailto:info@wcaglobal.org" 
                         className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors"
                       >
                         <Mail className="w-5 h-5" />
-                        <span>info@wca.org</span>
+                        <span>info@wcaglobal.org</span>
                       </a>
                     </div>
                   </div>
