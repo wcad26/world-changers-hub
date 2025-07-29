@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -12,7 +12,9 @@ import {
   Play, 
   MessageCircle, 
   ShoppingBag,
-  LogOut 
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -42,18 +44,32 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const isMobile = useIsMobile();
   const location = useLocation();
   const { signOut, profile } = useAuth();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   if (!isMobile) {
     // Desktop layout with sidebar
     return (
       <div className="min-h-screen bg-background flex">
         {/* Sidebar */}
-        <div className="w-64 bg-card border-r border-border flex flex-col">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Welcome, {profile?.first_name}
-            </p>
+        <div className={cn(
+          "bg-card border-r border-border flex flex-col transition-all duration-300",
+          isCollapsed ? "w-16" : "w-64"
+        )}>
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <div className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100")}>
+              <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Welcome, {profile?.first_name}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="shrink-0"
+            >
+              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </Button>
           </div>
           
           <nav className="flex-1 p-4 space-y-2">
@@ -61,25 +77,26 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
-                  <Link
+                   <Link
                     key={item.name}
                     to={item.href}
                     className={cn(
-                      'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'flex items-center rounded-lg text-sm font-medium transition-colors',
+                      isCollapsed ? 'justify-center p-3' : 'px-3 py-2',
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    <item.icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                    {!isCollapsed && item.name}
                   </Link>
                 );
               })}
             </div>
             
             <div className="pt-4 border-t border-border">
-              <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>
+              {!isCollapsed && <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>}
               {secondaryNavigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
@@ -87,14 +104,15 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                     key={item.name}
                     to={item.href}
                     className={cn(
-                      'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'flex items-center rounded-lg text-sm font-medium transition-colors',
+                      isCollapsed ? 'justify-center p-3' : 'px-3 py-2',
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <item.icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    <item.icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                    {!isCollapsed && item.name}
                   </Link>
                 );
               })}
@@ -105,10 +123,13 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
             <Button 
               variant="ghost" 
               onClick={signOut} 
-              className="w-full justify-start text-muted-foreground hover:text-foreground"
+              className={cn(
+                "w-full text-muted-foreground hover:text-foreground",
+                isCollapsed ? "justify-center p-3" : "justify-start"
+              )}
             >
-              <LogOut className="mr-3 h-5 w-5" />
-              Sign Out
+              <LogOut className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+              {!isCollapsed && "Sign Out"}
             </Button>
           </div>
         </div>
