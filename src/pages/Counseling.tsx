@@ -451,7 +451,7 @@ const Counseling = () => {
                 <div>
                   <h3 className="font-bold text-lg mb-2">What does counseling cost?</h3>
                   <p className="text-gray-600 dark:text-gray-300">
-                    We offer counseling on a sliding scale basis to ensure everyone has access to support. Typical sessions range from $30-$90 depending on income level. We also offer limited free sessions for those in financial hardship.
+                    Our counseling services are completely free of charge. We believe that everyone should have access to quality mental health support regardless of their financial situation.
                   </p>
                 </div>
                 
