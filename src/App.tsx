@@ -64,6 +64,7 @@ import DcgCommunication from "./pages/dcg/Communication";
 
 // Member Portal Routes
 import MemberAuth from "./pages/MemberAuth";
+import MemberLayout from "./components/layout/MemberLayout";
 import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 import MemberDashboard from "./pages/member/Dashboard";
 import MemberEvents from "./pages/member/Events";
@@ -334,7 +335,9 @@ const App = () => {
               path="/member/dashboard" 
               element={
                 <MemberProtectedRoute>
-                  <MemberDashboard />
+                  <MemberLayout>
+                    <MemberDashboard />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -342,7 +345,9 @@ const App = () => {
               path="/member/events" 
               element={
                 <MemberProtectedRoute>
-                  <MemberEvents />
+                  <MemberLayout>
+                    <MemberEvents />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -350,7 +355,9 @@ const App = () => {
               path="/member/profile" 
               element={
                 <MemberProtectedRoute>
-                  <MemberProfile />
+                  <MemberLayout>
+                    <MemberProfile />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -358,7 +365,9 @@ const App = () => {
               path="/member/finances" 
               element={
                 <MemberProtectedRoute>
-                  <MemberFinances />
+                  <MemberLayout>
+                    <MemberFinances />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
