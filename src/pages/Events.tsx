@@ -86,14 +86,15 @@ const Events = () => {
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const { data: allEvents, isLoading, isError } = usePublicEvents();
+  const { data: featuredEvents, isLoading: isLoadingFeatured } = useFeaturedEvents();
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
-    // Combine real events with mock featured events for demonstration
-    const eventsToProcess = allEvents ? [...allEvents, ...mockFeaturedEvents] : mockFeaturedEvents;
+    // Use only real events
+    const eventsToProcess = allEvents || [];
     
     let result = eventsToProcess;
     
@@ -280,7 +281,22 @@ const Events = () => {
         <section className="py-12">
           <div className="container-custom">
             <h2 className="text-2xl font-bold mb-8">Featured Events</h2>
-            <div>{renderEventList(filteredEvents.filter(e => e.is_featured))}</div>
+            {isLoadingFeatured ? (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-video bg-muted rounded-lg mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-5 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-full"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              renderEventList(featuredEvents || [])
+            )}
           </div>
         </section>
 

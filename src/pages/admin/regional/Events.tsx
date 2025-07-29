@@ -69,6 +69,7 @@ const eventSchema = z.object({
   location_name: z.string().min(3, { message: "Please provide a location." }),
   capacity: z.coerce.number().positive().int().optional(),
   is_public: z.boolean().default(true),
+  is_featured: z.boolean().default(false),
 }).refine((data) => {
   if (data.end_date && data.start_date) {
     return new Date(data.end_date) >= new Date(data.start_date);
@@ -217,7 +218,7 @@ const RegionalEvents: React.FC = () => {
         image_url: null,
         capacity: values.capacity || null,
         is_public: values.is_public,
-        is_featured: false,
+        is_featured: values.is_featured,
         status: 'Upcoming',
         dcg_id: null,
     };
@@ -591,7 +592,7 @@ const RegionalEvents: React.FC = () => {
                   )}
                 />
                 
-                <FormField
+                 <FormField
                   control={form.control}
                   name="is_public"
                   render={({ field }) => (
@@ -608,6 +609,29 @@ const RegionalEvents: React.FC = () => {
                         <FormLabel>Public Event</FormLabel>
                         <FormDescription>
                           Display this event on the public website and regional homepage
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="is_featured"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Featured Event</FormLabel>
+                        <FormDescription>
+                          Highlight this event on the homepage
                         </FormDescription>
                       </div>
                     </FormItem>

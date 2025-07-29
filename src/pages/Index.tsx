@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import Hero from '@/components/home/Hero';
 import Mission from '@/components/home/Mission';
 import Features from '@/components/home/Features';
-import { ArrowRight, MapPin, Calendar, Bell } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Bell, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
@@ -57,6 +57,7 @@ const testimonials = [
 
 const Index = () => {
   const { data: contentData } = useHomepageContent();
+  const { data: featuredEvents, isLoading: isLoadingEvents } = useFeaturedEvents();
   const homepageData = contentData?.content as any;
 
   useEffect(() => {
@@ -92,37 +93,77 @@ const Index = () => {
               </Link>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {(homepageData?.events?.events || upcomingEvents).map((event: any) => (
-                <GlassCard key={event.id} className="overflow-hidden">
-                  <div className="h-48 relative overflow-hidden">
-                    <img 
-                      src={event.image} 
-                      alt={event.title} 
-                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="font-semibold text-xl mb-2">{event.title}</h3>
-                    <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
-                      <Calendar size={16} className="mr-2 text-wca-purple" />
-                      <span className="text-sm">{event.date}</span>
+            {isLoadingEvents ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded-lg mb-4"></div>
+                    <div className="space-y-2 p-6">
+                      <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
                     </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-300">
-                      <MapPin size={16} className="mr-2 text-wca-purple" />
-                      <span className="text-sm">{event.location}</span>
-                    </div>
-                    <Link 
-                      to={`/events/${event.id}`} 
-                      className="block w-full text-center button-primary mt-4"
-                    >
-                      Learn More
-                    </Link>
                   </div>
-                </GlassCard>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : featuredEvents && featuredEvents.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {featuredEvents.slice(0, 6).map((event) => {
+                  const { dateRange, timeRange, isMultiDay } = formatEventDuration(event.start_datetime, event.end_datetime);
+                  
+                  return (
+                    <GlassCard key={event.id} className="overflow-hidden">
+                      <div className="h-48 relative overflow-hidden">
+                        {event.image_url ? (
+                          <img 
+                            src={event.image_url} 
+                            alt={event.name} 
+                            className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-wca-purple to-wca-violet flex items-center justify-center">
+                            <Calendar size={48} className="text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-6">
+                        <h3 className="font-semibold text-xl mb-2">{event.name}</h3>
+                        {event.description && (
+                          <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{event.description}</p>
+                        )}
+                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
+                          <Calendar size={16} className="mr-2 text-wca-purple" />
+                          <span className="text-sm">{dateRange}</span>
+                          {isMultiDay && <span className="ml-2 text-xs bg-wca-teal/10 text-wca-teal px-2 py-1 rounded">Multi-day</span>}
+                        </div>
+                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
+                          <Clock size={16} className="mr-2 text-wca-purple" />
+                          <span className="text-sm">{timeRange}</span>
+                        </div>
+                        {event.location_name && (
+                          <div className="flex items-center text-gray-600 dark:text-gray-300">
+                            <MapPin size={16} className="mr-2 text-wca-purple" />
+                            <span className="text-sm">{event.location_name}</span>
+                          </div>
+                        )}
+                        <Link 
+                          to="/events" 
+                          className="block w-full text-center button-primary mt-4"
+                        >
+                          Learn More
+                        </Link>
+                      </div>
+                    </GlassCard>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Calendar size={48} className="mx-auto mb-4 text-gray-400" />
+                <p className="text-gray-600 dark:text-gray-300">No featured events at the moment. Check back soon!</p>
+              </div>
+            )}
           </div>
         </section>
         

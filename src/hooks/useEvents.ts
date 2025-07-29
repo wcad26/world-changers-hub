@@ -45,6 +45,23 @@ export const usePublicEvents = () => {
     });
 };
 
+// Hook to get featured public events
+export const useFeaturedEvents = () => {
+    return useQuery({
+        queryKey: ['featuredEvents'],
+        queryFn: async () => {
+            const { data, error } = await supabase
+                .from('events')
+                .select('*')
+                .eq('is_public', true)
+                .eq('is_featured', true)
+                .order('start_datetime', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+    });
+};
+
 
 // Hook to create an event
 export const useCreateEvent = () => {

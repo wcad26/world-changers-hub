@@ -59,6 +59,7 @@ const eventFormSchema = z.object({
   address: z.string().optional(),
   capacity: z.number().optional(),
   is_public: z.boolean().default(false),
+  is_featured: z.boolean().default(false),
 }).refine((data) => {
   if (data.end_date && data.start_date) {
     return new Date(data.end_date) >= new Date(data.start_date);
@@ -118,6 +119,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         address: data.address,
         capacity: data.capacity || null,
         is_public: data.is_public,
+        is_featured: data.is_featured,
       });
       form.reset();
       onClose();
@@ -304,6 +306,29 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                     <Input placeholder="Enter full address" {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="is_featured"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                  <FormControl>
+                    <input
+                      type="checkbox"
+                      checked={field.value}
+                      onChange={field.onChange}
+                      className="h-4 w-4 mt-1"
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Featured Event</FormLabel>
+                    <div className="text-xs text-muted-foreground">
+                      Highlight this event on the homepage
+                    </div>
+                  </div>
                 </FormItem>
               )}
             />
