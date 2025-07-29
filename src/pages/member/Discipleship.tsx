@@ -4,9 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Users, Target, BookOpen } from 'lucide-react';
+import { Calendar, Users, Target, BookOpen, TrendingUp } from 'lucide-react';
 import { useMemberDiscipleshipRelationships, useMemberDiscipleshipStats } from '@/hooks/useDiscipleship';
 import { useAuth } from '@/hooks/useAuth';
+import { AddProgressDialog } from '@/components/member/discipleship/AddProgressDialog';
+import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
+import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
 
 export default function MemberDiscipleship() {
   const { user } = useAuth();
@@ -246,9 +249,29 @@ export default function MemberDiscipleship() {
                     {relationship.notes && (
                       <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>
                     )}
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">Add Progress</Button>
-                      <Button size="sm" variant="outline">Schedule Meeting</Button>
+                    <div className="flex gap-2 flex-wrap">
+                      <AddProgressDialog 
+                        relationshipId={relationship.id} 
+                        discipleName={`${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`}
+                      >
+                        <Button size="sm" variant="outline">Add Progress</Button>
+                      </AddProgressDialog>
+                      
+                      <ScheduleMeetingDialog 
+                        discipleName={`${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`}
+                      >
+                        <Button size="sm" variant="outline">Schedule Meeting</Button>
+                      </ScheduleMeetingDialog>
+                      
+                      <ProgressSummaryDialog 
+                        relationshipId={relationship.id}
+                        discipleName={`${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`}
+                      >
+                        <Button size="sm" variant="outline">
+                          <TrendingUp className="h-4 w-4 mr-1" />
+                          Summary
+                        </Button>
+                      </ProgressSummaryDialog>
                     </div>
                   </CardContent>
                 </Card>
