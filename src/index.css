@@ -130,6 +130,12 @@
     @apply font-medium tracking-tight;
   }
 
+  @keyframes dash-line {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
   h1 {
     @apply text-3xl md:text-4xl lg:text-5xl;
   }

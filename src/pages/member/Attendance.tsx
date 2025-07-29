@@ -152,34 +152,94 @@ export default function MemberAttendance() {
           <CardDescription>Your attendance pattern over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-40 flex items-end justify-between gap-2">
-            {[
-              { rate: 85, month: 'Jul', color: 'bg-orange-500' },
-              { rate: 92, month: 'Aug', color: 'bg-green-500' },
-              { rate: 78, month: 'Sep', color: 'bg-yellow-500' },
-              { rate: 88, month: 'Oct', color: 'bg-blue-500' },
-              { rate: 95, month: 'Nov', color: 'bg-emerald-500' },
-              { rate: 87, month: 'Dec', color: 'bg-primary' }
-            ].map((data, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center group">
-                <div className="w-full relative">
-                  <div 
-                    className={`w-full ${data.color} rounded-t transition-all duration-500 ease-out hover:brightness-110 animate-scale-in`}
-                    style={{ 
-                      height: `${(data.rate / 100) * 140}px`,
-                      animationDelay: `${index * 100}ms`
-                    }}
-                  ></div>
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    {data.rate}%
-                  </div>
+          <div className="h-40 relative">
+            {/* Grid lines */}
+            <div className="absolute inset-0 flex flex-col justify-between">
+              {[100, 80, 60, 40, 20].map((value) => (
+                <div key={value} className="flex items-center">
+                  <span className="text-xs text-muted-foreground w-8">{value}%</span>
+                  <div className="flex-1 h-px bg-border opacity-30"></div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 font-medium">
-                  {data.month}
-                </p>
-                <p className="text-xs font-bold text-foreground">{data.rate}%</p>
-              </div>
-            ))}
+              ))}
+            </div>
+            
+            {/* Trend line */}
+            <div className="absolute inset-0 pl-8">
+              <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="attendanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Area under curve */}
+                <path
+                  d="M 0 15 L 60 8 L 120 22 L 180 12 L 240 5 L 300 13 L 300 100 L 0 100 Z"
+                  fill="url(#attendanceGradient)"
+                  className="animate-fade-in"
+                />
+                
+                {/* Trend line */}
+                <path
+                  d="M 0 15 L 60 8 L 120 22 L 180 12 L 240 5 L 300 13"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="animate-fade-in"
+                  style={{
+                    strokeDasharray: "1000",
+                    strokeDashoffset: "1000",
+                    animation: "dash-line 2s ease-out forwards"
+                  }}
+                />
+                
+                {/* Data points */}
+                {[
+                  { x: 0, y: 15, rate: 85 },
+                  { x: 60, y: 8, rate: 92 },
+                  { x: 120, y: 22, rate: 78 },
+                  { x: 180, y: 12, rate: 88 },
+                  { x: 240, y: 5, rate: 95 },
+                  { x: 300, y: 13, rate: 87 }
+                ].map((point, index) => (
+                  <g key={index}>
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r="4"
+                      fill="hsl(var(--primary))"
+                      className="animate-scale-in hover:r-6 transition-all duration-200 cursor-pointer"
+                      style={{ animationDelay: `${index * 200 + 1500}ms` }}
+                    />
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r="8"
+                      fill="hsl(var(--primary))"
+                      opacity="0.2"
+                      className="animate-scale-in"
+                      style={{ animationDelay: `${index * 200 + 1500}ms` }}
+                    />
+                  </g>
+                ))}
+              </svg>
+            </div>
+            
+            {/* Month labels */}
+            <div className="absolute bottom-0 left-8 right-0 flex justify-between">
+              {["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, index) => (
+                <div key={month} className="flex flex-col items-center">
+                  <p className="text-xs text-muted-foreground font-medium">{month}</p>
+                  <p className="text-xs font-bold text-foreground mt-1">
+                    {[85, 92, 78, 88, 95, 87][index]}%
+                  </p>
+                </div>
+              ))}
+            </div>
+            
           </div>
         </CardContent>
       </Card>
