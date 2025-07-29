@@ -62,6 +62,13 @@ import DcgFinances from "./pages/dcg/Finances";
 import DcgReports from "./pages/dcg/Reports";
 import DcgCommunication from "./pages/dcg/Communication";
 
+// Member Portal Routes
+import MemberAuth from "./pages/MemberAuth";
+import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
+import MemberDashboard from "./pages/member/Dashboard";
+import MemberEvents from "./pages/member/Events";
+import MemberProfile from "./pages/member/Profile";
+
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -109,6 +116,7 @@ const App = () => {
             <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/dcg-auth" element={<DcgAuth />} />
+            <Route path="/member/auth" element={<MemberAuth />} />
             
             {/* Admin Redirects - For easier navigation */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
@@ -316,6 +324,33 @@ const App = () => {
                 <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <AboutUsSettings />
                 </ProtectedRoute>
+              } 
+            />
+            
+            {/* Member Portal Routes */}
+            <Route path="/member" element={<Navigate to="/member/dashboard" replace />} />
+            <Route 
+              path="/member/dashboard" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberDashboard />
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/events" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberEvents />
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/profile" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberProfile />
+                </MemberProtectedRoute>
               } 
             />
             
