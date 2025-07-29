@@ -169,7 +169,7 @@ export default function MemberDiscipleship() {
                 <Users className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-2xl font-bold text-foreground">{displayStats.total_disciples}</p>
-                  <p className="text-sm text-muted-foreground">Total Disciples</p>
+                  <p className="text-sm text-muted-foreground">Disciples</p>
                 </div>
               </div>
             </CardContent>
