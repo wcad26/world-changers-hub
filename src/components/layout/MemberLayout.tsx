@@ -165,7 +165,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
 
       {/* Bottom navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="grid grid-cols-5 gap-1 p-2">
+        <div className="flex justify-around items-center p-2 max-w-md mx-auto">
           {navigation.map((item) => {
             const isActive = location.pathname === item.href;
             return (
@@ -173,14 +173,14 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  'flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-colors',
+                  'flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors min-w-0 flex-1',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                 )}
               >
-                <item.icon className="h-5 w-5 mb-1" />
-                <span className="text-xs font-medium leading-none">{item.name}</span>
+                <item.icon className="h-5 w-5 mb-1 shrink-0" />
+                <span className="text-xs font-medium leading-none truncate">{item.name}</span>
               </Link>
             );
           })}
