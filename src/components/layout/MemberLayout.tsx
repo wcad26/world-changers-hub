@@ -88,7 +88,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <item.icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                    <item.icon className={cn(isCollapsed ? "h-6 w-6" : "h-5 w-5 mr-3")} />
                     {!isCollapsed && item.name}
                   </Link>
                 );
@@ -111,7 +111,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                     )}
                   >
-                    <item.icon className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+                    <item.icon className={cn(isCollapsed ? "h-6 w-6" : "h-5 w-5 mr-3")} />
                     {!isCollapsed && item.name}
                   </Link>
                 );
@@ -128,7 +128,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                 isCollapsed ? "justify-center p-3" : "justify-start"
               )}
             >
-              <LogOut className={cn("h-5 w-5", !isCollapsed && "mr-3")} />
+              <LogOut className={cn(isCollapsed ? "h-6 w-6" : "h-5 w-5 mr-3")} />
               {!isCollapsed && "Sign Out"}
             </Button>
           </div>
