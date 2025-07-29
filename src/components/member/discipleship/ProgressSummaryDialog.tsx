@@ -158,34 +158,34 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-3xl w-[90vw] h-[85vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Progress Summary for {discipleName}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-6 flex-1 overflow-hidden">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-4 p-4">
           {/* Progress Notes Section */}
-          <div className="flex flex-col h-full">
-            <h3 className="text-lg font-semibold mb-3">Progress History</h3>
-            <ScrollArea className="flex-1 pr-4">
-              <div className="space-y-4">
+          <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
+            <h3 className="text-lg font-semibold mb-3 shrink-0">Progress History</h3>
+            <ScrollArea className="flex-1 pr-2">
+              <div className="space-y-3">
                 {mockProgressNotes.map((note, index) => (
-                  <Card key={note.id}>
-                    <CardHeader className="pb-3">
+                  <Card key={note.id} className="border-l-4 border-l-primary/20">
+                    <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
                         <Badge className={getMilestoneColor(note.milestone)}>
                           {getMilestoneLabel(note.milestone)}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           {format(new Date(note.achieved_date), 'MMM dd, yyyy')}
                         </span>
                       </div>
                     </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">{note.notes}</p>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-muted-foreground leading-relaxed">{note.notes}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -194,13 +194,13 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
           </div>
 
           {/* AI Chat Section */}
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
+            <div className="flex items-center gap-2 mb-3 shrink-0">
               <Sparkles className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold">AI Insights</h3>
             </div>
             
-            <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+            <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
               {/* Chat Messages */}
               <ScrollArea className="flex-1 p-4 min-h-0">
                 {chatMessages.length === 0 ? (
