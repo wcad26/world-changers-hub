@@ -260,7 +260,7 @@ export default function MemberDiscipleship() {
                       <ScheduleMeetingDialog 
                         discipleName={`${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`}
                       >
-                        <Button size="sm" variant="outline">Schedule Meeting</Button>
+                        <Button size="sm" variant="outline">Schedule</Button>
                       </ScheduleMeetingDialog>
                       
                       <ProgressSummaryDialog 
