@@ -254,7 +254,7 @@ export default function MemberDiscipleship() {
                         relationshipId={relationship.id} 
                         discipleName={`${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`}
                       >
-                        <Button size="sm" variant="outline">Add Progress</Button>
+                        <Button size="sm" variant="outline">+ Progress</Button>
                       </AddProgressDialog>
                       
                       <ScheduleMeetingDialog 
