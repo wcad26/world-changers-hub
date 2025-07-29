@@ -79,19 +79,39 @@ export default function MemberFundraising() {
       name: "Community Food Bank",
       description: "Ongoing support for families in need within our local community. Every contribution makes a difference.",
       goal: 1500000, // $15,000 in cents
-      raised: 890000, // $8,900 in cents
+      raised: 1650000, // $16,500 in cents (exceeded goal!)
       start_date: "2024-09-15",
-      end_date: "2025-01-15",
-      status: "Active"
+      end_date: "2024-12-15", // ended but still accepting donations
+      status: "Goal Reached"
     },
     {
       id: 4,
       name: "Mission Trip to Guatemala",
       description: "Help send our mission team to serve communities in Guatemala through medical aid and construction projects.",
       goal: 3000000, // $30,000 in cents
-      raised: 2750000, // $27,500 in cents
+      raised: 3000000, // $30,000 in cents (exactly reached goal!)
       start_date: "2024-08-01",
-      end_date: "2024-12-20",
+      end_date: "2024-12-10", // ended but still accepting donations
+      status: "Goal Reached"
+    },
+    {
+      id: 5,
+      name: "Children's Christmas Program",
+      description: "Fund costumes, decorations, and gifts for our annual Christmas program for 100+ children.",
+      goal: 800000, // $8,000 in cents
+      raised: 950000, // $9,500 in cents (exceeded goal!)
+      start_date: "2024-10-15",
+      end_date: "2024-12-05", // ended but still accepting donations
+      status: "Goal Reached"
+    },
+    {
+      id: 6,
+      name: "Senior Ministry Outreach",
+      description: "Support our elderly members with transportation, meals, and companionship programs.",
+      goal: 1200000, // $12,000 in cents
+      raised: 750000, // $7,500 in cents
+      start_date: "2024-11-15",
+      end_date: "2025-01-31",
       status: "Active"
     }
   ];
@@ -190,8 +210,10 @@ export default function MemberFundraising() {
           ) : (
             <div className="grid gap-4">
               {campaigns?.map((campaign) => {
-                const progressPercentage = (campaign.raised / campaign.goal) * 100;
+                const progressPercentage = Math.min((campaign.raised / campaign.goal) * 100, 100);
                 const remainingDays = Math.ceil((new Date(campaign.end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                const isGoalReached = campaign.raised >= campaign.goal;
+                const hasEnded = remainingDays <= 0;
                 
                 return (
                   <Card key={campaign.id}>
@@ -201,9 +223,21 @@ export default function MemberFundraising() {
                           <CardTitle className="text-lg">{campaign.name}</CardTitle>
                           <CardDescription>{campaign.description}</CardDescription>
                         </div>
-                        <Badge variant={remainingDays > 0 ? 'default' : 'secondary'}>
-                          {remainingDays > 0 ? `${remainingDays} days left` : 'Ended'}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          {isGoalReached ? (
+                            <Badge variant="default" className="bg-green-600">
+                              🎉 Goal Reached!
+                            </Badge>
+                          ) : hasEnded ? (
+                            <Badge variant="secondary">
+                              Campaign Ended
+                            </Badge>
+                          ) : (
+                            <Badge variant="default">
+                              {remainingDays} days left
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -213,26 +247,31 @@ export default function MemberFundraising() {
                             <span className="text-muted-foreground">Progress</span>
                             <span className="font-medium text-foreground">
                               ${(campaign.raised / 100).toFixed(2)} / ${(campaign.goal / 100).toFixed(2)}
+                              {isGoalReached && (
+                                <span className="text-green-600 ml-1">✓</span>
+                              )}
                             </span>
                           </div>
                           <Progress value={progressPercentage} className="h-2" />
                           <p className="text-xs text-muted-foreground mt-1">
-                            {progressPercentage.toFixed(1)}% raised
+                            {isGoalReached 
+                              ? `Goal exceeded by $${((campaign.raised - campaign.goal) / 100).toFixed(2)}! Still accepting donations.`
+                              : `${progressPercentage.toFixed(1)}% raised`
+                            }
                           </p>
                         </div>
                         
                         <div className="flex gap-2">
                           <Button 
                             size="sm" 
-                            disabled={remainingDays <= 0}
                             onClick={() => handleDonation(campaign, 25)}
+                            variant={isGoalReached ? "outline" : "default"}
                           >
                             Donate $25
                           </Button>
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            disabled={remainingDays <= 0}
                             onClick={() => handleDonation(campaign, 50)}
                           >
                             Donate $50
@@ -240,7 +279,6 @@ export default function MemberFundraising() {
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            disabled={remainingDays <= 0}
                             onClick={() => handleDonation(campaign, 'custom')}
                           >
                             Custom Amount
