@@ -25,7 +25,6 @@ interface MemberLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/member/dashboard', icon: Home },
   { name: 'Events', href: '/member/events', icon: Calendar },
-  { name: 'Profile', href: '/member/profile', icon: User },
   { name: 'Finances', href: '/member/finances', icon: DollarSign },
   { name: 'Discipleship', href: '/member/discipleship', icon: Users },
 ];
@@ -36,6 +35,7 @@ const secondaryNavigation = [
   { name: 'Media', href: '/member/media', icon: Play },
   { name: 'Counseling', href: '/member/counseling', icon: MessageCircle },
   { name: 'Store', href: '/member/store', icon: ShoppingBag },
+  { name: 'Profile', href: '/member/profile', icon: User },
 ];
 
 export default function MemberLayout({ children }: MemberLayoutProps) {
