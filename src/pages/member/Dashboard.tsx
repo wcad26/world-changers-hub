@@ -70,31 +70,35 @@ export default function MemberDashboard() {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Next Event</p>
-                  <p className="text-xs text-muted-foreground">
-                    {upcomingEvents[0] ? format(parseISO(upcomingEvents[0].start_datetime), 'MMM dd') : 'None scheduled'}
-                  </p>
+          <Link to="/member/events">
+            <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium">Next Event</p>
+                    <p className="text-xs text-muted-foreground">
+                      {upcomingEvents[0] ? format(parseISO(upcomingEvents[0].start_datetime), 'MMM dd') : 'None scheduled'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Attendance</p>
-                  <p className="text-xs text-muted-foreground">View Reports</p>
+          <Link to="/member/attendance">
+            <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                  <div>
+                    <p className="text-sm font-medium">Attendance</p>
+                    <p className="text-xs text-muted-foreground">View Reports</p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
 
         {/* Upcoming Events */}
