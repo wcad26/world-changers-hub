@@ -70,6 +70,12 @@ import MemberDashboard from "./pages/member/Dashboard";
 import MemberEvents from "./pages/member/Events";
 import MemberProfile from "./pages/member/Profile";
 import MemberFinances from "./pages/member/Finances";
+import MemberDiscipleship from "./pages/member/Discipleship";
+import MemberAttendance from "./pages/member/Attendance";
+import MemberFundraising from "./pages/member/Fundraising";
+import MemberMedia from "./pages/member/Media";
+import MemberCounseling from "./pages/member/Counseling";
+import MemberStore from "./pages/member/Store";
 
 const queryClient = new QueryClient();
 
@@ -367,6 +373,66 @@ const App = () => {
                 <MemberProtectedRoute>
                   <MemberLayout>
                     <MemberFinances />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/discipleship" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberDiscipleship />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/attendance" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberAttendance />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/fundraising" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberFundraising />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/media" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberMedia />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/counseling" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberCounseling />
+                  </MemberLayout>
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/store" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberLayout>
+                    <MemberStore />
                   </MemberLayout>
                 </MemberProtectedRoute>
               } 

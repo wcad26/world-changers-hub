@@ -1,0 +1,183 @@
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Calendar, Users, Target, BookOpen } from 'lucide-react';
+import { useMemberDiscipleshipRelationships, useMemberDiscipleshipStats } from '@/hooks/useDiscipleship';
+import { useAuth } from '@/hooks/useAuth';
+
+export default function MemberDiscipleship() {
+  const { user } = useAuth();
+  const { data: relationships, isLoading } = useMemberDiscipleshipRelationships(user?.id);
+  const { data: stats } = useMemberDiscipleshipStats(user?.id);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="h-32 bg-muted rounded"></div>
+          <div className="h-32 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center gap-2 mb-6">
+        <BookOpen className="h-6 w-6 text-primary" />
+        <h1 className="text-2xl font-bold text-foreground">My Discipleship Journey</h1>
+      </div>
+
+      {/* Stats Overview */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stats.total_disciples}</p>
+                  <p className="text-sm text-muted-foreground">Total Disciples</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stats.active_disciples}</p>
+                  <p className="text-sm text-muted-foreground">Active</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stats.completed_disciples}</p>
+                  <p className="text-sm text-muted-foreground">Completed</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div>
+                <p className="text-2xl font-bold text-foreground">{Math.round(stats.success_rate)}%</p>
+                <p className="text-sm text-muted-foreground">Success Rate</p>
+                <Progress value={stats.success_rate} className="mt-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      <Tabs defaultValue="mentoring" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="mentoring">I'm Mentoring</TabsTrigger>
+          <TabsTrigger value="being-mentored">I'm Being Mentored</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="mentoring" className="space-y-4">
+          {relationships?.asDisciple?.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Disciples Yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  You haven't been assigned any disciples to mentor yet.
+                </p>
+                <Button variant="outline">Contact Leadership</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {relationships?.asDisciple?.map((relationship) => (
+                <Card key={relationship.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">
+                          {relationship.mentor?.profiles?.first_name} {relationship.mentor?.profiles?.last_name}
+                        </CardTitle>
+                        <CardDescription>
+                          Started: {new Date(relationship.start_date).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={relationship.status === 'active' ? 'default' : 'secondary'}>
+                        {relationship.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {relationship.notes && (
+                      <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">View Progress</Button>
+                      <Button size="sm" variant="outline">Schedule Meeting</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="being-mentored" className="space-y-4">
+          {relationships?.asMentor?.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">No Mentor Assigned</h3>
+                <p className="text-muted-foreground mb-4">
+                  You haven't been assigned a mentor yet. Contact leadership to get started.
+                </p>
+                <Button variant="outline">Request Mentor</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {relationships?.asMentor?.map((relationship) => (
+                <Card key={relationship.id}>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">
+                          {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
+                        </CardTitle>
+                        <CardDescription>
+                          Started: {new Date(relationship.start_date).toLocaleDateString()}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={relationship.status === 'active' ? 'default' : 'secondary'}>
+                        {relationship.status}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {relationship.notes && (
+                      <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline">Add Progress</Button>
+                      <Button size="sm" variant="outline">Schedule Meeting</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
