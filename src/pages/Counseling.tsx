@@ -27,10 +27,10 @@ interface TimeSlot {
 }
 const counselors: Counselor[] = [{
   id: 1,
-  name: "Dr. Sarah Johnson",
-  title: "Licensed Professional Counselor",
+  name: "Pastor Terence Kibula",
+  title: "Pastoral Counselor",
   specialties: ["Marriage & Family", "Grief", "Anxiety"],
-  imageUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  imageUrl: "/lovable-uploads/2bd72f5c-d750-4fff-b603-63339e342b49.png",
   availability: [{
     day: "Monday",
     slots: ["9:00 AM", "11:00 AM", "2:00 PM"]
@@ -41,15 +41,15 @@ const counselors: Counselor[] = [{
     day: "Friday",
     slots: ["9:00 AM", "12:00 PM", "3:00 PM"]
   }],
-  bio: "Dr. Sarah Johnson has over 15 years of experience in counseling individuals and families through difficult seasons. She specializes in helping couples restore their relationships and individuals navigate grief and anxiety.",
-  languages: ["English", "Spanish"],
+  bio: "Pastor Terence Kibula has extensive experience in counseling individuals and families through difficult seasons. He specializes in helping couples restore their relationships and individuals navigate grief and anxiety.",
+  languages: ["English", "French"],
   experience: "15 years"
 }, {
   id: 2,
-  name: "Pastor James Wilson",
-  title: "Pastoral Counselor",
-  specialties: ["Spiritual Growth", "Life Direction", "Men's Issues"],
-  imageUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  name: "Mrs Boumi Clara",
+  title: "Family Counselor",
+  specialties: ["Parenting", "Women's Issues", "Family Dynamics"],
+  imageUrl: "/lovable-uploads/8d88ccc5-b5f3-419c-ae8e-3ef46bcfb71d.png",
   availability: [{
     day: "Tuesday",
     slots: ["10:00 AM", "1:00 PM", "3:00 PM"]
@@ -60,15 +60,15 @@ const counselors: Counselor[] = [{
     day: "Saturday",
     slots: ["10:00 AM", "1:00 PM"]
   }],
-  bio: "Pastor James Wilson combines biblical wisdom with practical counseling techniques to help individuals grow spiritually and find direction in life. He has a special passion for mentoring men through life's challenges.",
-  languages: ["English"],
+  bio: "Mrs Boumi Clara specializes in family counseling and women's issues. She brings compassion and wisdom to help families navigate challenges and strengthen their relationships.",
+  languages: ["English", "French"],
   experience: "12 years"
 }, {
   id: 3,
-  name: "Lisa Thompson",
-  title: "Family Therapist",
-  specialties: ["Parenting", "Child Behavior", "Family Dynamics"],
-  imageUrl: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+  name: "Pastor Leonard Ngarka",
+  title: "Licensed Professional Counselor",
+  specialties: ["Spiritual Growth", "Life Direction", "Men's Issues"],
+  imageUrl: "/lovable-uploads/15519acb-f856-4cf5-a23d-3e9451b2b146.png",
   availability: [{
     day: "Monday",
     slots: ["10:00 AM", "1:00 PM", "4:00 PM"]
@@ -79,28 +79,9 @@ const counselors: Counselor[] = [{
     day: "Thursday",
     slots: ["10:00 AM", "2:00 PM", "5:00 PM"]
   }],
-  bio: "Lisa Thompson has devoted her career to helping families build healthy relationships and navigate challenges with children. She provides practical tools for parenting and improving family communication.",
-  languages: ["English", "French"],
-  experience: "8 years"
-}, {
-  id: 4,
-  name: "Dr. Michael Davis",
-  title: "Clinical Psychologist",
-  specialties: ["Depression", "Trauma", "Addiction Recovery"],
-  imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-  availability: [{
-    day: "Tuesday",
-    slots: ["9:00 AM", "12:00 PM", "3:00 PM"]
-  }, {
-    day: "Friday",
-    slots: ["10:00 AM", "1:00 PM", "4:00 PM"]
-  }, {
-    day: "Saturday",
-    slots: ["9:00 AM", "11:00 AM", "2:00 PM"]
-  }],
-  bio: "Dr. Michael Davis brings clinical expertise in treating depression, trauma, and addiction. He helps clients develop coping mechanisms and find healing through evidence-based therapeutic approaches.",
+  bio: "Pastor Leonard Ngarka combines biblical wisdom with professional counseling techniques to help individuals grow spiritually and find direction in life. He has a special passion for mentoring men through life's challenges.",
   languages: ["English"],
-  experience: "20 years"
+  experience: "18 years"
 }];
 const Counseling = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
