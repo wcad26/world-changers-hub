@@ -230,7 +230,7 @@ export default function MemberFundraising() {
                             </Badge>
                           ) : hasEnded ? (
                             <Badge variant="secondary">
-                              Campaign Ended
+                              Open Campaigns
                             </Badge>
                           ) : (
                             <Badge variant="default">
