@@ -1,4 +1,3 @@
-
 import { useEffect } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -9,6 +8,8 @@ import { ArrowRight, MapPin, Calendar, Bell, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
+import { useFeaturedEvents } from '@/hooks/useEvents';
+import { formatEventDuration } from '@/utils/dateUtils';
 
 const upcomingEvents = [
   {
