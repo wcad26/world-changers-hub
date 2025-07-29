@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import MemberLayout from '@/components/layout/MemberLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -73,19 +72,16 @@ export default function MemberProfile() {
 
   if (!profile) {
     return (
-      <MemberLayout>
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </MemberLayout>
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
     );
   }
 
   return (
-    <MemberLayout>
-      <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-foreground">My Profile</h1>
@@ -269,6 +265,5 @@ export default function MemberProfile() {
           </CardContent>
         </Card>
       </div>
-    </MemberLayout>
   );
 }

@@ -1,5 +1,4 @@
 import React from 'react';
-import MemberLayout from '@/components/layout/MemberLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,8 +29,7 @@ export default function MemberDashboard() {
   ).slice(0, 3) || [];
 
   return (
-    <MemberLayout>
-      <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6">
         {/* Welcome Section */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">
@@ -165,6 +163,5 @@ export default function MemberDashboard() {
           </Link>
         </div>
       </div>
-    </MemberLayout>
   );
 }

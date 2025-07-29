@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import MemberLayout from '@/components/layout/MemberLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -107,23 +106,20 @@ export default function MemberEvents() {
 
   if (isLoading) {
     return (
-      <MemberLayout>
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-full" />
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-48 w-full" />
-            ))}
-          </div>
+      <div className="p-4 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-10 w-full" />
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-48 w-full" />
+          ))}
         </div>
-      </MemberLayout>
+      </div>
     );
   }
 
   return (
-    <MemberLayout>
-      <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6">
         {/* Header */}
         <div className="space-y-4">
           <h1 className="text-2xl font-bold text-foreground">Events</h1>
@@ -194,6 +190,5 @@ export default function MemberEvents() {
           </TabsContent>
         </Tabs>
       </div>
-    </MemberLayout>
   );
 }

@@ -341,7 +341,9 @@ const App = () => {
               path="/member/dashboard" 
               element={
                 <MemberProtectedRoute>
-                  <MemberDashboard />
+                  <MemberLayout>
+                    <MemberDashboard />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -349,7 +351,9 @@ const App = () => {
               path="/member/events" 
               element={
                 <MemberProtectedRoute>
-                  <MemberEvents />
+                  <MemberLayout>
+                    <MemberEvents />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -357,7 +361,9 @@ const App = () => {
               path="/member/profile" 
               element={
                 <MemberProtectedRoute>
-                  <MemberProfile />
+                  <MemberLayout>
+                    <MemberProfile />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -375,7 +381,9 @@ const App = () => {
               path="/member/discipleship" 
               element={
                 <MemberProtectedRoute>
-                  <MemberDiscipleship />
+                  <MemberLayout>
+                    <MemberDiscipleship />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -383,7 +391,9 @@ const App = () => {
               path="/member/attendance" 
               element={
                 <MemberProtectedRoute>
-                  <MemberAttendance />
+                  <MemberLayout>
+                    <MemberAttendance />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -391,7 +401,9 @@ const App = () => {
               path="/member/fundraising" 
               element={
                 <MemberProtectedRoute>
-                  <MemberFundraising />
+                  <MemberLayout>
+                    <MemberFundraising />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -399,7 +411,9 @@ const App = () => {
               path="/member/media" 
               element={
                 <MemberProtectedRoute>
-                  <MemberMedia />
+                  <MemberLayout>
+                    <MemberMedia />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -407,7 +421,9 @@ const App = () => {
               path="/member/counseling" 
               element={
                 <MemberProtectedRoute>
-                  <MemberCounseling />
+                  <MemberLayout>
+                    <MemberCounseling />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
@@ -415,7 +431,9 @@ const App = () => {
               path="/member/store" 
               element={
                 <MemberProtectedRoute>
-                  <MemberStore />
+                  <MemberLayout>
+                    <MemberStore />
+                  </MemberLayout>
                 </MemberProtectedRoute>
               } 
             />
