@@ -190,9 +190,9 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="progress" className="flex-1 mt-0 min-h-0">
-                <ScrollArea className="h-full">
-                  <div className="space-y-3 pr-2">
+              <TabsContent value="progress" className="flex-1 mt-0 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full max-h-[60vh]">
+                  <div className="space-y-3 pr-2 pb-4">
                     {mockProgressNotes.map((note, index) => (
                       <Card key={note.id} className="border-l-4 border-l-primary/20">
                         <CardHeader className="pb-2">
