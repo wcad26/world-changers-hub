@@ -177,9 +177,9 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
         
         {showTabs ? (
           /* Mobile/Tablet: Tabbed Layout */
-          <div className="flex-1 min-h-0 p-4 overflow-hidden">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+          <div className="flex-1 min-h-0 p-4 overflow-hidden h-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
                 <TabsTrigger value="progress" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   Progress History
@@ -190,8 +190,8 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="progress" className="flex-1 mt-0 min-h-0 overflow-hidden">
-                <ScrollArea className="h-full max-h-[60vh]">
+              <TabsContent value="progress" className="flex-1 mt-0 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-full">
                   <div className="space-y-3 pr-2 pb-4">
                     {mockProgressNotes.map((note, index) => (
                       <Card key={note.id} className="border-l-4 border-l-primary/20">
@@ -214,8 +214,8 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
                 </ScrollArea>
               </TabsContent>
               
-              <TabsContent value="ai" className="flex-1 mt-0 min-h-0">
-                <div className="border rounded-lg h-full flex flex-col min-h-0 overflow-hidden">
+              <TabsContent value="ai" className="flex-1 mt-0 min-h-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
                   {/* Chat Messages */}
                   <ScrollArea className="flex-1 p-4 min-h-0">
                     {chatMessages.length === 0 ? (
