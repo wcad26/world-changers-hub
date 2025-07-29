@@ -81,8 +81,10 @@ export default function MemberEvents() {
     }
   ];
 
-  // Use mock data if no real events are available
-  const regionEvents = events?.filter(event => event.region_id === profile?.region_id) || mockEvents;
+  // Use mock data if no real events are available, or use real events filtered by region
+  const regionEvents = (events && events.length > 0) 
+    ? events.filter(event => event.region_id === profile?.region_id)
+    : mockEvents;
 
   // Filter events by search query
   const filteredEvents = regionEvents.filter(event =>
