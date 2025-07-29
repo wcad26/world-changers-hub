@@ -15,6 +15,7 @@ import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
+import { formatDateRange, formatTimeRange } from "@/utils/dateUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -61,11 +62,21 @@ const eventSchema = z.object({
   name: z.string().min(3, { message: "Event name must be at least 3 characters." }),
   category: z.enum(eventCategories),
   description: z.string().optional(),
-  date: z.string().min(1, { message: "Please select a date." }),
-  time: z.string().min(1, { message: "Please provide a time." }),
+  start_date: z.string().min(1, { message: "Please select a start date." }),
+  start_time: z.string().min(1, { message: "Please provide a start time." }),
+  end_date: z.string().optional(),
+  end_time: z.string().optional(),
   location_name: z.string().min(3, { message: "Please provide a location." }),
   capacity: z.coerce.number().positive().int().optional(),
   is_public: z.boolean().default(true),
+}).refine((data) => {
+  if (data.end_date && data.start_date) {
+    return new Date(data.end_date) >= new Date(data.start_date);
+  }
+  return true;
+}, {
+  message: "End date must be after or same as start date",
+  path: ["end_date"]
 });
 
 const RegionalEvents: React.FC = () => {
@@ -89,8 +100,10 @@ const RegionalEvents: React.FC = () => {
     defaultValues: {
       name: "",
       description: "",
-      date: "",
-      time: "",
+      start_date: "",
+      start_time: "",
+      end_date: "",
+      end_time: "",
       location_name: "",
       is_public: true,
     },
@@ -185,14 +198,20 @@ const RegionalEvents: React.FC = () => {
   }, [events, attendanceData]);
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
-    const start_datetime = new Date(`${values.date}T${values.time}`).toISOString();
+    const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
+    let end_datetime = null;
+    
+    if (values.end_date) {
+      const endTime = values.end_time || values.start_time; // Use start time if no end time specified
+      end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
+    }
     
     const newEventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'> = {
         name: values.name,
         description: values.description || null,
         category: values.category,
         start_datetime: start_datetime,
-        end_datetime: null,
+        end_datetime: end_datetime,
         location_name: values.location_name,
         address: null,
         image_url: null,
@@ -255,8 +274,8 @@ const RegionalEvents: React.FC = () => {
       <TableRow key={event.id}>
         <TableCell className="font-medium">{event.name}</TableCell>
         <TableCell>{event.category}</TableCell>
-        <TableCell>{format(new Date(event.start_datetime), 'MMM dd, yyyy')}</TableCell>
-        <TableCell>{format(new Date(event.start_datetime), 'p')}</TableCell>
+        <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
+        <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{event.location_name}</TableCell>
         <TableCell>{event.capacity ?? 'N/A'}</TableCell>
         <TableCell>
@@ -474,10 +493,10 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
-                  name="date"
+                  name="start_date"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Event Date</FormLabel>
+                      <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -487,10 +506,37 @@ const RegionalEvents: React.FC = () => {
                 />
                 <FormField
                   control={form.control}
-                  name="time"
+                  name="start_time"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Event Time</FormLabel>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="end_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="end_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time (Optional)</FormLabel>
                       <FormControl>
                         <Input type="time" {...field} />
                       </FormControl>

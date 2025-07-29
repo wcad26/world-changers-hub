@@ -51,12 +51,22 @@ const eventFormSchema = z.object({
     'Training',
     'Other'
   ]),
-  start_datetime: z.date(),
-  end_datetime: z.date().optional(),
+  start_date: z.string().min(1, 'Start date is required'),
+  start_time: z.string().min(1, 'Start time is required'),
+  end_date: z.string().optional(),
+  end_time: z.string().optional(),
   location_name: z.string().optional(),
   address: z.string().optional(),
   capacity: z.number().optional(),
   is_public: z.boolean().default(false),
+}).refine((data) => {
+  if (data.end_date && data.start_date) {
+    return new Date(data.end_date) >= new Date(data.start_date);
+  }
+  return true;
+}, {
+  message: "End date must be after or same as start date",
+  path: ["end_date"]
 });
 
 type EventFormData = z.infer<typeof eventFormSchema>;
@@ -78,6 +88,10 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       name: '',
       description: '',
       category: 'DCG Meeting',
+      start_date: '',
+      start_time: '',
+      end_date: '',
+      end_time: '',
       location_name: '',
       address: '',
       is_public: false,
@@ -86,12 +100,20 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
   const handleSubmit = async (data: EventFormData) => {
     try {
+      const start_datetime = new Date(`${data.start_date}T${data.start_time}`).toISOString();
+      let end_datetime = null;
+      
+      if (data.end_date) {
+        const endTime = data.end_time || data.start_time; // Use start time if no end time specified
+        end_datetime = new Date(`${data.end_date}T${endTime}`).toISOString();
+      }
+      
       await createEvent.mutateAsync({
         name: data.name,
         description: data.description,
         category: data.category,
-        start_datetime: data.start_datetime.toISOString(),
-        end_datetime: data.end_datetime?.toISOString(),
+        start_datetime: start_datetime,
+        end_datetime: end_datetime,
         location_name: data.location_name,
         address: data.address,
         capacity: data.capacity || null,
@@ -180,107 +202,57 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="start_datetime"
+                name="start_date"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Start Date & Time</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP HH:mm")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Input
-                            type="time"
-                            onChange={(e) => {
-                              if (field.value && e.target.value) {
-                                const [hours, minutes] = e.target.value.split(':');
-                                const newDate = new Date(field.value);
-                                newDate.setHours(parseInt(hours), parseInt(minutes));
-                                field.onChange(newDate);
-                              }
-                            }}
-                            value={field.value ? format(field.value, "HH:mm") : ""}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>Start Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
+              
               <FormField
                 control={form.control}
-                name="end_datetime"
+                name="start_time"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>End Date & Time (Optional)</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP HH:mm")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t">
-                          <Input
-                            type="time"
-                            onChange={(e) => {
-                              if (field.value && e.target.value) {
-                                const [hours, minutes] = e.target.value.split(':');
-                                const newDate = new Date(field.value);
-                                newDate.setHours(parseInt(hours), parseInt(minutes));
-                                field.onChange(newDate);
-                              }
-                            }}
-                            value={field.value ? format(field.value, "HH:mm") : ""}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                  <FormItem>
+                    <FormLabel>Start Time</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="end_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="end_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

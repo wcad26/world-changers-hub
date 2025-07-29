@@ -8,6 +8,7 @@ import { usePublicEvents, Event } from '@/hooks/useEvents';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
+import { formatEventDuration } from '@/utils/dateUtils';
 
 // Event categories
 const categories = [
@@ -173,11 +174,16 @@ const Events = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                   <div className="flex items-start text-gray-600 dark:text-gray-300">
                     <Calendar size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                    <span className="text-sm">{format(parseISO(event.start_datetime), 'MMM dd, yyyy')}</span>
+                    <div className="text-sm">
+                      <div>{formatEventDuration(event.start_datetime, event.end_datetime).dateRange}</div>
+                      {formatEventDuration(event.start_datetime, event.end_datetime).isMultiDay && (
+                        <div className="text-xs text-gray-500">Multi-day event</div>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-start text-gray-600 dark:text-gray-300">
                     <Clock size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                    <span className="text-sm">{format(parseISO(event.start_datetime), 'p')}</span>
+                    <span className="text-sm">{formatEventDuration(event.start_datetime, event.end_datetime).timeRange}</span>
                   </div>
                   <div className="flex items-start text-gray-600 dark:text-gray-300">
                     <MapPin size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />

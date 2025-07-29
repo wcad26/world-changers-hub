@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { formatEventDuration } from '@/utils/dateUtils';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -118,11 +119,11 @@ const DcgEvents = () => {
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <div>{format(new Date(event.start_datetime), 'PPP')}</div>
+                      <div>{formatEventDuration(event.start_datetime, event.end_datetime).dateRange}</div>
                       <div className="text-sm text-muted-foreground">
-                        {format(new Date(event.start_datetime), 'p')}
-                        {event.end_datetime && (
-                          <> - {format(new Date(event.end_datetime), 'p')}</>
+                        {formatEventDuration(event.start_datetime, event.end_datetime).timeRange}
+                        {formatEventDuration(event.start_datetime, event.end_datetime).isMultiDay && (
+                          <div className="text-xs text-amber-600">Multi-day event</div>
                         )}
                       </div>
                     </div>
