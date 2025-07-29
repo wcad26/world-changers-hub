@@ -167,7 +167,7 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-6xl w-[95vw] max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col p-0">
         <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -177,7 +177,7 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
         
         {showTabs ? (
           // Mobile/Tablet: Tabbed Layout with proper scrolling
-          <div className="flex-1 min-h-0 p-4">
+          <div className="flex-1 min-h-0 p-4 overflow-hidden">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
                 <TabsTrigger value="progress" className="flex items-center gap-2">
