@@ -84,67 +84,6 @@ export default function MemberAttendance() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Upcoming Events */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Events</CardTitle>
-            <CardDescription>Events you're expected to attend</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {upcomingEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-semibold text-foreground">{event.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString()}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <MapPin className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{event.location}</span>
-                    </div>
-                  </div>
-                  <Badge variant={event.type === 'regional' ? 'default' : 'secondary'}>
-                    {event.type.toUpperCase()}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Recent Attendance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Events</CardTitle>
-            <CardDescription>Your attendance history for the past month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-semibold text-foreground">{event.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={event.type === 'regional' ? 'default' : 'secondary'}>
-                      {event.type.toUpperCase()}
-                    </Badge>
-                    <Badge variant={event.attended ? 'default' : 'destructive'}>
-                      {event.attended ? 'Present' : 'Absent'}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Monthly Trend */}
       <Card>
         <CardHeader>
@@ -239,10 +178,71 @@ export default function MemberAttendance() {
                 </div>
               ))}
             </div>
-            
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Upcoming Events */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Upcoming Events</CardTitle>
+            <CardDescription>Events you're expected to attend</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-semibold text-foreground">{event.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{event.location}</span>
+                    </div>
+                  </div>
+                  <Badge variant={event.type === 'regional' ? 'default' : 'secondary'}>
+                    {event.type.toUpperCase()}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Attendance */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Events</CardTitle>
+            <CardDescription>Your attendance history for the past month</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentEvents.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-semibold text-foreground">{event.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={event.type === 'regional' ? 'default' : 'secondary'}>
+                      {event.type.toUpperCase()}
+                    </Badge>
+                    <Badge variant={event.attended ? 'default' : 'destructive'}>
+                      {event.attended ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
     </div>
   );
 }
