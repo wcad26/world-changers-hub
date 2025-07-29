@@ -22,11 +22,39 @@ export default function MemberDashboard() {
   const { profile, userRegion } = useAuth();
   const { data: events } = usePublicEvents();
 
-  // Get upcoming events for the member's region
-  const upcomingEvents = events?.filter(event => 
-    event.region_id === profile?.region_id && 
-    isFuture(parseISO(event.start_datetime))
-  ).slice(0, 3) || [];
+  // Mock upcoming events data for demo purposes
+  const mockUpcomingEvents = [
+    {
+      id: 'mock-1',
+      name: 'Sunday Service',
+      start_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
+      end_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(), // +2 hours
+      location_name: 'Main Sanctuary',
+      category: 'Worship',
+      region_id: profile?.region_id
+    },
+    {
+      id: 'mock-2',
+      name: 'Youth Fellowship',
+      start_datetime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
+      end_datetime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000).toISOString(), // +3 hours
+      location_name: 'Community Hall',
+      category: 'Fellowship',
+      region_id: profile?.region_id
+    },
+    {
+      id: 'mock-3',
+      name: 'Bible Study',
+      start_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      end_datetime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(), // +1.5 hours
+      location_name: 'Prayer Room',
+      category: 'Study',
+      region_id: profile?.region_id
+    }
+  ];
+
+  // Get upcoming events for the member's region (use mock data for demo)
+  const upcomingEvents = mockUpcomingEvents.slice(0, 3);
 
   return (
     <div className="p-4 space-y-6">
