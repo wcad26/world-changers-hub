@@ -153,16 +153,31 @@ export default function MemberAttendance() {
         </CardHeader>
         <CardContent>
           <div className="h-40 flex items-end justify-between gap-2">
-            {[85, 92, 78, 88, 95, 87].map((rate, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div 
-                  className="w-full bg-primary rounded-t"
-                  style={{ height: `${rate}%` }}
-                ></div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(2024, 6 + index).toLocaleDateString('en', { month: 'short' })}
+            {[
+              { rate: 85, month: 'Jul', color: 'bg-orange-500' },
+              { rate: 92, month: 'Aug', color: 'bg-green-500' },
+              { rate: 78, month: 'Sep', color: 'bg-yellow-500' },
+              { rate: 88, month: 'Oct', color: 'bg-blue-500' },
+              { rate: 95, month: 'Nov', color: 'bg-emerald-500' },
+              { rate: 87, month: 'Dec', color: 'bg-primary' }
+            ].map((data, index) => (
+              <div key={index} className="flex-1 flex flex-col items-center group">
+                <div className="w-full relative">
+                  <div 
+                    className={`w-full ${data.color} rounded-t transition-all duration-500 ease-out hover:brightness-110 animate-scale-in`}
+                    style={{ 
+                      height: `${(data.rate / 100) * 140}px`,
+                      animationDelay: `${index * 100}ms`
+                    }}
+                  ></div>
+                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    {data.rate}%
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">
+                  {data.month}
                 </p>
-                <p className="text-xs font-medium text-foreground">{rate}%</p>
+                <p className="text-xs font-bold text-foreground">{data.rate}%</p>
               </div>
             ))}
           </div>
