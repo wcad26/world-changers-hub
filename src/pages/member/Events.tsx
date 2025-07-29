@@ -23,8 +23,119 @@ export default function MemberEvents() {
   const { data: events, isLoading } = usePublicEvents();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter events for the member's region
-  const regionEvents = events?.filter(event => event.region_id === profile?.region_id) || [];
+  // Mock events data for demo purposes
+  const mockEvents = [
+    {
+      id: "1",
+      name: "Sunday Worship Service",
+      description: "Join us for our weekly worship service with uplifting music, inspiring messages, and fellowship.",
+      start_datetime: "2024-07-30T10:00:00Z",
+      end_datetime: "2024-07-30T12:00:00Z",
+      location_name: "Main Sanctuary",
+      capacity: 300,
+      category: "Worship",
+      status: "Upcoming",
+      is_featured: true,
+      image_url: "/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png",
+      region_id: profile?.region_id
+    },
+    {
+      id: "2",
+      name: "Youth Bible Study",
+      description: "A dedicated time for our youth to dive deep into God's word and build lasting friendships.",
+      start_datetime: "2024-07-31T18:30:00Z",
+      end_datetime: "2024-07-31T20:00:00Z",
+      location_name: "Youth Center",
+      capacity: 50,
+      category: "Bible Study",
+      status: "Upcoming",
+      is_featured: false,
+      region_id: profile?.region_id
+    },
+    {
+      id: "3",
+      name: "Community Outreach Day",
+      description: "Let's serve our community together by volunteering at the local food bank and homeless shelter.",
+      start_datetime: "2024-08-03T09:00:00Z",
+      end_datetime: "2024-08-03T15:00:00Z",
+      location_name: "Community Center",
+      capacity: 100,
+      category: "Outreach",
+      status: "Upcoming",
+      is_featured: true,
+      image_url: "/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png",
+      region_id: profile?.region_id
+    },
+    {
+      id: "4",
+      name: "Women's Prayer Meeting",
+      description: "A time for the women of our church to come together in prayer and mutual support.",
+      start_datetime: "2024-08-05T19:00:00Z",
+      end_datetime: "2024-08-05T20:30:00Z",
+      location_name: "Fellowship Hall",
+      capacity: 75,
+      category: "Prayer",
+      status: "Upcoming",
+      is_featured: false,
+      region_id: profile?.region_id
+    },
+    {
+      id: "5",
+      name: "Men's Breakfast Fellowship",
+      description: "Start your Saturday with fellowship, food, and encouragement with the men of our church.",
+      start_datetime: "2024-08-10T08:00:00Z",
+      end_datetime: "2024-08-10T10:00:00Z",
+      location_name: "Church Kitchen",
+      capacity: 40,
+      category: "Fellowship",
+      status: "Upcoming",
+      is_featured: false,
+      region_id: profile?.region_id
+    },
+    {
+      id: "6",
+      name: "Sunday School for All Ages",
+      description: "Educational classes for children, youth, and adults to grow in faith and knowledge.",
+      start_datetime: "2024-07-29T09:00:00Z",
+      end_datetime: "2024-07-29T09:45:00Z",
+      location_name: "Various Classrooms",
+      capacity: 200,
+      category: "Education",
+      status: "Today",
+      is_featured: false,
+      region_id: profile?.region_id
+    },
+    {
+      id: "7",
+      name: "Church Anniversary Celebration",
+      description: "Celebrating 25 years of ministry with special guests, testimonies, and a fellowship meal.",
+      start_datetime: "2024-07-20T10:00:00Z",
+      end_datetime: "2024-07-20T16:00:00Z",
+      location_name: "Main Sanctuary & Fellowship Hall",
+      capacity: 500,
+      category: "Celebration",
+      status: "Past",
+      is_featured: true,
+      image_url: "/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png",
+      region_id: profile?.region_id
+    },
+    {
+      id: "8",
+      name: "Baptism Service",
+      description: "Witnessing new believers take the next step in their faith journey through baptism.",
+      start_datetime: "2024-07-15T14:00:00Z",
+      end_datetime: "2024-07-15T15:30:00Z",
+      location_name: "Baptistry",
+      capacity: 150,
+      category: "Ceremony",
+      status: "Past",
+      is_featured: false,
+      region_id: profile?.region_id
+    }
+  ];
+
+  // Use mock data if no real events are available
+  const regionEvents = events?.filter(event => event.region_id === profile?.region_id) || mockEvents;
 
   // Filter events by search query
   const filteredEvents = regionEvents.filter(event =>
