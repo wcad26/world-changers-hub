@@ -1,12 +1,75 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Phone, Mail, Clock, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Phone, Mail, Clock, User, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MemberCounseling() {
+  const { toast } = useToast();
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [selectedCounselor, setSelectedCounselor] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>('');
+
+  // Mock available dates and times for each counselor
+  const getAvailableDates = (counselorId: number) => {
+    const today = new Date();
+    const availableDates = [];
+    
+    // Generate next 30 days, excluding weekends
+    for (let i = 1; i <= 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      
+      // Exclude weekends (Saturday = 6, Sunday = 0)
+      if (date.getDay() !== 0 && date.getDay() !== 6) {
+        availableDates.push(date);
+      }
+    }
+    
+    return availableDates;
+  };
+
+  const getAvailableTimes = () => {
+    return [
+      '9:00 AM',
+      '10:00 AM', 
+      '11:00 AM',
+      '2:00 PM',
+      '3:00 PM',
+      '4:00 PM'
+    ];
+  };
+
+  const handleBookSession = (counselor: any) => {
+    setSelectedCounselor(counselor);
+    setSelectedDate(undefined);
+    setSelectedTime('');
+    setBookingDialogOpen(true);
+  };
+
+  const handleConfirmBooking = () => {
+    if (selectedDate && selectedTime && selectedCounselor) {
+      toast({
+        title: "Session Booked Successfully!",
+        description: `Your session with ${selectedCounselor.name} has been scheduled for ${format(selectedDate, 'PPP')} at ${selectedTime}.`,
+      });
+      setBookingDialogOpen(false);
+      setSelectedDate(undefined);
+      setSelectedTime('');
+      setSelectedCounselor(null);
+    }
+  };
+
   // Mock data - will be replaced with actual data when backend is implemented
   const counselors = [
     {
@@ -152,6 +215,7 @@ export default function MemberCounseling() {
                     <Button 
                       size="sm" 
                       disabled={!counselor.available}
+                      onClick={() => handleBookSession(counselor)}
                     >
                       <Calendar className="h-4 w-4 mr-1" />
                       Book Session
@@ -260,6 +324,103 @@ export default function MemberCounseling() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Book a Session</DialogTitle>
+            <DialogDescription>
+              {selectedCounselor && `Schedule a counseling session with ${selectedCounselor.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Date Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => {
+                      if (!selectedCounselor) return true;
+                      const availableDates = getAvailableDates(selectedCounselor.id);
+                      return !availableDates.some(availableDate => 
+                        availableDate.toDateString() === date.toDateString()
+                      );
+                    }}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Time Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Time</label>
+              <Select value={selectedTime} onValueChange={setSelectedTime} disabled={!selectedDate}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose available time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableTimes().map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Selected Counselor Info */}
+            {selectedCounselor && (
+              <div className="p-4 bg-accent rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback>
+                      {selectedCounselor.name.split(' ').map((n: string) => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{selectedCounselor.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Specialties: {selectedCounselor.specialties.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBookingDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleConfirmBooking}
+              disabled={!selectedDate || !selectedTime}
+            >
+              Confirm Booking
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
