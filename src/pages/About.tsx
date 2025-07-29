@@ -118,7 +118,7 @@ const About = () => {
                               <img 
                                 src={slide.image} 
                                 alt={slide.title || `Slide ${index + 1}`} 
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-contain" 
                                 loading="lazy" 
                               />
                               {/* Slide overlay with title and description for carousel slides */}
