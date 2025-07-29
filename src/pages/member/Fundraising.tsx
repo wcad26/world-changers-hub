@@ -1,13 +1,57 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Heart, DollarSign, Target, Calendar } from 'lucide-react';
-import { useFundraisingCampaigns } from '@/hooks/useFundraisingCampaigns';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MemberFundraising() {
+  const { toast } = useToast();
+  const [donationDialogOpen, setDonationDialogOpen] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
+  const [customAmount, setCustomAmount] = useState('');
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+
+  const handleDonation = (campaign: any, amount: number | 'custom') => {
+    setSelectedCampaign(campaign);
+    if (amount === 'custom') {
+      setSelectedAmount(null);
+      setCustomAmount('');
+    } else {
+      setSelectedAmount(amount);
+      setCustomAmount('');
+    }
+    setDonationDialogOpen(true);
+  };
+
+  const processDonation = () => {
+    const donationAmount = selectedAmount || parseFloat(customAmount);
+    
+    if (!donationAmount || donationAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid donation amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Simulate donation processing
+    toast({
+      title: "Donation Successful! 🎉",
+      description: `Thank you for your $${donationAmount} donation to ${selectedCampaign?.name}. Your generosity makes a difference!`,
+    });
+
+    setDonationDialogOpen(false);
+    setSelectedCampaign(null);
+    setSelectedAmount(null);
+    setCustomAmount('');
+  };
   // Mock active campaigns data for demo purposes
   const mockCampaigns = [
     {
@@ -178,13 +222,27 @@ export default function MemberFundraising() {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button size="sm" disabled={remainingDays <= 0}>
+                          <Button 
+                            size="sm" 
+                            disabled={remainingDays <= 0}
+                            onClick={() => handleDonation(campaign, 25)}
+                          >
                             Donate $25
                           </Button>
-                          <Button size="sm" variant="outline" disabled={remainingDays <= 0}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            disabled={remainingDays <= 0}
+                            onClick={() => handleDonation(campaign, 50)}
+                          >
                             Donate $50
                           </Button>
-                          <Button size="sm" variant="outline" disabled={remainingDays <= 0}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            disabled={remainingDays <= 0}
+                            onClick={() => handleDonation(campaign, 'custom')}
+                          >
                             Custom Amount
                           </Button>
                         </div>
@@ -247,6 +305,86 @@ export default function MemberFundraising() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Donation Dialog */}
+      <Dialog open={donationDialogOpen} onOpenChange={setDonationDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Make a Donation</DialogTitle>
+            <DialogDescription>
+              {selectedCampaign && `Support the ${selectedCampaign.name} campaign`}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Campaign Info */}
+            {selectedCampaign && (
+              <div className="p-4 bg-accent rounded-lg">
+                <h4 className="font-medium text-foreground">{selectedCampaign.name}</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  ${(selectedCampaign.raised / 100).toFixed(2)} of ${(selectedCampaign.goal / 100).toFixed(2)} raised
+                </p>
+                <Progress 
+                  value={(selectedCampaign.raised / selectedCampaign.goal) * 100} 
+                  className="h-2 mt-2" 
+                />
+              </div>
+            )}
+
+            {/* Amount Selection */}
+            <div className="space-y-3">
+              <Label>Donation Amount</Label>
+              
+              {selectedAmount ? (
+                <div className="flex items-center justify-between p-3 border rounded-lg bg-primary/5">
+                  <span className="font-medium">${selectedAmount}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedAmount(null)}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    type="number"
+                    placeholder="Enter custom amount"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    min="1"
+                    step="0.01"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter your desired donation amount in dollars
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Method Info */}
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                💳 This is a demo. In a real implementation, this would integrate with Stripe or another payment processor.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDonationDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={processDonation}
+              disabled={!selectedAmount && (!customAmount || parseFloat(customAmount) <= 0)}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Donate {selectedAmount ? `$${selectedAmount}` : customAmount ? `$${customAmount}` : ''}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
