@@ -6,9 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Calendar, MessageCircle, Sparkles, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 
 interface ProgressSummaryDialogProps {
   relationshipId: string;
@@ -59,8 +62,14 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
   const [chatInput, setChatInput] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('progress');
   
   const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  
+  // Show tabs for mobile and tablet views
+  const showTabs = isMobile || isTablet;
 
   const getMilestoneLabel = (milestone: string) => {
     const labels = {
@@ -166,113 +175,230 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-4 p-4">
-          {/* Progress Notes Section */}
-          <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
-            <h3 className="text-lg font-semibold mb-3 shrink-0">Progress History</h3>
-            <ScrollArea className="flex-1 pr-2">
-              <div className="space-y-3">
-                {mockProgressNotes.map((note, index) => (
-                  <Card key={note.id} className="border-l-4 border-l-primary/20">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <Badge className={getMilestoneColor(note.milestone)}>
-                          {getMilestoneLabel(note.milestone)}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(note.achieved_date), 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-sm text-muted-foreground leading-relaxed">{note.notes}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* AI Chat Section */}
-          <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
-            <div className="flex items-center gap-2 mb-3 shrink-0">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">AI Insights</h3>
-            </div>
-            
-            <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
-              {/* Chat Messages */}
-              <ScrollArea className="flex-1 p-4 min-h-0">
-                {chatMessages.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Ask me anything about {discipleName}'s progress!</p>
-                    <div className="mt-4 space-y-2">
-                      {predefinedPrompts.map((prompt, index) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          size="sm"
-                          className="mx-1"
-                          onClick={() => setChatInput(prompt)}
-                        >
-                          {prompt}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {chatMessages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            message.role === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          <p className="text-sm">{message.content}</p>
-                          <p className="text-xs opacity-70 mt-1">
-                            {format(message.timestamp, 'HH:mm')}
-                          </p>
-                        </div>
-                      </div>
+        {showTabs ? (
+          /* Mobile/Tablet: Tabbed Layout */
+          <div className="flex-1 min-h-0 p-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="progress" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Progress History
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  AI Insights
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="progress" className="flex-1 mt-0 min-h-0">
+                <ScrollArea className="h-full">
+                  <div className="space-y-3 pr-2">
+                    {mockProgressNotes.map((note, index) => (
+                      <Card key={note.id} className="border-l-4 border-l-primary/20">
+                        <CardHeader className="pb-2">
+                          <div className="flex items-center justify-between">
+                            <Badge className={getMilestoneColor(note.milestone)}>
+                              {getMilestoneLabel(note.milestone)}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(note.achieved_date), 'MMM dd, yyyy')}
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-sm text-muted-foreground leading-relaxed">{note.notes}</p>
+                        </CardContent>
+                      </Card>
                     ))}
-                    {isLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted rounded-lg p-3">
-                          <p className="text-sm">Thinking...</p>
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="ai" className="flex-1 mt-0 min-h-0">
+                <div className="border rounded-lg h-full flex flex-col min-h-0 overflow-hidden">
+                  {/* Chat Messages */}
+                  <ScrollArea className="flex-1 p-4 min-h-0">
+                    {chatMessages.length === 0 ? (
+                      <div className="text-center text-muted-foreground py-8">
+                        <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Ask me anything about {discipleName}'s progress!</p>
+                        <div className="mt-4 space-y-2">
+                          {predefinedPrompts.map((prompt, index) => (
+                            <Button
+                              key={index}
+                              variant="outline"
+                              size="sm"
+                              className="mx-1"
+                              onClick={() => setChatInput(prompt)}
+                            >
+                              {prompt}
+                            </Button>
+                          ))}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {chatMessages.map((message, index) => (
+                          <div
+                            key={index}
+                            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-[80%] rounded-lg p-3 ${
+                                message.role === 'user'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted'
+                              }`}
+                            >
+                              <p className="text-sm">{message.content}</p>
+                              <p className="text-xs opacity-70 mt-1">
+                                {format(message.timestamp, 'HH:mm')}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {isLoading && (
+                          <div className="flex justify-start">
+                            <div className="bg-muted rounded-lg p-3">
+                              <p className="text-sm">Thinking...</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </ScrollArea>
+                  </ScrollArea>
 
-              <Separator />
+                  <Separator />
 
-              {/* Chat Input */}
-              <form onSubmit={handleChatSubmit} className="p-3 border-t">
-                <div className="flex gap-2">
-                  <Input
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask about their progress..."
-                    disabled={isLoading}
-                    className="flex-1"
-                  />
-                  <Button type="submit" size="icon" disabled={isLoading || !chatInput.trim()}>
-                    <Send className="h-4 w-4" />
-                  </Button>
+                  {/* Chat Input */}
+                  <form onSubmit={handleChatSubmit} className="p-3 border-t">
+                    <div className="flex gap-2">
+                      <Input
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Ask about their progress..."
+                        disabled={isLoading}
+                        className="flex-1"
+                      />
+                      <Button type="submit" size="icon" disabled={isLoading || !chatInput.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          /* Desktop: Side-by-side Layout */
+          <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-4 p-4">
+            {/* Progress Notes Section */}
+            <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
+              <h3 className="text-lg font-semibold mb-3 shrink-0">Progress History</h3>
+              <ScrollArea className="flex-1 pr-2">
+                <div className="space-y-3">
+                  {mockProgressNotes.map((note, index) => (
+                    <Card key={note.id} className="border-l-4 border-l-primary/20">
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <Badge className={getMilestoneColor(note.milestone)}>
+                            {getMilestoneLabel(note.milestone)}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(note.achieved_date), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-sm text-muted-foreground leading-relaxed">{note.notes}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* AI Chat Section */}
+            <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
+              <div className="flex items-center gap-2 mb-3 shrink-0">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">AI Insights</h3>
+              </div>
+              
+              <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
+                {/* Chat Messages */}
+                <ScrollArea className="flex-1 p-4 min-h-0">
+                  {chatMessages.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Ask me anything about {discipleName}'s progress!</p>
+                      <div className="mt-4 space-y-2">
+                        {predefinedPrompts.map((prompt, index) => (
+                          <Button
+                            key={index}
+                            variant="outline"
+                            size="sm"
+                            className="mx-1"
+                            onClick={() => setChatInput(prompt)}
+                          >
+                            {prompt}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {chatMessages.map((message, index) => (
+                        <div
+                          key={index}
+                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                        >
+                          <div
+                            className={`max-w-[80%] rounded-lg p-3 ${
+                              message.role === 'user'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted'
+                            }`}
+                          >
+                            <p className="text-sm">{message.content}</p>
+                            <p className="text-xs opacity-70 mt-1">
+                              {format(message.timestamp, 'HH:mm')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted rounded-lg p-3">
+                            <p className="text-sm">Thinking...</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </ScrollArea>
+
+                <Separator />
+
+                {/* Chat Input */}
+                <form onSubmit={handleChatSubmit} className="p-3 border-t">
+                  <div className="flex gap-2">
+                    <Input
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder="Ask about their progress..."
+                      disabled={isLoading}
+                      className="flex-1"
+                    />
+                    <Button type="submit" size="icon" disabled={isLoading || !chatInput.trim()}>
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
