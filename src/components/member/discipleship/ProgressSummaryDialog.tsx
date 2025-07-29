@@ -176,8 +176,8 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
         </DialogHeader>
         
         {showTabs ? (
-          /* Mobile/Tablet: Tabbed Layout */
-          <div className="flex-1 min-h-0 p-4 overflow-hidden h-full">
+          // Mobile/Tablet: Tabbed Layout with proper scrolling
+          <div className="flex-1 min-h-0 p-4">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
               <TabsList className="grid w-full grid-cols-2 mb-4 shrink-0">
                 <TabsTrigger value="progress" className="flex items-center gap-2">
@@ -190,10 +190,10 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
                 </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="progress" className="flex-1 mt-0 min-h-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
-                <ScrollArea className="flex-1 h-full">
+              <TabsContent value="progress" className="flex-1 mt-0 min-h-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <ScrollArea className="flex-1 h-0">
                   <div className="space-y-3 pr-2 pb-4">
-                    {mockProgressNotes.map((note, index) => (
+                    {mockProgressNotes.map((note) => (
                       <Card key={note.id} className="border-l-4 border-l-primary/20">
                         <CardHeader className="pb-2">
                           <div className="flex items-center justify-between">
@@ -216,7 +216,6 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
               
               <TabsContent value="ai" className="flex-1 mt-0 min-h-0 data-[state=active]:flex data-[state=active]:flex-col">
                 <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {/* Chat Messages */}
                   <ScrollArea className="flex-1 p-4 min-h-0">
                     {chatMessages.length === 0 ? (
                       <div className="text-center text-muted-foreground py-8">
@@ -270,8 +269,7 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
 
                   <Separator />
 
-                  {/* Chat Input */}
-                  <form onSubmit={handleChatSubmit} className="p-3 border-t">
+                  <form onSubmit={handleChatSubmit} className="p-3 border-t shrink-0">
                     <div className="flex gap-2">
                       <Input
                         value={chatInput}
@@ -290,14 +288,13 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
             </Tabs>
           </div>
         ) : (
-          /* Desktop: Side-by-side Layout */
+          // Desktop: Side-by-side Layout
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-4 p-4">
-            {/* Progress Notes Section */}
             <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
               <h3 className="text-lg font-semibold mb-3 shrink-0">Progress History</h3>
               <ScrollArea className="flex-1 pr-2">
                 <div className="space-y-3">
-                  {mockProgressNotes.map((note, index) => (
+                  {mockProgressNotes.map((note) => (
                     <Card key={note.id} className="border-l-4 border-l-primary/20">
                       <CardHeader className="pb-2">
                         <div className="flex items-center justify-between">
@@ -318,7 +315,6 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
               </ScrollArea>
             </div>
 
-            {/* AI Chat Section */}
             <div className="flex flex-col flex-1 lg:flex-none lg:w-1/2 min-h-0">
               <div className="flex items-center gap-2 mb-3 shrink-0">
                 <Sparkles className="h-5 w-5 text-primary" />
@@ -326,7 +322,6 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
               </div>
               
               <div className="border rounded-lg flex-1 flex flex-col min-h-0 overflow-hidden">
-                {/* Chat Messages */}
                 <ScrollArea className="flex-1 p-4 min-h-0">
                   {chatMessages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
@@ -380,8 +375,7 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
 
                 <Separator />
 
-                {/* Chat Input */}
-                <form onSubmit={handleChatSubmit} className="p-3 border-t">
+                <form onSubmit={handleChatSubmit} className="p-3 border-t shrink-0">
                   <div className="flex gap-2">
                     <Input
                       value={chatInput}
