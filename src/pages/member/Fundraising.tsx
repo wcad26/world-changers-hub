@@ -8,16 +8,67 @@ import { Heart, DollarSign, Target, Calendar } from 'lucide-react';
 import { useFundraisingCampaigns } from '@/hooks/useFundraisingCampaigns';
 
 export default function MemberFundraising() {
-  const { data: campaigns, isLoading } = useFundraisingCampaigns({ status: 'Active' });
+  // Mock active campaigns data for demo purposes
+  const mockCampaigns = [
+    {
+      id: 1,
+      name: "New Church Building Fund",
+      description: "Help us build a new sanctuary to accommodate our growing congregation and serve the community better.",
+      goal: 50000000, // $500,000 in cents
+      raised: 32500000, // $325,000 in cents
+      start_date: "2024-10-01",
+      end_date: "2025-03-31",
+      status: "Active"
+    },
+    {
+      id: 2,
+      name: "Youth Summer Camp 2025",
+      description: "Support our youth ministry by helping fund the annual summer camp experience for 50+ teenagers.",
+      goal: 2500000, // $25,000 in cents
+      raised: 1850000, // $18,500 in cents
+      start_date: "2024-11-01",
+      end_date: "2025-02-28",
+      status: "Active"
+    },
+    {
+      id: 3,
+      name: "Community Food Bank",
+      description: "Ongoing support for families in need within our local community. Every contribution makes a difference.",
+      goal: 1500000, // $15,000 in cents
+      raised: 890000, // $8,900 in cents
+      start_date: "2024-09-15",
+      end_date: "2025-01-15",
+      status: "Active"
+    },
+    {
+      id: 4,
+      name: "Mission Trip to Guatemala",
+      description: "Help send our mission team to serve communities in Guatemala through medical aid and construction projects.",
+      goal: 3000000, // $30,000 in cents
+      raised: 2750000, // $27,500 in cents
+      start_date: "2024-08-01",
+      end_date: "2024-12-20",
+      status: "Active"
+    }
+  ];
 
-  // Mock donation history - will be replaced with actual hook when available
+  // Enhanced donation history with more variety
   const donationHistory = [
-    { id: 1, campaign: "New Church Building", amount: 250, date: "2024-12-01", status: "completed" },
-    { id: 2, campaign: "Community Outreach", amount: 100, date: "2024-11-15", status: "completed" },
-    { id: 3, campaign: "Youth Program", amount: 75, date: "2024-11-01", status: "completed" },
+    { id: 1, campaign: "New Church Building Fund", amount: 500, date: "2024-12-15", status: "completed" },
+    { id: 2, campaign: "Community Food Bank", amount: 100, date: "2024-12-10", status: "completed" },
+    { id: 3, campaign: "Youth Summer Camp 2025", amount: 250, date: "2024-12-05", status: "completed" },
+    { id: 4, campaign: "Mission Trip to Guatemala", amount: 200, date: "2024-11-28", status: "completed" },
+    { id: 5, campaign: "New Church Building Fund", amount: 300, date: "2024-11-20", status: "completed" },
+    { id: 6, campaign: "Community Food Bank", amount: 75, date: "2024-11-15", status: "completed" },
+    { id: 7, campaign: "Youth Summer Camp 2025", amount: 150, date: "2024-11-01", status: "completed" },
+    { id: 8, campaign: "Mission Trip to Guatemala", amount: 400, date: "2024-10-15", status: "completed" },
   ];
 
   const totalDonated = donationHistory.reduce((sum, donation) => sum + donation.amount, 0);
+  
+  // Use mock data instead of hook for demo
+  const campaigns = mockCampaigns;
+  const isLoading = false;
 
   if (isLoading) {
     return (
