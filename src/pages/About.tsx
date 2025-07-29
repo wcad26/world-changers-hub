@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
 import { useGlobalContent, GlobalContentData } from '@/hooks/useGlobalContent';
 import { renderIcon } from '@/utils/iconMapping';
+import Autoplay from "embla-carousel-autoplay";
 
 const About = () => {
   const isMobile = useIsMobile();
@@ -110,7 +111,14 @@ const About = () => {
                 <div className="relative">
                   {/* Hero slides carousel */}
                   {pageContent.hero?.slides && pageContent.hero.slides.length > 0 ? (
-                    <Carousel className="w-full max-w-2xl">
+                    <Carousel 
+                      className="w-full max-w-2xl"
+                      plugins={[
+                        Autoplay({
+                          delay: 3000,
+                        }),
+                      ]}
+                    >
                       <CarouselContent>
                         {pageContent.hero.slides.map((slide, index) => (
                           <CarouselItem key={slide.id || index}>
