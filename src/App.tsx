@@ -68,6 +68,7 @@ import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 import MemberDashboard from "./pages/member/Dashboard";
 import MemberEvents from "./pages/member/Events";
 import MemberProfile from "./pages/member/Profile";
+import MemberFinances from "./pages/member/Finances";
 
 const queryClient = new QueryClient();
 
@@ -350,6 +351,14 @@ const App = () => {
               element={
                 <MemberProtectedRoute>
                   <MemberProfile />
+                </MemberProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/member/finances" 
+              element={
+                <MemberProtectedRoute>
+                  <MemberFinances />
                 </MemberProtectedRoute>
               } 
             />
