@@ -12,7 +12,7 @@ export default function MemberProtectedRoute({
   children, 
   redirectTo = '/member/auth' 
 }: MemberProtectedRouteProps) {
-  const { user, loading, isMember } = useAuth();
+  const { user, loading, isMember, isRegionalAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -27,7 +27,7 @@ export default function MemberProtectedRoute({
     );
   }
 
-  if (!user || !isMember()) {
+  if (!user || (!isMember() && !isRegionalAdmin())) {
     return <Navigate to={redirectTo} replace />;
   }
 

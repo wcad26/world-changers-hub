@@ -19,15 +19,15 @@ export default function MemberAuth() {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
-  const { user, isMember } = useAuth();
+  const { user, isMember, isRegionalAdmin } = useAuth();
   const { toast } = useToast();
 
   // Redirect if already authenticated as member
   useEffect(() => {
-    if (user && isMember()) {
+    if (user && (isMember() || isRegionalAdmin())) {
       navigate('/member/dashboard');
     }
-  }, [user, isMember, navigate]);
+  }, [user, isMember, isRegionalAdmin, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
