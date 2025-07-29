@@ -177,8 +177,8 @@ export function ProgressSummaryDialog({ relationshipId, discipleName, children }
         
         {showTabs ? (
           /* Mobile/Tablet: Tabbed Layout */
-          <div className="flex-1 min-h-0 p-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <div className="flex-1 min-h-0 p-4 overflow-hidden">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col overflow-hidden">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="progress" className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
