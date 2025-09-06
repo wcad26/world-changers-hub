@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
-import wcaLogo from '/lovable-uploads/d7cad735-b9fd-485a-ab12-3716233b4518.png';
+
 
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
@@ -71,7 +71,7 @@ const DcgAuth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-center">
-            <img src={wcaLogo} alt="WCA Logo" className="w-16 h-16 rounded-lg" />
+            <img src="/lovable-uploads/15519acb-f856-4cf5-a23d-3e9451b2b146.png" alt="WCA Logo" className="w-16 h-16 rounded-lg" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">DCG Portal</CardTitle>
           <CardDescription className="text-center">

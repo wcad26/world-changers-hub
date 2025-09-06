@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Users, Shield, Loader2, AlertCircle } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import wcaLogo from '/lovable-uploads/d7cad735-b9fd-485a-ab12-3716233b4518.png';
+
 
 const RegionSpecificAuth = () => {
   const { regionSlug } = useParams<{ regionSlug: string }>();
@@ -241,7 +241,7 @@ const RegionSpecificAuth = () => {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <img src={wcaLogo} alt="WCA Logo" className="w-12 h-12 rounded-lg" />
+            <img src="/lovable-uploads/15519acb-f856-4cf5-a23d-3e9451b2b146.png" alt="WCA Logo" className="w-12 h-12 rounded-lg" />
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
                 {region.name}
