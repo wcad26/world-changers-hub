@@ -34,9 +34,17 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
   // Filter members based on search term
   const filteredMembers = availableMembers?.filter(member => {
     const searchLower = searchTerm.toLowerCase();
-    const fullName = `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.toLowerCase();
+    const firstName = member.profiles?.first_name || '';
+    const lastName = member.profiles?.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim().toLowerCase();
     const email = member.profiles?.email?.toLowerCase() || '';
-    return fullName.includes(searchLower) || email.includes(searchLower) || member.member_id.toLowerCase().includes(searchLower);
+    const memberId = member.member_id?.toLowerCase() || '';
+    
+    return fullName.includes(searchLower) || 
+           email.includes(searchLower) || 
+           memberId.includes(searchLower) ||
+           firstName.toLowerCase().includes(searchLower) ||
+           lastName.toLowerCase().includes(searchLower);
   }) || [];
 
   const handleMemberToggle = (memberId: string) => {
@@ -165,7 +173,10 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {member.profiles?.first_name} {member.profiles?.last_name}
+                            {member.profiles?.first_name || member.profiles?.last_name 
+                              ? `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.trim()
+                              : member.profiles?.email || member.member_id || 'Unknown Member'
+                            }
                           </div>
                         </div>
                       </TableCell>
