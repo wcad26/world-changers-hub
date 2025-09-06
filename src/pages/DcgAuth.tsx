@@ -71,7 +71,7 @@ const DcgAuth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-center">
-            <img src="/lovable-uploads/15519acb-f856-4cf5-a23d-3e9451b2b146.png" alt="WCA Logo" className="w-16 h-16 rounded-lg" />
+            <img src="/lovable-uploads/a8469e8a-2c56-4caf-8bd4-f09c9120deb6.png" alt="WCA Logo" className="w-16 h-16 rounded-lg" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">DCG Portal</CardTitle>
           <CardDescription className="text-center">
