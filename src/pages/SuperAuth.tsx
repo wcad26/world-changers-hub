@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Shield, Users, Loader2 } from 'lucide-react';
+import wcaLogo from '/lovable-uploads/d7cad735-b9fd-485a-ab12-3716233b4518.png';
 
 const SuperAuth = () => {
   const [email, setEmail] = useState('');
@@ -281,9 +282,7 @@ const SuperAuth = () => {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-r from-wca-purple to-wca-violet text-white">
-              <Shield size={32} />
-            </div>
+            <img src={wcaLogo} alt="WCA Logo" className="w-12 h-12 rounded-lg" />
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
                 WCA

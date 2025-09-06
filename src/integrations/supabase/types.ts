@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1073,6 +1073,7 @@ export type Database = {
           is_active: boolean | null
           region_id: string | null
           role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["user_role_status"] | null
           user_id: string
         }
         Insert: {
@@ -1082,6 +1083,7 @@ export type Database = {
           is_active?: boolean | null
           region_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_role_status"] | null
           user_id: string
         }
         Update: {
@@ -1091,6 +1093,7 @@ export type Database = {
           is_active?: boolean | null
           region_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["user_role_status"] | null
           user_id?: string
         }
         Relationships: [
@@ -1115,46 +1118,46 @@ export type Database = {
       get_attendance_summary: {
         Args: { p_region_id: string }
         Returns: {
+          absent_count: number
+          event_date: string
           event_id: string
           event_name: string
-          event_date: string
           present_count: number
-          absent_count: number
         }[]
       }
       get_discipleship_impact_trend: {
         Args: { _member_id: string; _region_id: string }
         Returns: {
+          disciples_attended: number
           event_date: string
           event_name: string
           mentor_attended: boolean
-          disciples_attended: number
         }[]
       }
       get_global_attendance_summary: {
         Args: Record<PropertyKey, never>
         Returns: {
-          region_id: string
-          total_present: number
-          total_events: number
           avg_attendance: number
+          region_id: string
+          total_events: number
+          total_present: number
         }[]
       }
       get_member_discipleship_stats: {
         Args: { _member_id: string }
         Returns: {
-          total_disciples: number
           active_disciples: number
           completed_disciples: number
           success_rate: number
+          total_disciples: number
         }[]
       }
       get_next_dcg_meeting: {
         Args: { _dcg_id: string }
         Returns: {
+          event_date: string
           event_id: string
           event_name: string
-          event_date: string
           is_today: boolean
           is_upcoming: boolean
         }[]
@@ -1173,13 +1176,13 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       user_belongs_to_region: {
-        Args: { _user_id: string; _region_id: string }
+        Args: { _region_id: string; _user_id: string }
         Returns: boolean
       }
     }
@@ -1222,6 +1225,7 @@ export type Database = {
       event_status: "Upcoming" | "Completed" | "Cancelled" | "Draft"
       financial_transaction_type: "Income" | "Expense"
       member_status: "active" | "inactive" | "new" | "transferred"
+      user_role_status: "pending" | "active" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1391,6 +1395,7 @@ export const Constants = {
       event_status: ["Upcoming", "Completed", "Cancelled", "Draft"],
       financial_transaction_type: ["Income", "Expense"],
       member_status: ["active", "inactive", "new", "transferred"],
+      user_role_status: ["pending", "active", "rejected"],
     },
   },
 } as const
