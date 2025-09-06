@@ -26,39 +26,52 @@ const PendingApprovalsList: React.FC = () => {
   const { data: pendingUsers, isLoading } = useQuery({
     queryKey: ["pending-users"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get pending user roles
+      const { data: userRoles, error: rolesError } = await supabase
         .from("user_roles")
-        .select(`
-          id,
-          user_id,
-          role,
-          region_id,
-          created_at,
-          profiles!inner(
-            id,
-            email,
-            first_name,
-            last_name
-          ),
-          regions!inner(
-            name
-          )
-        `)
+        .select("id, user_id, role, region_id, assigned_at")
         .eq("status", "pending")
         .eq("role", "regional_admin");
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
+      if (!userRoles || userRoles.length === 0) return [];
 
-      return data.map((item: any) => ({
-        id: item.profiles.id,
-        email: item.profiles.email,
-        first_name: item.profiles.first_name,
-        last_name: item.profiles.last_name,
-        region_id: item.region_id,
-        region_name: item.regions.name,
-        role_id: item.id,
-        created_at: item.created_at,
-      }));
+      // Get user IDs and region IDs
+      const userIds = userRoles.map(role => role.user_id);
+      const regionIds = userRoles.map(role => role.region_id).filter(Boolean);
+
+      // Get profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, first_name, last_name")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Get region names
+      const { data: regions, error: regionsError } = await supabase
+        .from("regions")
+        .select("id, name")
+        .in("id", regionIds);
+
+      if (regionsError) throw regionsError;
+
+      // Combine the data
+      return userRoles.map((role: any) => {
+        const profile = profiles?.find(p => p.id === role.user_id);
+        const region = regions?.find(r => r.id === role.region_id);
+        
+        return {
+          id: profile?.id || role.user_id,
+          email: profile?.email || "N/A",
+          first_name: profile?.first_name || null,
+          last_name: profile?.last_name || null,
+          region_id: role.region_id,
+          region_name: region?.name || "Unknown Region",
+          role_id: role.id,
+          created_at: role.assigned_at,
+        };
+      });
     },
   });
 
