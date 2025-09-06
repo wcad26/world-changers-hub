@@ -145,7 +145,6 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">Select</TableHead>
-                    <TableHead>Member ID</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Type</TableHead>
@@ -162,9 +161,6 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                           onChange={() => handleMemberToggle(member.id)}
                           className="rounded border-gray-300"
                         />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {member.member_id}
                       </TableCell>
                       <TableCell>
                         <div>
