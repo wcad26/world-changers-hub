@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Users, Plus, UserX } from 'lucide-react';
+import { Users, Plus } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import AssignRoleDialog from './AssignRoleDialog';
@@ -38,7 +38,6 @@ const UserRoleAssignmentTab: React.FC = () => {
                   <TableHead>Member</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Current Roles</TableHead>
-                  <TableHead>Member Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -56,13 +55,6 @@ const UserRoleAssignmentTab: React.FC = () => {
                         {/* TODO: Show actual roles when user has them */}
                         <Badge variant="secondary">Member</Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={member.status === 'active' ? 'default' : 'secondary'}
-                      >
-                        {member.status}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
