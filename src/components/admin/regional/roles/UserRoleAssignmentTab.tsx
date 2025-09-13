@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Users, Plus, Search, Filter } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { useRegionalRoles } from '@/hooks/useRegionalRoles';
 import AssignRoleDialog from './AssignRoleDialog';
 
 const UserRoleAssignmentTab: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: members, isLoading } = useMembers(userRegion?.id);
+  const { data: regionalRoles, isLoading: rolesLoading } = useRegionalRoles(userRegion?.id);
   const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -27,15 +29,17 @@ const UserRoleAssignmentTab: React.FC = () => {
         `${member.profiles?.first_name} ${member.profiles?.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Role filter (for now just showing Member role, but this can be expanded)
-      const matchesRole = roleFilter === 'all' || roleFilter === 'member';
+      // Role filter (check against actual regional role names)
+      const matchesRole = roleFilter === 'all' || 
+        regionalRoles?.some(role => role.name === roleFilter && role.is_active) || 
+        roleFilter === 'member'; // Keep member as fallback
       
       return matchesSearch && matchesRole;
     });
   }, [members, searchQuery, roleFilter]);
 
-  if (isLoading) {
-    return <div className="text-center py-8">Loading members...</div>;
+  if (isLoading || rolesLoading) {
+    return <div className="text-center py-8">Loading...</div>;
   }
 
   return (
@@ -68,8 +72,11 @@ const UserRoleAssignmentTab: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    {regionalRoles?.filter(role => role.is_active).map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
