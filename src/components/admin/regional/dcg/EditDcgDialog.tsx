@@ -12,52 +12,22 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUpdateLocation } from '@/hooks/useLocations';
+import { dcgSchema, DcgWithLeader } from '@/hooks/useDCGs';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import LocationCoordinatePicker from '@/components/ui/LocationCoordinatePicker';
-import type { Database } from '@/integrations/supabase/types';
-
-type DcgWithLocation = {
-  id: string;
-  name: string;
-  description: string | null;
-  location: string | null;
-  meeting_day: string | null;
-  meeting_time: string | null;
-  contact_phone: string | null;
-  leader_id: string | null;
-  locations?: {
-    id: string;
-    name: string;
-    address: string;
-    city: string;
-    state: string;
-    zip: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    contact_person: string | null;
-    contact_phone: string | null;
-  } | null;
-};
 
 interface EditDcgDialogProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  dcg: DcgWithLocation | null;
+  dcg: DcgWithLeader | null;
 }
 
 const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-const editDcgSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters."),
-  description: z.string().optional(),
-  location: z.string().optional(),
-  meeting_day: z.string().optional(),
-  meeting_time: z.string().optional(),
-  contact_phone: z.string().optional(),
-  leader_id: z.string().nullable(),
+// Enhanced schema for DCG with location fields - same as AddDcgDialog
+const enhancedDcgSchema = dcgSchema.extend({
   // Location fields
   address: z.string().min(5, "Please provide a valid address."),
   city: z.string().min(2, "Please enter a city."),
@@ -65,24 +35,21 @@ const editDcgSchema = z.object({
   zip: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
-  contact_person: z.string().optional(),
-  location_contact_phone: z.string().optional(),
 });
 
 export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg }) => {
   const { userRegion } = useAuth();
-  const updateLocationMutation = useUpdateLocation();
   const { data: members = [] } = useMembers(userRegion?.id);
   const [leaderOpen, setLeaderOpen] = useState(false);
   const [selectedCoordinates, setSelectedCoordinates] = useState<{lat: number, lng: number, address?: string} | null>(null);
 
-  const form = useForm<z.infer<typeof editDcgSchema>>({
-    resolver: zodResolver(editDcgSchema),
+  const form = useForm<z.infer<typeof enhancedDcgSchema>>({
+    resolver: zodResolver(enhancedDcgSchema),
     defaultValues: {
       name: '',
       description: '',
       location: '',
-      meeting_day: '',
+      meeting_day: undefined,
       meeting_time: '',
       contact_phone: '',
       leader_id: null,
@@ -92,8 +59,6 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
       zip: '',
       latitude: undefined,
       longitude: undefined,
-      contact_person: '',
-      location_contact_phone: '',
     },
   });
 
@@ -104,53 +69,141 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
         name: dcg.name || '',
         description: dcg.description || '',
         location: dcg.location || '',
-        meeting_day: dcg.meeting_day || '',
+        meeting_day: dcg.meeting_day || undefined,
         meeting_time: dcg.meeting_time || '',
         contact_phone: dcg.contact_phone || '',
         leader_id: dcg.leader_id,
-        address: dcg.locations?.address || '',
-        city: dcg.locations?.city || '',
-        state: dcg.locations?.state || '',
-        zip: dcg.locations?.zip || '',
-        latitude: dcg.locations?.latitude || undefined,
-        longitude: dcg.locations?.longitude || undefined,
-        contact_person: dcg.locations?.contact_person || '',
-        location_contact_phone: dcg.locations?.contact_phone || '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+        latitude: undefined,
+        longitude: undefined,
       });
-
-      if (dcg.locations?.latitude && dcg.locations?.longitude) {
-        setSelectedCoordinates({
-          lat: dcg.locations.latitude,
-          lng: dcg.locations.longitude,
-          address: dcg.locations.address
-        });
-      }
     }
   }, [dcg, open, form]);
 
-  const onSubmit = async (values: z.infer<typeof editDcgSchema>) => {
+  const onSubmit = async (values: z.infer<typeof enhancedDcgSchema>) => {
     try {
-      if (!dcg?.locations?.id) {
-        throw new Error('DCG location not found');
+      if (!dcg) {
+        throw new Error('No DCG selected for editing');
       }
 
-      // Update only the location (DCG updates would require additional mutations)
-      const locationData = {
-        id: dcg.locations.id,
-        name: `${values.name} - DCG Location`,
-        address: values.address,
-        city: values.city,
-        state: values.state,
-        zip: values.zip,
-        latitude: values.latitude,
-        longitude: values.longitude,
-        contact_person: values.contact_person,
-        contact_phone: values.location_contact_phone,
-      };
-
-      await updateLocationMutation.mutateAsync(locationData);
+      const selectedMember = members.find(m => m.id === values.leader_id);
       
-      toast.success('DCG location updated successfully!');
+      if (values.leader_id && !selectedMember?.profile_id) {
+        throw new Error('Selected member must have a valid profile to become a DCG leader');
+      }
+
+      // Update DCG basic information
+      const { error: dcgError } = await supabase
+        .from('dcgs')
+        .update({
+          name: values.name,
+          description: values.description,
+          location: values.location,
+          meeting_day: values.meeting_day,
+          meeting_time: values.meeting_time,
+          contact_phone: values.contact_phone,
+          leader_id: values.leader_id,
+        })
+        .eq('id', dcg.id);
+
+      if (dcgError) {
+        throw new Error(`Failed to update DCG: ${dcgError.message}`);
+      }
+
+      // Create or update location if needed
+      if (values.address && values.city && values.state) {
+        const locationData = {
+          name: `${values.name} - DCG Location`,
+          type: 'DCG Location' as const,
+          address: values.address,
+          city: values.city,
+          state: values.state,
+          zip: values.zip,
+          latitude: values.latitude,
+          longitude: values.longitude,
+          contact_person: selectedMember?.profiles?.first_name && selectedMember?.profiles?.last_name 
+            ? `${selectedMember.profiles.first_name} ${selectedMember.profiles.last_name}`
+            : undefined,
+          contact_phone: selectedMember?.profiles?.phone || values.contact_phone,
+          region_id: userRegion?.id,
+        };
+
+        const { error: locationError } = await supabase
+          .from('locations')
+          .insert(locationData);
+
+        if (locationError) {
+          console.error('Failed to create location:', locationError);
+        }
+      }
+
+      // Handle leader role assignment if leader changed
+      if (values.leader_id && selectedMember?.profile_id) {
+        // Remove existing DCG admin role for this DCG
+        await supabase
+          .from('user_roles')
+          .delete()
+          .eq('role', 'dcg_admin')
+          .eq('region_id', userRegion?.id);
+
+        // Add new DCG admin role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: selectedMember.profile_id,
+            role: 'dcg_admin',
+            region_id: userRegion?.id,
+            is_active: true
+          });
+
+        if (roleError) {
+          console.error('Failed to assign DCG leader role:', roleError);
+        }
+
+        // Update DCG user session
+        await supabase
+          .from('dcg_user_sessions')
+          .delete()
+          .eq('dcg_id', dcg.id);
+
+        const { error: sessionError } = await supabase
+          .from('dcg_user_sessions')
+          .insert({
+            dcg_id: dcg.id,
+            user_id: selectedMember.profile_id,
+            is_active: true
+          });
+
+        if (sessionError) {
+          console.error('Failed to create DCG session:', sessionError);
+        }
+
+        // Update DCG member leadership
+        await supabase
+          .from('dcg_members')
+          .update({ role: 'Member' })
+          .eq('dcg_id', dcg.id)
+          .eq('role', 'Leader');
+
+        const { error: memberError } = await supabase
+          .from('dcg_members')
+          .upsert({
+            dcg_id: dcg.id,
+            member_id: selectedMember.id,
+            role: 'Leader',
+            joined_date: new Date().toISOString().split('T')[0],
+            is_active: true
+          });
+
+        if (memberError) {
+          console.error('Failed to update DCG member leadership:', memberError);
+        }
+      }
+      
+      toast.success('DCG updated successfully!');
       setOpen(false);
     } catch (error: any) {
       toast.error(`Failed to update DCG: ${error.message}`);
@@ -163,17 +216,182 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Edit DCG Location</DialogTitle>
+          <DialogTitle>Edit DCG</DialogTitle>
           <DialogDescription>
-            Update the location details for {dcg.name}.
+            Update the details for {dcg.name} and its location.
           </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto pr-2">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Location Information */}
+              {/* DCG Basic Information */}
               <div className="space-y-4">
+                <h3 className="text-lg font-medium">DCG Information</h3>
+                
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>DCG Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="E.g., Victory DCG" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="A brief description of the DCG" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="E.g., Downtown Community Center" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="meeting_day"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meeting Day</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a day" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {weekDays.map(day => <SelectItem key={day} value={day}>{day}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="meeting_time"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meeting Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="contact_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Contact Phone</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Optional contact number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="leader_id"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>DCG Leader</FormLabel>
+                      <Popover open={leaderOpen} onOpenChange={setLeaderOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? members.find((member) => member.id === field.value)?.profiles
+                                  ? `${members.find((member) => member.id === field.value)?.profiles?.first_name || ''} ${members.find((member) => member.id === field.value)?.profiles?.last_name || ''}`
+                                  : "Member not found"
+                                : "Select DCG leader"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command>
+                            <CommandInput placeholder="Search members..." />
+                            <CommandList>
+                              <CommandEmpty>No members found.</CommandEmpty>
+                              <CommandGroup>
+                                {members.map((member) => (
+                                  <CommandItem
+                                    value={`${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`}
+                                    key={member.id}
+                                    onSelect={() => {
+                                      field.onChange(member.id);
+                                      setLeaderOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        member.id === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {member.profiles?.first_name || ''} {member.profiles?.last_name || ''}
+                                    <span className="ml-2 text-sm text-muted-foreground">
+                                      ({member.member_id})
+                                    </span>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Select the member who will lead this DCG.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Location Information */}
+              <div className="space-y-4 border-t pt-4">
                 <h3 className="text-lg font-medium">Location Details</h3>
                 
                 <FormField
@@ -232,35 +450,6 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                     </FormItem>
                   )}
                 />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="contact_person"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Person</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="location_contact_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contact Phone</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+1234567890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
               
               {/* Location Coordinate Picker */}
@@ -290,10 +479,10 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
           </Button>
           <Button 
             type="submit" 
-            disabled={updateLocationMutation.isPending}
+            disabled={false}
             onClick={form.handleSubmit(onSubmit)}
           >
-            {updateLocationMutation.isPending ? 'Updating...' : 'Update Location'}
+            Update DCG & Location
           </Button>
         </DialogFooter>
       </DialogContent>
