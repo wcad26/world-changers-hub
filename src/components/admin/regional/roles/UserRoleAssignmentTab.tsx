@@ -9,6 +9,8 @@ import { Users, Plus, Search, Filter } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import AssignRoleDialog from './AssignRoleDialog';
 
 const UserRoleAssignmentTab: React.FC = () => {
@@ -19,26 +21,70 @@ const UserRoleAssignmentTab: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
 
-  // Filter members based on search query and role filter
+  // Fetch regional user role assignments
+  const { data: userRoleAssignments, isLoading: userRolesLoading } = useQuery({
+    queryKey: ['regional-user-role-assignments', userRegion?.id],
+    queryFn: async () => {
+      if (!userRegion?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('regional_user_roles')
+        .select(`
+          user_id,
+          regional_roles:regional_role_id (
+            id,
+            name,
+            description
+          )
+        `)
+        .eq('region_id', userRegion.id)
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userRegion?.id,
+  });
+
+  // Filter members based on search query and role filter - show only members with regional roles
   const filteredMembers = useMemo(() => {
-    if (!members) return [];
+    if (!members || !userRoleAssignments) return [];
     
-    return members.filter((member) => {
+    // Only include members who have been assigned regional roles
+    const membersWithRoles = members.filter((member) => {
+      return userRoleAssignments.some(assignment => assignment.user_id === member.profile_id);
+    });
+    
+    return membersWithRoles.filter((member) => {
       // Search filter
       const matchesSearch = searchQuery === '' || 
         `${member.profiles?.first_name} ${member.profiles?.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
       
-      // Role filter (check against actual regional role names)
-      const matchesRole = roleFilter === 'all' || 
-        regionalRoles?.some(role => role.name === roleFilter && role.is_active) || 
-        roleFilter === 'member'; // Keep member as fallback
+      // Role filter - check against actual assigned roles
+      if (roleFilter === 'all') return matchesSearch;
+      
+      const memberRoles = userRoleAssignments
+        .filter(assignment => assignment.user_id === member.profile_id)
+        .map(assignment => assignment.regional_roles?.name)
+        .filter(Boolean);
+      
+      const matchesRole = memberRoles.includes(roleFilter);
       
       return matchesSearch && matchesRole;
     });
-  }, [members, searchQuery, roleFilter]);
+  }, [members, userRoleAssignments, searchQuery, roleFilter]);
 
-  if (isLoading || rolesLoading) {
+  // Get roles for a specific member
+  const getMemberRoles = (profileId: string) => {
+    if (!userRoleAssignments) return [];
+    return userRoleAssignments
+      .filter(assignment => assignment.user_id === profileId)
+      .map(assignment => assignment.regional_roles)
+      .filter(Boolean);
+  };
+
+  if (isLoading || rolesLoading || userRolesLoading) {
     return <div className="text-center py-8">Loading...</div>;
   }
 
@@ -94,7 +140,7 @@ const UserRoleAssignmentTab: React.FC = () => {
               </div>
             ) : filteredMembers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No members match your search criteria.
+                No members with regional roles match your search criteria.
               </div>
             ) : (
               <Table>
@@ -115,12 +161,15 @@ const UserRoleAssignmentTab: React.FC = () => {
                       <TableCell className="text-muted-foreground">
                         {member.profiles?.email}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {/* TODO: Show actual roles when user has them */}
-                          <Badge variant="secondary">Member</Badge>
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex gap-1 flex-wrap">
+                           {getMemberRoles(member.profile_id).map((role) => (
+                             <Badge key={role.id} variant="secondary">
+                               {role.name}
+                             </Badge>
+                           ))}
+                         </div>
+                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
