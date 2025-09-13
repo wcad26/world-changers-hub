@@ -8,17 +8,17 @@ const RegionalAuth = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-wca-teal/10 via-wca-teal/5 to-wca-purple/10 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 flex items-center justify-center p-4">
+      <div className="absolute inset-0 opacity-5"></div>
       
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="p-3 rounded-2xl bg-gradient-to-r from-wca-teal to-wca-teal/80 text-white">
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
               <Users size={32} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 Select Your Regional Portal
               </h1>
               <p className="text-sm text-muted-foreground">
