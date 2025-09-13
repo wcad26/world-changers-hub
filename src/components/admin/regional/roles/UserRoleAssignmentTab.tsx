@@ -129,7 +129,7 @@ const UserRoleAssignmentTab: React.FC = () => {
                             onClick={() => setAssigningUserId(member.profile_id)}
                           >
                             <Plus className="h-4 w-4" />
-                            Assign Role
+                            Edit Role
                           </Button>
                         </div>
                       </TableCell>
