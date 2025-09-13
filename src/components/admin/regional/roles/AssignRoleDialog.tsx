@@ -10,6 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
 import { useAssignUserRole, useUserRegionalRoles } from '@/hooks/useUserPermissions';
 import { useMembers } from '@/hooks/useMembers';
@@ -28,6 +32,7 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
 }) => {
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(userId || '');
+  const [userComboboxOpen, setUserComboboxOpen] = useState(false);
   const { userRegion } = useAuth();
   const { data: roles } = useRegionalRoles();
   const { data: members } = useMembers(userRegion?.id);
@@ -78,25 +83,58 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
           {!userId && (
             <div>
               <Label htmlFor="user">Select User *</Label>
-              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a user to assign role to" />
-                </SelectTrigger>
-                <SelectContent>
-                  {members?.map((member) => (
-                    <SelectItem key={member.id} value={member.profile_id || ''}>
-                      <div>
-                        <div className="font-medium">
-                          {member.profiles?.first_name} {member.profiles?.last_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {member.profiles?.email}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={userComboboxOpen} onOpenChange={setUserComboboxOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={userComboboxOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedUserId
+                      ? members?.find((member) => member.profile_id === selectedUserId)
+                        ? `${members.find((member) => member.profile_id === selectedUserId)?.profiles?.first_name} ${members.find((member) => member.profile_id === selectedUserId)?.profiles?.last_name}`
+                        : "Select user..."
+                      : "Select user..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search users..." />
+                    <CommandList>
+                      <CommandEmpty>No users found.</CommandEmpty>
+                      <CommandGroup>
+                        {members?.map((member) => (
+                          <CommandItem
+                            key={member.id}
+                            value={`${member.profiles?.first_name} ${member.profiles?.last_name} ${member.profiles?.email}`}
+                            onSelect={() => {
+                              setSelectedUserId(member.profile_id || '');
+                              setUserComboboxOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedUserId === member.profile_id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <div className="font-medium">
+                                {member.profiles?.first_name} {member.profiles?.last_name}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {member.profiles?.email}
+                              </div>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
 
