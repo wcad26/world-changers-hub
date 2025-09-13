@@ -31,6 +31,7 @@ const menuItems = [
   { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Branch Settings", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "User Roles", path: "/admin/regional/user-roles", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Settings", path: "/admin/regional/settings", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
 ];
 

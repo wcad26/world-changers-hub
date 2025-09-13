@@ -40,6 +40,7 @@ import RegionalReports from "./pages/admin/regional/Reports";
 import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
+import UserRoles from "./pages/admin/regional/UserRoles";
 
 // Super Admin Portal Routes
 import SuperDashboard from "./pages/admin/super/Dashboard";
@@ -229,6 +230,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalBranchSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/user-roles" 
+              element={
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                  <UserRoles />
                 </ProtectedRoute>
               } 
             />

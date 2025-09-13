@@ -1008,6 +1008,80 @@ export type Database = {
           },
         ]
       }
+      regional_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          permissions: Json
+          region_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          permissions?: Json
+          region_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          permissions?: Json
+          region_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      regional_user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          is_active: boolean
+          region_id: string
+          regional_role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          region_id: string
+          regional_role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          region_id?: string
+          regional_role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regional_user_roles_regional_role_id_fkey"
+            columns: ["regional_role_id"]
+            isOneToOne: false
+            referencedRelation: "regional_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regions: {
         Row: {
           address: string | null
@@ -1174,6 +1248,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      has_regional_permission: {
+        Args: { _permission: string; _region_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1225,6 +1303,35 @@ export type Database = {
       event_status: "Upcoming" | "Completed" | "Cancelled" | "Draft"
       financial_transaction_type: "Income" | "Expense"
       member_status: "active" | "inactive" | "new" | "transferred"
+      regional_permission:
+        | "dashboard_view"
+        | "members_view"
+        | "members_create"
+        | "members_edit"
+        | "members_export"
+        | "events_view"
+        | "events_create"
+        | "events_edit"
+        | "events_delete"
+        | "finances_view"
+        | "finances_create"
+        | "finances_edit"
+        | "dcg_view"
+        | "dcg_create"
+        | "dcg_edit"
+        | "reports_view"
+        | "reports_export"
+        | "communication_view"
+        | "communication_create"
+        | "communication_send"
+        | "locations_view"
+        | "locations_create"
+        | "locations_edit"
+        | "fundraising_view"
+        | "fundraising_create"
+        | "fundraising_edit"
+        | "settings_view"
+        | "settings_edit"
       user_role_status: "pending" | "active" | "rejected"
     }
     CompositeTypes: {
@@ -1395,6 +1502,36 @@ export const Constants = {
       event_status: ["Upcoming", "Completed", "Cancelled", "Draft"],
       financial_transaction_type: ["Income", "Expense"],
       member_status: ["active", "inactive", "new", "transferred"],
+      regional_permission: [
+        "dashboard_view",
+        "members_view",
+        "members_create",
+        "members_edit",
+        "members_export",
+        "events_view",
+        "events_create",
+        "events_edit",
+        "events_delete",
+        "finances_view",
+        "finances_create",
+        "finances_edit",
+        "dcg_view",
+        "dcg_create",
+        "dcg_edit",
+        "reports_view",
+        "reports_export",
+        "communication_view",
+        "communication_create",
+        "communication_send",
+        "locations_view",
+        "locations_create",
+        "locations_edit",
+        "fundraising_view",
+        "fundraising_create",
+        "fundraising_edit",
+        "settings_view",
+        "settings_edit",
+      ],
       user_role_status: ["pending", "active", "rejected"],
     },
   },

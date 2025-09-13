@@ -16,6 +16,7 @@ export const useAuth = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
+  const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -163,8 +164,28 @@ export const useAuth = () => {
             setUserDcg(dcgData);
           }
         }
-      }
-    } catch (error) {
+        }
+
+        // Fetch regional roles if user has region
+        if (profileData && profileData.region_id) {
+          const { data: regionalRolesData } = await supabase
+            .from('regional_user_roles')
+            .select(`
+              *,
+              regional_roles (
+                id,
+                name,
+                description,
+                permissions
+              )
+            `)
+            .eq('user_id', userId)
+            .eq('region_id', profileData.region_id)
+            .eq('is_active', true);
+
+          setUserRegionalRoles(regionalRolesData || []);
+        }
+      } catch (error) {
       console.error('useAuth: Exception fetching user data:', error);
       toast({
         title: "Error loading user data",
@@ -180,6 +201,14 @@ export const useAuth = () => {
     const result = userRoles.some(ur => ur.role === role && ur.is_active);
     console.log(`useAuth: Checking role ${role}:`, result, 'from roles:', userRoles.map(r => r.role));
     return result;
+  };
+
+  const hasRegionalPermission = (permission: string) => {
+    if (hasRole('super_admin') || hasRole('regional_admin')) return true;
+    
+    return userRegionalRoles.some(userRole => 
+      userRole.regional_roles?.permissions?.includes(permission)
+    );
   };
 
   const isSuperAdmin = () => hasRole('super_admin');
@@ -233,6 +262,7 @@ export const useAuth = () => {
         setUserRoles([]);
         setUserRegion(null);
         setUserDcg(null);
+        setUserRegionalRoles([]);
         
         navigate(redirectUrl);
         toast({
@@ -253,8 +283,10 @@ export const useAuth = () => {
     userRoles,
     userRegion,
     userDcg,
+    userRegionalRoles,
     loading,
     hasRole,
+    hasRegionalPermission,
     isSuperAdmin,
     isRegionalAdmin,
     isMember,
