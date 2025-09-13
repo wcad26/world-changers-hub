@@ -22,7 +22,25 @@ const RegionSpecificRegister = () => {
   const { toast } = useToast();
   
   // Convert region code to slug format for the hook
-  const regionSlug = regionCode?.toLowerCase().replace('wca', 'wca-');
+  const getRegionSlug = (code: string | undefined): string | undefined => {
+    if (!code) return undefined;
+    
+    const lowerCode = code.toLowerCase();
+    switch (lowerCode) {
+      case 'wcad':
+        return 'wca-douala';
+      case 'wcaeu':
+        return 'wca-eu';
+      case 'wcausa':
+        return 'wca-usa';
+      case 'wcayde':
+        return 'wca-yaounde';
+      default:
+        return undefined;
+    }
+  };
+  
+  const regionSlug = getRegionSlug(regionCode);
   const { data: region, isLoading: regionLoading } = useRegionBySlug(regionSlug);
 
   const handleRegister = async (e: React.FormEvent) => {
