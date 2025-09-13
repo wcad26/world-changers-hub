@@ -57,8 +57,8 @@ const RegionSelect = () => {
                   return (
                     <Button
                       key={region.id}
-                      variant="outline"
-                      className="justify-between h-14 p-4 hover:bg-wca-teal/5 hover:border-wca-teal transition-all"
+                      variant="soft"
+                      className="justify-between h-14 p-4"
                       onClick={() => navigate(`/auth/regions/${slug}`)}
                     >
                       <div className="text-left">
@@ -77,7 +77,7 @@ const RegionSelect = () => {
             <div className="mt-6 pt-6 border-t border-gray-200">
               <div className="flex justify-center">
                 <Button
-                  variant="outline"
+                  variant="modern"
                   className="flex-1 max-w-xs"
                   onClick={() => navigate('/auth/super')}
                 >
@@ -90,7 +90,7 @@ const RegionSelect = () => {
 
         <div className="text-center mt-6">
           <Button
-            variant="ghost"
+            variant="elegant"
             className="text-muted-foreground hover:text-foreground"
             onClick={() => navigate('/')}
           >
