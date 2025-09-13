@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
@@ -18,6 +18,7 @@ export const useAuth = () => {
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -191,6 +192,31 @@ export const useAuth = () => {
       console.log('useAuth: Signing out user...');
       setLoading(true);
       
+      // Determine redirect URL BEFORE clearing user state
+      const pathname = location.pathname;
+      let redirectUrl = '/';
+      
+      if (pathname.startsWith('/admin/super') || pathname.startsWith('/super/')) {
+        redirectUrl = '/auth/super';
+      } else if (pathname.startsWith('/admin/regional') || pathname.startsWith('/regional/')) {
+        redirectUrl = '/auth/regional';
+      } else if (pathname.startsWith('/dcg/')) {
+        redirectUrl = '/auth/dcg';
+      } else if (pathname.startsWith('/member/')) {
+        redirectUrl = '/auth/member';
+      } else {
+        // Fallback: determine by user roles (while still available)
+        if (hasRole('super_admin')) {
+          redirectUrl = '/auth/super';
+        } else if (hasRole('regional_admin')) {
+          redirectUrl = '/auth/regional';
+        } else if (hasRole('dcg_admin')) {
+          redirectUrl = '/auth/dcg';
+        } else if (hasRole('member')) {
+          redirectUrl = '/auth/member';
+        }
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('useAuth: Sign out error:', error);
@@ -201,14 +227,14 @@ export const useAuth = () => {
         });
       } else {
         console.log('useAuth: Sign out successful');
-        // Clear state immediately
+        // Clear state after determining redirect URL
         setUser(null);
         setProfile(null);
         setUserRoles([]);
         setUserRegion(null);
         setUserDcg(null);
         
-        navigate('/');
+        navigate(redirectUrl);
         toast({
           title: "Signed out successfully",
           description: "You have been signed out of your account."
