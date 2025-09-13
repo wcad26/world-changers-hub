@@ -73,7 +73,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
           <SidebarHeader className="p-4 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2">
               <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {userRegion?.name ? `WCA ${userRegion.name.toUpperCase()}` : 'WCA'}
+                {userRegion?.name?.toUpperCase() || 'PORTAL'}
               </span>
             </Link>
             {isMobile && (
