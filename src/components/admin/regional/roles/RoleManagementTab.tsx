@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Edit, Trash2, Shield, Eye } from 'lucide-react';
 import { useRegionalRoles, useDeleteRegionalRole } from '@/hooks/useRegionalRoles';
-import { formatDistanceToNow } from 'date-fns';
 import EditRoleDialog from './EditRoleDialog';
 import RoleDetailsDialog from './RoleDetailsDialog';
 
@@ -48,7 +47,6 @@ const RoleManagementTab: React.FC = () => {
                   <TableHead>Role Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Permissions</TableHead>
-                  <TableHead>Created</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -70,9 +68,6 @@ const RoleManagementTab: React.FC = () => {
                       <Badge variant="outline">
                         {role.permissions?.length || 0} permissions
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDistanceToNow(new Date(role.created_at), { addSuffix: true })}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
