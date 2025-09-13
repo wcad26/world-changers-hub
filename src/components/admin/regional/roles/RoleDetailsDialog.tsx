@@ -68,9 +68,6 @@ const RoleDetailsDialog: React.FC<RoleDetailsDialogProps> = ({ role, open, onOpe
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {role.name}
-            {role.name === 'Full Access Admin' && (
-              <Badge variant="secondary">Default</Badge>
-            )}
           </DialogTitle>
           <DialogDescription>
             {role.description || 'No description available'}

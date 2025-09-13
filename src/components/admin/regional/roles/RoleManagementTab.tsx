@@ -57,9 +57,6 @@ const RoleManagementTab: React.FC = () => {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {role.name}
-                        {role.name === 'Full Access Admin' && (
-                          <Badge variant="secondary">Default</Badge>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -84,14 +81,14 @@ const RoleManagementTab: React.FC = () => {
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => setEditingRole(role)}
-                            disabled={role.name === 'Full Access Admin'}
+                            disabled={role.name === 'Regional Admin'}
                           >
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             onClick={() => handleDeleteRole(role.id)}
-                            disabled={role.name === 'Full Access Admin'}
+                            disabled={role.name === 'Regional Admin'}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />

@@ -63,7 +63,7 @@ const UserRoles: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? '...' : roles?.filter(r => r.is_active && r.name !== 'Full Access Admin').length || 0}
+                {isLoading ? '...' : roles?.filter(r => r.is_active && r.name !== 'Regional Admin').length || 0}
               </div>
             </CardContent>
           </Card>
