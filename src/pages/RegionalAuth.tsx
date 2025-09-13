@@ -41,8 +41,8 @@ const RegionalAuth = () => {
           <CardContent>
             <div className="grid gap-3 mb-6">
               <Button 
-                variant="outline" 
-                className="justify-between h-14 p-4 hover:bg-wca-teal/5 hover:border-wca-teal transition-all" 
+                variant="modern" 
+                className="justify-between h-14 p-4" 
                 onClick={() => navigate('/auth/regions/wca-douala')}
               >
                 <div className="text-left">
@@ -53,8 +53,8 @@ const RegionalAuth = () => {
               </Button>
               
               <Button 
-                variant="outline" 
-                className="justify-between h-14 p-4 hover:bg-wca-teal/5 hover:border-wca-teal transition-all" 
+                variant="modern" 
+                className="justify-between h-14 p-4" 
                 onClick={() => navigate('/auth/regions/wca-eu')}
               >
                 <div className="text-left">
@@ -65,8 +65,8 @@ const RegionalAuth = () => {
               </Button>
               
               <Button 
-                variant="outline" 
-                className="justify-between h-14 p-4 hover:bg-wca-teal/5 hover:border-wca-teal transition-all" 
+                variant="modern" 
+                className="justify-between h-14 p-4" 
                 onClick={() => navigate('/auth/regions/wca-usa')}
               >
                 <div className="text-left">
@@ -77,8 +77,8 @@ const RegionalAuth = () => {
               </Button>
               
               <Button 
-                variant="outline" 
-                className="justify-between h-14 p-4 hover:bg-wca-teal/5 hover:border-wca-teal transition-all" 
+                variant="modern" 
+                className="justify-between h-14 p-4" 
                 onClick={() => navigate('/auth/regions/wca-yaounde')}
               >
                 <div className="text-left">
