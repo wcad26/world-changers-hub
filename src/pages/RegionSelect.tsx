@@ -75,17 +75,10 @@ const RegionSelect = () => {
             )}
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex gap-2">
+              <div className="flex justify-center">
                 <Button
                   variant="outline"
-                  className="flex-1"
-                  onClick={() => navigate('/auth/regional')}
-                >
-                  General Regional Login
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
+                  className="flex-1 max-w-xs"
                   onClick={() => navigate('/auth/super')}
                 >
                   Super Admin Portal
