@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,9 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
 import { useAssignUserRole, useUserRegionalRoles } from '@/hooks/useUserPermissions';
+import { useMembers } from '@/hooks/useMembers';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AssignRoleDialogProps {
-  userId: string;
+  userId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -25,9 +27,17 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
   onOpenChange 
 }) => {
   const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState(userId || '');
+  const { userRegion } = useAuth();
   const { data: roles } = useRegionalRoles();
-  const { data: userRoles } = useUserRegionalRoles(userId);
+  const { data: members } = useMembers(userRegion?.id);
+  const { data: userRoles } = useUserRegionalRoles(selectedUserId);
   const assignRole = useAssignUserRole();
+
+  // Reset selectedUserId when dialog opens or userId changes
+  useEffect(() => {
+    setSelectedUserId(userId || '');
+  }, [userId, open]);
 
   const availableRoles = roles?.filter(role => 
     role.is_active && 
@@ -37,15 +47,16 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!selectedRoleId) return;
+    if (!selectedRoleId || !selectedUserId) return;
 
     try {
       await assignRole.mutateAsync({
-        userId,
+        userId: selectedUserId,
         roleId: selectedRoleId,
       });
       
       setSelectedRoleId('');
+      if (!userId) setSelectedUserId(''); // Reset user selection if this was a general assignment
       onOpenChange(false);
     } catch (error) {
       console.error('Error assigning role:', error);
@@ -63,6 +74,32 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* User Selection - only show if no specific userId was provided */}
+          {!userId && (
+            <div>
+              <Label htmlFor="user">Select User *</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a user to assign role to" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members?.map((member) => (
+                    <SelectItem key={member.id} value={member.profile_id || ''}>
+                      <div>
+                        <div className="font-medium">
+                          {member.profiles?.first_name} {member.profiles?.last_name}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {member.profiles?.email}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Current Roles */}
           {userRoles && userRoles.length > 0 && (
             <div>
@@ -112,7 +149,7 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
             </Button>
             <Button 
               type="submit" 
-              disabled={!selectedRoleId || assignRole.isPending || availableRoles.length === 0}
+              disabled={!selectedRoleId || !selectedUserId || assignRole.isPending || availableRoles.length === 0}
             >
               {assignRole.isPending ? 'Assigning...' : 'Assign Role'}
             </Button>

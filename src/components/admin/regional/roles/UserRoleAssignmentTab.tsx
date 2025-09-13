@@ -51,7 +51,7 @@ const UserRoleAssignmentTab: React.FC = () => {
               <Users className="h-5 w-5" />
               User Role Assignments
             </CardTitle>
-            <Button onClick={() => setAssigningUserId('')}>
+            <Button onClick={() => setAssigningUserId('general')}>
               <Plus className="h-4 w-4 mr-2" />
               Assign Role
             </Button>
@@ -144,7 +144,7 @@ const UserRoleAssignmentTab: React.FC = () => {
 
       {assigningUserId && (
         <AssignRoleDialog
-          userId={assigningUserId}
+          userId={assigningUserId === 'general' ? undefined : assigningUserId}
           open={!!assigningUserId}
           onOpenChange={(open) => !open && setAssigningUserId(null)}
         />
