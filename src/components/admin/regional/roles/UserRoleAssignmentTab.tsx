@@ -96,7 +96,7 @@ const UserRoleAssignmentTab: React.FC = () => {
                   <TableRow>
                     <TableHead>Member</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Current Roles</TableHead>
+                    <TableHead>Roles</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
