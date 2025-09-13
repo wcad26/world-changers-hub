@@ -11,12 +11,15 @@ import { useDcgs, useDeleteDcg, DcgWithLeader } from "@/hooks/useDCGs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AddDcgDialog } from "./AddDcgDialog";
+import { EditDcgDialog } from "./EditDcgDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRegionalDcgStats, useRecentDcgActivity } from "@/hooks/useRegionalStats";
 
 const DcgOverviewTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDcgDialogOpen, setAddDcgDialogOpen] = useState(false);
+  const [isEditDcgDialogOpen, setEditDcgDialogOpen] = useState(false);
+  const [selectedDcg, setSelectedDcg] = useState<DcgWithLeader | null>(null);
   const { data: dcgs, isLoading, isError, error } = useDcgs();
   const { data: regionalStats, isLoading: statsLoading } = useRegionalDcgStats();
   const { data: recentActivity, isLoading: activityLoading } = useRecentDcgActivity();
@@ -159,7 +162,10 @@ const DcgOverviewTab = () => {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedDcg(dcg);
+                                setEditDcgDialogOpen(true);
+                              }}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 Edit
                               </DropdownMenuItem>
@@ -192,6 +198,11 @@ const DcgOverviewTab = () => {
 
 
       <AddDcgDialog open={isAddDcgDialogOpen} setOpen={setAddDcgDialogOpen} />
+      <EditDcgDialog 
+        open={isEditDcgDialogOpen} 
+        setOpen={setEditDcgDialogOpen} 
+        dcg={selectedDcg} 
+      />
     </div>
   );
 };
