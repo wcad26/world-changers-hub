@@ -1,0 +1,1 @@
+DELETE FROM user_roles WHERE user_id = '36243d46-de76-4cc6-b787-1165aeb61ff9' AND status = 'pending';
