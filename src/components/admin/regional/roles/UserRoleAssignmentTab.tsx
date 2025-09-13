@@ -46,10 +46,16 @@ const UserRoleAssignmentTab: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            User Role Assignments
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              User Role Assignments
+            </CardTitle>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Assign Role
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
