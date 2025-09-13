@@ -122,6 +122,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/regional" element={<RegionalAuth />} />
             <Route path="/auth/regions" element={<RegionSelect />} />
+            <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
             <Route path="/register/regional" element={<RegionalRegister />} />
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/dcg-auth" element={<DcgAuth />} />
@@ -136,7 +137,7 @@ const App = () => {
             <Route 
               path="/admin/regional/dashboard" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalDashboard />
                 </ProtectedRoute>
               } 
@@ -144,7 +145,7 @@ const App = () => {
             <Route 
               path="/admin/regional/members" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalMembers />
                 </ProtectedRoute>
               } 
@@ -152,7 +153,7 @@ const App = () => {
             <Route 
               path="/admin/regional/members/:memberId" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalMemberProfile />
                 </ProtectedRoute>
               } 
@@ -160,7 +161,7 @@ const App = () => {
             <Route 
               path="/admin/regional/events" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalEvents />
                 </ProtectedRoute>
               } 
@@ -168,7 +169,7 @@ const App = () => {
             <Route 
               path="/admin/regional/fundraising" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalFundraising />
                 </ProtectedRoute>
               } 
@@ -176,7 +177,7 @@ const App = () => {
             <Route 
               path="/admin/regional/locations" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalLocations />
                 </ProtectedRoute>
               } 
@@ -184,7 +185,7 @@ const App = () => {
             <Route 
               path="/admin/regional/finances" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalFinances />
                 </ProtectedRoute>
               } 
@@ -192,7 +193,7 @@ const App = () => {
             <Route 
               path="/admin/regional/dcg" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalDCG />
                 </ProtectedRoute>
               } 
@@ -200,7 +201,7 @@ const App = () => {
             <Route 
               path="/admin/regional/dcg/:dcgId" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <DcgProfile />
                 </ProtectedRoute>
               } 
@@ -208,7 +209,7 @@ const App = () => {
             <Route 
               path="/admin/regional/reports" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalReports />
                 </ProtectedRoute>
               } 
@@ -216,7 +217,7 @@ const App = () => {
             <Route 
               path="/admin/regional/communication" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalCommunication />
                 </ProtectedRoute>
               } 
@@ -224,7 +225,7 @@ const App = () => {
             <Route 
               path="/admin/regional/branch-settings" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalBranchSettings />
                 </ProtectedRoute>
               } 
@@ -232,7 +233,7 @@ const App = () => {
             <Route 
               path="/admin/regional/settings" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regional">
+                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
                   <RegionalSettings />
                 </ProtectedRoute>
               } 
