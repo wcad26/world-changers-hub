@@ -28,6 +28,7 @@ import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Users, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import AssignDiscipleDialog from "@/components/admin/regional/discipleship/AssignDiscipleDialog";
+import RoleBadge from "@/components/ui/RoleBadge";
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -161,6 +162,7 @@ const Members: React.FC = () => {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
+                        <TableHead>Role</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Join Date</TableHead>
                         <TableHead>Actions</TableHead>
@@ -168,9 +170,9 @@ const Members: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {isLoadingMembers ? (
-                        <TableRow><TableCell colSpan={6} className="text-center">Loading members...</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center">Loading members...</TableCell></TableRow>
                       ) : membersError ? (
-                         <TableRow><TableCell colSpan={6} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
+                         <TableRow><TableCell colSpan={7} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
                        ) : filteredMembers.length > 0 ? (
                         filteredMembers.map(member => (
                           <TableRow 
@@ -183,6 +185,9 @@ const Members: React.FC = () => {
                             </TableCell>
                             <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
                             <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                            <TableCell>
+                              <RoleBadge roles={member.profiles?.user_roles || []} />
+                            </TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(member.status || 'new')}>
                                 {member.status || 'new'}
@@ -204,7 +209,7 @@ const Members: React.FC = () => {
                           </TableRow>
                         ))
                       ) : (
-                        <TableRow><TableCell colSpan={6} className="text-center">No members found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center">No members found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>

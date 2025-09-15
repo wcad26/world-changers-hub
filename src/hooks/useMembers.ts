@@ -24,10 +24,20 @@ export const memberSchema = z.object({
 export type NewMemberData = z.infer<typeof memberSchema>;
 
 // Enhanced member type with profile data
-type Profile = Database['public']['Tables']['profiles']['Row'] & { email?: string | null };
+type Profile = Database['public']['Tables']['profiles']['Row'] & { 
+  email?: string | null;
+  user_roles?: Array<{
+    role: string;
+    is_active: boolean;
+  }>;
+};
 
 export type MemberWithProfile = Database['public']['Tables']['members']['Row'] & {
   profiles: Profile | null;
+  user_roles?: Array<{
+    role: string;
+    is_active: boolean;
+  }>;
 };
 
 export const useMembers = (regionId?: string) => {
@@ -54,8 +64,29 @@ export const useMembers = (regionId?: string) => {
         throw error;
       }
       
-      console.log('useMembers: Fetched members:', data);
-      return data as MemberWithProfile[];
+      // Fetch user roles separately for each member
+      const membersWithRoles = await Promise.all(
+        (data || []).map(async (member) => {
+          if (!member.profiles?.id) return member;
+          
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role, is_active')
+            .eq('user_id', member.profiles.id)
+            .eq('is_active', true);
+          
+          return {
+            ...member,
+            profiles: {
+              ...member.profiles,
+              user_roles: roles || []
+            }
+          };
+        })
+      );
+      
+      console.log('useMembers: Fetched members with roles:', membersWithRoles);
+      return membersWithRoles as MemberWithProfile[];
     },
     enabled: !!regionId,
   });

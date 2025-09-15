@@ -56,6 +56,15 @@ const CreateRegionalAdminForm: React.FC = () => {
 
       if (error) throw error;
 
+      if (result?.userExists) {
+        toast({
+          title: "User Already Exists",
+          description: result.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Success!",
         description: `Regional administrator account created successfully. An invitation email has been sent to ${data.email}.`,

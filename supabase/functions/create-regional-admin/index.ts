@@ -52,6 +52,41 @@ serve(async (req) => {
       throw new Error('Invalid region specified');
     }
 
+    // Check if user already exists with this email
+    const { data: existingUser, error: userCheckError } = await supabase.auth.admin.listUsers();
+    
+    if (userCheckError) {
+      console.error('Error checking existing users:', userCheckError);
+    }
+
+    const userExists = existingUser?.users?.find(user => user.email === email);
+    
+    if (userExists) {
+      // Check if user already has member record in this region
+      const { data: existingMember } = await supabase
+        .from('members')
+        .select('id, member_id')
+        .eq('profile_id', userExists.id)
+        .eq('region_id', regionId)
+        .single();
+
+      if (existingMember) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            userExists: true,
+            message: 'This user already exists as a member in this region. Please assign them regional admin role instead of creating a new account.',
+            userId: userExists.id,
+            memberId: existingMember.member_id,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+    }
+
     // Generate a temporary password
     const tempPassword = `WCA${Math.random().toString(36).slice(-8)}!`;
 
