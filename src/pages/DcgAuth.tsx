@@ -17,13 +17,24 @@ const DcgAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, getAvailablePortals } = useAuth();
 
   useEffect(() => {
-    if (user && hasRole('dcg_admin')) {
-      navigate('/dcg/dashboard');
+    // If user is already authenticated, check if they have multiple roles
+    if (user) {
+      const availablePortals = getAvailablePortals();
+      
+      if (availablePortals.length > 1) {
+        navigate('/portal-selector');
+      } else if (hasRole('dcg_admin')) {
+        navigate('/dcg/dashboard');
+      } else if (hasRole('regional_admin')) {
+        navigate('/admin/regional/dashboard');
+      } else if (hasRole('super_admin')) {
+        navigate('/admin/super/dashboard');
+      }
     }
-  }, [user, hasRole, navigate]);
+  }, [user, hasRole, getAvailablePortals, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,22 +53,30 @@ const DcgAuth = () => {
       }
 
       if (data.user) {
-        // Check if user has DCG leader role
+        // Check if user has any admin roles
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id)
-          .eq('role', 'dcg_admin')
-          .eq('is_active', true)
-          .single();
+          .in('role', ['dcg_admin', 'regional_admin', 'super_admin'])
+          .eq('is_active', true);
 
-        if (!roleData) {
-          setError('Access denied. This portal is for DCG leaders only.');
+        if (!roleData || roleData.length === 0) {
+          setError('Access denied. This portal is for authorized users only.');
           await supabase.auth.signOut();
           return;
         }
 
-        navigate('/dcg/dashboard');
+        // Check if user has multiple roles and redirect accordingly
+        if (roleData.length > 1) {
+          navigate('/portal-selector');
+        } else if (roleData.some(role => role.role === 'dcg_admin')) {
+          navigate('/dcg/dashboard');
+        } else if (roleData.some(role => role.role === 'regional_admin')) {
+          navigate('/admin/regional/dashboard');
+        } else if (roleData.some(role => role.role === 'super_admin')) {
+          navigate('/admin/super/dashboard');
+        }
       }
     } catch (err: any) {
       setError('An unexpected error occurred. Please try again.');

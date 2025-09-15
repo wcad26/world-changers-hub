@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Menu, ChevronLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
+import PortalSwitcher from "./PortalSwitcher";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -130,6 +131,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
                 </h1>
               </div>
               <div className="flex items-center gap-2">
+                <PortalSwitcher />
                 {user && (
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {user.email}

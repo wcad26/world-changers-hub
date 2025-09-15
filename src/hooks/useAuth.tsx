@@ -203,6 +203,29 @@ export const useAuth = () => {
     return result;
   };
 
+  const hasAnyRole = (roles: Array<'super_admin' | 'regional_admin' | 'member' | 'dcg_admin'>): boolean => {
+    return roles.some(role => hasRole(role));
+  };
+
+  const getAvailablePortals = () => {
+    const portals = [];
+    if (hasRole('super_admin')) portals.push('super');
+    if (hasRole('regional_admin')) portals.push('regional');
+    if (hasRole('dcg_admin')) portals.push('dcg');
+    if (hasRole('member')) portals.push('member');
+    return portals;
+  };
+
+  const canAccessPortal = (portalType: string): boolean => {
+    switch (portalType) {
+      case 'super': return hasRole('super_admin');
+      case 'regional': return hasRole('super_admin') || hasRole('regional_admin');
+      case 'dcg': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin');
+      case 'member': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin') || hasRole('member');
+      default: return false;
+    }
+  };
+
   const hasRegionalPermission = (permission: string) => {
     if (hasRole('super_admin') || hasRole('regional_admin')) return true;
     
@@ -286,6 +309,9 @@ export const useAuth = () => {
     userRegionalRoles,
     loading,
     hasRole,
+    hasAnyRole,
+    getAvailablePortals,
+    canAccessPortal,
     hasRegionalPermission,
     isSuperAdmin,
     isRegionalAdmin,

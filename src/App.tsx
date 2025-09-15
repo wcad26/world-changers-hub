@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
@@ -24,7 +25,8 @@ import RegionSpecificAuth from "./components/auth/RegionSpecificAuth";
 import RegionalRegister from "./pages/auth/RegionalRegister";
 import RegionSpecificRegister from "./pages/auth/RegionSpecificRegister";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
+import PortalSelector from "./components/auth/PortalSelector";
+import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
 
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
@@ -136,117 +138,117 @@ const App = () => {
             <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
             <Route path="/admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
             
-            {/* Regional Admin Portal Routes */}
+            {/* Regional Admin Portal Routes - Allow super admins access */}
             <Route 
               path="/admin/regional/dashboard" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalDashboard />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/members" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalMembers />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/members/:memberId" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalMemberProfile />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/events" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalEvents />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/fundraising" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalFundraising />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/locations" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalLocations />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/finances" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalFinances />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/dcg" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalDCG />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/dcg/:dcgId" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <DcgProfile />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/reports" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalReports />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/communication" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalCommunication />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/branch-settings" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalBranchSettings />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/user-roles" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <UserRoles />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/admin/regional/settings" 
               element={
-                <ProtectedRoute requiredRole="regional_admin" redirectTo="/auth/regions">
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalSettings />
-                </ProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             
@@ -451,56 +453,70 @@ const App = () => {
               } 
             />
             
-            {/* DCG Portal Routes */}
+            {/* DCG Portal Routes - Allow regional admins and super admins access */}
             <Route path="/dcg" element={<Navigate to="/dcg/dashboard" replace />} />
             <Route 
               path="/dcg/dashboard" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgDashboard />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/dcg/members" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgMembers />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/dcg/events" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgEvents />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/dcg/finances" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgFinances />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/dcg/reports" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgReports />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
             <Route 
               path="/dcg/communication" 
               element={
-                <DcgProtectedRoute>
+                <MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgCommunication />
-                </DcgProtectedRoute>
+                </MultiRoleProtectedRoute>
               } 
             />
+            
+            {/* Portal Selector Route */}
+            <Route path="/portal-selector" element={<PortalSelector />} />
+            
+            {/* Unauthorized Route */}
+            <Route path="/unauthorized" element={
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold mb-4">Unauthorized Access</h1>
+                  <p className="text-muted-foreground mb-4">You don't have permission to access this resource.</p>
+                  <Button onClick={() => window.history.back()}>Go Back</Button>
+                </div>
+              </div>
+            } />
             
             {/* Not Found Route */}
             <Route path="*" element={<NotFound />} />

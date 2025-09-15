@@ -1,23 +1,20 @@
-
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
-interface ProtectedRouteProps {
+interface MultiRoleProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin';
-  allowedRoles?: Array<'super_admin' | 'regional_admin' | 'member' | 'dcg_admin'>;
+  allowedRoles: Array<'super_admin' | 'regional_admin' | 'member' | 'dcg_admin'>;
   redirectTo?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({ 
   children, 
-  requiredRole,
   allowedRoles,
   redirectTo = '/portal-selector'
 }) => {
-  const { user, loading, hasRole, hasAnyRole } = useAuth();
+  const { user, loading, hasAnyRole } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -32,17 +29,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Check for specific required role
-  if (requiredRole && !hasRole(requiredRole)) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
-  // Check for any of the allowed roles
-  if (allowedRoles && !hasAnyRole(allowedRoles)) {
+  if (!hasAnyRole(allowedRoles)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
   return <>{children}</>;
 };
 
-export default ProtectedRoute;
+export default MultiRoleProtectedRoute;

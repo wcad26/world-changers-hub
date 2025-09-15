@@ -27,7 +27,7 @@ const DcgProtectedRoute: React.FC<DcgProtectedRouteProps> = ({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  if (!hasRole('dcg_admin')) {
+  if (!hasRole('dcg_admin') && !hasRole('regional_admin') && !hasRole('super_admin')) {
     return <Navigate to="/unauthorized" replace />;
   }
 
