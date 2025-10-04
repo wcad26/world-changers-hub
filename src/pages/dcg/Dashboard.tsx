@@ -26,10 +26,16 @@ import { useFinancialTransactions, useFinancialSummary } from '@/hooks/useFinanc
 import { useDcgAttendanceAnalytics, useDcgAttendanceHistory } from '@/hooks/useDcgAttendance';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useDcgs } from '@/hooks/useDCGs';
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { formatWithCurrency } from '@/utils/currencyUtils';
 
 const DcgDashboard = () => {
   const { profile, userDcg } = useAuth();
   const navigate = useNavigate();
+  const { data: dcgs } = useDcgs();
+  const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
+  const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
   
   // Data hooks
   const { data: dcgMembers = [] } = useDcgMembers(userDcg?.id);
@@ -109,10 +115,10 @@ const DcgDashboard = () => {
     },
     {
       title: "Monthly Income",
-      value: `$${dcgFinancialSummary.total_income.toFixed(0)}`,
+      value: formatWithCurrency(dcgFinancialSummary.total_income, regionCurrency),
       description: "This month",
       icon: DollarSign,
-      trend: `$${dcgFinancialSummary.total_offerings.toFixed(0)} offerings`,
+      trend: `${formatWithCurrency(dcgFinancialSummary.total_offerings, regionCurrency)} offerings`,
       trendType: "positive" as const
     },
     {
@@ -322,26 +328,26 @@ const DcgDashboard = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Total Income</span>
                     <span className="font-medium text-green-600">
-                      ${dcgFinancialSummary.total_income.toFixed(2)}
+                      {formatWithCurrency(dcgFinancialSummary.total_income, regionCurrency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Offerings</span>
                     <span className="text-sm text-muted-foreground">
-                      ${dcgFinancialSummary.total_offerings.toFixed(2)}
+                      {formatWithCurrency(dcgFinancialSummary.total_offerings, regionCurrency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Special Giving</span>
                     <span className="text-sm text-muted-foreground">
-                      ${dcgFinancialSummary.total_special_giving.toFixed(2)}
+                      {formatWithCurrency(dcgFinancialSummary.total_special_giving, regionCurrency)}
                     </span>
                   </div>
                   <Separator />
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Total Expenses</span>
                     <span className="font-medium text-red-600">
-                      ${dcgFinancialSummary.total_expenses.toFixed(2)}
+                      {formatWithCurrency(dcgFinancialSummary.total_expenses, regionCurrency)}
                     </span>
                   </div>
                   <Separator />
@@ -352,7 +358,7 @@ const DcgDashboard = () => {
                         ? 'text-green-600' 
                         : 'text-red-600'
                     }`}>
-                      ${(dcgFinancialSummary.total_income - dcgFinancialSummary.total_expenses).toFixed(2)}
+                      {formatWithCurrency(dcgFinancialSummary.total_income - dcgFinancialSummary.total_expenses, regionCurrency)}
                     </span>
                   </div>
                 </div>

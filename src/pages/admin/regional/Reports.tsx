@@ -11,8 +11,13 @@ import { useRegionalReports } from "@/hooks/useReports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import Papa from "papaparse";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatWithCurrency } from "@/utils/currencyUtils";
 
 const RegionalReports: React.FC = () => {
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const [dateRange, setDateRange] = useState("year");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -21,7 +26,7 @@ const RegionalReports: React.FC = () => {
   const { data: reportData, isLoading, isError, error, refetch } = useRegionalReports();
   const { toast } = useToast();
 
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  const formatCurrency = (amount: number) => formatWithCurrency(amount, regionCurrency);
   
   const dcgTotalMembers = reportData?.dcgReports.reduce((sum, dcg) => sum + dcg.members, 0) ?? 0;
   

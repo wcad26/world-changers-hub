@@ -2,12 +2,18 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import FinancialTrendChart from './FinancialTrendChart';
+import { useAuth } from '@/hooks/useAuth';
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { formatWithCurrency } from '@/utils/currencyUtils';
 
 interface FinanceTabProps {
   selectedPeriod: string;
 }
 
 const FinanceTab: React.FC<FinanceTabProps> = ({ selectedPeriod }) => {
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  
   // Mock financial summary data
   const mockSummaryData = {
     totalIncome: 58000,
@@ -21,16 +27,13 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ selectedPeriod }) => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: 'USD' 
-    }).format(amount);
+    return formatWithCurrency(amount, regionCurrency);
   };
 
   return (
     <div className="space-y-6">
       {/* Financial Trend Chart */}
-      <FinancialTrendChart selectedPeriod={selectedPeriod} />
+      <FinancialTrendChart selectedPeriod={selectedPeriod} regionCurrency={regionCurrency} />
       
       {/* Financial Summary Card */}
       <Card>

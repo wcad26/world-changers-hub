@@ -14,9 +14,15 @@ import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
 import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecialGivingDialog";
 import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatWithCurrency } from "@/utils/currencyUtils";
 
 const RegionalFinances: React.FC = () => {
   console.log('RegionalFinances component loaded successfully');
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  
   // State for dialogs
   const [recordTitheDialogOpen, setRecordTitheDialogOpen] = useState(false);
   const [offeringDialogOpen, setOfferingDialogOpen] = useState(false);
@@ -63,10 +69,7 @@ const RegionalFinances: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return formatWithCurrency(amount, regionCurrency);
   };
 
   return (

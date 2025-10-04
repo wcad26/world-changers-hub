@@ -12,6 +12,8 @@ import { useMembers } from "@/hooks/useMembers";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateFinancialTransaction, useFinancialCategories } from "@/hooks/useFinancials";
 import { toast } from "@/hooks/use-toast";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { getCurrencySymbol } from "@/utils/currencyUtils";
 
 const titheSchema = z.object({
   date: z.string().min(1, { message: "Date is required" }),
@@ -31,6 +33,8 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
   onOpenChange,
 }) => {
   const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
   const { data: members = [] } = useMembers(userRegion?.id);
   const { data: categories = [] } = useFinancialCategories();
   const createTransaction = useCreateFinancialTransaction();
@@ -147,7 +151,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount ($)</FormLabel>
+                  <FormLabel>Amount ({currencySymbol})</FormLabel>
                   <FormControl>
                     <Input 
                       type="number" 

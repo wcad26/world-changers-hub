@@ -7,6 +7,9 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateFinancialTransaction } from '@/hooks/useFinancials';
+import { useAuth } from '@/hooks/useAuth';
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { getCurrencySymbol } from '@/utils/currencyUtils';
 
 import {
   Dialog,
@@ -64,6 +67,9 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
   onOpenChange,
 }) => {
   const { toast } = useToast();
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
   const createTransaction = useCreateFinancialTransaction();
 
   const form = useForm<SpecialGivingFormData>({
@@ -197,7 +203,7 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount ({currencySymbol})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

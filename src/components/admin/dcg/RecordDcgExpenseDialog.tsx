@@ -39,6 +39,9 @@ import { cn } from "@/lib/utils";
 import { useCreateFinancialTransaction, useFinancialCategories } from "@/hooks/useFinancials";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useDcgs } from "@/hooks/useDCGs";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { getCurrencySymbol } from "@/utils/currencyUtils";
 
 const expenseSchema = z.object({
   category_id: z.string().uuid("Please select a category"),
@@ -59,6 +62,10 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
   onOpenChange,
 }) => {
   const { userDcg } = useAuth();
+  const { data: dcgs } = useDcgs();
+  const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
+  const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
+  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
   const { toast } = useToast();
   const createTransaction = useCreateFinancialTransaction();
   const { data: categories } = useFinancialCategories();
@@ -148,7 +155,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount ({currencySymbol})</FormLabel>
                   <FormControl>
                     <Input
                       type="number"

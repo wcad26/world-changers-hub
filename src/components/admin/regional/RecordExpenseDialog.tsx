@@ -35,6 +35,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { getCurrencySymbol } from '@/utils/currencyUtils';
 
 const expenseSchema = z.object({
   date: z.date({
@@ -58,6 +61,9 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
   onOpenChange,
   onSubmit,
 }) => {
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
   const [receiptImage, setReceiptImage] = React.useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
 
@@ -198,7 +204,7 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Amount ({currencySymbol})</FormLabel>
                     <FormControl>
                       <Input
                         type="number"

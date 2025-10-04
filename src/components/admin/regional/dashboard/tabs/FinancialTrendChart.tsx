@@ -2,12 +2,17 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { formatWithCurrency, getCurrencySymbol } from '@/utils/currencyUtils';
+import type { Currency } from '@/hooks/useCurrencies';
 
 interface FinancialTrendChartProps {
   selectedPeriod: string;
+  regionCurrency?: Currency | null;
 }
 
-const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod }) => {
+const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod, regionCurrency }) => {
+  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  
   // Mock financial data for demonstration
   const mockFinancialData = [
     { month: 'Jan 2024', income: 45000, expenses: 32000, net: 13000 },
@@ -20,10 +25,7 @@ const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPerio
   ];
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(value);
+    return formatWithCurrency(value, regionCurrency);
   };
 
   return (
@@ -52,7 +54,7 @@ const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPerio
                 fontSize={12}
                 tickLine={false}
                 axisLine={false}
-                tickFormatter={(value) => `$${value / 1000}k`}
+                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
               />
               <Tooltip 
                 formatter={(value, name) => [formatCurrency(Number(value)), name]}

@@ -11,9 +11,15 @@ import { useFinancialTransactions, useFinancialSummary } from "@/hooks/useFinanc
 import { useAuth } from "@/hooks/useAuth";
 import { RecordDcgIncomeDialog } from "@/components/admin/dcg/RecordDcgIncomeDialog";
 import { RecordDcgExpenseDialog } from "@/components/admin/dcg/RecordDcgExpenseDialog";
+import { useDcgs } from "@/hooks/useDCGs";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatWithCurrency } from "@/utils/currencyUtils";
 
 const DcgFinances: React.FC = () => {
   const { userDcg } = useAuth();
+  const { data: dcgs } = useDcgs();
+  const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
+  const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
   
   // State for dialogs
   const [recordIncomeDialogOpen, setRecordIncomeDialogOpen] = useState(false);
@@ -80,10 +86,7 @@ const DcgFinances: React.FC = () => {
   const periods = ["Last 30 days", "Last 3 months", "Last 6 months", "This year", "Last year"];
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return formatWithCurrency(amount, regionCurrency);
   };
 
   if (!userDcg) {

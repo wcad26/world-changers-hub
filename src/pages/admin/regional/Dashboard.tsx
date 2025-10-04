@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
 
 // Import our dashboard components
 // Import our dashboard components
@@ -28,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const RegionalDashboard: React.FC = () => {
   const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const [activeTab, setActiveTab] = useState('members');
   const [selectedPeriod, setSelectedPeriod] = useState('1-month');
 
@@ -175,7 +177,7 @@ const RegionalDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="mt-6 space-y-6">
-              <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} selectedPeriod={selectedPeriod} />
+              <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} selectedPeriod={selectedPeriod} regionCurrency={regionCurrency} />
               {activeTab === 'members' && <MemberCards />}
             </div>
           )}

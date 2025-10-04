@@ -8,9 +8,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { DollarSign, TrendingUp, Gift, Heart, Calendar } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { formatWithCurrency } from '@/utils/currencyUtils';
 
 export default function MemberFinances() {
   const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const [dateFilter, setDateFilter] = useState('3months');
   
   // Calculate date range based on filter
@@ -113,7 +116,7 @@ export default function MemberFinances() {
               <Heart className="w-8 h-8 text-primary" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Tithes</p>
-                <p className="text-xl font-bold">${summary?.total_tithes?.toLocaleString() || '0'}</p>
+                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_tithes || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -125,7 +128,7 @@ export default function MemberFinances() {
               <Gift className="w-8 h-8 text-secondary" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Offerings</p>
-                <p className="text-xl font-bold">${summary?.total_offerings?.toLocaleString() || '0'}</p>
+                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_offerings || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -137,7 +140,7 @@ export default function MemberFinances() {
               <TrendingUp className="w-8 h-8 text-accent" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Special Giving</p>
-                <p className="text-xl font-bold">${summary?.total_special_giving?.toLocaleString() || '0'}</p>
+                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_special_giving || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -149,7 +152,7 @@ export default function MemberFinances() {
               <DollarSign className="w-8 h-8 text-primary" />
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Given</p>
-                <p className="text-xl font-bold">${summary?.total_income?.toLocaleString() || '0'}</p>
+                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_income || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -184,7 +187,7 @@ export default function MemberFinances() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-600">
-                      +${Number(transaction.amount).toLocaleString()}
+                      +{formatWithCurrency(Number(transaction.amount), regionCurrency)}
                     </p>
                   </div>
                 </div>
