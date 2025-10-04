@@ -56,7 +56,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
   });
 
   const titheCategory = categories.find(cat => 
-    cat.type === 'Income' && cat.name.toLowerCase().includes('tithe')
+    cat.type === 'Income' && cat.name === 'Tithes'
   );
 
   const onSubmit = async (values: z.infer<typeof titheSchema>) => {

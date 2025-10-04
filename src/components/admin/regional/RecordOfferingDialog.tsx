@@ -6,7 +6,7 @@ import { CalendarIcon, Receipt } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { useCreateFinancialTransaction } from '@/hooks/useFinancials';
+import { useCreateFinancialTransaction, useFinancialCategories } from '@/hooks/useFinancials';
 import { useAuth } from '@/hooks/useAuth';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { getCurrencySymbol } from '@/utils/currencyUtils';
@@ -68,6 +68,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const currencySymbol = getCurrencySymbol(regionCurrency);
+  const { data: categories = [] } = useFinancialCategories();
   const createTransaction = useCreateFinancialTransaction();
 
   const form = useForm<OfferingFormData>({
@@ -81,15 +82,24 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
     },
   });
 
+  const offeringCategory = categories.find(cat => 
+    cat.type === 'Income' && cat.name === 'Offerings'
+  );
+
   const onSubmit = async (data: OfferingFormData) => {
+    if (!offeringCategory) {
+      toast({
+        title: 'Error',
+        description: 'Offerings category not found. Please contact your administrator.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      // Note: This is using mock categories. In a real implementation,
-      // you would need to fetch the actual category IDs from the database
-      const mockCategoryId = "mock-offering-category-id";
-      
       await createTransaction.mutateAsync({
         amount: parseFloat(data.amount),
-        category_id: mockCategoryId,
+        category_id: offeringCategory.id,
         transaction_date: data.date.toISOString().split('T')[0],
         description: `${data.service} - ${data.category}${data.notes ? `: ${data.notes}` : ''}`,
       });
