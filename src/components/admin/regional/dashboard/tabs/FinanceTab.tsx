@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import FinancialTrendChart from './FinancialTrendChart';
 import { useAuth } from '@/hooks/useAuth';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
-import { formatWithCurrency } from '@/utils/currencyUtils';
+import { formatCurrencyWithSymbol } from '@/utils/currencyUtils';
 
 interface FinanceTabProps {
   selectedPeriod: string;
@@ -27,7 +27,7 @@ const FinanceTab: React.FC<FinanceTabProps> = ({ selectedPeriod }) => {
   };
 
   const formatCurrency = (amount: number) => {
-    return formatWithCurrency(amount, regionCurrency);
+    return formatCurrencyWithSymbol(amount, regionCurrency);
   };
 
   return (

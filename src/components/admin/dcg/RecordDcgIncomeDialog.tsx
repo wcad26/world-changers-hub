@@ -65,7 +65,7 @@ export const RecordDcgIncomeDialog: React.FC<RecordDcgIncomeDialogProps> = ({
   const { data: dcgs } = useDcgs();
   const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
   const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
-  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  const currencySymbol = getCurrencySymbol(regionCurrency);
   const { toast } = useToast();
   const createTransaction = useCreateFinancialTransaction();
   const { data: categories } = useFinancialCategories();

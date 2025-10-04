@@ -69,7 +69,7 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
   const { toast } = useToast();
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
-  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  const currencySymbol = getCurrencySymbol(regionCurrency);
   const createTransaction = useCreateFinancialTransaction();
 
   const form = useForm<SpecialGivingFormData>({

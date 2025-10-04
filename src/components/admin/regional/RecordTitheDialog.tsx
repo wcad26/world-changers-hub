@@ -34,7 +34,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
 }) => {
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
-  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  const currencySymbol = getCurrencySymbol(regionCurrency);
   const { data: members = [] } = useMembers(userRegion?.id);
   const { data: categories = [] } = useFinancialCategories();
   const createTransaction = useCreateFinancialTransaction();

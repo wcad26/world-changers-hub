@@ -63,7 +63,7 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
 }) => {
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
-  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  const currencySymbol = getCurrencySymbol(regionCurrency);
   const [receiptImage, setReceiptImage] = React.useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = React.useState<string | null>(null);
 

@@ -15,54 +15,60 @@ export const formatCurrency = (
 };
 
 /**
- * Get currency symbol for a currency code
+ * Get currency symbol directly from database Currency object
  */
-export const getCurrencySymbol = (
-  currencyCode: string,
-  locale: string = 'en-US'
-): string => {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currencyCode,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  })
-    .format(0)
-    .replace(/\d/g, '')
-    .trim();
+export const getCurrencySymbol = (currency?: Currency | null): string => {
+  if (!currency || !currency.symbol) {
+    console.error('Currency or currency symbol not provided to getCurrencySymbol');
+    return '';
+  }
+  return currency.symbol;
 };
 
 /**
- * Format currency with provided Currency object
+ * Format currency with provided Currency object (uses database symbol)
  */
 export const formatWithCurrency = (
   amount: number,
   currency?: Currency | null,
   locale: string = 'en-US'
 ): string => {
-  if (!currency) {
-    return formatCurrency(amount, 'USD', locale);
+  if (!currency || !currency.symbol) {
+    console.error('Currency not provided to formatWithCurrency');
+    return amount.toLocaleString(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
   }
   
-  return formatCurrency(amount, currency.code, locale);
+  const formattedNumber = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: currency.decimal_places || 2,
+  }).format(amount);
+  
+  return `${currency.symbol} ${formattedNumber}`;
 };
 
 /**
- * Format currency with symbol only (not code)
+ * Format currency with symbol only (uses database symbol directly)
  */
 export const formatCurrencyWithSymbol = (
   amount: number,
   currency?: Currency | null,
   locale: string = 'en-US'
 ): string => {
-  const currencyCode = currency?.code || 'USD';
-  const symbol = getCurrencySymbol(currencyCode, locale);
+  if (!currency || !currency.symbol) {
+    console.error('Currency not provided to formatCurrencyWithSymbol');
+    return amount.toLocaleString(locale, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }
   
-  // Format the number without currency style
   const formattedNumber = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: currency.decimal_places || 2,
   }).format(amount);
   
-  return `${symbol} ${formattedNumber}`;
+  return `${currency.symbol} ${formattedNumber}`;
 };

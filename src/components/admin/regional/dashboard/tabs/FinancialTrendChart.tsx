@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
-import { formatWithCurrency, getCurrencySymbol } from '@/utils/currencyUtils';
+import { formatCurrencyWithSymbol, getCurrencySymbol } from '@/utils/currencyUtils';
 import type { Currency } from '@/hooks/useCurrencies';
 
 interface FinancialTrendChartProps {
@@ -11,7 +11,7 @@ interface FinancialTrendChartProps {
 }
 
 const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod, regionCurrency }) => {
-  const currencySymbol = regionCurrency ? getCurrencySymbol(regionCurrency.code) : '$';
+  const currencySymbol = getCurrencySymbol(regionCurrency);
   
   // Mock financial data for demonstration
   const mockFinancialData = [
@@ -25,7 +25,7 @@ const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPerio
   ];
 
   const formatCurrency = (value: number) => {
-    return formatWithCurrency(value, regionCurrency);
+    return formatCurrencyWithSymbol(value, regionCurrency);
   };
 
   return (
