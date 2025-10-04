@@ -45,6 +45,7 @@ import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 import UserRoles from "./pages/admin/regional/UserRoles";
 
 // Super Admin Portal Routes
+// Super Admin Portal Routes
 import SuperDashboard from "./pages/admin/super/Dashboard";
 import SuperMembers from "./pages/admin/super/Members";
 import SuperEvents from "./pages/admin/super/Events";
@@ -52,6 +53,7 @@ import SuperFundraising from "./pages/admin/super/Fundraising";
 import SuperLocations from "./pages/admin/super/Locations";
 import SuperFinances from "./pages/admin/super/Finances";
 import SuperRegions from "./pages/admin/super/Regions";
+import SuperCurrencies from "./pages/admin/super/Currencies";
 import SuperReports from "./pages/admin/super/Reports";
 import SuperCommunication from "./pages/admin/super/Communication";
 import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
@@ -306,6 +308,14 @@ const App = () => {
               element={
                 <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <SuperRegions />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/currencies" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperCurrencies />
                 </ProtectedRoute>
               } 
             />

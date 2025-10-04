@@ -210,6 +210,42 @@ export type Database = {
           },
         ]
       }
+      currencies: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          decimal_places: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          symbol: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          decimal_places?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          symbol: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          decimal_places?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          symbol?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       dcg_members: {
         Row: {
           created_at: string
@@ -563,6 +599,7 @@ export type Database = {
           amount: number
           category_id: string
           created_at: string
+          currency_code: string
           dcg_id: string | null
           description: string | null
           id: string
@@ -575,6 +612,7 @@ export type Database = {
           amount: number
           category_id: string
           created_at?: string
+          currency_code?: string
           dcg_id?: string | null
           description?: string | null
           id?: string
@@ -587,6 +625,7 @@ export type Database = {
           amount?: number
           category_id?: string
           created_at?: string
+          currency_code?: string
           dcg_id?: string | null
           description?: string | null
           id?: string
@@ -602,6 +641,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "financial_transaction_categories"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "financial_transactions_dcg_id_fkey"
@@ -623,7 +669,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          currency: string
+          currency_code: string
           description: string | null
           end_date: string
           goal: number
@@ -640,7 +686,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          currency?: string
+          currency_code?: string
           description?: string | null
           end_date: string
           goal: number
@@ -657,7 +703,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          currency?: string
+          currency_code?: string
           description?: string | null
           end_date?: string
           goal?: number
@@ -673,6 +719,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_fundraising_campaigns_currency"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
             foreignKeyName: "fundraising_campaigns_region_id_fkey"
             columns: ["region_id"]
             isOneToOne: false
@@ -687,7 +740,7 @@ export type Database = {
           anonymous: boolean
           campaign_id: string
           created_at: string
-          currency: string
+          currency_code: string
           donation_date: string
           donor_email: string | null
           donor_name: string | null
@@ -699,7 +752,7 @@ export type Database = {
           anonymous?: boolean
           campaign_id: string
           created_at?: string
-          currency?: string
+          currency_code?: string
           donation_date?: string
           donor_email?: string | null
           donor_name?: string | null
@@ -711,7 +764,7 @@ export type Database = {
           anonymous?: boolean
           campaign_id?: string
           created_at?: string
-          currency?: string
+          currency_code?: string
           donation_date?: string
           donor_email?: string | null
           donor_name?: string | null
@@ -719,6 +772,13 @@ export type Database = {
           message?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_fundraising_donations_currency"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "fundraising_donations_campaign_id_fkey"
             columns: ["campaign_id"]
@@ -1089,6 +1149,7 @@ export type Database = {
           contact_email: string | null
           contact_phone: string | null
           created_at: string | null
+          currency_code: string | null
           description: string | null
           established_date: string | null
           hero_slide_images: Json | null
@@ -1107,6 +1168,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          currency_code?: string | null
           description?: string | null
           established_date?: string | null
           hero_slide_images?: Json | null
@@ -1125,6 +1187,7 @@ export type Database = {
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          currency_code?: string | null
           description?: string | null
           established_date?: string | null
           hero_slide_images?: Json | null
@@ -1137,7 +1200,15 @@ export type Database = {
           regional_president_photo?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "regions_currency_code_fkey"
+            columns: ["currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
       }
       user_roles: {
         Row: {
