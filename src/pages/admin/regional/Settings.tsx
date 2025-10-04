@@ -33,10 +33,12 @@ const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { data: currencies, isLoading: currenciesLoading } = useCurrencies();
-  const { data: userRegion, isLoading: regionLoading } = useRegions().data?.find(
-    (region) => region.id === user?.user_metadata?.region_id
-  ) as any;
+  const { data: regions, isLoading: regionsLoading } = useRegions();
   const { updateRegion } = useRegionMutations();
+  
+  const userRegion = regions?.find(
+    (region) => region.id === user?.user_metadata?.region_id
+  );
   
   const [selectedCurrency, setSelectedCurrency] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
