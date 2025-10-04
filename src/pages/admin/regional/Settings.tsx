@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,8 +23,75 @@ import {
   MapPin
 } from "lucide-react";
 import RegionalBranchForm from "@/components/admin/regional/RegionalBranchForm";
+import { useCurrencies } from "@/hooks/useCurrencies";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegions } from "@/hooks/useRegions";
+import { useRegionMutations } from "@/hooks/useRegionMutations";
+import { useToast } from "@/hooks/use-toast";
 
 const Settings = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { data: currencies, isLoading: currenciesLoading } = useCurrencies();
+  const { data: userRegion, isLoading: regionLoading } = useRegions().data?.find(
+    (region) => region.id === user?.user_metadata?.region_id
+  ) as any;
+  const { updateRegion } = useRegionMutations();
+  
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize currency from user's region
+  useEffect(() => {
+    if (userRegion?.currency_code) {
+      setSelectedCurrency(userRegion.currency_code);
+    }
+  }, [userRegion]);
+
+  const handleSaveSettings = async () => {
+    if (!user?.user_metadata?.region_id) {
+      toast({
+        title: "Error",
+        description: "No region found for current user",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedCurrency) {
+      toast({
+        title: "Error", 
+        description: "Please select a currency",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateRegion.mutateAsync({
+        id: user.user_metadata.region_id,
+        updates: {
+          currency_code: selectedCurrency,
+        },
+      });
+
+      toast({
+        title: "Settings saved",
+        description: "Currency settings have been updated successfully",
+      });
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <RegionalAdminLayout>
       <div className="container mx-auto py-6 space-y-6">
@@ -134,16 +201,27 @@ const Settings = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Default currency</Label>
-                <Select defaultValue="usd">
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
+                <Select 
+                  value={selectedCurrency} 
+                  onValueChange={setSelectedCurrency}
+                  disabled={currenciesLoading}
+                >
+                  <SelectTrigger className="w-full sm:w-64 bg-background border shadow-sm">
+                    <SelectValue placeholder={currenciesLoading ? "Loading..." : "Select currency"} />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="usd">USD ($)</SelectItem>
-                    <SelectItem value="eur">EUR (€)</SelectItem>
-                    <SelectItem value="gbp">GBP (£)</SelectItem>
+                  <SelectContent className="bg-background border shadow-md z-50 max-h-[300px]">
+                    {currencies?.map((currency) => (
+                      <SelectItem key={currency.code} value={currency.code}>
+                        {currency.code} - {currency.name} ({currency.symbol})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                {selectedCurrency && currencies && (
+                  <p className="text-sm text-muted-foreground">
+                    Selected: {currencies.find(c => c.code === selectedCurrency)?.symbol} - {currencies.find(c => c.code === selectedCurrency)?.name}
+                  </p>
+                )}
               </div>
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -413,7 +491,9 @@ const Settings = () => {
 
       <div className="flex justify-end space-x-4 pt-6">
         <Button variant="outline">Cancel</Button>
-        <Button>Save Changes</Button>
+        <Button onClick={handleSaveSettings} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
       </div>
       </div>
     </RegionalAdminLayout>
