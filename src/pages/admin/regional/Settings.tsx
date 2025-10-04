@@ -115,53 +115,6 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Member Management Settings
-              </CardTitle>
-              <CardDescription>
-                Configure how member data is handled in your regional portal
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Auto-approve new member registrations</Label>
-                  <p className="text-sm text-muted-foreground">
-                    New members will be automatically approved without admin review
-                  </p>
-                </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Require photo upload for members</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Members must upload a profile photo during registration
-                  </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <Label>Default member status</Label>
-                <Select defaultValue="active">
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Financial Settings
               </CardTitle>
