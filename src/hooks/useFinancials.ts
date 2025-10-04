@@ -41,7 +41,7 @@ export const useFinancialTransactions = (filters?: { from?: string, to?: string 
       if (!regionId) return [];
       let query = supabase
         .from('financial_transactions')
-        .select('*, category:financial_transaction_categories(name, type), dcg:dcgs(name), member:members(member_id, profile:profiles(first_name, last_name))')
+        .select('*, category:financial_transaction_categories(name, type), dcg:dcgs(name), recorded_by_profile:profiles!recorded_by(first_name, last_name)')
         .eq('region_id', regionId);
       
       if (filters?.from) query = query.gte('transaction_date', filters.from);
