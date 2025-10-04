@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useUpdateDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useMembers } from '@/hooks/useMembers';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
@@ -23,6 +25,7 @@ interface ManageDiscipleshipDialogProps {
 }
 
 const updateSchema = z.object({
+  mentor_id: z.string().uuid('Invalid mentor ID'),
   status: z.enum(['active', 'completed', 'transferred', 'inactive']),
   notes: z.string().optional(),
   end_date: z.date().optional().nullable(),
@@ -37,10 +40,13 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
 }) => {
   const updateRelationship = useUpdateDiscipleshipRelationship();
   const { toast } = useToast();
+  const { userRegion } = useAuth();
+  const { data: members = [] } = useMembers(userRegion?.id);
 
   const form = useForm<UpdateFormData>({
     resolver: zodResolver(updateSchema),
     defaultValues: {
+      mentor_id: relationship?.mentor_id || '',
       status: relationship?.status || 'active',
       notes: relationship?.notes || '',
       end_date: relationship?.end_date ? new Date(relationship.end_date) : null,
@@ -50,6 +56,7 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
   React.useEffect(() => {
     if (relationship) {
       form.reset({
+        mentor_id: relationship.mentor_id,
         status: relationship.status || 'active',
         notes: relationship.notes || '',
         end_date: relationship.end_date ? new Date(relationship.end_date) : null,
@@ -64,6 +71,7 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
       await updateRelationship.mutateAsync({
         id: relationship.id,
         updates: {
+          mentor_id: data.mentor_id,
           status: data.status,
           notes: data.notes,
           end_date: data.end_date ? data.end_date.toISOString().split('T')[0] : null,
@@ -97,30 +105,50 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
         
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Mentor</p>
-            <p className="text-sm font-semibold">
-              {relationship.mentor?.profiles?.first_name} {relationship.mentor?.profiles?.last_name}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Disciple</p>
-            <p className="text-sm font-semibold">
-              {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
-            </p>
-          </div>
-          </div>
-          
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Start Date</p>
-            <p className="text-sm">
-              {relationship.start_date ? format(new Date(relationship.start_date), 'PPP') : 'N/A'}
-            </p>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Disciple</p>
+              <p className="text-sm font-semibold">
+                {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Start Date</p>
+              <p className="text-sm">
+                {relationship.start_date ? format(new Date(relationship.start_date), 'PPP') : 'N/A'}
+              </p>
+            </div>
           </div>
         </div>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="mentor_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Mentor</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select mentor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {members
+                        .filter((member) => member.id !== relationship.disciple_id)
+                        .map((member) => (
+                          <SelectItem key={member.id} value={member.id}>
+                            {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
             <FormField
               control={form.control}
               name="status"
