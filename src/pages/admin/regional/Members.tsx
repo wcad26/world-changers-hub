@@ -28,6 +28,8 @@ import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Users, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 import AssignDiscipleDialog from "@/components/admin/regional/discipleship/AssignDiscipleDialog";
+import ManageDiscipleshipDialog from "@/components/admin/regional/discipleship/ManageDiscipleshipDialog";
+import type { DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import RoleBadge from "@/components/ui/RoleBadge";
 
 const Members: React.FC = () => {
@@ -42,6 +44,7 @@ const Members: React.FC = () => {
   const [discipleshipSearchTerm, setDiscipleshipSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('all');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
+  const [selectedRelationship, setSelectedRelationship] = React.useState<DiscipleshipRelationshipWithMembers | null>(null);
   const { data: relationships, isLoading: discipleshipLoading, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
 
   // Filter relationships based on search and status
@@ -335,7 +338,14 @@ const Members: React.FC = () => {
                               )}
                             </TableCell>
                             <TableCell>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedRelationship(relationship);
+                                }}
+                              >
                                 Manage
                               </Button>
                             </TableCell>
@@ -352,6 +362,13 @@ const Members: React.FC = () => {
             <AssignDiscipleDialog
               isOpen={isAssignDialogOpen}
               onOpenChange={setIsAssignDialogOpen}
+            />
+            
+            {/* Manage Discipleship Dialog */}
+            <ManageDiscipleshipDialog
+              relationship={selectedRelationship}
+              isOpen={!!selectedRelationship}
+              onOpenChange={(open) => !open && setSelectedRelationship(null)}
             />
           </TabsContent>
         </Tabs>
