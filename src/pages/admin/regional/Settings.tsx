@@ -162,37 +162,6 @@ const Settings = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Event Management Settings
-              </CardTitle>
-              <CardDescription>
-                Configure event creation and management preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Maximum event capacity</Label>
-                <Input type="number" placeholder="500" className="w-32" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Allow external event registration</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Non-members can register for events
-                  </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="space-y-2">
-                <Label>Event registration deadline (days before event)</Label>
-                <Input type="number" placeholder="3" className="w-24" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Financial Settings
               </CardTitle>
