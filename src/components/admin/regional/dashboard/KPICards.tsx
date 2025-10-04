@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, DollarSign, Home, MapPin, TrendingUp, TrendingDown, Banknote } from 'lucide-react';
-import { formatWithCurrency } from '@/utils/currencyUtils';
+import { formatCurrencyWithSymbol } from '@/utils/currencyUtils';
 import type { Currency } from '@/hooks/useCurrencies';
 
 interface KPIData {
@@ -48,7 +48,7 @@ interface KPICardsProps {
 
 const KPICards: React.FC<KPICardsProps> = ({ data, activeTab, bankBalance, selectedPeriod, regionCurrency }) => {
   const formatCurrency = (amount: number) => {
-    return formatWithCurrency(amount, regionCurrency);
+    return formatCurrencyWithSymbol(amount, regionCurrency);
   };
 
   const formatPercentage = (value: number) => {

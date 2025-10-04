@@ -46,3 +46,23 @@ export const formatWithCurrency = (
   
   return formatCurrency(amount, currency.code, locale);
 };
+
+/**
+ * Format currency with symbol only (not code)
+ */
+export const formatCurrencyWithSymbol = (
+  amount: number,
+  currency?: Currency | null,
+  locale: string = 'en-US'
+): string => {
+  const currencyCode = currency?.code || 'USD';
+  const symbol = getCurrencySymbol(currencyCode, locale);
+  
+  // Format the number without currency style
+  const formattedNumber = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+  
+  return `${symbol} ${formattedNumber}`;
+};
