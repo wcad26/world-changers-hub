@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Plus, Mail, Phone, Loader2 } from 'lucide-react';
 import { useAvailableRegionalMembers, useAddMemberToDcg } from '@/hooks/useDcgMembers';
 import { useAuth } from '@/hooks/useAuth';
@@ -87,7 +88,7 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-hidden">
+        <div className="space-y-4 flex-1 min-h-0">
           {/* Search and Role Selection */}
           <div className="flex gap-4">
             <div className="flex-1 relative">
@@ -138,7 +139,7 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
           )}
 
           {/* Members Table */}
-          <div className="border rounded-lg overflow-hidden flex-1 overflow-y-auto">
+          <div className="border rounded-lg overflow-hidden flex-1 min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -149,65 +150,67 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                 {searchTerm ? 'No members found matching your search.' : 'No available members to add.'}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">Select</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Join Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredMembers.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedMembers.has(member.id)}
-                          onChange={() => handleMemberToggle(member.id)}
-                          className="rounded border-gray-300"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {member.profiles?.first_name || member.profiles?.last_name 
-                              ? `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.trim()
-                              : member.profiles?.email || member.member_id || 'Unknown Member'
-                            }
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {member.profiles?.email && (
-                            <div className="flex items-center text-sm">
-                              <Mail className="mr-2 h-3 w-3" />
-                              {member.profiles.email}
-                            </div>
-                          )}
-                          {member.profiles?.phone && (
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Phone className="mr-2 h-3 w-3" />
-                              {member.profiles.phone}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
-                          {member.member_type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {member.join_date ? new Date(member.join_date).toLocaleDateString() : '-'}
-                      </TableCell>
+              <ScrollArea className="h-[400px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Select</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Join Date</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredMembers.map((member) => (
+                      <TableRow key={member.id}>
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedMembers.has(member.id)}
+                            onChange={() => handleMemberToggle(member.id)}
+                            className="rounded border-gray-300"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {member.profiles?.first_name || member.profiles?.last_name 
+                                ? `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.trim()
+                                : member.profiles?.email || member.member_id || 'Unknown Member'
+                              }
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {member.profiles?.email && (
+                              <div className="flex items-center text-sm">
+                                <Mail className="mr-2 h-3 w-3" />
+                                {member.profiles.email}
+                              </div>
+                            )}
+                            {member.profiles?.phone && (
+                              <div className="flex items-center text-sm text-muted-foreground">
+                                <Phone className="mr-2 h-3 w-3" />
+                                {member.profiles.phone}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
+                            {member.member_type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {member.join_date ? new Date(member.join_date).toLocaleDateString() : '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             )}
           </div>
         </div>
