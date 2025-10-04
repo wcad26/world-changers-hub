@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,6 +36,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
   open,
   onOpenChange,
 }) => {
+  const [memberComboboxOpen, setMemberComboboxOpen] = React.useState(false);
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const currencySymbol = getCurrencySymbol(regionCurrency);
@@ -125,22 +130,57 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
               control={form.control}
               name="memberId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Member</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a member" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {members.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.profiles?.first_name} {member.profiles?.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={memberComboboxOpen} onOpenChange={setMemberComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value
+                            ? members.find((member) => member.id === field.value)
+                                ? `${members.find((member) => member.id === field.value)?.profiles?.first_name} ${members.find((member) => member.id === field.value)?.profiles?.last_name}`
+                                : "Select a member"
+                            : "Select a member"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[400px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search members..." />
+                        <CommandList>
+                          <CommandEmpty>No members found.</CommandEmpty>
+                          <CommandGroup>
+                            {members.map((member) => (
+                              <CommandItem
+                                key={member.id}
+                                value={`${member.profiles?.first_name} ${member.profiles?.last_name}`}
+                                onSelect={() => {
+                                  field.onChange(member.id);
+                                  setMemberComboboxOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === member.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {member.profiles?.first_name} {member.profiles?.last_name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
