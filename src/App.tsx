@@ -10,6 +10,7 @@ import About from "./pages/About";
 import Locations from "./pages/Locations";
 import RegionalBranchHome from "./pages/RegionalBranchHome";
 import Events from "./pages/Events";
+import EventDetail from "./pages/EventDetail";
 import Media from "./pages/Media";
 import Store from "./pages/Store";
 import Blog from "./pages/Blog";
@@ -118,6 +119,7 @@ const App = () => {
             <Route path="/locations" element={<Locations />} />
             <Route path="/locations/:slug" element={<RegionalBranchHome />} />
             <Route path="/events" element={<Events />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />

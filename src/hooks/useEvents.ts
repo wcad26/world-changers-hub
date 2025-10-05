@@ -45,6 +45,24 @@ export const usePublicEvents = () => {
     });
 };
 
+// Hook to get a single event by ID
+export const useEventById = (eventId: string | undefined) => {
+    return useQuery({
+        queryKey: ['event', eventId],
+        queryFn: async () => {
+            if (!eventId) return null;
+            const { data, error } = await supabase
+                .from('events')
+                .select('*')
+                .eq('id', eventId)
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        enabled: !!eventId,
+    });
+};
+
 // Hook to get featured public events
 export const useFeaturedEvents = () => {
     return useQuery({
