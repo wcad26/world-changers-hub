@@ -1,7 +1,4 @@
 import React from "react";
-import { Calendar, Clock, MapPin, Users, ChevronLeft, ChevronRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { format, isToday, isPast, isFuture } from "date-fns";
 import { Event } from "@/hooks/useEvents";
 import {
   Carousel,
@@ -19,27 +16,6 @@ interface EventHeroSectionProps {
 
 export function EventHeroSection({ event }: EventHeroSectionProps) {
   const { data: eventImages, isLoading: imagesLoading } = useEventImages(event.id);
-  
-  const getStatusBadge = () => {
-    const eventDate = new Date(event.start_datetime);
-    
-    if (event.status === "Completed") {
-      return <Badge className="bg-muted text-muted-foreground">Completed</Badge>;
-    }
-    if (event.status === "Cancelled") {
-      return <Badge variant="destructive">Cancelled</Badge>;
-    }
-    if (isToday(eventDate)) {
-      return <Badge className="bg-gradient-to-r from-primary to-accent text-white animate-glow">Today</Badge>;
-    }
-    if (isFuture(eventDate)) {
-      return <Badge className="bg-primary/20 text-primary border border-primary/30">Upcoming</Badge>;
-    }
-    if (isPast(eventDate)) {
-      return <Badge variant="secondary">Past Event</Badge>;
-    }
-    return null;
-  };
 
   // Priority: Use images from event_images table, fallback to single image_url
   const heroImages = React.useMemo(() => {
@@ -56,7 +32,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
   const hasMultipleImages = heroImages.length > 1;
 
   return (
-    <div className="relative h-[90vh] min-h-[600px] w-full overflow-hidden">
+    <div className="relative h-[70vh] min-h-[500px] w-full overflow-hidden">
       {/* Background Image Carousel or Gradient */}
       {hasImages ? (
         <Carousel
@@ -76,7 +52,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
             {heroImages.map((image, index) => (
               <CarouselItem key={index}>
                 <div 
-                  className="h-[90vh] min-h-[600px] md:min-h-[600px] sm:min-h-[500px] bg-cover bg-center transition-transform duration-700"
+                  className="h-[70vh] min-h-[500px] bg-cover bg-center transition-transform duration-700"
                   style={{
                     backgroundImage: `url(${image})`,
                   }}
@@ -92,7 +68,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
               <CarouselNext className="right-4 md:right-8 bg-black/30 hover:bg-black/60 border-none text-white h-12 w-12 hidden md:flex transition-all opacity-0 group-hover:opacity-100" />
               
               {/* Dot Indicators */}
-              <div className="absolute bottom-24 md:bottom-32 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                 {heroImages.map((_, idx) => (
                   <div
                     key={idx}
@@ -114,32 +90,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
       )}
       
       {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
-      
-      {/* Content */}
-      <div className="relative h-full flex flex-col justify-end pb-12 md:pb-20">
-        <div className="container-custom">
-          {/* Badges */}
-          <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up">
-            {event.is_featured && (
-              <Badge className="bg-gradient-to-r from-accent to-primary text-white px-4 py-1.5">
-                ⭐ Featured Event
-              </Badge>
-            )}
-            {getStatusBadge()}
-            {event.category && (
-              <Badge variant="outline" className="glass-panel-soft border-primary/30">
-                {event.category}
-              </Badge>
-            )}
-          </div>
-
-          {/* Event Title */}
-          <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-fade-in-up leading-tight">
-            {event.name}
-          </h1>
-        </div>
-      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background/80" />
     </div>
   );
 }

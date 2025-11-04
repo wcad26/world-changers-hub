@@ -12,11 +12,34 @@ import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Clock, MapPin, Users } from "lucide-react";
-import { format } from "date-fns";
+import { format, isToday, isPast, isFuture } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { data: event, isLoading, error } = useEventById(eventId);
+
+  const getStatusBadge = () => {
+    if (!event) return null;
+    const eventDate = new Date(event.start_datetime);
+    
+    if (event.status === "Completed") {
+      return <Badge className="bg-muted text-muted-foreground">Completed</Badge>;
+    }
+    if (event.status === "Cancelled") {
+      return <Badge variant="destructive">Cancelled</Badge>;
+    }
+    if (isToday(eventDate)) {
+      return <Badge className="bg-gradient-to-r from-primary to-accent text-white animate-glow">Today</Badge>;
+    }
+    if (isFuture(eventDate)) {
+      return <Badge className="bg-primary/20 text-primary border border-primary/30">Upcoming</Badge>;
+    }
+    if (isPast(eventDate)) {
+      return <Badge variant="secondary">Past Event</Badge>;
+    }
+    return null;
+  };
 
   if (isLoading) {
     return (
@@ -72,8 +95,33 @@ export default function EventDetail() {
       <EventQuickInfoBar event={event} />
       
       <main className="flex-1">
-        {/* Hero Section */}
+        {/* Hero Slider */}
         <EventHeroSection event={event} />
+        
+        {/* Event Title & Badges Section */}
+        <section className="py-8 bg-background border-b">
+          <div className="container-custom">
+            {/* Badges */}
+            <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up">
+              {event.is_featured && (
+                <Badge className="bg-gradient-to-r from-accent to-primary text-white px-4 py-1.5">
+                  ⭐ Featured Event
+                </Badge>
+              )}
+              {getStatusBadge()}
+              {event.category && (
+                <Badge variant="outline" className="glass-panel-soft border-primary/30">
+                  {event.category}
+                </Badge>
+              )}
+            </div>
+
+            {/* Event Title */}
+            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-fade-in-up leading-tight">
+              {event.name}
+            </h1>
+          </div>
+        </section>
         
         {/* Quick Info Section */}
         <section className="py-8 bg-background border-b">
