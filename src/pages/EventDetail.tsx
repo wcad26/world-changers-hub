@@ -70,18 +70,6 @@ export default function EventDetail() {
       <EventQuickInfoBar event={event} />
       
       <main className="flex-1">
-        {/* Static Page Header Section - EDITABLE */}
-        <section className="bg-gradient-to-b from-background to-muted/20 py-8 border-b">
-          <div className="container-custom text-center">
-            <p className="text-sm uppercase tracking-wider text-primary font-semibold mb-2">
-              Discover Amazing Events
-            </p>
-            <h1 className="text-2xl font-bold text-foreground">
-              Join Us For Unforgettable Experiences
-            </h1>
-          </div>
-        </section>
-
         {/* Hero Section */}
         <EventHeroSection event={event} />
         
