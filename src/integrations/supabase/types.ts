@@ -530,6 +530,44 @@ export type Database = {
           },
         ]
       }
+      event_images: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          image_url: string
+          is_hero_image: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          image_url: string
+          is_hero_image?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          image_url?: string
+          is_hero_image?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_images_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_testimonials: {
         Row: {
           content: string

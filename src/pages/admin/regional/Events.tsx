@@ -73,6 +73,7 @@ const eventSchema = z.object({
   address: z.string().min(10, { message: "Please provide a full address for map display." }),
   capacity: z.coerce.number().positive().int().optional(),
   image_file: z.instanceof(File).optional(),
+  image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
   registration_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   organizer_name: z.string().optional(),
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
@@ -108,6 +109,7 @@ const RegionalEvents: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("3months");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const { toast } = useToast();
 
   const { userRegion } = useAuth();
@@ -238,9 +240,28 @@ const RegionalEvents: React.FC = () => {
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
     try {
-      // Upload image if provided
-      let imageUrl = null;
-      if (values.image_file) {
+      // Upload multiple images if provided
+      let uploadedImageUrls: string[] = [];
+      if (values.image_files && values.image_files.length > 0) {
+        for (const file of values.image_files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrls.push(publicUrl);
+        }
+      } else if (values.image_file) {
+        // Fallback to single image upload for backward compatibility
         const fileExt = values.image_file.name.split('.').pop();
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${fileName}`;
@@ -255,7 +276,7 @@ const RegionalEvents: React.FC = () => {
           .from('event-images')
           .getPublicUrl(filePath);
 
-        imageUrl = publicUrl;
+        uploadedImageUrls.push(publicUrl);
       }
 
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
@@ -274,7 +295,7 @@ const RegionalEvents: React.FC = () => {
         end_datetime: end_datetime,
         location_name: values.location_name,
         address: values.address || null,
-        image_url: imageUrl,
+        image_url: uploadedImageUrls[0] || null, // Use first image as primary
         capacity: values.capacity || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
@@ -288,6 +309,22 @@ const RegionalEvents: React.FC = () => {
       };
 
       const createdEvent = await createEventMutation.mutateAsync(newEventData);
+      
+      // Insert all images into event_images table
+      if (uploadedImageUrls.length > 0 && createdEvent) {
+        const imageRecords = uploadedImageUrls.map((url, index) => ({
+          event_id: createdEvent.id,
+          image_url: url,
+          display_order: index,
+          is_hero_image: true,
+        }));
+        
+        const { error: imageError } = await supabase
+          .from('event_images')
+          .insert(imageRecords);
+        
+        if (imageError) throw imageError;
+      }
       
       // Insert testimonials if provided
       if (values.testimonials && values.testimonials.length > 0 && createdEvent) {
@@ -323,8 +360,9 @@ const RegionalEvents: React.FC = () => {
         if (faqError) throw faqError;
       }
 
-      toast({ title: "Success", description: "Event created successfully with testimonials and FAQs." });
+      toast({ title: "Success", description: "Event created successfully with images, testimonials and FAQs." });
       form.reset();
+      setImagePreviews([]);
       setCreateEventDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
@@ -689,21 +727,39 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
-                  name="image_file"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  name="image_files"
+                  render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Event Hero Image (Optional)</FormLabel>
+                      <FormLabel>Event Hero Images (Slider)</FormLabel>
                       <FormControl>
                         <Input 
                           type="file" 
                           accept="image/*"
+                          multiple
                           onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) onChange(file);
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 5);
+                            onChange(limitedFiles);
+                            setImagePreviews(limitedFiles.map(f => URL.createObjectURL(f)));
                           }}
                           {...field}
                         />
                       </FormControl>
+                      <FormDescription>Upload up to 5 images for the event hero slider. First image will be primary.</FormDescription>
+                      
+                      {/* Image Previews */}
+                      {imagePreviews.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {imagePreviews.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                              <img src={preview} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {idx + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <FormDescription>
                         Recommended: 1920x1080px, max 2MB (JPG, PNG)
                       </FormDescription>
