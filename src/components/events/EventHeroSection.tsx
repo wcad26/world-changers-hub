@@ -1,9 +1,13 @@
-import { ArrowLeft, Calendar, Clock, MapPin, Users } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Calendar, Clock, MapPin, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Event } from "@/hooks/useEvents";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 
 interface EventHeroSectionProps {
   event: Event;
@@ -31,18 +35,47 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
     return null;
   };
 
+  const heroImages = event.image_url ? [event.image_url] : [];
+  const hasImages = heroImages.length > 0;
+
   return (
     <div className="relative h-[90vh] min-h-[600px] w-full overflow-hidden">
-      {/* Background Image with Parallax Effect */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: event.image_url 
-            ? `url(${event.image_url})` 
-            : 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)',
-          transform: 'scale(1.1)',
-        }}
-      />
+      {/* Background Image Carousel or Gradient */}
+      {hasImages ? (
+        <Carousel
+          opts={{
+            loop: true,
+            align: "center",
+          }}
+          plugins={[
+            Autoplay({
+              delay: 5000,
+              stopOnInteraction: false,
+            }),
+          ]}
+          className="absolute inset-0"
+        >
+          <CarouselContent>
+            {heroImages.map((image, index) => (
+              <CarouselItem key={index}>
+                <div 
+                  className="h-[90vh] min-h-[600px] bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${image})`,
+                  }}
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
+      ) : (
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%)',
+          }}
+        />
+      )}
       
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
@@ -50,17 +83,6 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
       {/* Content */}
       <div className="relative h-full flex flex-col justify-end pb-12 md:pb-20">
         <div className="container-custom">
-          {/* Back Button */}
-          <Link to="/events">
-            <Button 
-              variant="ghost" 
-              className="glass-panel-soft mb-6 hover:scale-105 transition-transform"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Events
-            </Button>
-          </Link>
-
           {/* Badges */}
           <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up">
             {event.is_featured && (
