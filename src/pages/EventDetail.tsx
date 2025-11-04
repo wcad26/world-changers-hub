@@ -11,6 +11,8 @@ import { EventRegistrationSection } from "@/components/events/EventRegistrationS
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { format } from "date-fns";
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -72,6 +74,37 @@ export default function EventDetail() {
       <main className="flex-1">
         {/* Hero Section */}
         <EventHeroSection event={event} />
+        
+        {/* Quick Info Section */}
+        <section className="py-8 bg-background border-b">
+          <div className="container-custom">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform">
+                <Calendar className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Date</p>
+                <p className="font-semibold">{format(new Date(event.start_datetime), "MMM dd, yyyy")}</p>
+              </div>
+              
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform">
+                <Clock className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Time</p>
+                <p className="font-semibold">{format(new Date(event.start_datetime), "h:mm a")}</p>
+              </div>
+              
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform col-span-2 md:col-span-1">
+                <MapPin className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Location</p>
+                <p className="font-semibold truncate">{event.location_name || "TBA"}</p>
+              </div>
+              
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform col-span-2 md:col-span-1">
+                <Users className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm text-muted-foreground">Capacity</p>
+                <p className="font-semibold">{event.capacity ? `${event.capacity} people` : "Unlimited"}</p>
+              </div>
+            </div>
+          </div>
+        </section>
         
         {/* Static Section Divider - EDITABLE */}
         <section className="py-12 bg-background">
