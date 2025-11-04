@@ -10,7 +10,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, Filter, X, ChevronDown } from "lucide-react";
-import { useRegionalEvents, useCreateEvent, useDeleteEvent, NewEvent } from "@/hooks/useEvents";
+import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
@@ -106,16 +106,20 @@ const RegionalEvents: React.FC = () => {
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
+  const [editEventDialogOpen, setEditEventDialogOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<any>(null);
   const [selectedTimeRange, setSelectedTimeRange] = useState("3months");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
   const { toast } = useToast();
 
   const { userRegion } = useAuth();
   const { data: events, isLoading, isError, error } = useRegionalEvents();
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const createEventMutation = useCreateEvent();
+  const updateEventMutation = useUpdateEvent();
   const deleteEventMutation = useDeleteEvent();
 
   const form = useForm<z.infer<typeof eventSchema>>({
@@ -385,9 +389,196 @@ const RegionalEvents: React.FC = () => {
     setAttendanceDialogOpen(true);
   };
 
-  const handleEdit = (event: any) => {
-    // TODO: Implement edit functionality
-    toast({ title: "Info", description: "Edit functionality coming soon." });
+  async function onEditSubmit(values: z.infer<typeof eventSchema>) {
+    if (!eventToEdit) return;
+    
+    try {
+      // Handle new image uploads (if any)
+      let uploadedImageUrls: string[] = [];
+      if (values.image_files && values.image_files.length > 0) {
+        for (const file of values.image_files) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrls.push(publicUrl);
+        }
+        
+        // Delete old images from event_images table
+        await supabase
+          .from('event_images')
+          .delete()
+          .eq('event_id', eventToEdit.id);
+        
+        // Insert new images
+        const imageRecords = uploadedImageUrls.map((url, index) => ({
+          event_id: eventToEdit.id,
+          image_url: url,
+          display_order: index,
+          is_hero_image: true,
+        }));
+        
+        await supabase
+          .from('event_images')
+          .insert(imageRecords);
+      }
+
+      const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
+      let end_datetime = null;
+      
+      if (values.end_date) {
+        const endTime = values.end_time || values.start_time;
+        end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
+      }
+      
+      const updateData: UpdateEvent & { id: string } = {
+        id: eventToEdit.id,
+        name: values.name,
+        description: values.description || null,
+        category: values.category,
+        start_datetime: start_datetime,
+        end_datetime: end_datetime,
+        location_name: values.location_name,
+        address: values.address || null,
+        image_url: uploadedImageUrls[0] || eventToEdit.image_url,
+        capacity: values.capacity || null,
+        is_public: values.is_public,
+        is_featured: values.is_featured,
+        registration_url: values.registration_url || null,
+        organizer_name: values.organizer_name || null,
+        organizer_email: values.organizer_email || null,
+        organizer_phone: values.organizer_phone || null,
+        requirements: values.requirements || null,
+      };
+
+      await updateEventMutation.mutateAsync(updateData);
+      
+      // Update testimonials
+      await supabase
+        .from('event_testimonials')
+        .delete()
+        .eq('event_id', eventToEdit.id);
+      
+      if (values.testimonials && values.testimonials.length > 0) {
+        const testimonialsData = values.testimonials.map((t, index) => ({
+          event_id: eventToEdit.id,
+          name: t.name,
+          role: t.role,
+          content: t.content,
+          rating: t.rating,
+          display_order: index,
+        }));
+        
+        await supabase
+          .from('event_testimonials')
+          .insert(testimonialsData);
+      }
+      
+      // Update FAQs
+      await supabase
+        .from('event_faqs')
+        .delete()
+        .eq('event_id', eventToEdit.id);
+      
+      if (values.faqs && values.faqs.length > 0) {
+        const faqsData = values.faqs.map((faq, index) => ({
+          event_id: eventToEdit.id,
+          question: faq.question,
+          answer: faq.answer,
+          display_order: index,
+        }));
+        
+        await supabase
+          .from('event_faqs')
+          .insert(faqsData);
+      }
+
+      toast({ title: "Success", description: "Event updated successfully." });
+      form.reset();
+      setEditImagePreviews([]);
+      setEditEventDialogOpen(false);
+      setEventToEdit(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not update event.", variant: "destructive" });
+    }
+  }
+
+  const handleEdit = async (event: any) => {
+    setEventToEdit(event);
+    
+    // Fetch existing images for preview
+    const { data: existingImages } = await supabase
+      .from('event_images')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('display_order');
+    
+    if (existingImages && existingImages.length > 0) {
+      setEditImagePreviews(existingImages.map(img => img.image_url));
+    } else {
+      setEditImagePreviews([]);
+    }
+    
+    // Fetch existing testimonials
+    const { data: existingTestimonials } = await supabase
+      .from('event_testimonials')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('display_order');
+    
+    // Fetch existing FAQs
+    const { data: existingFaqs } = await supabase
+      .from('event_faqs')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('display_order');
+    
+    // Parse datetime into date and time
+    const startDate = new Date(event.start_datetime);
+    const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
+    
+    // Pre-populate form
+    form.reset({
+      name: event.name,
+      category: event.category,
+      description: event.description || "",
+      start_date: startDate.toISOString().split('T')[0],
+      start_time: startDate.toTimeString().slice(0, 5),
+      end_date: endDate ? endDate.toISOString().split('T')[0] : "",
+      end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
+      location_name: event.location_name,
+      address: event.address || "",
+      capacity: event.capacity || undefined,
+      registration_url: event.registration_url || "",
+      organizer_name: event.organizer_name || "",
+      organizer_email: event.organizer_email || "",
+      organizer_phone: event.organizer_phone || "",
+      requirements: event.requirements || "",
+      is_public: event.is_public,
+      is_featured: event.is_featured,
+      testimonials: existingTestimonials?.map(t => ({
+        name: t.name,
+        role: t.role,
+        content: t.content,
+        rating: t.rating,
+      })) || [],
+      faqs: existingFaqs?.map(f => ({
+        question: f.question,
+        answer: f.answer,
+      })) || [],
+    });
+    
+    setEditEventDialogOpen(true);
   };
 
   const renderTableBody = (eventList: typeof events) => {
@@ -1104,6 +1295,541 @@ const RegionalEvents: React.FC = () => {
                 <Button type="submit" disabled={createEventMutation.isPending}>
                   <Calendar className="mr-2 h-4 w-4" />
                   {createEventMutation.isPending ? "Creating..." : "Create Event"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Update event details, images, testimonials, and FAQs.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Annual Conference" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Type</FormLabel>
+                      <FormControl>
+                        <select 
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                          {...field}
+                        >
+                          <option value="">Select event type</option>
+                          {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="start_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="start_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="end_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="end_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Main Hall" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St, City, State ZIP" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Full address for map display on event detail page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Expected turnout</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="100" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="image_files"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Hero Images (Slider)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 5);
+                            onChange(limitedFiles);
+                            setEditImagePreviews(limitedFiles.map(f => URL.createObjectURL(f)));
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Upload up to 5 images for the event hero slider. Leave empty to keep existing images.</FormDescription>
+                      
+                      {/* Image Previews */}
+                      {editImagePreviews.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {editImagePreviews.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                              <img src={preview} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {idx + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <FormDescription>
+                        Recommended: 1920x1080px, max 2MB (JPG, PNG)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="registration_url"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Registration URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://forms.google.com/..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        External registration link (Google Forms, Eventbrite, etc.)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="organizer@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1234567890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Requirements/Prerequisites (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="What attendees should bring or prepare..."
+                          {...field}
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Max 500 characters
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          className="min-h-[120px]"
+                          placeholder="Provide details about the event..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Testimonials Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">Testimonials (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add testimonials from previous attendees</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {testimonialFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">Testimonial {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTestimonial(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`testimonials.${index}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="John Doe" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`testimonials.${index}.role`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Role/Title</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Previous Attendee" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.content`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Testimonial Content</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="This event was amazing..." maxLength={300} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/300 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.rating`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Rating (1-5)</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" min={1} max={5} {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendTestimonial({ name: "", role: "", content: "", rating: 5 })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Testimonial
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
+                {/* FAQs Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">FAQs (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add frequently asked questions</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {faqFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">FAQ {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFAQ(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`faqs.${index}.question`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Question</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="How do I register?" />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/200 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`faqs.${index}.answer`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Answer</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="You can register by..." maxLength={500} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/500 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendFAQ({ question: "", answer: "" })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add FAQ
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
+                 <FormField
+                  control={form.control}
+                  name="is_public"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Public Event</FormLabel>
+                        <FormDescription>
+                          Display this event on the public website and regional homepage
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="is_featured"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Featured Event</FormLabel>
+                        <FormDescription>
+                          Highlight this event on the homepage
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setEditEventDialogOpen(false);
+                  setEventToEdit(null);
+                  form.reset();
+                  setEditImagePreviews([]);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateEventMutation.isPending}>
+                  {updateEventMutation.isPending ? "Updating..." : "Update Event"}
                 </Button>
               </DialogFooter>
             </form>
