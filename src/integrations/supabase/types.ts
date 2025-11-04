@@ -492,6 +492,88 @@ export type Database = {
           },
         ]
       }
+      event_faqs: {
+        Row: {
+          answer: string
+          created_at: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_faqs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_testimonials: {
+        Row: {
+          content: string
+          created_at: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          name: string
+          rating: number | null
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          name: string
+          rating?: number | null
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          name?: string
+          rating?: number | null
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_testimonials_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           address: string | null
@@ -508,7 +590,12 @@ export type Database = {
           is_public: boolean
           location_name: string | null
           name: string
+          organizer_email: string | null
+          organizer_name: string | null
+          organizer_phone: string | null
           region_id: string | null
+          registration_url: string | null
+          requirements: string | null
           start_datetime: string
           status: Database["public"]["Enums"]["event_status"]
           updated_at: string
@@ -528,7 +615,12 @@ export type Database = {
           is_public?: boolean
           location_name?: string | null
           name: string
+          organizer_email?: string | null
+          organizer_name?: string | null
+          organizer_phone?: string | null
           region_id?: string | null
+          registration_url?: string | null
+          requirements?: string | null
           start_datetime: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
@@ -548,7 +640,12 @@ export type Database = {
           is_public?: boolean
           location_name?: string | null
           name?: string
+          organizer_email?: string | null
+          organizer_name?: string | null
+          organizer_phone?: string | null
           region_id?: string | null
+          registration_url?: string | null
+          requirements?: string | null
           start_datetime?: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
@@ -1256,10 +1353,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_member_id: {
-        Args: { _region_id: string }
-        Returns: string
-      }
+      generate_member_id: { Args: { _region_id: string }; Returns: string }
       get_attendance_summary: {
         Args: { p_region_id: string }
         Returns: {
@@ -1280,7 +1374,7 @@ export type Database = {
         }[]
       }
       get_global_attendance_summary: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avg_attendance: number
           region_id: string
@@ -1307,18 +1401,9 @@ export type Database = {
           is_upcoming: boolean
         }[]
       }
-      get_region_from_dcg: {
-        Args: { _dcg_id: string }
-        Returns: string
-      }
-      get_user_dcg: {
-        Args: { _user_id: string }
-        Returns: string
-      }
-      get_user_region: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_region_from_dcg: { Args: { _dcg_id: string }; Returns: string }
+      get_user_dcg: { Args: { _user_id: string }; Returns: string }
+      get_user_region: { Args: { _user_id: string }; Returns: string }
       has_regional_permission: {
         Args: { _permission: string; _region_id: string; _user_id: string }
         Returns: boolean

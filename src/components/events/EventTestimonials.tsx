@@ -1,9 +1,17 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Quote } from "lucide-react";
+import { useEventTestimonials } from "@/hooks/useEventTestimonials";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function EventTestimonials() {
-  // Mock testimonials - in production, these would come from the backend
-  const testimonials = [
+interface EventTestimonialsProps {
+  eventId: string;
+}
+
+export function EventTestimonials({ eventId }: EventTestimonialsProps) {
+  const { data: testimonials, isLoading } = useEventTestimonials(eventId);
+
+  // Fallback testimonials if none exist for this event
+  const defaultTestimonials = [
     {
       name: "Sarah Johnson",
       role: "Previous Attendee",
@@ -24,6 +32,28 @@ export function EventTestimonials() {
     },
   ];
 
+  const displayTestimonials = testimonials && testimonials.length > 0 
+    ? testimonials 
+    : defaultTestimonials;
+
+  if (isLoading) {
+    return (
+      <section className="py-20 bg-muted/20">
+        <div className="container-custom">
+          <div className="text-center mb-12">
+            <Skeleton className="h-10 w-64 mx-auto mb-4" />
+            <Skeleton className="h-6 w-96 mx-auto" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-64" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 bg-muted/20">
       <div className="container-custom">
@@ -37,7 +67,7 @@ export function EventTestimonials() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {testimonials.map((testimonial, index) => (
+          {displayTestimonials.map((testimonial, index) => (
             <div
               key={index}
               className="glass-panel-soft p-8 hover:scale-105 transition-all duration-300 animate-fade-in-up"

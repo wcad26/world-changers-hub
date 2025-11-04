@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, Filter } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, Filter, X, ChevronDown } from "lucide-react";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, NewEvent } from "@/hooks/useEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,9 @@ import { format } from "date-fns";
 import { formatDateRange, formatTimeRange } from "@/utils/dateUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,7 +70,24 @@ const eventSchema = z.object({
   end_date: z.string().optional(),
   end_time: z.string().optional(),
   location_name: z.string().min(3, { message: "Please provide a location." }),
+  address: z.string().min(10, { message: "Please provide a full address for map display." }),
   capacity: z.coerce.number().positive().int().optional(),
+  image_file: z.instanceof(File).optional(),
+  registration_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  organizer_name: z.string().optional(),
+  organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  organizer_phone: z.string().optional(),
+  requirements: z.string().max(500).optional(),
+  testimonials: z.array(z.object({
+    name: z.string().min(2, "Name is required"),
+    role: z.string().min(2, "Role is required"),
+    content: z.string().min(10, "Content must be at least 10 characters").max(300, "Content must be less than 300 characters"),
+    rating: z.coerce.number().min(1).max(5).default(5),
+  })).optional(),
+  faqs: z.array(z.object({
+    question: z.string().min(5, "Question must be at least 5 characters").max(200, "Question must be less than 200 characters"),
+    answer: z.string().min(10, "Answer must be at least 10 characters").max(500, "Answer must be less than 500 characters"),
+  })).optional(),
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
 }).refine((data) => {
@@ -106,8 +126,26 @@ const RegionalEvents: React.FC = () => {
       end_date: "",
       end_time: "",
       location_name: "",
+      address: "",
+      registration_url: "",
+      organizer_name: "",
+      organizer_email: "",
+      organizer_phone: "",
+      requirements: "",
       is_public: true,
+      testimonials: [],
+      faqs: [],
     },
+  });
+
+  const { fields: testimonialFields, append: appendTestimonial, remove: removeTestimonial } = useFieldArray({
+    control: form.control,
+    name: "testimonials",
+  });
+
+  const { fields: faqFields, append: appendFAQ, remove: removeFAQ } = useFieldArray({
+    control: form.control,
+    name: "faqs",
   });
 
   const filteredEvents = React.useMemo(() => {
@@ -199,40 +237,98 @@ const RegionalEvents: React.FC = () => {
   }, [events, attendanceData]);
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
-    const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
-    let end_datetime = null;
-    
-    if (values.end_date) {
-      const endTime = values.end_time || values.start_time; // Use start time if no end time specified
-      end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
-    }
-    
-    const newEventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'> = {
+    try {
+      // Upload image if provided
+      let imageUrl = null;
+      if (values.image_file) {
+        const fileExt = values.image_file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, values.image_file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('event-images')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+      }
+
+      const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
+      let end_datetime = null;
+      
+      if (values.end_date) {
+        const endTime = values.end_time || values.start_time;
+        end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
+      }
+      
+      const newEventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'> = {
         name: values.name,
         description: values.description || null,
         category: values.category,
         start_datetime: start_datetime,
         end_datetime: end_datetime,
         location_name: values.location_name,
-        address: null,
-        image_url: null,
+        address: values.address || null,
+        image_url: imageUrl,
         capacity: values.capacity || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
         status: 'Upcoming',
         dcg_id: null,
-    };
+        registration_url: values.registration_url || null,
+        organizer_name: values.organizer_name || null,
+        organizer_email: values.organizer_email || null,
+        organizer_phone: values.organizer_phone || null,
+        requirements: values.requirements || null,
+      };
 
-    createEventMutation.mutate(newEventData, {
-      onSuccess: () => {
-        toast({ title: "Success", description: "Event created successfully." });
-        form.reset();
-        setCreateEventDialogOpen(false);
-      },
-      onError: (err: any) => {
-        toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
+      const createdEvent = await createEventMutation.mutateAsync(newEventData);
+      
+      // Insert testimonials if provided
+      if (values.testimonials && values.testimonials.length > 0 && createdEvent) {
+        const testimonialsData = values.testimonials.map((t, index) => ({
+          event_id: createdEvent.id,
+          name: t.name,
+          role: t.role,
+          content: t.content,
+          rating: t.rating,
+          display_order: index,
+        }));
+        
+        const { error: testimonialError } = await supabase
+          .from('event_testimonials')
+          .insert(testimonialsData);
+        
+        if (testimonialError) throw testimonialError;
       }
-    });
+      
+      // Insert FAQs if provided
+      if (values.faqs && values.faqs.length > 0 && createdEvent) {
+        const faqsData = values.faqs.map((faq, index) => ({
+          event_id: createdEvent.id,
+          question: faq.question,
+          answer: faq.answer,
+          display_order: index,
+        }));
+        
+        const { error: faqError } = await supabase
+          .from('event_faqs')
+          .insert(faqsData);
+        
+        if (faqError) throw faqError;
+      }
+
+      toast({ title: "Success", description: "Event created successfully with testimonials and FAQs." });
+      form.reset();
+      setCreateEventDialogOpen(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
+    }
   }
   
   const handleDelete = (id: string) => {
@@ -551,10 +647,27 @@ const RegionalEvents: React.FC = () => {
                   name="location_name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Location</FormLabel>
+                      <FormLabel>Location Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Main Hall" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St, City, State ZIP" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Full address for map display on event detail page
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -576,13 +689,118 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
+                  name="image_file"
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Hero Image (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) onChange(file);
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Recommended: 1920x1080px, max 2MB (JPG, PNG)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="registration_url"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Registration URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://forms.google.com/..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        External registration link (Google Forms, Eventbrite, etc.)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="organizer@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Phone (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1234567890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Requirements/Prerequisites (Optional)</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="What attendees should bring or prepare..."
+                          {...field}
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Max 500 characters
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel>Event Description</FormLabel>
                       <FormControl>
-                        <textarea 
-                          className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                        <Textarea 
+                          className="min-h-[120px]"
                           placeholder="Provide details about the event..."
                           {...field}
                         />
@@ -591,6 +809,191 @@ const RegionalEvents: React.FC = () => {
                     </FormItem>
                   )}
                 />
+                
+                {/* Testimonials Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">Testimonials (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add testimonials from previous attendees</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {testimonialFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">Testimonial {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTestimonial(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`testimonials.${index}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="John Doe" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`testimonials.${index}.role`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Role/Title</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Previous Attendee" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.content`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Testimonial Content</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="This event was amazing..." maxLength={300} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/300 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.rating`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Rating (1-5)</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" min={1} max={5} {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendTestimonial({ name: "", role: "", content: "", rating: 5 })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Testimonial
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
+                {/* FAQs Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">FAQs (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add frequently asked questions</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {faqFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">FAQ {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFAQ(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`faqs.${index}.question`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Question</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="How do I register?" />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/200 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`faqs.${index}.answer`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Answer</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="You can register by..." maxLength={500} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/500 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendFAQ({ question: "", answer: "" })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add FAQ
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
                 
                  <FormField
                   control={form.control}

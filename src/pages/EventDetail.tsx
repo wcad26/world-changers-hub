@@ -83,13 +83,13 @@ export default function EventDetail() {
         <EventRegistrationSection event={event} />
         
         {/* Testimonials */}
-        <EventTestimonials />
+        <EventTestimonials eventId={event.id} />
         
         {/* Related Events Carousel */}
         <RelatedEventsCarousel currentEventId={event.id} />
         
         {/* FAQ Section */}
-        <EventFAQ />
+        <EventFAQ eventId={event.id} />
       </main>
       
       <Footer />

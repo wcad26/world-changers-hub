@@ -5,9 +5,18 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { HelpCircle } from "lucide-react";
+import { useEventFAQs } from "@/hooks/useEventFAQs";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export function EventFAQ() {
-  const faqs = [
+interface EventFAQProps {
+  eventId: string;
+}
+
+export function EventFAQ({ eventId }: EventFAQProps) {
+  const { data: faqs, isLoading } = useEventFAQs(eventId);
+
+  // Fallback FAQs if none exist for this event
+  const defaultFAQs = [
     {
       question: "How do I register for the event?",
       answer: "You can register by clicking the 'Register Now' button above. Fill out the registration form with your details, and you'll receive a confirmation email with all the event information.",
@@ -30,6 +39,27 @@ export function EventFAQ() {
     },
   ];
 
+  const displayFAQs = faqs && faqs.length > 0 ? faqs : defaultFAQs;
+
+  if (isLoading) {
+    return (
+      <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+        <div className="container-custom">
+          <div className="text-center mb-12">
+            <Skeleton className="h-16 w-16 rounded-full mx-auto mb-6" />
+            <Skeleton className="h-10 w-96 mx-auto mb-4" />
+            <Skeleton className="h-6 w-72 mx-auto" />
+          </div>
+          <div className="max-w-3xl mx-auto space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Skeleton key={i} className="h-16" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 bg-gradient-to-b from-background to-muted/20">
       <div className="container-custom">
@@ -47,7 +77,7 @@ export function EventFAQ() {
 
         <div className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, index) => (
+            {displayFAQs.map((faq, index) => (
               <AccordionItem 
                 key={index} 
                 value={`item-${index}`}
