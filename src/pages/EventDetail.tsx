@@ -124,28 +124,31 @@ export default function EventDetail() {
         </section>
         
         {/* Quick Info Section */}
-        <section className="py-8 bg-background border-b">
-          <div className="container-custom">
+        <section className="py-12 relative overflow-hidden bg-hero-pattern border-y border-primary/10">
+          {/* Animated Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 animate-pulse" />
+          
+          <div className="container-custom relative z-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform">
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
                 <Calendar className="h-5 w-5 text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">Date</p>
                 <p className="font-semibold">{format(new Date(event.start_datetime), "MMM dd, yyyy")}</p>
               </div>
               
-              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform">
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
                 <Clock className="h-5 w-5 text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">Time</p>
                 <p className="font-semibold">{format(new Date(event.start_datetime), "h:mm a")}</p>
               </div>
               
-              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform col-span-2 md:col-span-1">
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90 col-span-2 md:col-span-1">
                 <MapPin className="h-5 w-5 text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">Location</p>
                 <p className="font-semibold truncate">{event.location_name || "TBA"}</p>
               </div>
               
-              <div className="glass-panel-soft p-4 hover:scale-105 transition-transform col-span-2 md:col-span-1">
+              <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90 col-span-2 md:col-span-1">
                 <Users className="h-5 w-5 text-primary mb-2" />
                 <p className="text-sm text-muted-foreground">Capacity</p>
                 <p className="font-semibold">{event.capacity ? `${event.capacity} people` : "Unlimited"}</p>
