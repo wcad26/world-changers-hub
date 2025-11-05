@@ -159,16 +159,6 @@ export default function EventDetail() {
         {/* Speakers Section */}
         <EventSpeakers eventId={event.id} />
         
-        {/* Static Section Divider - EDITABLE */}
-        <section className="py-12 bg-background">
-          <div className="container-custom text-center">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">Event Highlights</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Browse through our collection of memorable moments and see what makes our events special
-            </p>
-          </div>
-        </section>
-        
         {/* Gallery Carousel */}
         <EventGalleryCarousel event={event} />
         
