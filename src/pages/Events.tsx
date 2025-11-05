@@ -176,7 +176,7 @@ const Events = () => {
           <Link 
             to={`/events/${event.id}`} 
             key={event.id}
-            className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+            className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
           >
             <div className="relative w-full aspect-[4/3] overflow-hidden">
               <img 
@@ -185,9 +185,16 @@ const Events = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Category Badge */}
+              <div className="absolute top-3 right-3 z-10">
+                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm">
+                  {event.category}
+                </span>
+              </div>
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <h3 className="text-white font-semibold text-lg">{event.name}</h3>
+                  <h3 className="text-white font-semibold text-lg drop-shadow-lg">{event.name}</h3>
                 </div>
               </div>
             </div>
