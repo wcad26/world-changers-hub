@@ -33,7 +33,7 @@ export default function EventDetail() {
       return <Badge className="bg-gradient-to-r from-primary to-accent text-white animate-glow">Today</Badge>;
     }
     if (isFuture(eventDate)) {
-      return <Badge className="bg-primary/20 text-primary border border-primary/30">Upcoming</Badge>;
+      return <Badge className="bg-white text-black border-2 border-primary">Upcoming</Badge>;
     }
     if (isPast(eventDate)) {
       return <Badge variant="secondary">Past Event</Badge>;
