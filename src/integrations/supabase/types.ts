@@ -692,6 +692,7 @@ export type Database = {
           start_datetime: string
           status: Database["public"]["Enums"]["event_status"]
           updated_at: string
+          whatsapp_contact: string | null
         }
         Insert: {
           address?: string | null
@@ -719,6 +720,7 @@ export type Database = {
           start_datetime: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
+          whatsapp_contact?: string | null
         }
         Update: {
           address?: string | null
@@ -746,6 +748,7 @@ export type Database = {
           start_datetime?: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
+          whatsapp_contact?: string | null
         }
         Relationships: [
           {

@@ -61,6 +61,7 @@ const eventFormSchema = z.object({
   capacity: z.number().optional(),
   cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
   cost_currency_code: z.string().optional(),
+  whatsapp_contact: z.string().optional(),
   is_public: z.boolean().default(false),
   is_featured: z.boolean().default(false),
 }).refine((data) => {
@@ -124,6 +125,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         capacity: data.capacity || null,
         cost: data.cost || 0,
         cost_currency_code: data.cost_currency_code || null,
+        whatsapp_contact: data.whatsapp_contact || null,
         is_public: data.is_public,
         is_featured: data.is_featured,
       });
@@ -359,6 +361,23 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                   <FormControl>
                     <Input placeholder="Enter full address" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="whatsapp_contact"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>WhatsApp Contact (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="+1 234 567 890" {...field} />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground">
+                    Include country code for WhatsApp link (e.g., +1 for US)
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

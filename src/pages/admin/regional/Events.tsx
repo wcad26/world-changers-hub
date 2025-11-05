@@ -82,6 +82,7 @@ const eventSchema = z.object({
   organizer_name: z.string().optional(),
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   organizer_phone: z.string().optional(),
+  whatsapp_contact: z.string().optional(),
   requirements: z.string().max(500).optional(),
   testimonials: z.array(z.object({
     name: z.string().min(2, "Name is required"),
@@ -339,6 +340,7 @@ const RegionalEvents: React.FC = () => {
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
         organizer_phone: values.organizer_phone || null,
+        whatsapp_contact: values.whatsapp_contact || null,
         requirements: values.requirements || null,
       };
 
@@ -627,6 +629,7 @@ const RegionalEvents: React.FC = () => {
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
         organizer_phone: values.organizer_phone || null,
+        whatsapp_contact: values.whatsapp_contact || null,
         requirements: values.requirements || null,
       };
 
@@ -845,6 +848,7 @@ const RegionalEvents: React.FC = () => {
       organizer_name: event.organizer_name || "",
       organizer_email: event.organizer_email || "",
       organizer_phone: event.organizer_phone || "",
+      whatsapp_contact: event.whatsapp_contact || "",
       requirements: event.requirements || "",
       is_public: event.is_public,
       is_featured: event.is_featured,
@@ -1389,6 +1393,23 @@ const RegionalEvents: React.FC = () => {
                       <FormControl>
                         <Input placeholder="+1234567890" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="whatsapp_contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp Contact (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 234 567 890" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Include country code for WhatsApp link (e.g., +1 for US)
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -2217,6 +2238,23 @@ const RegionalEvents: React.FC = () => {
                       <FormControl>
                         <Input placeholder="+1234567890" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="whatsapp_contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp Contact (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 234 567 890" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Include country code for WhatsApp link (e.g., +1 for US)
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

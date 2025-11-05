@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Calendar, CalendarPlus, Ticket } from "lucide-react";
+import { Calendar, MessageCircle, Ticket } from "lucide-react";
 import { Event } from "@/hooks/useEvents";
 import { format, isFuture } from "date-fns";
 import { useCurrencies } from "@/hooks/useCurrencies";
@@ -61,11 +61,23 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
                 
                 <Button 
                   className="w-full bg-[#35adaf] hover:bg-[#35adaf]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
-                  onClick={() => {/* Add to calendar logic */}}
+                  onClick={() => {
+                    if (event.whatsapp_contact) {
+                      const phoneNumber = event.whatsapp_contact.replace(/[^0-9]/g, '');
+                      window.open(`https://wa.me/${phoneNumber}`, '_blank');
+                    }
+                  }}
+                  disabled={!event.whatsapp_contact}
                 >
-                  <CalendarPlus className="mr-2 h-5 w-5" />
-                  Add Event to Calendar
+                  <MessageCircle className="mr-2 h-5 w-5" />
+                  Contact Us
                 </Button>
+                
+                {!event.whatsapp_contact && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    WhatsApp contact not available for this event
+                  </p>
+                )}
                 
                 <p className="text-sm text-muted-foreground text-center mt-4">
                   {event.capacity ? `${event.capacity} spots available` : 'Unlimited capacity'}
