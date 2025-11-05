@@ -6,6 +6,7 @@ import { EventHeroSection } from "@/components/events/EventHeroSection";
 import { EventQuickInfoBar } from "@/components/events/EventQuickInfoBar";
 import { EventGalleryCarousel } from "@/components/events/EventGalleryCarousel";
 import { EventDetailsGrid } from "@/components/events/EventDetailsGrid";
+import { EventSpeakers } from "@/components/events/EventSpeakers";
 import { RelatedEventsCarousel } from "@/components/events/RelatedEventsCarousel";
 import { EventRegistrationSection } from "@/components/events/EventRegistrationSection";
 import { EventTestimonials } from "@/components/events/EventTestimonials";
@@ -154,6 +155,9 @@ export default function EventDetail() {
         
         {/* Details Grid - About Event */}
         <EventDetailsGrid event={event} />
+        
+        {/* Speakers Section */}
+        <EventSpeakers eventId={event.id} />
         
         {/* Static Section Divider - EDITABLE */}
         <section className="py-12 bg-background">

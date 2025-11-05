@@ -568,6 +568,59 @@ export type Database = {
           },
         ]
       }
+      event_speakers: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          linkedin_url: string | null
+          name: string
+          photo_url: string | null
+          title: string
+          twitter_url: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          linkedin_url?: string | null
+          name: string
+          photo_url?: string | null
+          title: string
+          twitter_url?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          linkedin_url?: string | null
+          name?: string
+          photo_url?: string | null
+          title?: string
+          twitter_url?: string | null
+          updated_at?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_speakers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_testimonials: {
         Row: {
           content: string
