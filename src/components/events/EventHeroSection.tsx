@@ -88,6 +88,12 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
           }}
         />
       )}
+      
+      {/* Transparent Brand Color Overlay for smooth blending */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-b from-transparent via-[#5DBAB7]/30 to-[#5DBAB7]/60 pointer-events-none z-10"
+        aria-hidden="true"
+      />
     </div>
   );
 }
