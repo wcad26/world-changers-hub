@@ -141,9 +141,9 @@ const Events = () => {
   const renderEventList = (eventsToRender: Event[]) => {
     if (isLoading) {
        return (
-        <div className="space-y-6">
-          {Array.from({ length: 3 }).map((_, i) => (
-             <Skeleton key={i} className="h-64 w-full rounded-xl" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, i) => (
+             <Skeleton key={i} className="w-full aspect-[4/3] rounded-lg" />
           ))}
         </div>
        );
@@ -171,67 +171,27 @@ const Events = () => {
     }
 
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {eventsToRender.map((event) => (
-          <GlassCard key={event.id} className="overflow-hidden">
-            <div className="flex flex-col md:flex-row">
-              <div className="md:w-1/4 h-48 md:h-auto relative overflow-hidden">
-                <img 
-                  src={event.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
-                  alt={event.name} 
-                  className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 right-4 md:hidden">
-                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-wca-purple text-white">
-                    {event.category}
-                  </span>
-                </div>
-              </div>
-              <div className="md:w-3/4 p-6">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-3">
-                  <h3 className="font-semibold text-xl">{event.name}</h3>
-                  <span className="hidden md:inline-block text-xs font-medium px-3 py-1 rounded-full bg-wca-purple text-white mt-2 md:mt-0">
-                    {event.category}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-start text-gray-600 dark:text-gray-300">
-                    <Calendar size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                    <div className="text-sm">
-                      <div>{formatEventDuration(event.start_datetime, event.end_datetime).dateRange}</div>
-                      {formatEventDuration(event.start_datetime, event.end_datetime).isMultiDay && (
-                        <div className="text-xs text-gray-500">Multi-day event</div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-start text-gray-600 dark:text-gray-300">
-                    <Clock size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                    <span className="text-sm">{formatEventDuration(event.start_datetime, event.end_datetime).timeRange}</span>
-                  </div>
-                  <div className="flex items-start text-gray-600 dark:text-gray-300">
-                    <MapPin size={16} className="mr-2 mt-1 flex-shrink-0 text-wca-purple" />
-                    <span className="text-sm">{event.location_name}</span>
-                  </div>
-                </div>
-                
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-                  {event.description}
-                </p>
-                
-                <div className="flex justify-end">
-                  <Link 
-                    to={`/events/${event.id}`} 
-                    className="flex items-center text-wca-purple hover:text-wca-violet transition-colors"
-                  >
-                    Learn More
-                    <ArrowRight size={16} className="ml-1" />
-                  </Link>
+          <Link 
+            to={`/events/${event.id}`} 
+            key={event.id}
+            className="group relative overflow-hidden rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            <div className="relative w-full aspect-[4/3] overflow-hidden">
+              <img 
+                src={event.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
+                alt={event.name} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <h3 className="text-white font-semibold text-lg">{event.name}</h3>
                 </div>
               </div>
             </div>
-          </GlassCard>
+          </Link>
         ))}
       </div>
     );
