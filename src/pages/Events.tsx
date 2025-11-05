@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
-import { Calendar, Clock, MapPin, Search, Filter, ChevronDown, ArrowRight, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, Filter, ChevronDown, ArrowRight, AlertCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePublicEvents, Event } from '@/hooks/useEvents';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -193,6 +193,12 @@ const Events = () => {
               </div>
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {/* Center Eye Icon and Text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <Eye className="text-white mb-2" size={32} strokeWidth={2} />
+                  <span className="text-white font-medium text-sm drop-shadow-lg">Click to View</span>
+                </div>
+                {/* Event Name at Bottom */}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <h3 className="text-white font-semibold text-lg drop-shadow-lg">{event.name}</h3>
                 </div>
