@@ -18,18 +18,7 @@ export function EventDetailsGrid({ event }: EventDetailsGridProps) {
           </p>
         </div>
 
-        {/* Description Section */}
-        <div className="glass-panel-soft p-8 md:p-12 lg:p-16 animate-fade-in-up max-w-6xl mx-auto">
-          <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
-            <Info className="h-6 w-6 text-primary" />
-            About This Event
-          </h3>
-          <div className="prose prose-lg max-w-none dark:prose-invert">
-            <p className="text-muted-foreground leading-relaxed">
-              {event.description || "No description available for this event."}
-            </p>
-          </div>
-        </div>
+        {/* Description Section - Card removed */}
       </div>
     </section>
   );
