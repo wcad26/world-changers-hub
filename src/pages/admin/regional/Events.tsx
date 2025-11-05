@@ -116,6 +116,8 @@ const RegionalEvents: React.FC = () => {
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
   const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
+  const [existingGalleryImages, setExistingGalleryImages] = useState<any[]>([]);
+  const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const { toast } = useToast();
 
   const { userRegion } = useAuth();
@@ -475,7 +477,15 @@ const RegionalEvents: React.FC = () => {
           .insert(imageRecords);
       }
       
-      // Insert gallery images if provided
+      // Delete marked gallery images
+      if (imagesToDelete.length > 0) {
+        await supabase
+          .from('event_images')
+          .delete()
+          .in('id', imagesToDelete);
+      }
+
+      // Upload and insert new gallery images if provided
       if (values.gallery_images && values.gallery_images.length > 0) {
         const galleryImageUrls: string[] = [];
         
@@ -497,18 +507,17 @@ const RegionalEvents: React.FC = () => {
           galleryImageUrls.push(publicUrl);
         }
         
-        // Delete old gallery images
-        await supabase
-          .from('event_images')
-          .delete()
-          .eq('event_id', eventToEdit.id)
-          .eq('is_hero_image', false);
+        // Get remaining gallery images to calculate correct display_order
+        const remainingImages = existingGalleryImages.filter(
+          img => !imagesToDelete.includes(img.id)
+        );
+        const startOrder = remainingImages.length;
         
-        // Insert gallery images with is_hero_image: false
+        // Insert new gallery images with is_hero_image: false
         const galleryRecords = galleryImageUrls.map((url, index) => ({
           event_id: eventToEdit.id,
           image_url: url,
-          display_order: index,
+          display_order: startOrder + index,
           is_hero_image: false,
         }));
         
@@ -590,6 +599,9 @@ const RegionalEvents: React.FC = () => {
       toast({ title: "Success", description: "Event updated successfully." });
       form.reset();
       setEditImagePreviews([]);
+      setEditGalleryPreviews([]);
+      setExistingGalleryImages([]);
+      setImagesToDelete([]);
       setEditEventDialogOpen(false);
       setEventToEdit(null);
     } catch (err: any) {
@@ -600,18 +612,37 @@ const RegionalEvents: React.FC = () => {
   const handleEdit = async (event: any) => {
     setEventToEdit(event);
     
-    // Fetch existing images for preview
-    const { data: existingImages } = await supabase
+    // Fetch existing hero images for preview
+    const { data: heroImages } = await supabase
       .from('event_images')
       .select('*')
       .eq('event_id', event.id)
+      .eq('is_hero_image', true)
       .order('display_order');
     
-    if (existingImages && existingImages.length > 0) {
-      setEditImagePreviews(existingImages.map(img => img.image_url));
+    if (heroImages && heroImages.length > 0) {
+      setEditImagePreviews(heroImages.map(img => img.image_url));
     } else {
       setEditImagePreviews([]);
     }
+    
+    // Fetch existing gallery images
+    const { data: galleryImages } = await supabase
+      .from('event_images')
+      .select('*')
+      .eq('event_id', event.id)
+      .eq('is_hero_image', false)
+      .order('display_order');
+    
+    if (galleryImages) {
+      setExistingGalleryImages(galleryImages);
+    } else {
+      setExistingGalleryImages([]);
+    }
+    
+    // Reset deletion tracking
+    setImagesToDelete([]);
+    setEditGalleryPreviews([]);
     
     // Fetch existing testimonials
     const { data: existingTestimonials } = await supabase
@@ -1617,6 +1648,30 @@ const RegionalEvents: React.FC = () => {
                   render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel>Event Gallery Images</FormLabel>
+                      
+                      {/* Existing Gallery Images */}
+                      {existingGalleryImages.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-sm text-muted-foreground mb-2">Existing Gallery Images (click X to remove)</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {existingGalleryImages
+                              .filter(img => !imagesToDelete.includes(img.id))
+                              .map((image) => (
+                                <div key={image.id} className="relative aspect-video rounded-md overflow-hidden border border-border group">
+                                  <img src={image.image_url} alt={`Gallery ${image.display_order + 1}`} className="object-cover w-full h-full" />
+                                  <button
+                                    type="button"
+                                    onClick={() => setImagesToDelete(prev => [...prev, image.id])}
+                                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+
                       <FormControl>
                         <Input 
                           type="file" 
@@ -1631,16 +1686,19 @@ const RegionalEvents: React.FC = () => {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>Upload up to 10 new images for the event gallery. Leave empty to keep existing images.</FormDescription>
+                      <FormDescription>Upload up to 10 new images for the event gallery section</FormDescription>
                       
-                      {/* Gallery Image Previews */}
+                      {/* New Gallery Image Previews */}
                       {editGalleryPreviews.length > 0 && (
-                        <div className="grid grid-cols-5 gap-2 mt-2">
-                          {editGalleryPreviews.map((preview, idx) => (
-                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
-                              <img src={preview} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full" />
-                            </div>
-                          ))}
+                        <div>
+                          <p className="text-sm text-muted-foreground mb-2 mt-4">New Images to Upload</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {editGalleryPreviews.map((preview, idx) => (
+                              <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                                <img src={preview} alt={`New Gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       <FormMessage />
