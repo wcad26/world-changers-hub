@@ -216,7 +216,7 @@ const Events = () => {
       
       <main className="flex-grow pt-0">
         {/* Hero Section */}
-        <section className="relative py-16 md:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+        <section className="relative py-[30px] bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
           <div className="container-custom">
             <div className="text-center max-w-3xl mx-auto">
               <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm mb-4">
