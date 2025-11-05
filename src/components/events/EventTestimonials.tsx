@@ -38,7 +38,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
 
   if (isLoading) {
     return (
-      <section className="py-20 bg-muted/20">
+      <section className="py-10 bg-muted/20">
         <div className="container-custom">
           <div className="text-center mb-12">
             <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -55,7 +55,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
   }
 
   return (
-    <section className="py-20 bg-muted/20">
+    <section className="py-10 bg-muted/20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
           <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
