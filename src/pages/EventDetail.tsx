@@ -120,7 +120,7 @@ export default function EventDetail() {
             </div>
 
             {/* Event Title */}
-            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-fade-in-up leading-tight mb-10">
+            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold text-white animate-fade-in-up leading-tight mb-10">
               {event.name}
             </h1>
 
