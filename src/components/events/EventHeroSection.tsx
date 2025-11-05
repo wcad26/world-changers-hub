@@ -32,7 +32,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
   const hasMultipleImages = heroImages.length > 1;
 
   return (
-    <div className="relative h-[70vh] min-h-[500px] w-full overflow-hidden">
+    <div className="relative h-[40vh] min-h-[300px] md:h-[50vh] md:min-h-[350px] lg:h-[70vh] lg:min-h-[500px] w-full overflow-hidden">
       {/* Background Image Carousel or Gradient */}
       {hasImages ? (
         <Carousel
@@ -52,7 +52,7 @@ export function EventHeroSection({ event }: EventHeroSectionProps) {
             {heroImages.map((image, index) => (
               <CarouselItem key={index}>
                 <div 
-                  className="h-[70vh] min-h-[500px] bg-cover bg-center transition-transform duration-700"
+                  className="h-[40vh] min-h-[300px] md:h-[50vh] md:min-h-[350px] lg:h-[70vh] lg:min-h-[500px] bg-cover bg-center transition-transform duration-700"
                   style={{
                     backgroundImage: `url(${image})`,
                   }}
