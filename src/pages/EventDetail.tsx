@@ -169,9 +169,6 @@ export default function EventDetail() {
             <p className="text-lg text-muted-foreground mb-6 max-w-xl mx-auto">
               Reserve your spot today and be part of something extraordinary
             </p>
-            <p className="text-sm text-muted-foreground">
-              Questions? Contact us at events@example.com
-            </p>
           </div>
         </section>
         
