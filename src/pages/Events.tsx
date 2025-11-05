@@ -191,11 +191,11 @@ const Events = () => {
                   {event.category}
                 </span>
               </div>
-              {/* Hover Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              {/* Permanent Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/20 group-hover:from-black/75 group-hover:via-black/40 group-hover:to-black/30 transition-all duration-300">
                 {/* Center Eye Icon and Text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Eye className="text-white mb-2" size={32} strokeWidth={2} />
+                  <Eye className="text-white mb-2 group-hover:scale-110 transition-transform duration-300" size={32} strokeWidth={2} />
                   <span className="text-white font-medium text-sm drop-shadow-lg">Click to View</span>
                 </div>
                 {/* Event Name at Bottom */}
