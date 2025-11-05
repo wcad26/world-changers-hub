@@ -135,15 +135,6 @@ export default function EventDetail() {
                 <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
                   <Button 
                     size="lg"
-                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white whitespace-nowrap transition-all hover:scale-105"
-                    onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
-                  >
-                    <Calendar className="mr-2 h-5 w-5" />
-                    Register for Event
-                  </Button>
-                  
-                  <Button 
-                    size="lg"
                     className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white whitespace-nowrap transition-all hover:scale-105"
                     onClick={() => {
                       if (event.whatsapp_contact) {
@@ -155,6 +146,15 @@ export default function EventDetail() {
                   >
                     <MessageCircle className="mr-2 h-5 w-5" />
                     Contact Us
+                  </Button>
+                  
+                  <Button 
+                    size="lg"
+                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white whitespace-nowrap transition-all hover:scale-105"
+                    onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
+                  >
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Register for Event
                   </Button>
                 </div>
               )}
