@@ -34,10 +34,12 @@ export const usePublicEvents = () => {
     return useQuery({
         queryKey: ['publicEvents'],
         queryFn: async () => {
+            const now = new Date().toISOString();
             const { data, error } = await supabase
                 .from('events')
                 .select('*')
                 .eq('is_public', true)
+                .gte('start_datetime', now)
                 .order('start_datetime', { ascending: true });
             if (error) throw error;
             return data;
@@ -68,11 +70,13 @@ export const useFeaturedEvents = () => {
     return useQuery({
         queryKey: ['featuredEvents'],
         queryFn: async () => {
+            const now = new Date().toISOString();
             const { data, error } = await supabase
                 .from('events')
                 .select('*')
                 .eq('is_public', true)
                 .eq('is_featured', true)
+                .gte('start_datetime', now)
                 .order('start_datetime', { ascending: true });
             if (error) throw error;
             return data;
