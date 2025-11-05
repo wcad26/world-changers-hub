@@ -157,6 +157,9 @@ export default function EventDetail() {
           </div>
         </section>
         
+        {/* Details Grid - About Event */}
+        <EventDetailsGrid event={event} />
+        
         {/* Static Section Divider - EDITABLE */}
         <section className="py-12 bg-background">
           <div className="container-custom text-center">
@@ -169,9 +172,6 @@ export default function EventDetail() {
         
         {/* Gallery Carousel */}
         <EventGalleryCarousel event={event} />
-        
-        {/* Details Grid */}
-        <EventDetailsGrid event={event} />
         
         {/* Static CTA Banner - EDITABLE */}
         <section className="py-16 bg-primary/5 border-y">
