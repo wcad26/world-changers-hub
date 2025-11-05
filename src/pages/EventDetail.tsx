@@ -133,10 +133,9 @@ export default function EventDetail() {
               
               {/* Action Buttons - Only show if registration is available */}
               {canRegister && (
-                <div className="flex flex-row gap-3 lg:flex-shrink-0">
+                <div className="flex flex-row gap-2 lg:gap-3 lg:flex-shrink-0">
                   <Button 
-                    size="lg"
-                    className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white whitespace-nowrap transition-all hover:scale-105"
+                    className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
                     onClick={() => {
                       if (event.whatsapp_contact) {
                         const phoneNumber = event.whatsapp_contact.replace(/[^0-9]/g, '');
@@ -145,16 +144,15 @@ export default function EventDetail() {
                     }}
                     disabled={!event.whatsapp_contact}
                   >
-                    <MessageCircle className="mr-2 h-5 w-5" />
+                    <MessageCircle className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
                     Contact Us
                   </Button>
                   
                   <Button 
-                    size="lg"
-                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white whitespace-nowrap transition-all hover:scale-105"
+                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
                     onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
                   >
-                    <Calendar className="mr-2 h-5 w-5" />
+                    <Calendar className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
                     Register for Event
                   </Button>
                 </div>
