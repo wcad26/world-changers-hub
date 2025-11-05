@@ -43,7 +43,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
 
   if (isLoading) {
     return (
-      <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+      <section className="py-10 bg-gradient-to-b from-background to-muted/20">
         <div className="container-custom">
           <div className="text-center mb-12">
             <Skeleton className="h-16 w-16 rounded-full mx-auto mb-6" />
@@ -61,7 +61,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+    <section className="py-10 bg-gradient-to-b from-background to-muted/20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-6">
