@@ -74,6 +74,7 @@ const eventSchema = z.object({
   capacity: z.coerce.number().positive().int().optional(),
   image_file: z.instanceof(File).optional(),
   image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
+  gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
   registration_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   organizer_name: z.string().optional(),
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
@@ -113,6 +114,8 @@ const RegionalEvents: React.FC = () => {
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
   const { toast } = useToast();
 
   const { userRegion } = useAuth();
@@ -330,6 +333,43 @@ const RegionalEvents: React.FC = () => {
         if (imageError) throw imageError;
       }
       
+      // Insert gallery images if provided
+      if (values.gallery_images && values.gallery_images.length > 0 && createdEvent) {
+        const galleryImageUrls: string[] = [];
+        
+        for (const file of values.gallery_images) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          galleryImageUrls.push(publicUrl);
+        }
+        
+        // Insert gallery images with is_hero_image: false
+        const galleryRecords = galleryImageUrls.map((url, index) => ({
+          event_id: createdEvent.id,
+          image_url: url,
+          display_order: index,
+          is_hero_image: false,
+        }));
+        
+        const { error: galleryError } = await supabase
+          .from('event_images')
+          .insert(galleryRecords);
+        
+        if (galleryError) throw galleryError;
+      }
+      
       // Insert testimonials if provided
       if (values.testimonials && values.testimonials.length > 0 && createdEvent) {
         const testimonialsData = values.testimonials.map((t, index) => ({
@@ -367,6 +407,7 @@ const RegionalEvents: React.FC = () => {
       toast({ title: "Success", description: "Event created successfully with images, testimonials and FAQs." });
       form.reset();
       setImagePreviews([]);
+      setGalleryPreviews([]);
       setCreateEventDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
@@ -414,11 +455,12 @@ const RegionalEvents: React.FC = () => {
           uploadedImageUrls.push(publicUrl);
         }
         
-        // Delete old images from event_images table
+        // Delete old hero images from event_images table
         await supabase
           .from('event_images')
           .delete()
-          .eq('event_id', eventToEdit.id);
+          .eq('event_id', eventToEdit.id)
+          .eq('is_hero_image', true);
         
         // Insert new images
         const imageRecords = uploadedImageUrls.map((url, index) => ({
@@ -431,6 +473,48 @@ const RegionalEvents: React.FC = () => {
         await supabase
           .from('event_images')
           .insert(imageRecords);
+      }
+      
+      // Insert gallery images if provided
+      if (values.gallery_images && values.gallery_images.length > 0) {
+        const galleryImageUrls: string[] = [];
+        
+        for (const file of values.gallery_images) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          galleryImageUrls.push(publicUrl);
+        }
+        
+        // Delete old gallery images
+        await supabase
+          .from('event_images')
+          .delete()
+          .eq('event_id', eventToEdit.id)
+          .eq('is_hero_image', false);
+        
+        // Insert gallery images with is_hero_image: false
+        const galleryRecords = galleryImageUrls.map((url, index) => ({
+          event_id: eventToEdit.id,
+          image_url: url,
+          display_order: index,
+          is_hero_image: false,
+        }));
+        
+        await supabase
+          .from('event_images')
+          .insert(galleryRecords);
       }
 
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
@@ -954,6 +1038,43 @@ const RegionalEvents: React.FC = () => {
                       <FormDescription>
                         Recommended: 1920x1080px, max 2MB (JPG, PNG)
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="gallery_images"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Gallery Images</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 10);
+                            onChange(limitedFiles);
+                            setGalleryPreviews(limitedFiles.map(f => URL.createObjectURL(f)));
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Upload up to 10 images for the event gallery section</FormDescription>
+                      
+                      {/* Gallery Image Previews */}
+                      {galleryPreviews.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {galleryPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                              <img src={preview} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1485,6 +1606,43 @@ const RegionalEvents: React.FC = () => {
                       <FormDescription>
                         Recommended: 1920x1080px, max 2MB (JPG, PNG)
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="gallery_images"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Gallery Images</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 10);
+                            onChange(limitedFiles);
+                            setEditGalleryPreviews(limitedFiles.map(f => URL.createObjectURL(f)));
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Upload up to 10 new images for the event gallery. Leave empty to keep existing images.</FormDescription>
+                      
+                      {/* Gallery Image Previews */}
+                      {editGalleryPreviews.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {editGalleryPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                              <img src={preview} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
