@@ -19,7 +19,7 @@ export function EventDetailsGrid({ event }: EventDetailsGridProps) {
         </div>
 
         {/* Description Section */}
-        <div className="glass-panel-soft p-8 md:p-12 animate-fade-in-up max-w-4xl mx-auto">
+        <div className="glass-panel-soft p-8 md:p-12 lg:p-16 animate-fade-in-up max-w-6xl mx-auto">
           <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
             <Info className="h-6 w-6 text-primary" />
             About This Event
