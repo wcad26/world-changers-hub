@@ -106,7 +106,7 @@ export default function EventDetail() {
           
           <div className="container-custom relative z-10">
             {/* Badges */}
-            <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up">
+            <div className="flex flex-nowrap gap-3 mb-6 animate-fade-in-up overflow-x-auto">
               {event.is_featured && (
                 <Badge className="bg-gradient-to-r from-accent to-primary text-white px-4 py-1.5">
                   ⭐ Featured Event
