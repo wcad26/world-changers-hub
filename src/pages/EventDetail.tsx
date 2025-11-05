@@ -192,16 +192,6 @@ export default function EventDetail() {
         {/* Testimonials */}
         <EventTestimonials eventId={event.id} />
         
-        {/* Static Divider - EDITABLE */}
-        <section className="py-8 bg-muted/10">
-          <div className="container-custom text-center">
-            <h3 className="text-2xl font-semibold mb-2 text-foreground">Explore More Events</h3>
-            <p className="text-muted-foreground">
-              Check out other upcoming events you might enjoy
-            </p>
-          </div>
-        </section>
-        
         {/* Related Events Carousel */}
         <RelatedEventsCarousel currentEventId={event.id} />
         
