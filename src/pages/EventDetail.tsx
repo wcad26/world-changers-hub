@@ -162,16 +162,6 @@ export default function EventDetail() {
         {/* Gallery Carousel */}
         <EventGalleryCarousel event={event} />
         
-        {/* Static CTA Banner - EDITABLE */}
-        <section className="py-16 bg-primary/5 border-y">
-          <div className="container-custom text-center">
-            <h2 className="text-3xl font-bold mb-4 text-foreground">Ready to Join?</h2>
-            <p className="text-lg text-muted-foreground mb-6 max-w-xl mx-auto">
-              Reserve your spot today and be part of something extraordinary
-            </p>
-          </div>
-        </section>
-        
         {/* Registration/CTA Section */}
         <EventRegistrationSection event={event} />
         

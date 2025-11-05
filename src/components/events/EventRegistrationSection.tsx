@@ -22,6 +22,14 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,hsl(var(--accent)/0.2),transparent_50%)]" />
       
       <div className="container-custom relative z-10">
+        {/* CTA Header */}
+        <div className="text-center mb-12 animate-fade-in-up">
+          <h2 className="text-3xl font-bold mb-4 text-foreground">Ready to Join?</h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+            Reserve your spot today and be part of something extraordinary
+          </p>
+        </div>
+
         {canRegister ? (
           <div className="max-w-4xl mx-auto animate-fade-in-up">
             <div className="grid md:grid-cols-2 gap-0 rounded-lg overflow-hidden shadow-xl">
