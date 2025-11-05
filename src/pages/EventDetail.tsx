@@ -195,6 +195,9 @@ export default function EventDetail() {
         {/* Related Events Carousel */}
         <RelatedEventsCarousel currentEventId={event.id} />
         
+        {/* FAQ Section */}
+        <EventFAQ eventId={event.id} />
+        
         {/* Static Event Guidelines - EDITABLE */}
         <section className="py-12 bg-background border-t">
           <div className="container-custom max-w-4xl">
