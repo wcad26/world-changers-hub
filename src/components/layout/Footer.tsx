@@ -117,25 +117,6 @@ export default function Footer() {
           <p className="text-gray-600 dark:text-gray-400 text-sm">
             © {currentYear} World Changers Association.
           </p>
-          <div className="mt-4 md:mt-0">
-            <ul className="flex space-x-6 text-sm">
-              <li>
-                <Link to="/privacy" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
     </footer>;
