@@ -39,6 +39,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
 import { useCurrencies } from '@/hooks/useCurrencies';
+import { supabase } from '@/integrations/supabase/client';
 
 const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
@@ -61,6 +62,7 @@ const eventFormSchema = z.object({
   capacity: z.number().optional(),
   cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
   cost_currency_code: z.string().optional(),
+  event_card_image: z.instanceof(File).optional(),
   whatsapp_contact: z.string().optional(),
   is_public: z.boolean().default(false),
   is_featured: z.boolean().default(false),
@@ -85,6 +87,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   isOpen,
   onClose,
 }) => {
+  const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
   const createEvent = useCreateDcgEvent();
   const { data: currencies } = useCurrencies();
 
@@ -106,6 +109,25 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
   const handleSubmit = async (data: EventFormData) => {
     try {
+      // Upload event card image if provided
+      let eventCardImageUrl: string | null = null;
+      if (data.event_card_image) {
+        const fileExt = data.event_card_image.name.split('.').pop();
+        const fileName = `dcg-card-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, data.event_card_image);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+          eventCardImageUrl = publicUrl;
+        }
+      }
+
       const start_datetime = new Date(`${data.start_date}T${data.start_time}`).toISOString();
       let end_datetime = null;
       
@@ -128,8 +150,10 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         whatsapp_contact: data.whatsapp_contact || null,
         is_public: data.is_public,
         is_featured: data.is_featured,
+        image_url: eventCardImageUrl || null,
       });
       form.reset();
+      setCardImagePreview('');
       onClose();
     } catch (error) {
       console.error('Error creating event:', error);
@@ -351,6 +375,40 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="event_card_image"
+              render={({ field: { onChange, value, ...field } }) => (
+                <FormItem>
+                  <FormLabel>Event Card Image</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          onChange(file);
+                          setCardImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      {...field}
+                      value={undefined}
+                    />
+                  </FormControl>
+                  <div className="text-xs text-muted-foreground">
+                    This image will appear on the Events listing page
+                  </div>
+                  {cardImagePreview && (
+                    <div className="mt-2 relative w-32 aspect-[4/3] rounded-md overflow-hidden border">
+                      <img src={cardImagePreview} alt="Card preview" className="object-cover w-full h-full" />
+                    </div>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

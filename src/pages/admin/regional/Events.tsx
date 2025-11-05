@@ -75,6 +75,7 @@ const eventSchema = z.object({
   capacity: z.coerce.number().positive().int().optional(),
   cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
   cost_currency_code: z.string().optional(),
+  event_card_image: z.instanceof(File).optional(),
   image_file: z.instanceof(File).optional(),
   image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
   gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
@@ -128,6 +129,8 @@ const RegionalEvents: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("3months");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
+  const [cardImagePreview, setCardImagePreview] = useState<string>('');
+  const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
@@ -273,6 +276,26 @@ const RegionalEvents: React.FC = () => {
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
     try {
+      // Upload event card image first (if provided)
+      let eventCardImageUrl: string | null = null;
+      if (values.event_card_image) {
+        const fileExt = values.event_card_image.name.split('.').pop();
+        const fileName = `card-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, values.event_card_image);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('event-images')
+          .getPublicUrl(filePath);
+
+        eventCardImageUrl = publicUrl;
+      }
+
       // Upload multiple images if provided
       let uploadedImageUrls: string[] = [];
       if (values.image_files && values.image_files.length > 0) {
@@ -328,7 +351,7 @@ const RegionalEvents: React.FC = () => {
         end_datetime: end_datetime,
         location_name: values.location_name,
         address: values.address || null,
-        image_url: uploadedImageUrls[0] || null, // Use first image as primary
+        image_url: eventCardImageUrl || uploadedImageUrls[0] || null, // Use card image first, fallback to first hero
         capacity: values.capacity || null,
         cost: values.cost || 0,
         cost_currency_code: values.cost_currency_code || null,
@@ -485,6 +508,7 @@ const RegionalEvents: React.FC = () => {
 
       toast({ title: "Success", description: "Event created successfully with images, testimonials, FAQs and speakers." });
       form.reset();
+      setCardImagePreview('');
       setImagePreviews([]);
       setGalleryPreviews([]);
       setSpeakerPhotoPreviews({});
@@ -514,6 +538,25 @@ const RegionalEvents: React.FC = () => {
     if (!eventToEdit) return;
     
     try {
+      // Upload new event card image if provided
+      let eventCardImageUrl = eventToEdit.image_url; // Keep existing by default
+      if (values.event_card_image) {
+        const fileExt = values.event_card_image.name.split('.').pop();
+        const fileName = `card-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, values.event_card_image);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+          eventCardImageUrl = publicUrl;
+        }
+      }
+
       // Handle new image uploads (if any)
       let uploadedImageUrls: string[] = [];
       if (values.image_files && values.image_files.length > 0) {
@@ -621,7 +664,7 @@ const RegionalEvents: React.FC = () => {
         end_datetime: end_datetime,
         location_name: values.location_name,
         address: values.address || null,
-        image_url: uploadedImageUrls[0] || eventToEdit.image_url,
+        image_url: eventCardImageUrl,
         capacity: values.capacity || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
@@ -747,6 +790,7 @@ const RegionalEvents: React.FC = () => {
 
       toast({ title: "Success", description: "Event updated successfully." });
       form.reset();
+      setEditCardImagePreview('');
       setEditImagePreviews([]);
       setEditGalleryPreviews([]);
       setExistingGalleryImages([]);
@@ -761,6 +805,13 @@ const RegionalEvents: React.FC = () => {
 
   const handleEdit = async (event: any) => {
     setEventToEdit(event);
+    
+    // Set card image preview if exists
+    if (event.image_url) {
+      setEditCardImagePreview(event.image_url);
+    } else {
+      setEditCardImagePreview('');
+    }
     
     // Fetch existing hero images for preview
     const { data: heroImages } = await supabase
@@ -1254,6 +1305,40 @@ const RegionalEvents: React.FC = () => {
                           value={field.value || 0}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="event_card_image"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Card Image (for Events Page)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              onChange(file);
+                              setCardImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          {...field}
+                          value={undefined}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        This image will be displayed on the Events listing page. Recommended: 1200x900px (4:3 ratio)
+                      </FormDescription>
+                      {cardImagePreview && (
+                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border">
+                          <img src={cardImagePreview} alt="Card preview" className="object-cover w-full h-full" />
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -2072,6 +2157,43 @@ const RegionalEvents: React.FC = () => {
                           value={field.value || 0}
                         />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="event_card_image"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Card Image (for Events Page)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              onChange(file);
+                              setEditCardImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          {...field}
+                          value={undefined}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Upload a new image for the Events listing page, or leave empty to keep existing. Recommended: 1200x900px (4:3 ratio)
+                      </FormDescription>
+                      {editCardImagePreview && (
+                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border">
+                          <img src={editCardImagePreview} alt="Current card image" className="object-cover w-full h-full" />
+                          <span className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                            Current
+                          </span>
+                        </div>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
