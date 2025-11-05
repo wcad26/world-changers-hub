@@ -98,9 +98,12 @@ export default function EventDetail() {
         {/* Hero Slider */}
         <EventHeroSection event={event} />
         
-        {/* Event Title & Badges Section */}
-        <section className="py-8 bg-background border-b">
-          <div className="container-custom">
+        {/* Quick Info Section */}
+        <section className="py-12 relative overflow-hidden bg-hero-pattern border-y border-primary/10">
+          {/* Animated Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 animate-pulse" />
+          
+          <div className="container-custom relative z-10">
             {/* Badges */}
             <div className="flex flex-wrap gap-3 mb-6 animate-fade-in-up">
               {event.is_featured && (
@@ -117,18 +120,10 @@ export default function EventDetail() {
             </div>
 
             {/* Event Title */}
-            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-fade-in-up leading-tight">
+            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-fade-in-up leading-tight mb-10">
               {event.name}
             </h1>
-          </div>
-        </section>
-        
-        {/* Quick Info Section */}
-        <section className="py-12 relative overflow-hidden bg-hero-pattern border-y border-primary/10">
-          {/* Animated Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 animate-pulse" />
-          
-          <div className="container-custom relative z-10">
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
                 <Calendar className="h-5 w-5 text-primary mb-2" />
