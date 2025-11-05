@@ -174,18 +174,6 @@ export default function EventDetail() {
         {/* FAQ Section */}
         <EventFAQ eventId={event.id} />
         
-        {/* Static Event Guidelines - EDITABLE */}
-        <section className="py-12 bg-background border-t">
-          <div className="container-custom max-w-4xl">
-            <h3 className="text-xl font-bold mb-4 text-foreground">Event Guidelines</h3>
-            <div className="space-y-2 text-muted-foreground text-sm">
-              <p>• Please arrive 15 minutes before the event starts</p>
-              <p>• Dress code: Smart casual unless otherwise specified</p>
-              <p>• Photography is allowed for personal use</p>
-              <p>• For cancellations, please notify us 24 hours in advance</p>
-            </div>
-          </div>
-        </section>
       </main>
       
       <Footer />
