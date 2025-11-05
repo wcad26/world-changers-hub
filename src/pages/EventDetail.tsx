@@ -133,7 +133,7 @@ export default function EventDetail() {
               
               {/* Action Buttons - Only show if registration is available */}
               {canRegister && (
-                <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                <div className="flex flex-row gap-3 lg:flex-shrink-0">
                   <Button 
                     size="lg"
                     className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white whitespace-nowrap transition-all hover:scale-105"
