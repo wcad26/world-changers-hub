@@ -38,6 +38,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
+import { useCurrencies } from '@/hooks/useCurrencies';
 
 const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
@@ -58,6 +59,8 @@ const eventFormSchema = z.object({
   location_name: z.string().optional(),
   address: z.string().optional(),
   capacity: z.number().optional(),
+  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
+  cost_currency_code: z.string().optional(),
   is_public: z.boolean().default(false),
   is_featured: z.boolean().default(false),
 }).refine((data) => {
@@ -82,6 +85,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   onClose,
 }) => {
   const createEvent = useCreateDcgEvent();
+  const { data: currencies } = useCurrencies();
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
@@ -118,6 +122,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         location_name: data.location_name,
         address: data.address,
         capacity: data.capacity || null,
+        cost: data.cost || 0,
+        cost_currency_code: data.cost_currency_code || null,
         is_public: data.is_public,
         is_featured: data.is_featured,
       });
@@ -288,6 +294,54 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                         placeholder="Max attendees"
                         {...field}
                         onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="cost_currency_code"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Currency</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {currencies?.map((currency) => (
+                          <SelectItem key={currency.code} value={currency.code}>
+                            {currency.symbol} - {currency.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Event Cost</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
                       />
                     </FormControl>
                     <FormMessage />

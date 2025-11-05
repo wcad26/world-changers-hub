@@ -670,6 +670,8 @@ export type Database = {
           address: string | null
           capacity: number | null
           category: Database["public"]["Enums"]["event_category"] | null
+          cost: number | null
+          cost_currency_code: string | null
           created_at: string
           created_by: string | null
           dcg_id: string | null
@@ -695,6 +697,8 @@ export type Database = {
           address?: string | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
+          cost?: number | null
+          cost_currency_code?: string | null
           created_at?: string
           created_by?: string | null
           dcg_id?: string | null
@@ -720,6 +724,8 @@ export type Database = {
           address?: string | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
+          cost?: number | null
+          cost_currency_code?: string | null
           created_at?: string
           created_by?: string | null
           dcg_id?: string | null
@@ -742,6 +748,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "events_cost_currency_code_fkey"
+            columns: ["cost_currency_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "events_dcg_id_fkey"
             columns: ["dcg_id"]

@@ -13,6 +13,7 @@ import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, 
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
+import { useCurrencies } from "@/hooks/useCurrencies";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
 import { formatDateRange, formatTimeRange } from "@/utils/dateUtils";
@@ -72,6 +73,8 @@ const eventSchema = z.object({
   location_name: z.string().min(3, { message: "Please provide a location." }),
   address: z.string().min(10, { message: "Please provide a full address for map display." }),
   capacity: z.coerce.number().positive().int().optional(),
+  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
+  cost_currency_code: z.string().optional(),
   image_file: z.instanceof(File).optional(),
   image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
   gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
@@ -136,6 +139,7 @@ const RegionalEvents: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: events, isLoading, isError, error } = useRegionalEvents();
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: currencies } = useCurrencies();
   const createEventMutation = useCreateEvent();
   const updateEventMutation = useUpdateEvent();
   const deleteEventMutation = useDeleteEvent();
@@ -325,6 +329,8 @@ const RegionalEvents: React.FC = () => {
         address: values.address || null,
         image_url: uploadedImageUrls[0] || null, // Use first image as primary
         capacity: values.capacity || null,
+        cost: values.cost || 0,
+        cost_currency_code: values.cost_currency_code || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
         status: 'Upcoming',
@@ -1205,6 +1211,52 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
+                  name="cost_currency_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <option value="">Select currency</option>
+                          {currencies?.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                              {currency.symbol} - {currency.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="cost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Cost</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                          value={field.value || 0}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="image_files"
                   render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
@@ -1952,6 +2004,52 @@ const RegionalEvents: React.FC = () => {
                       <FormLabel>Expected turnout</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="100" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="cost_currency_code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <FormControl>
+                        <select
+                          {...field}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <option value="">Select currency</option>
+                          {currencies?.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                              {currency.symbol} - {currency.name}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="cost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Cost</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
+                          value={field.value || 0}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
