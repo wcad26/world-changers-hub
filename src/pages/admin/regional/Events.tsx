@@ -90,6 +90,18 @@ const eventSchema = z.object({
     question: z.string().min(5, "Question must be at least 5 characters").max(200, "Question must be less than 200 characters"),
     answer: z.string().min(10, "Answer must be at least 10 characters").max(500, "Answer must be less than 500 characters"),
   })).optional(),
+  speakers: z.array(z.object({
+    id: z.string().optional(),
+    name: z.string().min(2, "Speaker name is required"),
+    title: z.string().min(2, "Speaker title is required"),
+    bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+    photo: z.instanceof(File).optional(),
+    existing_photo_url: z.string().optional(),
+    linkedin_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    twitter_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    website_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+    display_order: z.number().optional(),
+  })).optional(),
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
 }).refine((data) => {
@@ -118,6 +130,7 @@ const RegionalEvents: React.FC = () => {
   const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
   const [existingGalleryImages, setExistingGalleryImages] = useState<any[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [speakerPhotoPreviews, setSpeakerPhotoPreviews] = useState<{[key: number]: string}>({});
   const { toast } = useToast();
 
   const { userRegion } = useAuth();
@@ -146,6 +159,7 @@ const RegionalEvents: React.FC = () => {
       is_public: true,
       testimonials: [],
       faqs: [],
+      speakers: [],
     },
   });
 
@@ -157,6 +171,11 @@ const RegionalEvents: React.FC = () => {
   const { fields: faqFields, append: appendFAQ, remove: removeFAQ } = useFieldArray({
     control: form.control,
     name: "faqs",
+  });
+
+  const { fields: speakerFields, append: appendSpeaker, remove: removeSpeaker } = useFieldArray({
+    control: form.control,
+    name: "speakers",
   });
 
   const filteredEvents = React.useMemo(() => {
@@ -406,10 +425,61 @@ const RegionalEvents: React.FC = () => {
         if (faqError) throw faqError;
       }
 
-      toast({ title: "Success", description: "Event created successfully with images, testimonials and FAQs." });
+      // Upload speaker photos and create speaker records
+      if (values.speakers && values.speakers.length > 0 && createdEvent) {
+        for (let i = 0; i < values.speakers.length; i++) {
+          const speaker = values.speakers[i];
+          let speakerPhotoUrl = null;
+
+          // Upload speaker photo if provided
+          if (speaker.photo) {
+            const fileExt = speaker.photo.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${createdEvent.id}/speakers/${fileName}`;
+
+            const { error: uploadError, data: uploadData } = await supabase.storage
+              .from('event-images')
+              .upload(filePath, speaker.photo);
+
+            if (!uploadError && uploadData) {
+              const { data: { publicUrl } } = supabase.storage
+                .from('event-images')
+                .getPublicUrl(filePath);
+              speakerPhotoUrl = publicUrl;
+            }
+          }
+
+          // Insert speaker record
+          const { error: speakerError } = await supabase
+            .from('event_speakers')
+            .insert({
+              event_id: createdEvent.id,
+              name: speaker.name,
+              title: speaker.title,
+              bio: speaker.bio || null,
+              photo_url: speakerPhotoUrl,
+              linkedin_url: speaker.linkedin_url || null,
+              twitter_url: speaker.twitter_url || null,
+              website_url: speaker.website_url || null,
+              display_order: speaker.display_order || i,
+            });
+
+          if (speakerError) {
+            console.error('Error creating speaker:', speakerError);
+            toast({
+              title: "Warning",
+              description: `Event created but failed to add speaker: ${speaker.name}`,
+              variant: "destructive",
+            });
+          }
+        }
+      }
+
+      toast({ title: "Success", description: "Event created successfully with images, testimonials, FAQs and speakers." });
       form.reset();
       setImagePreviews([]);
       setGalleryPreviews([]);
+      setSpeakerPhotoPreviews({});
       setCreateEventDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
@@ -596,12 +666,83 @@ const RegionalEvents: React.FC = () => {
           .insert(faqsData);
       }
 
+      // Handle speakers - delete removed, update existing, add new
+      if (values.speakers) {
+        // Get current speakers from DB
+        const { data: currentSpeakers } = await supabase
+          .from('event_speakers')
+          .select('id')
+          .eq('event_id', eventToEdit.id);
+
+        const currentIds = currentSpeakers?.map(s => s.id) || [];
+        const updatedIds = values.speakers.map(s => s.id).filter(id => id);
+
+        // Delete removed speakers
+        const toDelete = currentIds.filter(id => !updatedIds.includes(id));
+        if (toDelete.length > 0) {
+          await supabase
+            .from('event_speakers')
+            .delete()
+            .in('id', toDelete);
+        }
+
+        // Update or insert speakers
+        for (let i = 0; i < values.speakers.length; i++) {
+          const speaker = values.speakers[i];
+          let speakerPhotoUrl = speaker.existing_photo_url || null;
+
+          // Upload new photo if provided
+          if (speaker.photo && speaker.photo instanceof File) {
+            const fileExt = speaker.photo.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const filePath = `${eventToEdit.id}/speakers/${fileName}`;
+
+            const { error: uploadError, data: uploadData } = await supabase.storage
+              .from('event-images')
+              .upload(filePath, speaker.photo);
+
+            if (!uploadError && uploadData) {
+              const { data: { publicUrl } } = supabase.storage
+                .from('event-images')
+                .getPublicUrl(filePath);
+              speakerPhotoUrl = publicUrl;
+            }
+          }
+
+          const speakerData = {
+            event_id: eventToEdit.id,
+            name: speaker.name,
+            title: speaker.title,
+            bio: speaker.bio || null,
+            photo_url: speakerPhotoUrl,
+            linkedin_url: speaker.linkedin_url || null,
+            twitter_url: speaker.twitter_url || null,
+            website_url: speaker.website_url || null,
+            display_order: speaker.display_order || i,
+          };
+
+          if (speaker.id) {
+            // Update existing
+            await supabase
+              .from('event_speakers')
+              .update(speakerData)
+              .eq('id', speaker.id);
+          } else {
+            // Insert new
+            await supabase
+              .from('event_speakers')
+              .insert(speakerData);
+          }
+        }
+      }
+
       toast({ title: "Success", description: "Event updated successfully." });
       form.reset();
       setEditImagePreviews([]);
       setEditGalleryPreviews([]);
       setExistingGalleryImages([]);
       setImagesToDelete([]);
+      setSpeakerPhotoPreviews({});
       setEditEventDialogOpen(false);
       setEventToEdit(null);
     } catch (err: any) {
@@ -658,6 +799,26 @@ const RegionalEvents: React.FC = () => {
       .eq('event_id', event.id)
       .order('display_order');
     
+    // Fetch existing speakers
+    const { data: existingSpeakers } = await supabase
+      .from('event_speakers')
+      .select('*')
+      .eq('event_id', event.id)
+      .order('display_order');
+    
+    // Set photo previews for existing speakers
+    if (existingSpeakers && existingSpeakers.length > 0) {
+      const previews: {[key: number]: string} = {};
+      existingSpeakers.forEach((s, idx) => {
+        if (s.photo_url) {
+          previews[idx] = s.photo_url;
+        }
+      });
+      setSpeakerPhotoPreviews(previews);
+    } else {
+      setSpeakerPhotoPreviews({});
+    }
+    
     // Parse datetime into date and time
     const startDate = new Date(event.start_datetime);
     const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
@@ -690,6 +851,17 @@ const RegionalEvents: React.FC = () => {
       faqs: existingFaqs?.map(f => ({
         question: f.question,
         answer: f.answer,
+      })) || [],
+      speakers: existingSpeakers?.map(s => ({
+        id: s.id,
+        name: s.name,
+        title: s.title,
+        bio: s.bio || '',
+        linkedin_url: s.linkedin_url || '',
+        twitter_url: s.twitter_url || '',
+        website_url: s.website_url || '',
+        display_order: s.display_order,
+        existing_photo_url: s.photo_url,
       })) || [],
     });
     
@@ -1394,6 +1566,193 @@ const RegionalEvents: React.FC = () => {
                   </Collapsible>
                 </div>
                 
+                {/* Speakers Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">Event Speakers (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add speakers and their details</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {speakerFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">Speaker {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  removeSpeaker(index);
+                                  const newPreviews = {...speakerPhotoPreviews};
+                                  delete newPreviews[index];
+                                  setSpeakerPhotoPreviews(newPreviews);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name *</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Dr. John Smith" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.title`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Title/Role *</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Keynote Speaker" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.bio`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Biography</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="Brief biography..." maxLength={500} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/500 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.photo`}
+                              render={({ field: { onChange, value, ...field } }) => (
+                                <FormItem>
+                                  <FormLabel>Photo</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="file" 
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          onChange(file);
+                                          setSpeakerPhotoPreviews(prev => ({
+                                            ...prev,
+                                            [index]: URL.createObjectURL(file)
+                                          }));
+                                        }
+                                      }}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  {speakerPhotoPreviews[index] && (
+                                    <div className="mt-2">
+                                      <img 
+                                        src={speakerPhotoPreviews[index]} 
+                                        alt="Preview" 
+                                        className="w-24 h-24 object-cover rounded-full border-2 border-primary/20"
+                                      />
+                                    </div>
+                                  )}
+                                  <FormDescription>Square image recommended (e.g., 400x400px)</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.linkedin_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>LinkedIn URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://linkedin.com/in/..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.twitter_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Twitter/X URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://twitter.com/..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.website_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Website URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendSpeaker({ 
+                          name: "", 
+                          title: "", 
+                          bio: "", 
+                          linkedin_url: "", 
+                          twitter_url: "", 
+                          website_url: "",
+                          display_order: speakerFields.length 
+                        })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Speaker
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
                  <FormField
                   control={form.control}
                   name="is_public"
@@ -1984,6 +2343,193 @@ const RegionalEvents: React.FC = () => {
                       >
                         <Plus className="mr-2 h-4 w-4" />
                         Add FAQ
+                      </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
+                {/* Speakers Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold">Event Speakers (Optional)</h4>
+                        <p className="text-sm text-muted-foreground">Add speakers and their details</p>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      {speakerFields.map((field, index) => (
+                        <Card key={field.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h5 className="font-semibold text-sm">Speaker {index + 1}</h5>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  removeSpeaker(index);
+                                  const newPreviews = {...speakerPhotoPreviews};
+                                  delete newPreviews[index];
+                                  setSpeakerPhotoPreviews(newPreviews);
+                                }}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.name`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Name *</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Dr. John Smith" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.title`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Title/Role *</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="Keynote Speaker" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.bio`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Biography</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} placeholder="Brief biography..." maxLength={500} rows={3} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    {field.value?.length || 0}/500 characters
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.photo`}
+                              render={({ field: { onChange, value, ...field } }) => (
+                                <FormItem>
+                                  <FormLabel>Photo</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="file" 
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          onChange(file);
+                                          setSpeakerPhotoPreviews(prev => ({
+                                            ...prev,
+                                            [index]: URL.createObjectURL(file)
+                                          }));
+                                        }
+                                      }}
+                                      {...field}
+                                    />
+                                  </FormControl>
+                                  {speakerPhotoPreviews[index] && (
+                                    <div className="mt-2">
+                                      <img 
+                                        src={speakerPhotoPreviews[index]} 
+                                        alt="Preview" 
+                                        className="w-24 h-24 object-cover rounded-full border-2 border-primary/20"
+                                      />
+                                    </div>
+                                  )}
+                                  <FormDescription>Square image recommended (e.g., 400x400px)</FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <div className="grid grid-cols-3 gap-3">
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.linkedin_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>LinkedIn URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://linkedin.com/in/..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.twitter_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Twitter/X URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://twitter.com/..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.website_url`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Website URL</FormLabel>
+                                    <FormControl>
+                                      <Input {...field} placeholder="https://..." />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendSpeaker({ 
+                          name: "", 
+                          title: "", 
+                          bio: "", 
+                          linkedin_url: "", 
+                          twitter_url: "", 
+                          website_url: "",
+                          display_order: speakerFields.length 
+                        })}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Speaker
                       </Button>
                     </CollapsibleContent>
                   </Collapsible>
