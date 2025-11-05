@@ -12,7 +12,8 @@ import { EventRegistrationSection } from "@/components/events/EventRegistrationS
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Clock, MapPin, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, MapPin, Users, MessageCircle } from "lucide-react";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -41,6 +42,9 @@ export default function EventDetail() {
     }
     return null;
   };
+
+  const isUpcoming = isFuture(new Date(event.start_datetime));
+  const canRegister = isUpcoming && event.status !== "Cancelled" && event.status !== "Completed";
 
   if (isLoading) {
     return (
@@ -120,10 +124,41 @@ export default function EventDetail() {
               )}
             </div>
 
-            {/* Event Title */}
-            <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold text-white animate-fade-in-up leading-tight mb-10">
-              {event.name}
-            </h1>
+            {/* Event Title & Action Buttons */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10 animate-fade-in-up">
+              <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold text-white leading-tight">
+                {event.name}
+              </h1>
+              
+              {/* Action Buttons - Only show if registration is available */}
+              {canRegister && (
+                <div className="flex flex-col sm:flex-row gap-3 lg:flex-shrink-0">
+                  <Button 
+                    size="lg"
+                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white whitespace-nowrap transition-all hover:scale-105"
+                    onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
+                  >
+                    <Calendar className="mr-2 h-5 w-5" />
+                    Register for Event
+                  </Button>
+                  
+                  <Button 
+                    size="lg"
+                    className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white whitespace-nowrap transition-all hover:scale-105"
+                    onClick={() => {
+                      if (event.whatsapp_contact) {
+                        const phoneNumber = event.whatsapp_contact.replace(/[^0-9]/g, '');
+                        window.open(`https://wa.me/${phoneNumber}`, '_blank');
+                      }
+                    }}
+                    disabled={!event.whatsapp_contact}
+                  >
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Contact Us
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
