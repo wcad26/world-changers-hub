@@ -14,7 +14,7 @@ export function EventDetailsGrid({ event }: EventDetailsGridProps) {
             About This Event
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Everything you need to know about this event
+            {event.description || "No description available for this event."}
           </p>
         </div>
 
