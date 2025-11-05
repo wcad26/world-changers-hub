@@ -43,9 +43,6 @@ export default function EventDetail() {
     return null;
   };
 
-  const isUpcoming = isFuture(new Date(event.start_datetime));
-  const canRegister = isUpcoming && event.status !== "Cancelled" && event.status !== "Completed";
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -91,6 +88,10 @@ export default function EventDetail() {
       </div>
     );
   }
+
+  // Check if event registration is available
+  const isUpcoming = isFuture(new Date(event.start_datetime));
+  const canRegister = isUpcoming && event.status !== "Cancelled" && event.status !== "Completed";
 
   return (
     <div className="min-h-screen flex flex-col">
