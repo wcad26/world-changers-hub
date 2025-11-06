@@ -88,8 +88,6 @@ const eventSchema = z.object({
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
   organizer_phone: z.string().optional(),
   whatsapp_contact: z.string().optional(),
-  requirements: z.string().max(500).optional(),
-  requirements_fr: z.string().max(500).optional(),
   testimonials: z.array(z.object({
     name: z.string().min(2, "Name is required"),
     name_fr: z.string().optional(),
@@ -183,8 +181,6 @@ const RegionalEvents: React.FC = () => {
       organizer_name: "",
       organizer_email: "",
       organizer_phone: "",
-      requirements: "",
-      requirements_fr: "",
       is_public: true,
       testimonials: [],
       faqs: [],
@@ -389,8 +385,6 @@ const RegionalEvents: React.FC = () => {
         organizer_email: values.organizer_email || null,
         organizer_phone: values.organizer_phone || null,
         whatsapp_contact: values.whatsapp_contact || null,
-        requirements: values.requirements || null,
-        requirements_fr: values.requirements_fr || null,
       };
 
       const createdEvent = await createEventMutation.mutateAsync(newEventData);
@@ -724,12 +718,10 @@ const RegionalEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         registration_url: values.registration_url || null,
-        organizer_name: values.organizer_name || null,
-        organizer_email: values.organizer_email || null,
-        organizer_phone: values.organizer_phone || null,
-        whatsapp_contact: values.whatsapp_contact || null,
-        requirements: values.requirements || null,
-        requirements_fr: values.requirements_fr || null,
+          organizer_name: values.organizer_name || null,
+          organizer_email: values.organizer_email || null,
+          organizer_phone: values.organizer_phone || null,
+          whatsapp_contact: values.whatsapp_contact || null,
       };
 
       await updateEventMutation.mutateAsync(updateData);
@@ -962,8 +954,6 @@ const RegionalEvents: React.FC = () => {
       address_fr: event.address_fr || "",
       location_name: event.location_name || "",
       location_name_fr: event.location_name_fr || "",
-      requirements: event.requirements || "",
-      requirements_fr: event.requirements_fr || "",
       start_date: startDate.toISOString().split('T')[0],
       start_time: startDate.toTimeString().slice(0, 5),
       end_date: endDate ? endDate.toISOString().split('T')[0] : "",
@@ -1617,27 +1607,6 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
-                  name="requirements"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Requirements/Prerequisites (Optional)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="What attendees should bring or prepare..."
-                          {...field}
-                          rows={3}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Max 500 characters
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
@@ -1732,27 +1701,6 @@ const RegionalEvents: React.FC = () => {
                             </FormItem>
                           )}
                         />
-                        
-                        <FormField
-                          control={form.control}
-                          name="requirements_fr"
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Requirements (French)</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Exigences..."
-                                  {...field}
-                                  rows={3}
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                Max 500 characters
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
@@ -1834,27 +1782,9 @@ const RegionalEvents: React.FC = () => {
                             </FormControl>
                             <FormMessage />
                           </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="requirements_fr"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Requirements (French)</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Exigences"
-                                className="min-h-[80px]"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CollapsibleContent>
+                          )}
+                        />
+                      </CollapsibleContent>
                   </Collapsible>
                 </div>
                 
