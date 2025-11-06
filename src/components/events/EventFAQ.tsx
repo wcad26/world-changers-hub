@@ -87,7 +87,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:text-primary transition-colors">
                   <span className="text-left font-semibold text-base">{faq.question}</span>
                 </AccordionTrigger>
-                <AccordionContent className="px-6 pb-4 text-muted-foreground">
+                <AccordionContent className="px-6 pb-4 text-muted-foreground text-justify">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>
