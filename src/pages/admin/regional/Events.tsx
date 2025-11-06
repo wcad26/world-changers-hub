@@ -137,6 +137,9 @@ const RegionalEvents: React.FC = () => {
   const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
   const [existingGalleryImages, setExistingGalleryImages] = useState<any[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [deleteCardImage, setDeleteCardImage] = useState<boolean>(false);
+  const [existingHeroImages, setExistingHeroImages] = useState<any[]>([]);
+  const [heroImagesToDelete, setHeroImagesToDelete] = useState<string[]>([]);
   const [speakerPhotoPreviews, setSpeakerPhotoPreviews] = useState<{[key: number]: string}>({});
   const { toast } = useToast();
 
@@ -512,6 +515,9 @@ const RegionalEvents: React.FC = () => {
       setImagePreviews([]);
       setGalleryPreviews([]);
       setSpeakerPhotoPreviews({});
+      setDeleteCardImage(false);
+      setExistingHeroImages([]);
+      setHeroImagesToDelete([]);
       setCreateEventDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
@@ -538,8 +544,15 @@ const RegionalEvents: React.FC = () => {
     if (!eventToEdit) return;
     
     try {
-      // Upload new event card image if provided
+      // Handle event card image
       let eventCardImageUrl = eventToEdit.image_url; // Keep existing by default
+      
+      // Delete card image if marked for deletion
+      if (deleteCardImage) {
+        eventCardImageUrl = null;
+      }
+      
+      // Upload new event card image if provided (overrides deletion)
       if (values.event_card_image) {
         const fileExt = values.event_card_image.name.split('.').pop();
         const fileName = `card-${Math.random()}.${fileExt}`;
@@ -557,9 +570,18 @@ const RegionalEvents: React.FC = () => {
         }
       }
 
-      // Handle new image uploads (if any)
-      let uploadedImageUrls: string[] = [];
+      // Delete marked hero images
+      if (heroImagesToDelete.length > 0) {
+        await supabase
+          .from('event_images')
+          .delete()
+          .in('id', heroImagesToDelete);
+      }
+
+      // Handle new hero image uploads
       if (values.image_files && values.image_files.length > 0) {
+        let uploadedImageUrls: string[] = [];
+        
         for (const file of values.image_files) {
           const fileExt = file.name.split('.').pop();
           const fileName = `${Math.random()}.${fileExt}`;
@@ -578,18 +600,16 @@ const RegionalEvents: React.FC = () => {
           uploadedImageUrls.push(publicUrl);
         }
         
-        // Delete old hero images from event_images table
-        await supabase
-          .from('event_images')
-          .delete()
-          .eq('event_id', eventToEdit.id)
-          .eq('is_hero_image', true);
+        // Get remaining hero images count for display_order calculation
+        const remainingHeroCount = existingHeroImages.filter(
+          img => !heroImagesToDelete.includes(img.id)
+        ).length;
         
-        // Insert new images
+        // Insert new hero images with adjusted display_order
         const imageRecords = uploadedImageUrls.map((url, index) => ({
           event_id: eventToEdit.id,
           image_url: url,
-          display_order: index,
+          display_order: remainingHeroCount + index,
           is_hero_image: true,
         }));
         
@@ -813,7 +833,7 @@ const RegionalEvents: React.FC = () => {
       setEditCardImagePreview('');
     }
     
-    // Fetch existing hero images for preview
+    // Fetch existing hero images (store full objects, not just URLs)
     const { data: heroImages } = await supabase
       .from('event_images')
       .select('*')
@@ -822,8 +842,10 @@ const RegionalEvents: React.FC = () => {
       .order('display_order');
     
     if (heroImages && heroImages.length > 0) {
-      setEditImagePreviews(heroImages.map(img => img.image_url));
+      setExistingHeroImages(heroImages);
+      setEditImagePreviews([]); // Clear new upload previews
     } else {
+      setExistingHeroImages([]);
       setEditImagePreviews([]);
     }
     
@@ -844,6 +866,8 @@ const RegionalEvents: React.FC = () => {
     // Reset deletion tracking
     setImagesToDelete([]);
     setEditGalleryPreviews([]);
+    setDeleteCardImage(false);
+    setHeroImagesToDelete([]);
     
     // Fetch existing testimonials
     const { data: existingTestimonials } = await supabase
@@ -1335,8 +1359,18 @@ const RegionalEvents: React.FC = () => {
                         This image will be displayed on the Events listing page. Recommended: 1200x900px (4:3 ratio)
                       </FormDescription>
                       {cardImagePreview && (
-                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border">
+                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border group">
                           <img src={cardImagePreview} alt="Card preview" className="object-cover w-full h-full" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCardImagePreview('');
+                              onChange(undefined);
+                            }}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </div>
                       )}
                       <FormMessage />
@@ -1370,11 +1404,23 @@ const RegionalEvents: React.FC = () => {
                       {imagePreviews.length > 0 && (
                         <div className="grid grid-cols-5 gap-2 mt-2">
                           {imagePreviews.map((preview, idx) => (
-                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border group">
                               <img src={preview} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full" />
                               <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
                                 {idx + 1}
                               </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setImagePreviews(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -1413,8 +1459,20 @@ const RegionalEvents: React.FC = () => {
                       {galleryPreviews.length > 0 && (
                         <div className="grid grid-cols-5 gap-2 mt-2">
                           {galleryPreviews.map((preview, idx) => (
-                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border group">
                               <img src={preview} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setGalleryPreviews(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -2177,6 +2235,7 @@ const RegionalEvents: React.FC = () => {
                             if (file) {
                               onChange(file);
                               setEditCardImagePreview(URL.createObjectURL(file));
+                              setDeleteCardImage(false); // Unmark deletion if new image uploaded
                             }
                           }}
                           {...field}
@@ -2186,13 +2245,28 @@ const RegionalEvents: React.FC = () => {
                       <FormDescription>
                         Upload a new image for the Events listing page, or leave empty to keep existing. Recommended: 1200x900px (4:3 ratio)
                       </FormDescription>
-                      {editCardImagePreview && (
-                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border">
+                      {editCardImagePreview && !deleteCardImage && (
+                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border group">
                           <img src={editCardImagePreview} alt="Current card image" className="object-cover w-full h-full" />
-                          <span className="absolute top-1 right-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                          <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
                             Current
                           </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDeleteCardImage(true);
+                              setEditCardImagePreview('');
+                            }}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
                         </div>
+                      )}
+                      {deleteCardImage && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Card image will be deleted. Upload a new image or save to confirm deletion.
+                        </p>
                       )}
                       <FormMessage />
                     </FormItem>
@@ -2205,6 +2279,33 @@ const RegionalEvents: React.FC = () => {
                   render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
                       <FormLabel>Event Hero Images (Slider)</FormLabel>
+                      
+                      {/* Existing Hero Images */}
+                      {existingHeroImages.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-sm text-muted-foreground mb-2">Existing Hero Images (click X to remove)</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {existingHeroImages
+                              .filter(img => !heroImagesToDelete.includes(img.id))
+                              .map((image) => (
+                                <div key={image.id} className="relative aspect-video rounded-md overflow-hidden border border-border group">
+                                  <img src={image.image_url} alt={`Hero ${image.display_order + 1}`} className="object-cover w-full h-full" />
+                                  <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                    {image.display_order + 1}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setHeroImagesToDelete(prev => [...prev, image.id])}
+                                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                      
                       <FormControl>
                         <Input 
                           type="file" 
@@ -2219,19 +2320,22 @@ const RegionalEvents: React.FC = () => {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>Upload up to 5 images for the event hero slider. Leave empty to keep existing images.</FormDescription>
+                      <FormDescription>Upload up to 5 new images for the event hero slider.</FormDescription>
                       
-                      {/* Image Previews */}
+                      {/* New Upload Previews */}
                       {editImagePreviews.length > 0 && (
-                        <div className="grid grid-cols-5 gap-2 mt-2">
-                          {editImagePreviews.map((preview, idx) => (
-                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
-                              <img src={preview} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full" />
-                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                                {idx + 1}
-                              </span>
-                            </div>
-                          ))}
+                        <div className="mt-2">
+                          <p className="text-sm text-muted-foreground mb-2">New Images to Upload</p>
+                          <div className="grid grid-cols-5 gap-2">
+                            {editImagePreviews.map((preview, idx) => (
+                              <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border">
+                                <img src={preview} alt={`New ${idx + 1}`} className="object-cover w-full h-full" />
+                                <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                  New {idx + 1}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                       <FormDescription>
