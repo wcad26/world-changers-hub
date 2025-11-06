@@ -9,7 +9,7 @@ export function EventDetailsGrid({ event }: EventDetailsGridProps) {
   return (
     <section className="py-5 bg-muted/20">
       <div className="container-custom">
-        <div className="mb-12 animate-fade-in-up">
+        <div className="mb-6 animate-fade-in-up">
           <h2 className="text-fluid-3xl font-bold mb-6 text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             About This Event
           </h2>
