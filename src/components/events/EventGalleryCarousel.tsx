@@ -63,7 +63,7 @@ export function EventGalleryCarousel({ event }: EventGalleryCarouselProps) {
                     <img
                       src={galleryImage.image_url}
                       alt={`${event.name} gallery image ${index + 1}`}
-                      className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-48 sm:h-56 md:h-64 object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                   </div>
                 </div>
