@@ -85,7 +85,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:text-primary transition-colors">
-                  <span className="text-left font-semibold">{faq.question}</span>
+                  <span className="text-left font-semibold text-base">{faq.question}</span>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-4 text-muted-foreground">
                   {faq.answer}
