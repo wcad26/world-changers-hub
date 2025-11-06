@@ -12,7 +12,7 @@ export function EventSpeakers({ eventId }: EventSpeakersProps) {
 
   if (isLoading) {
     return (
-      <section className="py-20 bg-background">
+      <section className="py-10 bg-background">
         <div className="container-custom">
           <div className="text-center mb-12">
             <div className="h-10 w-48 bg-muted animate-pulse rounded mx-auto mb-4" />
@@ -28,7 +28,7 @@ export function EventSpeakers({ eventId }: EventSpeakersProps) {
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/20">
+    <section className="py-10 bg-gradient-to-b from-background to-muted/20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
           <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
