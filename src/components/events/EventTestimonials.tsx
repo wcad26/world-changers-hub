@@ -81,7 +81,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
                 ))}
               </div>
 
-              <p className="text-muted-foreground mb-6 italic leading-relaxed">
+              <p className="text-muted-foreground mb-6 italic leading-relaxed text-justify">
                 "{testimonial.content}"
               </p>
 
