@@ -7,6 +7,7 @@ import {
 import { HelpCircle } from "lucide-react";
 import { useEventFAQs } from "@/hooks/useEventFAQs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface EventFAQProps {
   eventId: string;
@@ -14,6 +15,7 @@ interface EventFAQProps {
 
 export function EventFAQ({ eventId }: EventFAQProps) {
   const { data: faqs, isLoading } = useEventFAQs(eventId);
+  const { t, localizedField } = useLanguage();
 
   // Fallback FAQs if none exist for this event
   const defaultFAQs = [
@@ -68,30 +70,40 @@ export function EventFAQ({ eventId }: EventFAQProps) {
             <HelpCircle className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Frequently Asked Questions
+            {t('faq')}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Find answers to common questions about the event
+            {t('faqSubtitle')}
           </p>
         </div>
 
         <div className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="space-y-4">
-            {displayFAQs.map((faq, index) => (
-              <AccordionItem 
-                key={index} 
-                value={`item-${index}`}
-                className="glass-panel-soft border-none animate-fade-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <AccordionTrigger className="px-6 py-4 hover:no-underline hover:text-primary transition-colors">
-                  <span className="text-left font-semibold text-base">{faq.question}</span>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-4 text-muted-foreground text-justify">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
+            {displayFAQs.map((faq, index) => {
+              // Check if this is a database FAQ (has _fr fields) or default FAQ
+              const question = 'question_fr' in faq 
+                ? (localizedField(faq.question, (faq as any).question_fr) as string)
+                : (faq.question as string);
+              const answer = 'answer_fr' in faq
+                ? (localizedField(faq.answer, (faq as any).answer_fr) as string)
+                : (faq.answer as string);
+              
+              return (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="glass-panel-soft border-none animate-fade-in-up"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:text-primary transition-colors">
+                    <span className="text-left font-semibold text-base">{question}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4 text-muted-foreground text-justify">
+                    {answer}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
           </Accordion>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { Calendar, Clock, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Event } from "@/hooks/useEvents";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface EventQuickInfoBarProps {
   event: Event;
@@ -9,6 +10,10 @@ interface EventQuickInfoBarProps {
 
 export function EventQuickInfoBar({ event }: EventQuickInfoBarProps) {
   const [isVisible, setIsVisible] = useState(false);
+  const { localizedField, t } = useLanguage();
+  
+  const eventName = localizedField(event.name, event.name_fr);
+  const locationName = localizedField(event.location_name, event.location_name_fr);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,7 +34,7 @@ export function EventQuickInfoBar({ event }: EventQuickInfoBarProps) {
         <div className="container-custom py-4">
           <div className="flex items-center justify-between overflow-x-auto gap-4 scrollbar-hide">
             <h2 className="text-lg font-semibold truncate min-w-[200px] bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              {event.name}
+              {eventName}
             </h2>
             
             <div className="flex items-center gap-6 text-sm">
@@ -45,7 +50,7 @@ export function EventQuickInfoBar({ event }: EventQuickInfoBarProps) {
               
               <div className="hidden md:flex items-center gap-2 whitespace-nowrap">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span className="truncate max-w-[200px]">{event.location_name || "TBA"}</span>
+                <span className="truncate max-w-[200px]">{locationName || "TBA"}</span>
               </div>
               
               <div className="hidden lg:flex items-center gap-2 whitespace-nowrap">

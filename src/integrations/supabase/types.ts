@@ -495,29 +495,35 @@ export type Database = {
       event_faqs: {
         Row: {
           answer: string
+          answer_fr: string | null
           created_at: string | null
           display_order: number | null
           event_id: string
           id: string
           question: string
+          question_fr: string | null
           updated_at: string | null
         }
         Insert: {
           answer: string
+          answer_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id: string
           id?: string
           question: string
+          question_fr?: string | null
           updated_at?: string | null
         }
         Update: {
           answer?: string
+          answer_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id?: string
           id?: string
           question?: string
+          question_fr?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -571,42 +577,51 @@ export type Database = {
       event_speakers: {
         Row: {
           bio: string | null
+          bio_fr: string | null
           created_at: string | null
           display_order: number | null
           event_id: string
           id: string
           linkedin_url: string | null
           name: string
+          name_fr: string | null
           photo_url: string | null
           title: string
+          title_fr: string | null
           twitter_url: string | null
           updated_at: string | null
           website_url: string | null
         }
         Insert: {
           bio?: string | null
+          bio_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id: string
           id?: string
           linkedin_url?: string | null
           name: string
+          name_fr?: string | null
           photo_url?: string | null
           title: string
+          title_fr?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website_url?: string | null
         }
         Update: {
           bio?: string | null
+          bio_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id?: string
           id?: string
           linkedin_url?: string | null
           name?: string
+          name_fr?: string | null
           photo_url?: string | null
           title?: string
+          title_fr?: string | null
           twitter_url?: string | null
           updated_at?: string | null
           website_url?: string | null
@@ -624,35 +639,44 @@ export type Database = {
       event_testimonials: {
         Row: {
           content: string
+          content_fr: string | null
           created_at: string | null
           display_order: number | null
           event_id: string
           id: string
           name: string
+          name_fr: string | null
           rating: number | null
           role: string
+          role_fr: string | null
           updated_at: string | null
         }
         Insert: {
           content: string
+          content_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id: string
           id?: string
           name: string
+          name_fr?: string | null
           rating?: number | null
           role: string
+          role_fr?: string | null
           updated_at?: string | null
         }
         Update: {
           content?: string
+          content_fr?: string | null
           created_at?: string | null
           display_order?: number | null
           event_id?: string
           id?: string
           name?: string
+          name_fr?: string | null
           rating?: number | null
           role?: string
+          role_fr?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -668,6 +692,7 @@ export type Database = {
       events: {
         Row: {
           address: string | null
+          address_fr: string | null
           capacity: number | null
           category: Database["public"]["Enums"]["event_category"] | null
           cost: number | null
@@ -676,19 +701,23 @@ export type Database = {
           created_by: string | null
           dcg_id: string | null
           description: string | null
+          description_fr: string | null
           end_datetime: string | null
           id: string
           image_url: string | null
           is_featured: boolean
           is_public: boolean
           location_name: string | null
+          location_name_fr: string | null
           name: string
+          name_fr: string | null
           organizer_email: string | null
           organizer_name: string | null
           organizer_phone: string | null
           region_id: string | null
           registration_url: string | null
           requirements: string | null
+          requirements_fr: string | null
           start_datetime: string
           status: Database["public"]["Enums"]["event_status"]
           updated_at: string
@@ -696,6 +725,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_fr?: string | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
           cost?: number | null
@@ -704,19 +734,23 @@ export type Database = {
           created_by?: string | null
           dcg_id?: string | null
           description?: string | null
+          description_fr?: string | null
           end_datetime?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
           is_public?: boolean
           location_name?: string | null
+          location_name_fr?: string | null
           name: string
+          name_fr?: string | null
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
           region_id?: string | null
           registration_url?: string | null
           requirements?: string | null
+          requirements_fr?: string | null
           start_datetime: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
@@ -724,6 +758,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_fr?: string | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
           cost?: number | null
@@ -732,19 +767,23 @@ export type Database = {
           created_by?: string | null
           dcg_id?: string | null
           description?: string | null
+          description_fr?: string | null
           end_datetime?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
           is_public?: boolean
           location_name?: string | null
+          location_name_fr?: string | null
           name?: string
+          name_fr?: string | null
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
           region_id?: string | null
           registration_url?: string | null
           requirements?: string | null
+          requirements_fr?: string | null
           start_datetime?: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string

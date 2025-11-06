@@ -5,8 +5,11 @@ export interface EventSpeaker {
   id: string;
   event_id: string;
   name: string;
+  name_fr?: string;
   title: string;
+  title_fr?: string;
   bio?: string;
+  bio_fr?: string;
   photo_url?: string;
   linkedin_url?: string;
   twitter_url?: string;

@@ -5,7 +5,9 @@ export interface EventFAQ {
   id: string;
   event_id: string;
   question: string;
+  question_fr?: string;
   answer: string;
+  answer_fr?: string;
   display_order: number;
   created_at: string;
   updated_at: string;

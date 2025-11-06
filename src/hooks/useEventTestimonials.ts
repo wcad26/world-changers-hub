@@ -5,8 +5,11 @@ export interface EventTestimonial {
   id: string;
   event_id: string;
   name: string;
+  name_fr?: string;
   role: string;
+  role_fr?: string;
   content: string;
+  content_fr?: string;
   rating: number;
   display_order: number;
   created_at: string;
