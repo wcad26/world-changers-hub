@@ -64,14 +64,18 @@ const mockEvents = [
 // Form schema for event creation
 const eventSchema = z.object({
   name: z.string().min(3, { message: "Event name must be at least 3 characters." }),
+  name_fr: z.string().optional(),
   category: z.enum(eventCategories),
   description: z.string().optional(),
+  description_fr: z.string().optional(),
   start_date: z.string().min(1, { message: "Please select a start date." }),
   start_time: z.string().min(1, { message: "Please provide a start time." }),
   end_date: z.string().optional(),
   end_time: z.string().optional(),
   location_name: z.string().min(3, { message: "Please provide a location." }),
+  location_name_fr: z.string().optional(),
   address: z.string().min(10, { message: "Please provide a full address for map display." }),
+  address_fr: z.string().optional(),
   capacity: z.coerce.number().positive().int().optional(),
   cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
   cost_currency_code: z.string().optional(),
@@ -85,21 +89,30 @@ const eventSchema = z.object({
   organizer_phone: z.string().optional(),
   whatsapp_contact: z.string().optional(),
   requirements: z.string().max(500).optional(),
+  requirements_fr: z.string().max(500).optional(),
   testimonials: z.array(z.object({
     name: z.string().min(2, "Name is required"),
+    name_fr: z.string().optional(),
     role: z.string().min(2, "Role is required"),
+    role_fr: z.string().optional(),
     content: z.string().min(10, "Content must be at least 10 characters").max(300, "Content must be less than 300 characters"),
+    content_fr: z.string().max(300).optional(),
     rating: z.coerce.number().min(1).max(5).default(5),
   })).optional(),
   faqs: z.array(z.object({
     question: z.string().min(5, "Question must be at least 5 characters").max(200, "Question must be less than 200 characters"),
+    question_fr: z.string().max(200).optional(),
     answer: z.string().min(10, "Answer must be at least 10 characters").max(500, "Answer must be less than 500 characters"),
+    answer_fr: z.string().max(500).optional(),
   })).optional(),
   speakers: z.array(z.object({
     id: z.string().optional(),
     name: z.string().min(2, "Speaker name is required"),
+    name_fr: z.string().optional(),
     title: z.string().min(2, "Speaker title is required"),
+    title_fr: z.string().optional(),
     bio: z.string().max(500, "Bio must be less than 500 characters").optional(),
+    bio_fr: z.string().max(500).optional(),
     photo: z.instanceof(File).optional(),
     existing_photo_url: z.string().optional(),
     linkedin_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -155,18 +168,23 @@ const RegionalEvents: React.FC = () => {
     resolver: zodResolver(eventSchema),
     defaultValues: {
       name: "",
+      name_fr: "",
       description: "",
+      description_fr: "",
       start_date: "",
       start_time: "",
       end_date: "",
       end_time: "",
       location_name: "",
+      location_name_fr: "",
       address: "",
+      address_fr: "",
       registration_url: "",
       organizer_name: "",
       organizer_email: "",
       organizer_phone: "",
       requirements: "",
+      requirements_fr: "",
       is_public: true,
       testimonials: [],
       faqs: [],
@@ -348,12 +366,16 @@ const RegionalEvents: React.FC = () => {
       
       const newEventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'> = {
         name: values.name,
+        name_fr: values.name_fr || null,
         description: values.description || null,
+        description_fr: values.description_fr || null,
         category: values.category,
         start_datetime: start_datetime,
         end_datetime: end_datetime,
         location_name: values.location_name,
+        location_name_fr: values.location_name_fr || null,
         address: values.address || null,
+        address_fr: values.address_fr || null,
         image_url: eventCardImageUrl || uploadedImageUrls[0] || null, // Use card image first, fallback to first hero
         capacity: values.capacity || null,
         cost: values.cost || 0,
@@ -368,6 +390,7 @@ const RegionalEvents: React.FC = () => {
         organizer_phone: values.organizer_phone || null,
         whatsapp_contact: values.whatsapp_contact || null,
         requirements: values.requirements || null,
+        requirements_fr: values.requirements_fr || null,
       };
 
       const createdEvent = await createEventMutation.mutateAsync(newEventData);
@@ -430,8 +453,11 @@ const RegionalEvents: React.FC = () => {
         const testimonialsData = values.testimonials.map((t, index) => ({
           event_id: createdEvent.id,
           name: t.name,
+          name_fr: t.name_fr || null,
           role: t.role,
+          role_fr: t.role_fr || null,
           content: t.content,
+          content_fr: t.content_fr || null,
           rating: t.rating,
           display_order: index,
         }));
@@ -448,7 +474,9 @@ const RegionalEvents: React.FC = () => {
         const faqsData = values.faqs.map((faq, index) => ({
           event_id: createdEvent.id,
           question: faq.question,
+          question_fr: faq.question_fr || null,
           answer: faq.answer,
+          answer_fr: faq.answer_fr || null,
           display_order: index,
         }));
         
@@ -489,8 +517,11 @@ const RegionalEvents: React.FC = () => {
             .insert({
               event_id: createdEvent.id,
               name: speaker.name,
+              name_fr: speaker.name_fr || null,
               title: speaker.title,
+              title_fr: speaker.title_fr || null,
               bio: speaker.bio || null,
+              bio_fr: speaker.bio_fr || null,
               photo_url: speakerPhotoUrl,
               linkedin_url: speaker.linkedin_url || null,
               twitter_url: speaker.twitter_url || null,
@@ -910,13 +941,16 @@ const RegionalEvents: React.FC = () => {
     // Pre-populate form
     form.reset({
       name: event.name,
+      name_fr: event.name_fr || "",
       category: event.category,
       description: event.description || "",
+      description_fr: event.description_fr || "",
       start_date: startDate.toISOString().split('T')[0],
       start_time: startDate.toTimeString().slice(0, 5),
       end_date: endDate ? endDate.toISOString().split('T')[0] : "",
       end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
       location_name: event.location_name,
+      location_name_fr: event.location_name_fr || "",
       address: event.address || "",
       capacity: event.capacity || undefined,
       registration_url: event.registration_url || "",
@@ -1597,6 +1631,110 @@ const RegionalEvents: React.FC = () => {
                   )}
                 />
                 
+                {/* French Translations Section */}
+                <div className="md:col-span-2">
+                  <Collapsible className="space-y-4">
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🇫🇷</span>
+                        <div>
+                          <h4 className="text-sm font-semibold">French Translations (Optional)</h4>
+                          <p className="text-sm text-muted-foreground">Provide French translations for French-speaking visitors</p>
+                        </div>
+                      </div>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                    <CollapsibleContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="name_fr"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Event Name (French)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Nom de l'événement" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="location_name_fr"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Location Name (French)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Nom du lieu" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="address_fr"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Full Address (French)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Adresse complète" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="description_fr"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Event Description (French)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  className="min-h-[120px]"
+                                  placeholder="Description de l'événement..."
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="requirements_fr"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Requirements (French)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                  placeholder="Exigences..."
+                                  {...field}
+                                  rows={3}
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Max 500 characters
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+                
                 {/* Testimonials Section */}
                 <div className="md:col-span-2">
                   <Collapsible className="space-y-4">
@@ -1687,6 +1825,65 @@ const RegionalEvents: React.FC = () => {
                                 </FormItem>
                               )}
                             />
+                            
+                            {/* French Translation Subsection */}
+                            <Collapsible className="space-y-2">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" type="button" className="w-full justify-start">
+                                  <span className="mr-2">🇫🇷</span>
+                                  <span className="text-xs">French Translation</span>
+                                  <ChevronDown className="ml-auto h-3 w-3" />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <FormField
+                                    control={form.control}
+                                    name={`testimonials.${index}.name_fr`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Name (French)</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="Nom" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  
+                                  <FormField
+                                    control={form.control}
+                                    name={`testimonials.${index}.role_fr`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Role (French)</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="Rôle" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                
+                                <FormField
+                                  control={form.control}
+                                  name={`testimonials.${index}.content_fr`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Content (French)</FormLabel>
+                                      <FormControl>
+                                        <Textarea {...field} placeholder="Contenu du témoignage..." maxLength={300} rows={3} />
+                                      </FormControl>
+                                      <FormDescription>
+                                        {field.value?.length || 0}/300 characters
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </CollapsibleContent>
+                            </Collapsible>
                           </div>
                         </Card>
                       ))}
@@ -1766,6 +1963,52 @@ const RegionalEvents: React.FC = () => {
                                 </FormItem>
                               )}
                             />
+                            
+                            {/* French Translation Subsection */}
+                            <Collapsible className="space-y-2">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" type="button" className="w-full justify-start">
+                                  <span className="mr-2">🇫🇷</span>
+                                  <span className="text-xs">French Translation</span>
+                                  <ChevronDown className="ml-auto h-3 w-3" />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="space-y-3">
+                                <FormField
+                                  control={form.control}
+                                  name={`faqs.${index}.question_fr`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Question (French)</FormLabel>
+                                      <FormControl>
+                                        <Input {...field} placeholder="Comment puis-je m'inscrire ?" />
+                                      </FormControl>
+                                      <FormDescription>
+                                        {field.value?.length || 0}/200 characters
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                
+                                <FormField
+                                  control={form.control}
+                                  name={`faqs.${index}.answer_fr`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Answer (French)</FormLabel>
+                                      <FormControl>
+                                        <Textarea {...field} placeholder="Vous pouvez vous inscrire en..." maxLength={500} rows={3} />
+                                      </FormControl>
+                                      <FormDescription>
+                                        {field.value?.length || 0}/500 characters
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </CollapsibleContent>
+                            </Collapsible>
                           </div>
                         </Card>
                       ))}
@@ -1945,6 +2188,65 @@ const RegionalEvents: React.FC = () => {
                                 )}
                               />
                             </div>
+                            
+                            {/* French Translation Subsection */}
+                            <Collapsible className="space-y-2">
+                              <CollapsibleTrigger asChild>
+                                <Button variant="ghost" size="sm" type="button" className="w-full justify-start">
+                                  <span className="mr-2">🇫🇷</span>
+                                  <span className="text-xs">French Translation</span>
+                                  <ChevronDown className="ml-auto h-3 w-3" />
+                                </Button>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <FormField
+                                    control={form.control}
+                                    name={`speakers.${index}.name_fr`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Name (French)</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="Nom" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                  
+                                  <FormField
+                                    control={form.control}
+                                    name={`speakers.${index}.title_fr`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormLabel>Title (French)</FormLabel>
+                                        <FormControl>
+                                          <Input {...field} placeholder="Titre" />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+                                
+                                <FormField
+                                  control={form.control}
+                                  name={`speakers.${index}.bio_fr`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormLabel>Biography (French)</FormLabel>
+                                      <FormControl>
+                                        <Textarea {...field} placeholder="Biographie..." maxLength={500} rows={3} />
+                                      </FormControl>
+                                      <FormDescription>
+                                        {field.value?.length || 0}/500 characters
+                                      </FormDescription>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              </CollapsibleContent>
+                            </Collapsible>
                           </div>
                         </Card>
                       ))}
