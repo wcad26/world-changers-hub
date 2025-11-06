@@ -95,7 +95,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin size={18} className="mr-2 mt-0.5 text-wca-purple" />
-                <span className="text-gray-600 dark:text-gray-400">Jarden Logbaba, Douala, Cameroon</span>
+                <span className="text-gray-600 dark:text-gray-400">Jardin Logbaba, Douala, Cameroon</span>
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 text-wca-purple" />
@@ -105,9 +105,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center">
                 <Phone size={18} className="mr-2 text-wca-purple" />
-                <a href="tel:+23767568130" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  +237 675 6813-10
-                </a>
+                <a href="tel:+23767568130" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">+237 690 63 48 60</a>
               </li>
             </ul>
           </div>
