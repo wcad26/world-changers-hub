@@ -51,6 +51,8 @@ export function EventGalleryCarousel({ event }: EventGalleryCarouselProps) {
           plugins={[
             Autoplay({
               delay: 4000,
+              stopOnInteraction: false,
+              stopOnMouseEnter: false,
             }),
           ]}
           className="w-full max-w-6xl mx-auto"
