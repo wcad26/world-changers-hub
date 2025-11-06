@@ -86,7 +86,6 @@ const eventSchema = z.object({
   registration_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   organizer_name: z.string().optional(),
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
-  organizer_phone: z.string().optional(),
   whatsapp_contact: z.string().optional(),
   testimonials: z.array(z.object({
     name: z.string().min(2, "Name is required"),
@@ -180,7 +179,6 @@ const RegionalEvents: React.FC = () => {
       registration_url: "",
       organizer_name: "",
       organizer_email: "",
-      organizer_phone: "",
       is_public: true,
       testimonials: [],
       faqs: [],
@@ -383,7 +381,6 @@ const RegionalEvents: React.FC = () => {
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
-        organizer_phone: values.organizer_phone || null,
         whatsapp_contact: values.whatsapp_contact || null,
       };
 
@@ -720,7 +717,6 @@ const RegionalEvents: React.FC = () => {
         registration_url: values.registration_url || null,
           organizer_name: values.organizer_name || null,
           organizer_email: values.organizer_email || null,
-          organizer_phone: values.organizer_phone || null,
           whatsapp_contact: values.whatsapp_contact || null,
       };
 
@@ -960,10 +956,9 @@ const RegionalEvents: React.FC = () => {
       end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
       capacity: event.capacity || undefined,
       registration_url: event.registration_url || "",
-      organizer_name: event.organizer_name || "",
-      organizer_email: event.organizer_email || "",
-      organizer_phone: event.organizer_phone || "",
-      whatsapp_contact: event.whatsapp_contact || "",
+          organizer_name: event.organizer_name || "",
+          organizer_email: event.organizer_email || "",
+          whatsapp_contact: event.whatsapp_contact || "",
       is_public: event.is_public,
       is_featured: event.is_featured,
           testimonials: existingTestimonials?.map(t => ({
@@ -1568,20 +1563,6 @@ const RegionalEvents: React.FC = () => {
                       <FormLabel>Organizer Email (Optional)</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="organizer@example.com" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="organizer_phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Organizer Phone (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+1234567890" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
