@@ -13,7 +13,7 @@ export function EventDetailsGrid({ event }: EventDetailsGridProps) {
           <h2 className="text-fluid-3xl font-bold mb-6 text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             About This Event
           </h2>
-          <div className="text-muted-foreground max-w-4xl mx-auto whitespace-pre-line text-left leading-relaxed">
+          <div className="text-muted-foreground max-w-4xl mx-auto whitespace-pre-line text-justify leading-relaxed">
             {event.description || "No description available for this event."}
           </div>
         </div>
