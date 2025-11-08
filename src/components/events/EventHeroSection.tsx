@@ -9,24 +9,30 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 import { useEventImages } from "@/hooks/useEventImages";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface EventHeroSectionProps {
   event: Event;
 }
 
 export function EventHeroSection({ event }: EventHeroSectionProps) {
-  const { data: eventImages, isLoading: imagesLoading } = useEventImages(event.id);
+  const { language } = useLanguage();
+  const { data: eventImages, isLoading: imagesLoading } = useEventImages(event.id, language);
 
   // Priority: Use images from event_images table, fallback to single image_url
   const heroImages = React.useMemo(() => {
     if (eventImages && eventImages.length > 0) {
       return eventImages.map(img => img.image_url);
     }
+    // Check for French card image if language is French
+    if (language === 'fr' && event.image_url_fr) {
+      return [event.image_url_fr];
+    }
     if (event.image_url) {
       return [event.image_url];
     }
     return [];
-  }, [eventImages, event.image_url]);
+  }, [eventImages, event.image_url, event.image_url_fr, language]);
   
   const hasImages = heroImages.length > 0;
   const hasMultipleImages = heroImages.length > 1;

@@ -81,9 +81,12 @@ const eventSchema = z.object({
   cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
   cost_currency_code: z.string().optional(),
   event_card_image: z.instanceof(File).optional(),
+  event_card_image_fr: z.instanceof(File).optional(),
   image_file: z.instanceof(File).optional(),
   image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
+  image_files_fr: z.array(z.instanceof(File)).max(5, "Maximum 5 French hero images allowed").optional(),
   gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
+  gallery_images_fr: z.array(z.instanceof(File)).max(10, "Maximum 10 French gallery images allowed").optional(),
   registration_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   organizer_name: z.string().optional(),
   organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
@@ -141,11 +144,17 @@ const RegionalEvents: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
+  const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
+  const [editCardImagePreviewFr, setEditCardImagePreviewFr] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imagePreviewsFr, setImagePreviewsFr] = useState<string[]>([]);
   const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
+  const [editImagePreviewsFr, setEditImagePreviewsFr] = useState<string[]>([]);
   const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [galleryPreviewsFr, setGalleryPreviewsFr] = useState<string[]>([]);
   const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
+  const [editGalleryPreviewsFr, setEditGalleryPreviewsFr] = useState<string[]>([]);
   const [existingGalleryImages, setExistingGalleryImages] = useState<any[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [deleteCardImage, setDeleteCardImage] = useState<boolean>(false);
@@ -312,6 +321,26 @@ const RegionalEvents: React.FC = () => {
         eventCardImageUrl = publicUrl;
       }
 
+      // Upload French event card image (if provided)
+      let eventCardImageUrlFr: string | null = null;
+      if (values.event_card_image_fr) {
+        const fileExt = values.event_card_image_fr.name.split('.').pop();
+        const fileName = `card-fr-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, values.event_card_image_fr);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('event-images')
+          .getPublicUrl(filePath);
+
+        eventCardImageUrlFr = publicUrl;
+      }
+
       // Upload multiple images if provided
       let uploadedImageUrls: string[] = [];
       if (values.image_files && values.image_files.length > 0) {
@@ -351,6 +380,28 @@ const RegionalEvents: React.FC = () => {
         uploadedImageUrls.push(publicUrl);
       }
 
+      // Upload French hero images if provided
+      let uploadedImageUrlsFr: string[] = [];
+      if (values.image_files_fr && values.image_files_fr.length > 0) {
+        for (const file of values.image_files_fr) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `fr-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrlsFr.push(publicUrl);
+        }
+      }
+
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
       let end_datetime = null;
       
@@ -372,6 +423,7 @@ const RegionalEvents: React.FC = () => {
         address: values.address || null,
         address_fr: values.address_fr || null,
         image_url: eventCardImageUrl || uploadedImageUrls[0] || null, // Use card image first, fallback to first hero
+        image_url_fr: eventCardImageUrlFr || uploadedImageUrlsFr[0] || null, // French card image or first French hero
         capacity: values.capacity || null,
         cost: values.cost || 0,
         cost_currency_code: values.cost_currency_code || null,
@@ -392,6 +444,7 @@ const RegionalEvents: React.FC = () => {
         const imageRecords = uploadedImageUrls.map((url, index) => ({
           event_id: createdEvent.id,
           image_url: url,
+          image_url_fr: uploadedImageUrlsFr[index] || null,
           display_order: index,
           is_hero_image: true,
         }));
@@ -438,6 +491,48 @@ const RegionalEvents: React.FC = () => {
           .insert(galleryRecords);
         
         if (galleryError) throw galleryError;
+      }
+      
+      // Insert French gallery images if provided
+      if (values.gallery_images_fr && values.gallery_images_fr.length > 0 && createdEvent) {
+        const galleryImageUrlsFr: string[] = [];
+        
+        for (const file of values.gallery_images_fr) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `fr-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          galleryImageUrlsFr.push(publicUrl);
+        }
+        
+        // Update existing gallery records with French URLs
+        if (galleryImageUrlsFr.length > 0) {
+          const { data: existingGalleryImages } = await supabase
+            .from('event_images')
+            .select('id')
+            .eq('event_id', createdEvent.id)
+            .eq('is_hero_image', false)
+            .order('display_order', { ascending: true });
+          
+          if (existingGalleryImages) {
+            for (let i = 0; i < Math.min(galleryImageUrlsFr.length, existingGalleryImages.length); i++) {
+              await supabase
+                .from('event_images')
+                .update({ image_url_fr: galleryImageUrlsFr[i] })
+                .eq('id', existingGalleryImages[i].id);
+            }
+          }
+        }
       }
       
       // Insert testimonials if provided
@@ -1423,6 +1518,50 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
+                  name="event_card_image_fr"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Card Image (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              onChange(file);
+                              setCardImagePreviewFr(URL.createObjectURL(file));
+                            }
+                          }}
+                          {...field}
+                          value={undefined}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        French version shown when language is set to French. Recommended: 1200x900px (4:3 ratio)
+                      </FormDescription>
+                      {cardImagePreviewFr && (
+                        <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border group">
+                          <img src={cardImagePreviewFr} alt="French card preview" className="object-cover w-full h-full" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCardImagePreviewFr('');
+                              onChange(undefined);
+                            }}
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="image_files"
                   render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
@@ -1478,6 +1617,61 @@ const RegionalEvents: React.FC = () => {
                 
                 <FormField
                   control={form.control}
+                  name="image_files_fr"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Hero Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 5);
+                            onChange(limitedFiles);
+                            setImagePreviewsFr(limitedFiles.map(f => URL.createObjectURL(f)));
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Upload up to 5 French hero images. Shown when language is French.</FormDescription>
+                      
+                      {/* French Image Previews */}
+                      {imagePreviewsFr.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {imagePreviewsFr.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border group">
+                              <img src={preview} alt={`French preview ${idx + 1}`} className="object-cover w-full h-full" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setImagePreviewsFr(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <FormDescription>
+                        Recommended: 1920x1080px, max 2MB (JPG, PNG)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
                   name="gallery_images"
                   render={({ field: { onChange, value, ...field } }) => (
                     <FormItem className="md:col-span-2">
@@ -1511,6 +1705,55 @@ const RegionalEvents: React.FC = () => {
                                   const newFiles = currentFiles.filter((_, i) => i !== idx);
                                   onChange(newFiles);
                                   setGalleryPreviews(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="gallery_images_fr"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Event Gallery Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            const limitedFiles = files.slice(0, 10);
+                            onChange(limitedFiles);
+                            setGalleryPreviewsFr(limitedFiles.map(f => URL.createObjectURL(f)));
+                          }}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>Upload up to 10 French gallery images. Shown when language is French.</FormDescription>
+                      
+                      {/* French Gallery Image Previews */}
+                      {galleryPreviewsFr.length > 0 && (
+                        <div className="grid grid-cols-5 gap-2 mt-2">
+                          {galleryPreviewsFr.map((preview, idx) => (
+                            <div key={idx} className="relative aspect-video rounded-md overflow-hidden border border-border group">
+                              <img src={preview} alt={`French gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setGalleryPreviewsFr(newFiles.map(f => URL.createObjectURL(f)));
                                 }}
                                 className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                               >

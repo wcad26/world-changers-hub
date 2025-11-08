@@ -543,6 +543,7 @@ export type Database = {
           event_id: string
           id: string
           image_url: string
+          image_url_fr: string | null
           is_hero_image: boolean | null
           updated_at: string | null
         }
@@ -552,6 +553,7 @@ export type Database = {
           event_id: string
           id?: string
           image_url: string
+          image_url_fr?: string | null
           is_hero_image?: boolean | null
           updated_at?: string | null
         }
@@ -561,6 +563,7 @@ export type Database = {
           event_id?: string
           id?: string
           image_url?: string
+          image_url_fr?: string | null
           is_hero_image?: boolean | null
           updated_at?: string | null
         }
@@ -705,6 +708,7 @@ export type Database = {
           end_datetime: string | null
           id: string
           image_url: string | null
+          image_url_fr: string | null
           is_featured: boolean
           is_public: boolean
           location_name: string | null
@@ -738,6 +742,7 @@ export type Database = {
           end_datetime?: string | null
           id?: string
           image_url?: string | null
+          image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
           location_name?: string | null
@@ -771,6 +776,7 @@ export type Database = {
           end_datetime?: string | null
           id?: string
           image_url?: string | null
+          image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
           location_name?: string | null

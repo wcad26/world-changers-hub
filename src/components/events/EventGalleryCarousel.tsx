@@ -2,13 +2,15 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Autoplay from "embla-carousel-autoplay";
 import { Event } from "@/hooks/useEvents";
 import { useEventGalleryImages } from "@/hooks/useEventGalleryImages";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface EventGalleryCarouselProps {
   event: Event;
 }
 
 export function EventGalleryCarousel({ event }: EventGalleryCarouselProps) {
-  const { data: galleryImages, isLoading } = useEventGalleryImages(event.id);
+  const { language } = useLanguage();
+  const { data: galleryImages, isLoading } = useEventGalleryImages(event.id, language);
 
   if (isLoading) {
     return (

@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
 import { formatEventDuration } from '@/utils/dateUtils';
+import { useLanguage } from '@/hooks/useLanguage';
 
 // Event categories
 const categories = [
@@ -17,7 +18,6 @@ const categories = [
   "Community Service", "Bible Study", "Retreat", "Seminar", "DCG Meeting", "Other"
 ];
 
-// Mock featured events data for demonstration
 const mockFeaturedEvents: Event[] = [
   {
     id: "mock-1",
@@ -39,6 +39,7 @@ const mockFeaturedEvents: Event[] = [
     cost: 50,
     cost_currency_code: "USD",
     image_url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    image_url_fr: null,
     registration_url: null,
     organizer_name: null,
     organizer_email: null,
@@ -72,6 +73,7 @@ const mockFeaturedEvents: Event[] = [
     cost: 0,
     cost_currency_code: null,
     image_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    image_url_fr: null,
     registration_url: null,
     organizer_name: null,
     organizer_email: null,
@@ -105,6 +107,7 @@ const mockFeaturedEvents: Event[] = [
     cost: 25,
     cost_currency_code: "USD",
     image_url: "https://images.unsplash.com/photo-1515187029135-18ee286d815b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80",
+    image_url_fr: null,
     registration_url: null,
     organizer_name: null,
     organizer_email: null,
@@ -126,6 +129,7 @@ const Events = () => {
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const { data: allEvents, isLoading, isError } = usePublicEvents();
+  const { language } = useLanguage();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -187,19 +191,22 @@ const Events = () => {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {eventsToRender.map((event) => (
-          <Link 
-            to={`/events/${event.id}`} 
-            key={event.id}
-            className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
-          >
-            <div className="relative w-full aspect-[4/3] overflow-hidden">
-              <img 
-                src={event.image_url || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
-                alt={event.name} 
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                loading="lazy"
-              />
+        {eventsToRender.map((event) => {
+          const imageUrl = (language === 'fr' && event.image_url_fr) ? event.image_url_fr : event.image_url;
+          
+          return (
+            <Link 
+              to={`/events/${event.id}`} 
+              key={event.id}
+              className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
+            >
+              <div className="relative w-full aspect-[4/3] overflow-hidden">
+                <img 
+                  src={imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80'}
+                  alt={event.name} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  loading="lazy"
+                />
               {/* Category Badge */}
               <div className="absolute top-3 right-3 z-10">
                 <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-primary/90 text-primary-foreground shadow-lg backdrop-blur-sm">
@@ -220,7 +227,8 @@ const Events = () => {
               </div>
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     );
   };
