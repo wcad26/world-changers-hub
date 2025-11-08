@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useEventById } from "@/hooks/useEvents";
+import { useLanguage } from "@/hooks/useLanguage";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { EventHeroSection } from "@/components/events/EventHeroSection";
@@ -20,25 +21,26 @@ import { Badge } from "@/components/ui/badge";
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const { data: event, isLoading, error } = useEventById(eventId);
+  const { localizedField, t } = useLanguage();
 
   const getStatusBadge = () => {
     if (!event) return null;
     const eventDate = new Date(event.start_datetime);
     
     if (event.status === "Completed") {
-      return <Badge className="bg-muted text-muted-foreground">Completed</Badge>;
+      return <Badge className="bg-muted text-muted-foreground">{t('completed')}</Badge>;
     }
     if (event.status === "Cancelled") {
-      return <Badge variant="destructive">Cancelled</Badge>;
+      return <Badge variant="destructive">{t('cancelled')}</Badge>;
     }
     if (isToday(eventDate)) {
-      return <Badge className="bg-gradient-to-r from-primary to-accent text-white animate-glow">Today</Badge>;
+      return <Badge className="bg-gradient-to-r from-primary to-accent text-white animate-glow">{t('today')}</Badge>;
     }
     if (isFuture(eventDate)) {
-      return <Badge className="bg-[#5DBAB7] text-black border-2 border-[#5DBAB7]">Upcoming</Badge>;
+      return <Badge className="bg-[#5DBAB7] text-black border-2 border-[#5DBAB7]">{t('upcoming')}</Badge>;
     }
     if (isPast(eventDate)) {
-      return <Badge variant="secondary">Past Event</Badge>;
+      return <Badge variant="secondary">{t('pastEvent')}</Badge>;
     }
     return null;
   };
@@ -72,15 +74,15 @@ export default function EventDetail() {
         <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center glass-panel-soft p-12 max-w-md">
-            <h2 className="text-2xl font-bold mb-4">Event Not Found</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('eventNotFound')}</h2>
             <p className="text-muted-foreground mb-6">
-              We couldn't find the event you're looking for.
+              {t('eventNotFoundDesc')}
             </p>
             <a
               href="/events"
               className="text-primary hover:underline font-semibold"
             >
-              ← Back to Events
+              {t('backToEvents')}
             </a>
           </div>
         </main>
@@ -114,7 +116,7 @@ export default function EventDetail() {
             <div className="flex flex-nowrap gap-3 mb-6 animate-fade-in-up overflow-x-auto">
               {event.is_featured && (
                 <Badge className="bg-gradient-to-r from-accent to-primary text-white px-4 py-1.5">
-                  ⭐ Featured
+                  ⭐ {t('featured')}
                 </Badge>
               )}
               {getStatusBadge()}
@@ -128,7 +130,7 @@ export default function EventDetail() {
             {/* Event Title & Action Buttons */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10 animate-fade-in-up">
               <h1 className="text-fluid-4xl md:text-fluid-5xl font-bold text-white leading-tight">
-                {event.name}
+                {localizedField(event.name, event.name_fr)}
               </h1>
               
               {/* Action Buttons - Only show if registration is available */}
@@ -145,7 +147,7 @@ export default function EventDetail() {
                     disabled={!event.whatsapp_contact}
                   >
                     <MessageCircle className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
-                    Contact Us
+                    {t('contactUs')}
                   </Button>
                   
                   <Button 
@@ -153,7 +155,7 @@ export default function EventDetail() {
                     onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
                   >
                     <Calendar className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
-                    Register for Event
+                    {t('registerForEvent')}
                   </Button>
                 </div>
               )}
@@ -162,26 +164,26 @@ export default function EventDetail() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
                 <Calendar className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">Date</p>
+                <p className="text-sm text-muted-foreground">{t('date')}</p>
                 <p className="font-semibold">{format(new Date(event.start_datetime), "MMM dd, yyyy")}</p>
               </div>
               
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">
                 <Clock className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">Time</p>
+                <p className="text-sm text-muted-foreground">{t('time')}</p>
                 <p className="font-semibold">{format(new Date(event.start_datetime), "h:mm a")}</p>
               </div>
               
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90 col-span-2 md:col-span-1">
                 <MapPin className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">Location</p>
-                <p className="font-semibold truncate">{event.location_name || "TBA"}</p>
+                <p className="text-sm text-muted-foreground">{t('location')}</p>
+                <p className="font-semibold truncate">{localizedField(event.location_name, event.location_name_fr) || "TBA"}</p>
               </div>
               
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90 col-span-2 md:col-span-1">
                 <Users className="h-5 w-5 text-primary mb-2" />
-                <p className="text-sm text-muted-foreground">Capacity</p>
-                <p className="font-semibold">{event.capacity ? `${event.capacity} people` : "Unlimited"}</p>
+                <p className="text-sm text-muted-foreground">{t('capacity')}</p>
+                <p className="font-semibold">{event.capacity ? `${event.capacity} ${t('people')}` : t('unlimited')}</p>
               </div>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { Calendar, MessageCircle, Ticket } from "lucide-react";
 import { Event } from "@/hooks/useEvents";
 import { format, isFuture } from "date-fns";
 import { useCurrencies } from "@/hooks/useCurrencies";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface EventRegistrationSectionProps {
   event: Event;
@@ -13,6 +14,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
   const canRegister = isUpcoming && event.status !== "Cancelled" && event.status !== "Completed";
   const { data: currencies } = useCurrencies();
   const eventCurrency = currencies?.find(c => c.code === event.cost_currency_code);
+  const { t } = useLanguage();
 
   return (
     <section className="py-20 relative overflow-hidden">
@@ -24,9 +26,9 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
       <div className="container-custom relative z-10">
         {/* CTA Header */}
         <div className="text-center mb-12 animate-fade-in-up">
-          <h2 className="text-3xl font-bold mb-4 text-foreground">Ready to Join?</h2>
+          <h2 className="text-3xl font-bold mb-4 text-foreground">{t('readyToJoin')}</h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            Reserve your spot today and be part of something extraordinary
+            {t('reserveSpot')}
           </p>
         </div>
 
@@ -36,9 +38,9 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
               {/* Left Side - Violet Background with Cost */}
               <div className="bg-[#542a8f] p-12 flex flex-col items-center justify-center text-white">
                 <Ticket className="w-16 h-16 mb-6" />
-                <h3 className="text-3xl font-bold mb-4">Event Cost</h3>
+                <h3 className="text-3xl font-bold mb-4">{t('eventCost')}</h3>
                 {!event.cost || event.cost === 0 ? (
-                  <p className="text-5xl font-bold">Free</p>
+                  <p className="text-5xl font-bold">{t('free')}</p>
                 ) : (
                   <div className="text-center">
                     <p className="text-5xl font-bold">
@@ -56,7 +58,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
                   onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
                 >
                   <Calendar className="mr-2 h-5 w-5" />
-                  Register for Event
+                  {t('registerForEvent')}
                 </Button>
                 
                 <Button 
@@ -70,17 +72,17 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
                   disabled={!event.whatsapp_contact}
                 >
                   <MessageCircle className="mr-2 h-5 w-5" />
-                  Contact Us
+                  {t('contactUs')}
                 </Button>
                 
                 {!event.whatsapp_contact && (
                   <p className="text-xs text-muted-foreground text-center">
-                    WhatsApp contact not available for this event
+                    {t('whatsappNotAvailable')}
                   </p>
                 )}
                 
                 <p className="text-sm text-muted-foreground text-center mt-4">
-                  {event.capacity ? `${event.capacity} spots available` : 'Unlimited capacity'}
+                  {event.capacity ? `${event.capacity} ${t('spotsAvailable')}` : t('unlimited') + ' capacity'}
                 </p>
               </div>
             </div>
@@ -89,19 +91,19 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
           <div className="glass-panel-hero p-8 md:p-12 max-w-2xl mx-auto text-center animate-fade-in-up">
             <Calendar className="h-16 w-16 mx-auto mb-6 text-muted-foreground" />
             <h2 className="text-fluid-3xl font-bold mb-4">
-              {event.status === "Completed" ? "Event Completed" : "Registration Unavailable"}
+              {event.status === "Completed" ? t('eventCompleted') : t('registrationUnavailable')}
             </h2>
             <p className="text-lg text-muted-foreground mb-6">
               {event.status === "Completed"
-                ? "This event has already taken place. Check out our upcoming events!"
-                : "Registration is currently not available for this event."}
+                ? t('eventCompletedDesc')
+                : t('registrationUnavailableDesc')}
             </p>
             <Button 
               size="lg" 
               className="btn-soft text-lg px-8 py-6"
               asChild
             >
-              <a href="/events">View All Events</a>
+              <a href="/events">{t('viewAllEvents')}</a>
             </Button>
           </div>
         )}
