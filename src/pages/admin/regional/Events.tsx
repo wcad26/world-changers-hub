@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -2267,6 +2268,970 @@ const RegionalEvents: React.FC = () => {
                   setEventToEdit(null);
                   form.reset();
                   setEditImagePreviews([]);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateEventMutation.isPending}>
+                  {updateEventMutation.isPending ? "Updating..." : "Update Event"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Event Dialog */}
+      <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Event</DialogTitle>
+            <DialogDescription>
+              Update the details of this event.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-6">
+              {/* Event details form fields - same structure as create dialog */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Annual Conference" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="name_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Event Name (French)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Conférence annuelle" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {eventCategories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Dates and times */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="start_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Date</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="start_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Start Time</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="end_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Date (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="end_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>End Time (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Description fields */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Event description..." className="min-h-[100px]" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (French)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Description de l'événement..." className="min-h-[100px]" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Location fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="location_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="City Convention Center" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="location_name_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location Name (French)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Centre de congrès de la ville" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="address_fr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address (French)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 rue principale" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Contact and capacity fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Capacity (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="100" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormDescription>Leave empty for unlimited</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="registration_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Registration URL (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Name (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="organizer_email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organizer Email (Optional)</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="organizer@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="whatsapp_contact"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp Contact (Optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1234567890" {...field} />
+                      </FormControl>
+                      <FormDescription>Include country code</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Event card image */}
+              <FormField
+                control={form.control}
+                name="event_card_image"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Event Card Image</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            onChange(file);
+                            setEditCardImagePreview(URL.createObjectURL(file));
+                            setDeleteCardImage(false);
+                          }
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {(editCardImagePreview && !deleteCardImage) && (
+                      <div className="relative mt-2 w-48 h-32 group">
+                        <img src={editCardImagePreview} alt="Card preview" className="object-cover w-full h-full rounded border" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditCardImagePreview('');
+                            setDeleteCardImage(true);
+                            onChange(null);
+                          }}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <FormDescription>
+                      Shown in event cards on the events page (recommended: 800x600px)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Hero images */}
+              <FormField
+                control={form.control}
+                name="image_files"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Hero Images (Multiple)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          onChange(files);
+                          const previews = files.map(f => URL.createObjectURL(f));
+                          setEditImagePreviews(previews);
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {existingHeroImages.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">Existing hero images:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {existingHeroImages
+                            .filter(img => !heroImagesToDelete.includes(img.id))
+                            .map((img, idx) => (
+                            <div key={img.id} className="relative w-24 h-24 group">
+                              <img src={img.image_url} alt={`Existing ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setHeroImagesToDelete(prev => [...prev, img.id])}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editImagePreviews.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">New uploads:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editImagePreviews.map((preview, idx) => (
+                            <div key={idx} className="relative w-24 h-24 group">
+                              <img src={preview} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                {existingHeroImages.filter(img => !heroImagesToDelete.includes(img.id)).length + idx + 1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <FormDescription>
+                      Displayed in the hero carousel at the top of the event detail page
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Gallery images */}
+              <FormField
+                control={form.control}
+                name="gallery_images"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Gallery Images (Multiple)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          onChange(files);
+                          const previews = files.map(f => URL.createObjectURL(f));
+                          setEditGalleryPreviews(previews);
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {existingGalleryImages.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">Existing gallery:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {existingGalleryImages
+                            .filter(img => !imagesToDelete.includes(img.id))
+                            .map((img, idx) => (
+                            <div key={img.id} className="relative w-24 h-24 group">
+                              <img src={img.image_url} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <button
+                                type="button"
+                                onClick={() => setImagesToDelete(prev => [...prev, img.id])}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editGalleryPreviews.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">New uploads:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editGalleryPreviews.map((preview, idx) => (
+                            <div key={idx} className="relative w-24 h-24">
+                              <img src={preview} alt={`New ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <FormDescription>
+                      Additional photos shown in the gallery section
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Testimonials, FAQs, Speakers - collapsed sections */}
+              <div className="space-y-4">
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                      <span>Testimonials ({testimonialFields.length})</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    {testimonialFields.map((field, index) => (
+                      <Card key={field.id} className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">Testimonial {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTestimonial(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.name_fr`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name (French)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.role`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Role</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`testimonials.${index}.role_fr`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Role (French)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`testimonials.${index}.content`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Content</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`testimonials.${index}.content_fr`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Content (French)</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`testimonials.${index}.rating`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Rating (1-5)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="number" 
+                                    min={1} 
+                                    max={5} 
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </Card>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => appendTestimonial({ name: "", role: "", content: "", rating: 5 })}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Testimonial
+                    </Button>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                      <span>FAQs ({faqFields.length})</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    {faqFields.map((field, index) => (
+                      <Card key={field.id} className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">FAQ {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFAQ(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.question`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Question</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.question_fr`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Question (French)</FormLabel>
+                                <FormControl>
+                                  <Input {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.answer`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Answer</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`faqs.${index}.answer_fr`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Answer (French)</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} className="min-h-[80px]" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </Card>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => appendFAQ({ question: "", answer: "" })}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add FAQ
+                    </Button>
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Collapsible>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full justify-between">
+                      <span>Speakers ({speakerFields.length})</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-4 mt-4">
+                    {speakerFields.map((field, index) => (
+                      <Card key={field.id} className="p-4">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium">Speaker {index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeSpeaker(index)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.name`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.name_fr`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name (French)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.title`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Title</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`speakers.${index}.title_fr`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Title (French)</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <Collapsible>
+                            <CollapsibleTrigger asChild>
+                              <Button type="button" variant="ghost" size="sm" className="w-full justify-between">
+                                <span>Additional Details</span>
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="space-y-4 mt-2">
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.bio`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Bio</FormLabel>
+                                    <FormControl>
+                                      <Textarea 
+                                        placeholder="Biography"
+                                        className="min-h-[80px]"
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              
+                              <FormField
+                                control={form.control}
+                                name={`speakers.${index}.bio_fr`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>Bio (French)</FormLabel>
+                                    <FormControl>
+                                      <Textarea 
+                                        placeholder="Biographie"
+                                        className="min-h-[80px]"
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </CollapsibleContent>
+                          </Collapsible>
+                          
+                          <FormField
+                            control={form.control}
+                            name={`speakers.${index}.photo`}
+                            render={({ field: { onChange, value, ...field } }) => (
+                              <FormItem>
+                                <FormLabel>Photo</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="file" 
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        onChange(file);
+                                        setSpeakerPhotoPreviews(prev => ({
+                                          ...prev,
+                                          [index]: URL.createObjectURL(file)
+                                        }));
+                                      }
+                                    }}
+                                    {...field}
+                                  />
+                                </FormControl>
+                                {speakerPhotoPreviews[index] && (
+                                  <div className="mt-2">
+                                    <img 
+                                      src={speakerPhotoPreviews[index]} 
+                                      alt="Preview" 
+                                      className="w-24 h-24 object-cover rounded-full border-2 border-primary/20"
+                                    />
+                                  </div>
+                                )}
+                                <FormDescription>Square image recommended (e.g., 400x400px)</FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </Card>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => appendSpeaker({ 
+                        name: "", 
+                        title: "", 
+                        bio: "", 
+                        linkedin_url: "", 
+                        twitter_url: "", 
+                        website_url: "",
+                        display_order: speakerFields.length 
+                      })}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Speaker
+                    </Button>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="is_public"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 mt-1"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Public Event</FormLabel>
+                      <FormDescription>
+                        Display this event on the public website and regional homepage
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="is_featured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 mt-1"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Featured Event</FormLabel>
+                      <FormDescription>
+                        Highlight this event on the homepage
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setEditEventDialogOpen(false);
+                  setEventToEdit(null);
+                  form.reset();
+                  setEditImagePreviews([]);
+                  setEditCardImagePreview('');
+                  setEditGalleryPreviews([]);
+                  setExistingGalleryImages([]);
+                  setExistingHeroImages([]);
+                  setImagesToDelete([]);
+                  setHeroImagesToDelete([]);
+                  setDeleteCardImage(false);
+                  setSpeakerPhotoPreviews({});
                 }}>
                   Cancel
                 </Button>
