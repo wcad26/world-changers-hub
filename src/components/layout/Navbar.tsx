@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Phone, Mail, X, ChevronDown } from 'lucide-react';
+import { Menu, Phone, Mail, X, ChevronDown, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useLanguage } from '@/hooks/useLanguage';
 const Navbar = () => {
   const location = useLocation();
   const isHomepage = location.pathname === '/';
   const [isScrolled, setIsScrolled] = useState(false);
+  const { language, setLanguage } = useLanguage();
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 0);
@@ -104,25 +107,58 @@ const Navbar = () => {
                       Events
                     </Link>
                     
-                    {/* Resources Section */}
-                    <div className="py-2 border-b border-border/50">
-                      <h4 className="text-lg font-medium text-foreground mb-3">Resources</h4>
-                      <div className="flex flex-col space-y-2 pl-4">
-                        <Link to="/media" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                          Media & Sermons
-                        </Link>
-                        <Link to="/store" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                          Store/Library
-                        </Link>
-                        <Link to="/blog" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                          News & Blog
-                        </Link>
-                        <Link to="/counseling" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                          Counselling
-                        </Link>
-                        <Link to="/fundraising" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                          Fundraising
-                        </Link>
+                    {/* Resources Section - Collapsible */}
+                    <Collapsible className="border-b border-border/50">
+                      <CollapsibleTrigger asChild>
+                        <button className="flex items-center justify-between w-full py-2 text-left">
+                          <h4 className="text-lg font-medium text-foreground">Resources</h4>
+                          <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
+                        </button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="pb-2">
+                        <div className="flex flex-col space-y-2 pl-4 pt-2">
+                          <Link to="/media" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
+                            Media & Sermons
+                          </Link>
+                          <Link to="/store" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
+                            Store/Library
+                          </Link>
+                          <Link to="/blog" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
+                            News & Blog
+                          </Link>
+                          <Link to="/counseling" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
+                            Counselling
+                          </Link>
+                          <Link to="/fundraising" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
+                            Fundraising
+                          </Link>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Language Selector */}
+                    <div className="py-4 border-b border-border/50">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Languages className="h-5 w-5 text-foreground" />
+                        <h4 className="text-lg font-medium text-foreground">Language</h4>
+                      </div>
+                      <div className="flex gap-2 pl-4">
+                        <Button
+                          variant={language === 'en' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setLanguage('en')}
+                          className="flex-1"
+                        >
+                          English
+                        </Button>
+                        <Button
+                          variant={language === 'fr' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setLanguage('fr')}
+                          className="flex-1"
+                        >
+                          Français
+                        </Button>
                       </div>
                     </div>
                   </nav>
