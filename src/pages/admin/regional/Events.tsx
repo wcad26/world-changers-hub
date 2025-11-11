@@ -793,15 +793,14 @@ const RegionalEvents: React.FC = () => {
           uploadedImageUrlsFr.push(publicUrl);
         }
         
-        // Get existing hero images to update with French URLs
-        const { data: heroImagesToUpdate } = await supabase
-          .from('event_images')
-          .select('id')
-          .eq('event_id', eventToEdit.id)
-          .eq('is_hero_image', true)
-          .is('image_url_fr', null)
-          .order('display_order', { ascending: true })
-          .limit(uploadedImageUrlsFr.length);
+            // Get existing hero images to update with French URLs (by display order)
+            const { data: heroImagesToUpdate } = await supabase
+              .from('event_images')
+              .select('id')
+              .eq('event_id', eventToEdit.id)
+              .eq('is_hero_image', true)
+              .order('display_order', { ascending: true })
+              .limit(uploadedImageUrlsFr.length);
         
         if (heroImagesToUpdate) {
           for (let i = 0; i < Math.min(uploadedImageUrlsFr.length, heroImagesToUpdate.length); i++) {
@@ -894,15 +893,14 @@ const RegionalEvents: React.FC = () => {
           uploadedGalleryUrlsFr.push(publicUrl);
         }
         
-        // Get existing gallery images to update with French URLs
-        const { data: galleryImagesToUpdate } = await supabase
-          .from('event_images')
-          .select('id')
-          .eq('event_id', eventToEdit.id)
-          .eq('is_hero_image', false)
-          .is('image_url_fr', null)
-          .order('display_order', { ascending: true })
-          .limit(uploadedGalleryUrlsFr.length);
+            // Get existing gallery images to update with French URLs (by display order)
+            const { data: galleryImagesToUpdate } = await supabase
+              .from('event_images')
+              .select('id')
+              .eq('event_id', eventToEdit.id)
+              .eq('is_hero_image', false)
+              .order('display_order', { ascending: true })
+              .limit(uploadedGalleryUrlsFr.length);
         
         if (galleryImagesToUpdate) {
           for (let i = 0; i < Math.min(uploadedGalleryUrlsFr.length, galleryImagesToUpdate.length); i++) {
