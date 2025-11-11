@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Youtube, MapPin, Mail, Phone } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
-
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  const { t } = useLanguage();
+  const {
+    t
+  } = useLanguage();
   return <footer className="bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
       <div className="container-custom py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
@@ -12,7 +13,7 @@ export default function Footer() {
             <Link to="/" className="inline-block">
               <img src="/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png" alt="World Changers Association" className="w-full md:h-24 md:w-auto" />
             </Link>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md">
+            <p className="text-gray-600 dark:text-gray-400 max-w-md text-justify">
               {t('footerMission')}
             </p>
             <div className="flex space-x-4">
