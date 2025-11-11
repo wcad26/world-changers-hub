@@ -21,6 +21,7 @@ const categories = [
 const mockFeaturedEvents: Event[] = [
   {
     id: "mock-1",
+    slug: null,
     name: "Annual WCA Conference 2024",
     name_fr: null,
     description: "Join us for our biggest annual gathering featuring inspiring speakers, worship sessions, and networking opportunities. This three-day conference will transform your spiritual journey.",
@@ -54,7 +55,8 @@ const mockFeaturedEvents: Event[] = [
     created_by: null
   },
   {
-    id: "mock-2", 
+    id: "mock-2",
+    slug: null,
     name: "Youth Revival Night",
     name_fr: null,
     description: "A powerful evening of worship and testimony designed for young people. Experience breakthrough, healing, and spiritual renewal in an atmosphere of faith and community.",
@@ -89,6 +91,7 @@ const mockFeaturedEvents: Event[] = [
   },
   {
     id: "mock-3",
+    slug: null,
     name: "Leadership Training Workshop", 
     name_fr: null,
     description: "Develop your leadership skills through practical workshops, mentorship sessions, and collaborative learning. Perfect for current and aspiring ministry leaders.",
@@ -196,7 +199,7 @@ const Events = () => {
           
           return (
             <Link 
-              to={`/events/${event.id}`} 
+              to={`/events/${event.slug || event.id}`} 
               key={event.id}
               className="group relative overflow-hidden rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
             >

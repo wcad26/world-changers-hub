@@ -40,7 +40,7 @@ export function RelatedEventsCarousel({ currentEventId }: RelatedEventsCarouselP
           <CarouselContent>
             {relatedEvents.map((event) => (
               <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
-                <Link to={`/events/${event.id}`}>
+                <Link to={`/events/${event.slug || event.id}`}>
                   <Card className="card-soft h-full hover:scale-105 transition-all duration-300 overflow-hidden group">
                     {event.image_url && (
                       <div className="overflow-hidden h-48">

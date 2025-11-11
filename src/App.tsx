@@ -119,7 +119,7 @@ const App = () => {
             <Route path="/locations" element={<Locations />} />
             <Route path="/locations/:slug" element={<RegionalBranchHome />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/events/:eventId" element={<EventDetail />} /> {/* Supports both UUID and slug */}
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />

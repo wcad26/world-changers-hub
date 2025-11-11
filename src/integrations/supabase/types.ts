@@ -722,6 +722,7 @@ export type Database = {
           registration_url: string | null
           requirements: string | null
           requirements_fr: string | null
+          slug: string | null
           start_datetime: string
           status: Database["public"]["Enums"]["event_status"]
           updated_at: string
@@ -756,6 +757,7 @@ export type Database = {
           registration_url?: string | null
           requirements?: string | null
           requirements_fr?: string | null
+          slug?: string | null
           start_datetime: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string
@@ -790,6 +792,7 @@ export type Database = {
           registration_url?: string | null
           requirements?: string | null
           requirements_fr?: string | null
+          slug?: string | null
           start_datetime?: string
           status?: Database["public"]["Enums"]["event_status"]
           updated_at?: string

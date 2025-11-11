@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEventById } from "@/hooks/useEvents";
+import { useEventBySlug } from "@/hooks/useEventBySlug";
 import { useLanguage } from "@/hooks/useLanguage";
+import { isUUID } from "@/utils/slugUtils";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { EventHeroSection } from "@/components/events/EventHeroSection";
@@ -20,7 +22,19 @@ import { Badge } from "@/components/ui/badge";
 
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
-  const { data: event, isLoading, error } = useEventById(eventId);
+  
+  // Detect if eventId is a UUID or slug
+  const isEventIdUUID = eventId ? isUUID(eventId) : false;
+  
+  // Fetch event by appropriate method
+  const { data: eventById, isLoading: isLoadingById, error: errorById } = useEventById(isEventIdUUID ? eventId : undefined);
+  const { data: eventBySlug, isLoading: isLoadingBySlug, error: errorBySlug } = useEventBySlug(!isEventIdUUID ? eventId : undefined);
+  
+  // Use whichever query is active
+  const event = isEventIdUUID ? eventById : eventBySlug;
+  const isLoading = isEventIdUUID ? isLoadingById : isLoadingBySlug;
+  const error = isEventIdUUID ? errorById : errorBySlug;
+  
   const { localizedField, t } = useLanguage();
 
   const getStatusBadge = () => {
