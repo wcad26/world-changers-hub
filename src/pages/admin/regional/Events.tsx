@@ -171,7 +171,7 @@ const RegionalEvents: React.FC = () => {
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const { toast } = useToast();
 
-  const { userRegion } = useAuth();
+  const { userRegion, user } = useAuth();
   const { data: events, isLoading, isError, error } = useRegionalEvents();
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: currencies } = useCurrencies();
@@ -954,10 +954,25 @@ const RegionalEvents: React.FC = () => {
         end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
       }
       
+      // Save slug history if slug changed
+      const oldSlug = eventToEdit.slug;
+      const newSlug = values.slug && values.slug.trim() ? values.slug : oldSlug;
+      
+      if (oldSlug && oldSlug !== newSlug && user?.id) {
+        await supabase
+          .from('event_slug_history')
+          .insert({
+            event_id: eventToEdit.id,
+            old_slug: oldSlug,
+            changed_by: user.id,
+          });
+      }
+      
       const updateData: UpdateEvent & { id: string } = {
         id: eventToEdit.id,
         name: values.name,
         name_fr: values.name_fr || null,
+        slug: newSlug || null,
         description: values.description || null,
         description_fr: values.description_fr || null,
         category: values.category,
@@ -2815,8 +2830,8 @@ const RegionalEvents: React.FC = () => {
                               <span className="text-primary font-medium block">
                                 URL: wcaglobal.org/events/{field.value}
                               </span>
-                              <span className="text-amber-600 dark:text-amber-400 block">
-                                ⚠️ Changing the URL slug will break existing links to this event
+                              <span className="text-green-600 dark:text-green-400 block">
+                                ✅ Old links will automatically redirect to the new URL
                               </span>
                             </>
                           ) : (

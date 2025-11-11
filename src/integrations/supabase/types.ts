@@ -577,6 +577,38 @@ export type Database = {
           },
         ]
       }
+      event_slug_history: {
+        Row: {
+          changed_at: string | null
+          changed_by: string | null
+          event_id: string
+          id: string
+          old_slug: string
+        }
+        Insert: {
+          changed_at?: string | null
+          changed_by?: string | null
+          event_id: string
+          id?: string
+          old_slug: string
+        }
+        Update: {
+          changed_at?: string | null
+          changed_by?: string | null
+          event_id?: string
+          id?: string
+          old_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_slug_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_speakers: {
         Row: {
           bio: string | null
