@@ -83,6 +83,7 @@ export const translations = {
     eventGallery: "Event Gallery",
     eventGalleryDescription: "Take a look at what makes this event special",
     testimonialsDescription: "Hear from those who've experienced our events",
+    footerMission: "Building a network of fellowships that are spiritually, intellectually and economically empowered to transform lives.",
   },
   fr: {
     aboutEvent: "À propos de cet événement",
@@ -129,5 +130,6 @@ export const translations = {
     eventGallery: "Galerie de l'événement",
     eventGalleryDescription: "Découvrez ce qui rend cet événement spécial",
     testimonialsDescription: "Écoutez ceux qui ont vécu nos événements",
+    footerMission: "Construire un réseau de communautés spirituellement, intellectuellement et économiquement habilitées à transformer des vies.",
   },
 };
