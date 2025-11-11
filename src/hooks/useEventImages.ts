@@ -18,12 +18,22 @@ export function useEventImages(eventId: string | undefined, language: 'en' | 'fr
     queryFn: async () => {
       if (!eventId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('event_images')
         .select('*')
         .eq('event_id', eventId)
-        .eq('is_hero_image', true)
-        .order('display_order', { ascending: true });
+        .eq('is_hero_image', true);
+      
+      // Filter to only show images that have content for the selected language
+      if (language === 'fr') {
+        query = query.not('image_url_fr', 'is', null);
+      } else {
+        query = query.not('image_url', 'is', null);
+      }
+      
+      query = query.order('display_order', { ascending: true });
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
