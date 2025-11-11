@@ -160,6 +160,10 @@ const RegionalEvents: React.FC = () => {
   const [deleteCardImage, setDeleteCardImage] = useState<boolean>(false);
   const [existingHeroImages, setExistingHeroImages] = useState<any[]>([]);
   const [heroImagesToDelete, setHeroImagesToDelete] = useState<string[]>([]);
+  const [existingHeroImagesFr, setExistingHeroImagesFr] = useState<any[]>([]);
+  const [existingGalleryImagesFr, setExistingGalleryImagesFr] = useState<any[]>([]);
+  const [heroImagesFrToDelete, setHeroImagesFrToDelete] = useState<string[]>([]);
+  const [galleryImagesFrToDelete, setGalleryImagesFrToDelete] = useState<string[]>([]);
   const [speakerPhotoPreviews, setSpeakerPhotoPreviews] = useState<{[key: number]: string}>({});
   const { toast } = useToast();
 
@@ -688,6 +692,27 @@ const RegionalEvents: React.FC = () => {
         }
       }
 
+      // Handle French event card image
+      let eventCardImageUrlFr = eventToEdit.image_url_fr; // Keep existing by default
+      
+      // Upload new French event card image if provided
+      if (values.event_card_image_fr) {
+        const fileExt = values.event_card_image_fr.name.split('.').pop();
+        const fileName = `card-fr-${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, values.event_card_image_fr);
+
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+          eventCardImageUrlFr = publicUrl;
+        }
+      }
+
       // Delete marked hero images
       if (heroImagesToDelete.length > 0) {
         await supabase
@@ -734,6 +759,58 @@ const RegionalEvents: React.FC = () => {
         await supabase
           .from('event_images')
           .insert(imageRecords);
+      }
+
+      // Delete marked French hero images
+      if (heroImagesFrToDelete.length > 0) {
+        for (const imageId of heroImagesFrToDelete) {
+          await supabase
+            .from('event_images')
+            .update({ image_url_fr: null })
+            .eq('id', imageId);
+        }
+      }
+
+      // Handle new French hero image uploads
+      if (values.image_files_fr && values.image_files_fr.length > 0) {
+        let uploadedImageUrlsFr: string[] = [];
+        
+        for (const file of values.image_files_fr) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `fr-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrlsFr.push(publicUrl);
+        }
+        
+        // Get existing hero images to update with French URLs
+        const { data: heroImagesToUpdate } = await supabase
+          .from('event_images')
+          .select('id')
+          .eq('event_id', eventToEdit.id)
+          .eq('is_hero_image', true)
+          .is('image_url_fr', null)
+          .order('display_order', { ascending: true })
+          .limit(uploadedImageUrlsFr.length);
+        
+        if (heroImagesToUpdate) {
+          for (let i = 0; i < Math.min(uploadedImageUrlsFr.length, heroImagesToUpdate.length); i++) {
+            await supabase
+              .from('event_images')
+              .update({ image_url_fr: uploadedImageUrlsFr[i] })
+              .eq('id', heroImagesToUpdate[i].id);
+          }
+        }
       }
       
       // Delete marked gallery images
@@ -785,6 +862,58 @@ const RegionalEvents: React.FC = () => {
           .insert(galleryRecords);
       }
 
+      // Delete marked French gallery images
+      if (galleryImagesFrToDelete.length > 0) {
+        for (const imageId of galleryImagesFrToDelete) {
+          await supabase
+            .from('event_images')
+            .update({ image_url_fr: null })
+            .eq('id', imageId);
+        }
+      }
+
+      // Handle new French gallery image uploads
+      if (values.gallery_images_fr && values.gallery_images_fr.length > 0) {
+        let uploadedGalleryUrlsFr: string[] = [];
+        
+        for (const file of values.gallery_images_fr) {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `fr-${Math.random()}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('event-images')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          uploadedGalleryUrlsFr.push(publicUrl);
+        }
+        
+        // Get existing gallery images to update with French URLs
+        const { data: galleryImagesToUpdate } = await supabase
+          .from('event_images')
+          .select('id')
+          .eq('event_id', eventToEdit.id)
+          .eq('is_hero_image', false)
+          .is('image_url_fr', null)
+          .order('display_order', { ascending: true })
+          .limit(uploadedGalleryUrlsFr.length);
+        
+        if (galleryImagesToUpdate) {
+          for (let i = 0; i < Math.min(uploadedGalleryUrlsFr.length, galleryImagesToUpdate.length); i++) {
+            await supabase
+              .from('event_images')
+              .update({ image_url_fr: uploadedGalleryUrlsFr[i] })
+              .eq('id', galleryImagesToUpdate[i].id);
+          }
+        }
+      }
+
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
       let end_datetime = null;
       
@@ -807,6 +936,7 @@ const RegionalEvents: React.FC = () => {
         address: values.address || null,
         address_fr: values.address_fr || null,
         image_url: eventCardImageUrl,
+        image_url_fr: eventCardImageUrlFr,
         capacity: values.capacity || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
@@ -939,10 +1069,17 @@ const RegionalEvents: React.FC = () => {
       toast({ title: "Success", description: "Event updated successfully." });
       form.reset();
       setEditCardImagePreview('');
+      setEditCardImagePreviewFr('');
       setEditImagePreviews([]);
+      setEditImagePreviewsFr([]);
       setEditGalleryPreviews([]);
+      setEditGalleryPreviewsFr([]);
       setExistingGalleryImages([]);
+      setExistingHeroImagesFr([]);
+      setExistingGalleryImagesFr([]);
       setImagesToDelete([]);
+      setHeroImagesFrToDelete([]);
+      setGalleryImagesFrToDelete([]);
       setSpeakerPhotoPreviews({});
       setEditEventDialogOpen(false);
       setEventToEdit(null);
@@ -960,6 +1097,13 @@ const RegionalEvents: React.FC = () => {
     } else {
       setEditCardImagePreview('');
     }
+
+    // Set French card image preview if exists
+    if (event.image_url_fr) {
+      setEditCardImagePreviewFr(event.image_url_fr);
+    } else {
+      setEditCardImagePreviewFr('');
+    }
     
     // Fetch existing hero images (store full objects, not just URLs)
     const { data: heroImages } = await supabase
@@ -971,10 +1115,15 @@ const RegionalEvents: React.FC = () => {
     
     if (heroImages && heroImages.length > 0) {
       setExistingHeroImages(heroImages);
+      // Separate French hero images
+      setExistingHeroImagesFr(heroImages.filter(img => img.image_url_fr));
       setEditImagePreviews([]); // Clear new upload previews
+      setEditImagePreviewsFr([]);
     } else {
       setExistingHeroImages([]);
+      setExistingHeroImagesFr([]);
       setEditImagePreviews([]);
+      setEditImagePreviewsFr([]);
     }
     
     // Fetch existing gallery images
@@ -987,15 +1136,21 @@ const RegionalEvents: React.FC = () => {
     
     if (galleryImages) {
       setExistingGalleryImages(galleryImages);
+      // Separate French gallery images
+      setExistingGalleryImagesFr(galleryImages.filter(img => img.image_url_fr));
     } else {
       setExistingGalleryImages([]);
+      setExistingGalleryImagesFr([]);
     }
     
     // Reset deletion tracking
     setImagesToDelete([]);
     setEditGalleryPreviews([]);
+    setEditGalleryPreviewsFr([]);
     setDeleteCardImage(false);
     setHeroImagesToDelete([]);
+    setHeroImagesFrToDelete([]);
+    setGalleryImagesFrToDelete([]);
     
     // Fetch existing testimonials
     const { data: existingTestimonials } = await supabase
@@ -2862,6 +3017,50 @@ const RegionalEvents: React.FC = () => {
                 )}
               />
 
+              {/* French Event Card Image */}
+              <FormField
+                control={form.control}
+                name="event_card_image_fr"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Event Card Image (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            onChange(file);
+                            setEditCardImagePreviewFr(URL.createObjectURL(file));
+                          }
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {editCardImagePreviewFr && (
+                      <div className="relative mt-2 w-48 h-32 group">
+                        <img src={editCardImagePreviewFr} alt="French card preview" className="object-cover w-full h-full rounded border" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditCardImagePreviewFr('');
+                            onChange(null);
+                          }}
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <FormDescription>
+                      French version shown when language is set to French (recommended: 800x600px)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Hero images */}
               <FormField
                 control={form.control}
@@ -2930,6 +3129,86 @@ const RegionalEvents: React.FC = () => {
                 )}
               />
 
+              {/* French Hero Images */}
+              <FormField
+                control={form.control}
+                name="image_files_fr"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Hero Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          onChange(files);
+                          const previews = files.map(f => URL.createObjectURL(f));
+                          setEditImagePreviewsFr(previews);
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {existingHeroImagesFr.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">Existing French hero images:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {existingHeroImagesFr
+                            .filter(img => !heroImagesFrToDelete.includes(img.id))
+                            .map((img, idx) => (
+                            <div key={img.id} className="relative w-24 h-24 group">
+                              <img src={img.image_url_fr} alt={`French ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                FR {idx + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setHeroImagesFrToDelete(prev => [...prev, img.id])}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editImagePreviewsFr.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">New French uploads:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editImagePreviewsFr.map((preview, idx) => (
+                            <div key={idx} className="relative w-24 h-24 group">
+                              <img src={preview} alt={`French preview ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
+                                NEW
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setEditImagePreviewsFr(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <FormDescription>
+                      Upload French hero images. Shown when language is set to French (recommended: 1920x1080px)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Gallery images */}
               <FormField
                 control={form.control}
@@ -2986,6 +3265,80 @@ const RegionalEvents: React.FC = () => {
                     )}
                     <FormDescription>
                       Additional photos shown in the gallery section
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* French Gallery Images */}
+              <FormField
+                control={form.control}
+                name="gallery_images_fr"
+                render={({ field: { onChange, value, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Gallery Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          onChange(files);
+                          const previews = files.map(f => URL.createObjectURL(f));
+                          setEditGalleryPreviewsFr(previews);
+                        }}
+                        {...field}
+                      />
+                    </FormControl>
+                    {existingGalleryImagesFr.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">Existing French gallery images:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {existingGalleryImagesFr
+                            .filter(img => !galleryImagesFrToDelete.includes(img.id))
+                            .map((img, idx) => (
+                            <div key={img.id} className="relative w-24 h-24 group">
+                              <img src={img.image_url_fr} alt={`French gallery ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <button
+                                type="button"
+                                onClick={() => setGalleryImagesFrToDelete(prev => [...prev, img.id])}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {editGalleryPreviewsFr.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-sm text-muted-foreground mb-2">New French uploads:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {editGalleryPreviewsFr.map((preview, idx) => (
+                            <div key={idx} className="relative w-24 h-24 group">
+                              <img src={preview} alt={`French preview ${idx + 1}`} className="object-cover w-full h-full rounded border" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentFiles = value as File[] || [];
+                                  const newFiles = currentFiles.filter((_, i) => i !== idx);
+                                  onChange(newFiles);
+                                  setEditGalleryPreviewsFr(newFiles.map(f => URL.createObjectURL(f)));
+                                }}
+                                className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <FormDescription>
+                      Upload French gallery images. Shown when language is set to French
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
