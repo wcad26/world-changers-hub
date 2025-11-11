@@ -64,7 +64,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
             {t('testimonials')}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Hear from those who've experienced our events
+            {t('testimonialsDescription')}
           </p>
         </div>
 

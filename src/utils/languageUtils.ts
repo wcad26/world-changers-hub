@@ -82,6 +82,7 @@ export const translations = {
     backToEvents: "← Back to Events",
     eventGallery: "Event Gallery",
     eventGalleryDescription: "Take a look at what makes this event special",
+    testimonialsDescription: "Hear from those who've experienced our events",
   },
   fr: {
     aboutEvent: "À propos de cet événement",
@@ -127,5 +128,6 @@ export const translations = {
     backToEvents: "← Retour aux événements",
     eventGallery: "Galerie de l'événement",
     eventGalleryDescription: "Découvrez ce qui rend cet événement spécial",
+    testimonialsDescription: "Écoutez ceux qui ont vécu nos événements",
   },
 };
