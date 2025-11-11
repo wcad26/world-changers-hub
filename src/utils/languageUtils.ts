@@ -80,6 +80,8 @@ export const translations = {
     eventNotFound: "Event Not Found",
     eventNotFoundDesc: "We couldn't find the event you're looking for.",
     backToEvents: "← Back to Events",
+    eventGallery: "Event Gallery",
+    eventGalleryDescription: "Take a look at what makes this event special",
   },
   fr: {
     aboutEvent: "À propos de cet événement",
@@ -123,5 +125,7 @@ export const translations = {
     eventNotFound: "Événement introuvable",
     eventNotFoundDesc: "Nous n'avons pas pu trouver l'événement que vous recherchez.",
     backToEvents: "← Retour aux événements",
+    eventGallery: "Galerie de l'événement",
+    eventGalleryDescription: "Découvrez ce qui rend cet événement spécial",
   },
 };

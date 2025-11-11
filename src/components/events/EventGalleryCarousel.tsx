@@ -9,7 +9,7 @@ interface EventGalleryCarouselProps {
 }
 
 export function EventGalleryCarousel({ event }: EventGalleryCarouselProps) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { data: galleryImages, isLoading } = useEventGalleryImages(event.id, language);
 
   if (isLoading) {
@@ -38,10 +38,10 @@ export function EventGalleryCarousel({ event }: EventGalleryCarouselProps) {
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
           <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Event Gallery
+            {t('eventGallery')}
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Take a look at what makes this event special
+            {t('eventGalleryDescription')}
           </p>
         </div>
 
