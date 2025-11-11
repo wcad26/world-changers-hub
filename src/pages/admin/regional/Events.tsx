@@ -1223,10 +1223,11 @@ const RegionalEvents: React.FC = () => {
     const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
     
     // Pre-populate form
-    form.reset({
-      name: event.name,
-      name_fr: event.name_fr || "",
-      category: event.category,
+      form.reset({
+        name: event.name,
+        name_fr: event.name_fr || "",
+        slug: event.slug || "",
+        category: event.category,
       description: event.description || "",
       description_fr: event.description_fr || "",
       address: event.address || "",
@@ -2794,6 +2795,39 @@ const RegionalEvents: React.FC = () => {
                     </FormItem>
                   )}
                 />
+                
+                <div className="md:col-span-2">
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL Slug</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="annual-conference-2024"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs space-y-1">
+                          {field.value ? (
+                            <>
+                              <span className="text-primary font-medium block">
+                                URL: wcaglobal.org/events/{field.value}
+                              </span>
+                              <span className="text-amber-600 dark:text-amber-400 block">
+                                ⚠️ Changing the URL slug will break existing links to this event
+                              </span>
+                            </>
+                          ) : (
+                            "Enter a URL-friendly slug for this event"
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 
                 <FormField
                   control={form.control}
