@@ -26,7 +26,8 @@ serve(async (req) => {
       rated_event_id,
       event_satisfaction_rating,
       referral_source,
-      referral_person_name
+      referral_person_name,
+      referral_other_details
     } = await req.json()
 
     console.log('create-visitor: Received data for', email)
@@ -119,6 +120,7 @@ serve(async (req) => {
         event_satisfaction_rating: event_satisfaction_rating || null,
         referral_source: referral_source || null,
         referral_person_name: referral_person_name || null,
+        referral_other_details: referral_other_details || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
