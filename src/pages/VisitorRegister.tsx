@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 export default function VisitorRegister() {
   const { regionCode } = useParams<{ regionCode: string }>();
@@ -19,6 +20,7 @@ export default function VisitorRegister() {
   const { data: region, isLoading: regionLoading } = useRegionBySlug(regionCode);
   const { mutate: registerVisitor, isPending } = useVisitorRegistration();
   const [registrationSuccess, setRegistrationSuccess] = useState<{ visitor_id: string; message: string } | null>(null);
+  const { t, localizedField } = useLanguage();
 
   const form = useForm<VisitorRegistrationFormData>({
     resolver: zodResolver(visitorRegistrationSchema),
@@ -46,7 +48,7 @@ export default function VisitorRegister() {
         },
         onError: (error: any) => {
           form.setError('root', {
-            message: error.message || 'Registration failed. Please try again.'
+            message: error.message || t('registrationFailed')
           });
         }
       }
@@ -66,14 +68,14 @@ export default function VisitorRegister() {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Region Not Found</CardTitle>
+            <CardTitle>{t('regionNotFound')}</CardTitle>
             <CardDescription>
-              The region you're trying to register for could not be found.
+              {t('regionNotFoundDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/')} className="w-full">
-              Return to Home
+              {t('returnToHome')}
             </Button>
           </CardContent>
         </Card>
@@ -89,23 +91,23 @@ export default function VisitorRegister() {
             <div className="flex justify-center mb-4">
               <CheckCircle2 className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Registration Successful!</CardTitle>
+            <CardTitle className="text-2xl">{t('registrationSuccessful')}</CardTitle>
             <CardDescription>{registrationSuccess.message}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted p-4 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Your Visitor ID</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('yourVisitorId')}</p>
               <p className="text-2xl font-bold text-foreground">{registrationSuccess.visitor_id}</p>
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Please save this ID for your records. A regional administrator will contact you soon.
+              {t('saveIdMessage')}
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="space-y-2">
               <Button onClick={() => navigate(`/regional/${regionCode}`)} className="w-full">
-                Go to {region.name}
+                {t('backToRegionalPage')}
               </Button>
               <Button variant="outline" onClick={() => setRegistrationSuccess(null)} className="w-full">
-                Register Another Visitor
+                {t('registerAgain')}
               </Button>
             </div>
           </CardContent>
@@ -117,24 +119,23 @@ export default function VisitorRegister() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-2xl mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(`/regional/${regionCode}`)}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to {region.name}
-        </Button>
-
         <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl">Visitor Registration</CardTitle>
-            <CardDescription className="text-lg">
-              Welcome to {region.name}
+          <CardHeader>
+            <div className="mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/regional/${regionCode}`)}
+                className="mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('back')}
+              </Button>
+            </div>
+            <CardTitle className="text-3xl">{t('visitorRegTitle')}</CardTitle>
+            <CardDescription className="text-base">
+              {t('welcomeTo')} {region.name}. {t('visitorRegDescription')}
             </CardDescription>
-            <p className="text-sm text-muted-foreground mt-2">
-              Please fill out the form below to register as a visitor. All fields are required.
-            </p>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -151,7 +152,7 @@ export default function VisitorRegister() {
                     name="first_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First Name</FormLabel>
+                        <FormLabel>{t('firstName')}</FormLabel>
                         <FormControl>
                           <Input placeholder="John" {...field} />
                         </FormControl>
@@ -165,7 +166,7 @@ export default function VisitorRegister() {
                     name="last_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last Name</FormLabel>
+                        <FormLabel>{t('lastName')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" {...field} />
                         </FormControl>
@@ -180,7 +181,7 @@ export default function VisitorRegister() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email Address</FormLabel>
+                      <FormLabel>{t('emailAddress')}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john.doe@example.com" {...field} />
                       </FormControl>
@@ -194,7 +195,7 @@ export default function VisitorRegister() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
+                      <FormLabel>{t('phoneNumber')}</FormLabel>
                       <FormControl>
                         <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
                       </FormControl>
@@ -208,7 +209,7 @@ export default function VisitorRegister() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Address</FormLabel>
+                      <FormLabel>{t('address')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="123 Main St, City, State, ZIP" 
@@ -225,17 +226,17 @@ export default function VisitorRegister() {
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Registering...
+                      {t('completeRegistration')}...
                     </>
                   ) : (
-                    'Complete Visitor Registration'
+                    t('completeRegistration')
                   )}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
-                  Already a member?{' '}
+                  {t('alreadyMember')}{' '}
                   <Link to="/auth/member" className="text-primary hover:underline font-medium">
-                    Sign In
+                    {t('signIn')}
                   </Link>
                 </p>
               </form>
