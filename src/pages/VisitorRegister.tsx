@@ -13,6 +13,7 @@ import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import Navbar from '@/components/layout/Navbar';
 
 export default function VisitorRegister() {
   const { regionCode } = useParams<{ regionCode: string }>();
@@ -57,68 +58,79 @@ export default function VisitorRegister() {
 
   if (regionLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </>
     );
   }
 
   if (!region) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>{t('regionNotFound')}</CardTitle>
-            <CardDescription>
-              {t('regionNotFoundDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate('/')} className="w-full">
-              {t('returnToHome')}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>{t('regionNotFound')}</CardTitle>
+              <CardDescription>
+                {t('regionNotFoundDesc')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => navigate('/')} className="w-full">
+                {t('returnToHome')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   }
 
   if (registrationSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl">{t('registrationSuccessful')}</CardTitle>
-            <CardDescription>{registrationSuccess.message}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">{t('yourVisitorId')}</p>
-              <p className="text-2xl font-bold text-foreground">{registrationSuccess.visitor_id}</p>
-            </div>
-            <p className="text-sm text-muted-foreground text-center">
-              {t('saveIdMessage')}
-            </p>
-            <div className="space-y-2">
-              <Button onClick={() => navigate(`/regional/${regionCode}`)} className="w-full">
-                {t('backToRegionalPage')}
-              </Button>
-              <Button variant="outline" onClick={() => setRegistrationSuccess(null)} className="w-full">
-                {t('registerAgain')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <CheckCircle2 className="h-16 w-16 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl">{t('registrationSuccessful')}</CardTitle>
+              <CardDescription>{registrationSuccess.message}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-muted p-4 rounded-lg text-center">
+                <p className="text-sm text-muted-foreground mb-1">{t('yourVisitorId')}</p>
+                <p className="text-2xl font-bold text-foreground">{registrationSuccess.visitor_id}</p>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">
+                {t('saveIdMessage')}
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={() => setRegistrationSuccess(null)} variant="outline" className="flex-1">
+                  Register Another Visitor
+                </Button>
+                <Button onClick={() => navigate(`/regional/${regionCode}`)} className="flex-1">
+                  {t('backToRegionalPage')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-2xl mx-auto px-4 py-8">
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-background">
+        <div className="container max-w-2xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl">{t('visitorRegTitle')}</CardTitle>
@@ -234,5 +246,6 @@ export default function VisitorRegister() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
