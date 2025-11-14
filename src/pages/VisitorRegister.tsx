@@ -121,17 +121,6 @@ export default function VisitorRegister() {
       <div className="container max-w-2xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <div className="mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate(`/regional/${regionCode}`)}
-                className="mb-4"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('back')}
-              </Button>
-            </div>
             <CardTitle className="text-3xl">{t('visitorRegTitle')}</CardTitle>
             <CardDescription className="text-base">
               {t('welcomeTo')} {region.name}. {t('visitorRegDescription')}
