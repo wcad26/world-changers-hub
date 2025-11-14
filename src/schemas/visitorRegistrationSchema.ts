@@ -41,6 +41,11 @@ export const visitorRegistrationSchema = z.object({
   referral_person_name: z.string()
     .trim()
     .max(100, "Name must be less than 100 characters")
+    .optional(),
+  
+  referral_other_details: z.string()
+    .trim()
+    .max(200, "Details must be less than 200 characters")
     .optional()
 }).refine((data) => {
   // If referral_source is "invited_by", referral_person_name is required
@@ -51,6 +56,15 @@ export const visitorRegistrationSchema = z.object({
 }, {
   message: "Please provide the name of the person who invited you",
   path: ["referral_person_name"]
+}).refine((data) => {
+  // If referral_source is "other", referral_other_details is required
+  if (data.referral_source === "other" && !data.referral_other_details) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please provide details about how you heard about us",
+  path: ["referral_other_details"]
 });
 
 export type VisitorRegistrationFormData = z.infer<typeof visitorRegistrationSchema>;

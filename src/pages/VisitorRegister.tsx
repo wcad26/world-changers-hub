@@ -53,7 +53,8 @@ export default function VisitorRegister() {
       rated_event_id: undefined,
       event_satisfaction_rating: undefined,
       referral_source: '',
-      referral_person_name: ''
+      referral_person_name: '',
+      referral_other_details: ''
     }
   });
   const onSubmit = (data: VisitorRegistrationFormData) => {
@@ -286,12 +287,8 @@ export default function VisitorRegister() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="friend_family">{t('friendFamily')}</SelectItem>
                           <SelectItem value="social_media">{t('socialMedia')}</SelectItem>
                           <SelectItem value="website">{t('website')}</SelectItem>
-                          <SelectItem value="church_member">{t('churchMember')}</SelectItem>
-                          <SelectItem value="event">{t('event')}</SelectItem>
-                          <SelectItem value="search_engine">{t('searchEngine')}</SelectItem>
                           <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
                           <SelectItem value="other">{t('other')}</SelectItem>
                         </SelectContent>
@@ -312,6 +309,27 @@ export default function VisitorRegister() {
                         <FormControl>
                           <Input 
                             placeholder={t('enterPersonName')} 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Conditional Other Details Input */}
+                {form.watch('referral_source') === 'other' && (
+                  <FormField
+                    control={form.control}
+                    name="referral_other_details"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('referralOtherDetails')}</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder={t('explainReferralSource')} 
+                            className="min-h-[80px]"
                             {...field} 
                           />
                         </FormControl>
