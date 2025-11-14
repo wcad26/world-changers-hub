@@ -40,15 +40,15 @@ export type MemberWithProfile = Database['public']['Tables']['members']['Row'] &
   }>;
 };
 
-export const useMembers = (regionId?: string) => {
+export const useMembers = (regionId?: string, memberType?: 'member' | 'visitor') => {
   return useQuery({
-    queryKey: ['members', regionId],
+    queryKey: ['members', regionId, memberType],
     queryFn: async () => {
       if (!regionId) return [];
       
-      console.log('useMembers: Fetching members for region:', regionId);
+      console.log('useMembers: Fetching members for region:', regionId, 'type:', memberType);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('members')
         .select(`
           *,
@@ -56,8 +56,13 @@ export const useMembers = (regionId?: string) => {
             *
           )
         `)
-        .eq('region_id', regionId)
-        .order('created_at', { ascending: false });
+        .eq('region_id', regionId);
+
+      if (memberType) {
+        query = query.eq('member_type', memberType);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         console.error('useMembers: Error fetching members:', error);

@@ -343,9 +343,11 @@ const RegionalBranchHome = () => {
             <div className="flex flex-col sm:flex-row gap-6 justify-center animate-fade-up" style={{
             animationDelay: '0.4s'
           }}>
-              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold shadow-lg">
-                Visit Us Today
-                <ArrowRight className="w-5 h-5 ml-2" />
+              <Button size="lg" variant="secondary" className="px-8 py-4 text-lg font-semibold shadow-lg" asChild>
+                <Link to={`/visitor/register/${slug}`}>
+                  New Visitor? Register Here
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
               </Button>
               <Button size="lg" variant="outline" className="px-8 py-4 text-lg font-semibold border-white/50 text-foreground hover:bg-white/20 backdrop-blur-sm">
                 Explore Events
