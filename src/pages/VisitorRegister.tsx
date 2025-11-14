@@ -134,8 +134,8 @@ export default function VisitorRegister() {
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{t('visitorRegTitle')}</CardTitle>
-            <CardDescription className="text-base">
-              {t('welcomeTo')} {region.name}. {t('visitorRegDescription')}
+            <CardDescription className="text-base text-center">
+              {t('visitorRegDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
