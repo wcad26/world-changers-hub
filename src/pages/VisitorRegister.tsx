@@ -108,20 +108,13 @@ export default function VisitorRegister() {
               <CardDescription>{t('vipWelcomeMessage')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg text-center">
-                <p className="text-sm text-muted-foreground mb-1">{t('yourVisitorId')}</p>
-                <p className="text-2xl font-bold text-foreground">{registrationSuccess.visitor_id}</p>
-              </div>
-              <p className="text-sm text-muted-foreground text-center">
-                {t('saveIdMessage')}
-              </p>
+              
+              
               <div className="flex gap-2">
                 <Button onClick={() => setRegistrationSuccess(null)} variant="outline" className="flex-1">
                   Register Another Visitor
                 </Button>
-                <Button onClick={() => navigate(`/regional/${regionCode}`)} className="flex-1">
-                  {t('backToRegionalPage')}
-                </Button>
+                
               </div>
             </CardContent>
           </Card>
