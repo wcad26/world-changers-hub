@@ -1237,6 +1237,7 @@ export type Database = {
           preferred_service_areas: string[] | null
           profile_id: string | null
           rated_event_id: string | null
+          referral_other_details: string | null
           referral_person_name: string | null
           referral_source: string | null
           region_id: string
@@ -1259,6 +1260,7 @@ export type Database = {
           preferred_service_areas?: string[] | null
           profile_id?: string | null
           rated_event_id?: string | null
+          referral_other_details?: string | null
           referral_person_name?: string | null
           referral_source?: string | null
           region_id: string
@@ -1281,6 +1283,7 @@ export type Database = {
           preferred_service_areas?: string[] | null
           profile_id?: string | null
           rated_event_id?: string | null
+          referral_other_details?: string | null
           referral_person_name?: string | null
           referral_source?: string | null
           region_id?: string
