@@ -253,7 +253,7 @@ export default function VisitorRegister() {
                             value={field.value?.toString()}
                             className="flex flex-wrap gap-3"
                           >
-                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                            {[1, 2, 3, 4, 5].map((rating) => (
                               <div key={rating} className="flex items-center space-x-2">
                                 <RadioGroupItem value={rating.toString()} id={`rating-${rating}`} />
                                 <label

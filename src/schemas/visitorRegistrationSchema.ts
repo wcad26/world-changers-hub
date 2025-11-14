@@ -30,8 +30,8 @@ export const visitorRegistrationSchema = z.object({
   
   event_satisfaction_rating: z.number()
     .int()
-    .min(0, "Rating must be at least 0")
-    .max(10, "Rating must be at most 10")
+    .min(1, "Rating must be at least 1")
+    .max(5, "Rating must be at most 5")
     .optional(),
   
   referral_source: z.string()
