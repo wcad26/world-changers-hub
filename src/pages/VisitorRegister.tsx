@@ -105,7 +105,7 @@ export default function VisitorRegister() {
                 <CheckCircle2 className="h-16 w-16 text-green-600" />
               </div>
               <CardTitle className="text-2xl">{t('registrationSuccessful')}</CardTitle>
-              <CardDescription>{registrationSuccess.message}</CardDescription>
+              <CardDescription>{t('vipWelcomeMessage')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-muted p-4 rounded-lg text-center">
