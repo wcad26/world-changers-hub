@@ -133,7 +133,7 @@ export default function VisitorRegister() {
         <div className="container max-w-2xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-3xl">{t('visitorRegTitle')}</CardTitle>
+            <CardTitle className="text-2xl">{t('visitorRegTitle')}</CardTitle>
             <CardDescription className="text-base">
               {t('welcomeTo')} {region.name}. {t('visitorRegDescription')}
             </CardDescription>
