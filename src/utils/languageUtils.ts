@@ -86,7 +86,7 @@ export const translations = {
     footerMission: "Building a network of fellowships that are spiritually, intellectually and economically empowered to transform lives.",
     // Visitor Registration Page
     visitorRegTitle: "VIP Registration Form",
-    visitorRegDescription: "Welcome to WCA, a place where leaders are made.",
+    visitorRegDescription: "Welcome to WCA, a place where impact leaders are made.",
     welcomeTo: "Welcome to",
     firstName: "First Name",
     lastName: "Last Name",
@@ -155,7 +155,7 @@ export const translations = {
     footerMission: "Construire un réseau de communautés spirituellement, intellectuellement et économiquement habilitées à transformer des vies.",
     // Visitor Registration Page
     visitorRegTitle: "Formulaire d'inscription VIP",
-    visitorRegDescription: "Bienvenue à WCA, un endroit où les leaders sont formés.",
+    visitorRegDescription: "Bienvenue à WCA, un endroit où les leaders d'impact sont formés.",
     welcomeTo: "Bienvenue à",
     firstName: "Prénom",
     lastName: "Nom de famille",
