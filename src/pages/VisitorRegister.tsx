@@ -217,7 +217,7 @@ export default function VisitorRegister() {
                           <SelectContent>
                             {events.map((event) => (
                               <SelectItem key={event.id} value={event.id}>
-                                {localizedField(event.name, event.name_fr)} - {format(new Date(event.start_datetime), 'PPP')}
+                                {localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event'} - {format(new Date(event.start_datetime), 'PPP')}
                               </SelectItem>
                             ))}
                           </SelectContent>
