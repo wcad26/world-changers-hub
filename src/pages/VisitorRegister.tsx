@@ -205,12 +205,7 @@ export default function VisitorRegister() {
                     </> : t('completeRegistration')}
                 </Button>
 
-                <p className="text-center text-sm text-muted-foreground">
-                  {t('alreadyMember')}{' '}
-                  <Link to="/auth/member" className="text-primary hover:underline font-medium">
-                    {t('signIn')}
-                  </Link>
-                </p>
+                
               </form>
             </Form>
           </CardContent>
