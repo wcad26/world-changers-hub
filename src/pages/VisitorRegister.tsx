@@ -210,14 +210,25 @@ export default function VisitorRegister() {
                         <FormLabel>{t('selectEvent')} ({t('optional')})</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder={t('selectEventPlaceholder')} />
+                            <SelectTrigger className="h-auto min-h-[2.5rem]">
+                              <SelectValue placeholder={t('selectEventPlaceholder')} className="whitespace-normal text-left" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="max-w-[calc(100vw-2rem)] md:max-w-md">
                             {events.map((event) => (
-                              <SelectItem key={event.id} value={event.id}>
-                                {localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event'} - {format(new Date(event.start_datetime), 'PPP')}
+                              <SelectItem 
+                                key={event.id} 
+                                value={event.id}
+                                className="whitespace-normal h-auto py-3"
+                              >
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-medium">
+                                    {localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event'}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(event.start_datetime), 'PPP')}
+                                  </span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
