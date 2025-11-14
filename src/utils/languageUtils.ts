@@ -107,6 +107,7 @@ export const translations = {
     registerAgain: "Register Again",
     registrationFailed: "Registration failed. Please try again.",
     vipWelcomeMessage: "Welcome! You have been registered as a WCA VIP Visitor.",
+    registerAnotherVisitor: "Register Another Visitor",
   },
   fr: {
     aboutEvent: "À propos de cet événement",
@@ -177,5 +178,6 @@ export const translations = {
     registerAgain: "S'inscrire à nouveau",
     registrationFailed: "L'inscription a échoué. Veuillez réessayer.",
     vipWelcomeMessage: "Bienvenue! Vous avez été enregistré en tant que visiteur VIP WCA.",
+    registerAnotherVisitor: "Enregistrer un autre visiteur",
   },
 };

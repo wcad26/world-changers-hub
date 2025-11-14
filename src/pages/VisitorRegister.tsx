@@ -112,7 +112,7 @@ export default function VisitorRegister() {
               
               <div className="flex gap-2">
                 <Button onClick={() => setRegistrationSuccess(null)} variant="default" className="flex-1">
-                  Register Another Visitor
+                  {t('registerAnotherVisitor')}
                 </Button>
                 
               </div>
