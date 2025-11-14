@@ -85,7 +85,7 @@ export const translations = {
     testimonialsDescription: "Hear from those who've experienced our events",
     footerMission: "Building a network of fellowships that are spiritually, intellectually and economically empowered to transform lives.",
     // Visitor Registration Page
-    visitorRegTitle: "Visitor Registration",
+    visitorRegTitle: "VIP Registration Form",
     visitorRegDescription: "Register as a new visitor to connect with our community.",
     welcomeTo: "Welcome to",
     firstName: "First Name",
@@ -154,7 +154,7 @@ export const translations = {
     testimonialsDescription: "Écoutez ceux qui ont vécu nos événements",
     footerMission: "Construire un réseau de communautés spirituellement, intellectuellement et économiquement habilitées à transformer des vies.",
     // Visitor Registration Page
-    visitorRegTitle: "Inscription des visiteurs",
+    visitorRegTitle: "Formulaire d'inscription VIP",
     visitorRegDescription: "Inscrivez-vous en tant que nouveau visiteur pour vous connecter à notre communauté.",
     welcomeTo: "Bienvenue à",
     firstName: "Prénom",
