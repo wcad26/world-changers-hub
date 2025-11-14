@@ -14,15 +14,29 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import Navbar from '@/components/layout/Navbar';
-
 export default function VisitorRegister() {
-  const { regionCode } = useParams<{ regionCode: string }>();
+  const {
+    regionCode
+  } = useParams<{
+    regionCode: string;
+  }>();
   const navigate = useNavigate();
-  const { data: region, isLoading: regionLoading } = useRegionBySlug(regionCode);
-  const { mutate: registerVisitor, isPending } = useVisitorRegistration();
-  const [registrationSuccess, setRegistrationSuccess] = useState<{ visitor_id: string; message: string } | null>(null);
-  const { t, localizedField } = useLanguage();
-
+  const {
+    data: region,
+    isLoading: regionLoading
+  } = useRegionBySlug(regionCode);
+  const {
+    mutate: registerVisitor,
+    isPending
+  } = useVisitorRegistration();
+  const [registrationSuccess, setRegistrationSuccess] = useState<{
+    visitor_id: string;
+    message: string;
+  } | null>(null);
+  const {
+    t,
+    localizedField
+  } = useLanguage();
   const form = useForm<VisitorRegistrationFormData>({
     resolver: zodResolver(visitorRegistrationSchema),
     defaultValues: {
@@ -33,43 +47,36 @@ export default function VisitorRegister() {
       address: ''
     }
   });
-
   const onSubmit = (data: VisitorRegistrationFormData) => {
     if (!region?.id) return;
-
-    registerVisitor(
-      { ...data, region_id: region.id },
-      {
-        onSuccess: (result) => {
-          setRegistrationSuccess({
-            visitor_id: result.visitor_id,
-            message: result.message
-          });
-          form.reset();
-        },
-        onError: (error: any) => {
-          form.setError('root', {
-            message: error.message || t('registrationFailed')
-          });
-        }
+    registerVisitor({
+      ...data,
+      region_id: region.id
+    }, {
+      onSuccess: result => {
+        setRegistrationSuccess({
+          visitor_id: result.visitor_id,
+          message: result.message
+        });
+        form.reset();
+      },
+      onError: (error: any) => {
+        form.setError('root', {
+          message: error.message || t('registrationFailed')
+        });
       }
-    );
+    });
   };
-
   if (regionLoading) {
-    return (
-      <>
+    return <>
         <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </>
-    );
+      </>;
   }
-
   if (!region) {
-    return (
-      <>
+    return <>
         <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
@@ -86,13 +93,10 @@ export default function VisitorRegister() {
             </CardContent>
           </Card>
         </div>
-      </>
-    );
+      </>;
   }
-
   if (registrationSuccess) {
-    return (
-      <>
+    return <>
         <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <Card className="w-full max-w-md">
@@ -122,18 +126,15 @@ export default function VisitorRegister() {
             </CardContent>
           </Card>
         </div>
-      </>
-    );
+      </>;
   }
-
-  return (
-    <>
+  return <>
       <Navbar />
       <div className="min-h-screen bg-background">
         <div className="container max-w-2xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">{t('visitorRegTitle')}</CardTitle>
+            <CardTitle className="text-xl text-center">{t('visitorRegTitle')}</CardTitle>
             <CardDescription className="text-base text-center">
               {t('visitorRegDescription')}
             </CardDescription>
@@ -141,97 +142,67 @@ export default function VisitorRegister() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {form.formState.errors.root && (
-                  <Alert variant="destructive">
+                {form.formState.errors.root && <Alert variant="destructive">
                     <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-                  </Alert>
-                )}
+                  </Alert>}
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="first_name"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="first_name" render={({
+                    field
+                  }) => <FormItem>
                         <FormLabel>{t('firstName')}</FormLabel>
                         <FormControl>
                           <Input placeholder="John" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
 
-                  <FormField
-                    control={form.control}
-                    name="last_name"
-                    render={({ field }) => (
-                      <FormItem>
+                  <FormField control={form.control} name="last_name" render={({
+                    field
+                  }) => <FormItem>
                         <FormLabel>{t('lastName')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      </FormItem>} />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="email" render={({
+                  field
+                }) => <FormItem>
                       <FormLabel>{t('emailAddress')}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="john.doe@example.com" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="phone" render={({
+                  field
+                }) => <FormItem>
                       <FormLabel>{t('phoneNumber')}</FormLabel>
                       <FormControl>
                         <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
+                <FormField control={form.control} name="address" render={({
+                  field
+                }) => <FormItem>
                       <FormLabel>{t('address')}</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="123 Main St, City, State, ZIP" 
-                          className="min-h-[80px]"
-                          {...field} 
-                        />
+                        <Textarea placeholder="123 Main St, City, State, ZIP" className="min-h-[80px]" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    </FormItem>} />
 
                 <Button type="submit" className="w-full" disabled={isPending}>
-                  {isPending ? (
-                    <>
+                  {isPending ? <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       {t('completeRegistration')}...
-                    </>
-                  ) : (
-                    t('completeRegistration')
-                  )}
+                    </> : t('completeRegistration')}
                 </Button>
 
                 <p className="text-center text-sm text-muted-foreground">
@@ -246,6 +217,5 @@ export default function VisitorRegister() {
         </Card>
       </div>
     </div>
-    </>
-  );
+    </>;
 }
