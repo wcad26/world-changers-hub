@@ -3,16 +3,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useVisitorRegistration } from '@/hooks/useVisitorRegistration';
+import { usePublicRegionEvents } from '@/hooks/usePublicRegionEvents';
 import { visitorRegistrationSchema, VisitorRegistrationFormData } from '@/schemas/visitorRegistrationSchema';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
+import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
 export default function VisitorRegister() {
   const {
@@ -25,6 +29,7 @@ export default function VisitorRegister() {
     data: region,
     isLoading: regionLoading
   } = useRegionBySlug(regionCode);
+  const { data: events = [], isLoading: eventsLoading } = usePublicRegionEvents(region?.id);
   const {
     mutate: registerVisitor,
     isPending
@@ -44,7 +49,11 @@ export default function VisitorRegister() {
       last_name: '',
       email: '',
       phone: '',
-      address: ''
+      address: '',
+      rated_event_id: undefined,
+      event_satisfaction_rating: undefined,
+      referral_source: '',
+      referral_person_name: ''
     }
   });
   const onSubmit = (data: VisitorRegistrationFormData) => {
@@ -190,6 +199,116 @@ export default function VisitorRegister() {
                       </FormControl>
                       <FormMessage />
                     </FormItem>} />
+
+                {/* Event Selection - Only show if events are available */}
+                {events.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="rated_event_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('selectEvent')} ({t('optional')})</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder={t('selectEventPlaceholder')} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {events.map((event) => (
+                              <SelectItem key={event.id} value={event.id}>
+                                {localizedField(event.name, event.name_fr)} - {format(new Date(event.start_datetime), 'PPP')}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Event Satisfaction Rating - Only show if an event is selected */}
+                {form.watch('rated_event_id') && (
+                  <FormField
+                    control={form.control}
+                    name="event_satisfaction_rating"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('eventSatisfaction')} ({t('optional')})</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={(value) => field.onChange(parseInt(value))}
+                            value={field.value?.toString()}
+                            className="flex flex-wrap gap-3"
+                          >
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                              <div key={rating} className="flex items-center space-x-2">
+                                <RadioGroupItem value={rating.toString()} id={`rating-${rating}`} />
+                                <label
+                                  htmlFor={`rating-${rating}`}
+                                  className="text-sm font-medium cursor-pointer"
+                                >
+                                  {rating}
+                                </label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {/* Referral Source */}
+                <FormField
+                  control={form.control}
+                  name="referral_source"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('referralSource')} ({t('optional')})</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('selectReferralSource')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="friend_family">{t('friendFamily')}</SelectItem>
+                          <SelectItem value="social_media">{t('socialMedia')}</SelectItem>
+                          <SelectItem value="website">{t('website')}</SelectItem>
+                          <SelectItem value="church_member">{t('churchMember')}</SelectItem>
+                          <SelectItem value="event">{t('event')}</SelectItem>
+                          <SelectItem value="search_engine">{t('searchEngine')}</SelectItem>
+                          <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
+                          <SelectItem value="other">{t('other')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Conditional Person Name Input */}
+                {form.watch('referral_source') === 'invited_by' && (
+                  <FormField
+                    control={form.control}
+                    name="referral_person_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('referralPersonName')}</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder={t('enterPersonName')} 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <Button type="submit" className="w-full" disabled={isPending}>
                   {isPending ? <>

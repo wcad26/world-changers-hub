@@ -1225,6 +1225,7 @@ export type Database = {
         Row: {
           baptism_date: string | null
           created_at: string | null
+          event_satisfaction_rating: number | null
           id: string
           is_volunteer: boolean | null
           join_date: string | null
@@ -1235,6 +1236,9 @@ export type Database = {
           photo_url: string | null
           preferred_service_areas: string[] | null
           profile_id: string | null
+          rated_event_id: string | null
+          referral_person_name: string | null
+          referral_source: string | null
           region_id: string
           skills_talents: string[] | null
           status: Database["public"]["Enums"]["member_status"] | null
@@ -1243,6 +1247,7 @@ export type Database = {
         Insert: {
           baptism_date?: string | null
           created_at?: string | null
+          event_satisfaction_rating?: number | null
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
@@ -1253,6 +1258,9 @@ export type Database = {
           photo_url?: string | null
           preferred_service_areas?: string[] | null
           profile_id?: string | null
+          rated_event_id?: string | null
+          referral_person_name?: string | null
+          referral_source?: string | null
           region_id: string
           skills_talents?: string[] | null
           status?: Database["public"]["Enums"]["member_status"] | null
@@ -1261,6 +1269,7 @@ export type Database = {
         Update: {
           baptism_date?: string | null
           created_at?: string | null
+          event_satisfaction_rating?: number | null
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
@@ -1271,6 +1280,9 @@ export type Database = {
           photo_url?: string | null
           preferred_service_areas?: string[] | null
           profile_id?: string | null
+          rated_event_id?: string | null
+          referral_person_name?: string | null
+          referral_source?: string | null
           region_id?: string
           skills_talents?: string[] | null
           status?: Database["public"]["Enums"]["member_status"] | null
@@ -1282,6 +1294,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_rated_event_id_fkey"
+            columns: ["rated_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
           {
