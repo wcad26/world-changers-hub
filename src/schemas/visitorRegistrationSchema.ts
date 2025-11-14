@@ -24,7 +24,33 @@ export const visitorRegistrationSchema = z.object({
   address: z.string()
     .trim()
     .min(10, "Address must be at least 10 characters")
-    .max(200, "Address must be less than 200 characters")
+    .max(200, "Address must be less than 200 characters"),
+  
+  rated_event_id: z.string().uuid().optional(),
+  
+  event_satisfaction_rating: z.number()
+    .int()
+    .min(0, "Rating must be at least 0")
+    .max(10, "Rating must be at most 10")
+    .optional(),
+  
+  referral_source: z.string()
+    .trim()
+    .optional(),
+  
+  referral_person_name: z.string()
+    .trim()
+    .max(100, "Name must be less than 100 characters")
+    .optional()
+}).refine((data) => {
+  // If referral_source is "invited_by", referral_person_name is required
+  if (data.referral_source === "invited_by" && !data.referral_person_name) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please provide the name of the person who invited you",
+  path: ["referral_person_name"]
 });
 
 export type VisitorRegistrationFormData = z.infer<typeof visitorRegistrationSchema>;

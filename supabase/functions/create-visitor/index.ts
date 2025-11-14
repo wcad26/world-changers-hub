@@ -22,7 +22,11 @@ serve(async (req) => {
       email, 
       phone, 
       address,
-      region_id 
+      region_id,
+      rated_event_id,
+      event_satisfaction_rating,
+      referral_source,
+      referral_person_name
     } = await req.json()
 
     console.log('create-visitor: Received data for', email)
@@ -111,6 +115,10 @@ serve(async (req) => {
         member_type: 'visitor',
         status: 'new',
         join_date: new Date().toISOString().split('T')[0],
+        rated_event_id: rated_event_id || null,
+        event_satisfaction_rating: event_satisfaction_rating || null,
+        referral_source: referral_source || null,
+        referral_person_name: referral_person_name || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
