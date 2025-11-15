@@ -12,7 +12,8 @@ import {
   BarChart2, 
   MessageSquare,
   Settings,
-  Building2
+  Building2,
+  UserCog
 } from "lucide-react";
 
 interface RegionalAdminLayoutProps {
@@ -31,6 +32,7 @@ const menuItems = [
   { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Branch Settings", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "User Management", path: "/admin/regional/user-management", icon: UserCog as React.ComponentType<{ className?: string; size?: number }> },
   { title: "User Roles", path: "/admin/regional/user-roles", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Settings", path: "/admin/regional/settings", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },
 ];
