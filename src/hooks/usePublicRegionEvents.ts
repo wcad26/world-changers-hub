@@ -30,13 +30,17 @@ export const usePublicRegionEvents = (regionId: string | undefined) => {
     queryFn: async () => {
       if (!regionId) return [];
       
-      const now = new Date().toISOString();
+      // Calculate cutoff date (2 days ago) to show recent past events
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      const cutoffDate = twoDaysAgo.toISOString();
+      
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('region_id', regionId)
         .eq('is_public', true)
-        .gte('start_datetime', now)
+        .gte('start_datetime', cutoffDate)
         .order('start_datetime', { ascending: true });
       
       if (error) throw error;
