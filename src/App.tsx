@@ -45,6 +45,7 @@ import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 import UserRoles from "./pages/admin/regional/UserRoles";
+import RegionalUserManagement from "./pages/admin/regional/UserManagement";
 
 // Super Admin Portal Routes
 // Super Admin Portal Routes
@@ -250,6 +251,14 @@ const App = () => {
               } 
             />
             <Route 
+              path="/admin/regional/user-management" 
+              element={
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
+                  <RegionalUserManagement />
+                </MultiRoleProtectedRoute>
+              } 
+            />
+            <Route
               path="/admin/regional/settings" 
               element={
                 <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
