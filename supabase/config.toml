@@ -2,3 +2,6 @@ project_id = "dtqyyvjosdgoqloxybnx"
 
 [functions.create-visitor]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = true

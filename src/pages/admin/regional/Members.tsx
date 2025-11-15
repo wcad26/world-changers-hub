@@ -8,9 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, Heart } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
-import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
+import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,23 @@ import {
 import { Badge } from "@/components/ui/badge";
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Users, TrendingUp, CheckCircle, Clock } from 'lucide-react';
@@ -39,6 +56,8 @@ const Members: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isRegisterDialogOpen, setRegisterDialogOpen] = React.useState(false);
   const [editMember, setEditMember] = React.useState<MemberWithProfile | null>(null);
+  const [memberToDelete, setMemberToDelete] = React.useState<MemberWithProfile | null>(null);
+  const deleteMutation = useDeleteMember();
   
   // Discipleship state
   const [discipleshipSearchTerm, setDiscipleshipSearchTerm] = React.useState('');
@@ -78,6 +97,19 @@ const Members: React.FC = () => {
       case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
       case 'new': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    if (!memberToDelete?.profiles?.id) return;
+    
+    try {
+      await deleteMutation.mutateAsync(memberToDelete.profiles.id);
+      toast.success('Member deleted successfully');
+      setMemberToDelete(null);
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast.error('Failed to delete member');
     }
   };
 
@@ -198,17 +230,31 @@ const Members: React.FC = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditMember(member);
-                                }}
-                              >
-                                <Pen className="h-4 w-4" />
-                              </Button>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                    <Pen className="h-4 w-4 mr-2" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => setMemberToDelete(member)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))
@@ -258,16 +304,17 @@ const Members: React.FC = () => {
                         <TableHead>Address</TableHead>
                         <TableHead>Registered</TableHead>
                         <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {isLoadingMembers ? (
-                        <TableRow><TableCell colSpan={7} className="text-center">Loading visitors...</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center">Loading visitors...</TableCell></TableRow>
                       ) : filteredMembers?.filter(m => m.member_type === 'visitor').length > 0 ? (
                         filteredMembers
                           .filter(m => m.member_type === 'visitor')
                           .map((visitor) => (
-                            <TableRow key={visitor.id} className="cursor-pointer hover:bg-muted/50">
+                            <TableRow key={visitor.id} className="hover:bg-muted/50">
                               <TableCell className="font-medium">{visitor.member_id}</TableCell>
                               <TableCell>
                                 {visitor.profiles ? `${visitor.profiles.first_name} ${visitor.profiles.last_name}` : 'N/A'}
@@ -281,10 +328,32 @@ const Members: React.FC = () => {
                                   {visitor.status}
                                 </Badge>
                               </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditMember(visitor)}>
+                                      <Pen className="h-4 w-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => setMemberToDelete(visitor)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
                             </TableRow>
                           ))
                       ) : (
-                        <TableRow><TableCell colSpan={7} className="text-center">No visitors found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={8} className="text-center">No visitors found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
@@ -447,6 +516,28 @@ const Members: React.FC = () => {
         
         {/* Existing dialogs remain outside the tabs */}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {memberToDelete?.profiles?.first_name} {memberToDelete?.profiles?.last_name} 
+              and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </RegionalAdminLayout>
   );
 };

@@ -145,3 +145,40 @@ export const useCreateMember = () => {
     },
   });
 };
+
+export const useDeleteMember = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      console.log('useDeleteMember: Starting member deletion:', userId);
+      
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { user_id: userId },
+      });
+
+      if (error) {
+        console.error('useDeleteMember: Function call failed:', error);
+        throw error;
+      }
+      
+      if (!data?.success) {
+        console.error('useDeleteMember: Function returned error:', data);
+        throw new Error(data?.error || 'Failed to delete member');
+      }
+      
+      console.log('useDeleteMember: Member deleted successfully:', data);
+      return data;
+    },
+    onSuccess: () => {
+      console.log('useDeleteMember: Mutation successful, invalidating queries');
+      if (userRegion?.id) {
+        queryClient.invalidateQueries({ queryKey: ['members', userRegion.id] });
+      }
+    },
+    onError: (error) => {
+      console.error('useDeleteMember: Mutation failed:', error);
+    },
+  });
+};
