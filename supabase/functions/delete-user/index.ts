@@ -68,11 +68,41 @@ Deno.serve(async (req) => {
     const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(targetUserId);
 
     if (deleteError) {
-      console.error('Error deleting user:', deleteError);
-      throw deleteError;
+      console.error('Error deleting user from auth:', deleteError);
+      
+      // If user not found in auth (404), it might have been manually deleted
+      // but profile/member records still exist. Clean them up.
+      if (deleteError.status === 404) {
+        console.log('User not found in auth, cleaning up orphaned records');
+        
+        // Delete member records first (due to foreign key to profiles)
+        const { error: memberError } = await supabaseClient
+          .from('members')
+          .delete()
+          .eq('profile_id', targetUserId);
+        
+        if (memberError) {
+          console.error('Error deleting member records:', memberError);
+        }
+        
+        // Delete the profile
+        const { error: profileError } = await supabaseClient
+          .from('profiles')
+          .delete()
+          .eq('id', targetUserId);
+        
+        if (profileError) {
+          console.error('Error deleting profile:', profileError);
+          throw new Error('Failed to clean up orphaned profile');
+        }
+        
+        console.log('Orphaned records cleaned up successfully');
+      } else {
+        throw deleteError;
+      }
+    } else {
+      console.log('User deleted successfully from auth:', targetUserId);
     }
-
-    console.log('User deleted successfully:', targetUserId);
 
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully' }),
