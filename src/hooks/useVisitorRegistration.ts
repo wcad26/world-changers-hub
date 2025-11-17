@@ -9,8 +9,16 @@ export const useVisitorRegistration = () => {
         body: data
       });
 
-      if (error) throw error;
-      if (!result.success) throw new Error(result.message || 'Registration failed');
+      // Handle edge function errors and extract user-friendly messages
+      if (error) {
+        // The error context often contains the actual response message
+        const errorMessage = error.context?.message || error.message || 'Registration failed';
+        throw new Error(errorMessage);
+      }
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Registration failed');
+      }
       
       return result;
     }
