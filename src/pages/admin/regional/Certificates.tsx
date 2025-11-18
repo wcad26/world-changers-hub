@@ -771,64 +771,78 @@ const Certificates = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                  <span className="sr-only">Open menu</span>
+                            <div className="flex items-center gap-2">
+                              {cert.is_active ? (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => setCertificateToDelete(cert.id)}
+                                  disabled={deleteCertificate.isPending}
+                                >
+                                  <Trash2 className="mr-1 h-4 w-4" />
+                                  Revoke
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                      {cert.is_active ? (
-                        <DropdownMenuItem
-                          onClick={() => setCertificateToDelete(cert.id)}
-                          disabled={deleteCertificate.isPending}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Revoke
-                        </DropdownMenuItem>
-                      ) : (
-                        <>
-                          <DropdownMenuItem
-                            onClick={() => reinstateCertificate.mutate(cert.id)}
-                            disabled={reinstateCertificate.isPending}
-                            className="text-green-600 focus:text-green-600"
-                          >
-                            <RotateCcw className="mr-2 h-4 w-4" />
-                            Reinstate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setCertificateToDeletePermanently({
-                              id: cert.id,
-                              certificate_url: cert.certificate_url,
-                              certificate_number: cert.certificate_number,
-                              recipient_name: cert.recipient_name,
-                              certificate_type: cert.certificate_type
-                            })}
-                            disabled={permanentlyDeleteCertificate.isPending}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Delete Permanently
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => reinstateCertificate.mutate(cert.id)}
+                                    disabled={reinstateCertificate.isPending}
+                                  >
+                                    <RotateCcw className="mr-1 h-4 w-4" />
+                                    Reinstate
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                      setCertificateToDeletePermanently({
+                                        id: cert.id,
+                                        certificate_url: cert.certificate_url,
+                                        certificate_number: cert.certificate_number,
+                                        recipient_name: cert.recipient_name,
+                                        certificate_type: cert.certificate_type,
+                                      })
+                                    }
+                                    disabled={permanentlyDeleteCertificate.isPending}
+                                  >
+                                    <XCircle className="mr-1 h-4 w-4" />
+                                    Delete
+                                  </Button>
+                                </>
+                              )}
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      downloadCertificate(
+                                        cert.certificate_url,
+                                        `${cert.certificate_number}.png`
+                                      )
+                                    }
+                                  >
+                                    <Download className="mr-2 h-4 w-4" />
+                                    Download
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      window.open(`/verify/${cert.verification_code}`, "_blank")
+                                    }
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
