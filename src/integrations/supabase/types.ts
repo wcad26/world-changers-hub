@@ -107,6 +107,131 @@ export type Database = {
           },
         ]
       }
+      certificate_templates: {
+        Row: {
+          additional_fields: Json | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name_position: Json | null
+          qr_position: Json | null
+          region_id: string | null
+          template_name: string
+          template_type: string
+          template_url: string
+        }
+        Insert: {
+          additional_fields?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_position?: Json | null
+          qr_position?: Json | null
+          region_id?: string | null
+          template_name: string
+          template_type: string
+          template_url: string
+        }
+        Update: {
+          additional_fields?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_position?: Json | null
+          qr_position?: Json | null
+          region_id?: string | null
+          template_name?: string
+          template_type?: string
+          template_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_templates_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      certificates: {
+        Row: {
+          certificate_number: string
+          certificate_type: string
+          certificate_url: string
+          created_at: string | null
+          event_date: string | null
+          event_name: string | null
+          id: string
+          is_active: boolean | null
+          issued_by: string | null
+          issued_date: string
+          member_id: string | null
+          qr_code_data: string | null
+          recipient_email: string | null
+          recipient_name: string
+          region_id: string
+          updated_at: string | null
+          verification_code: string
+        }
+        Insert: {
+          certificate_number: string
+          certificate_type: string
+          certificate_url: string
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          issued_by?: string | null
+          issued_date?: string
+          member_id?: string | null
+          qr_code_data?: string | null
+          recipient_email?: string | null
+          recipient_name: string
+          region_id: string
+          updated_at?: string | null
+          verification_code: string
+        }
+        Update: {
+          certificate_number?: string
+          certificate_type?: string
+          certificate_url?: string
+          created_at?: string | null
+          event_date?: string | null
+          event_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          issued_by?: string | null
+          issued_date?: string
+          member_id?: string | null
+          qr_code_data?: string | null
+          recipient_email?: string | null
+          recipient_name?: string
+          region_id?: string
+          updated_at?: string | null
+          verification_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       communication_templates: {
         Row: {
           category: string | null
