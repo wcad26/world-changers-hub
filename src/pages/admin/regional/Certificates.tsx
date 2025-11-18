@@ -19,6 +19,7 @@ import {
 } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
 import { useRegionalEvents } from '@/hooks/useEvents';
+import { useEventAttendees } from '@/hooks/useAttendance';
 import { getCertificateTypeOptions, downloadCertificate, downloadCertificatesAsZip, formatCertificateType } from '@/utils/certificateUtils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +54,13 @@ const Certificates = () => {
   const { data: members, isLoading: membersLoading } = useMembers(profile?.region_id || '');
   const { data: events, isLoading: eventsLoading } = useRegionalEvents();
   const { data: issuedCertificates, isLoading: certificatesLoading } = useIssuedCertificates(profile?.region_id || '');
+  const { data: eventAttendees, isLoading: attendeesLoading } = useEventAttendees(
+    selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
+    profile?.region_id || undefined
+  );
+
+  // Filter members based on event selection
+  const filteredMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
   
   // Mutations
   const uploadTemplate = useUploadCertificateTemplate();
@@ -153,6 +161,14 @@ const Certificates = () => {
         ? prev.filter(id => id !== memberId)
         : [...prev, memberId]
     );
+  };
+
+  const toggleSelectAllMembers = () => {
+    if (selectedMembers.length === filteredMembers.length) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(filteredMembers.map(m => m.id) || []);
+    }
   };
 
   const toggleCertificateSelection = (certificateId: string) => {
@@ -277,43 +293,64 @@ const Certificates = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label>Select Recipients ({selectedMembers.length} selected)</Label>
-                  <div className="border rounded-lg p-4 max-h-96 overflow-y-auto space-y-2">
-                    {membersLoading ? (
-                      <p className="text-muted-foreground">Loading members...</p>
-                    ) : members && members.length > 0 ? (
-                      members.map((member) => (
-                        <div key={member.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={selectedMembers.includes(member.id)}
-                            onCheckedChange={() => toggleMemberSelection(member.id)}
-                          />
-                          <Label className="cursor-pointer flex-1">
-                            {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
-                          </Label>
-                        </div>
-                      ))
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Select Recipients</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSelectAllMembers}
+                      disabled={filteredMembers.length === 0}
+                    >
+                      {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
+                  {selectedEventId && selectedEventId !== 'none' && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                      <FileCheck className="h-4 w-4" />
+                      <span>
+                        Showing {filteredMembers.length} attendee{filteredMembers.length !== 1 ? 's' : ''} marked present for this event
+                      </span>
+                    </div>
+                  )}
+                  <div className="border rounded-lg max-h-64 overflow-y-auto">
+                    {(membersLoading || attendeesLoading) ? (
+                      <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                    ) : filteredMembers && filteredMembers.length > 0 ? (
+                      <div className="divide-y">
+                        {filteredMembers.map((member) => {
+                          const fullName = member.profiles?.first_name && member.profiles?.last_name
+                            ? `${member.profiles.first_name} ${member.profiles.last_name}`
+                            : member.profiles?.email || 'Unknown';
+                          
+                          return (
+                            <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                              <Checkbox
+                                checked={selectedMembers.includes(member.id)}
+                                onCheckedChange={() => toggleMemberSelection(member.id)}
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{fullName}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {member.member_id} • {member.member_type}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : selectedEventId && selectedEventId !== 'none' ? (
+                      <div className="p-4 text-sm text-muted-foreground">
+                        No attendees marked present for this event
+                      </div>
                     ) : (
-                      <p className="text-muted-foreground">No members found</p>
+                      <div className="p-4 text-sm text-muted-foreground">No members found</div>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedMembers(members?.map(m => m.id) || [])}
-                    >
-                      Select All
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSelectedMembers([])}
-                    >
-                      Clear Selection
-                    </Button>
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedMembers.length} of {filteredMembers.length} selected
+                  </p>
                 </div>
 
                 <Button 
