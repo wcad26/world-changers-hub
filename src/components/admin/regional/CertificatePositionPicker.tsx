@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Move, Square } from 'lucide-react';
 
 interface Position {
@@ -271,12 +272,26 @@ export const CertificatePositionPicker = ({
 
               <div>
                 <Label className="text-xs">Font Family</Label>
-                <Input
+                <Select
                   value={namePosition.fontFamily || 'Arial'}
-                  onChange={(e) => onNamePositionChange({ ...namePosition, fontFamily: e.target.value })}
-                  className="h-8"
-                  placeholder="Arial, Georgia, etc."
-                />
+                  onValueChange={(value) => onNamePositionChange({ ...namePosition, fontFamily: value })}
+                >
+                  <SelectTrigger className="h-8">
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Arial">Arial</SelectItem>
+                    <SelectItem value="Georgia">Georgia</SelectItem>
+                    <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                    <SelectItem value="Garamond">Garamond</SelectItem>
+                    <SelectItem value="Palatino">Palatino</SelectItem>
+                    <SelectItem value="Didot">Didot</SelectItem>
+                    <SelectItem value="Bodoni MT">Bodoni MT</SelectItem>
+                    <SelectItem value="Baskerville">Baskerville</SelectItem>
+                    <SelectItem value="Copperplate">Copperplate</SelectItem>
+                    <SelectItem value="Brush Script MT">Brush Script MT</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
