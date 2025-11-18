@@ -778,31 +778,30 @@ const Certificates = () => {
                                   <span className="sr-only">Open menu</span>
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                      {cert.is_active ? (
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => setCertificateToDelete(cert.id)}
-                          disabled={deleteCertificate.isPending}
-                          className="text-destructive focus:text-destructive"
+                          onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Revoke
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
                         </DropdownMenuItem>
-                      ) : (
-                        <>
+                        <DropdownMenuItem
+                          onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {cert.is_active ? (
+                          <DropdownMenuItem
+                            onClick={() => setCertificateToDelete(cert.id)}
+                            disabled={deleteCertificate.isPending}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Revoke (mark invalid)
+                          </DropdownMenuItem>
+                        ) : (
                           <DropdownMenuItem
                             onClick={() => reinstateCertificate.mutate(cert.id)}
                             disabled={reinstateCertificate.isPending}
@@ -811,23 +810,22 @@ const Certificates = () => {
                             <RotateCcw className="mr-2 h-4 w-4" />
                             Reinstate
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setCertificateToDeletePermanently({
-                              id: cert.id,
-                              certificate_url: cert.certificate_url,
-                              certificate_number: cert.certificate_number,
-                              recipient_name: cert.recipient_name,
-                              certificate_type: cert.certificate_type
-                            })}
-                            disabled={permanentlyDeleteCertificate.isPending}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Delete Permanently
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                              </DropdownMenuContent>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setCertificateToDeletePermanently({
+                            id: cert.id,
+                            certificate_url: cert.certificate_url,
+                            certificate_number: cert.certificate_number,
+                            recipient_name: cert.recipient_name,
+                            certificate_type: cert.certificate_type
+                          })}
+                          disabled={permanentlyDeleteCertificate.isPending}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Delete Permanently
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
