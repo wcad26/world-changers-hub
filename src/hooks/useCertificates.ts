@@ -211,6 +211,58 @@ export const useDeleteCertificate = () => {
   });
 };
 
+// Delete certificate template
+export const useDeleteCertificateTemplate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (templateId: string) => {
+      // First, get the template to find the file path
+      const { data: template, error: fetchError } = await supabase
+        .from('certificate_templates')
+        .select('template_url')
+        .eq('id', templateId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Delete the file from storage
+      if (template?.template_url) {
+        const { error: storageError } = await supabase.storage
+          .from('certificate-templates')
+          .remove([template.template_url]);
+
+        if (storageError) {
+          console.error('Failed to delete template file from storage:', storageError);
+        }
+      }
+
+      // Soft delete the template record
+      const { error: deleteError } = await supabase
+        .from('certificate_templates')
+        .update({ is_active: false })
+        .eq('id', templateId);
+
+      if (deleteError) throw deleteError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
+      toast({
+        title: 'Template deleted',
+        description: 'Certificate template has been deleted successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Deletion failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
 // Fetch member certificates
 export const useMemberCertificates = (memberId: string) => {
   return useQuery({
