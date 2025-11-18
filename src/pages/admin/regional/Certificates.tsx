@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send, Trash2 } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye } from 'lucide-react';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const Certificates = () => {
   const { profile } = useAuth();
@@ -693,7 +694,6 @@ const Certificates = () => {
                             }}
                           />
                         </TableHead>
-                        <TableHead>Certificate #</TableHead>
                         <TableHead>Recipient</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Event</TableHead>
@@ -710,36 +710,42 @@ const Certificates = () => {
                               onCheckedChange={() => toggleCertificateSelection(cert.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{cert.certificate_number}</TableCell>
                           <TableCell>{cert.recipient_name}</TableCell>
                           <TableCell>{formatCertificateType(cert.certificate_type)}</TableCell>
                           <TableCell>{cert.event_name || '-'}</TableCell>
                           <TableCell>{new Date(cert.issued_date).toLocaleDateString()}</TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
-                              >
-                                Download
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
-                              >
-                                View
-                              </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => setCertificateToDelete(cert.id)}
-                          disabled={deleteCertificate.isPending}
-                        >
-                          Revoke
-                        </Button>
-                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setCertificateToDelete(cert.id)}
+                                  disabled={deleteCertificate.isPending}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Revoke
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))}
