@@ -194,15 +194,13 @@ const Certificates = () => {
           const verificationCode = await generateUniqueCode('verification', profile.region_id);
 
           // Generate certificate image using canvas
-          const blob = await generateCertificateImage(
-            templatePublicUrl,
-            recipientName,
-            eventName || null,
-            eventDate || null,
-            certificateNumber,
-            verificationCode,
-            baseUrl
-          );
+      const blob = await generateCertificateImage(
+        templatePublicUrl,
+        recipientName,
+        certificateNumber,
+        verificationCode,
+        baseUrl
+      );
 
           // Upload to storage with organized path structure
           const filePath = `${profile.region_id}/${memberId}/${certificateNumber}.png`;

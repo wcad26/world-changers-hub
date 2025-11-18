@@ -104,8 +104,6 @@ const loadImageWithTimeout = (src: string, timeoutMs: number = 10000): Promise<H
 export const generateCertificateImage = async (
   templateUrl: string,
   recipientName: string,
-  eventName: string | null,
-  eventDate: string | null,
   certificateNumber: string,
   verificationCode: string,
   baseUrl: string
@@ -125,45 +123,22 @@ export const generateCertificateImage = async (
   // Draw template
   ctx.drawImage(template, 0, 0);
 
-  // Configure text styling
+  // Draw recipient name on the horizontal line
+  ctx.font = 'bold 38px Georgia, serif';
+  ctx.fillStyle = '#1a365d';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  ctx.fillText(recipientName, canvas.width / 2, 477);
 
-  // Draw recipient name (centered, 1/3 from top)
-  ctx.font = 'bold 48px serif';
-  ctx.fillStyle = '#1a365d';
-  ctx.fillText(recipientName, canvas.width / 2, canvas.height / 3);
-
-  // Draw event name if provided (centered, below name)
-  if (eventName) {
-    ctx.font = '32px serif';
-    ctx.fillStyle = '#2d3748';
-    ctx.fillText(eventName, canvas.width / 2, canvas.height / 2.2);
-  }
-
-  // Draw event date if provided
-  if (eventDate) {
-    ctx.font = '24px serif';
-    ctx.fillStyle = '#4a5568';
-    const formattedDate = new Date(eventDate).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    ctx.fillText(formattedDate, canvas.width / 2, canvas.height / 1.8);
-  }
-
-  // Draw certificate number (bottom left)
-  ctx.font = '16px monospace';
-  ctx.fillStyle = '#718096';
-  ctx.textAlign = 'left';
-  ctx.fillText(certificateNumber, 40, canvas.height - 40);
-
-  // Generate and draw QR code (bottom right)
+  // Generate and draw QR code in the white verification box at bottom right
   const verificationUrl = `${baseUrl}/verify/${verificationCode}`;
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
-    width: 120,
-    margin: 1,
+    width: 100,
+    margin: 0,
+    color: {
+      dark: '#000000',
+      light: '#FFFFFF'
+    }
   });
 
   const qrImage = new Image();
@@ -173,7 +148,8 @@ export const generateCertificateImage = async (
     qrImage.src = qrDataUrl;
   });
 
-  ctx.drawImage(qrImage, canvas.width - 160, canvas.height - 160, 120, 120);
+  // Position QR code in the white verification box at bottom right
+  ctx.drawImage(qrImage, canvas.width - 92, canvas.height - 109, 100, 100);
 
   // Convert canvas to blob
   return new Promise((resolve, reject) => {
