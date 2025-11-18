@@ -155,24 +155,15 @@ const Certificates = () => {
         .from('certificate-templates')
         .getPublicUrl(template.template_url);
 
-      // Validate template accessibility
+      // Best-effort template accessibility check (doesn't abort on failure)
+      console.debug('Using certificate template URL:', templatePublicUrl);
       try {
         const response = await fetch(templatePublicUrl, { method: 'HEAD' });
         if (!response.ok) {
-          toast({
-            title: 'Error',
-            description: 'Certificate template not accessible. Please check the template.',
-            variant: 'destructive',
-          });
-          return;
+          console.warn('Template HEAD check failed, proceeding anyway:', response.status);
         }
       } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to access certificate template',
-          variant: 'destructive',
-        });
-        return;
+        console.warn('Template HEAD request failed, proceeding anyway:', error);
       }
 
       const baseUrl = window.location.origin;
