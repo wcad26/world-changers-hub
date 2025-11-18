@@ -1,0 +1,254 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+export type Certificate = Database['public']['Tables']['certificates']['Row'];
+export type CertificateTemplate = Database['public']['Tables']['certificate_templates']['Row'];
+export type NewCertificateTemplate = Database['public']['Tables']['certificate_templates']['Insert'];
+
+// Fetch certificate templates
+export const useCertificateTemplates = (regionId?: string) => {
+  return useQuery({
+    queryKey: ['certificate-templates', regionId],
+    queryFn: async () => {
+      let query = supabase
+        .from('certificate_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (regionId) {
+        query = query.or(`region_id.eq.${regionId},region_id.is.null`);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data as CertificateTemplate[];
+    }
+  });
+};
+
+// Upload certificate template
+export const useUploadCertificateTemplate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      file, 
+      templateData 
+    }: { 
+      file: File; 
+      templateData: Omit<NewCertificateTemplate, 'template_url'> 
+    }) => {
+      // Upload file to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `${templateData.region_id || 'global'}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('certificate-templates')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Create template record
+      const { data, error } = await supabase
+        .from('certificate_templates')
+        .insert({
+          ...templateData,
+          template_url: filePath
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
+      toast({
+        title: 'Template uploaded',
+        description: 'Certificate template has been uploaded successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Upload failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
+// Generate certificates
+export const useGenerateCertificates = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: {
+      template_id: string;
+      member_ids: string[];
+      certificate_type: string;
+      event_name?: string;
+      event_date?: string;
+      region_id: string;
+    }) => {
+      const { data: result, error } = await supabase.functions.invoke('generate-certificates', {
+        body: data
+      });
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      toast({
+        title: 'Certificates generated',
+        description: `Successfully generated ${data.totalGenerated} certificates`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Generation failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
+// Fetch issued certificates
+export const useIssuedCertificates = (regionId: string) => {
+  return useQuery({
+    queryKey: ['certificates', regionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`
+          *,
+          members (
+            member_id,
+            profiles (
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('region_id', regionId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
+// Fetch certificate by verification code (public)
+export const useCertificateByCode = (verificationCode: string) => {
+  return useQuery({
+    queryKey: ['certificate', verificationCode],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`
+          *,
+          regions (
+            name,
+            code
+          )
+        `)
+        .eq('verification_code', verificationCode)
+        .eq('is_active', true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!verificationCode
+  });
+};
+
+// Send certificate emails
+export const useSendCertificateEmails = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (certificate_ids: string[]) => {
+      const { data: result, error } = await supabase.functions.invoke('send-certificate-emails', {
+        body: { certificate_ids }
+      });
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: 'Emails sent',
+        description: `Successfully sent ${data.totalSent} emails`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Email sending failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
+// Delete certificate
+export const useDeleteCertificate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (certificateId: string) => {
+      const { error } = await supabase
+        .from('certificates')
+        .update({ is_active: false })
+        .eq('id', certificateId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      toast({
+        title: 'Certificate revoked',
+        description: 'Certificate has been revoked successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Revocation failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
+// Fetch member certificates
+export const useMemberCertificates = (memberId: string) => {
+  return useQuery({
+    queryKey: ['member-certificates', memberId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('member_id', memberId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Certificate[];
+    },
+    enabled: !!memberId
+  });
+};

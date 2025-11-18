@@ -16,6 +16,7 @@ import Store from "./pages/Store";
 import Blog from "./pages/Blog";
 import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
+import CertificateVerify from "./pages/CertificateVerify";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import RegionalAuth from "./pages/RegionalAuth";
@@ -46,6 +47,7 @@ import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 import UserRoles from "./pages/admin/regional/UserRoles";
 import RegionalUserManagement from "./pages/admin/regional/UserManagement";
+import RegionalCertificates from "./pages/admin/regional/Certificates";
 
 // Super Admin Portal Routes
 // Super Admin Portal Routes
@@ -127,6 +129,7 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
+            <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
             
             {/* Authentication Routes */}
             <Route path="/auth" element={<Auth />} />
@@ -219,7 +222,15 @@ const App = () => {
               } 
             />
             <Route 
-              path="/admin/regional/reports" 
+              path="/admin/regional/certificates" 
+              element={
+                <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
+                  <RegionalCertificates />
+                </MultiRoleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/regional/reports"
               element={
                 <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalReports />
