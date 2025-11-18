@@ -18,7 +18,9 @@ import {
   useDeleteCertificate
 } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
+import { useRegionalEvents } from '@/hooks/useEvents';
 import { getCertificateTypeOptions, downloadCertificate, downloadCertificatesAsZip, formatCertificateType } from '@/utils/certificateUtils';
+import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -38,6 +40,7 @@ const Certificates = () => {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [certificateType, setCertificateType] = useState('');
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
@@ -48,6 +51,7 @@ const Certificates = () => {
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
   const { data: members, isLoading: membersLoading } = useMembers(profile?.region_id || '');
+  const { data: events, isLoading: eventsLoading } = useRegionalEvents();
   const { data: issuedCertificates, isLoading: certificatesLoading } = useIssuedCertificates(profile?.region_id || '');
   
   // Mutations
@@ -223,22 +227,52 @@ const Certificates = () => {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="event-name">Event/Program Name (Optional)</Label>
-                    <Input
-                      id="event-name"
-                      value={eventName}
-                      onChange={(e) => setEventName(e.target.value)}
-                      placeholder="e.g., Leadership Training 2024"
-                    />
+                    <Label htmlFor="event-select">Associated Event (Optional)</Label>
+                    <Select 
+                      value={selectedEventId} 
+                      onValueChange={(value) => {
+                        setSelectedEventId(value);
+                        if (value === 'none') {
+                          setEventName('');
+                          setEventDate('');
+                        } else {
+                          const selectedEvent = events?.find(e => e.id === value);
+                          if (selectedEvent) {
+                            setEventName(selectedEvent.name);
+                            setEventDate(format(new Date(selectedEvent.start_datetime), 'yyyy-MM-dd'));
+                          }
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an event or none" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Event</SelectItem>
+                        {eventsLoading ? (
+                          <SelectItem value="loading" disabled>Loading events...</SelectItem>
+                        ) : events && events.length > 0 ? (
+                          events.map((event) => (
+                            <SelectItem key={event.id} value={event.id}>
+                              {event.name} - {format(new Date(event.start_datetime), 'MMM dd, yyyy')}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-events" disabled>No events available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="event-date">Event Date (Optional)</Label>
+                    <Label htmlFor="event-date">Event Date</Label>
                     <Input
                       id="event-date"
                       type="date"
                       value={eventDate}
-                      onChange={(e) => setEventDate(e.target.value)}
+                      readOnly
+                      className="bg-muted"
+                      placeholder="Auto-populated from event"
                     />
                   </div>
                 </div>
