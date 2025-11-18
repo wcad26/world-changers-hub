@@ -134,6 +134,85 @@ serve(async (req) => {
 
     console.log('create-visitor: Visitor created successfully:', newVisitor)
 
+    // Automatically create attendance record if visitor attended an event
+    if (rated_event_id) {
+      try {
+        console.log('create-visitor: Creating attendance record for event:', rated_event_id)
+        
+        // 1. Get the event details
+        const { data: event, error: eventError } = await supabaseAdmin
+          .from('events')
+          .select('name, start_datetime, region_id')
+          .eq('id', rated_event_id)
+          .single()
+        
+        if (eventError) {
+          console.error('create-visitor: Failed to fetch event:', eventError)
+        } else if (event) {
+          console.log('create-visitor: Event found:', event.name)
+          const eventDate = new Date(event.start_datetime).toISOString().split('T')[0]
+          
+          // 2. Check for existing attendance_event
+          let { data: attendanceEvent, error: attendanceEventFetchError } = await supabaseAdmin
+            .from('attendance_events')
+            .select('id')
+            .eq('event_date', eventDate)
+            .eq('region_id', event.region_id)
+            .ilike('name', `%${event.name}%`)
+            .maybeSingle()
+          
+          if (attendanceEventFetchError) {
+            console.error('create-visitor: Error checking for attendance event:', attendanceEventFetchError)
+          }
+          
+          // 3. Create attendance_event if it doesn't exist
+          if (!attendanceEvent) {
+            console.log('create-visitor: Creating new attendance event')
+            const { data: newAttendanceEvent, error: createAttendanceEventError } = await supabaseAdmin
+              .from('attendance_events')
+              .insert({
+                name: `Attendance - ${event.name}`,
+                event_date: eventDate,
+                region_id: event.region_id,
+                description: `Attendance tracking for ${event.name}`
+              })
+              .select('id')
+              .single()
+            
+            if (createAttendanceEventError) {
+              console.error('create-visitor: Failed to create attendance event:', createAttendanceEventError)
+            } else {
+              attendanceEvent = newAttendanceEvent
+              console.log('create-visitor: Attendance event created:', attendanceEvent.id)
+            }
+          } else {
+            console.log('create-visitor: Using existing attendance event:', attendanceEvent.id)
+          }
+          
+          // 4. Create attendance record for visitor
+          if (attendanceEvent) {
+            const { error: attendanceRecordError } = await supabaseAdmin
+              .from('attendance_records')
+              .insert({
+                event_id: attendanceEvent.id,
+                member_id: newVisitor.id,
+                is_present: true,
+                recorded_at: new Date().toISOString()
+              })
+            
+            if (attendanceRecordError) {
+              console.error('create-visitor: Failed to create attendance record:', attendanceRecordError)
+            } else {
+              console.log('create-visitor: Attendance record created successfully for visitor')
+            }
+          }
+        }
+      } catch (attendanceError) {
+        // Don't fail visitor registration if attendance tracking fails
+        console.error('create-visitor: Non-fatal error in attendance tracking:', attendanceError)
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
