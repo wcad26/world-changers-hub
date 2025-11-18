@@ -84,41 +84,18 @@ export const useUploadCertificateTemplate = () => {
   });
 };
 
-// Generate certificates
+// Generate certificates (client-side)
 export const useGenerateCertificates = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: {
-      template_id: string;
-      member_ids: string[];
-      certificate_type: string;
-      event_name?: string;
-      event_date?: string;
-      region_id: string;
-    }) => {
-      const { data: result, error } = await supabase.functions.invoke('generate-certificates', {
-        body: data
-      });
-
-      if (error) throw error;
-      return result;
+    mutationFn: async (params: any) => {
+      // This is now handled in the component with client-side generation
+      return params;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['certificates'] });
-      toast({
-        title: 'Certificates generated',
-        description: `Successfully generated ${data.totalGenerated} certificates`,
-      });
     },
-    onError: (error: Error) => {
-      toast({
-        title: 'Generation failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
   });
 };
 
