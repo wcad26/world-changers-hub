@@ -13,7 +13,8 @@ import {
   MessageSquare,
   Settings,
   Building2,
-  Shield
+  Shield,
+  Award
 } from "lucide-react";
 
 interface EnhancedRegionalAdminLayoutProps {
@@ -66,6 +67,12 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       path: "/admin/regional/dcg", 
       icon: Home as React.ComponentType<{ className?: string; size?: number }>,
       permission: "dcg_view"
+    },
+    { 
+      title: "Certificates", 
+      path: "/admin/regional/certificates", 
+      icon: Award as React.ComponentType<{ className?: string; size?: number }>,
+      permission: "members_view"
     },
     { 
       title: "Reports", 
