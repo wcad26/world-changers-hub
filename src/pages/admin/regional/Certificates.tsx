@@ -38,6 +38,7 @@ import {
 } from '@/utils/certificateUtils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,6 +48,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const Certificates = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('generate');
   
   const [templateFile, setTemplateFile] = useState<File | null>(null);
@@ -71,6 +73,10 @@ const Certificates = () => {
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
+  
+  // Loading state for certificate generation
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState({ current: 0, total: 0 });
   
   // Issued certificates state
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
@@ -202,6 +208,8 @@ const Certificates = () => {
     }
 
     setShowGenerateDialog(false);
+    setIsGenerating(true);
+    setGenerationProgress({ current: 0, total: selectedMembers.length });
 
     try {
       // Get template with public URL and positioning data
@@ -316,14 +324,7 @@ const Certificates = () => {
           if (insertError) throw insertError;
 
           successCount++;
-          
-          // Show progress toast
-          if (selectedMembers.length > 1) {
-            toast({
-              title: 'Progress',
-              description: `Generated ${i + 1} of ${selectedMembers.length} certificates`,
-            });
-          }
+          setGenerationProgress({ current: i + 1, total: selectedMembers.length });
         } catch (error) {
           console.error(`Failed to generate certificate for member ${memberId}:`, error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -340,8 +341,14 @@ const Certificates = () => {
       if (successCount > 0) {
         toast({
           title: 'Success',
-          description: `Successfully generated ${successCount} certificate(s)`,
+          description: `Successfully generated ${successCount} certificate${successCount > 1 ? 's' : ''}`,
         });
+        
+        // Refresh certificate data
+        await queryClient.invalidateQueries({ queryKey: ['certificates'] });
+        
+        // Switch to issued certificates tab
+        setActiveTab('issued');
       }
       if (failCount > 0) {
         console.error('Certificate generation errors:', failedMembers);
@@ -365,6 +372,9 @@ const Certificates = () => {
         description: 'Failed to generate certificates',
         variant: 'destructive',
       });
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress({ current: 0, total: 0 });
     }
   };
 
@@ -439,11 +449,11 @@ const Certificates = () => {
           </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={(value) => !isGenerating && setActiveTab(value)}>
           <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="generate">Generate Certificates</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="issued">Issued Certificates</TabsTrigger>
+            <TabsTrigger value="generate" disabled={isGenerating}>Generate Certificates</TabsTrigger>
+            <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
+            <TabsTrigger value="issued" disabled={isGenerating}>Issued Certificates</TabsTrigger>
           </TabsList>
 
           {/* Generate Certificates Tab */}
@@ -602,12 +612,15 @@ const Certificates = () => {
 
                 <Button 
                   onClick={() => setShowGenerateDialog(true)}
-                  disabled={!selectedTemplate || selectedMembers.length === 0 || !certificateType || generateCertificates.isPending}
+                  disabled={!selectedTemplate || selectedMembers.length === 0 || !certificateType || isGenerating}
                   className="w-full"
                   size="lg"
                 >
-                  <FileCheck className="mr-2 h-5 w-5" />
-                  {generateCertificates.isPending ? 'Generating...' : `Generate ${selectedMembers.length} Certificate(s)`}
+                  <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
+                  {isGenerating 
+                    ? `Generating... (${generationProgress.current}/${generationProgress.total})`
+                    : `Generate ${selectedMembers.length} Certificate(s)`
+                  }
                 </Button>
               </CardContent>
             </Card>
