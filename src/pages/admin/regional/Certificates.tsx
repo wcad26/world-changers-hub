@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw } from 'lucide-react';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,8 @@ import {
   useIssuedCertificates,
   useSendCertificateEmails,
   useDeleteCertificate,
-  useDeleteCertificateTemplate
+  useDeleteCertificateTemplate,
+  useReinstateCertificate
 } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
 import { useRegionalEvents } from '@/hooks/useEvents';
@@ -35,6 +36,7 @@ import {
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -81,6 +83,7 @@ const Certificates = () => {
   const generateCertificates = useGenerateCertificates();
   const sendEmails = useSendCertificateEmails();
   const deleteCertificate = useDeleteCertificate();
+  const reinstateCertificate = useReinstateCertificate();
   const deleteTemplate = useDeleteCertificateTemplate();
 
   const handleTemplateUpload = async () => {
@@ -670,7 +673,20 @@ const Certificates = () => {
                       Download Selected ({selectedCertificates.length})
                     </Button>
                     <Button 
-                      onClick={handleBulkEmail}
+                      onClick={() => {
+                        const activeCertificates = selectedCertificates.filter(id => 
+                          issuedCertificates?.find(c => c.id === id)?.is_active
+                        );
+                        if (activeCertificates.length > 0) {
+                          handleBulkEmail();
+                        } else {
+                          toast({
+                            title: 'No active certificates selected',
+                            description: 'Please select at least one active certificate',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
                       disabled={selectedCertificates.length === 0 || sendEmails.isPending}
                     >
                       <Send className="mr-2 h-4 w-4" />
@@ -698,22 +714,42 @@ const Certificates = () => {
                         <TableHead>Type</TableHead>
                         <TableHead>Event</TableHead>
                         <TableHead>Issued Date</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {issuedCertificates.map((cert) => (
-                        <TableRow key={cert.id}>
+                        <TableRow 
+                          key={cert.id}
+                          className={cn(
+                            !cert.is_active && "opacity-60 bg-muted/50"
+                          )}
+                        >
                           <TableCell>
                             <Checkbox
                               checked={selectedCertificates.includes(cert.id)}
                               onCheckedChange={() => toggleCertificateSelection(cert.id)}
+                              disabled={!cert.is_active}
                             />
                           </TableCell>
-                          <TableCell>{cert.recipient_name}</TableCell>
-                          <TableCell>{formatCertificateType(cert.certificate_type)}</TableCell>
-                          <TableCell>{cert.event_name || '-'}</TableCell>
-                          <TableCell>{new Date(cert.issued_date).toLocaleDateString()}</TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {cert.recipient_name}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {formatCertificateType(cert.certificate_type)}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {cert.event_name || '-'}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {new Date(cert.issued_date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={cert.is_active ? "default" : "destructive"}>
+                              {cert.is_active ? "Active" : "Revoked"}
+                            </Badge>
+                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -736,14 +772,25 @@ const Certificates = () => {
                                   View
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => setCertificateToDelete(cert.id)}
-                                  disabled={deleteCertificate.isPending}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Revoke
-                                </DropdownMenuItem>
+                                {cert.is_active ? (
+                                  <DropdownMenuItem
+                                    onClick={() => setCertificateToDelete(cert.id)}
+                                    disabled={deleteCertificate.isPending}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Revoke
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => reinstateCertificate.mutate(cert.id)}
+                                    disabled={reinstateCertificate.isPending}
+                                    className="text-green-600 focus:text-green-600"
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reinstate
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

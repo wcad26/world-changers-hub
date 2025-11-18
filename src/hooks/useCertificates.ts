@@ -211,6 +211,37 @@ export const useDeleteCertificate = () => {
   });
 };
 
+// Reinstate certificate
+export const useReinstateCertificate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (certificateId: string) => {
+      const { error } = await supabase
+        .from('certificates')
+        .update({ is_active: true })
+        .eq('id', certificateId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      toast({
+        title: 'Certificate reinstated',
+        description: 'Certificate has been reinstated and is now active',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Reinstatement failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
 // Delete certificate template
 export const useDeleteCertificateTemplate = () => {
   const queryClient = useQueryClient();
