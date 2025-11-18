@@ -103,6 +103,24 @@ const Certificates = () => {
     setTemplateType('');
   };
 
+  const generateUniqueCode = async (type: 'certificate' | 'verification', regionId: string): Promise<string> => {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = type === 'certificate' 
+        ? generateCertificateNumber(regionId)
+        : generateVerificationCode();
+      
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('id')
+        .eq(type === 'certificate' ? 'certificate_number' : 'verification_code', code)
+        .maybeSingle();
+      
+      if (!data && !error) return code;
+    }
+    
+    throw new Error(`Failed to generate unique ${type} code after 5 attempts`);
+  };
+
   const handleGenerateCertificates = async () => {
     if (!selectedTemplate || selectedMembers.length === 0 || !certificateType || !profile?.region_id) {
       toast({
@@ -137,13 +155,35 @@ const Certificates = () => {
         .from('certificate-templates')
         .getPublicUrl(template.template_url);
 
+      // Validate template accessibility
+      try {
+        const response = await fetch(templatePublicUrl, { method: 'HEAD' });
+        if (!response.ok) {
+          toast({
+            title: 'Error',
+            description: 'Certificate template not accessible. Please check the template.',
+            variant: 'destructive',
+          });
+          return;
+        }
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to access certificate template',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const baseUrl = window.location.origin;
       let successCount = 0;
       let failCount = 0;
+      const failedMembers: Array<{ memberId: string; name: string; error: string }> = [];
 
       // Generate certificates one by one
       for (let i = 0; i < selectedMembers.length; i++) {
         const memberId = selectedMembers[i];
+        let recipientName = 'Unknown';
         
         try {
           // Get member details
@@ -158,9 +198,9 @@ const Certificates = () => {
             continue;
           }
 
-          const recipientName = `${member.profiles.first_name} ${member.profiles.last_name}`;
-          const certificateNumber = generateCertificateNumber(profile.region_id);
-          const verificationCode = generateVerificationCode();
+          recipientName = `${member.profiles.first_name} ${member.profiles.last_name}`;
+          const certificateNumber = await generateUniqueCode('certificate', profile.region_id);
+          const verificationCode = await generateUniqueCode('verification', profile.region_id);
 
           // Generate certificate image using canvas
           const blob = await generateCertificateImage(
@@ -173,13 +213,13 @@ const Certificates = () => {
             baseUrl
           );
 
-          // Upload to storage
-          const fileName = `${certificateNumber}.png`;
+          // Upload to storage with organized path structure
+          const filePath = `${profile.region_id}/${memberId}/${certificateNumber}.png`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('certificates')
-            .upload(fileName, blob, {
+            .upload(filePath, blob, {
               contentType: 'image/png',
-              upsert: false,
+              upsert: true,
             });
 
           if (uploadError) throw uploadError;
@@ -221,6 +261,12 @@ const Certificates = () => {
           }
         } catch (error) {
           console.error(`Failed to generate certificate for member ${memberId}:`, error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          failedMembers.push({
+            memberId,
+            name: recipientName,
+            error: errorMessage
+          });
           failCount++;
         }
       }
@@ -233,9 +279,10 @@ const Certificates = () => {
         });
       }
       if (failCount > 0) {
+        console.error('Certificate generation errors:', failedMembers);
         toast({
           title: 'Partial failure',
-          description: `Failed to generate ${failCount} certificate(s)`,
+          description: `Failed to generate ${failCount} certificate(s). Check console for details.`,
           variant: 'destructive',
         });
       }
