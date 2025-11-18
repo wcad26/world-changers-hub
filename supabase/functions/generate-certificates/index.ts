@@ -118,11 +118,15 @@ serve(async (req) => {
         // Draw template
         ctx.drawImage(templateImage, 0, 0);
 
+        // Use template positions or defaults
+        const namePos = template.name_position as any || { x: canvas.width / 2, y: 477, fontSize: 38, fontFamily: 'Georgia, serif', color: '#1a365d' };
+        const qrPos = template.qr_position as any || { x: canvas.width - 92, y: canvas.height - 109, size: 100 };
+        
         // Draw recipient name
-        const namePos = template.name_position || { x: 400, y: 300, fontSize: 48, fontFamily: 'Arial', color: '#000000' };
-        ctx.font = `${namePos.fontSize}px ${namePos.fontFamily}`;
-        ctx.fillStyle = namePos.color;
+        ctx.font = `bold ${namePos.fontSize || 38}px ${namePos.fontFamily || 'Georgia, serif'}`;
+        ctx.fillStyle = namePos.color || '#1a365d';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.fillText(recipientName, namePos.x, namePos.y);
 
         // Draw event name if provided
@@ -142,7 +146,6 @@ serve(async (req) => {
         }
 
         // Draw QR code
-        const qrPos = template.qr_position || { x: 50, y: 550, size: 150 };
         const qrImage = await loadImage(qrCodeDataURL);
         ctx.drawImage(qrImage, qrPos.x, qrPos.y, qrPos.size, qrPos.size);
 
