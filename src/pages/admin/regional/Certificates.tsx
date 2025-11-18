@@ -20,7 +20,17 @@ import {
 import { useMembers } from '@/hooks/useMembers';
 import { useRegionalEvents } from '@/hooks/useEvents';
 import { useEventAttendees } from '@/hooks/useAttendance';
-import { getCertificateTypeOptions, downloadCertificate, downloadCertificatesAsZip, formatCertificateType } from '@/utils/certificateUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  getCertificateTypeOptions, 
+  downloadCertificate, 
+  downloadCertificatesAsZip, 
+  formatCertificateType,
+  generateCertificateNumber,
+  generateVerificationCode,
+  getVerificationUrl,
+  generateCertificateImage
+} from '@/utils/certificateUtils';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -94,7 +104,7 @@ const Certificates = () => {
   };
 
   const handleGenerateCertificates = async () => {
-    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType) {
+    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType || !profile?.region_id) {
       toast({
         title: 'Missing information',
         description: 'Please select a template, members, and certificate type',
@@ -105,20 +115,145 @@ const Certificates = () => {
 
     setShowGenerateDialog(false);
 
-    await generateCertificates.mutateAsync({
-      template_id: selectedTemplate,
-      member_ids: selectedMembers,
-      certificate_type: certificateType,
-      event_name: eventName || undefined,
-      event_date: eventDate || undefined,
-      region_id: profile?.region_id || '',
-    });
+    try {
+      // Get template with public URL
+      const { data: template } = await supabase
+        .from('certificate_templates')
+        .select('template_url')
+        .eq('id', selectedTemplate)
+        .single();
 
-    // Reset form
-    setSelectedMembers([]);
-    setCertificateType('');
-    setEventName('');
-    setEventDate('');
+      if (!template) {
+        toast({
+          title: 'Error',
+          description: 'Template not found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get public URL for template
+      const { data: { publicUrl: templatePublicUrl } } = supabase.storage
+        .from('certificate-templates')
+        .getPublicUrl(template.template_url);
+
+      const baseUrl = window.location.origin;
+      let successCount = 0;
+      let failCount = 0;
+
+      // Generate certificates one by one
+      for (let i = 0; i < selectedMembers.length; i++) {
+        const memberId = selectedMembers[i];
+        
+        try {
+          // Get member details
+          const { data: member } = await supabase
+            .from('members')
+            .select('profiles(first_name, last_name, email)')
+            .eq('id', memberId)
+            .single();
+
+          if (!member?.profiles) {
+            failCount++;
+            continue;
+          }
+
+          const recipientName = `${member.profiles.first_name} ${member.profiles.last_name}`;
+          const certificateNumber = generateCertificateNumber(profile.region_id);
+          const verificationCode = generateVerificationCode();
+
+          // Generate certificate image using canvas
+          const blob = await generateCertificateImage(
+            templatePublicUrl,
+            recipientName,
+            eventName || null,
+            eventDate || null,
+            certificateNumber,
+            verificationCode,
+            baseUrl
+          );
+
+          // Upload to storage
+          const fileName = `${certificateNumber}.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('certificates')
+            .upload(fileName, blob, {
+              contentType: 'image/png',
+              upsert: false,
+            });
+
+          if (uploadError) throw uploadError;
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('certificates')
+            .getPublicUrl(uploadData.path);
+
+          // Create certificate record
+          const { error: insertError } = await supabase
+            .from('certificates')
+            .insert({
+              certificate_number: certificateNumber,
+              certificate_type: certificateType,
+              certificate_url: publicUrl,
+              verification_code: verificationCode,
+              recipient_name: recipientName,
+              recipient_email: member.profiles.email,
+              event_name: eventName || null,
+              event_date: eventDate || null,
+              issued_date: new Date().toISOString().split('T')[0],
+              region_id: profile.region_id,
+              member_id: memberId,
+              issued_by: profile.id,
+              qr_code_data: getVerificationUrl(verificationCode, baseUrl),
+            });
+
+          if (insertError) throw insertError;
+
+          successCount++;
+          
+          // Show progress toast
+          if (selectedMembers.length > 1) {
+            toast({
+              title: 'Progress',
+              description: `Generated ${i + 1} of ${selectedMembers.length} certificates`,
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to generate certificate for member ${memberId}:`, error);
+          failCount++;
+        }
+      }
+
+      // Show final result
+      if (successCount > 0) {
+        toast({
+          title: 'Success',
+          description: `Successfully generated ${successCount} certificate(s)`,
+        });
+      }
+      if (failCount > 0) {
+        toast({
+          title: 'Partial failure',
+          description: `Failed to generate ${failCount} certificate(s)`,
+          variant: 'destructive',
+        });
+      }
+
+      // Reset form
+      setSelectedMembers([]);
+      setCertificateType('');
+      setEventName('');
+      setEventDate('');
+      setSelectedEventId('');
+    } catch (error) {
+      console.error("Error generating certificates:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to generate certificates',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleBulkDownload = async () => {
