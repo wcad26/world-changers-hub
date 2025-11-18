@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2 } from 'lucide-react';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,8 @@ import {
   useGenerateCertificates,
   useIssuedCertificates,
   useSendCertificateEmails,
-  useDeleteCertificate
+  useDeleteCertificate,
+  useDeleteCertificateTemplate
 } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
 import { useRegionalEvents } from '@/hooks/useEvents';
@@ -58,6 +59,7 @@ const Certificates = () => {
   
   // Issued certificates state
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
@@ -77,6 +79,7 @@ const Certificates = () => {
   const generateCertificates = useGenerateCertificates();
   const sendEmails = useSendCertificateEmails();
   const deleteCertificate = useDeleteCertificate();
+  const deleteTemplate = useDeleteCertificateTemplate();
 
   const handleTemplateUpload = async () => {
     if (!templateFile || !templateName || !templateType) {
@@ -101,6 +104,11 @@ const Certificates = () => {
     setTemplateFile(null);
     setTemplateName('');
     setTemplateType('');
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    await deleteTemplate.mutateAsync(templateId);
+    setTemplateToDelete(null);
   };
 
   const generateUniqueCode = async (type: 'certificate' | 'verification', regionId: string): Promise<string> => {
@@ -604,17 +612,27 @@ const Certificates = () => {
                 ) : templates && templates.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {templates.map((template) => (
-                      <Card key={template.id}>
-                        <CardHeader>
-                          <CardTitle className="text-base">{template.template_name}</CardTitle>
-                          <CardDescription>{formatCertificateType(template.template_type)}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <Badge variant={template.is_active ? 'default' : 'secondary'}>
-                            {template.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </CardContent>
-                      </Card>
+                  <Card key={template.id}>
+                    <CardHeader>
+                      <CardTitle className="text-base">{template.template_name}</CardTitle>
+                      <CardDescription>{formatCertificateType(template.template_type)}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Badge variant={template.is_active ? 'default' : 'secondary'}>
+                        {template.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setTemplateToDelete(template.id)}
+                        disabled={deleteTemplate.isPending}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
+                    </CardContent>
+                  </Card>
                     ))}
                   </div>
                 ) : (
@@ -749,6 +767,36 @@ const Certificates = () => {
               </Button>
               <Button onClick={handleGenerateCertificates}>
                 Generate Certificates
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Template Confirmation Dialog */}
+        <Dialog open={!!templateToDelete} onOpenChange={(open) => !open && setTemplateToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Certificate Template?</DialogTitle>
+              <DialogDescription>
+                This action cannot be undone. The template will be permanently deleted and you won't be able to use it to generate new certificates.
+              </DialogDescription>
+            </DialogHeader>
+            {templates?.find(t => t.id === templateToDelete) && (
+              <div className="py-4">
+                <p className="font-semibold">
+                  Template: {templates.find(t => t.id === templateToDelete)?.template_name}
+                </p>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setTemplateToDelete(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => templateToDelete && handleDeleteTemplate(templateToDelete)}
+              >
+                Delete Template
               </Button>
             </DialogFooter>
           </DialogContent>
