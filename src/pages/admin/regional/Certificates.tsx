@@ -60,6 +60,7 @@ const Certificates = () => {
   // Issued certificates state
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
@@ -109,6 +110,11 @@ const Certificates = () => {
   const handleDeleteTemplate = async (templateId: string) => {
     await deleteTemplate.mutateAsync(templateId);
     setTemplateToDelete(null);
+  };
+
+  const handleDeleteCertificate = async (certificateId: string) => {
+    await deleteCertificate.mutateAsync(certificateId);
+    setCertificateToDelete(null);
   };
 
   const generateUniqueCode = async (type: 'certificate' | 'verification', regionId: string): Promise<string> => {
@@ -725,13 +731,14 @@ const Certificates = () => {
                               >
                                 View
                               </Button>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => deleteCertificate.mutate(cert.id)}
-                              >
-                                Revoke
-                              </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => setCertificateToDelete(cert.id)}
+                          disabled={deleteCertificate.isPending}
+                        >
+                          Revoke
+                        </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -797,6 +804,37 @@ const Certificates = () => {
                 onClick={() => templateToDelete && handleDeleteTemplate(templateToDelete)}
               >
                 Delete Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Revoke Certificate Confirmation Dialog */}
+        <Dialog open={!!certificateToDelete} onOpenChange={(open) => !open && setCertificateToDelete(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Revoke Certificate?</DialogTitle>
+              <DialogDescription>
+                This action will revoke the certificate and make it invalid. The certificate will no longer be verifiable and the recipient will not be able to use it.
+              </DialogDescription>
+            </DialogHeader>
+            {issuedCertificates?.find(c => c.id === certificateToDelete) && (
+              <div className="space-y-2 py-4">
+                <p><strong>Certificate:</strong> {issuedCertificates.find(c => c.id === certificateToDelete)?.certificate_number}</p>
+                <p><strong>Recipient:</strong> {issuedCertificates.find(c => c.id === certificateToDelete)?.recipient_name}</p>
+                <p><strong>Type:</strong> {formatCertificateType(issuedCertificates.find(c => c.id === certificateToDelete)?.certificate_type || '')}</p>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCertificateToDelete(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={() => certificateToDelete && handleDeleteCertificate(certificateToDelete)}
+                disabled={deleteCertificate.isPending}
+              >
+                {deleteCertificate.isPending ? 'Revoking...' : 'Revoke Certificate'}
               </Button>
             </DialogFooter>
           </DialogContent>
