@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle } from 'lucide-react';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +17,8 @@ import {
   useSendCertificateEmails,
   useDeleteCertificate,
   useDeleteCertificateTemplate,
-  useReinstateCertificate
+  useReinstateCertificate,
+  usePermanentlyDeleteCertificate
 } from '@/hooks/useCertificates';
 import { useMembers } from '@/hooks/useMembers';
 import { useRegionalEvents } from '@/hooks/useEvents';
@@ -64,6 +65,13 @@ const Certificates = () => {
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
+  const [certificateToDeletePermanently, setCertificateToDeletePermanently] = useState<{
+    id: string;
+    certificate_url: string;
+    certificate_number: string;
+    recipient_name: string;
+    certificate_type: string;
+  } | null>(null);
   
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
@@ -85,6 +93,7 @@ const Certificates = () => {
   const deleteCertificate = useDeleteCertificate();
   const reinstateCertificate = useReinstateCertificate();
   const deleteTemplate = useDeleteCertificateTemplate();
+  const permanentlyDeleteCertificate = usePermanentlyDeleteCertificate();
 
   const handleTemplateUpload = async () => {
     if (!templateFile || !templateName || !templateType) {
@@ -119,6 +128,17 @@ const Certificates = () => {
   const handleDeleteCertificate = async (certificateId: string) => {
     await deleteCertificate.mutateAsync(certificateId);
     setCertificateToDelete(null);
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!certificateToDeletePermanently) return;
+    
+    await permanentlyDeleteCertificate.mutateAsync({
+      id: certificateToDeletePermanently.id,
+      certificate_url: certificateToDeletePermanently.certificate_url
+    });
+    
+    setCertificateToDeletePermanently(null);
   };
 
   const generateUniqueCode = async (type: 'certificate' | 'verification', regionId: string): Promise<string> => {
@@ -772,25 +792,41 @@ const Certificates = () => {
                                   View
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                {cert.is_active ? (
-                                  <DropdownMenuItem
-                                    onClick={() => setCertificateToDelete(cert.id)}
-                                    disabled={deleteCertificate.isPending}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Revoke
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem
-                                    onClick={() => reinstateCertificate.mutate(cert.id)}
-                                    disabled={reinstateCertificate.isPending}
-                                    className="text-green-600 focus:text-green-600"
-                                  >
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    Reinstate
-                                  </DropdownMenuItem>
-                                )}
+                      {cert.is_active ? (
+                        <DropdownMenuItem
+                          onClick={() => setCertificateToDelete(cert.id)}
+                          disabled={deleteCertificate.isPending}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Revoke
+                        </DropdownMenuItem>
+                      ) : (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => reinstateCertificate.mutate(cert.id)}
+                            disabled={reinstateCertificate.isPending}
+                            className="text-green-600 focus:text-green-600"
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reinstate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setCertificateToDeletePermanently({
+                              id: cert.id,
+                              certificate_url: cert.certificate_url,
+                              certificate_number: cert.certificate_number,
+                              recipient_name: cert.recipient_name,
+                              certificate_type: cert.certificate_type
+                            })}
+                            disabled={permanentlyDeleteCertificate.isPending}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Delete Permanently
+                          </DropdownMenuItem>
+                        </>
+                      )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -888,6 +924,42 @@ const Certificates = () => {
                 disabled={deleteCertificate.isPending}
               >
                 {deleteCertificate.isPending ? 'Revoking...' : 'Revoke Certificate'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Permanent Delete Confirmation Dialog */}
+        <Dialog open={!!certificateToDeletePermanently} onOpenChange={(open) => !open && setCertificateToDeletePermanently(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Delete Certificate Permanently?</DialogTitle>
+              <DialogDescription>
+                This action <strong>cannot be undone</strong>. The certificate will be permanently removed from the database and storage. 
+                Use this only for certificates that were issued by mistake.
+              </DialogDescription>
+            </DialogHeader>
+            {certificateToDeletePermanently && (
+              <div className="space-y-2 py-4 bg-destructive/10 p-4 rounded-md">
+                <p><strong>Certificate:</strong> {certificateToDeletePermanently.certificate_number}</p>
+                <p><strong>Recipient:</strong> {certificateToDeletePermanently.recipient_name}</p>
+                <p><strong>Type:</strong> {formatCertificateType(certificateToDeletePermanently.certificate_type)}</p>
+              </div>
+            )}
+            <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md text-sm text-yellow-800">
+              <strong>⚠️ Warning:</strong> This will permanently delete the certificate file and database record. 
+              This action cannot be reversed.
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCertificateToDeletePermanently(null)}>
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handlePermanentDelete}
+                disabled={permanentlyDeleteCertificate.isPending}
+              >
+                {permanentlyDeleteCertificate.isPending ? 'Deleting...' : 'Delete Permanently'}
               </Button>
             </DialogFooter>
           </DialogContent>

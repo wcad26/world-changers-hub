@@ -242,6 +242,55 @@ export const useReinstateCertificate = () => {
   });
 };
 
+// Permanently delete certificate (remove from database and storage)
+export const usePermanentlyDeleteCertificate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (certificate: { id: string; certificate_url: string }) => {
+      // Extract storage path from public URL
+      // URL format: https://{project}.supabase.co/storage/v1/object/public/certificates/{path}
+      const urlParts = certificate.certificate_url.split('/certificates/');
+      const storagePath = urlParts[1];
+
+      // Delete file from storage first
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from('certificates')
+          .remove([storagePath]);
+
+        if (storageError) {
+          console.error('Failed to delete certificate file from storage:', storageError);
+          // Continue even if storage delete fails - we still want to remove the DB record
+        }
+      }
+
+      // Delete certificate record from database
+      const { error: dbError } = await supabase
+        .from('certificates')
+        .delete()
+        .eq('id', certificate.id);
+
+      if (dbError) throw dbError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      toast({
+        title: 'Certificate deleted permanently',
+        description: 'Certificate has been permanently removed from the system',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Deletion failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
 // Delete certificate template
 export const useDeleteCertificateTemplate = () => {
   const queryClient = useQueryClient();
