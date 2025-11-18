@@ -78,6 +78,29 @@ export const getCertificateTypeOptions = () => [
   { value: 'other', label: 'Other' },
 ];
 
+const loadImageWithTimeout = (src: string, timeoutMs: number = 10000): Promise<HTMLImageElement> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    const timeout = setTimeout(() => {
+      reject(new Error(`Image load timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+    
+    img.onload = () => {
+      clearTimeout(timeout);
+      resolve(img);
+    };
+    
+    img.onerror = (error) => {
+      clearTimeout(timeout);
+      reject(new Error(`Failed to load image: ${error}`));
+    };
+    
+    img.src = src;
+  });
+};
+
 export const generateCertificateImage = async (
   templateUrl: string,
   recipientName: string,
@@ -92,14 +115,8 @@ export const generateCertificateImage = async (
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get canvas context');
 
-  // Load template image
-  const template = new Image();
-  template.crossOrigin = 'anonymous';
-  await new Promise((resolve, reject) => {
-    template.onload = resolve;
-    template.onerror = reject;
-    template.src = templateUrl;
-  });
+  // Load template image with timeout
+  const template = await loadImageWithTimeout(templateUrl);
 
   // Set canvas size to match template
   canvas.width = template.width;
