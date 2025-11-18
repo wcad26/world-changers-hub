@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.delete-user]
 verify_jwt = true
+
+[functions.generate-certificates]
+verify_jwt = true
+
+[functions.send-certificate-emails]
+verify_jwt = true

@@ -13,7 +13,8 @@ import {
   MessageSquare,
   Settings,
   Building2,
-  UserCog
+  UserCog,
+  Award
 } from "lucide-react";
 
 interface RegionalAdminLayoutProps {
@@ -29,6 +30,7 @@ const menuItems = [
   { title: "Locations", path: "/admin/regional/locations", icon: MapPin as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Finances", path: "/admin/regional/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
   { title: "DCG Management", path: "/admin/regional/dcg", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Certificates", path: "/admin/regional/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Branch Settings", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
