@@ -54,7 +54,7 @@ export const useUploadCertificateTemplate = () => {
 
       if (uploadError) throw uploadError;
 
-      // Create template record
+      // Create template record with position data
       const { data, error } = await supabase
         .from('certificate_templates')
         .insert({
@@ -71,7 +71,7 @@ export const useUploadCertificateTemplate = () => {
       queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
       toast({
         title: 'Template uploaded',
-        description: 'Certificate template has been uploaded successfully',
+        description: 'Certificate template has been uploaded successfully with position configuration',
       });
     },
     onError: (error: Error) => {

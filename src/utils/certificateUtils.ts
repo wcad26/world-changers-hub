@@ -106,7 +106,9 @@ export const generateCertificateImage = async (
   recipientName: string,
   certificateNumber: string,
   verificationCode: string,
-  baseUrl: string
+  baseUrl: string,
+  namePosition?: { x: number; y: number; fontSize?: number; fontFamily?: string; color?: string },
+  qrPosition?: { x: number; y: number; size: number }
 ): Promise<Blob> => {
   // Create canvas
   const canvas = document.createElement('canvas');
@@ -123,17 +125,24 @@ export const generateCertificateImage = async (
   // Draw template
   ctx.drawImage(template, 0, 0);
 
-  // Draw recipient name on the horizontal line
-  ctx.font = 'bold 38px Georgia, serif';
-  ctx.fillStyle = '#1a365d';
+  // Use provided positions or defaults
+  const namePosX = namePosition?.x ?? canvas.width / 2;
+  const namePosY = namePosition?.y ?? 477;
+  const fontSize = namePosition?.fontSize ?? 38;
+  const fontFamily = namePosition?.fontFamily ?? 'Georgia, serif';
+  const textColor = namePosition?.color ?? '#1a365d';
+
+  // Draw recipient name
+  ctx.font = `bold ${fontSize}px ${fontFamily}`;
+  ctx.fillStyle = textColor;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(recipientName, canvas.width / 2, 477);
+  ctx.fillText(recipientName, namePosX, namePosY);
 
-  // Generate and draw QR code in the white verification box at bottom right
+  // Generate and draw QR code
   const verificationUrl = `${baseUrl}/verify/${verificationCode}`;
   const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
-    width: 100,
+    width: qrPosition?.size ?? 100,
     margin: 0,
     color: {
       dark: '#000000',
@@ -148,8 +157,11 @@ export const generateCertificateImage = async (
     qrImage.src = qrDataUrl;
   });
 
-  // Position QR code in the white verification box at bottom right
-  ctx.drawImage(qrImage, canvas.width - 92, canvas.height - 109, 100, 100);
+  // Position QR code
+  const qrX = qrPosition?.x ?? (canvas.width - 92);
+  const qrY = qrPosition?.y ?? (canvas.height - 109);
+  const qrSize = qrPosition?.size ?? 100;
+  ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
 
   // Convert canvas to blob
   return new Promise((resolve, reject) => {

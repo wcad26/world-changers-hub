@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle, ImageIcon } from 'lucide-react';
+import { CertificatePositionPicker } from '@/components/admin/regional/CertificatePositionPicker';
+import { PreviewCertificateDialog } from '@/components/admin/regional/PreviewCertificateDialog';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,10 +49,19 @@ const Certificates = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('generate');
   
-  // Template upload state
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [templateName, setTemplateName] = useState('');
   const [templateType, setTemplateType] = useState('');
+  const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null);
+  const [namePosition, setNamePosition] = useState<{ x: number; y: number; fontSize?: number; fontFamily?: string; color?: string }>({ 
+    x: 400, 
+    y: 477, 
+    fontSize: 38, 
+    fontFamily: 'Georgia, serif', 
+    color: '#1a365d' 
+  });
+  const [qrPosition, setQRPosition] = useState({ x: 708, y: 591, size: 100 });
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   
   // Certificate generation state
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -99,25 +110,46 @@ const Certificates = () => {
     if (!templateFile || !templateName || !templateType) {
       toast({
         title: 'Missing information',
-        description: 'Please fill in all fields and select a file',
+        description: 'Please fill in all fields',
         variant: 'destructive',
       });
       return;
     }
 
-    await uploadTemplate.mutateAsync({
-      file: templateFile,
-      templateData: {
-        template_name: templateName,
-        template_type: templateType,
-        region_id: profile?.region_id || undefined,
-        is_active: true,
+    uploadTemplate.mutate(
+      {
+        file: templateFile,
+        templateData: {
+          template_name: templateName,
+          template_type: templateType,
+          region_id: profile?.region_id || null,
+          created_by: profile?.id || null,
+          name_position: namePosition,
+          qr_position: qrPosition,
+        },
+      },
+      {
+        onSuccess: () => {
+          setTemplateFile(null);
+          setTemplateName('');
+          setTemplateType('');
+          setTemplatePreviewUrl(null);
+        },
       }
-    });
+    );
+  };
 
-    setTemplateFile(null);
-    setTemplateName('');
-    setTemplateType('');
+  const handleTemplateFileChange = (file: File | null) => {
+    setTemplateFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setTemplatePreviewUrl(url);
+    } else {
+      if (templatePreviewUrl) {
+        URL.revokeObjectURL(templatePreviewUrl);
+      }
+      setTemplatePreviewUrl(null);
+    }
   };
 
   const handleDeleteTemplate = async (templateId: string) => {
@@ -172,10 +204,10 @@ const Certificates = () => {
     setShowGenerateDialog(false);
 
     try {
-      // Get template with public URL
+      // Get template with public URL and positioning data
       const { data: template } = await supabase
         .from('certificate_templates')
-        .select('template_url')
+        .select('template_url, name_position, qr_position')
         .eq('id', selectedTemplate)
         .single();
 
@@ -231,14 +263,20 @@ const Certificates = () => {
           const certificateNumber = await generateUniqueCode('certificate', profile.region_id);
           const verificationCode = await generateUniqueCode('verification', profile.region_id);
 
-          // Generate certificate image using canvas
-      const blob = await generateCertificateImage(
-        templatePublicUrl,
-        recipientName,
-        certificateNumber,
-        verificationCode,
-        baseUrl
-      );
+          // Get template positions
+          const namePos = template.name_position as any || undefined;
+          const qrPos = template.qr_position as any || undefined;
+
+          // Generate certificate image using canvas with template positions
+          const blob = await generateCertificateImage(
+            templatePublicUrl,
+            recipientName,
+            certificateNumber,
+            verificationCode,
+            baseUrl,
+            namePos,
+            qrPos
+          );
 
           // Upload to storage with organized path structure
           const filePath = `${profile.region_id}/${memberId}/${certificateNumber}.png`;
@@ -617,9 +655,31 @@ const Certificates = () => {
                     id="template-file"
                     type="file"
                     accept="image/*"
-                    onChange={(e) => setTemplateFile(e.target.files?.[0] || null)}
+                    onChange={(e) => handleTemplateFileChange(e.target.files?.[0] || null)}
                   />
                 </div>
+
+                {templatePreviewUrl && (
+                  <>
+                    <CertificatePositionPicker
+                      templateUrl={templatePreviewUrl}
+                      namePosition={namePosition}
+                      qrPosition={qrPosition}
+                      onNamePositionChange={setNamePosition}
+                      onQRPositionChange={setQRPosition}
+                    />
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowPreviewDialog(true)}
+                      className="w-full"
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      Preview Certificate
+                    </Button>
+                  </>
+                )}
 
                 <Button 
                   onClick={handleTemplateUpload}
@@ -962,6 +1022,17 @@ const Certificates = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Preview Certificate Dialog */}
+        {templatePreviewUrl && (
+          <PreviewCertificateDialog
+            open={showPreviewDialog}
+            onOpenChange={setShowPreviewDialog}
+            templateUrl={templatePreviewUrl}
+            namePosition={namePosition}
+            qrPosition={qrPosition}
+          />
+        )}
       </div>
     </EnhancedRegionalAdminLayout>
   );
