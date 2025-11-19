@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
-import { createHmac } from "https://deno.land/std@0.190.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,9 +47,23 @@ serve(async (req) => {
     // Verify webhook signature if secret is configured
     if (webhookSecret && signature && timestamp && id) {
       const signedContent = `${id}.${timestamp}.${body}`;
-      const expectedSignature = createHmac('sha256', webhookSecret)
-        .update(signedContent)
-        .digest('base64');
+      
+      // Use Web Crypto API for HMAC verification
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(webhookSecret);
+      const key = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      const signatureBuffer = await crypto.subtle.sign(
+        'HMAC',
+        key,
+        encoder.encode(signedContent)
+      );
+      const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBuffer)));
 
       // Svix uses base64 with URL-safe encoding
       const signatures = signature.split(' ');
