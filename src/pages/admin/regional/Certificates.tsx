@@ -615,6 +615,9 @@ const Certificates = () => {
                                 <p className="text-sm font-medium">{fullName}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {member.member_id} • {member.member_type}
+                                  {member.profiles?.email && (
+                                    <> • {member.profiles.email}</>
+                                  )}
                                 </p>
                               </div>
                             </div>
