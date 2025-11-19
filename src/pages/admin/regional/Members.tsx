@@ -48,6 +48,7 @@ import AssignDiscipleDialog from "@/components/admin/regional/discipleship/Assig
 import ManageDiscipleshipDialog from "@/components/admin/regional/discipleship/ManageDiscipleshipDialog";
 import type { DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import RoleBadge from "@/components/ui/RoleBadge";
+import Papa from 'papaparse';
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +59,10 @@ const Members: React.FC = () => {
   const [editMember, setEditMember] = React.useState<MemberWithProfile | null>(null);
   const [memberToDelete, setMemberToDelete] = React.useState<MemberWithProfile | null>(null);
   const deleteMutation = useDeleteMember();
+  
+  // Member filters
+  const [memberStatusFilter, setMemberStatusFilter] = React.useState('all');
+  const [memberTypeFilter, setMemberTypeFilter] = React.useState('all');
   
   // Discipleship state
   const [discipleshipSearchTerm, setDiscipleshipSearchTerm] = React.useState('');
@@ -81,13 +86,23 @@ const Members: React.FC = () => {
     return members.filter(member => {
       const profile = member.profiles;
       if (!profile) return false;
+      
+      // Search filter
       const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
       const email = (profile.email || '').toLowerCase();
       const phone = (profile.phone || '').toLowerCase();
       const searchLower = searchTerm.toLowerCase();
-      return fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
+      const searchMatch = fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
+      
+      // Status filter
+      const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
+      
+      // Member type filter
+      const typeMatch = memberTypeFilter === 'all' || member.member_type === memberTypeFilter;
+      
+      return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -111,6 +126,47 @@ const Members: React.FC = () => {
       console.error('Error deleting member:', error);
       toast.error('Failed to delete member');
     }
+  };
+
+  const handleExportMembers = () => {
+    if (!filteredMembers || filteredMembers.length === 0) {
+      toast.error('No members to export');
+      return;
+    }
+
+    // Map the filtered members to CSV-friendly format
+    const dataToExport = filteredMembers.map(member => ({
+      'Member ID': member.member_id,
+      'First Name': member.profiles?.first_name || '',
+      'Last Name': member.profiles?.last_name || '',
+      'Email': member.profiles?.email || '',
+      'Phone': member.profiles?.phone || '',
+      'Address': member.profiles?.address || '',
+      'Gender': member.profiles?.gender || '',
+      'Date of Birth': member.profiles?.date_of_birth || '',
+      'Occupation': member.profiles?.occupation || '',
+      'Member Type': member.member_type,
+      'Status': member.status || '',
+      'Join Date': member.join_date ? new Date(member.join_date).toLocaleDateString() : '',
+      'Emergency Contact': member.profiles?.emergency_contact_name || '',
+      'Emergency Phone': member.profiles?.emergency_contact_phone || '',
+    }));
+
+    // Generate CSV
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    
+    // Create download link
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `members-export-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Exported ${filteredMembers.length} members successfully`);
   };
 
 
@@ -174,20 +230,47 @@ const Members: React.FC = () => {
                     </DialogContent>
                   </Dialog>
                 </div>
-                <div className="flex justify-between items-center pt-4">
-                    <div className="relative w-full max-w-sm">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search by name, email, or phone..." 
-                            className="pl-8" 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                <div className="flex flex-col gap-4 pt-4">
+                  <div className="flex flex-wrap gap-4 items-center">
+                    <div className="relative flex-1 min-w-[250px]">
+                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Search by name, email, or phone..." 
+                        className="pl-8" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
                     </div>
-                    <Button variant="outline">
-                        <Download className="mr-2 h-4 w-4" />
-                        Export
+                    
+                    <Select value={memberStatusFilter} onValueChange={setMemberStatusFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="new">New</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="transferred">Transferred</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter by Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="visitor">Visitor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button variant="outline" onClick={handleExportMembers}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export ({filteredMembers.length})
                     </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
