@@ -17,6 +17,8 @@ import {
   useUploadCertificateTemplate,
   useGenerateCertificates,
   useIssuedCertificates,
+  useUnsentCertificates,
+  useSentCertificates,
   useSendCertificateEmails,
   useDeleteCertificate,
   useDeleteCertificateTemplate,
@@ -103,6 +105,8 @@ const Certificates = () => {
   const { data: members, isLoading: membersLoading } = useMembers(profile?.region_id || '');
   const { data: events, isLoading: eventsLoading } = useRegionalEvents();
   const { data: issuedCertificates, isLoading: certificatesLoading } = useIssuedCertificates(profile?.region_id || '');
+  const { data: unsentCertificates, isLoading: unsentCertificatesLoading } = useUnsentCertificates(profile?.region_id || '');
+  const { data: sentCertificates, isLoading: sentCertificatesLoading } = useSentCertificates(profile?.region_id || '');
   const { data: eventAttendees, isLoading: attendeesLoading } = useEventAttendees(
     selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
     profile?.region_id || undefined
@@ -792,15 +796,15 @@ const Certificates = () => {
             </Card>
           </TabsContent>
 
-          {/* Issued Certificates Tab */}
+          {/* Unsent Certificates Tab */}
           <TabsContent value="issued" className="space-y-6">
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Issued Certificates</CardTitle>
+                    <CardTitle>Unsent Certificates</CardTitle>
                     <CardDescription>
-                      View and manage all issued certificates
+                      View and manage certificates that have been issued but not yet sent via email
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
@@ -815,7 +819,7 @@ const Certificates = () => {
                     <Button 
                       onClick={() => {
                         const activeCertificates = selectedCertificates.filter(id => 
-                          issuedCertificates?.find(c => c.id === id)?.is_active
+                          unsentCertificates?.find(c => c.id === id)?.is_active
                         );
                         if (activeCertificates.length > 0) {
                           handleBulkEmail();
@@ -849,15 +853,15 @@ const Certificates = () => {
                 )}
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
-                ) : issuedCertificates && issuedCertificates.length > 0 ? (
+                ) : unsentCertificates && unsentCertificates.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">
                           <Checkbox
-                            checked={selectedCertificates.length === issuedCertificates.length}
+                            checked={selectedCertificates.length === unsentCertificates.length}
                             onCheckedChange={(checked) => {
-                              setSelectedCertificates(checked ? issuedCertificates.map(c => c.id) : []);
+                              setSelectedCertificates(checked ? unsentCertificates.map(c => c.id) : []);
                             }}
                           />
                         </TableHead>
@@ -870,7 +874,7 @@ const Certificates = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {issuedCertificates.map((cert) => (
+                      {unsentCertificates.map((cert) => (
                         <TableRow 
                           key={cert.id}
                           className={cn(
@@ -964,7 +968,132 @@ const Certificates = () => {
                     </TableBody>
                   </Table>
                 ) : (
-                  <p className="text-muted-foreground">No certificates issued yet.</p>
+                  <p className="text-muted-foreground">No unsent certificates.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Sent Certificates Tab */}
+          <TabsContent value="sent" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sent Certificates</CardTitle>
+                <CardDescription>
+                  View certificates that have been sent via email
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {certificatesLoading ? (
+                  <p className="text-muted-foreground">Loading certificates...</p>
+                ) : sentCertificates && sentCertificates.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Recipient</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Event</TableHead>
+                        <TableHead>Issued Date</TableHead>
+                        <TableHead>Sent Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sentCertificates.map((cert) => (
+                        <TableRow 
+                          key={cert.id}
+                          className={cn(
+                            !cert.is_active && "opacity-60 bg-muted/50"
+                          )}
+                        >
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {cert.recipient_name}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {formatCertificateType(cert.certificate_type)}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {cert.event_name || '-'}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {new Date(cert.issued_date).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
+                            {cert.email_sent_at 
+                              ? new Date(cert.email_sent_at).toLocaleDateString() + ' ' + new Date(cert.email_sent_at).toLocaleTimeString()
+                              : '-'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={cert.is_active ? "default" : "destructive"}>
+                              {cert.is_active ? "Active" : "Revoked"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {cert.is_active ? (
+                                  <DropdownMenuItem
+                                    onClick={() => setCertificateToDelete(cert.id)}
+                                    disabled={deleteCertificate.isPending}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Revoke (mark invalid)
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => reinstateCertificate.mutate(cert.id)}
+                                    disabled={reinstateCertificate.isPending}
+                                    className="text-green-600 focus:text-green-600"
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reinstate
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => setCertificateToDeletePermanently({
+                                    id: cert.id,
+                                    certificate_url: cert.certificate_url,
+                                    certificate_number: cert.certificate_number,
+                                    recipient_name: cert.recipient_name,
+                                    certificate_type: cert.certificate_type
+                                  })}
+                                  disabled={permanentlyDeleteCertificate.isPending}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Delete Permanently
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-muted-foreground">No certificates sent yet.</p>
                 )}
               </CardContent>
             </Card>

@@ -152,6 +152,16 @@ serve(async (req) => {
           throw emailResponse.error;
         }
 
+        // Mark certificate as sent
+        const { error: updateError } = await supabase
+          .from('certificates')
+          .update({ email_sent_at: new Date().toISOString() })
+          .eq('id', certificateId);
+
+        if (updateError) {
+          console.error('Failed to update certificate send status:', updateError);
+        }
+
         results.push({
           certificateId,
           success: true,

@@ -126,6 +126,62 @@ export const useIssuedCertificates = (regionId: string) => {
   });
 };
 
+// Fetch unsent certificates (issued but not emailed yet)
+export const useUnsentCertificates = (regionId: string) => {
+  return useQuery({
+    queryKey: ['certificates', 'unsent', regionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`
+          *,
+          members (
+            member_id,
+            profiles (
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('region_id', regionId)
+        .is('email_sent_at', null)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
+// Fetch sent certificates (emailed)
+export const useSentCertificates = (regionId: string) => {
+  return useQuery({
+    queryKey: ['certificates', 'sent', regionId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`
+          *,
+          members (
+            member_id,
+            profiles (
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('region_id', regionId)
+        .not('email_sent_at', 'is', null)
+        .order('email_sent_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
 // Fetch certificate by verification code (public)
 export const useCertificateByCode = (verificationCode: string) => {
   return useQuery({
@@ -154,6 +210,7 @@ export const useCertificateByCode = (verificationCode: string) => {
 // Send certificate emails with automatic batching
 export const useSendCertificateEmails = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ 
@@ -209,6 +266,10 @@ export const useSendCertificateEmails = () => {
       };
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['certificates', 'unsent'] });
+      queryClient.invalidateQueries({ queryKey: ['certificates', 'sent'] });
+      queryClient.invalidateQueries({ queryKey: ['certificates'] });
+      
       if (data.totalFailed > 0) {
         toast({
           title: 'Emails sent with some failures',
