@@ -151,24 +151,76 @@ export const useCertificateByCode = (verificationCode: string) => {
   });
 };
 
-// Send certificate emails
+// Send certificate emails with automatic batching
 export const useSendCertificateEmails = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (certificate_ids: string[]) => {
-      const { data: result, error } = await supabase.functions.invoke('send-certificate-emails', {
-        body: { certificate_ids }
-      });
+    mutationFn: async ({ 
+      certificate_ids, 
+      onProgress 
+    }: { 
+      certificate_ids: string[]; 
+      onProgress?: (current: number, total: number) => void 
+    }) => {
+      const BATCH_SIZE = 20;
+      const batches: string[][] = [];
+      
+      // Split into batches
+      for (let i = 0; i < certificate_ids.length; i += BATCH_SIZE) {
+        batches.push(certificate_ids.slice(i, i + BATCH_SIZE));
+      }
 
-      if (error) throw error;
-      return result;
+      let totalSent = 0;
+      let totalFailed = 0;
+      const allResults: any[] = [];
+
+      // Process each batch sequentially
+      for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        
+        // Update progress
+        if (onProgress) {
+          onProgress(i + 1, batches.length);
+        }
+
+        try {
+          const { data: result, error } = await supabase.functions.invoke('send-certificate-emails', {
+            body: { certificate_ids: batch }
+          });
+
+          if (error) throw error;
+
+          totalSent += result.totalSent || 0;
+          totalFailed += result.totalFailed || 0;
+          allResults.push(...(result.results || []));
+        } catch (error) {
+          console.error(`Error processing batch ${i + 1}:`, error);
+          totalFailed += batch.length;
+          allResults.push(...batch.map(id => ({ id, error: 'Batch processing failed' })));
+        }
+      }
+
+      return {
+        totalSent,
+        totalFailed,
+        results: allResults,
+        totalBatches: batches.length
+      };
     },
     onSuccess: (data) => {
-      toast({
-        title: 'Emails sent',
-        description: `Successfully sent ${data.totalSent} emails`,
-      });
+      if (data.totalFailed > 0) {
+        toast({
+          title: 'Emails sent with some failures',
+          description: `Successfully sent ${data.totalSent} emails. ${data.totalFailed} failed. Check logs for details.`,
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'All emails sent successfully',
+          description: `Successfully sent ${data.totalSent} emails in ${data.totalBatches} batch${data.totalBatches > 1 ? 'es' : ''}`,
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
