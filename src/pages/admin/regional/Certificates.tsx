@@ -488,10 +488,11 @@ const Certificates = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => !isGenerating && setActiveTab(value)}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="generate" disabled={isGenerating}>Generate Certificates</TabsTrigger>
             <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
-            <TabsTrigger value="issued" disabled={isGenerating}>Issued Certificates</TabsTrigger>
+            <TabsTrigger value="issued" disabled={isGenerating}>Unsent Certificates</TabsTrigger>
+            <TabsTrigger value="sent" disabled={isGenerating}>Sent Certificates</TabsTrigger>
           </TabsList>
 
           {/* Generate Certificates Tab */}
