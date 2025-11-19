@@ -163,7 +163,12 @@ export type Database = {
           certificate_type: string
           certificate_url: string
           created_at: string | null
+          email_delivery_details: Json | null
+          email_last_status_update: string | null
           email_sent_at: string | null
+          email_status:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
           event_date: string | null
           event_name: string | null
           id: string
@@ -175,6 +180,7 @@ export type Database = {
           recipient_email: string | null
           recipient_name: string
           region_id: string
+          resend_email_id: string | null
           updated_at: string | null
           verification_code: string
         }
@@ -183,7 +189,12 @@ export type Database = {
           certificate_type: string
           certificate_url: string
           created_at?: string | null
+          email_delivery_details?: Json | null
+          email_last_status_update?: string | null
           email_sent_at?: string | null
+          email_status?:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
           event_date?: string | null
           event_name?: string | null
           id?: string
@@ -195,6 +206,7 @@ export type Database = {
           recipient_email?: string | null
           recipient_name: string
           region_id: string
+          resend_email_id?: string | null
           updated_at?: string | null
           verification_code: string
         }
@@ -203,7 +215,12 @@ export type Database = {
           certificate_type?: string
           certificate_url?: string
           created_at?: string | null
+          email_delivery_details?: Json | null
+          email_last_status_update?: string | null
           email_sent_at?: string | null
+          email_status?:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
           event_date?: string | null
           event_name?: string | null
           id?: string
@@ -215,6 +232,7 @@ export type Database = {
           recipient_email?: string | null
           recipient_name?: string
           region_id?: string
+          resend_email_id?: string | null
           updated_at?: string | null
           verification_code?: string
         }
@@ -1780,6 +1798,13 @@ export type Database = {
         | "became_member"
         | "serving"
       discipleship_status: "active" | "completed" | "transferred" | "inactive"
+      email_delivery_status:
+        | "pending"
+        | "sent"
+        | "delivered"
+        | "bounced"
+        | "failed"
+        | "complained"
       event_category:
         | "Conference"
         | "Worship"
@@ -1978,6 +2003,14 @@ export const Constants = {
         "serving",
       ],
       discipleship_status: ["active", "completed", "transferred", "inactive"],
+      email_delivery_status: [
+        "pending",
+        "sent",
+        "delivered",
+        "bounced",
+        "failed",
+        "complained",
+      ],
       event_category: [
         "Conference",
         "Worship",
