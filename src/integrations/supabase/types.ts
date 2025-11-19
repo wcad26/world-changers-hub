@@ -163,6 +163,7 @@ export type Database = {
           certificate_type: string
           certificate_url: string
           created_at: string | null
+          email_sent_at: string | null
           event_date: string | null
           event_name: string | null
           id: string
@@ -182,6 +183,7 @@ export type Database = {
           certificate_type: string
           certificate_url: string
           created_at?: string | null
+          email_sent_at?: string | null
           event_date?: string | null
           event_name?: string | null
           id?: string
@@ -201,6 +203,7 @@ export type Database = {
           certificate_type?: string
           certificate_url?: string
           created_at?: string | null
+          email_sent_at?: string | null
           event_date?: string | null
           event_name?: string | null
           id?: string
