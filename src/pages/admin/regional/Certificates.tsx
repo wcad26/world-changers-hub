@@ -491,7 +491,7 @@ const Certificates = () => {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="generate" disabled={isGenerating}>Generate Certificates</TabsTrigger>
             <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
-            <TabsTrigger value="issued" disabled={isGenerating}>Unsent Certificates</TabsTrigger>
+            <TabsTrigger value="issued" disabled={isGenerating}>Issued Certificates</TabsTrigger>
             <TabsTrigger value="sent" disabled={isGenerating}>Sent Certificates</TabsTrigger>
           </TabsList>
 
@@ -803,7 +803,7 @@ const Certificates = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Unsent Certificates</CardTitle>
+                    <CardTitle>Issued Certificates</CardTitle>
                     <CardDescription>
                       View and manage certificates that have been issued but not yet sent via email
                     </CardDescription>
