@@ -62,7 +62,16 @@ serve(async (req) => {
         const certificateUrl = certificate.certificate_url;
         const response = await fetch(certificateUrl);
         const certificateBlob = await response.arrayBuffer();
-        const certificateBase64 = btoa(String.fromCharCode(...new Uint8Array(certificateBlob)));
+        
+        // Convert array buffer to base64 in chunks to avoid stack overflow
+        const bytes = new Uint8Array(certificateBlob);
+        let binary = '';
+        const chunkSize = 0x8000; // 32KB chunks
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+          binary += String.fromCharCode.apply(null, Array.from(chunk));
+        }
+        const certificateBase64 = btoa(binary);
 
         // Send email with certificate attachment
         const emailResponse = await resend.emails.send({
