@@ -152,10 +152,15 @@ serve(async (req) => {
           throw emailResponse.error;
         }
 
-        // Mark certificate as sent
+        // Mark certificate as sent with tracking info
         const { error: updateError } = await supabase
           .from('certificates')
-          .update({ email_sent_at: new Date().toISOString() })
+          .update({ 
+            email_sent_at: new Date().toISOString(),
+            resend_email_id: emailResponse.data?.id,
+            email_status: 'sent',
+            email_last_status_update: new Date().toISOString()
+          })
           .eq('id', certificateId);
 
         if (updateError) {

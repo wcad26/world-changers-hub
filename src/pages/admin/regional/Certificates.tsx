@@ -85,6 +85,7 @@ const Certificates = () => {
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
+  const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
   
   // Email sending progress state
   const [isSendingEmails, setIsSendingEmails] = useState(false);
@@ -122,9 +123,15 @@ const Certificates = () => {
       : (member.profiles?.email || '').toLowerCase();
     const memberId = (member.member_id || '').toLowerCase();
     const searchLower = memberSearchTerm.toLowerCase();
-    
+
     return fullName.includes(searchLower) || memberId.includes(searchLower);
   });
+
+  // Filter sent certificates by email status
+  const filteredSentCertificates = sentCertificates?.filter(cert => {
+    if (emailStatusFilter === 'all') return true;
+    return cert.email_status === emailStatusFilter;
+  }) || [];
   
   // Mutations
   const uploadTemplate = useUploadCertificateTemplate();
@@ -979,15 +986,33 @@ const Certificates = () => {
           <TabsContent value="sent" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Sent Certificates</CardTitle>
-                <CardDescription>
-                  View certificates that have been sent via email
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Sent Certificates</CardTitle>
+                    <CardDescription>
+                      View certificates that have been sent via email
+                    </CardDescription>
+                  </div>
+                  <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Email Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="sent">📤 Sent</SelectItem>
+                      <SelectItem value="delivered">✅ Delivered</SelectItem>
+                      <SelectItem value="bounced">❌ Bounced</SelectItem>
+                      <SelectItem value="failed">⚠️ Failed</SelectItem>
+                      <SelectItem value="complained">⚠️ Complained</SelectItem>
+                      <SelectItem value="pending">⏳ Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
-                ) : sentCertificates && sentCertificates.length > 0 ? (
+                ) : filteredSentCertificates.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -996,12 +1021,36 @@ const Certificates = () => {
                         <TableHead>Event</TableHead>
                         <TableHead>Issued Date</TableHead>
                         <TableHead>Sent Date</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Email Status</TableHead>
+                        <TableHead>Certificate Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sentCertificates.map((cert) => (
+                      {filteredSentCertificates.map((cert) => {
+                        const emailStatus = cert.email_status || 'pending';
+                        const getStatusColor = (status: string) => {
+                          switch (status) {
+                            case 'delivered': return 'default';
+                            case 'sent': return 'secondary';
+                            case 'bounced': return 'destructive';
+                            case 'failed': return 'destructive';
+                            case 'complained': return 'destructive';
+                            default: return 'outline';
+                          }
+                        };
+                        const getStatusLabel = (status: string) => {
+                          switch (status) {
+                            case 'delivered': return '✅ Delivered';
+                            case 'sent': return '📤 Sent';
+                            case 'bounced': return '❌ Bounced';
+                            case 'failed': return '⚠️ Failed';
+                            case 'complained': return '⚠️ Complained';
+                            default: return '⏳ Pending';
+                          }
+                        };
+                        
+                        return (
                         <TableRow 
                           key={cert.id}
                           className={cn(
@@ -1025,6 +1074,21 @@ const Certificates = () => {
                               ? new Date(cert.email_sent_at).toLocaleDateString() + ' ' + new Date(cert.email_sent_at).toLocaleTimeString()
                               : '-'
                             }
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusColor(emailStatus)}>
+                              {getStatusLabel(emailStatus)}
+                            </Badge>
+                            {cert.email_delivery_details && 
+                             typeof cert.email_delivery_details === 'object' &&
+                             'bounce' in cert.email_delivery_details && 
+                             cert.email_delivery_details.bounce && 
+                             typeof cert.email_delivery_details.bounce === 'object' &&
+                             'message' in cert.email_delivery_details.bounce && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {String(cert.email_delivery_details.bounce.message)}
+                              </p>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge variant={cert.is_active ? "default" : "destructive"}>
@@ -1090,7 +1154,8 @@ const Certificates = () => {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 ) : (
