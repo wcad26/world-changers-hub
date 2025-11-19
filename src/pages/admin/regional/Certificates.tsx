@@ -90,6 +90,9 @@ const Certificates = () => {
     certificate_type: string;
   } | null>(null);
   
+  // Search state
+  const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
   const { data: members, isLoading: membersLoading } = useMembers(profile?.region_id || '');
@@ -100,8 +103,19 @@ const Certificates = () => {
     profile?.region_id || undefined
   );
 
-  // Filter members based on event selection
-  const filteredMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
+  // Filter members based on event selection and search term
+  const baseMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
+  const filteredMembers = baseMembers.filter((member) => {
+    if (!memberSearchTerm) return true;
+    
+    const fullName = member.profiles?.first_name && member.profiles?.last_name
+      ? `${member.profiles.first_name} ${member.profiles.last_name}`.toLowerCase()
+      : (member.profiles?.email || '').toLowerCase();
+    const memberId = (member.member_id || '').toLowerCase();
+    const searchLower = memberSearchTerm.toLowerCase();
+    
+    return fullName.includes(searchLower) || memberId.includes(searchLower);
+  });
   
   // Mutations
   const uploadTemplate = useUploadCertificateTemplate();
@@ -563,6 +577,16 @@ const Certificates = () => {
                       {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
                     </Button>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Search by name or member ID..."
+                      value={memberSearchTerm}
+                      onChange={(e) => setMemberSearchTerm(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  
                   {selectedEventId && selectedEventId !== 'none' && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
                       <FileCheck className="h-4 w-4" />
