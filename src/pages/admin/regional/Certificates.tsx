@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   useCertificateTemplates, 
@@ -82,6 +83,10 @@ const Certificates = () => {
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
+  
+  // Email sending progress state
+  const [isSendingEmails, setIsSendingEmails] = useState(false);
+  const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
   const [certificateToDeletePermanently, setCertificateToDeletePermanently] = useState<{
     id: string;
     certificate_url: string;
@@ -422,8 +427,23 @@ const Certificates = () => {
       return;
     }
 
-    await sendEmails.mutateAsync(selectedCertificates);
-    setSelectedCertificates([]);
+    setIsSendingEmails(true);
+    setEmailProgress({ current: 0, total: 0 });
+
+    try {
+      await sendEmails.mutateAsync({
+        certificate_ids: selectedCertificates,
+        onProgress: (current, total) => {
+          setEmailProgress({ current, total });
+        }
+      });
+      setSelectedCertificates([]);
+    } catch (error) {
+      console.error('Error sending emails:', error);
+    } finally {
+      setIsSendingEmails(false);
+      setEmailProgress({ current: 0, total: 0 });
+    }
   };
 
   const toggleMemberSelection = (memberId: string) => {
@@ -807,15 +827,26 @@ const Certificates = () => {
                           });
                         }
                       }}
-                      disabled={selectedCertificates.length === 0 || sendEmails.isPending}
+                      disabled={selectedCertificates.length === 0 || isSendingEmails}
                     >
                       <Send className="mr-2 h-4 w-4" />
-                      {sendEmails.isPending ? 'Sending...' : `Email Selected (${selectedCertificates.length})`}
+                      {isSendingEmails 
+                        ? `Sending batch ${emailProgress.current}/${emailProgress.total}...` 
+                        : `Email Selected (${selectedCertificates.length})`}
                     </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {isSendingEmails && (
+                  <div className="mb-4 space-y-2">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Sending emails in batches...</span>
+                      <span>Batch {emailProgress.current} of {emailProgress.total}</span>
+                    </div>
+                    <Progress value={(emailProgress.current / emailProgress.total) * 100} />
+                  </div>
+                )}
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
                 ) : issuedCertificates && issuedCertificates.length > 0 ? (
