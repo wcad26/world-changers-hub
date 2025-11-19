@@ -1,0 +1,37 @@
+UPDATE certificates
+SET email_sent_at = issued_date::timestamp with time zone
+WHERE recipient_email IN (
+  'menyehfhkimbuchio@gmail.com',
+  'naratogenjin@mail.com',
+  'gracenfor109@gmail.com',
+  'K91875960@gmail.com',
+  'angekeuga01@gmail.com',
+  'bhaddiecute226@gmail.com',
+  'nadegcumi@gmail.com',
+  'emmanuelshey@gmail.com',
+  'ngongangtchigeproosie@gmail.com',
+  'josephpodai@outlook.com',
+  'ruthjabea612@gmail.com',
+  'JuanbradyManjenjedissaka@gmail.com',
+  'seanjason0209@gmail.com',
+  'kamganata@gmail.com',
+  'g74849446@gmail.com',
+  'benguelbangwaltermoise@gmail.com',
+  'linnahetang@gmail.com',
+  'djeabiamba@gmail.com',
+  'anaisfeussi@gmail.com',
+  'jakyjenny@gmail.com',
+  'jofinawafo17@gmail.com',
+  'michelnkaa8@gmail.com',
+  'BrendalekukengBOuza@gmail.com',
+  'djeudjeudanielle@gmail.com',
+  'madeleinlaeticiapouche@gmail.com',
+  'ejenguelebongwaltermoise@gmail.com',
+  'ndanielaurelien@yahoo.fr',
+  'martainsandracar677448107@gmail.com',
+  'yasminemassah@gmail.com',
+  'maestrodivane@icloud.com',
+  'innakalixte@gmail.com',
+  'madeleinelaeticiapouhe@gmail.com'
+)
+AND email_sent_at IS NULL;
