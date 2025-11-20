@@ -83,6 +83,7 @@ const Certificates = () => {
   
   // Issued certificates state
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
+  const [selectedSentCertificates, setSelectedSentCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
@@ -479,6 +480,83 @@ const Certificates = () => {
         ? prev.filter(id => id !== certificateId)
         : [...prev, certificateId]
     );
+  };
+
+  const toggleSentCertificateSelection = (certificateId: string) => {
+    setSelectedSentCertificates(prev => 
+      prev.includes(certificateId) 
+        ? prev.filter(id => id !== certificateId)
+        : [...prev, certificateId]
+    );
+  };
+
+  const handleResendEmails = async () => {
+    if (selectedSentCertificates.length === 0) {
+      toast({
+        title: 'No certificates selected',
+        description: 'Please select certificates to resend',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Filter only active certificates with resendable statuses
+    const resendableCertificates = sentCertificates?.filter(cert => 
+      selectedSentCertificates.includes(cert.id) && 
+      cert.is_active &&
+      ['pending', 'failed', 'bounced'].includes(cert.email_status || 'pending')
+    ).map(c => c.id) || [];
+
+    if (resendableCertificates.length === 0) {
+      toast({
+        title: 'No resendable certificates',
+        description: 'Selected certificates cannot be resent (already delivered or inactive)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSendingEmails(true);
+    setEmailProgress({ current: 0, total: 0 });
+
+    try {
+      await sendEmails.mutateAsync({
+        certificate_ids: resendableCertificates,
+        onProgress: (current, total) => {
+          setEmailProgress({ current, total });
+        }
+      });
+      setSelectedSentCertificates([]);
+      toast({
+        title: 'Success',
+        description: `Resent ${resendableCertificates.length} certificate(s)`,
+      });
+    } catch (error) {
+      console.error('Error resending emails:', error);
+    } finally {
+      setIsSendingEmails(false);
+      setEmailProgress({ current: 0, total: 0 });
+    }
+  };
+
+  const handleDownloadSentCertificates = async () => {
+    if (selectedSentCertificates.length === 0) {
+      toast({
+        title: 'No certificates selected',
+        description: 'Please select certificates to download',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const certificatesToDownload = sentCertificates?.filter(cert => 
+      selectedSentCertificates.includes(cert.id)
+    ).map(cert => ({
+      url: cert.certificate_url,
+      filename: `${cert.certificate_number}.png`
+    })) || [];
+
+    await downloadCertificatesAsZip(certificatesToDownload);
   };
 
   return (
@@ -986,36 +1064,72 @@ const Certificates = () => {
           <TabsContent value="sent" className="space-y-6">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center flex-wrap gap-4">
                   <div>
                     <CardTitle>Sent Certificates</CardTitle>
                     <CardDescription>
-                      View certificates that have been sent via email
+                      View and resend certificates that have been sent via email
                     </CardDescription>
                   </div>
-                  <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Email Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value="sent">📤 Sent</SelectItem>
-                      <SelectItem value="delivered">✅ Delivered</SelectItem>
-                      <SelectItem value="bounced">❌ Bounced</SelectItem>
-                      <SelectItem value="failed">⚠️ Failed</SelectItem>
-                      <SelectItem value="complained">⚠️ Complained</SelectItem>
-                      <SelectItem value="pending">⏳ Pending</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 items-center flex-wrap">
+                    <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Email Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        <SelectItem value="sent">📤 Sent</SelectItem>
+                        <SelectItem value="delivered">✅ Delivered</SelectItem>
+                        <SelectItem value="bounced">❌ Bounced</SelectItem>
+                        <SelectItem value="failed">⚠️ Failed</SelectItem>
+                        <SelectItem value="complained">⚠️ Complained</SelectItem>
+                        <SelectItem value="pending">⏳ Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline"
+                      onClick={handleDownloadSentCertificates}
+                      disabled={selectedSentCertificates.length === 0}
+                    >
+                      <FileCheck className="mr-2 h-4 w-4" />
+                      Download Selected ({selectedSentCertificates.length})
+                    </Button>
+                    <Button 
+                      onClick={handleResendEmails}
+                      disabled={selectedSentCertificates.length === 0 || isSendingEmails}
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      {isSendingEmails 
+                        ? `Sending batch ${emailProgress.current}/${emailProgress.total}...` 
+                        : `Resend Selected (${selectedSentCertificates.length})`}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {isSendingEmails && (
+                  <div className="mb-4 space-y-2">
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Sending emails in batches...</span>
+                      <span>Batch {emailProgress.current} of {emailProgress.total}</span>
+                    </div>
+                    <Progress value={(emailProgress.current / emailProgress.total) * 100} />
+                  </div>
+                )}
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
                 ) : filteredSentCertificates.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedSentCertificates.length === filteredSentCertificates.filter(c => c.is_active).length && filteredSentCertificates.filter(c => c.is_active).length > 0}
+                            onCheckedChange={(checked) => {
+                              setSelectedSentCertificates(checked ? filteredSentCertificates.filter(c => c.is_active).map(c => c.id) : []);
+                            }}
+                          />
+                        </TableHead>
                         <TableHead>Recipient</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Event</TableHead>
@@ -1057,6 +1171,13 @@ const Certificates = () => {
                             !cert.is_active && "opacity-60 bg-muted/50"
                           )}
                         >
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedSentCertificates.includes(cert.id)}
+                              onCheckedChange={() => toggleSentCertificateSelection(cert.id)}
+                              disabled={!cert.is_active}
+                            />
+                          </TableCell>
                           <TableCell className={cn(!cert.is_active && "text-muted-foreground")}>
                             {cert.recipient_name}
                           </TableCell>
