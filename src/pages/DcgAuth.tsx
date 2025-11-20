@@ -122,6 +122,17 @@ const DcgAuth = () => {
                 required
                 disabled={loading}
               />
+              <div className="text-right mt-1">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-xs text-primary hover:text-primary/80 p-0 h-auto"
+                  onClick={() => navigate('/auth/forgot-password?portal=dcg')}
+                  disabled={loading}
+                >
+                  Forgot your password?
+                </Button>
+              </div>
             </div>
           </CardContent>
           <CardFooter>

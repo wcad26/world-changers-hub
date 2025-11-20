@@ -308,6 +308,17 @@ const RegionSpecificAuth = () => {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </Button>
                 </div>
+                <div className="text-right mt-1">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-xs text-wca-teal hover:text-wca-teal/80 p-0 h-auto"
+                    onClick={() => navigate(`/auth/forgot-password?portal=regional&region=${regionSlug}`)}
+                    disabled={isLoading}
+                  >
+                    Forgot your password?
+                  </Button>
+                </div>
               </div>
 
               <Button

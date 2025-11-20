@@ -383,6 +383,19 @@ const SuperAuth = () => {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </Button>
                 </div>
+                {!isSignUp && (
+                  <div className="text-right mt-1">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="text-xs text-wca-purple hover:text-wca-purple/80 p-0 h-auto"
+                      onClick={() => navigate('/auth/forgot-password?portal=super')}
+                      disabled={isLoading}
+                    >
+                      Forgot your password?
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <Button
