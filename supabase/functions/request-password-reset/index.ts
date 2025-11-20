@@ -163,7 +163,13 @@ serve(async (req) => {
 
     if (emailError) {
       console.error('Error sending email:', emailError);
-      throw new Error('Failed to send OTP email');
+      
+      // Check if it's a Resend domain verification error
+      if (emailError.message && emailError.message.includes('verify a domain')) {
+        throw new Error('Email service is not fully configured. Please verify your domain at resend.com/domains or contact your administrator.');
+      }
+      
+      throw new Error('Failed to send OTP email. Please try again or contact support.');
     }
 
     console.log('OTP sent successfully to:', email);
