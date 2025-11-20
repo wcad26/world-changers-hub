@@ -106,7 +106,7 @@ serve(async (req) => {
     const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
     
     const { error: emailError } = await resend.emails.send({
-      from: 'WCA Admin Portal <noreply@resend.dev>',
+      from: 'WCA Admin Portal <noreply@wcaglobal.org>',
       to: [email],
       subject: 'Password Reset - Your OTP Code',
       html: `
