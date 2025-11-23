@@ -221,6 +221,7 @@ export default function VisitorRegister() {
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
+                                type="button"
                                 variant="outline"
                                 className={cn(
                                   "w-full pl-3 text-left font-normal",
@@ -240,11 +241,12 @@ export default function VisitorRegister() {
                             <Calendar
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                               disabled={(date) =>
                                 date > new Date() || date < new Date("1900-01-01")
                               }
                               initialFocus
+                              className={cn("p-3 pointer-events-auto")}
                             />
                           </PopoverContent>
                         </Popover>
