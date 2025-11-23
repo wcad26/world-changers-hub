@@ -162,7 +162,7 @@ export default function MemberRegister() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
           <Card className="max-w-2xl w-full">
             <CardHeader>
-              <div className="flex items-center gap-2 text-green-600">
+              <div className="flex items-center justify-center gap-2 text-green-600">
                 <CheckCircle2 className="h-6 w-6" />
                 <CardTitle>{t('memberRegistrationSuccess')}</CardTitle>
               </div>
