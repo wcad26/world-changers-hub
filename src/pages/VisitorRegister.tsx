@@ -290,37 +290,34 @@ export default function VisitorRegister() {
                   )}
                 />
 
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-sm font-semibold">{t('emergencyContact')} ({t('optional')})</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="emergency_contact_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('emergencyContactName')}</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Contact name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('emergencyContactName')} ({t('optional')})</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Contact name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name="emergency_contact_phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('emergencyContactPhone')}</FormLabel>
-                          <FormControl>
-                            <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="emergency_contact_phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('emergencyContactPhone')} ({t('optional')})</FormLabel>
+                        <FormControl>
+                          <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
                 {/* Event Selection - Only show if events are available */}
