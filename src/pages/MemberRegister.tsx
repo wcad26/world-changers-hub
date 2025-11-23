@@ -77,7 +77,6 @@ export default function MemberRegister() {
       last_name: '',
       email: '',
       phone: '',
-      whatsapp_number: '',
       address: '',
       date_of_birth: '',
       gender: '',
@@ -297,28 +296,14 @@ export default function MemberRegister() {
                             <FormControl>
                               <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
                             </FormControl>
+                            <FormDescription className="text-xs">
+                              {t('phoneDescription')}
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-
-                    <FormField
-                      control={form.control}
-                      name="whatsapp_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('whatsappNumber')}</FormLabel>
-                          <FormControl>
-                            <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            {t('whatsappDescription')}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
                     <FormField
                       control={form.control}

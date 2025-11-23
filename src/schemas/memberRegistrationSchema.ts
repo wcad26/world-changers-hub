@@ -21,12 +21,6 @@ export const memberRegistrationSchema = z.object({
     .min(10, "Phone number must be at least 10 characters")
     .max(20, "Phone number must be less than 20 characters"),
   
-  whatsapp_number: z.string()
-    .trim()
-    .min(10, "WhatsApp number must be at least 10 characters")
-    .max(20, "WhatsApp number must be less than 20 characters")
-    .optional(),
-  
   address: z.string()
     .trim()
     .min(10, "Address must be at least 10 characters")
