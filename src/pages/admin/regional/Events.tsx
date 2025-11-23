@@ -3041,7 +3041,7 @@ const RegionalEvents: React.FC = () => {
                   control={form.control}
                   name="registration_url"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="md:col-span-2">
                       <FormLabel>Registration URL (Optional)</FormLabel>
                       <FormControl>
                         <Input placeholder="https://forms.google.com/..." {...field} />
