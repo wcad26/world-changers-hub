@@ -28,6 +28,7 @@ import RegionalRegister from "./pages/auth/RegionalRegister";
 import RegionSpecificRegister from "./pages/auth/RegionSpecificRegister";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
+import MemberRegister from "./pages/MemberRegister";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
 import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
@@ -140,6 +141,7 @@ const App = () => {
             <Route path="/register/regional" element={<RegionalRegister />} />
             <Route path="/register/regions/:regionCode" element={<RegionSpecificRegister />} />
             <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
+            <Route path="/member/register/:regionCode" element={<MemberRegister />} />
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/dcg-auth" element={<DcgAuth />} />
