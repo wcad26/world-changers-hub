@@ -36,17 +36,20 @@ export const visitorRegistrationSchema = z.object({
     .trim()
     .min(2, "Occupation must be at least 2 characters")
     .max(100, "Occupation must be less than 100 characters")
+    .transform((val) => val === '' ? undefined : val)
     .optional(),
   
   emergency_contact_name: z.string()
     .trim()
     .max(100, "Name must be less than 100 characters")
+    .transform((val) => val === '' ? undefined : val)
     .optional(),
   
   emergency_contact_phone: z.string()
     .trim()
     .min(10, "Phone must be at least 10 characters")
     .max(20, "Phone must be less than 20 characters")
+    .transform((val) => val === '' ? undefined : val)
     .optional(),
   
   rated_event_id: z.string().uuid().optional(),
@@ -64,11 +67,13 @@ export const visitorRegistrationSchema = z.object({
   referral_person_name: z.string()
     .trim()
     .max(100, "Name must be less than 100 characters")
+    .transform((val) => val === '' ? undefined : val)
     .optional(),
   
   referral_other_details: z.string()
     .trim()
     .max(200, "Details must be less than 200 characters")
+    .transform((val) => val === '' ? undefined : val)
     .optional()
 }).refine((data) => {
   // If referral_source is "invited_by", referral_person_name is required
