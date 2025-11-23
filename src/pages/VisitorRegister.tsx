@@ -216,7 +216,7 @@ export default function VisitorRegister() {
                     name="date_of_birth"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t('dateOfBirth')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('dateOfBirth')}</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -258,7 +258,7 @@ export default function VisitorRegister() {
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('gender')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('gender')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -281,7 +281,7 @@ export default function VisitorRegister() {
                   name="occupation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('occupation')} ({t('optional')})</FormLabel>
+                      <FormLabel>{t('occupation')}</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Teacher, Engineer, Student" {...field} />
                       </FormControl>
@@ -296,7 +296,7 @@ export default function VisitorRegister() {
                     name="emergency_contact_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('emergencyContactName')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('emergencyContactName')}</FormLabel>
                         <FormControl>
                           <Input placeholder="Contact name" {...field} />
                         </FormControl>
@@ -310,7 +310,7 @@ export default function VisitorRegister() {
                     name="emergency_contact_phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('emergencyContactPhone')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('emergencyContactPhone')}</FormLabel>
                         <FormControl>
                           <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
                         </FormControl>
@@ -327,7 +327,7 @@ export default function VisitorRegister() {
                     name="rated_event_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('selectEvent')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('selectEvent')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-auto min-h-[2.5rem]">
@@ -366,7 +366,7 @@ export default function VisitorRegister() {
                     name="event_satisfaction_rating"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('eventSatisfaction')} ({t('optional')})</FormLabel>
+                        <FormLabel>{t('eventSatisfaction')}</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={(value) => field.onChange(parseInt(value))}
@@ -398,7 +398,7 @@ export default function VisitorRegister() {
                   name="referral_source"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('referralSource')} ({t('optional')})</FormLabel>
+                      <FormLabel>{t('referralSource')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
