@@ -214,16 +214,9 @@ export default function MemberRegister() {
         <div className="max-w-3xl mx-auto">
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2 mb-2">
-                <Link to="/">
-                  <Button variant="ghost" size="icon">
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <div>
-                  <CardTitle className="text-2xl">{t('memberRegistration')}</CardTitle>
-                  <CardDescription>{region.name}</CardDescription>
-                </div>
+              <div className="mb-2">
+                <CardTitle className="text-2xl">{t('memberRegistration')}</CardTitle>
+                <CardDescription>{region.name}</CardDescription>
               </div>
               <p className="text-sm text-muted-foreground">
                 {t('memberWelcome')}
