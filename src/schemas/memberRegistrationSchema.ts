@@ -49,10 +49,6 @@ export const memberRegistrationSchema = z.object({
     .max(20, "Phone must be less than 20 characters")
     .optional(),
   
-  is_baptized: z.boolean().optional(),
-  
-  baptism_date: z.string().optional(),
-  
   ministry_interests: z.array(z.string()).optional(),
   
   skills_talents: z.string()
@@ -60,16 +56,28 @@ export const memberRegistrationSchema = z.object({
     .max(500, "Skills and talents must be less than 500 characters")
     .optional(),
   
+  has_completed_foundation_school: z.string().optional(),
+  
+  foundation_school_date: z.string().optional(),
+  
+  is_baptized: z.string().optional(),
+  
+  baptism_date: z.string().optional(),
+  
   dcg_id: z.string().uuid().optional(),
 }).refine((data) => {
-  // If is_baptized is true, baptism_date should be provided
-  if (data.is_baptized && !data.baptism_date) {
+  // If completed Foundation School, date is required
+  if (data.has_completed_foundation_school === 'yes' && !data.foundation_school_date) {
+    return false;
+  }
+  // If baptized, date is required
+  if (data.is_baptized === 'yes' && !data.baptism_date) {
     return false;
   }
   return true;
 }, {
-  message: "Please provide your baptism date",
-  path: ["baptism_date"]
+  message: "Please provide the completion date",
+  path: ["foundation_school_date", "baptism_date"]
 });
 
 export type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;

@@ -1372,6 +1372,7 @@ export type Database = {
           baptism_date: string | null
           created_at: string | null
           event_satisfaction_rating: number | null
+          foundation_school_date: string | null
           id: string
           is_volunteer: boolean | null
           join_date: string | null
@@ -1395,6 +1396,7 @@ export type Database = {
           baptism_date?: string | null
           created_at?: string | null
           event_satisfaction_rating?: number | null
+          foundation_school_date?: string | null
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
@@ -1418,6 +1420,7 @@ export type Database = {
           baptism_date?: string | null
           created_at?: string | null
           event_satisfaction_rating?: number | null
+          foundation_school_date?: string | null
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
