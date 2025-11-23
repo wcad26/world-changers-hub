@@ -87,7 +87,7 @@ serve(async (req) => {
         phone,
         address,
         date_of_birth: date_of_birth || null,
-        gender: gender || null,
+        gender: gender ? gender.toLowerCase() : null,
         occupation: occupation || null,
         emergency_contact_name: emergency_contact_name || null,
         emergency_contact_phone: emergency_contact_phone || null,
