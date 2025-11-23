@@ -21,7 +21,6 @@ serve(async (req) => {
       last_name, 
       email, 
       phone,
-      whatsapp_number,
       address,
       date_of_birth,
       gender,
@@ -149,7 +148,6 @@ serve(async (req) => {
         baptism_date: (is_baptized && baptism_date) ? baptism_date : null,
         skills_talents: skillsArray,
         preferred_service_areas: ministryArray,
-        notes: whatsapp_number ? `WhatsApp: ${whatsapp_number}` : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
