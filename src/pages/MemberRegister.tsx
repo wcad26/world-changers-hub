@@ -167,39 +167,8 @@ export default function MemberRegister() {
                 <CardTitle>{t('memberRegistrationSuccess')}</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Alert>
-                <AlertDescription className="whitespace-pre-line">
-                  {registrationSuccess.message}
-                </AlertDescription>
-              </Alert>
-
-              <div className="bg-muted p-4 rounded-lg space-y-2">
-                <p className="font-semibold">{t('yourLoginCredentials')}:</p>
-                <div className="space-y-1 text-sm">
-                  <p><strong>{t('email')}:</strong> {registrationSuccess.login_email}</p>
-                  <p><strong>{t('password')}:</strong> {registrationSuccess.default_password}</p>
-                  <p className="text-muted-foreground italic mt-2">
-                    {t('pleaseChangePassword')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <Button onClick={() => navigate('/member/auth')} className="flex-1">
-                  {t('loginNow')}
-                </Button>
-                <Button 
-                  onClick={() => {
-                    setRegistrationSuccess(null);
-                    form.reset();
-                  }} 
-                  variant="outline" 
-                  className="flex-1"
-                >
-                  {t('registerAnother')}
-                </Button>
-              </div>
+            <CardContent>
+              {/* Success message displayed - no additional details shown */}
             </CardContent>
           </Card>
         </div>
