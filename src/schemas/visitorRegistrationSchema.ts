@@ -26,6 +26,29 @@ export const visitorRegistrationSchema = z.object({
     .min(10, "Address must be at least 10 characters")
     .max(200, "Address must be less than 200 characters"),
   
+  date_of_birth: z.string()
+    .optional(),
+  
+  gender: z.string()
+    .optional(),
+  
+  occupation: z.string()
+    .trim()
+    .min(2, "Occupation must be at least 2 characters")
+    .max(100, "Occupation must be less than 100 characters")
+    .optional(),
+  
+  emergency_contact_name: z.string()
+    .trim()
+    .max(100, "Name must be less than 100 characters")
+    .optional(),
+  
+  emergency_contact_phone: z.string()
+    .trim()
+    .min(10, "Phone must be at least 10 characters")
+    .max(20, "Phone must be less than 20 characters")
+    .optional(),
+  
   rated_event_id: z.string().uuid().optional(),
   
   event_satisfaction_rating: z.number()
