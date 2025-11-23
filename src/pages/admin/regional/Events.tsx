@@ -3044,8 +3044,11 @@ const RegionalEvents: React.FC = () => {
                     <FormItem>
                       <FormLabel>Registration URL (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://..." {...field} />
+                        <Input placeholder="https://forms.google.com/..." {...field} />
                       </FormControl>
+                      <FormDescription>
+                        External registration link (Google Forms, Eventbrite, etc.)
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
