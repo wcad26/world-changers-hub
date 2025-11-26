@@ -53,13 +53,15 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
 
               {/* Right Side - White Background with Buttons */}
               <div className="bg-white p-12 flex flex-col justify-center space-y-6">
-                <Button 
-                  className="w-full bg-[#542a8f] hover:bg-[#542a8f]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
-                  onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
-                >
-                  <Calendar className="mr-2 h-5 w-5" />
-                  {t('registerForEvent')}
-                </Button>
+                {event.registration_url && (
+                  <Button 
+                    className="w-full bg-[#542a8f] hover:bg-[#542a8f]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
+                    onClick={() => window.open(event.registration_url, '_blank')}
+                  >
+                    <Calendar className="mr-2 h-5 w-5" />
+                    {t('registerForEvent')}
+                  </Button>
+                )}
                 
                 <Button 
                   className="w-full bg-[#35adaf] hover:bg-[#35adaf]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
