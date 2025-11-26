@@ -17,32 +17,6 @@ export function EventFAQ({ eventId }: EventFAQProps) {
   const { data: faqs, isLoading } = useEventFAQs(eventId);
   const { t, localizedField } = useLanguage();
 
-  // Fallback FAQs if none exist for this event
-  const defaultFAQs = [
-    {
-      question: "How do I register for the event?",
-      answer: "You can register by clicking the 'Register Now' button above. Fill out the registration form with your details, and you'll receive a confirmation email with all the event information.",
-    },
-    {
-      question: "What should I bring to the event?",
-      answer: "Please bring a valid ID for check-in, comfortable clothing, and any personal items you may need. Specific requirements will be sent in your confirmation email.",
-    },
-    {
-      question: "Is parking available at the venue?",
-      answer: "Yes, complimentary parking is available for all attendees. The parking area is located adjacent to the main venue entrance.",
-    },
-    {
-      question: "Can I get a refund if I can't attend?",
-      answer: "Refund policies vary by event. Generally, you can request a refund up to 48 hours before the event start time. Please check your confirmation email for specific details.",
-    },
-    {
-      question: "Will food and beverages be provided?",
-      answer: "Yes, refreshments will be provided throughout the event. If you have any dietary restrictions, please let us know during registration.",
-    },
-  ];
-
-  const displayFAQs = faqs && faqs.length > 0 ? faqs : defaultFAQs;
-
   if (isLoading) {
     return (
       <section className="py-10 bg-gradient-to-b from-background to-muted/20">
@@ -62,6 +36,11 @@ export function EventFAQ({ eventId }: EventFAQProps) {
     );
   }
 
+  // Don't render the section if no FAQs exist for this event
+  if (!faqs || faqs.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-10 bg-gradient-to-b from-background to-muted/20">
       <div className="container-custom">
@@ -79,7 +58,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
 
         <div className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="space-y-4">
-            {displayFAQs.map((faq, index) => {
+            {faqs.map((faq, index) => {
               // Check if this is a database FAQ (has _fr fields) or default FAQ
               const question = 'question_fr' in faq 
                 ? (localizedField(faq.question, (faq as any).question_fr) as string)
