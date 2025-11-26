@@ -16,20 +16,29 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
   const defaultTestimonials = [
     {
       name: "Sarah Johnson",
+      name_fr: "Sarah Johnson",
       role: "Previous Attendee",
+      role_fr: "Ancienne participante",
       content: "This event exceeded all my expectations. The organization was flawless, and I learned so much from the sessions!",
+      content_fr: "Cet événement a dépassé toutes mes attentes. L'organisation était impeccable et j'ai tellement appris des sessions !",
       rating: 5,
     },
     {
       name: "Michael Chen",
+      name_fr: "Michael Chen",
       role: "Community Member",
+      role_fr: "Membre de la communauté",
       content: "Amazing experience! Met wonderful people and gained valuable insights. Can't wait for the next one.",
+      content_fr: "Une expérience incroyable ! J'ai rencontré des personnes formidables et acquis des connaissances précieuses. J'attends le prochain avec impatience.",
       rating: 5,
     },
     {
       name: "Emily Rodriguez",
+      name_fr: "Emily Rodriguez",
       role: "First-time Participant",
+      role_fr: "Participante pour la première fois",
       content: "As a first-timer, I was warmly welcomed. The event was well-structured and incredibly enriching.",
+      content_fr: "En tant que nouvelle participante, j'ai été chaleureusement accueillie. L'événement était bien structuré et incroyablement enrichissant.",
       rating: 5,
     },
   ];
