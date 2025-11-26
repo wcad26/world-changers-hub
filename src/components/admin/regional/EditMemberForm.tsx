@@ -42,20 +42,20 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
 
   const updateMember = useMutation({
     mutationFn: async (data: NewMemberData) => {
-      // Update profile
+      // Update profile - convert empty strings to null for optional fields
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: data.first_name,
           last_name: data.last_name,
           email: data.email,
-          phone: data.phone,
-          address: data.address,
-          date_of_birth: data.date_of_birth,
-          gender: data.gender,
-          occupation: data.occupation,
-          emergency_contact_name: data.emergency_contact_name,
-          emergency_contact_phone: data.emergency_contact_phone,
+          phone: data.phone || null,
+          address: data.address || null,
+          date_of_birth: data.date_of_birth || null,
+          gender: data.gender ? data.gender.toLowerCase() : null,
+          occupation: data.occupation || null,
+          emergency_contact_name: data.emergency_contact_name || null,
+          emergency_contact_phone: data.emergency_contact_phone || null,
         })
         .eq('id', member.profile_id);
 
@@ -168,9 +168,9 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Male">Male</SelectItem>
-              <SelectItem value="Female">Female</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+              <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
           {errors.gender && (
