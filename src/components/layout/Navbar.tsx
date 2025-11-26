@@ -29,38 +29,38 @@ const Navbar = () => {
           {/* Navigation Links - Desktop */}
           <nav className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              Home
+              {language === 'fr' ? 'Accueil' : 'Home'}
             </Link>
             <Link to="/about" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              About Us
+              {language === 'fr' ? 'À propos' : 'About Us'}
             </Link>
             <Link to="/locations" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              Locations
+              {language === 'fr' ? 'Emplacements' : 'Locations'}
             </Link>
             <Link to="/events" className="text-muted-foreground hover:text-primary transition-colors font-medium">
-              Events
+              {language === 'fr' ? 'Événements' : 'Events'}
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-muted-foreground hover:text-primary transition-colors font-medium p-0 h-auto">
-                  Resources <ChevronDown className="ml-1 h-4 w-4" />
+                  {language === 'fr' ? 'Ressources' : 'Resources'} <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-background border shadow-lg">
                 <DropdownMenuItem asChild>
-                  <Link to="/media" className="w-full">Media & Sermons</Link>
+                  <Link to="/media" className="w-full">{language === 'fr' ? 'Médias et sermons' : 'Media & Sermons'}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/store" className="w-full">Store/Library</Link>
+                  <Link to="/store" className="w-full">{language === 'fr' ? 'Boutique/Bibliothèque' : 'Store/Library'}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/blog" className="w-full">News & Blog</Link>
+                  <Link to="/blog" className="w-full">{language === 'fr' ? 'Actualités et blog' : 'News & Blog'}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/counseling" className="w-full">Counselling</Link>
+                  <Link to="/counseling" className="w-full">{language === 'fr' ? 'Conseil' : 'Counselling'}</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/fundraising" className="w-full">Fundraising</Link>
+                  <Link to="/fundraising" className="w-full">{language === 'fr' ? 'Collecte de fonds' : 'Fundraising'}</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -80,7 +80,7 @@ const Navbar = () => {
 
             {/* CTA Button */}
             <Button size="sm" className="hidden sm:inline-flex">
-              Visit Us
+              {language === 'fr' ? 'Visitez-nous' : 'Visit Us'}
             </Button>
 
             {/* Mobile Menu Button */}
@@ -95,42 +95,42 @@ const Navbar = () => {
                   {/* Navigation Links */}
                   <nav className="flex flex-col space-y-4">
                     <Link to="/" className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50">
-                      Home
+                      {language === 'fr' ? 'Accueil' : 'Home'}
                     </Link>
                     <Link to="/about" className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50">
-                      About Us
+                      {language === 'fr' ? 'À propos' : 'About Us'}
                     </Link>
                     <Link to="/locations" className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50">
-                      Locations
+                      {language === 'fr' ? 'Emplacements' : 'Locations'}
                     </Link>
                     <Link to="/events" className="text-lg font-medium text-foreground hover:text-primary transition-colors py-2 border-b border-border/50">
-                      Events
+                      {language === 'fr' ? 'Événements' : 'Events'}
                     </Link>
                     
                     {/* Resources Section - Collapsible */}
                     <Collapsible className="border-b border-border/50">
                       <CollapsibleTrigger asChild>
                         <button className="flex items-center justify-between w-full py-2 text-left">
-                          <h4 className="text-lg font-medium text-foreground">Resources</h4>
+                          <h4 className="text-lg font-medium text-foreground">{language === 'fr' ? 'Ressources' : 'Resources'}</h4>
                           <ChevronDown className="h-5 w-5 transition-transform duration-200 data-[state=open]:rotate-180" />
                         </button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="pb-2">
                         <div className="flex flex-col space-y-2 pl-4 pt-2">
                           <Link to="/media" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                            Media & Sermons
+                            {language === 'fr' ? 'Médias et sermons' : 'Media & Sermons'}
                           </Link>
                           <Link to="/store" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                            Store/Library
+                            {language === 'fr' ? 'Boutique/Bibliothèque' : 'Store/Library'}
                           </Link>
                           <Link to="/blog" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                            News & Blog
+                            {language === 'fr' ? 'Actualités et blog' : 'News & Blog'}
                           </Link>
                           <Link to="/counseling" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                            Counselling
+                            {language === 'fr' ? 'Conseil' : 'Counselling'}
                           </Link>
                           <Link to="/fundraising" className="text-base text-muted-foreground hover:text-primary transition-colors py-1">
-                            Fundraising
+                            {language === 'fr' ? 'Collecte de fonds' : 'Fundraising'}
                           </Link>
                         </div>
                       </CollapsibleContent>
@@ -140,7 +140,7 @@ const Navbar = () => {
                     <div className="py-4 border-b border-border/50">
                       <div className="flex items-center gap-2 mb-3">
                         <Languages className="h-5 w-5 text-foreground" />
-                        <h4 className="text-lg font-medium text-foreground">Language</h4>
+                        <h4 className="text-lg font-medium text-foreground">{language === 'fr' ? 'Langue' : 'Language'}</h4>
                       </div>
                       <div className="flex gap-2 pl-4">
                         <Button
@@ -165,7 +165,7 @@ const Navbar = () => {
 
                   {/* Contact Information */}
                   <div className="space-y-4 pt-4">
-                    <h3 className="font-semibold text-foreground">Contact Us</h3>
+                    <h3 className="font-semibold text-foreground">{language === 'fr' ? 'Nous contacter' : 'Contact Us'}</h3>
                     <div className="space-y-3">
                       <a href="tel:+23767568130" className="flex items-center space-x-3 text-muted-foreground hover:text-primary transition-colors">
                         <Phone className="w-5 h-5" />
@@ -181,7 +181,7 @@ const Navbar = () => {
                   {/* CTA Button */}
                   <div className="pt-4">
                     <Button className="w-full">
-                      Visit Us
+                      {language === 'fr' ? 'Visitez-nous' : 'Visit Us'}
                     </Button>
                   </div>
                 </div>
