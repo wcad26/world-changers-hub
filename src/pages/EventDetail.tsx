@@ -173,13 +173,15 @@ export default function EventDetail() {
                     {t('contactUs')}
                   </Button>
                   
-                  <Button 
-                    className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
-                    onClick={() => event.registration_url && window.open(event.registration_url, '_blank')}
-                  >
-                    <Calendar className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
-                    {t('registerForEvent')}
-                  </Button>
+                  {event.registration_url && (
+                    <Button 
+                      className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
+                      onClick={() => window.open(event.registration_url, '_blank')}
+                    >
+                      <Calendar className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
+                      {t('registerForEvent')}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
