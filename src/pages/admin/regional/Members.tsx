@@ -305,7 +305,13 @@ const Members: React.FC = () => {
                             <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
                             <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
                             <TableCell>
-                              <RoleBadge roles={member.profiles?.user_roles || []} />
+                              <Badge 
+                                variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
+                                className={member.member_type === 'visitor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}
+                              >
+                                <Users className="w-3 h-3 mr-1" />
+                                {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
+                              </Badge>
                             </TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(member.status || 'new')}>
