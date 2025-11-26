@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, Filter, X, ChevronDown, Languages, Copy } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy } from "lucide-react";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
@@ -47,6 +47,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AttendanceManagementDialog } from "@/components/admin/regional/events/AttendanceManagementDialog";
@@ -842,6 +843,28 @@ const RegionalEvents: React.FC = () => {
     }
   };
 
+  const handleTogglePublic = async (event: any) => {
+    const newStatus = !event.is_public;
+    try {
+      await updateEventMutation.mutateAsync({
+        id: event.id,
+        is_public: newStatus,
+      });
+      toast({
+        title: newStatus ? "Event Made Public" : "Event Made Private",
+        description: newStatus 
+          ? `"${event.name}" is now visible on public pages.`
+          : `"${event.name}" is now hidden from public pages.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to update event visibility.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleAttendance = (event: any) => {
     setSelectedEvent(event);
     setAttendanceDialogOpen(true);
@@ -1481,14 +1504,28 @@ const RegionalEvents: React.FC = () => {
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => handleDuplicate(event)}
-                disabled={isDuplicating}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                {isDuplicating ? "Duplicating..." : "Duplicate"}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleAttendance(event)}>
+                              <DropdownMenuItem 
+                                onClick={() => handleDuplicate(event)}
+                                disabled={isDuplicating}
+                              >
+                                <Copy className="mr-2 h-4 w-4" />
+                                {isDuplicating ? "Duplicating..." : "Duplicate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleTogglePublic(event)}>
+                                {event.is_public ? (
+                                  <>
+                                    <EyeOff className="mr-2 h-4 w-4" />
+                                    Make Private
+                                  </>
+                                ) : (
+                                  <>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Make Public
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleAttendance(event)}>
                 <UserCheck className="mr-2 h-4 w-4" />
                 Record Attendance
               </DropdownMenuItem>
