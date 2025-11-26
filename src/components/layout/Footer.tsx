@@ -33,74 +33,74 @@ export default function Footer() {
           </div>
 
           <div>
-            <h3 className="font-medium text-lg mb-4">Quick Links</h3>
+            <h3 className="font-medium text-lg mb-4">{t('quickLinks')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link to="/about" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  About Us
+                  {t('aboutUs')}
                 </Link>
               </li>
               <li>
                 <Link to="/locations" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Our Locations
+                  {t('ourLocations')}
                 </Link>
               </li>
               <li>
                 <Link to="/events" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Events
+                  {t('events')}
                 </Link>
               </li>
               <li>
                 <Link to="/media" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Media & Sermons
+                  {t('mediaSermons')}
                 </Link>
               </li>
               <li>
                 <Link to="/store" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Store/Library
+                  {t('storeLibrary')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-medium text-lg mb-4">Resources</h3>
+            <h3 className="font-medium text-lg mb-4">{t('resources')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link to="/blog" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  News & Blog
+                  {t('newsBlog')}
                 </Link>
               </li>
               <li>
                 <Link to="/counseling" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Counseling
+                  {t('counselling')}
                 </Link>
               </li>
               <li>
                 <Link to="/fundraising" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Fundraising Projects
+                  {t('fundraisingProjects')}
                 </Link>
               </li>
               <li>
                 <Link to="/locations" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Visitor Registration
+                  {t('visitorRegistration')}
                 </Link>
               </li>
               <li>
                 <Link to="/privacy" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Privacy Policy
+                  {t('privacyPolicy')}
                 </Link>
               </li>
               <li>
                 <Link to="/terms" className="text-gray-600 hover:text-wca-purple dark:text-gray-400 dark:hover:text-wca-teal transition-colors">
-                  Terms of Service
+                  {t('termsOfService')}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="font-medium text-lg mb-4">Contact Us</h3>
+            <h3 className="font-medium text-lg mb-4">{t('contactUs')}</h3>
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin size={18} className="mr-2 mt-0.5 text-wca-purple" />
