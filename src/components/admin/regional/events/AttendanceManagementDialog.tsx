@@ -78,6 +78,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
         event_date: new Date(event.start_datetime).toISOString().split('T')[0],
         region_id: userRegion.id,
         description: `Attendance tracking for ${event.name}`,
+        source_event_id: event.id,
       };
 
       const attendanceEvent = await createAttendanceEvent.mutateAsync(attendanceEventData);
