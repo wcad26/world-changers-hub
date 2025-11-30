@@ -55,6 +55,7 @@ import RegionalCertificates from "./pages/admin/regional/Certificates";
 // Super Admin Portal Routes
 import SuperDashboard from "./pages/admin/super/Dashboard";
 import SuperMembers from "./pages/admin/super/Members";
+import SuperMemberProfile from "./pages/admin/super/MemberProfile";
 import SuperEvents from "./pages/admin/super/Events";
 import SuperFundraising from "./pages/admin/super/Fundraising";
 import SuperLocations from "./pages/admin/super/Locations";
@@ -300,7 +301,15 @@ const App = () => {
               } 
             />
             <Route 
-              path="/admin/super/events" 
+              path="/admin/super/members/:memberId" 
+              element={
+                <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperMemberProfile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/super/events"
               element={
                 <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <SuperEvents />
