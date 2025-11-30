@@ -73,7 +73,6 @@ const SuperMembers: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Global Member Directory</CardTitle>
             <CardDescription>
               Access and manage the complete WCA membership database.
             </CardDescription>
