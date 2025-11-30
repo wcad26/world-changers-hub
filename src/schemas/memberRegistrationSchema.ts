@@ -65,19 +65,6 @@ export const memberRegistrationSchema = z.object({
   baptism_date: z.string().optional(),
   
   dcg_id: z.string().uuid().optional(),
-}).refine((data) => {
-  // If completed Foundation School, date is required
-  if (data.has_completed_foundation_school === 'yes' && !data.foundation_school_date) {
-    return false;
-  }
-  // If baptized, date is required
-  if (data.is_baptized === 'yes' && !data.baptism_date) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Please provide the completion date",
-  path: ["foundation_school_date", "baptism_date"]
 });
 
 export type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;
