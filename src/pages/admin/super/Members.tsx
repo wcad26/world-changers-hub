@@ -4,31 +4,13 @@ import { useNavigate } from "react-router-dom";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Mail, Phone, Calendar, Search, Loader2 } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { useAllMembers, useGlobalMemberStats } from "@/hooks/useAllMembers";
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-
-
-// Form schema for member registration
-const memberSchema = z.object({
-  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  phone: z.string().min(10, { message: "Phone number must be at least 10 digits." }),
-  region: z.string().min(1, { message: "Please select a region." }),
-  address: z.string().min(5, { message: "Address must be at least 5 characters." }),
-  dateOfBirth: z.string().optional(),
-  gender: z.string().optional(),
-});
 
 const SuperMembers: React.FC = () => {
   const navigate = useNavigate();
@@ -44,27 +26,6 @@ const SuperMembers: React.FC = () => {
     status: statusFilter || undefined,
   });
   const { data: memberStats, isLoading: statsLoading } = useGlobalMemberStats();
-  
-  const form = useForm<z.infer<typeof memberSchema>>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      region: "",
-      address: "",
-      dateOfBirth: "",
-      gender: "",
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof memberSchema>) {
-    console.log(values);
-    // In a real app, this would save the member to a database
-    alert("Member registered successfully!");
-    form.reset();
-  }
 
   return (
     <SuperAdminLayout>
@@ -75,9 +36,8 @@ const SuperMembers: React.FC = () => {
         </p>
         
         <Tabs defaultValue="directory">
-          <TabsList className="grid grid-cols-1 md:grid-cols-3 w-full max-w-3xl">
+          <TabsList className="grid grid-cols-1 md:grid-cols-2 w-full max-w-2xl">
             <TabsTrigger value="directory">Member Directory</TabsTrigger>
-            <TabsTrigger value="register">Register Member</TabsTrigger>
             <TabsTrigger value="analytics">Member Analytics</TabsTrigger>
           </TabsList>
           
@@ -185,146 +145,6 @@ const SuperMembers: React.FC = () => {
                     </Table>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="register">
-            <Card>
-              <CardHeader>
-                <CardTitle>Register New Member</CardTitle>
-                <CardDescription>
-                  Add a new member to the global database.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="John" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email</FormLabel>
-                            <FormControl>
-                              <Input type="email" placeholder="john@example.com" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone Number</FormLabel>
-                            <FormControl>
-                              <Input type="tel" placeholder="+1234567890" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="region"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Region</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                              disabled={regionsLoading}
-                            >
-                              <option value="">Select region</option>
-                              {regions?.map(region => (
-                                <option key={region.id} value={region.id}>{region.name}</option>
-                              ))}
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="dateOfBirth"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Date of Birth</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem className="md:col-span-2">
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input placeholder="123 Main St, City, State" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="gender"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Gender</FormLabel>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                              {...field}
-                            >
-                              <option value="">Select gender</option>
-                              <option value="male">Male</option>
-                              <option value="female">Female</option>
-                              <option value="other">Other</option>
-                            </select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <Button type="submit" className="w-full sm:w-auto">
-                      <UserPlus className="mr-2 h-4 w-4" />
-                      Register Member
-                    </Button>
-                  </form>
-                </Form>
               </CardContent>
             </Card>
           </TabsContent>
