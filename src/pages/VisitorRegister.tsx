@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
@@ -34,6 +34,13 @@ export default function VisitorRegister() {
     isLoading: regionLoading
   } = useRegionBySlug(regionCode);
   const { data: events = [], isLoading: eventsLoading } = usePublicRegionEvents(region?.id);
+  
+  // Filter to only show past events (events that have already occurred)
+  const pastEvents = useMemo(() => {
+    const now = new Date();
+    return events.filter(event => new Date(event.start_datetime) <= now);
+  }, [events]);
+  
   const {
     mutate: registerVisitor,
     isPending
@@ -323,13 +330,16 @@ export default function VisitorRegister() {
                 </div>
 
                 {/* Event Selection - Only show if events are available */}
-                {events.length > 0 && (
+                {pastEvents.length > 0 && (
                   <FormField
                     control={form.control}
                     name="rated_event_id"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('selectEvent')}</FormLabel>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Select the event you attended
+                        </p>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="h-auto min-h-[2.5rem]">
@@ -337,7 +347,7 @@ export default function VisitorRegister() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-w-[calc(100vw-2rem)] md:max-w-md">
-                            {events.map((event) => (
+                            {pastEvents.map((event) => (
                               <SelectItem 
                                 key={event.id} 
                                 value={event.id}
