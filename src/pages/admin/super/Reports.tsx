@@ -43,6 +43,28 @@ const SuperReports: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const handleDcgExport = () => {
+    if (!reports || !reports.regionalDcgData) {
+      toast({ title: "No data to export" });
+      return;
+    }
+    const dataToExport = reports.regionalDcgData.map(region => ({
+        'Region': region.name,
+        'DCGs': formatNumber(region.dcgCount),
+        'Members': formatNumber(region.dcgMembers),
+        'Active': `${region.activePercentage.toFixed(1)}%`,
+        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
+    }));
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `dcg-regional-performance-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
@@ -102,6 +124,48 @@ const SuperReports: React.FC = () => {
                       ))}
                     </TableBody>
                   </Table>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>Regional DCG Performance</CardTitle>
+                    <CardDescription>
+                      DCG performance metrics across all regions.
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleDcgExport} disabled={isLoading || !reports}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {reports.regionalDcgData ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Region</TableHead>
+                        <TableHead>DCG</TableHead>
+                        <TableHead>Members</TableHead>
+                        <TableHead>Active</TableHead>
+                        <TableHead>YTD Growth</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reports.regionalDcgData.map(region => (
+                        <TableRow key={region.id}>
+                          <TableCell>{region.name}</TableCell>
+                          <TableCell>{formatNumber(region.dcgCount)}</TableCell>
+                          <TableCell>{formatNumber(region.dcgMembers)}</TableCell>
+                          <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : null}
               </CardContent>
             </Card>
             <Card>
