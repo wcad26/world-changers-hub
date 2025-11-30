@@ -133,15 +133,14 @@ const SuperMembers: React.FC = () => {
                           <TableHead>Email</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Region</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead>Type</TableHead>
                           <TableHead>Joined</TableHead>
-                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {membersLoading ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center h-24">
+                            <TableCell colSpan={6} className="text-center h-24">
                               <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                             </TableCell>
                           </TableRow>
@@ -155,32 +154,18 @@ const SuperMembers: React.FC = () => {
                               <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
                               <TableCell>{member.regions?.name || 'N/A'}</TableCell>
                               <TableCell>
-                                <Badge variant={
-                                  member.status === 'active' ? 'default' :
-                                  member.status === 'new' ? 'secondary' :
-                                  'outline'
-                                }>
-                                  {member.status}
+                                <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
+                                  {member.member_type === 'member' ? 'Member' : 'Visitor'}
                                 </Badge>
                               </TableCell>
                               <TableCell>
                                 {member.join_date ? format(new Date(member.join_date), 'MMM d, yyyy') : 'N/A'}
                               </TableCell>
-                              <TableCell>
-                                <div className="flex space-x-2">
-                                  <Button variant="ghost" size="sm" disabled={!member.profiles?.email}>
-                                    <Mail className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" disabled={!member.profiles?.phone}>
-                                    <Phone className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
                             </TableRow>
                           ))
                         ) : (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center h-24">
+                            <TableCell colSpan={6} className="text-center h-24">
                               No members found
                             </TableCell>
                           </TableRow>
