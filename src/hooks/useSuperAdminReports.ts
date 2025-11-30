@@ -3,10 +3,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subMonths, format, startOfYear, subDays } from 'date-fns';
 
-export const useSuperAdminReports = () => {
+interface TimeFrameParams {
+  startDate: Date;
+  endDate: Date;
+}
+
+export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
   return useQuery({
-    queryKey: ['superAdminReports'],
+    queryKey: ['superAdminReports', timeFrame?.startDate?.toISOString(), timeFrame?.endDate?.toISOString()],
     queryFn: async () => {
+      // Define date range (default to YTD)
+      const startDate = timeFrame?.startDate ?? startOfYear(new Date());
+      const endDate = timeFrame?.endDate ?? new Date();
+      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      const endDateStr = format(endDate, 'yyyy-MM-dd');
       // --- Global KPIs ---
 
       // Total Members (excluding visitors)
@@ -23,13 +33,13 @@ export const useSuperAdminReports = () => {
         .eq('member_type', 'visitor');
       if (visitorsError) throw visitorsError;
 
-      // New Members (last 30 days)
-      const oneMonthAgo = subMonths(new Date(), 1).toISOString();
-      const { count: newMembersLast30Days, error: newMembersError } = await supabase
+      // New Members (within selected period)
+      const { count: newMembersInPeriod, error: newMembersError } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
         .eq('member_type', 'member')
-        .gte('created_at', oneMonthAgo);
+        .gte('created_at', startDateStr)
+        .lte('created_at', endDateStr);
       if (newMembersError) throw newMembersError;
 
       // Total DCGs
@@ -44,20 +54,11 @@ export const useSuperAdminReports = () => {
         .select('*', { count: 'exact', head: true });
       if (regionsError) throw regionsError;
 
-      // Calculate Member Growth Percentage (YTD)
-      const now = new Date();
-      const yearStart = startOfYear(now);
-      const { count: newMembersYTD, error: newMembersYTDError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'member')
-        .gte('created_at', format(yearStart, 'yyyy-MM-dd'));
-      if (newMembersYTDError) throw newMembersYTDError;
-
-      const previousMemberCount = (totalMembers ?? 0) - (newMembersYTD ?? 0);
+      // Calculate Member Growth Percentage (for selected period)
+      const previousMemberCount = (totalMembers ?? 0) - (newMembersInPeriod ?? 0);
       const memberGrowthPercentage = previousMemberCount > 0 
-        ? ((newMembersYTD ?? 0) / previousMemberCount) * 100 
-        : (newMembersYTD ?? 0) > 0 ? 100 : 0;
+        ? ((newMembersInPeriod ?? 0) / previousMemberCount) * 100 
+        : (newMembersInPeriod ?? 0) > 0 ? 100 : 0;
       
       // --- Regional Overview Data ---
       const { data: regions, error: regionsDataError } = await supabase
@@ -75,13 +76,13 @@ export const useSuperAdminReports = () => {
         .select('id, region_id');
       if (dcgsByRegionError) throw dcgsByRegionError;
       
-      // Fetch regional attendance events (dcg_id IS NULL) for last 30 days
-      const thirtyDaysAgo = subDays(new Date(), 30);
+      // Fetch regional attendance events (dcg_id IS NULL) for selected period
       const { data: regionalAttendanceEvents, error: regionalAttendanceEventsError } = await supabase
         .from('attendance_events')
         .select('id, region_id, event_date')
         .is('dcg_id', null)
-        .gte('event_date', format(thirtyDaysAgo, 'yyyy-MM-dd'));
+        .gte('event_date', startDateStr)
+        .lte('event_date', endDateStr);
       if (regionalAttendanceEventsError) throw regionalAttendanceEventsError;
       
       // Get attendance records for regional events
@@ -103,12 +104,11 @@ export const useSuperAdminReports = () => {
           const members = allMembers.filter(m => m.member_type === 'member');
           const visitors = allMembers.filter(m => m.member_type === 'visitor');
           
-          // Calculate YTD growth (from start of year) - only for members
-          const yearStart = startOfYear(now);
-          const newMembersYTD = members.filter(m => m.created_at && new Date(m.created_at) >= yearStart).length;
+          // Calculate growth for selected period - only for members
+          const newMembersInPeriod = members.filter(m => m.created_at && new Date(m.created_at) >= startDate && new Date(m.created_at) <= endDate).length;
           const totalMembers = members.length;
-          const previousMemberCount = totalMembers - newMembersYTD;
-          const ytdGrowth = previousMemberCount > 0 ? (newMembersYTD / previousMemberCount) * 100 : (newMembersYTD > 0 ? 100 : 0);
+          const previousMemberCount = totalMembers - newMembersInPeriod;
+          const periodGrowth = previousMemberCount > 0 ? (newMembersInPeriod / previousMemberCount) * 100 : (newMembersInPeriod > 0 ? 100 : 0);
 
           // Calculate active percentage based on regional events
           const regionEvents = (regionalAttendanceEvents || []).filter(e => e.region_id === region.id);
@@ -141,7 +141,7 @@ export const useSuperAdminReports = () => {
               members: totalMembers,
               visitors: visitors.length,
               activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
-              ytdGrowth: isNaN(ytdGrowth) || !isFinite(ytdGrowth) ? 0 : ytdGrowth
+              periodGrowth: isNaN(periodGrowth) || !isFinite(periodGrowth) ? 0 : periodGrowth
           }
       });
       
@@ -151,13 +151,13 @@ export const useSuperAdminReports = () => {
         .select('id, member_id, dcg_id, created_at, is_active, dcgs(region_id)');
       if (dcgMembersError) throw dcgMembersError;
       
-      // Get attendance events for last month (DCG only)
-      const lastMonth = subDays(new Date(), 30);
+      // Get attendance events for selected period (DCG only)
       const { data: dcgAttendanceEvents, error: dcgAttendanceEventsError } = await supabase
         .from('attendance_events')
         .select('id, dcg_id, event_date')
         .not('dcg_id', 'is', null)
-        .gte('event_date', format(lastMonth, 'yyyy-MM-dd'));
+        .gte('event_date', startDateStr)
+        .lte('event_date', endDateStr);
       if (dcgAttendanceEventsError) throw dcgAttendanceEventsError;
       
       // Get attendance records for those events
@@ -211,15 +211,14 @@ export const useSuperAdminReports = () => {
         
         const activePercentage = totalDcgMembers > 0 ? (activeMembersCount / totalDcgMembers) * 100 : 0;
         
-        // Calculate YTD growth for DCG members
-        const yearStart = startOfYear(now);
-        const newDcgMembersYTD = regionDcgMembers.filter(
-          dm => dm.created_at && new Date(dm.created_at) >= yearStart
+        // Calculate growth for selected period for DCG members
+        const newDcgMembersInPeriod = regionDcgMembers.filter(
+          dm => dm.created_at && new Date(dm.created_at) >= startDate && new Date(dm.created_at) <= endDate
         ).length;
-        const previousDcgMemberCount = totalDcgMembers - newDcgMembersYTD;
-        const dcgYtdGrowth = previousDcgMemberCount > 0 
-          ? (newDcgMembersYTD / previousDcgMemberCount) * 100 
-          : (newDcgMembersYTD > 0 ? 100 : 0);
+        const previousDcgMemberCount = totalDcgMembers - newDcgMembersInPeriod;
+        const dcgPeriodGrowth = previousDcgMemberCount > 0 
+          ? (newDcgMembersInPeriod / previousDcgMemberCount) * 100 
+          : (newDcgMembersInPeriod > 0 ? 100 : 0);
         
         return {
           id: region.id,
@@ -227,7 +226,7 @@ export const useSuperAdminReports = () => {
           dcgCount: (dcgsByRegion || []).filter(d => d.region_id === region.id).length,
           dcgMembers: totalDcgMembers,
           activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
-          ytdGrowth: isNaN(dcgYtdGrowth) || !isFinite(dcgYtdGrowth) ? 0 : dcgYtdGrowth
+          periodGrowth: isNaN(dcgPeriodGrowth) || !isFinite(dcgPeriodGrowth) ? 0 : dcgPeriodGrowth
         };
       });
 
@@ -245,7 +244,7 @@ export const useSuperAdminReports = () => {
         kpis: {
           totalMembers: totalMembers ?? 0,
           totalVisitors: totalVisitors ?? 0,
-          newMembersLast30Days: newMembersLast30Days ?? 0,
+          newMembersInPeriod: newMembersInPeriod ?? 0,
           memberGrowthPercentage: isNaN(memberGrowthPercentage) || !isFinite(memberGrowthPercentage) ? 0 : memberGrowthPercentage,
           globalActivePercentage: isNaN(globalActivePercentage) || !isFinite(globalActivePercentage) ? 0 : globalActivePercentage,
           totalDcgs: totalDcgs ?? 0,
