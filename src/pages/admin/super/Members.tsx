@@ -10,32 +10,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Mail, Phone, Calendar, Search, Filter, Download, BarChart } from "lucide-react";
+import { UserPlus, Mail, Phone, Calendar, Search, Filter, Download, BarChart, Loader2 } from "lucide-react";
+import { useAllMembers, useGlobalMemberStats } from "@/hooks/useAllMembers";
+import { useAllRegions } from "@/hooks/useAllRegions";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
 
-// Mock data for global members
-const mockGlobalMembers = [
-  { id: 1, name: "John Doe", email: "john@example.com", phone: "+1234567890", region: "Northeast", status: "Active", joined: "2023-01-15" },
-  { id: 2, name: "Jane Smith", email: "jane@example.com", phone: "+1234567891", region: "Southeast", status: "Active", joined: "2023-02-20" },
-  { id: 3, name: "Michael Johnson", email: "michael@example.com", phone: "+1234567892", region: "Midwest", status: "Inactive", joined: "2023-03-10" },
-  { id: 4, name: "Sarah Williams", email: "sarah@example.com", phone: "+1234567893", region: "West", status: "Active", joined: "2023-04-05" },
-  { id: 5, name: "David Brown", email: "david@example.com", phone: "+1234567894", region: "Northeast", status: "Active", joined: "2023-05-12" },
-  { id: 6, name: "Emily Davis", email: "emily@example.com", phone: "+1234567895", region: "Southeast", status: "Inactive", joined: "2023-06-18" },
-  { id: 7, name: "James Wilson", email: "james@example.com", phone: "+1234567896", region: "Midwest", status: "Active", joined: "2023-07-22" },
-  { id: 8, name: "Olivia Taylor", email: "olivia@example.com", phone: "+1234567897", region: "West", status: "Active", joined: "2023-08-30" }
-];
-
-// Mock regions
-const mockRegions = ["All Regions", "Northeast", "Southeast", "Midwest", "West", "Southwest", "Northwest"];
-
-// Mock member statistics
-const mockMemberStats = [
-  { region: "Northeast", total: 245, active: 215, inactive: 30 },
-  { region: "Southeast", total: 198, active: 180, inactive: 18 },
-  { region: "Midwest", total: 176, active: 150, inactive: 26 },
-  { region: "West", total: 210, active: 190, inactive: 20 },
-  { region: "Southwest", total: 165, active: 145, inactive: 20 },
-  { region: "Northwest", total: 154, active: 132, inactive: 22 }
-];
 
 // Form schema for member registration
 const memberSchema = z.object({
@@ -51,8 +31,17 @@ const memberSchema = z.object({
 
 const SuperMembers: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("All Regions");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedRegion, setSelectedRegion] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  
+  // Fetch real data from database
+  const { data: regions, isLoading: regionsLoading } = useAllRegions();
+  const { data: members, isLoading: membersLoading } = useAllMembers({
+    searchTerm,
+    regionId: selectedRegion || undefined,
+    status: statusFilter || undefined,
+  });
+  const { data: memberStats, isLoading: statsLoading } = useGlobalMemberStats();
   
   const form = useForm<z.infer<typeof memberSchema>>({
     resolver: zodResolver(memberSchema),
@@ -67,14 +56,6 @@ const SuperMembers: React.FC = () => {
       gender: "",
     },
   });
-
-  const filteredMembers = mockGlobalMembers.filter(member => 
-    (member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     member.phone.includes(searchTerm)) &&
-    (selectedRegion === "All Regions" || member.region === selectedRegion) &&
-    (statusFilter === "All" || member.status === statusFilter)
-  );
 
   function onSubmit(values: z.infer<typeof memberSchema>) {
     console.log(values);
@@ -121,9 +102,11 @@ const SuperMembers: React.FC = () => {
                       className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={selectedRegion}
                       onChange={(e) => setSelectedRegion(e.target.value)}
+                      disabled={regionsLoading}
                     >
-                      {mockRegions.map(region => (
-                        <option key={region} value={region}>{region}</option>
+                      <option value="">All Regions</option>
+                      {regions?.map(region => (
+                        <option key={region.id} value={region.id}>{region.name}</option>
                       ))}
                     </select>
                     <select
@@ -131,9 +114,11 @@ const SuperMembers: React.FC = () => {
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
                     >
-                      <option value="All">All Status</option>
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="new">New</option>
+                      <option value="transferred">Transferred</option>
                     </select>
                     <Button variant="outline" size="icon">
                       <Filter size={16} />
@@ -161,29 +146,39 @@ const SuperMembers: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredMembers.length > 0 ? (
-                          filteredMembers.map((member) => (
+                        {membersLoading ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center h-24">
+                              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                            </TableCell>
+                          </TableRow>
+                        ) : members && members.length > 0 ? (
+                          members.map((member) => (
                             <TableRow key={member.id}>
-                              <TableCell className="font-medium">{member.name}</TableCell>
-                              <TableCell>{member.email}</TableCell>
-                              <TableCell>{member.phone}</TableCell>
-                              <TableCell>{member.region}</TableCell>
-                              <TableCell>
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  member.status === 'Active' 
-                                    ? 'bg-green-100 text-green-800' 
-                                    : 'bg-red-100 text-red-800'
-                                }`}>
-                                  {member.status}
-                                </span>
+                              <TableCell className="font-medium">
+                                {member.profiles?.first_name} {member.profiles?.last_name}
                               </TableCell>
-                              <TableCell>{member.joined}</TableCell>
+                              <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
+                              <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                              <TableCell>{member.regions?.name || 'N/A'}</TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  member.status === 'active' ? 'default' :
+                                  member.status === 'new' ? 'secondary' :
+                                  'outline'
+                                }>
+                                  {member.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {member.join_date ? format(new Date(member.join_date), 'MMM d, yyyy') : 'N/A'}
+                              </TableCell>
                               <TableCell>
                                 <div className="flex space-x-2">
-                                  <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" size="sm" disabled={!member.profiles?.email}>
                                     <Mail className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" size="sm" disabled={!member.profiles?.phone}>
                                     <Phone className="h-4 w-4" />
                                   </Button>
                                 </div>
@@ -203,7 +198,7 @@ const SuperMembers: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {filteredMembers.length} of {mockGlobalMembers.length} members
+                    Showing {members?.length || 0} members
                   </div>
                   <Button variant="outline">
                     <Download className="mr-2 h-4 w-4" />
@@ -287,10 +282,11 @@ const SuperMembers: React.FC = () => {
                             <select 
                               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
                               {...field}
+                              disabled={regionsLoading}
                             >
                               <option value="">Select region</option>
-                              {mockRegions.filter(r => r !== "All Regions").map(region => (
-                                <option key={region} value={region}>{region}</option>
+                              {regions?.map(region => (
+                                <option key={region.id} value={region.id}>{region.name}</option>
                               ))}
                             </select>
                             <FormMessage />
@@ -362,61 +358,87 @@ const SuperMembers: React.FC = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center p-6">
-                      <p className="text-lg font-medium text-muted-foreground mb-1">Total Members</p>
-                      <h3 className="text-4xl font-bold">{mockMemberStats.reduce((acc, curr) => acc + curr.total, 0)}</h3>
-                      <p className="text-xs text-muted-foreground mt-2">Across all regions</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center p-6">
-                      <p className="text-lg font-medium text-muted-foreground mb-1">Active Members</p>
-                      <h3 className="text-4xl font-bold text-green-600">{mockMemberStats.reduce((acc, curr) => acc + curr.active, 0)}</h3>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {Math.round((mockMemberStats.reduce((acc, curr) => acc + curr.active, 0) / mockMemberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)}% of total
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="flex flex-col items-center justify-center p-6">
-                      <p className="text-lg font-medium text-muted-foreground mb-1">Inactive Members</p>
-                      <h3 className="text-4xl font-bold text-red-600">{mockMemberStats.reduce((acc, curr) => acc + curr.inactive, 0)}</h3>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {Math.round((mockMemberStats.reduce((acc, curr) => acc + curr.inactive, 0) / mockMemberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)}% of total
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <h3 className="text-lg font-medium mb-4">Membership by Region</h3>
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Region</TableHead>
-                          <TableHead>Total Members</TableHead>
-                          <TableHead>Active</TableHead>
-                          <TableHead>Inactive</TableHead>
-                          <TableHead>Active Rate</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockMemberStats.map((stat, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-medium">{stat.region}</TableCell>
-                            <TableCell>{stat.total}</TableCell>
-                            <TableCell className="text-green-600">{stat.active}</TableCell>
-                            <TableCell className="text-red-600">{stat.inactive}</TableCell>
-                            <TableCell>{Math.round((stat.active / stat.total) * 100)}%</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                {statsLoading ? (
+                  <div className="flex justify-center items-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
-                </div>
+                ) : memberStats && memberStats.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                      <Card>
+                        <CardContent className="flex flex-col items-center justify-center p-6">
+                          <p className="text-lg font-medium text-muted-foreground mb-1">Total Members</p>
+                          <h3 className="text-4xl font-bold">
+                            {memberStats.reduce((acc, curr) => acc + curr.total, 0)}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-2">Across all regions</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="flex flex-col items-center justify-center p-6">
+                          <p className="text-lg font-medium text-muted-foreground mb-1">Active Members</p>
+                          <h3 className="text-4xl font-bold text-green-600">
+                            {memberStats.reduce((acc, curr) => acc + curr.active, 0)}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {memberStats.reduce((acc, curr) => acc + curr.total, 0) > 0
+                              ? Math.round((memberStats.reduce((acc, curr) => acc + curr.active, 0) / memberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)
+                              : 0}% of total
+                          </p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="flex flex-col items-center justify-center p-6">
+                          <p className="text-lg font-medium text-muted-foreground mb-1">Inactive Members</p>
+                          <h3 className="text-4xl font-bold text-red-600">
+                            {memberStats.reduce((acc, curr) => acc + curr.inactive, 0)}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {memberStats.reduce((acc, curr) => acc + curr.total, 0) > 0
+                              ? Math.round((memberStats.reduce((acc, curr) => acc + curr.inactive, 0) / memberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)
+                              : 0}% of total
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                
+                    <h3 className="text-lg font-medium mb-4">Membership by Region</h3>
+                    <div className="rounded-md border overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Region</TableHead>
+                              <TableHead>Total Members</TableHead>
+                              <TableHead>Active</TableHead>
+                              <TableHead>Inactive</TableHead>
+                              <TableHead>New</TableHead>
+                              <TableHead>Active Rate</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {memberStats.map((stat) => (
+                              <TableRow key={stat.region_id}>
+                                <TableCell className="font-medium">{stat.region_name}</TableCell>
+                                <TableCell>{stat.total}</TableCell>
+                                <TableCell className="text-green-600">{stat.active}</TableCell>
+                                <TableCell className="text-red-600">{stat.inactive}</TableCell>
+                                <TableCell className="text-blue-600">{stat.new}</TableCell>
+                                <TableCell>
+                                  {stat.total > 0 ? Math.round((stat.active / stat.total) * 100) : 0}%
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No member statistics available
+                  </div>
+                )}
                 
                 <div className="flex justify-center mt-6">
                   <Button variant="outline">
