@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Mail, Phone, Calendar, Search, BarChart, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Phone, Calendar, Search, Loader2 } from "lucide-react";
 import { useAllMembers, useGlobalMemberStats } from "@/hooks/useAllMembers";
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { format } from "date-fns";
@@ -413,13 +413,6 @@ const SuperMembers: React.FC = () => {
                     No member statistics available
                   </div>
                 )}
-                
-                <div className="flex justify-center mt-6">
-                  <Button variant="outline">
-                    <BarChart className="mr-2 h-4 w-4" />
-                    View Detailed Reports
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
