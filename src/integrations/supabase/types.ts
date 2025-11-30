@@ -884,6 +884,7 @@ export type Database = {
         Row: {
           address: string | null
           address_fr: string | null
+          attendance_target: number | null
           capacity: number | null
           category: Database["public"]["Enums"]["event_category"] | null
           cost: number | null
@@ -899,6 +900,7 @@ export type Database = {
           image_url_fr: string | null
           is_featured: boolean
           is_public: boolean
+          is_special: boolean | null
           location_name: string | null
           location_name_fr: string | null
           name: string
@@ -919,6 +921,7 @@ export type Database = {
         Insert: {
           address?: string | null
           address_fr?: string | null
+          attendance_target?: number | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
           cost?: number | null
@@ -934,6 +937,7 @@ export type Database = {
           image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
+          is_special?: boolean | null
           location_name?: string | null
           location_name_fr?: string | null
           name: string
@@ -954,6 +958,7 @@ export type Database = {
         Update: {
           address?: string | null
           address_fr?: string | null
+          attendance_target?: number | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
           cost?: number | null
@@ -969,6 +974,7 @@ export type Database = {
           image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
+          is_special?: boolean | null
           location_name?: string | null
           location_name_fr?: string | null
           name?: string

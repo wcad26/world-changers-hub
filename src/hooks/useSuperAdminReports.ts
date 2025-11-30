@@ -162,14 +162,14 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       
       // Get attendance records for those events
       const eventIds = (dcgAttendanceEvents || []).map(e => e.id);
-      let attendanceRecords: any[] = [];
+      let dcgAttendanceRecords: any[] = [];
       if (eventIds.length > 0) {
         const { data: records, error: recordsError } = await supabase
           .from('attendance_records')
           .select('event_id, member_id, is_present')
           .in('event_id', eventIds);
         if (recordsError) throw recordsError;
-        attendanceRecords = records || [];
+        dcgAttendanceRecords = records || [];
       }
       
       const regionalDcgData = (regions || []).map(region => {
@@ -195,7 +195,7 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
           // Count absences for this member
           let absenceCount = 0;
           memberEvents.forEach(event => {
-            const record = attendanceRecords.find(
+            const record = dcgAttendanceRecords.find(
               r => r.event_id === event.id && r.member_id === dcgMember.member_id
             );
             if (record && record.is_present === false) {
@@ -240,6 +240,72 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
         ? (totalActiveMembers / (totalMembers ?? 0)) * 100 
         : 0;
 
+      // --- Regional Events Data ---
+      // Fetch events (excluding DCG events and special events) within time frame
+      const { data: eventsData, error: eventsDataError } = await supabase
+        .from('events')
+        .select('id, region_id, capacity, attendance_target, start_datetime, is_special')
+        .is('dcg_id', null)
+        .eq('is_special', false)
+        .gte('start_datetime', startDateStr)
+        .lte('start_datetime', endDateStr);
+
+      if (eventsDataError) throw eventsDataError;
+
+      // Fetch attendance events with their records
+      const { data: eventAttendance } = await supabase
+        .from('attendance_events')
+        .select('source_event_id, id')
+        .not('source_event_id', 'is', null);
+
+      // Count attendance for each event
+      const { data: attendanceRecords } = await supabase
+        .from('attendance_records')
+        .select('event_id, is_present')
+        .eq('is_present', true);
+
+      // Calculate per-region aggregates with averages
+      const regionalEventsData = regions.map(region => {
+        const regionEvents = eventsData?.filter(e => 
+          e.region_id === region.id && 
+          new Date(e.start_datetime) < new Date()
+        ) || [];
+        
+        const eventCount = regionEvents.length;
+        
+        let totalTarget = 0;
+        let totalAttendance = 0;
+        let eventsWithTargets = 0;
+        
+        regionEvents.forEach(event => {
+          const target = event.attendance_target || event.capacity || 0;
+          if (target > 0) {
+            totalTarget += target;
+            eventsWithTargets++;
+          }
+          
+          // Calculate attendance from linked attendance_events
+          const linkedAttendanceEvents = eventAttendance?.filter(ae => ae.source_event_id === event.id) || [];
+          linkedAttendanceEvents.forEach(ae => {
+            const count = attendanceRecords?.filter(ar => ar.event_id === ae.id).length || 0;
+            totalAttendance += count;
+          });
+        });
+        
+        const avgTarget = eventsWithTargets > 0 ? Math.round(totalTarget / eventsWithTargets) : 0;
+        const avgAttendance = eventCount > 0 ? Math.round(totalAttendance / eventCount) : 0;
+        const performance = avgTarget > 0 ? (avgAttendance / avgTarget) * 100 : 0;
+        
+        return {
+          id: region.id,
+          name: region.name,
+          eventCount,
+          avgTarget,
+          avgAttendance,
+          performance
+        };
+      });
+
       return {
         kpis: {
           totalMembers: totalMembers ?? 0,
@@ -251,7 +317,8 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
           totalRegions: totalRegions ?? 0
         },
         regionalData,
-        regionalDcgData
+        regionalDcgData,
+        regionalEventsData,
       };
     },
   });
