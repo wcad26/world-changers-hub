@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserPlus, Mail, Phone, Calendar, Search, Filter, Download, BarChart, Loader2 } from "lucide-react";
+import { UserPlus, Mail, Phone, Calendar, Search, BarChart, Loader2 } from "lucide-react";
 import { useAllMembers, useGlobalMemberStats } from "@/hooks/useAllMembers";
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { format } from "date-fns";
@@ -124,14 +124,10 @@ const SuperMembers: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex justify-between items-center mb-4">
+                <div className="mb-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {members?.length || 0} members
                   </div>
-                  <Button variant="outline">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
                 </div>
                 <div className="rounded-md border overflow-hidden">
                   <div className="overflow-x-auto">
