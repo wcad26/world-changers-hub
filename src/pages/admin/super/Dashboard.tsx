@@ -92,10 +92,24 @@ const SuperDashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalMembers)}</div>
+                <p className="text-xs text-green-500 flex items-center">
+                  <ChevronUp className="mr-1 h-3 w-3" />
+                  +{reports.kpis.memberGrowthPercentage.toFixed(1)}% YTD growth
+                </p>
+                <p className="text-xs text-violet-500">
+                  {reports.kpis.globalActivePercentage.toFixed(1)}% active
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalVisitors)}</div>
                 <p className="text-xs text-muted-foreground">
-                  <span className="text-green-500 flex items-center">
-                    <ChevronUp className="mr-1 h-4 w-4" /> +{formatNumber(reports.kpis.newMembersLast30Days)} in last 30 days
-                  </span>
+                  Visitors not yet members
                 </p>
               </CardContent>
             </Card>
@@ -107,16 +121,6 @@ const SuperDashboard: React.FC = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{reports.kpis.totalRegions}</div>
                 <p className="text-xs text-muted-foreground">Across the globe</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Giving (YTD)</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(reports.kpis.totalIncomeYTD)}</div>
-                <p className="text-xs text-muted-foreground">Year-to-date income</p>
               </CardContent>
             </Card>
             <Card>
