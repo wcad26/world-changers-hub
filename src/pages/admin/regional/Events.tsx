@@ -126,6 +126,8 @@ const eventSchema = z.object({
   })).optional(),
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
+  is_special: z.boolean().default(false),
+  attendance_target: z.coerce.number().positive().int().optional(),
 }).refine((data) => {
   if (data.end_date && data.start_date) {
     return new Date(data.end_date) >= new Date(data.start_date);
@@ -465,10 +467,12 @@ const RegionalEvents: React.FC = () => {
         image_url: eventCardImageUrl || uploadedImageUrls[0] || null, // Use card image first, fallback to first hero
         image_url_fr: eventCardImageUrlFr || uploadedImageUrlsFr[0] || null, // French card image or first French hero
         capacity: values.capacity || null,
+        attendance_target: values.attendance_target || null,
         cost: values.cost || 0,
         cost_currency_code: values.cost_currency_code || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
+        is_special: values.is_special,
         status: 'Upcoming',
         dcg_id: null,
         registration_url: values.registration_url || null,
@@ -1159,8 +1163,10 @@ const RegionalEvents: React.FC = () => {
         image_url: eventCardImageUrl,
         image_url_fr: eventCardImageUrlFr,
         capacity: values.capacity || null,
+        attendance_target: values.attendance_target || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
+        is_special: values.is_special,
         registration_url: values.registration_url || null,
           organizer_name: values.organizer_name || null,
           organizer_email: values.organizer_email || null,
@@ -1434,6 +1440,8 @@ const RegionalEvents: React.FC = () => {
           whatsapp_contact: event.whatsapp_contact || "",
       is_public: event.is_public,
       is_featured: event.is_featured,
+      is_special: event.is_special || false,
+      attendance_target: event.attendance_target || undefined,
           testimonials: existingTestimonials?.map(t => ({
             name: t.name,
             name_fr: t.name_fr || "",
@@ -1862,6 +1870,23 @@ const RegionalEvents: React.FC = () => {
                       <FormControl>
                         <Input type="number" placeholder="100" {...field} value={field.value || ''} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="attendance_target"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Attendance Target</FormLabel>
+                      <FormControl>
+                        <Input type="number" placeholder="100" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormDescription>
+                        Target attendance for performance tracking
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -2923,7 +2948,7 @@ const RegionalEvents: React.FC = () => {
                   )}
                 />
                 
-                <FormField
+                 <FormField
                   control={form.control}
                   name="is_featured"
                   render={({ field }) => (
@@ -2940,6 +2965,29 @@ const RegionalEvents: React.FC = () => {
                         <FormLabel>Featured Event</FormLabel>
                         <FormDescription>
                           Highlight this event on the homepage
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="is_special"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Special Event</FormLabel>
+                        <FormDescription>
+                          Mark as extraordinary event (excluded from standard regional reports)
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -4130,6 +4178,29 @@ const RegionalEvents: React.FC = () => {
                       <FormLabel>Featured Event</FormLabel>
                       <FormDescription>
                         Highlight this event on the homepage
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="is_special"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={field.onChange}
+                        className="h-4 w-4 mt-1"
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Special Event</FormLabel>
+                      <FormDescription>
+                        Mark as extraordinary event (excluded from standard regional reports)
                       </FormDescription>
                     </div>
                   </FormItem>

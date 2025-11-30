@@ -120,6 +120,28 @@ const SuperDashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  const handleEventsExport = () => {
+    if (!reports || !reports.regionalEventsData) {
+      toast({ title: "No data to export" });
+      return;
+    }
+    const dataToExport = reports.regionalEventsData.map(region => ({
+      'Region': region.name,
+      'Events': formatNumber(region.eventCount),
+      'Avg. Target': formatNumber(region.avgTarget),
+      'Avg. Attendance': formatNumber(region.avgAttendance),
+      'Performance': `${region.performance.toFixed(1)}%`,
+    }));
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `regional-events-overview-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
@@ -237,7 +259,7 @@ const SuperDashboard: React.FC = () => {
             <TabsTrigger value="regions">Regional Member Overview</TabsTrigger>
             <TabsTrigger value="dcg-overview">Regional DCG Overview</TabsTrigger>
             <TabsTrigger value="global-finances">Global Finances</TabsTrigger>
-            <TabsTrigger value="major-events">Major Events</TabsTrigger>
+            <TabsTrigger value="regional-events">Regional Events Overview</TabsTrigger>
           </TabsList>
           <TabsContent value="regions" className="space-y-4">
             <Card>
@@ -350,17 +372,67 @@ const SuperDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="major-events" className="space-y-4">
+          <TabsContent value="regional-events" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Major Upcoming Events</CardTitle>
-                <CardDescription>
-                  Global events scheduled for the next quarter.
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Regional Events Overview</CardTitle>
+                    <CardDescription>
+                      Event performance overview across WCA regions (past events within selected period).
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleEventsExport} disabled={isLoading || !reports}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                 <p className="py-8 text-center text-muted-foreground">Live event data is coming soon.</p>
+                {isLoading ? (
+                  <Skeleton className="h-64" />
+                ) : isError ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>Could not load events data.</AlertDescription>
+                  </Alert>
+                ) : reports && reports.regionalEventsData ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Region</TableHead>
+                        <TableHead className="text-right">Events</TableHead>
+                        <TableHead className="text-right">Avg. Target</TableHead>
+                        <TableHead className="text-right">Avg. Attendance</TableHead>
+                        <TableHead className="text-right">Performance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {reports.regionalEventsData.map(region => (
+                        <TableRow key={region.id}>
+                          <TableCell className="font-medium">{region.name}</TableCell>
+                          <TableCell className="text-right">{formatNumber(region.eventCount)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(region.avgTarget)}</TableCell>
+                          <TableCell className="text-right">{formatNumber(region.avgAttendance)}</TableCell>
+                          <TableCell className={`text-right font-medium ${
+                            region.performance >= 80 ? 'text-green-600' : 
+                            region.performance >= 50 ? 'text-yellow-600' : 
+                            'text-red-600'
+                          }`}>
+                            {region.performance.toFixed(1)}%
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : null}
               </CardContent>
+              <CardFooter>
+                <p className="text-sm text-muted-foreground">
+                  Showing events data for all {reports?.kpis.totalRegions || 0} regions. Excludes DCG events and special events.
+                </p>
+              </CardFooter>
             </Card>
           </TabsContent>
         </Tabs>
