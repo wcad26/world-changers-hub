@@ -29,9 +29,9 @@ const SuperDashboard: React.FC = () => {
     const dataToExport = reports.regionalData.map(region => ({
         'Region': region.name,
         'Members': formatNumber(region.members),
-        'Growth (3 mo)': `+${region.growth.toFixed(1)}%`,
+        'Visitors': formatNumber(region.visitors),
         'DCGs': formatNumber(region.dcgs),
-        'YTD Giving': formatCurrency(region.giving),
+        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -139,9 +139,9 @@ const SuperDashboard: React.FC = () => {
                       <TableRow>
                         <TableHead>Region</TableHead>
                         <TableHead>Members</TableHead>
-                        <TableHead>Growth (3 mo)</TableHead>
+                        <TableHead>Visitors</TableHead>
                         <TableHead>DCGs</TableHead>
-                        <TableHead>YTD Giving</TableHead>
+                        <TableHead>YTD Growth</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -149,9 +149,9 @@ const SuperDashboard: React.FC = () => {
                         <TableRow key={region.id}>
                           <TableCell>{region.name}</TableCell>
                           <TableCell>{formatNumber(region.members)}</TableCell>
-                          <TableCell className="text-green-500">+{region.growth.toFixed(1)}%</TableCell>
+                          <TableCell>{formatNumber(region.visitors)}</TableCell>
                           <TableCell>{formatNumber(region.dcgs)}</TableCell>
-                          <TableCell>{formatCurrency(region.giving)}</TableCell>
+                          <TableCell className="text-green-500">+{region.ytdGrowth.toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
