@@ -46,15 +46,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
       '/admin/regional/fundraising': 'Fundraising Management',
       '/admin/regional/locations': 'Location Management',
       '/admin/regional/reports': 'Reports & Analytics',
-      '/admin/super/dashboard': 'Dashboard',
-      '/admin/super/regions': 'Region Management',
+      '/admin/super/dashboard': 'Super Admin Dashboard',
+      '/admin/super/regions': 'Regional Branches Management',
       '/admin/super/members': 'Global Member Management',
+      '/admin/super/user-management': 'User Management',
       '/admin/super/events': 'Global Event Management',
       '/admin/super/finances': 'Global Financial Management',
-      '/admin/super/communication': 'Global Communication',
-      '/admin/super/fundraising': 'Global Fundraising',
+      '/admin/super/communication': 'Global Communication Center',
+      '/admin/super/fundraising': 'Global Fundraising Management',
       '/admin/super/locations': 'Global Location Management',
       '/admin/super/reports': 'Global Reports & Analytics',
+      '/admin/super/currencies': 'Currency Management',
+      '/admin/super/homepage-settings': 'Homepage Settings',
+      '/admin/super/about-settings': 'About Us Settings',
     };
 
     return routeTitleMap[location.pathname] || 'Admin Dashboard';

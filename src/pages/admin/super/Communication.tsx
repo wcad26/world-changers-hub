@@ -183,10 +183,7 @@ const SuperCommunication: React.FC = () => {
     <SuperAdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-start">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Global Communication Center</h2>
-                <p className="text-muted-foreground">Manage organization-wide communication and announcements.</p>
-            </div>
+            <p className="text-muted-foreground">Manage organization-wide communication and announcements.</p>
             <Button onClick={() => setCreateDialogOpen(true)} disabled={isLoadingRegions || !regions}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 New Announcement

@@ -8,7 +8,6 @@ const SuperFinances: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Global Financial Management</h2>
         <p className="text-muted-foreground">
           Oversee finances across all WCA regions worldwide.
         </p>

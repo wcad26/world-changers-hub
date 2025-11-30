@@ -10,12 +10,9 @@ const SuperUserManagement: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="container mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground">
-            Create and manage regional administrator accounts
-          </p>
-        </div>
+        <p className="text-muted-foreground mb-6">
+          Create and manage regional administrator accounts
+        </p>
 
         <Tabs defaultValue="create-admin" className="w-full">
           <TabsList className="grid w-full grid-cols-3">

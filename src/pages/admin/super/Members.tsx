@@ -29,7 +29,6 @@ const SuperMembers: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Global Member Management</h2>
         <p className="text-muted-foreground">
           Manage membership across all WCA regions.
         </p>

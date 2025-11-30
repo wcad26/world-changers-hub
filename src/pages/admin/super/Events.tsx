@@ -7,7 +7,6 @@ const SuperEvents: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Global Event Management</h2>
         <p className="text-muted-foreground">
           Manage events across all WCA regions.
         </p>

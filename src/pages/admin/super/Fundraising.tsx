@@ -7,7 +7,6 @@ const SuperFundraising: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Global Fundraising Management</h2>
         <p className="text-muted-foreground">
           Coordinate fundraising efforts across all WCA regions.
         </p>

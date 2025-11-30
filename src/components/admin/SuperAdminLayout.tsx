@@ -40,7 +40,7 @@ const menuItems = [
 
 const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
   return (
-    <AdminLayout title="Super Admin" menuItems={menuItems}>
+    <AdminLayout menuItems={menuItems}>
       {children}
     </AdminLayout>
   );
