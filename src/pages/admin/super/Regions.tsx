@@ -10,12 +10,9 @@ const SuperRegions: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Regional Branches Management</h2>
-          <p className="text-muted-foreground">
-            Manage all WCA regions from a global perspective.
-          </p>
-        </div>
+        <p className="text-muted-foreground">
+          Manage all WCA regions from a global perspective.
+        </p>
         
         <RegionStatsCards />
         

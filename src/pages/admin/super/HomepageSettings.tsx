@@ -295,12 +295,9 @@ export default function HomepageSettings() {
     <SuperAdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Homepage Settings</h1>
-            <p className="text-gray-600 dark:text-gray-300">
-              Manage the content displayed on your homepage
-            </p>
-          </div>
+          <p className="text-muted-foreground">
+            Manage the content displayed on your homepage
+          </p>
           <Button onClick={handleSave} disabled={isUpdating}>
             <Save className="w-4 h-4 mr-2" />
             {isUpdating ? 'Saving...' : 'Save Changes'}

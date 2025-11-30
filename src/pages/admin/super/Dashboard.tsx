@@ -146,12 +146,9 @@ const SuperDashboard: React.FC = () => {
     <SuperAdminLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h2>
-            <p className="text-muted-foreground">
-              Welcome to the WCA super admin dashboard. Here's an overview of global operations.
-            </p>
-          </div>
+          <p className="text-muted-foreground">
+            Welcome to the WCA super admin dashboard. Here's an overview of global operations.
+          </p>
           
           {/* Time Frame Selector */}
           <div className="flex items-center gap-2">
