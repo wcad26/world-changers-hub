@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { subMonths, format, startOfYear } from 'date-fns';
+import { subMonths, format, startOfYear, subDays } from 'date-fns';
 
 export const useSuperAdminReports = () => {
   return useQuery({
@@ -64,7 +64,7 @@ export const useSuperAdminReports = () => {
       
       const { data: dcgsByRegion, error: dcgsByRegionError } = await supabase
         .from('dcgs')
-        .select('region_id');
+        .select('id, region_id');
       if (dcgsByRegionError) throw dcgsByRegionError;
       
       const regionalData = (regions || []).map(region => {
@@ -90,6 +90,92 @@ export const useSuperAdminReports = () => {
               ytdGrowth: isNaN(ytdGrowth) || !isFinite(ytdGrowth) ? 0 : ytdGrowth
           }
       });
+      
+      // --- DCG Regional Overview Data ---
+      const { data: dcgMembersData, error: dcgMembersError } = await supabase
+        .from('dcg_members')
+        .select('id, member_id, dcg_id, created_at, is_active, dcgs(region_id)');
+      if (dcgMembersError) throw dcgMembersError;
+      
+      // Get attendance events for last month (DCG only)
+      const lastMonth = subDays(new Date(), 30);
+      const { data: dcgAttendanceEvents, error: dcgAttendanceEventsError } = await supabase
+        .from('attendance_events')
+        .select('id, dcg_id, event_date')
+        .not('dcg_id', 'is', null)
+        .gte('event_date', format(lastMonth, 'yyyy-MM-dd'));
+      if (dcgAttendanceEventsError) throw dcgAttendanceEventsError;
+      
+      // Get attendance records for those events
+      const eventIds = (dcgAttendanceEvents || []).map(e => e.id);
+      let attendanceRecords: any[] = [];
+      if (eventIds.length > 0) {
+        const { data: records, error: recordsError } = await supabase
+          .from('attendance_records')
+          .select('event_id, member_id, is_present')
+          .in('event_id', eventIds);
+        if (recordsError) throw recordsError;
+        attendanceRecords = records || [];
+      }
+      
+      const regionalDcgData = (regions || []).map(region => {
+        // Get DCG members for this region
+        const regionDcgMembers = (dcgMembersData || []).filter(
+          dm => dm.is_active && dm.dcgs?.region_id === region.id
+        );
+        
+        const totalDcgMembers = regionDcgMembers.length;
+        
+        // Calculate active members (< 3 absences in last month)
+        let activeMembersCount = 0;
+        regionDcgMembers.forEach(dcgMember => {
+          // Get attendance events for DCGs in this region
+          const regionDcgIds = (dcgsByRegion || [])
+            .filter(d => d.region_id === region.id)
+            .map(d => d.id);
+          
+          const memberEvents = (dcgAttendanceEvents || []).filter(
+            e => regionDcgIds.includes(e.dcg_id)
+          );
+          
+          // Count absences for this member
+          let absenceCount = 0;
+          memberEvents.forEach(event => {
+            const record = attendanceRecords.find(
+              r => r.event_id === event.id && r.member_id === dcgMember.member_id
+            );
+            if (record && record.is_present === false) {
+              absenceCount++;
+            }
+          });
+          
+          // If less than 3 absences, member is active
+          if (absenceCount < 3) {
+            activeMembersCount++;
+          }
+        });
+        
+        const activePercentage = totalDcgMembers > 0 ? (activeMembersCount / totalDcgMembers) * 100 : 0;
+        
+        // Calculate YTD growth for DCG members
+        const yearStart = startOfYear(now);
+        const newDcgMembersYTD = regionDcgMembers.filter(
+          dm => dm.created_at && new Date(dm.created_at) >= yearStart
+        ).length;
+        const previousDcgMemberCount = totalDcgMembers - newDcgMembersYTD;
+        const dcgYtdGrowth = previousDcgMemberCount > 0 
+          ? (newDcgMembersYTD / previousDcgMemberCount) * 100 
+          : (newDcgMembersYTD > 0 ? 100 : 0);
+        
+        return {
+          id: region.id,
+          name: region.name,
+          dcgCount: (dcgsByRegion || []).filter(d => d.region_id === region.id).length,
+          dcgMembers: totalDcgMembers,
+          activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
+          ytdGrowth: isNaN(dcgYtdGrowth) || !isFinite(dcgYtdGrowth) ? 0 : dcgYtdGrowth
+        };
+      });
 
       return {
         kpis: {
@@ -99,7 +185,8 @@ export const useSuperAdminReports = () => {
           totalRegions: totalRegions ?? 0,
           totalIncomeYTD: totalIncomeYTD
         },
-        regionalData
+        regionalData,
+        regionalDcgData
       };
     },
   });
