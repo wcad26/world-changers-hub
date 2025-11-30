@@ -3,11 +3,11 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Loader2 } from "lucide-react";
-import { useAllMembers, useGlobalMemberStats } from "@/hooks/useAllMembers";
+import { useAllMembers } from "@/hooks/useAllMembers";
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,6 @@ const SuperMembers: React.FC = () => {
     regionId: selectedRegion || undefined,
     status: statusFilter || undefined,
   });
-  const { data: memberStats, isLoading: statsLoading } = useGlobalMemberStats();
 
   return (
     <SuperAdminLayout>
@@ -35,214 +34,111 @@ const SuperMembers: React.FC = () => {
           Manage membership across all WCA regions.
         </p>
         
-        <Tabs defaultValue="directory">
-          <TabsList className="grid grid-cols-1 md:grid-cols-2 w-full max-w-2xl">
-            <TabsTrigger value="directory">Member Directory</TabsTrigger>
-            <TabsTrigger value="analytics">Member Analytics</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="directory">
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Member Directory</CardTitle>
-                <CardDescription>
-                  Access and manage the complete WCA membership database.
-                </CardDescription>
-                <div className="flex flex-col md:flex-row gap-4 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search members globally..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <select
-                      className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={selectedRegion}
-                      onChange={(e) => setSelectedRegion(e.target.value)}
-                      disabled={regionsLoading}
-                    >
-                      <option value="">All Regions</option>
-                      {regions?.map(region => (
-                        <option key={region.id} value={region.id}>{region.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                      <option value="">All Status</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="new">New</option>
-                      <option value="transferred">Transferred</option>
-                    </select>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {members?.length || 0} members
-                  </div>
-                </div>
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Phone</TableHead>
-                          <TableHead>Region</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Joined</TableHead>
+        <Card>
+          <CardHeader>
+            <CardTitle>Global Member Directory</CardTitle>
+            <CardDescription>
+              Access and manage the complete WCA membership database.
+            </CardDescription>
+            <div className="flex flex-col md:flex-row gap-4 mt-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search members globally..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={selectedRegion}
+                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  disabled={regionsLoading}
+                >
+                  <option value="">All Regions</option>
+                  {regions?.map(region => (
+                    <option key={region.id} value={region.id}>{region.name}</option>
+                  ))}
+                </select>
+                <select
+                  className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="new">New</option>
+                  <option value="transferred">Transferred</option>
+                </select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {members?.length || 0} members
+              </div>
+            </div>
+            <div className="rounded-md border overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Region</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Joined</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {membersLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center h-24">
+                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : members && members.length > 0 ? (
+                      members.map((member) => (
+                        <TableRow 
+                          key={member.id}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => navigate(`/admin/super/members/${member.id}`)}
+                        >
+                          <TableCell className="font-medium">
+                            {member.profiles?.first_name} {member.profiles?.last_name}
+                          </TableCell>
+                          <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
+                          <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                          <TableCell>{member.regions?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
+                              {member.member_type === 'member' ? 'Member' : 'Visitor'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {member.join_date ? format(new Date(member.join_date), 'MMM d, yyyy') : 'N/A'}
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {membersLoading ? (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">
-                              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                            </TableCell>
-                          </TableRow>
-                        ) : members && members.length > 0 ? (
-                          members.map((member) => (
-                            <TableRow 
-                              key={member.id}
-                              className="cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => navigate(`/admin/super/members/${member.id}`)}
-                            >
-                              <TableCell className="font-medium">
-                                {member.profiles?.first_name} {member.profiles?.last_name}
-                              </TableCell>
-                              <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
-                              <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
-                              <TableCell>{member.regions?.name || 'N/A'}</TableCell>
-                              <TableCell>
-                                <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
-                                  {member.member_type === 'member' ? 'Member' : 'Visitor'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                {member.join_date ? format(new Date(member.join_date), 'MMM d, yyyy') : 'N/A'}
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={6} className="text-center h-24">
-                              No members found
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Member Analytics</CardTitle>
-                <CardDescription>
-                  View global membership statistics and trends.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {statsLoading ? (
-                  <div className="flex justify-center items-center h-48">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : memberStats && memberStats.length > 0 ? (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center p-6">
-                          <p className="text-lg font-medium text-muted-foreground mb-1">Total Members</p>
-                          <h3 className="text-4xl font-bold">
-                            {memberStats.reduce((acc, curr) => acc + curr.total, 0)}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-2">Across all regions</p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center p-6">
-                          <p className="text-lg font-medium text-muted-foreground mb-1">Active Members</p>
-                          <h3 className="text-4xl font-bold text-green-600">
-                            {memberStats.reduce((acc, curr) => acc + curr.active, 0)}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {memberStats.reduce((acc, curr) => acc + curr.total, 0) > 0
-                              ? Math.round((memberStats.reduce((acc, curr) => acc + curr.active, 0) / memberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)
-                              : 0}% of total
-                          </p>
-                        </CardContent>
-                      </Card>
-                      <Card>
-                        <CardContent className="flex flex-col items-center justify-center p-6">
-                          <p className="text-lg font-medium text-muted-foreground mb-1">Inactive Members</p>
-                          <h3 className="text-4xl font-bold text-red-600">
-                            {memberStats.reduce((acc, curr) => acc + curr.inactive, 0)}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {memberStats.reduce((acc, curr) => acc + curr.total, 0) > 0
-                              ? Math.round((memberStats.reduce((acc, curr) => acc + curr.inactive, 0) / memberStats.reduce((acc, curr) => acc + curr.total, 0)) * 100)
-                              : 0}% of total
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                
-                    <h3 className="text-lg font-medium mb-4">Membership by Region</h3>
-                    <div className="rounded-md border overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Region</TableHead>
-                              <TableHead>Total Members</TableHead>
-                              <TableHead>Active</TableHead>
-                              <TableHead>Inactive</TableHead>
-                              <TableHead>New</TableHead>
-                              <TableHead>Active Rate</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {memberStats.map((stat) => (
-                              <TableRow key={stat.region_id}>
-                                <TableCell className="font-medium">{stat.region_name}</TableCell>
-                                <TableCell>{stat.total}</TableCell>
-                                <TableCell className="text-green-600">{stat.active}</TableCell>
-                                <TableCell className="text-red-600">{stat.inactive}</TableCell>
-                                <TableCell className="text-blue-600">{stat.new}</TableCell>
-                                <TableCell>
-                                  {stat.total > 0 ? Math.round((stat.active / stat.total) * 100) : 0}%
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No member statistics available
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center h-24">
+                          No members found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </SuperAdminLayout>
   );
