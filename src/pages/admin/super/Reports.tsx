@@ -31,7 +31,7 @@ const SuperReports: React.FC = () => {
         'Members': formatNumber(region.members),
         'Visitors': formatNumber(region.visitors),
         'Active': `${region.activePercentage.toFixed(1)}%`,
-        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
+        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -53,7 +53,7 @@ const SuperReports: React.FC = () => {
         'DCGs': formatNumber(region.dcgCount),
         'Members': formatNumber(region.dcgMembers),
         'Active': `${region.activePercentage.toFixed(1)}%`,
-        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
+        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -109,7 +109,7 @@ const SuperReports: React.FC = () => {
                         <TableHead>Members</TableHead>
                         <TableHead>Visitors</TableHead>
                         <TableHead>Active</TableHead>
-                        <TableHead>YTD Growth</TableHead>
+                        <TableHead>Growth</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -119,7 +119,7 @@ const SuperReports: React.FC = () => {
                           <TableCell>{formatNumber(region.members)}</TableCell>
                           <TableCell>{formatNumber(region.visitors)}</TableCell>
                           <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -150,7 +150,7 @@ const SuperReports: React.FC = () => {
                         <TableHead>DCG</TableHead>
                         <TableHead>Members</TableHead>
                         <TableHead>Active</TableHead>
-                        <TableHead>YTD Growth</TableHead>
+                        <TableHead>Growth</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -160,7 +160,7 @@ const SuperReports: React.FC = () => {
                           <TableCell>{formatNumber(region.dcgCount)}</TableCell>
                           <TableCell>{formatNumber(region.dcgMembers)}</TableCell>
                           <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

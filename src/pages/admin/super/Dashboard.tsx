@@ -1,19 +1,74 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ChevronUp, Calendar, DollarSign, Globe, AlertCircle, Download } from "lucide-react";
+import { Users, ChevronUp, Calendar as CalendarIcon, DollarSign, Globe, AlertCircle, Download } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import Papa from "papaparse";
 import { useToast } from "@/hooks/use-toast";
+import { format, subMonths, subYears, startOfYear } from "date-fns";
 
 const SuperDashboard: React.FC = () => {
-  const { data: reports, isLoading, isError, error } = useSuperAdminReports();
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('ytd');
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined
+  });
   const { toast } = useToast();
+
+  const getTimeFrameDates = (period: string): { startDate: Date; endDate: Date } => {
+    const now = new Date();
+    let startDate: Date;
+    let endDate = now;
+    
+    switch (period) {
+      case '1m':
+        startDate = subMonths(now, 1);
+        break;
+      case '3m':
+        startDate = subMonths(now, 3);
+        break;
+      case '6m':
+        startDate = subMonths(now, 6);
+        break;
+      case 'ytd':
+        startDate = startOfYear(now);
+        break;
+      case '1y':
+        startDate = subYears(now, 1);
+        break;
+      case 'custom':
+        startDate = customDateRange.from ?? startOfYear(now);
+        endDate = customDateRange.to ?? now;
+        break;
+      default:
+        startDate = startOfYear(now);
+    }
+    
+    return { startDate, endDate };
+  };
+
+  const getPeriodLabel = (): string => {
+    switch (selectedPeriod) {
+      case '1m': return '1M';
+      case '3m': return '3M';
+      case '6m': return '6M';
+      case 'ytd': return 'YTD';
+      case '1y': return '1Y';
+      case 'custom': return 'Period';
+      default: return 'YTD';
+    }
+  };
+
+  const timeFrame = useMemo(() => getTimeFrameDates(selectedPeriod), [selectedPeriod, customDateRange]);
+  const { data: reports, isLoading, isError, error } = useSuperAdminReports(timeFrame);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
@@ -31,7 +86,7 @@ const SuperDashboard: React.FC = () => {
         'Members': formatNumber(region.members),
         'Visitors': formatNumber(region.visitors),
         'Active': `${region.activePercentage.toFixed(1)}%`,
-        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
+        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -53,7 +108,7 @@ const SuperDashboard: React.FC = () => {
         'DCGs': formatNumber(region.dcgCount),
         'Members': formatNumber(region.dcgMembers),
         'Active': `${region.activePercentage.toFixed(1)}%`,
-        'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
+        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -68,10 +123,51 @@ const SuperDashboard: React.FC = () => {
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h2>
-        <p className="text-muted-foreground">
-          Welcome to the WCA super admin dashboard. Here's an overview of global operations.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Super Admin Dashboard</h2>
+            <p className="text-muted-foreground">
+              Welcome to the WCA super admin dashboard. Here's an overview of global operations.
+            </p>
+          </div>
+          
+          {/* Time Frame Selector */}
+          <div className="flex items-center gap-2">
+            <ToggleGroup type="single" value={selectedPeriod} onValueChange={(value) => value && setSelectedPeriod(value)}>
+              <ToggleGroupItem value="1m" size="sm">1M</ToggleGroupItem>
+              <ToggleGroupItem value="3m" size="sm">3M</ToggleGroupItem>
+              <ToggleGroupItem value="6m" size="sm">6M</ToggleGroupItem>
+              <ToggleGroupItem value="ytd" size="sm">YTD</ToggleGroupItem>
+              <ToggleGroupItem value="1y" size="sm">1Y</ToggleGroupItem>
+              <ToggleGroupItem value="custom" size="sm">Custom</ToggleGroupItem>
+            </ToggleGroup>
+            
+            {/* Custom Date Range Popover */}
+            {selectedPeriod === 'custom' && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customDateRange.from ? (
+                      customDateRange.to ? (
+                        `${format(customDateRange.from, "MMM d")} - ${format(customDateRange.to, "MMM d, yyyy")}`
+                      ) : format(customDateRange.from, "MMM d, yyyy")
+                    ) : "Select dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: customDateRange.from, to: customDateRange.to }}
+                    onSelect={(range) => setCustomDateRange({ from: range?.from, to: range?.to })}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -94,7 +190,7 @@ const SuperDashboard: React.FC = () => {
                 <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalMembers)}</div>
                 <p className="text-xs text-green-500 flex items-center">
                   <ChevronUp className="mr-1 h-3 w-3" />
-                  +{reports.kpis.memberGrowthPercentage.toFixed(1)}% YTD growth
+                  +{reports.kpis.memberGrowthPercentage.toFixed(1)}% {getPeriodLabel()} growth
                 </p>
                 <p className="text-xs text-violet-500">
                   {reports.kpis.globalActivePercentage.toFixed(1)}% active
@@ -168,7 +264,7 @@ const SuperDashboard: React.FC = () => {
                         <TableHead>Members</TableHead>
                         <TableHead>Visitors</TableHead>
                         <TableHead>Active</TableHead>
-                        <TableHead>YTD Growth</TableHead>
+                        <TableHead>Growth</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -178,7 +274,7 @@ const SuperDashboard: React.FC = () => {
                           <TableCell>{formatNumber(region.members)}</TableCell>
                           <TableCell>{formatNumber(region.visitors)}</TableCell>
                           <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -217,7 +313,7 @@ const SuperDashboard: React.FC = () => {
                         <TableHead>DCG</TableHead>
                         <TableHead>Members</TableHead>
                         <TableHead>Active</TableHead>
-                        <TableHead>YTD Growth</TableHead>
+                        <TableHead>Growth</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -227,7 +323,7 @@ const SuperDashboard: React.FC = () => {
                           <TableCell>{formatNumber(region.dcgCount)}</TableCell>
                           <TableCell>{formatNumber(region.dcgMembers)}</TableCell>
                           <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
