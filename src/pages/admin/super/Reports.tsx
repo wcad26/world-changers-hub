@@ -97,7 +97,7 @@ const SuperReports: React.FC = () => {
                           <TableCell>{formatNumber(region.members)}</TableCell>
                           <TableCell>{formatNumber(region.visitors)}</TableCell>
                           <TableCell>{formatNumber(region.dcgs)}</TableCell>
-                          <TableCell className="text-green-500">+{region.ytdGrowth.toFixed(1)}%</TableCell>
+                          <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
