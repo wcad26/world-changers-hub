@@ -30,14 +30,14 @@ const SuperReports: React.FC = () => {
         'Region': region.name,
         'Members': formatNumber(region.members),
         'Visitors': formatNumber(region.visitors),
-        'DCGs': formatNumber(region.dcgs),
+        'Active': `${region.activePercentage.toFixed(1)}%`,
         'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `regional-performance-snapshot-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `regional-member-overview-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -90,9 +90,9 @@ const SuperReports: React.FC = () => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle>Regional Performance Snapshot</CardTitle>
+                    <CardTitle>Regional Member Overview</CardTitle>
                     <CardDescription>
-                      A high-level overview of key metrics across all regions.
+                      Member performance overview across all regions.
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading || !reports}>
@@ -108,7 +108,7 @@ const SuperReports: React.FC = () => {
                         <TableHead>Region</TableHead>
                         <TableHead>Members</TableHead>
                         <TableHead>Visitors</TableHead>
-                        <TableHead>DCGs</TableHead>
+                        <TableHead>Active</TableHead>
                         <TableHead>YTD Growth</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -118,7 +118,7 @@ const SuperReports: React.FC = () => {
                           <TableCell>{region.name}</TableCell>
                           <TableCell>{formatNumber(region.members)}</TableCell>
                           <TableCell>{formatNumber(region.visitors)}</TableCell>
-                          <TableCell>{formatNumber(region.dcgs)}</TableCell>
+                          <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
                           <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}

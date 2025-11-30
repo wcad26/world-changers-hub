@@ -59,13 +59,34 @@ export const useSuperAdminReports = () => {
       
       const { data: membersByRegion, error: membersByRegionError } = await supabase
         .from('members')
-        .select('region_id, created_at, member_type');
+        .select('id, region_id, created_at, member_type');
       if (membersByRegionError) throw membersByRegionError;
       
       const { data: dcgsByRegion, error: dcgsByRegionError } = await supabase
         .from('dcgs')
         .select('id, region_id');
       if (dcgsByRegionError) throw dcgsByRegionError;
+      
+      // Fetch regional attendance events (dcg_id IS NULL) for last 30 days
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      const { data: regionalAttendanceEvents, error: regionalAttendanceEventsError } = await supabase
+        .from('attendance_events')
+        .select('id, region_id, event_date')
+        .is('dcg_id', null)
+        .gte('event_date', format(thirtyDaysAgo, 'yyyy-MM-dd'));
+      if (regionalAttendanceEventsError) throw regionalAttendanceEventsError;
+      
+      // Get attendance records for regional events
+      const regionalEventIds = (regionalAttendanceEvents || []).map(e => e.id);
+      let regionalAttendanceRecords: any[] = [];
+      if (regionalEventIds.length > 0) {
+        const { data: records, error: recordsError } = await supabase
+          .from('attendance_records')
+          .select('event_id, member_id, is_present')
+          .in('event_id', regionalEventIds);
+        if (recordsError) throw recordsError;
+        regionalAttendanceRecords = records || [];
+      }
       
       const regionalData = (regions || []).map(region => {
           const allMembers = (membersByRegion || []).filter(m => m.region_id === region.id);
@@ -74,19 +95,44 @@ export const useSuperAdminReports = () => {
           const members = allMembers.filter(m => m.member_type === 'member');
           const visitors = allMembers.filter(m => m.member_type === 'visitor');
           
-          // Calculate YTD growth (from start of year)
+          // Calculate YTD growth (from start of year) - only for members
           const yearStart = startOfYear(now);
           const newMembersYTD = members.filter(m => m.created_at && new Date(m.created_at) >= yearStart).length;
           const totalMembers = members.length;
           const previousMemberCount = totalMembers - newMembersYTD;
           const ytdGrowth = previousMemberCount > 0 ? (newMembersYTD / previousMemberCount) * 100 : (newMembersYTD > 0 ? 100 : 0);
 
+          // Calculate active percentage based on regional events
+          const regionEvents = (regionalAttendanceEvents || []).filter(e => e.region_id === region.id);
+          let activeMembersCount = 0;
+          
+          members.forEach(member => {
+            // Count absences for this member in regional events
+            let absenceCount = 0;
+            regionEvents.forEach(event => {
+              const record = regionalAttendanceRecords.find(
+                r => r.event_id === event.id && r.member_id === member.id
+              );
+              // If no record exists OR is_present is false, count as absence
+              if (!record || record.is_present === false) {
+                absenceCount++;
+              }
+            });
+            
+            // If less than 3 absences, member is active
+            if (absenceCount < 3) {
+              activeMembersCount++;
+            }
+          });
+          
+          const activePercentage = totalMembers > 0 ? (activeMembersCount / totalMembers) * 100 : 0;
+
           return {
               id: region.id,
               name: region.name,
               members: totalMembers,
               visitors: visitors.length,
-              dcgs: (dcgsByRegion || []).filter(d => d.region_id === region.id).length,
+              activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
               ytdGrowth: isNaN(ytdGrowth) || !isFinite(ytdGrowth) ? 0 : ytdGrowth
           }
       });

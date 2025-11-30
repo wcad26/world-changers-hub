@@ -30,14 +30,14 @@ const SuperDashboard: React.FC = () => {
         'Region': region.name,
         'Members': formatNumber(region.members),
         'Visitors': formatNumber(region.visitors),
-        'DCGs': formatNumber(region.dcgs),
+        'Active': `${region.activePercentage.toFixed(1)}%`,
         'YTD Growth': `+${region.ytdGrowth.toFixed(1)}%`,
     }));
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `regional-overview-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `regional-member-overview-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -134,7 +134,7 @@ const SuperDashboard: React.FC = () => {
 
         <Tabs defaultValue="regions">
           <TabsList>
-            <TabsTrigger value="regions">Regional Overview</TabsTrigger>
+            <TabsTrigger value="regions">Regional Member Overview</TabsTrigger>
             <TabsTrigger value="dcg-overview">Regional DCG Overview</TabsTrigger>
             <TabsTrigger value="global-finances">Global Finances</TabsTrigger>
             <TabsTrigger value="major-events">Major Events</TabsTrigger>
@@ -144,9 +144,9 @@ const SuperDashboard: React.FC = () => {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Regional Overview</CardTitle>
+                    <CardTitle>Regional Member Overview</CardTitle>
                     <CardDescription>
-                      Performance overview of WCA regions.
+                      Member performance overview of WCA regions.
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading || !reports}>
@@ -163,7 +163,7 @@ const SuperDashboard: React.FC = () => {
                         <TableHead>Region</TableHead>
                         <TableHead>Members</TableHead>
                         <TableHead>Visitors</TableHead>
-                        <TableHead>DCGs</TableHead>
+                        <TableHead>Active</TableHead>
                         <TableHead>YTD Growth</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -173,7 +173,7 @@ const SuperDashboard: React.FC = () => {
                           <TableCell>{region.name}</TableCell>
                           <TableCell>{formatNumber(region.members)}</TableCell>
                           <TableCell>{formatNumber(region.visitors)}</TableCell>
-                          <TableCell>{formatNumber(region.dcgs)}</TableCell>
+                          <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
                           <TableCell className="text-green-500">+{(region.ytdGrowth ?? 0).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
