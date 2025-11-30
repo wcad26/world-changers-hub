@@ -1,5 +1,6 @@
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +31,7 @@ const memberSchema = z.object({
 });
 
 const SuperMembers: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -151,7 +153,11 @@ const SuperMembers: React.FC = () => {
                           </TableRow>
                         ) : members && members.length > 0 ? (
                           members.map((member) => (
-                            <TableRow key={member.id}>
+                            <TableRow 
+                              key={member.id}
+                              className="cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => navigate(`/admin/super/members/${member.id}`)}
+                            >
                               <TableCell className="font-medium">
                                 {member.profiles?.first_name} {member.profiles?.last_name}
                               </TableCell>

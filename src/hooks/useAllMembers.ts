@@ -81,6 +81,36 @@ export const useAllMembers = (options: UseAllMembersOptions = {}) => {
   });
 };
 
+export const useMemberById = (memberId?: string) => {
+  return useQuery({
+    queryKey: ['members', 'single', memberId],
+    queryFn: async () => {
+      if (!memberId) return null;
+      
+      console.log('Fetching member by ID:', memberId);
+      
+      const { data, error } = await supabase
+        .from('members')
+        .select(`
+          *,
+          profiles (*),
+          regions (*)
+        `)
+        .eq('id', memberId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching member:', error);
+        throw error;
+      }
+
+      console.log('Member fetched successfully:', data);
+      return data as MemberWithDetails;
+    },
+    enabled: !!memberId,
+  });
+};
+
 interface RegionalStats {
   region_id: string;
   region_name: string;
