@@ -9,17 +9,26 @@ export const useSuperAdminReports = () => {
     queryFn: async () => {
       // --- Global KPIs ---
 
-      // Total Members
+      // Total Members (excluding visitors)
       const { count: totalMembers, error: membersError } = await supabase
         .from('members')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type', 'member');
       if (membersError) throw membersError;
+
+      // Total Visitors (not yet members)
+      const { count: totalVisitors, error: visitorsError } = await supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type', 'visitor');
+      if (visitorsError) throw visitorsError;
 
       // New Members (last 30 days)
       const oneMonthAgo = subMonths(new Date(), 1).toISOString();
       const { count: newMembersLast30Days, error: newMembersError } = await supabase
         .from('members')
         .select('*', { count: 'exact', head: true })
+        .eq('member_type', 'member')
         .gte('created_at', oneMonthAgo);
       if (newMembersError) throw newMembersError;
 
@@ -35,21 +44,20 @@ export const useSuperAdminReports = () => {
         .select('*', { count: 'exact', head: true });
       if (regionsError) throw regionsError;
 
-      // --- Financial Data ---
+      // Calculate Member Growth Percentage (YTD)
       const now = new Date();
       const yearStart = startOfYear(now);
-      const { data: financialDataYear, error: financialYearError } = await supabase
-        .from('financial_transactions')
-        .select('amount, category:financial_transaction_categories(name, type), region_id')
-        .gte('transaction_date', format(yearStart, 'yyyy-MM-dd'));
-      if (financialYearError) throw financialYearError;
+      const { count: newMembersYTD, error: newMembersYTDError } = await supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_type', 'member')
+        .gte('created_at', format(yearStart, 'yyyy-MM-dd'));
+      if (newMembersYTDError) throw newMembersYTDError;
 
-      let totalIncomeYTD = 0;
-      (financialDataYear || []).forEach(t => {
-        if (t.category?.type === 'Income') {
-          totalIncomeYTD += t.amount;
-        }
-      });
+      const previousMemberCount = (totalMembers ?? 0) - (newMembersYTD ?? 0);
+      const memberGrowthPercentage = previousMemberCount > 0 
+        ? ((newMembersYTD ?? 0) / previousMemberCount) * 100 
+        : (newMembersYTD ?? 0) > 0 ? 100 : 0;
       
       // --- Regional Overview Data ---
       const { data: regions, error: regionsDataError } = await supabase
@@ -223,13 +231,25 @@ export const useSuperAdminReports = () => {
         };
       });
 
+      // Calculate Global Active Percentage
+      const totalActiveMembers = regionalData.reduce((sum, region) => {
+        const activeCount = Math.round((region.activePercentage / 100) * region.members);
+        return sum + activeCount;
+      }, 0);
+
+      const globalActivePercentage = (totalMembers ?? 0) > 0 
+        ? (totalActiveMembers / (totalMembers ?? 0)) * 100 
+        : 0;
+
       return {
         kpis: {
           totalMembers: totalMembers ?? 0,
+          totalVisitors: totalVisitors ?? 0,
           newMembersLast30Days: newMembersLast30Days ?? 0,
+          memberGrowthPercentage: isNaN(memberGrowthPercentage) || !isFinite(memberGrowthPercentage) ? 0 : memberGrowthPercentage,
+          globalActivePercentage: isNaN(globalActivePercentage) || !isFinite(globalActivePercentage) ? 0 : globalActivePercentage,
           totalDcgs: totalDcgs ?? 0,
-          totalRegions: totalRegions ?? 0,
-          totalIncomeYTD: totalIncomeYTD
+          totalRegions: totalRegions ?? 0
         },
         regionalData,
         regionalDcgData
