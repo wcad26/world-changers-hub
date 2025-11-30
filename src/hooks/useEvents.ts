@@ -138,41 +138,7 @@ export const useDeleteEvent = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (id: string) => {
-            // Get event details first to find related attendance events
-            const { data: event } = await supabase
-                .from('events')
-                .select('start_datetime, region_id, name')
-                .eq('id', id)
-                .single();
-            
-            if (event) {
-                const eventDate = new Date(event.start_datetime).toISOString().split('T')[0];
-                
-                // Find related attendance_events by date, region, and name
-                const { data: attendanceEvents } = await supabase
-                    .from('attendance_events')
-                    .select('id')
-                    .eq('event_date', eventDate)
-                    .eq('region_id', event.region_id)
-                    .eq('name', event.name);
-                
-                // Delete attendance records for these attendance events
-                if (attendanceEvents && attendanceEvents.length > 0) {
-                    const attendanceEventIds = attendanceEvents.map(ae => ae.id);
-                    await supabase
-                        .from('attendance_records')
-                        .delete()
-                        .in('event_id', attendanceEventIds);
-                    
-                    // Delete the attendance events
-                    await supabase
-                        .from('attendance_events')
-                        .delete()
-                        .in('id', attendanceEventIds);
-                }
-            }
-            
-            // Delete the main event (cascades to FAQs, images, speakers, testimonials, slug history)
+            // Simply delete the event - CASCADE will handle attendance_events and all related records
             const { error } = await supabase.from('events').delete().eq('id', id);
             if (error) throw error;
         },

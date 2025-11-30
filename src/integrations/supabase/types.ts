@@ -24,6 +24,7 @@ export type Database = {
           id: string
           name: string
           region_id: string
+          source_event_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           name: string
           region_id: string
+          source_event_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           id?: string
           name?: string
           region_id?: string
+          source_event_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -61,6 +64,13 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_events_source_event_id_fkey"
+            columns: ["source_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]

@@ -256,23 +256,11 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
     queryFn: async () => {
       if (!eventId || !regionId) return [];
 
-      // Get the event's date
-      const { data: event, error: eventError } = await supabase
-        .from('events')
-        .select('start_datetime')
-        .eq('id', eventId)
-        .single();
-
-      if (eventError) throw eventError;
-      if (!event) return [];
-
-      const eventDate = format(new Date(event.start_datetime), 'yyyy-MM-dd');
-
-      // Find the attendance_event by date and region
+      // Find the attendance_event using the source_event_id foreign key
       const { data: attendanceEvent, error: attendanceEventError } = await supabase
         .from('attendance_events')
         .select('id')
-        .eq('event_date', eventDate)
+        .eq('source_event_id', eventId)
         .eq('region_id', regionId)
         .maybeSingle();
 
