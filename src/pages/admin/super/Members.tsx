@@ -124,10 +124,6 @@ const SuperMembers: React.FC = () => {
                       <Filter size={16} />
                     </Button>
                   </div>
-                  <Button>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Contact
-                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
