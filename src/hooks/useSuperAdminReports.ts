@@ -59,7 +59,7 @@ export const useSuperAdminReports = () => {
       
       const { data: membersByRegion, error: membersByRegionError } = await supabase
         .from('members')
-        .select('region_id, created_at');
+        .select('region_id, created_at, member_type');
       if (membersByRegionError) throw membersByRegionError;
       
       const { data: dcgsByRegion, error: dcgsByRegionError } = await supabase
@@ -68,24 +68,26 @@ export const useSuperAdminReports = () => {
       if (dcgsByRegionError) throw dcgsByRegionError;
       
       const regionalData = (regions || []).map(region => {
-          const members = (membersByRegion || []).filter(m => m.region_id === region.id);
-          const quarterAgo = subMonths(new Date(), 3);
-          const newMembersLastQuarter = members.filter(m => m.created_at && new Date(m.created_at) > quarterAgo).length;
-          const totalMembersInRegion = members.length;
-          const previousMemberCount = totalMembersInRegion - newMembersLastQuarter;
-          const growth = previousMemberCount > 0 ? (newMembersLastQuarter / previousMemberCount) * 100 : (newMembersLastQuarter > 0 ? 100 : 0);
-
-          const giving = (financialDataYear || [])
-            .filter(t => t.region_id === region.id && t.category?.type === 'Income')
-            .reduce((sum, t) => sum + t.amount, 0);
+          const allMembers = (membersByRegion || []).filter(m => m.region_id === region.id);
+          
+          // Filter by member_type
+          const members = allMembers.filter(m => m.member_type === 'member');
+          const visitors = allMembers.filter(m => m.member_type === 'visitor');
+          
+          // Calculate YTD growth (from start of year)
+          const yearStart = startOfYear(now);
+          const newMembersYTD = members.filter(m => m.created_at && new Date(m.created_at) >= yearStart).length;
+          const totalMembers = members.length;
+          const previousMemberCount = totalMembers - newMembersYTD;
+          const ytdGrowth = previousMemberCount > 0 ? (newMembersYTD / previousMemberCount) * 100 : (newMembersYTD > 0 ? 100 : 0);
 
           return {
               id: region.id,
               name: region.name,
-              members: totalMembersInRegion,
-              growth: isNaN(growth) || !isFinite(growth) ? 0 : growth,
+              members: totalMembers,
+              visitors: visitors.length,
               dcgs: (dcgsByRegion || []).filter(d => d.region_id === region.id).length,
-              giving: giving
+              ytdGrowth: isNaN(ytdGrowth) || !isFinite(ytdGrowth) ? 0 : ytdGrowth
           }
       });
 
