@@ -73,10 +73,7 @@ const SuperMembers: React.FC = () => {
         
         <Card>
           <CardHeader>
-            <CardDescription>
-              Access and manage the complete WCA membership database.
-            </CardDescription>
-            <div className="text-sm text-muted-foreground mt-4">
+            <div className="text-sm text-muted-foreground">
               Showing {members?.length || 0} members
             </div>
           </CardHeader>
