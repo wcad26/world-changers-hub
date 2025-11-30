@@ -120,9 +120,6 @@ const SuperMembers: React.FC = () => {
                       <option value="new">New</option>
                       <option value="transferred">Transferred</option>
                     </select>
-                    <Button variant="outline" size="icon">
-                      <Filter size={16} />
-                    </Button>
                   </div>
                 </div>
               </CardHeader>
