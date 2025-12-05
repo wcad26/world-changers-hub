@@ -162,13 +162,12 @@ serve(async (req) => {
           console.log('create-visitor: Event found:', event.name)
           const eventDate = new Date(event.start_datetime).toISOString().split('T')[0]
           
-          // 2. Check for existing attendance_event
+          // 2. Check for existing attendance_event by source_event_id (most reliable)
           let { data: attendanceEvent, error: attendanceEventFetchError } = await supabaseAdmin
             .from('attendance_events')
             .select('id')
-            .eq('event_date', eventDate)
+            .eq('source_event_id', rated_event_id)
             .eq('region_id', event.region_id)
-            .ilike('name', `%${event.name}%`)
             .maybeSingle()
           
           if (attendanceEventFetchError) {
@@ -184,7 +183,8 @@ serve(async (req) => {
                 name: `Attendance - ${event.name}`,
                 event_date: eventDate,
                 region_id: event.region_id,
-                description: `Attendance tracking for ${event.name}`
+                description: `Attendance tracking for ${event.name}`,
+                source_event_id: rated_event_id
               })
               .select('id')
               .single()
