@@ -18,7 +18,7 @@ export const visitorRegistrationSchema = z.object({
   
   phone: z.string()
     .trim()
-    .min(10, "Phone number must be at least 10 characters")
+    .min(6, "Phone number must be at least 6 characters")
     .max(20, "Phone number must be less than 20 characters"),
   
   address: z.string()
@@ -47,7 +47,7 @@ export const visitorRegistrationSchema = z.object({
   
   emergency_contact_phone: z.string()
     .trim()
-    .min(10, "Phone must be at least 10 characters")
+    .min(6, "Phone must be at least 6 characters")
     .max(20, "Phone must be less than 20 characters")
     .transform((val) => val === '' ? undefined : val)
     .optional(),
