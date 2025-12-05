@@ -256,18 +256,20 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
     queryFn: async () => {
       if (!eventId || !regionId) return [];
 
-      // Find the attendance_event using the source_event_id foreign key
-      const { data: attendanceEvent, error: attendanceEventError } = await supabase
+      // Find ALL attendance events for this source event (may be multiple)
+      const { data: attendanceEvents, error: attendanceEventError } = await supabase
         .from('attendance_events')
         .select('id')
         .eq('source_event_id', eventId)
-        .eq('region_id', regionId)
-        .maybeSingle();
+        .eq('region_id', regionId);
 
       if (attendanceEventError) throw attendanceEventError;
-      if (!attendanceEvent) return [];
+      if (!attendanceEvents || attendanceEvents.length === 0) return [];
 
-      // Get all members who attended (is_present = true)
+      // Get attendance event IDs
+      const attendanceEventIds = attendanceEvents.map(e => e.id);
+
+      // Get all members who attended (is_present = true) from ALL attendance events
       const { data: attendees, error: attendeesError } = await supabase
         .from('attendance_records')
         .select(`
@@ -286,13 +288,20 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
             )
           )
         `)
-        .eq('event_id', attendanceEvent.id)
+        .in('event_id', attendanceEventIds)
         .eq('is_present', true);
 
       if (attendeesError) throw attendeesError;
 
-      // Transform to the expected format
-      return (attendees || []).map(record => record.members).filter(Boolean) as EventAttendee[];
+      // Deduplicate by member_id (same member might be in multiple attendance events)
+      const uniqueAttendees = new Map<string, EventAttendee>();
+      (attendees || []).forEach(record => {
+        if (record.members && !uniqueAttendees.has(record.member_id)) {
+          uniqueAttendees.set(record.member_id, record.members as EventAttendee);
+        }
+      });
+
+      return Array.from(uniqueAttendees.values());
     },
     enabled: !!eventId && !!regionId
   });
