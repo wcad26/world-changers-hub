@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMembers, MemberWithProfile } from "@/hooks/useMembers";
 import { useCreateAttendanceEvent, useSaveAttendance } from "@/hooks/useAttendance";
+import { useExistingEventAttendance } from "@/hooks/useExistingEventAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
-import { Search, UserCheck, Save, Loader2 } from "lucide-react";
+import { Search, UserCheck, Save, Loader2, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -28,10 +29,29 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
   const [searchTerm, setSearchTerm] = useState("");
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
   const [isRecording, setIsRecording] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const { data: members, isLoading: loadingMembers, error: membersError } = useMembers(userRegion?.id);
+  const { data: existingAttendance, isLoading: loadingExisting } = useExistingEventAttendance(event.id, userRegion?.id);
   const createAttendanceEvent = useCreateAttendanceEvent();
   const saveAttendance = useSaveAttendance();
+
+  // Initialize presentMembers with existing attendance data
+  useEffect(() => {
+    if (isOpen && existingAttendance && !isInitialized) {
+      setPresentMembers(new Set(existingAttendance.presentMemberIds));
+      setIsInitialized(true);
+    }
+  }, [isOpen, existingAttendance, isInitialized]);
+
+  // Reset initialization when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsInitialized(false);
+      setPresentMembers(new Set());
+      setSearchTerm("");
+    }
+  }, [isOpen]);
 
   const filteredMembers = useMemo(() => {
     if (!members) return [];
@@ -72,29 +92,39 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
 
     setIsRecording(true);
     try {
-      // First create an attendance event for this general event
-      const attendanceEventData = {
-        name: `Attendance - ${event.name}`,
-        event_date: new Date(event.start_datetime).toISOString().split('T')[0],
-        region_id: userRegion.id,
-        description: `Attendance tracking for ${event.name}`,
-        source_event_id: event.id,
-      };
+      let attendanceEventId = existingAttendance?.attendanceEventId;
 
-      const attendanceEvent = await createAttendanceEvent.mutateAsync(attendanceEventData);
+      // Only create a new attendance event if one doesn't exist
+      if (!attendanceEventId) {
+        const attendanceEventData = {
+          name: `Attendance - ${event.name}`,
+          event_date: new Date(event.start_datetime).toISOString().split('T')[0],
+          region_id: userRegion.id,
+          description: `Attendance tracking for ${event.name}`,
+          source_event_id: event.id,
+        };
 
-      // Create attendance records for all members
+        const attendanceEvent = await createAttendanceEvent.mutateAsync(attendanceEventData);
+        attendanceEventId = attendanceEvent.id;
+      }
+
+      // Create/update attendance records for all members
       const attendanceRecords = members.map(member => ({
-        event_id: attendanceEvent.id,
+        event_id: attendanceEventId!,
         member_id: member.id,
         is_present: presentMembers.has(member.id),
       }));
 
       await saveAttendance.mutateAsync(attendanceRecords);
 
+      const previouslyPresent = existingAttendance?.totalPresentCount || 0;
+      const newlyMarked = presentMembers.size - previouslyPresent;
+
       toast({
         title: "Success",
-        description: `Attendance recorded for ${presentMembers.size} present members and ${members.length - presentMembers.size} absent members.`,
+        description: previouslyPresent > 0
+          ? `Attendance updated. ${presentMembers.size} total present (${previouslyPresent} previously recorded, ${Math.max(0, newlyMarked)} newly added).`
+          : `Attendance recorded for ${presentMembers.size} present members.`,
       });
 
       onClose();
@@ -117,6 +147,9 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
     return member.profiles?.email || member.member_id || 'Unknown Member';
   };
 
+  const isLoading = loadingMembers || loadingExisting;
+  const existingCount = existingAttendance?.totalPresentCount || 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
@@ -131,6 +164,17 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
         </DialogHeader>
 
         <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+          {/* Existing attendance info */}
+          {existingCount > 0 && (
+            <Alert className="bg-primary/10 border-primary/20">
+              <Users className="h-4 w-4" />
+              <AlertDescription>
+                <strong>{existingCount}</strong> attendee{existingCount !== 1 ? 's' : ''} already recorded for this event. 
+                You can add more or update existing records.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Search and controls */}
           <div className="flex flex-col sm:flex-row gap-4 mt-2">
             <div className="relative flex-1">
@@ -146,7 +190,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
             <Button
               variant="outline"
               onClick={handleSelectAll}
-              disabled={loadingMembers || !filteredMembers.length}
+              disabled={isLoading || !filteredMembers.length}
             >
               {presentMembers.size === filteredMembers.length ? "Deselect All" : "Select All"}
             </Button>
@@ -180,7 +224,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loadingMembers ? (
+                {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-4" /></TableCell>
@@ -223,7 +267,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
             </Button>
             <Button 
               onClick={handleRecordAttendance} 
-              disabled={isRecording || loadingMembers || !members?.length}
+              disabled={isRecording || isLoading || !members?.length}
             >
               {isRecording ? (
                 <>
@@ -233,7 +277,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
               ) : (
                 <>
                   <Save className="mr-2 h-4 w-4" />
-                  Record Attendance
+                  {existingCount > 0 ? 'Update Attendance' : 'Record Attendance'}
                 </>
               )}
             </Button>
