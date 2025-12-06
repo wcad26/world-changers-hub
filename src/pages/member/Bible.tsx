@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MemberLayout from '@/components/layout/MemberLayout';
 import { useBibleVersions, useBibleBooks, useBibleChapter, BibleVersion, BibleBook } from '@/hooks/useBible';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -16,6 +16,7 @@ interface ReadingPosition {
   versionId: string;
   bookNumber: number;
   chapter: number;
+  verse?: number;
 }
 
 export default function BiblePage() {
@@ -26,8 +27,11 @@ export default function BiblePage() {
   const [selectedVersion, setSelectedVersion] = useState<BibleVersion | null>(null);
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
   const [fontSize, setFontSize] = useState(16);
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
+  
+  const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
 
   // Load saved position on mount
   useEffect(() => {
@@ -74,10 +78,21 @@ export default function BiblePage() {
         versionId: selectedVersion.id,
         bookNumber: selectedBook.book_number,
         chapter: selectedChapter,
+        verse: selectedVerse || undefined,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
     }
-  }, [selectedVersion, selectedBook, selectedChapter]);
+  }, [selectedVersion, selectedBook, selectedChapter, selectedVerse]);
+
+  // Auto-scroll to selected verse
+  useEffect(() => {
+    if (selectedVerse) {
+      const verseEl = verseRefs.current.get(selectedVerse);
+      if (verseEl) {
+        verseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [selectedVerse]);
 
   const { data: verses, isLoading: versesLoading, error: versesError } = useBibleChapter(
     selectedVersion?.id || null,
@@ -184,6 +199,7 @@ export default function BiblePage() {
               if (book) {
                 setSelectedBook(book);
                 setSelectedChapter(1);
+                setSelectedVerse(null);
               }
             }}
           >
@@ -211,11 +227,14 @@ export default function BiblePage() {
           </Select>
         </div>
 
-        {/* Chapter Selection */}
+        {/* Chapter and Verse Selection */}
         <div className="flex items-center gap-2">
           <Select
             value={selectedChapter.toString()}
-            onValueChange={(value) => setSelectedChapter(parseInt(value))}
+            onValueChange={(value) => {
+              setSelectedChapter(parseInt(value));
+              setSelectedVerse(null);
+            }}
           >
             <SelectTrigger className="flex-1">
               <SelectValue />
@@ -224,6 +243,25 @@ export default function BiblePage() {
               {selectedBook && Array.from({ length: selectedBook.chapters_count }, (_, i) => i + 1).map(ch => (
                 <SelectItem key={ch} value={ch.toString()}>
                   {language === 'fr' ? 'Chapitre' : 'Chapter'} {ch}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={selectedVerse?.toString() || 'all'}
+            onValueChange={(value) => setSelectedVerse(value === 'all' ? null : parseInt(value))}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                {language === 'fr' ? 'Tous les versets' : 'All Verses'}
+              </SelectItem>
+              {verses && verses.map(v => (
+                <SelectItem key={v.verse} value={v.verse.toString()}>
+                  {language === 'fr' ? 'Verset' : 'Verse'} {v.verse}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -261,6 +299,7 @@ export default function BiblePage() {
           <div className="flex items-center gap-2 text-sm font-medium">
             <Book className="h-4 w-4 text-primary" />
             {selectedBook && getBookName(selectedBook)} {selectedChapter}
+            {selectedVerse && `:${selectedVerse}`}
           </div>
 
           <Button
@@ -299,8 +338,16 @@ export default function BiblePage() {
               <div className="space-y-3" style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}>
                 {verses.map((verse) => (
                   <p 
-                    key={verse.verse} 
-                    className="group cursor-pointer hover:bg-accent/50 rounded px-2 py-1 -mx-2 transition-colors"
+                    key={verse.verse}
+                    ref={(el) => {
+                      if (el) verseRefs.current.set(verse.verse, el);
+                    }}
+                    className={cn(
+                      "group cursor-pointer rounded px-2 py-1 -mx-2 transition-colors",
+                      selectedVerse === verse.verse 
+                        ? "bg-primary/20 ring-2 ring-primary/50" 
+                        : "hover:bg-accent/50"
+                    )}
                     onClick={() => copyVerse(verse.verse, verse.text)}
                   >
                     <sup className="text-primary font-semibold mr-1 text-xs">
