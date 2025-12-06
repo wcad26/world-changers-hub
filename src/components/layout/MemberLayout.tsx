@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -72,6 +73,7 @@ export default function MemberLayout({
   children
 }: MemberLayoutProps) {
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const location = useLocation();
   const {
     signOut,
@@ -79,7 +81,11 @@ export default function MemberLayout({
   } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  if (!isMobile) {
+  
+  // Use mobile layout for both mobile and tablet views
+  const useMobileLayout = isMobile || isTablet;
+  
+  if (!useMobileLayout) {
     // Desktop layout with sidebar
     return <div className="min-h-screen bg-background flex">
         {/* Sidebar */}
