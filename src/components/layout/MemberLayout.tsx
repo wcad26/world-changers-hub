@@ -152,8 +152,8 @@ export default function MemberLayout({
 
   // Mobile layout with slide-out menu
   return <div className="min-h-screen bg-background flex flex-col">
-      {/* Top header */}
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
+      {/* Top header - fixed */}
+      <header className="fixed top-0 left-0 right-0 z-40 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div>
           {isDashboard ? (
             <div className="flex items-center gap-2">
@@ -215,8 +215,8 @@ export default function MemberLayout({
           </Sheet>
       </header>
 
-      {/* Main content - pb-24 ensures content is above the fixed bottom nav */}
-      <main className="flex-1 overflow-auto pb-24">
+      {/* Main content - pt-14 for fixed header, pb-24 for fixed bottom nav */}
+      <main className="flex-1 overflow-auto pt-14 pb-24">
         {children}
       </main>
 
