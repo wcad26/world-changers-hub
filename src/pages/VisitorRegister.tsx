@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowLeft, UserCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState, useMemo } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -46,6 +46,10 @@ export default function VisitorRegister() {
     visitor_id: string;
     message: string;
   } | null>(null);
+  const [alreadyEnrolled, setAlreadyEnrolled] = useState<{
+    visitor_id?: string;
+    message: string;
+  } | null>(null);
   const {
     t,
     localizedField
@@ -77,11 +81,19 @@ export default function VisitorRegister() {
       region_id: region.id
     }, {
       onSuccess: result => {
-        setRegistrationSuccess({
-          visitor_id: result.visitor_id,
-          message: result.message
-        });
-        form.reset();
+        // Handle duplicate registration as a friendly message
+        if (result.isDuplicate) {
+          setAlreadyEnrolled({
+            visitor_id: result.visitor_id,
+            message: result.message || t('alreadyRegisteredMessage')
+          });
+        } else {
+          setRegistrationSuccess({
+            visitor_id: result.visitor_id || '',
+            message: result.message || ''
+          });
+          form.reset();
+        }
       },
       onError: (error: any) => {
         form.setError('root', {
@@ -118,6 +130,56 @@ export default function VisitorRegister() {
         </div>
       </>;
   }
+  // Already enrolled screen
+  if (alreadyEnrolled) {
+    return <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="w-full max-w-md border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-4">
+                  <UserCheck className="h-12 w-12 text-blue-600 dark:text-blue-400" />
+                </div>
+              </div>
+              <CardTitle className="text-2xl text-blue-900 dark:text-blue-100">
+                {t('welcomeBack')}
+              </CardTitle>
+              <CardDescription className="text-blue-700 dark:text-blue-300">
+                {t('alreadyRegisteredMessage')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {alreadyEnrolled.visitor_id && (
+                <div className="bg-blue-100/50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">{t('yourVisitorId')}</p>
+                  <p className="font-mono font-semibold text-blue-900 dark:text-blue-100">
+                    {alreadyEnrolled.visitor_id}
+                  </p>
+                </div>
+              )}
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={() => navigate(`/${regionCode}`)} 
+                  variant="default"
+                  className="w-full"
+                >
+                  {t('goToHomepage')}
+                </Button>
+                <Button 
+                  onClick={() => setAlreadyEnrolled(null)} 
+                  variant="outline"
+                  className="w-full"
+                >
+                  {t('tryDifferentEmail')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </>;
+  }
+
   if (registrationSuccess) {
     return <>
         <Navbar />

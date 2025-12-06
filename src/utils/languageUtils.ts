@@ -288,6 +288,11 @@ export const translations = {
     merchandise: "Merchandise",
     audio: "Audio",
     course: "Course",
+    // Already Enrolled (Duplicate Visitor)
+    welcomeBack: "Welcome Back!",
+    alreadyRegisteredMessage: "You're already registered as a visitor in this region. No need to register again!",
+    goToHomepage: "Go to Homepage",
+    tryDifferentEmail: "Try Different Email",
   },
   fr: {
     aboutEvent: "À propos de cet événement",
@@ -539,5 +544,10 @@ export const translations = {
     merchandise: "Marchandise",
     audio: "Audio",
     course: "Cours",
+    // Already Enrolled (Duplicate Visitor)
+    welcomeBack: "Bienvenue!",
+    alreadyRegisteredMessage: "Vous êtes déjà inscrit en tant que visiteur dans cette région. Pas besoin de vous réinscrire!",
+    goToHomepage: "Aller à la page d'accueil",
+    tryDifferentEmail: "Essayer un autre e-mail",
   },
 };
