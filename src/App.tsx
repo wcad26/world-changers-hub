@@ -90,6 +90,8 @@ import MemberFundraising from "./pages/member/Fundraising";
 import MemberMedia from "./pages/member/Media";
 import MemberCounseling from "./pages/member/Counseling";
 import MemberStore from "./pages/member/Store";
+import MemberBible from "./pages/member/Bible";
+
 const queryClient = new QueryClient();
 const App = () => {
   useEffect(() => {
@@ -265,9 +267,10 @@ const App = () => {
                   </MemberLayout>
                 </MemberProtectedRoute>} />
             <Route path="/member/discipleship" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberDiscipleship />
-                  </MemberLayout>
+                  <MemberDiscipleship />
+                </MemberProtectedRoute>} />
+            <Route path="/member/bible" element={<MemberProtectedRoute>
+                  <MemberBible />
                 </MemberProtectedRoute>} />
             <Route path="/member/attendance" element={<MemberProtectedRoute>
                   <MemberLayout>

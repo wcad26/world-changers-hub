@@ -14,11 +14,14 @@ interface MemberLayoutProps {
 }
 
 // Page info with custom titles and icons for header
+import { Book } from 'lucide-react';
+
 const pageInfo: Record<string, { title: string; icon: LucideIcon }> = {
   '/member/dashboard': { title: 'Member Portal', icon: Home },
   '/member/events': { title: 'My Events', icon: Calendar },
   '/member/finances': { title: 'My Giving', icon: DollarSign },
   '/member/discipleship': { title: 'My Discipleship Journey', icon: BookOpen },
+  '/member/bible': { title: 'Bible', icon: Book },
   '/member/attendance': { title: 'My Attendance', icon: BarChart3 },
   '/member/fundraising': { title: 'Fundraising', icon: Heart },
   '/member/media': { title: 'Media', icon: Play },
@@ -45,6 +48,10 @@ const navigation = [{
   icon: Users
 }];
 const secondaryNavigation = [{
+  name: 'Bible',
+  href: '/member/bible',
+  icon: Book
+}, {
   name: 'Attendance',
   href: '/member/attendance',
   icon: BarChart3
