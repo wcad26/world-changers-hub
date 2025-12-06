@@ -35,11 +35,8 @@ export default function VisitorRegister() {
   } = useRegionBySlug(regionCode);
   const { data: events = [], isLoading: eventsLoading } = usePublicRegionEvents(region?.id);
   
-  // Filter to only show past events (events that have already occurred)
-  const pastEvents = useMemo(() => {
-    const now = new Date();
-    return events.filter(event => new Date(event.start_datetime) <= now);
-  }, [events]);
+  // Events from the hook are already filtered to past public events from the last month
+  const pastEvents = events;
   
   const {
     mutate: registerVisitor,
