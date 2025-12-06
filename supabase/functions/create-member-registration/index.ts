@@ -87,7 +87,9 @@ serve(async (req) => {
       user_metadata: {
         first_name,
         last_name,
-        region_id
+        region_id,
+        phone,
+        address
       }
     })
 
@@ -98,27 +100,40 @@ serve(async (req) => {
 
     console.log('create-member-registration: User created:', authUser.user.id)
 
-    // Update profile with all information
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        phone,
-        address,
-        date_of_birth: date_of_birth || null,
-        gender: gender || null,
-        occupation: occupation || null,
-        emergency_contact_name: emergency_contact_name || null,
-        emergency_contact_phone: emergency_contact_phone || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', authUser.user.id)
+    // Wait for the database trigger to create the profile, then update with all information
+    // Use retry logic to handle race condition with handle_new_user trigger
+    let profileUpdateSuccess = false
+    for (let attempt = 0; attempt < 5; attempt++) {
+      // Small delay to allow trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 150))
+      
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          phone,
+          address,
+          date_of_birth: date_of_birth || null,
+          gender: gender || null,
+          occupation: occupation || null,
+          emergency_contact_name: emergency_contact_name || null,
+          emergency_contact_phone: emergency_contact_phone || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authUser.user.id)
 
-    if (profileError) {
-      console.error('create-member-registration: Profile update failed:', profileError)
-      // Continue anyway, user is created
+      if (!profileError) {
+        profileUpdateSuccess = true
+        console.log('create-member-registration: Profile updated successfully on attempt', attempt + 1)
+        break
+      }
+      
+      console.log(`create-member-registration: Profile update attempt ${attempt + 1} failed:`, profileError.message)
     }
 
-    console.log('create-member-registration: Profile updated successfully')
+    if (!profileUpdateSuccess) {
+      console.error('create-member-registration: All profile update attempts failed')
+      // Continue anyway, user is created - phone is in metadata as fallback
+    }
 
     // Generate member ID
     const { data: memberId, error: memberIdError } = await supabaseAdmin.rpc(

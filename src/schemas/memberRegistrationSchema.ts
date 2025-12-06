@@ -18,8 +18,12 @@ export const memberRegistrationSchema = z.object({
   
   phone: z.string()
     .trim()
-    .min(6, "Phone number must be at least 6 characters")
-    .max(20, "Phone number must be less than 20 characters"),
+    .min(9, "Phone number must be at least 9 characters")
+    .max(20, "Phone number must be less than 20 characters")
+    .refine(
+      (val) => (val.match(/\d/g) || []).length >= 9,
+      "Phone number must contain at least 9 digits"
+    ),
   
   address: z.string()
     .trim()
