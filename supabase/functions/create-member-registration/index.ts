@@ -69,14 +69,14 @@ serve(async (req) => {
           console.log('create-member-registration: Duplicate found:', existingMember.member_id, 'type:', existingMember.member_type)
           return new Response(
             JSON.stringify({ 
-              success: false, 
+              success: true, 
               is_duplicate: true,
               is_visitor: isVisitor,
               message: isVisitor 
                 ? 'You are already registered as a visitor in this region. Please contact your regional admin to upgrade your status.'
                 : 'You are already registered as a member in this region.'
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
           )
         }
       }
@@ -84,12 +84,12 @@ serve(async (req) => {
       console.log('create-member-registration: User exists but not in this region:', email)
       return new Response(
         JSON.stringify({ 
-          success: false, 
+          success: true, 
           is_duplicate: true,
           is_visitor: false,
           message: 'An account with this email already exists. Please contact your regional admin if you need assistance.'
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       )
     }
 
@@ -115,12 +115,12 @@ serve(async (req) => {
       if (authError?.code === 'email_exists' || authError?.message?.includes('already been registered')) {
         return new Response(
           JSON.stringify({ 
-            success: false, 
+            success: true, 
             is_duplicate: true,
             is_visitor: false,
             message: 'An account with this email already exists. Please contact your regional admin if you need assistance.'
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
       

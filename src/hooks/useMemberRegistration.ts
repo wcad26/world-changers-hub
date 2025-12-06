@@ -32,21 +32,12 @@ export const useMemberRegistration = () => {
 
       const result = await response.json();
 
-      // Return duplicate info as a result (not an error) so it's handled in onSuccess
-      if (response.status === 409 && result.is_duplicate) {
-        return {
-          success: false,
-          is_duplicate: true,
-          is_visitor: result.is_visitor || false,
-          message: result.message
-        };
-      }
-
-      // Handle other errors
-      if (!response.ok || !result.success) {
+      // Handle real errors (non-200 responses)
+      if (!response.ok) {
         throw new Error(result.message || result.error || 'Registration failed');
       }
       
+      // Return the result - duplicates are now returned with status 200
       return result;
     }
   });
