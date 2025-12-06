@@ -42,7 +42,7 @@ serve(async (req) => {
       throw new Error('All fields are required: first name, last name, email, phone, address, and region.')
     }
 
-    // Check for existing visitor profile with same email in same region
+    // Check for existing profile with same email in same region
     const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id')
@@ -51,21 +51,24 @@ serve(async (req) => {
       .maybeSingle()
 
     if (existingProfile) {
-      // Check if this profile has a visitor member record
-      const { data: existingVisitor } = await supabaseAdmin
+      // Check if this profile has ANY member record (visitor OR member)
+      const { data: existingMember } = await supabaseAdmin
         .from('members')
-        .select('id, member_id')
+        .select('id, member_id, member_type')
         .eq('profile_id', existingProfile.id)
-        .eq('member_type', 'visitor')
         .maybeSingle()
 
-      if (existingVisitor) {
-        console.log('create-visitor: Duplicate found:', existingVisitor.member_id)
+      if (existingMember) {
+        const isVisitor = existingMember.member_type === 'visitor'
+        console.log('create-visitor: Duplicate found:', existingMember.member_id, 'type:', existingMember.member_type)
         return new Response(
           JSON.stringify({ 
             success: false, 
-            message: 'You are already registered as a visitor in this region.',
-            visitor_id: existingVisitor.member_id
+            message: isVisitor 
+              ? 'You are already registered as a visitor in this region.'
+              : 'You are already registered as a member in this region.',
+            visitor_id: existingMember.member_id,
+            member_type: existingMember.member_type
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
         )

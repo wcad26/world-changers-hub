@@ -48,6 +48,7 @@ export default function VisitorRegister() {
   } | null>(null);
   const [alreadyEnrolled, setAlreadyEnrolled] = useState<{
     visitor_id?: string;
+    member_type?: 'visitor' | 'member';
     message: string;
   } | null>(null);
   const {
@@ -85,6 +86,7 @@ export default function VisitorRegister() {
         if (result.isDuplicate) {
           setAlreadyEnrolled({
             visitor_id: result.visitor_id,
+            member_type: result.member_type,
             message: result.message || t('alreadyRegisteredMessage')
           });
         } else {
@@ -132,6 +134,10 @@ export default function VisitorRegister() {
   }
   // Already enrolled screen
   if (alreadyEnrolled) {
+    const isMember = alreadyEnrolled.member_type === 'member';
+    const messageKey = isMember ? 'alreadyRegisteredAsMember' : 'alreadyRegisteredAsVisitor';
+    const idLabelKey = isMember ? 'yourMemberId' : 'yourVisitorId';
+    
     return <>
         <Navbar />
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -146,13 +152,13 @@ export default function VisitorRegister() {
                 {t('welcomeBack')}
               </CardTitle>
               <CardDescription className="text-blue-700 dark:text-blue-300">
-                {t('alreadyRegisteredMessage')}
+                {t(messageKey)}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {alreadyEnrolled.visitor_id && (
                 <div className="bg-blue-100/50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">{t('yourVisitorId')}</p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">{t(idLabelKey)}</p>
                   <p className="font-mono font-semibold text-blue-900 dark:text-blue-100">
                     {alreadyEnrolled.visitor_id}
                   </p>
