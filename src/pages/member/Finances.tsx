@@ -108,7 +108,7 @@ export default function MemberFinances() {
   return <div className="space-y-6 p-4 max-w-4xl mx-auto px-[13px]">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">My Giving</h1>
+        
         <p className="text-muted-foreground">
           Track your tithes, offerings, and contributions to {userRegion?.name}
         </p>
