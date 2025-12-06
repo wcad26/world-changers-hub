@@ -108,6 +108,20 @@ serve(async (req) => {
 
     if (authError || !authUser.user) {
       console.error('create-member-registration: User creation failed:', authError)
+      
+      // Handle duplicate email error from auth
+      if (authError?.code === 'email_exists' || authError?.message?.includes('already been registered')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            is_duplicate: true,
+            is_visitor: false,
+            message: 'An account with this email already exists. Please contact your regional admin if you need assistance.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+        )
+      }
+      
       throw new Error('Failed to create user account')
     }
 
