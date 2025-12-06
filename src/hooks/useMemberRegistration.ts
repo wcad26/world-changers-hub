@@ -2,15 +2,19 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MemberRegistrationFormData } from '@/schemas/memberRegistrationSchema';
 
-interface DuplicateError extends Error {
-  is_duplicate: boolean;
-  is_visitor: boolean;
+export interface MemberRegistrationResult {
+  success: boolean;
+  is_duplicate?: boolean;
+  is_visitor?: boolean;
+  message: string;
+  member_id?: string;
+  login_email?: string;
+  default_password?: string;
 }
 
 export const useMemberRegistration = () => {
   return useMutation({
-    mutationFn: async (data: MemberRegistrationFormData & { region_id: string }) => {
-      // Use fetch directly to handle non-2xx responses properly
+    mutationFn: async (data: MemberRegistrationFormData & { region_id: string }): Promise<MemberRegistrationResult> => {
       const { data: { session } } = await supabase.auth.getSession();
       
       const response = await fetch(
@@ -28,12 +32,14 @@ export const useMemberRegistration = () => {
 
       const result = await response.json();
 
-      // Handle duplicate detection (409 status)
+      // Return duplicate info as a result (not an error) so it's handled in onSuccess
       if (response.status === 409 && result.is_duplicate) {
-        const duplicateError = new Error(result.message) as DuplicateError;
-        duplicateError.is_duplicate = true;
-        duplicateError.is_visitor = result.is_visitor || false;
-        throw duplicateError;
+        return {
+          success: false,
+          is_duplicate: true,
+          is_visitor: result.is_visitor || false,
+          message: result.message
+        };
       }
 
       // Handle other errors
