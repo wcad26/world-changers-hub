@@ -12,7 +12,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { cn } from '@/lib/utils';
-
 export default function MemberFinances() {
   const {
     userRegion
@@ -21,19 +20,29 @@ export default function MemberFinances() {
     data: regionCurrency
   } = useRegionCurrency(userRegion?.id);
   const [dateFilter, setDateFilter] = useState('3-months');
-  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [customDateRange, setCustomDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
     from: undefined,
     to: undefined
   });
-
-  const quickDateOptions = [
-    { value: '1-month', label: '1M' },
-    { value: '3-months', label: '3M' },
-    { value: '6-months', label: '6M' },
-    { value: '1-year', label: '1Y' },
-    { value: 'custom', label: 'Custom' }
-  ];
-
+  const quickDateOptions = [{
+    value: '1-month',
+    label: '1M'
+  }, {
+    value: '3-months',
+    label: '3M'
+  }, {
+    value: '6-months',
+    label: '6M'
+  }, {
+    value: '1-year',
+    label: '1Y'
+  }, {
+    value: 'custom',
+    label: 'Custom'
+  }];
   const handleQuickDateChange = (value: string) => {
     setDateFilter(value);
   };
@@ -41,14 +50,12 @@ export default function MemberFinances() {
   // Calculate date range based on filter
   const getDateRange = () => {
     const now = new Date();
-    
     if (dateFilter === 'custom' && customDateRange.from) {
       return {
         from: customDateRange.from.toISOString().split('T')[0],
         to: (customDateRange.to || now).toISOString().split('T')[0]
       };
     }
-
     switch (dateFilter) {
       case '1-month':
         return {
@@ -111,66 +118,31 @@ export default function MemberFinances() {
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1">
-            {quickDateOptions.map((option) => (
-              <Button
-                key={option.value}
-                variant={dateFilter === option.value ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => handleQuickDateChange(option.value)}
-                className="px-3 py-1 h-8"
-              >
+            {quickDateOptions.map(option => <Button key={option.value} variant={dateFilter === option.value ? 'default' : 'outline'} size="sm" onClick={() => handleQuickDateChange(option.value)} className="px-3 py-1 h-8">
                 {option.label}
-              </Button>
-            ))}
+              </Button>)}
           </div>
 
           {/* Custom Date Range Picker */}
-          {dateFilter === 'custom' && (
-            <Popover>
+          {dateFilter === 'custom' && <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "justify-start text-left font-normal h-8",
-                    !customDateRange.from && "text-muted-foreground"
-                  )}
-                >
+                <Button variant="outline" size="sm" className={cn("justify-start text-left font-normal h-8", !customDateRange.from && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customDateRange.from ? (
-                    customDateRange.to ? (
-                      <>
+                  {customDateRange.from ? customDateRange.to ? <>
                         {format(customDateRange.from, "MMM d")} - {format(customDateRange.to, "MMM d, y")}
-                      </>
-                    ) : (
-                      format(customDateRange.from, "MMM d, y")
-                    )
-                  ) : (
-                    <span>Pick dates</span>
-                  )}
+                      </> : format(customDateRange.from, "MMM d, y") : <span>Pick dates</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={customDateRange.from}
-                  selected={{
-                    from: customDateRange.from,
-                    to: customDateRange.to,
-                  }}
-                  onSelect={(range) =>
-                    setCustomDateRange({
-                      from: range?.from,
-                      to: range?.to,
-                    })
-                  }
-                  numberOfMonths={2}
-                  className="pointer-events-auto"
-                />
+                <Calendar initialFocus mode="range" defaultMonth={customDateRange.from} selected={{
+              from: customDateRange.from,
+              to: customDateRange.to
+            }} onSelect={range => setCustomDateRange({
+              from: range?.from,
+              to: range?.to
+            })} numberOfMonths={2} className="pointer-events-auto" />
               </PopoverContent>
-            </Popover>
-          )}
+            </Popover>}
         </div>
         
         <Button className="w-full sm:w-auto">
@@ -186,7 +158,7 @@ export default function MemberFinances() {
             <div className="flex items-center space-x-2">
               <Heart className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Tithes</p>
+                <p className="font-medium text-muted-foreground text-xs">Total Tithes</p>
                 <p className="text-xl font-bold">{formatWithCurrency(summary?.total_tithes || 0, regionCurrency)}</p>
               </div>
             </div>
@@ -198,7 +170,7 @@ export default function MemberFinances() {
             <div className="flex items-center space-x-2">
               <Gift className="w-8 h-8 text-secondary" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Offerings</p>
+                <p className="font-medium text-muted-foreground text-xs">Total Offerings</p>
                 <p className="text-xl font-bold">{formatWithCurrency(summary?.total_offerings || 0, regionCurrency)}</p>
               </div>
             </div>
@@ -210,7 +182,7 @@ export default function MemberFinances() {
             <div className="flex items-center space-x-2">
               <TrendingUp className="w-8 h-8 text-accent" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Special Giving</p>
+                <p className="font-medium text-muted-foreground text-xs">Special Giving</p>
                 <p className="text-xl font-bold">{formatWithCurrency(summary?.total_special_giving || 0, regionCurrency)}</p>
               </div>
             </div>
@@ -222,7 +194,7 @@ export default function MemberFinances() {
             <div className="flex items-center space-x-2">
               <DollarSign className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Given</p>
+                <p className="font-medium text-muted-foreground text-xs">Total Given</p>
                 <p className="text-xl font-bold">{formatWithCurrency(summary?.total_income || 0, regionCurrency)}</p>
               </div>
             </div>
