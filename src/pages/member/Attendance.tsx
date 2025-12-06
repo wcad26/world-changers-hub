@@ -1,35 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, TrendingUp, Clock } from 'lucide-react';
+import { Calendar, TrendingUp, Users, Flame, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
+import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
-export default function MemberAttendance() {
-  const { user } = useAuth();
 
-  // Mock data - will be replaced with actual hooks when available
-  const attendanceStats = {
-    overall_rate: 87,
-    regional_events: 12,
-    dcg_events: 24,
-    recent_streak: 5,
-    last_event: "Sunday Service - Dec 15, 2024"
+export default function MemberAttendance() {
+  const { memberRecord, userRegion } = useAuth();
+  
+  // Period filter state
+  const [filters, setFilters] = useState<PeriodFilters>({
+    quickDateRange: '3-months',
+    dateRange: {
+      from: new Date(new Date().setMonth(new Date().getMonth() - 3)),
+      to: new Date()
+    }
+  });
+
+  const handleFiltersChange = (newFilters: Partial<PeriodFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
   };
 
-  const recentEvents = [
-    { id: 1, name: "Sunday Service", date: "2024-12-15", type: "regional", attended: true },
-    { id: 2, name: "DCG Meeting", date: "2024-12-12", type: "dcg", attended: true },
-    { id: 3, name: "Prayer Meeting", date: "2024-12-10", type: "regional", attended: false },
-    { id: 4, name: "DCG Meeting", date: "2024-12-05", type: "dcg", attended: true },
-    { id: 5, name: "Sunday Service", date: "2024-12-08", type: "regional", attended: true },
-  ];
-
-  const upcomingEvents = [
-    { id: 1, name: "Sunday Service", date: "2024-12-22", type: "regional", location: "Main Church" },
-    { id: 2, name: "DCG Meeting", date: "2024-12-19", type: "dcg", location: "Community Center" },
-    { id: 3, name: "Christmas Service", date: "2024-12-25", type: "regional", location: "Main Church" },
-  ];
+  // Fetch attendance data with date filter
+  const { data: attendanceData, isLoading } = useMemberDetailedAttendance(
+    memberRecord?.id,
+    userRegion?.id,
+    filters.dateRange
+  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -38,47 +38,83 @@ export default function MemberAttendance() {
         <h1 className="text-2xl font-bold text-foreground">My Attendance</h1>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Period Filter */}
+      <PeriodFilter filters={filters} onFiltersChange={handleFiltersChange} />
+
+      {/* Stats Overview - 5 KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {/* Overall Attendance Rate */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{attendanceStats.overall_rate}%</p>
-                <p className="text-sm text-muted-foreground">Overall Rate</p>
+              <div className="flex-1">
+                <p className="text-2xl font-bold text-foreground">
+                  {isLoading ? '...' : `${attendanceData?.overall.rate || 0}%`}
+                </p>
+                <p className="text-sm text-muted-foreground">Overall Attendance Rate</p>
               </div>
             </div>
-            <Progress value={attendanceStats.overall_rate} className="mt-2" />
+            <Progress value={attendanceData?.overall.rate || 0} className="mt-2" />
           </CardContent>
         </Card>
+
+        {/* Regional Events */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-2xl font-bold text-foreground">{attendanceStats.regional_events}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
+                </p>
                 <p className="text-sm text-muted-foreground">Regional Events</p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* DCG */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-green-600" />
+              <Users className="h-5 w-5 text-green-600" />
               <div>
-                <p className="text-2xl font-bold text-foreground">{attendanceStats.dcg_events}</p>
-                <p className="text-sm text-muted-foreground">DCG Events</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
+                </p>
+                <p className="text-sm text-muted-foreground">DCG</p>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Prayer Meeting */}
         <Card>
           <CardContent className="p-4">
-            <div>
-              <p className="text-2xl font-bold text-foreground">{attendanceStats.recent_streak}</p>
-              <p className="text-sm text-muted-foreground">Current Streak</p>
+            <div className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
+                </p>
+                <p className="text-sm text-muted-foreground">Prayer Meeting</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Streaks */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Flame className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold text-foreground">
+                  {isLoading ? '...' : attendanceData?.streak || 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Streaks</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -88,61 +124,64 @@ export default function MemberAttendance() {
       <Card>
         <CardHeader>
           <CardTitle>Attendance Trend</CardTitle>
-          <CardDescription>Your attendance pattern over the last 6 months</CardDescription>
+          <CardDescription>Your attendance pattern over the selected period</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={[
-                  { month: 'Jul', rate: 85 },
-                  { month: 'Aug', rate: 92 },
-                  { month: 'Sep', rate: 78 },
-                  { month: 'Oct', rate: 88 },
-                  { month: 'Nov', rate: 95 },
-                  { month: 'Dec', rate: 87 },
-                ]}
-                margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
-              >
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                />
-                <YAxis 
-                  domain={[0, 100]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  tickFormatter={(value) => `${value}%`}
-                  width={45}
-                />
-                <Tooltip
-                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  }}
-                  labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                  formatter={(value: number) => [`${value}%`, 'Attendance']}
-                />
-                <Bar 
-                  dataKey="rate" 
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={50}
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                Loading...
+              </div>
+            ) : attendanceData?.monthlyTrend && attendanceData.monthlyTrend.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={attendanceData.monthlyTrend}
+                  margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
                 >
-                  {[85, 92, 78, 88, 95, 87].map((rate, index) => (
-                    <Cell 
-                      key={`cell-${index}`}
-                      fill={rate >= 90 ? 'hsl(var(--primary))' : rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    domain={[0, 100]}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    tickFormatter={(value) => `${value}%`}
+                    width={45}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                    formatter={(value: number) => [`${value}%`, 'Attendance']}
+                  />
+                  <Bar 
+                    dataKey="rate" 
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={50}
+                  >
+                    {attendanceData.monthlyTrend.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`}
+                        fill={entry.rate >= 90 ? 'hsl(var(--primary))' : entry.rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-muted-foreground">
+                No attendance data for the selected period
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-center gap-6 mt-4 text-sm">
             <div className="flex items-center gap-2">
@@ -165,32 +204,37 @@ export default function MemberAttendance() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Events</CardTitle>
-          <CardDescription>Your attendance history for the past month</CardDescription>
+          <CardDescription>Your attendance history for the selected period</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {recentEvents.map((event) => (
-              <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-semibold text-foreground">{event.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(event.date).toLocaleDateString()}
-                  </p>
+          {isLoading ? (
+            <div className="text-muted-foreground">Loading...</div>
+          ) : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? (
+            <div className="space-y-4">
+              {attendanceData.recentEvents.map((event) => (
+                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-semibold text-foreground">{event.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={event.type === 'regional' ? 'default' : event.type === 'dcg' ? 'secondary' : 'outline'}>
+                      {event.type === 'prayer' ? 'PRAYER' : event.type.toUpperCase()}
+                    </Badge>
+                    <Badge variant={event.attended ? 'default' : 'destructive'}>
+                      {event.attended ? 'Present' : 'Absent'}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={event.type === 'regional' ? 'default' : 'secondary'}>
-                    {event.type.toUpperCase()}
-                  </Badge>
-                  <Badge variant={event.attended ? 'default' : 'destructive'}>
-                    {event.attended ? 'Present' : 'Absent'}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-muted-foreground">No events found for the selected period</div>
+          )}
         </CardContent>
       </Card>
-
     </div>
   );
 }
