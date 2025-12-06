@@ -271,7 +271,7 @@ const App = () => {
                 </MemberProtectedRoute>} />
             <Route path="/member/attendance" element={<MemberProtectedRoute>
                   <MemberLayout>
-                    <MemberAttendance className="mx-0 px-[15px]" />
+                    <MemberAttendance />
                   </MemberLayout>
                 </MemberProtectedRoute>} />
             <Route path="/member/fundraising" element={<MemberProtectedRoute>
