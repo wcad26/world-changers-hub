@@ -150,12 +150,10 @@ export default function MemberLayout({
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div>
           {isDashboard ? (
-            <>
-              <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
-              <p className="text-xs text-muted-foreground">
-                Welcome, {profile?.first_name}
-              </p>
-            </>
+            <div className="flex items-center gap-2">
+              <PageIcon className="h-5 w-5 text-primary" />
+              <h1 className="text-base font-semibold text-foreground">Welcome back, {profile?.first_name}!</h1>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               <PageIcon className="h-5 w-5 text-primary" />
