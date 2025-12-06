@@ -49,30 +49,43 @@ serve(async (req) => {
     const userExists = existingUser.users.some(user => user.email === email)
 
     if (userExists) {
-      console.log('create-member-registration: User already exists:', email)
+      // Check if this user has a member record in this region
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle()
+
+      if (existingProfile) {
+        const { data: existingMember } = await supabaseAdmin
+          .from('members')
+          .select('id, member_id, member_type')
+          .eq('profile_id', existingProfile.id)
+          .eq('region_id', region_id)
+          .maybeSingle()
+
+        if (existingMember) {
+          const isVisitor = existingMember.member_type === 'visitor'
+          console.log('create-member-registration: Duplicate found:', existingMember.member_id, 'type:', existingMember.member_type)
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              is_duplicate: true,
+              is_visitor: isVisitor,
+              message: isVisitor 
+                ? 'You are already registered as a visitor in this region. Please contact your regional admin to upgrade your status.'
+                : 'You are already registered as a member in this region.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          )
+        }
+      }
+
+      console.log('create-member-registration: User exists but not in this region:', email)
       return new Response(
         JSON.stringify({ 
           success: false, 
           message: 'An account with this email already exists. Please contact your regional admin if you need assistance.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
-      )
-    }
-
-    // Check for existing profile with same email in same region
-    const { data: existingProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .eq('region_id', region_id)
-      .maybeSingle()
-
-    if (existingProfile) {
-      console.log('create-member-registration: Email already registered in this region')
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'You are already registered in this region. Please contact your regional admin for assistance.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
       )
@@ -152,6 +165,10 @@ serve(async (req) => {
     const skillsArray = skills_talents ? [skills_talents] : null
     const ministryArray = ministry_interests && ministry_interests.length > 0 ? ministry_interests : null
 
+    // Determine member_type: 'member' if completed foundation school, 'visitor' otherwise
+    const memberType = has_completed_foundation_school === 'yes' ? 'member' : 'visitor'
+    console.log('create-member-registration: Determined member_type:', memberType)
+
     // Create member record
     const { data: newMember, error: memberError } = await supabaseAdmin
       .from('members')
@@ -159,7 +176,7 @@ serve(async (req) => {
         profile_id: authUser.user.id,
         member_id: memberId,
         region_id: region_id,
-        member_type: 'member',
+        member_type: memberType,
         status: 'new',
         join_date: new Date().toISOString().split('T')[0],
         membership_class_completed: has_completed_foundation_school === 'yes',
@@ -180,23 +197,27 @@ serve(async (req) => {
 
     console.log('create-member-registration: Member created successfully:', newMember)
 
-    // Assign member role in user_roles
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: authUser.user.id,
-        role: 'member',
-        region_id: region_id,
-        is_active: true,
-        status: 'active',
-        assigned_at: new Date().toISOString()
-      })
+    // Only assign member role if they completed foundation school
+    if (has_completed_foundation_school === 'yes') {
+      const { error: roleError } = await supabaseAdmin
+        .from('user_roles')
+        .insert({
+          user_id: authUser.user.id,
+          role: 'member',
+          region_id: region_id,
+          is_active: true,
+          status: 'active',
+          assigned_at: new Date().toISOString()
+        })
 
-    if (roleError) {
-      console.error('create-member-registration: Role assignment failed:', roleError)
-      // Don't fail registration, continue
+      if (roleError) {
+        console.error('create-member-registration: Role assignment failed:', roleError)
+        // Don't fail registration, continue
+      } else {
+        console.log('create-member-registration: Member role assigned successfully')
+      }
     } else {
-      console.log('create-member-registration: Member role assigned successfully')
+      console.log('create-member-registration: Skipping member role assignment - visitor type')
     }
 
     // Add to DCG if selected
@@ -226,12 +247,13 @@ serve(async (req) => {
       }
     }
 
+    const roleLabel = memberType === 'member' ? 'member' : 'visitor'
     return new Response(
       JSON.stringify({ 
         success: true, 
         member: newMember,
         member_id: memberId,
-        message: `Welcome! You have been registered as a member with ID ${memberId}. Your login credentials are:\n\nEmail: ${email}\nPassword: 123456\n\nPlease change your password after your first login.`,
+        message: `Welcome! You have been registered as a ${roleLabel} with ID ${memberId}. Your login credentials are:\n\nEmail: ${email}\nPassword: 123456\n\nPlease change your password after your first login.`,
         dcg_added: dcgAdded,
         login_email: email,
         default_password: defaultPassword

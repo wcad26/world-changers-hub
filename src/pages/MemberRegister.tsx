@@ -68,6 +68,10 @@ export default function MemberRegister() {
     login_email: string;
     default_password: string;
   } | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    message: string;
+    isVisitor: boolean;
+  } | null>(null);
   const { t } = useLanguage();
 
   const form = useForm<MemberRegistrationFormData>({
@@ -112,9 +116,17 @@ export default function MemberRegister() {
           form.reset();
         },
         onError: (error: any) => {
-          form.setError('root', {
-            message: error.message || t('registrationFailed')
-          });
+          // Check if this is a duplicate error
+          if (error.is_duplicate) {
+            setDuplicateInfo({
+              message: error.message,
+              isVisitor: error.is_visitor || false
+            });
+          } else {
+            form.setError('root', {
+              message: error.message || t('registrationFailed')
+            });
+          }
         }
       }
     );
@@ -147,6 +159,39 @@ export default function MemberRegister() {
               <Button onClick={() => navigate('/')} className="w-full">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 {t('backToHome')}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  if (duplicateInfo) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-background p-4">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle className="text-center">{t('welcomeBack')}</CardTitle>
+              <CardDescription className="text-center">
+                {duplicateInfo.isVisitor 
+                  ? t('alreadyRegisteredAsVisitor')
+                  : t('alreadyRegisteredAsMember')
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              <Button onClick={() => navigate(`/${regionCode}`)} className="w-full">
+                {t('goToHomepage')}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setDuplicateInfo(null)} 
+                className="w-full"
+              >
+                {t('tryDifferentEmail')}
               </Button>
             </CardContent>
           </Card>
