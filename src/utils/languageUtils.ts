@@ -288,9 +288,12 @@ export const translations = {
     merchandise: "Merchandise",
     audio: "Audio",
     course: "Course",
-    // Already Enrolled (Duplicate Visitor)
+    // Already Enrolled (Duplicate Visitor/Member)
     welcomeBack: "Welcome Back!",
-    alreadyRegisteredMessage: "You're already registered as a visitor in this region. No need to register again!",
+    alreadyRegisteredAsVisitor: "You're already registered as a visitor in this region. No need to register again!",
+    alreadyRegisteredAsMember: "You're already registered as a member in this region. No need to register as a visitor!",
+    alreadyRegisteredMessage: "You're already registered in this region.",
+    yourMemberId: "Your Member ID",
     goToHomepage: "Go to Homepage",
     tryDifferentEmail: "Try Different Email",
   },
@@ -544,9 +547,12 @@ export const translations = {
     merchandise: "Marchandise",
     audio: "Audio",
     course: "Cours",
-    // Already Enrolled (Duplicate Visitor)
+    // Already Enrolled (Duplicate Visitor/Member)
     welcomeBack: "Bienvenue!",
-    alreadyRegisteredMessage: "Vous êtes déjà inscrit en tant que visiteur dans cette région. Pas besoin de vous réinscrire!",
+    alreadyRegisteredAsVisitor: "Vous êtes déjà inscrit en tant que visiteur dans cette région. Pas besoin de vous réinscrire!",
+    alreadyRegisteredAsMember: "Vous êtes déjà inscrit en tant que membre dans cette région. Pas besoin de vous inscrire comme visiteur!",
+    alreadyRegisteredMessage: "Vous êtes déjà inscrit dans cette région.",
+    yourMemberId: "Votre identifiant de membre",
     goToHomepage: "Aller à la page d'accueil",
     tryDifferentEmail: "Essayer un autre e-mail",
   },

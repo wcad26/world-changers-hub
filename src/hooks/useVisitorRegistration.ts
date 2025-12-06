@@ -6,6 +6,7 @@ export interface VisitorRegistrationResult {
   success: boolean;
   isDuplicate?: boolean;
   visitor_id?: string;
+  member_type?: 'visitor' | 'member';
   message?: string;
 }
 
@@ -28,6 +29,7 @@ export const useVisitorRegistration = () => {
           success: false,
           isDuplicate: true,
           visitor_id: result.visitor_id,
+          member_type: result.member_type || 'visitor',
           message: result.message
         };
       }
