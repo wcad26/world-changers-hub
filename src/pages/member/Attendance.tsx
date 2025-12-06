@@ -7,10 +7,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
 import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
-
 export default function MemberAttendance() {
-  const { memberRecord, userRegion } = useAuth();
-  
+  const {
+    memberRecord,
+    userRegion
+  } = useAuth();
+
   // Period filter state
   const [filters, setFilters] = useState<PeriodFilters>({
     quickDateRange: '3-months',
@@ -19,20 +21,19 @@ export default function MemberAttendance() {
       to: new Date()
     }
   });
-
   const handleFiltersChange = (newFilters: Partial<PeriodFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters
+    }));
   };
 
   // Fetch attendance data with date filter
-  const { data: attendanceData, isLoading } = useMemberDetailedAttendance(
-    memberRecord?.id,
-    userRegion?.id,
-    filters.dateRange
-  );
-
-  return (
-    <div className="container mx-auto p-6 space-y-6">
+  const {
+    data: attendanceData,
+    isLoading
+  } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, filters.dateRange);
+  return <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <Calendar className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">My Attendance</h1>
@@ -42,7 +43,7 @@ export default function MemberAttendance() {
       <PeriodFilter filters={filters} onFiltersChange={handleFiltersChange} />
 
       {/* Stats Overview - 5 KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 mx-0 px-0 border-0">
         {/* Overall Attendance Rate */}
         <Card>
           <CardContent className="p-4">
@@ -128,60 +129,42 @@ export default function MemberAttendance() {
         </CardHeader>
         <CardContent>
           <div className="h-64">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+            {isLoading ? <div className="flex items-center justify-center h-full text-muted-foreground">
                 Loading...
-              </div>
-            ) : attendanceData?.monthlyTrend && attendanceData.monthlyTrend.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={attendanceData.monthlyTrend}
-                  margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
-                >
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    domain={[0, 100]}
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    tickFormatter={(value) => `${value}%`}
-                    width={45}
-                  />
-                  <Tooltip
-                    cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }}
-                    labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
-                    formatter={(value: number) => [`${value}%`, 'Attendance']}
-                  />
-                  <Bar 
-                    dataKey="rate" 
-                    radius={[6, 6, 0, 0]}
-                    maxBarSize={50}
-                  >
-                    {attendanceData.monthlyTrend.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`}
-                        fill={entry.rate >= 90 ? 'hsl(var(--primary))' : entry.rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'}
-                      />
-                    ))}
+              </div> : attendanceData?.monthlyTrend && attendanceData.monthlyTrend.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={attendanceData.monthlyTrend} margin={{
+              top: 20,
+              right: 20,
+              left: 0,
+              bottom: 5
+            }}>
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{
+                fill: 'hsl(var(--muted-foreground))',
+                fontSize: 12
+              }} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{
+                fill: 'hsl(var(--muted-foreground))',
+                fontSize: 12
+              }} tickFormatter={value => `${value}%`} width={45} />
+                  <Tooltip cursor={{
+                fill: 'hsl(var(--muted))',
+                opacity: 0.3
+              }} contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }} labelStyle={{
+                color: 'hsl(var(--foreground))',
+                fontWeight: 600
+              }} formatter={(value: number) => [`${value}%`, 'Attendance']} />
+                  <Bar dataKey="rate" radius={[6, 6, 0, 0]} maxBarSize={50}>
+                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'hsl(var(--primary))' : entry.rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'} />)}
                   </Bar>
                 </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
+              </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-muted-foreground">
                 No attendance data for the selected period
-              </div>
-            )}
+              </div>}
           </div>
           <div className="flex items-center justify-center gap-6 mt-4 text-sm">
             <div className="flex items-center gap-2">
@@ -207,12 +190,8 @@ export default function MemberAttendance() {
           <CardDescription>Your attendance history for the selected period</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-muted-foreground">Loading...</div>
-          ) : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? (
-            <div className="space-y-4">
-              {attendanceData.recentEvents.map((event) => (
-                <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+          {isLoading ? <div className="text-muted-foreground">Loading...</div> : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? <div className="space-y-4">
+              {attendanceData.recentEvents.map(event => <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <h4 className="font-semibold text-foreground">{event.name}</h4>
                     <p className="text-sm text-muted-foreground">
@@ -227,14 +206,9 @@ export default function MemberAttendance() {
                       {event.attended ? 'Present' : 'Absent'}
                     </Badge>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-muted-foreground">No events found for the selected period</div>
-          )}
+                </div>)}
+            </div> : <div className="text-muted-foreground">No events found for the selected period</div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
