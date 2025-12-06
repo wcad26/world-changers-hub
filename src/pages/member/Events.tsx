@@ -1,93 +1,25 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
   Calendar, 
   Clock, 
   MapPin, 
   Search, 
-  Filter,
-  Users,
-  ExternalLink
+  Users
 } from 'lucide-react';
-import { usePublicEvents } from '@/hooks/useEvents';
+import { useMemberRegionEvents } from '@/hooks/useEvents';
 import { format, parseISO, isFuture, isPast, isToday } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function MemberEvents() {
-  const { profile } = useAuth();
-  const { data: events, isLoading } = usePublicEvents();
+  const { data: events, isLoading } = useMemberRegionEvents();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Mock events data for demo purposes
-  const mockEvents = [
-    {
-      id: "1",
-      name: "Sunday Worship Service",
-      description: "Join us for our weekly worship service with uplifting music and inspiring messages.",
-      start_datetime: "2024-07-30T10:00:00Z",
-      end_datetime: "2024-07-30T12:00:00Z",
-      location_name: "Main Sanctuary",
-      capacity: 300,
-      category: "Worship",
-      status: "Upcoming",
-      is_featured: true,
-      image_url: "/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png",
-      region_id: profile?.region_id
-    },
-    {
-      id: "2",
-      name: "Youth Bible Study",
-      description: "A dedicated time for our youth to dive deep into God's word.",
-      start_datetime: "2024-08-02T18:30:00Z",
-      end_datetime: "2024-08-02T20:00:00Z",
-      location_name: "Youth Center",
-      capacity: 50,
-      category: "Bible Study",
-      status: "Upcoming",
-      is_featured: false,
-      region_id: profile?.region_id
-    },
-    {
-      id: "3",
-      name: "Sunday School",
-      description: "Educational classes for all ages to grow in faith and knowledge.",
-      start_datetime: "2024-07-29T09:00:00Z",
-      end_datetime: "2024-07-29T09:45:00Z",
-      location_name: "Classrooms",
-      capacity: 200,
-      category: "Education",
-      status: "Today",
-      is_featured: false,
-      region_id: profile?.region_id
-    },
-    {
-      id: "4",
-      name: "Church Anniversary",
-      description: "Celebrating 25 years of ministry with special guests and fellowship.",
-      start_datetime: "2024-07-20T10:00:00Z",
-      end_datetime: "2024-07-20T16:00:00Z",
-      location_name: "Main Sanctuary",
-      capacity: 500,
-      category: "Celebration",
-      status: "Past",
-      is_featured: true,
-      image_url: "/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png",
-      region_id: profile?.region_id
-    }
-  ];
-
-  // Use mock data if no real events are available, or use real events filtered by region
-  const regionEvents = (events && events.length > 0) 
-    ? events.filter(event => event.region_id === profile?.region_id)
-    : mockEvents;
-
   // Filter events by search query
-  const filteredEvents = regionEvents.filter(event =>
+  const filteredEvents = (events || []).filter(event =>
     event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     event.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -152,9 +84,11 @@ export default function MemberEvents() {
           </div>
 
           <div className="flex items-center justify-between pt-2">
-            <Badge variant="secondary">
-              {event.category}
-            </Badge>
+            {event.category && (
+              <Badge variant="secondary">
+                {event.category}
+              </Badge>
+            )}
             <Badge variant={event.status === 'Upcoming' ? 'default' : 'secondary'}>
               {event.status}
             </Badge>
@@ -180,75 +114,75 @@ export default function MemberEvents() {
 
   return (
     <div className="p-4 space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-foreground">Events</h1>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+      {/* Header */}
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold text-foreground">Events</h1>
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search events..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
-
-        {/* Event Tabs */}
-        <Tabs defaultValue="upcoming" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upcoming">
-              Upcoming ({upcomingEvents.length})
-            </TabsTrigger>
-            <TabsTrigger value="today">
-              Today ({todayEvents.length})
-            </TabsTrigger>
-            <TabsTrigger value="past">
-              Past ({pastEvents.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="upcoming" className="space-y-4">
-            {upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No upcoming events found</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="today" className="space-y-4">
-            {todayEvents.length > 0 ? (
-              todayEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No events today</p>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="past" className="space-y-4">
-            {pastEvents.length > 0 ? (
-              pastEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                <p className="text-muted-foreground">No past events found</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
       </div>
+
+      {/* Event Tabs */}
+      <Tabs defaultValue="upcoming" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="upcoming">
+            Upcoming ({upcomingEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="today">
+            Today ({todayEvents.length})
+          </TabsTrigger>
+          <TabsTrigger value="past">
+            Past ({pastEvents.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upcoming" className="space-y-4">
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">No upcoming events</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="today" className="space-y-4">
+          {todayEvents.length > 0 ? (
+            todayEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">No events today</p>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="past" className="space-y-4">
+          {pastEvents.length > 0 ? (
+            pastEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">No past events</p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

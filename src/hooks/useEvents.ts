@@ -47,6 +47,28 @@ export const usePublicEvents = () => {
     });
 };
 
+// Hook to get events for a member's region (both past and future)
+export const useMemberRegionEvents = () => {
+  const { profile } = useAuth();
+  const regionId = profile?.region_id;
+
+  return useQuery({
+    queryKey: ['member-region-events', regionId],
+    queryFn: async () => {
+      if (!regionId) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('region_id', regionId)
+        .eq('is_public', true)
+        .order('start_datetime', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!regionId,
+  });
+};
+
 // Hook to get a single event by ID
 export const useEventById = (eventId: string | undefined) => {
     return useQuery({
