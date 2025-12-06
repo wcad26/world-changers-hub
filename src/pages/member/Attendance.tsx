@@ -42,9 +42,9 @@ export default function MemberAttendance() {
       {/* Period Filter */}
       <PeriodFilter filters={filters} onFiltersChange={handleFiltersChange} />
 
-      {/* Stats Overview - 5 KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 mx-0 px-0 border-0">
-        {/* Overall Attendance Rate */}
+      {/* Stats Overview - KPI Cards */}
+      <div className="space-y-4 mb-6">
+        {/* Overall Attendance Rate - Full Width */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -60,65 +60,68 @@ export default function MemberAttendance() {
           </CardContent>
         </Card>
 
-        {/* Regional Events */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
-                </p>
-                <p className="text-sm text-muted-foreground">Regional Events</p>
+        {/* Other KPIs - 2x2 grid on mobile, 4 cols on desktop */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {/* Regional Events */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-foreground">
+                    {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Regional Events</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* DCG */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
-                </p>
-                <p className="text-sm text-muted-foreground">DCG</p>
+          {/* DCG */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-green-600" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-foreground">
+                    {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground">DCG</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Prayer Meeting */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-purple-600" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
-                </p>
-                <p className="text-sm text-muted-foreground">Prayer Meeting</p>
+          {/* Prayer Meeting */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-foreground">
+                    {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Prayer Meeting</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Streaks */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? '...' : attendanceData?.streak || 0}
-                </p>
-                <p className="text-sm text-muted-foreground">Streaks</p>
+          {/* Streaks */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <Flame className="h-5 w-5 text-orange-500" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-foreground">
+                    {isLoading ? '...' : attendanceData?.streak || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Streaks</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Monthly Trend */}
