@@ -188,7 +188,7 @@ export default function MemberLayout({
       {/* Bottom navigation bar - Modern floating pill design */}
       <nav className="fixed bottom-4 left-4 right-4 z-50">
         <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/10">
-          <div className="flex justify-around items-center py-2 px-2 bg-primary">
+          <div className="flex justify-around items-center py-2 px-2 bg-primary rounded-2xl">
             {navigation.map(item => {
             const isActive = location.pathname === item.href;
             return <Link key={item.name} to={item.href} className={cn('relative flex flex-col items-center px-4 py-2 rounded-xl transition-all duration-300', isActive ? 'bg-primary/10' : 'hover:bg-muted/50')}>
