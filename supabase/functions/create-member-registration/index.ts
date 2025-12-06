@@ -85,6 +85,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
+          is_duplicate: true,
+          is_visitor: false,
           message: 'An account with this email already exists. Please contact your regional admin if you need assistance.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
