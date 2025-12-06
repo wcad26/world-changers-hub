@@ -162,16 +162,21 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top header */}
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                size="icon" 
-                className="bg-violet-600 hover:bg-violet-700 text-white"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
+          <p className="text-xs text-muted-foreground">
+            Welcome, {profile?.first_name}
+          </p>
+        </div>
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild>
+            <Button 
+              size="icon" 
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 bg-card">
               <div className="p-6 border-b border-border">
                 <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
@@ -240,14 +245,6 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
               </nav>
             </SheetContent>
           </Sheet>
-          
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
-            <p className="text-xs text-muted-foreground">
-              Welcome, {profile?.first_name}
-            </p>
-          </div>
-        </div>
       </header>
 
       {/* Main content */}
