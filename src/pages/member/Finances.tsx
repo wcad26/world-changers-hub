@@ -159,7 +159,7 @@ export default function MemberFinances() {
               <Heart className="w-8 h-8 text-primary" />
               <div>
                 <p className="font-medium text-muted-foreground text-xs">Total Tithes</p>
-                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_tithes || 0, regionCurrency)}</p>
+                <p className="font-bold text-lg text-right">{formatWithCurrency(summary?.total_tithes || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -171,7 +171,7 @@ export default function MemberFinances() {
               <Gift className="w-8 h-8 text-secondary" />
               <div>
                 <p className="font-medium text-muted-foreground text-xs">Total Offerings</p>
-                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_offerings || 0, regionCurrency)}</p>
+                <p className="font-bold text-lg text-right">{formatWithCurrency(summary?.total_offerings || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -183,7 +183,7 @@ export default function MemberFinances() {
               <TrendingUp className="w-8 h-8 text-accent" />
               <div>
                 <p className="font-medium text-muted-foreground text-xs">Special Giving</p>
-                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_special_giving || 0, regionCurrency)}</p>
+                <p className="font-bold text-lg text-right">{formatWithCurrency(summary?.total_special_giving || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
@@ -195,7 +195,7 @@ export default function MemberFinances() {
               <DollarSign className="w-8 h-8 text-primary" />
               <div>
                 <p className="font-medium text-muted-foreground text-xs">Total Given</p>
-                <p className="text-xl font-bold">{formatWithCurrency(summary?.total_income || 0, regionCurrency)}</p>
+                <p className="font-bold text-right text-lg">{formatWithCurrency(summary?.total_income || 0, regionCurrency)}</p>
               </div>
             </div>
           </CardContent>
