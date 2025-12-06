@@ -169,7 +169,7 @@ export default function MemberFinances() {
         </CardHeader>
         <CardContent className="px-[5px]">
           {transactions && transactions.length > 0 ? <div className="space-y-4">
-              {transactions.map((transaction: any) => <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg px-0">
+              {transactions.map((transaction: any) => <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg px-[5px]">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className="text-xs">
