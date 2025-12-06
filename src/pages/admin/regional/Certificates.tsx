@@ -101,6 +101,7 @@ const Certificates = () => {
   
   // Search state
   const [memberSearchTerm, setMemberSearchTerm] = useState('');
+  const [sentCertificateSearchTerm, setSentCertificateSearchTerm] = useState('');
   
   // Queries
   const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
@@ -128,10 +129,13 @@ const Certificates = () => {
     return fullName.includes(searchLower) || memberId.includes(searchLower);
   });
 
-  // Filter sent certificates by email status
+  // Filter sent certificates by email status and search term
   const filteredSentCertificates = sentCertificates?.filter(cert => {
-    if (emailStatusFilter === 'all') return true;
-    return cert.email_status === emailStatusFilter;
+    const matchesStatus = emailStatusFilter === 'all' || cert.email_status === emailStatusFilter;
+    const matchesSearch = !sentCertificateSearchTerm || 
+      cert.recipient_name.toLowerCase().includes(sentCertificateSearchTerm.toLowerCase()) ||
+      cert.recipient_email?.toLowerCase().includes(sentCertificateSearchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
   }) || [];
   
   // Mutations
@@ -1072,6 +1076,12 @@ const Certificates = () => {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2 items-center flex-wrap">
+                    <Input
+                      placeholder="Search by name or email..."
+                      value={sentCertificateSearchTerm}
+                      onChange={(e) => setSentCertificateSearchTerm(e.target.value)}
+                      className="w-[220px]"
+                    />
                     <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
                       <SelectTrigger className="w-[200px]">
                         <SelectValue placeholder="Email Status" />
