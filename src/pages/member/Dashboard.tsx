@@ -3,43 +3,31 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Calendar, 
-  Users, 
-  DollarSign, 
-  TrendingUp, 
-  Clock, 
-  MapPin,
-  ChevronRight,
-  Heart,
-  BookOpen
-} from 'lucide-react';
+import { Calendar, Users, DollarSign, TrendingUp, Clock, MapPin, ChevronRight, Heart, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useMemberRegionEvents } from '@/hooks/useEvents';
 import { format, parseISO, isFuture } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-
 export default function MemberDashboard() {
-  const { profile, userRegion } = useAuth();
-  const { data: events, isLoading } = useMemberRegionEvents();
+  const {
+    profile,
+    userRegion
+  } = useAuth();
+  const {
+    data: events,
+    isLoading
+  } = useMemberRegionEvents();
 
   // Filter for upcoming events only
-  const upcomingEvents = (events || [])
-    .filter(event => isFuture(parseISO(event.start_datetime)))
-    .slice(0, 3);
-
+  const upcomingEvents = (events || []).filter(event => isFuture(parseISO(event.start_datetime))).slice(0, 3);
   const nextEvent = upcomingEvents[0];
-
-  return (
-    <div className="p-4 space-y-6">
+  return <div className="p-4 space-y-6">
       {/* Welcome Section */}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">
           Welcome back, {profile?.first_name}!
         </h1>
-        <p className="text-muted-foreground">
-          {userRegion?.name} Branch
-        </p>
+        
       </div>
 
       {/* Quick Stats */}
@@ -52,13 +40,7 @@ export default function MemberDashboard() {
                 <div>
                   <p className="text-sm font-medium">Next Event</p>
                   <p className="text-xs text-muted-foreground">
-                    {isLoading ? (
-                      <Skeleton className="h-3 w-16" />
-                    ) : nextEvent ? (
-                      format(parseISO(nextEvent.start_datetime), 'MMM dd')
-                    ) : (
-                      'None scheduled'
-                    )}
+                    {isLoading ? <Skeleton className="h-3 w-16" /> : nextEvent ? format(parseISO(nextEvent.start_datetime), 'MMM dd') : 'None scheduled'}
                   </p>
                 </div>
               </div>
@@ -95,15 +77,9 @@ export default function MemberDashboard() {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
-              ))}
-            </div>
-          ) : upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => (
-              <div key={event.id} className="flex items-center space-x-3 p-3 rounded-lg bg-accent/50">
+          {isLoading ? <div className="space-y-3">
+              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+            </div> : upcomingEvents.length > 0 ? upcomingEvents.map(event => <div key={event.id} className="flex items-center space-x-3 p-3 rounded-lg bg-accent/50">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-primary" />
@@ -117,26 +93,18 @@ export default function MemberDashboard() {
                     <Clock className="h-3 w-3" />
                     <span>{format(parseISO(event.start_datetime), 'MMM dd, h:mm a')}</span>
                   </div>
-                  {event.location_name && (
-                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                  {event.location_name && <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" />
                       <span>{event.location_name}</span>
-                    </div>
-                  )}
+                    </div>}
                 </div>
-                {event.category && (
-                  <Badge variant="secondary" className="text-xs">
+                {event.category && <Badge variant="secondary" className="text-xs">
                     {event.category}
-                  </Badge>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-6 text-muted-foreground">
+                  </Badge>}
+              </div>) : <div className="text-center py-6 text-muted-foreground">
               <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No upcoming events</p>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
 
@@ -182,6 +150,5 @@ export default function MemberDashboard() {
           </Card>
         </Link>
       </div>
-    </div>
-  );
+    </div>;
 }
