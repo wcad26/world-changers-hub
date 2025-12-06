@@ -14,10 +14,12 @@ import {
   ShoppingBag,
   LogOut,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
 interface MemberLayoutProps {
@@ -45,6 +47,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
   const location = useLocation();
   const { signOut, profile } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   if (!isMobile) {
     // Desktop layout with sidebar
@@ -154,50 +157,103 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
     );
   }
 
-  // Mobile layout with bottom navigation
+  // Mobile layout with slide-out menu
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top header */}
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
-          <p className="text-xs text-muted-foreground">
-            Welcome, {profile?.first_name}
-          </p>
+        <div className="flex items-center gap-3">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                size="icon" 
+                className="bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0 bg-card">
+              <div className="p-6 border-b border-border">
+                <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Welcome, {profile?.first_name}
+                </p>
+              </div>
+              
+              <nav className="flex-1 p-4 space-y-2">
+                <div className="space-y-1">
+                  {navigation.map((item) => {
+                    const isActive = location.pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+                
+                <div className="pt-4 border-t border-border">
+                  <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>
+                  {secondaryNavigation.map((item) => {
+                    const isActive = location.pathname === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={cn(
+                          'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                        )}
+                      >
+                        <item.icon className="h-5 w-5 mr-3" />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                  
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      signOut();
+                    }} 
+                    className="w-full justify-start px-3 py-2 text-muted-foreground hover:text-foreground mt-2"
+                  >
+                    <LogOut className="h-5 w-5 mr-3" />
+                    Sign Out
+                  </Button>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+          
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
+            <p className="text-xs text-muted-foreground">
+              Welcome, {profile?.first_name}
+            </p>
+          </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-        </Button>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto pb-20">
+      <main className="flex-1 overflow-auto">
         {children}
       </main>
-
-      {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex justify-around items-center p-2 max-w-md mx-auto">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex flex-col items-center justify-center py-2 px-3 rounded-lg transition-colors min-w-0 flex-1',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                )}
-              >
-                <item.icon className="h-5 w-5 mb-1 shrink-0" />
-                <span className="text-xs font-medium leading-none truncate">{item.name}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
     </div>
   );
 }
