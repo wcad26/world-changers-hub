@@ -2,6 +2,11 @@ import { useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { MemberRegistrationFormData } from '@/schemas/memberRegistrationSchema';
 
+interface DuplicateError extends Error {
+  is_duplicate: boolean;
+  is_visitor: boolean;
+}
+
 export const useMemberRegistration = () => {
   return useMutation({
     mutationFn: async (data: MemberRegistrationFormData & { region_id: string }) => {
@@ -16,6 +21,13 @@ export const useMemberRegistration = () => {
       }
       
       if (!result.success) {
+        // Check if this is a duplicate error
+        if (result.is_duplicate) {
+          const duplicateError = new Error(result.message) as DuplicateError;
+          duplicateError.is_duplicate = true;
+          duplicateError.is_visitor = result.is_visitor || false;
+          throw duplicateError;
+        }
         throw new Error(result.message || 'Registration failed');
       }
       
