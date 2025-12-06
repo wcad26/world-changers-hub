@@ -166,7 +166,7 @@ export default function MemberAttendance() {
                 No attendance data for the selected period
               </div>}
           </div>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-6 mt-4 text-sm">
+          <div className="flex-col md:flex-row gap-2 md:gap-6 mt-4 text-sm flex items-start justify-center">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-sm bg-primary" />
               <span className="text-muted-foreground">Excellent (90%+)</span>
