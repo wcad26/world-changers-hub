@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, Book, Minus, Plus, Copy, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Book, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -229,26 +229,21 @@ export default function BiblePage() {
             </SelectContent>
           </Select>
 
-          {/* Font size controls */}
-          <div className="flex items-center gap-1 border rounded-md">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setFontSize(Math.max(12, fontSize - 2))}
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-            <span className="text-xs w-8 text-center">{fontSize}</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
-              onClick={() => setFontSize(Math.min(24, fontSize + 2))}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+          <Select
+            value={fontSize.toString()}
+            onValueChange={(value) => setFontSize(parseInt(value))}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[12, 14, 16, 18, 20, 22, 24].map(size => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}px
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Navigation */}
