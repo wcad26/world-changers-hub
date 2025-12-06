@@ -2,9 +2,9 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, TrendingUp, Clock, MapPin } from 'lucide-react';
+import { Calendar, TrendingUp, Clock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 export default function MemberAttendance() {
   const { user } = useAuth();
 
@@ -91,92 +91,71 @@ export default function MemberAttendance() {
           <CardDescription>Your attendance pattern over the last 6 months</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-40 relative">
-            {/* Grid lines */}
-            <div className="absolute inset-0 flex flex-col justify-between">
-              {[100, 80, 60, 40, 20].map((value) => (
-                <div key={value} className="flex items-center">
-                  <span className="text-xs text-muted-foreground w-8">{value}%</span>
-                  <div className="flex-1 h-px bg-border opacity-30"></div>
-                </div>
-              ))}
-            </div>
-            
-            {/* Trend line */}
-            <div className="absolute inset-0 pl-8">
-              <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-                <defs>
-                  <linearGradient id="attendanceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
-                  </linearGradient>
-                </defs>
-                
-                {/* Area under curve */}
-                <path
-                  d="M 0 15 L 60 8 L 120 22 L 180 12 L 240 5 L 300 13 L 300 100 L 0 100 Z"
-                  fill="url(#attendanceGradient)"
-                  className="animate-fade-in"
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={[
+                  { month: 'Jul', rate: 85 },
+                  { month: 'Aug', rate: 92 },
+                  { month: 'Sep', rate: 78 },
+                  { month: 'Oct', rate: 88 },
+                  { month: 'Nov', rate: 95 },
+                  { month: 'Dec', rate: 87 },
+                ]}
+                margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
+              >
+                <XAxis 
+                  dataKey="month" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                 />
-                
-                {/* Trend line */}
-                <path
-                  d="M 0 15 L 60 8 L 120 22 L 180 12 L 240 5 L 300 13"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="3"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="animate-fade-in"
-                  style={{
-                    strokeDasharray: "1000",
-                    strokeDashoffset: "1000",
-                    animation: "dash-line 2s ease-out forwards"
+                <YAxis 
+                  domain={[0, 100]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  tickFormatter={(value) => `${value}%`}
+                  width={45}
+                />
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
+                  labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600 }}
+                  formatter={(value: number) => [`${value}%`, 'Attendance']}
                 />
-                
-                {/* Data points */}
-                {[
-                  { x: 0, y: 15, rate: 85 },
-                  { x: 60, y: 8, rate: 92 },
-                  { x: 120, y: 22, rate: 78 },
-                  { x: 180, y: 12, rate: 88 },
-                  { x: 240, y: 5, rate: 95 },
-                  { x: 300, y: 13, rate: 87 }
-                ].map((point, index) => (
-                  <g key={index}>
-                    <circle
-                      cx={point.x}
-                      cy={point.y}
-                      r="4"
-                      fill="hsl(var(--primary))"
-                      className="animate-scale-in hover:r-6 transition-all duration-200 cursor-pointer"
-                      style={{ animationDelay: `${index * 200 + 1500}ms` }}
+                <Bar 
+                  dataKey="rate" 
+                  radius={[6, 6, 0, 0]}
+                  maxBarSize={50}
+                >
+                  {[85, 92, 78, 88, 95, 87].map((rate, index) => (
+                    <Cell 
+                      key={`cell-${index}`}
+                      fill={rate >= 90 ? 'hsl(var(--primary))' : rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'}
                     />
-                    <circle
-                      cx={point.x}
-                      cy={point.y}
-                      r="8"
-                      fill="hsl(var(--primary))"
-                      opacity="0.2"
-                      className="animate-scale-in"
-                      style={{ animationDelay: `${index * 200 + 1500}ms` }}
-                    />
-                  </g>
-                ))}
-              </svg>
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary" />
+              <span className="text-muted-foreground">Excellent (90%+)</span>
             </div>
-            
-            {/* Month labels */}
-            <div className="absolute bottom-0 left-8 right-0 flex justify-between">
-              {["Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, index) => (
-                <div key={month} className="flex flex-col items-center">
-                  <p className="text-xs text-muted-foreground font-medium">{month}</p>
-                  <p className="text-xs font-bold text-foreground mt-1">
-                    {[85, 92, 78, 88, 95, 87][index]}%
-                  </p>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-primary/70" />
+              <span className="text-muted-foreground">Good (80-89%)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-muted-foreground/50" />
+              <span className="text-muted-foreground">Needs Improvement</span>
             </div>
           </div>
         </CardContent>
