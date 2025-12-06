@@ -9,6 +9,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
+type Member = Database['public']['Tables']['members']['Row'];
 
 export const useAuth = () => {
   const [user, setUser] = useState<any>(null);
@@ -16,6 +17,7 @@ export const useAuth = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
+  const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -50,6 +52,7 @@ export const useAuth = () => {
           setUserRoles([]);
           setUserRegion(null);
           setUserDcg(null);
+          setMemberRecord(null);
           setLoading(false);
         }
       }
@@ -139,6 +142,22 @@ export const useAuth = () => {
         } else if (regionData) {
           console.log('useAuth: User region loaded:', regionData.name);
           setUserRegion(regionData);
+        }
+      }
+
+      // Fetch member record if user has profile
+      if (profileData) {
+        const { data: memberData, error: memberError } = await supabase
+          .from('members')
+          .select('*')
+          .eq('profile_id', userId)
+          .maybeSingle();
+
+        if (memberError) {
+          console.error('useAuth: Member fetch error:', memberError);
+        } else if (memberData) {
+          console.log('useAuth: Member record loaded:', memberData.member_id);
+          setMemberRecord(memberData);
         }
       }
 
@@ -285,6 +304,7 @@ export const useAuth = () => {
         setUserRoles([]);
         setUserRegion(null);
         setUserDcg(null);
+        setMemberRecord(null);
         setUserRegionalRoles([]);
         
         navigate(redirectUrl);
@@ -306,6 +326,8 @@ export const useAuth = () => {
     userRoles,
     userRegion,
     userDcg,
+    memberRecord,
+    memberId: memberRecord?.id || null,
     userRegionalRoles,
     loading,
     hasRole,
