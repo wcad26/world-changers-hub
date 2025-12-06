@@ -122,15 +122,31 @@ export default function MemberLayout({
       </div>;
   }
 
+  // Get page title based on current route
+  const getPageTitle = () => {
+    const allNavigation = [...navigation, ...secondaryNavigation];
+    const currentPage = allNavigation.find(item => location.pathname === item.href);
+    return currentPage?.name || 'Member Portal';
+  };
+
+  const isDashboard = location.pathname === '/member/dashboard';
+  const pageTitle = getPageTitle();
+
   // Mobile layout with slide-out menu
   return <div className="min-h-screen bg-background flex flex-col">
       {/* Top header */}
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
-          <p className="text-xs text-muted-foreground">
-            Welcome, {profile?.first_name}
-          </p>
+          {isDashboard ? (
+            <>
+              <h1 className="text-lg font-semibold text-foreground">Member Portal</h1>
+              <p className="text-xs text-muted-foreground">
+                Welcome, {profile?.first_name}
+              </p>
+            </>
+          ) : (
+            <h1 className="text-base font-semibold text-foreground">{pageTitle}</h1>
+          )}
         </div>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
