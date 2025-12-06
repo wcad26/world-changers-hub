@@ -97,8 +97,45 @@ export default function MemberRegister() {
     }
   });
 
-  const onSubmit = (data: MemberRegistrationFormData) => {
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
+  const onSubmit = async (data: MemberRegistrationFormData) => {
     if (!region?.id) return;
+    
+    // First, check if email already exists in profiles table
+    setIsCheckingEmail(true);
+    try {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', data.email.toLowerCase().trim())
+        .maybeSingle();
+      
+      if (existingProfile) {
+        // Email exists - check if they're a member or visitor in this region
+        const { data: existingMember } = await supabase
+          .from('members')
+          .select('member_type')
+          .eq('profile_id', existingProfile.id)
+          .eq('region_id', region.id)
+          .maybeSingle();
+        
+        const isVisitor = existingMember?.member_type === 'visitor';
+        
+        setDuplicateInfo({
+          message: isVisitor 
+            ? 'You are already registered as a visitor in this region.'
+            : 'You are already registered as a member in this region.',
+          isVisitor: isVisitor
+        });
+        setIsCheckingEmail(false);
+        return;
+      }
+    } catch (error) {
+      // If check fails, continue with registration (edge function will handle it)
+      console.log('Email check failed, continuing with registration');
+    }
+    setIsCheckingEmail(false);
     
     registerMember(
       {
@@ -699,8 +736,8 @@ export default function MemberRegister() {
                     </div>
                   )}
 
-                  <Button type="submit" className="w-full" disabled={isPending}>
-                    {isPending ? (
+                  <Button type="submit" className="w-full" disabled={isPending || isCheckingEmail}>
+                    {(isPending || isCheckingEmail) ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         {t('completeRegistration')}...
