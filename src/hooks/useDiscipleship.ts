@@ -175,6 +175,33 @@ export const useMemberDiscipleshipStats = (memberId?: string) => {
   });
 };
 
+// Hook to get discipleship progress for a specific relationship
+export const useDiscipleshipProgress = (relationshipId?: string) => {
+  return useQuery({
+    queryKey: ['discipleship-progress', relationshipId],
+    queryFn: async () => {
+      if (!relationshipId) return [];
+      
+      console.log('useDiscipleshipProgress: Fetching progress for relationship:', relationshipId);
+      
+      const { data, error } = await supabase
+        .from('discipleship_progress')
+        .select('*')
+        .eq('relationship_id', relationshipId)
+        .order('achieved_date', { ascending: false });
+      
+      if (error) {
+        console.error('useDiscipleshipProgress: Error fetching progress:', error);
+        throw error;
+      }
+      
+      console.log('useDiscipleshipProgress: Fetched progress:', data);
+      return data || [];
+    },
+    enabled: !!relationshipId,
+  });
+};
+
 // Hook to get discipleship impact trend
 export const useDiscipleshipImpactTrend = (memberId?: string, regionId?: string) => {
   return useQuery({
@@ -315,8 +342,9 @@ export const useAddDiscipleshipProgress = () => {
       console.log('useAddDiscipleshipProgress: Added progress:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       console.log('useAddDiscipleshipProgress: Mutation successful, invalidating queries');
+      queryClient.invalidateQueries({ queryKey: ['discipleship-progress', variables.relationship_id] });
       if (userRegion?.id) {
         queryClient.invalidateQueries({ queryKey: ['discipleship-relationships', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['member-discipleship-stats'] });
