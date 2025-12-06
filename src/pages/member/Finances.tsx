@@ -167,7 +167,7 @@ export default function MemberFinances() {
             Your recent tithes, offerings, and contributions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-[5px]">
           {transactions && transactions.length > 0 ? <div className="space-y-4">
               {transactions.map((transaction: any) => <div key={transaction.id} className="flex items-center justify-between p-4 border rounded-lg px-0">
                   <div className="flex-1">
