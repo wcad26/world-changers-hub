@@ -10,25 +10,35 @@ interface DuplicateError extends Error {
 export const useMemberRegistration = () => {
   return useMutation({
     mutationFn: async (data: MemberRegistrationFormData & { region_id: string }) => {
-      const { data: result, error } = await supabase.functions.invoke('create-member-registration', {
-        body: data
-      });
-
-      // Handle edge function errors and extract user-friendly messages
-      if (error) {
-        const errorMessage = error.context?.message || error.message || 'Registration failed';
-        throw new Error(errorMessage);
-      }
+      // Use fetch directly to handle non-2xx responses properly
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!result.success) {
-        // Check if this is a duplicate error
-        if (result.is_duplicate) {
-          const duplicateError = new Error(result.message) as DuplicateError;
-          duplicateError.is_duplicate = true;
-          duplicateError.is_visitor = result.is_visitor || false;
-          throw duplicateError;
+      const response = await fetch(
+        `https://dtqyyvjosdgoqloxybnx.supabase.co/functions/v1/create-member-registration`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0cXl5dmpvc2Rnb3Fsb3h5Ym54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5NzY2ODEsImV4cCI6MjA2NTU1MjY4MX0.FfgcNKJ06kHeVnjVoDHulSfzrNMQl6MT9w__vr46x0I'}`,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR0cXl5dmpvc2Rnb3Fsb3h5Ym54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5NzY2ODEsImV4cCI6MjA2NTU1MjY4MX0.FfgcNKJ06kHeVnjVoDHulSfzrNMQl6MT9w__vr46x0I'
+          },
+          body: JSON.stringify(data)
         }
-        throw new Error(result.message || 'Registration failed');
+      );
+
+      const result = await response.json();
+
+      // Handle duplicate detection (409 status)
+      if (response.status === 409 && result.is_duplicate) {
+        const duplicateError = new Error(result.message) as DuplicateError;
+        duplicateError.is_duplicate = true;
+        duplicateError.is_visitor = result.is_visitor || false;
+        throw duplicateError;
+      }
+
+      // Handle other errors
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || result.error || 'Registration failed');
       }
       
       return result;
