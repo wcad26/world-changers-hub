@@ -206,9 +206,7 @@ export default function MemberFinances() {
       <Card>
         <CardHeader>
           <CardTitle>Recent Giving History</CardTitle>
-          <CardDescription>
-            Your recent tithes, offerings, and contributions
-          </CardDescription>
+          
         </CardHeader>
         <CardContent className="px-[5px]">
           {transactions && transactions.length > 0 ? <div className="space-y-4">
