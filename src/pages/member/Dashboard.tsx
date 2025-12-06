@@ -79,7 +79,7 @@ export default function MemberDashboard() {
         <CardContent className="space-y-3 px-0 mx-0">
           {isLoading ? <div className="space-y-3">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-            </div> : upcomingEvents.length > 0 ? upcomingEvents.map(event => <div key={event.id} className="space-x-3 p-3 rounded-lg bg-accent/50 px-[12px] mx-0 flex items-center justify-center">
+            </div> : upcomingEvents.length > 0 ? upcomingEvents.map(event => <div key={event.id} className="space-x-3 p-3 rounded-lg bg-accent/50 px-[12px] items-center justify-center flex flex-row my-0 mx-[8px]">
                 <div className="flex-shrink-0">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Calendar className="h-6 w-6 text-primary" />
