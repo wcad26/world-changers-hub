@@ -306,3 +306,153 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
     enabled: !!eventId && !!regionId
   });
 };
+
+// Hook to get detailed attendance stats for a member with date filtering and categorization
+export const useMemberDetailedAttendance = (
+  memberId?: string,
+  regionId?: string,
+  dateRange?: { from: Date | undefined; to: Date | undefined }
+) => {
+  return useQuery({
+    queryKey: ['member_detailed_attendance', memberId, regionId, dateRange?.from?.toISOString(), dateRange?.to?.toISOString()],
+    queryFn: async () => {
+      if (!memberId || !regionId) return null;
+
+      let query = supabase
+        .from('attendance_records')
+        .select(`
+          id,
+          is_present,
+          event_id,
+          attendance_events!inner (
+            id,
+            name,
+            event_date,
+            region_id,
+            dcg_id
+          )
+        `)
+        .eq('member_id', memberId)
+        .eq('attendance_events.region_id', regionId)
+        .order('attendance_events(event_date)', { ascending: false });
+
+      // Apply date filters
+      if (dateRange?.from) {
+        query = query.gte('attendance_events.event_date', format(dateRange.from, 'yyyy-MM-dd'));
+      }
+      if (dateRange?.to) {
+        query = query.lte('attendance_events.event_date', format(dateRange.to, 'yyyy-MM-dd'));
+      }
+
+      const { data: records, error } = await query;
+
+      if (error) throw error;
+
+      if (!records || records.length === 0) {
+        return {
+          overall: { attended: 0, total: 0, rate: 0 },
+          regional: { attended: 0, total: 0 },
+          dcg: { attended: 0, total: 0 },
+          prayerMeeting: { attended: 0, total: 0 },
+          streak: 0,
+          recentEvents: [],
+          monthlyTrend: []
+        };
+      }
+
+      // Categorize events
+      const regionalEvents = records.filter(r => 
+        !r.attendance_events?.dcg_id && 
+        !r.attendance_events?.name?.toLowerCase().includes('prayer')
+      );
+      const dcgEvents = records.filter(r => r.attendance_events?.dcg_id);
+      const prayerEvents = records.filter(r => 
+        r.attendance_events?.name?.toLowerCase().includes('prayer')
+      );
+
+      // Calculate stats for each category
+      const overall = {
+        attended: records.filter(r => r.is_present).length,
+        total: records.length,
+        rate: records.length > 0 
+          ? Math.round((records.filter(r => r.is_present).length / records.length) * 100)
+          : 0
+      };
+
+      const regional = {
+        attended: regionalEvents.filter(r => r.is_present).length,
+        total: regionalEvents.length
+      };
+
+      const dcg = {
+        attended: dcgEvents.filter(r => r.is_present).length,
+        total: dcgEvents.length
+      };
+
+      const prayerMeeting = {
+        attended: prayerEvents.filter(r => r.is_present).length,
+        total: prayerEvents.length
+      };
+
+      // Calculate streak (consecutive present events from most recent)
+      const sortedRecords = [...records].sort((a, b) => {
+        const dateA = a.attendance_events?.event_date || '';
+        const dateB = b.attendance_events?.event_date || '';
+        return dateB.localeCompare(dateA);
+      });
+
+      let streak = 0;
+      for (const record of sortedRecords) {
+        if (record.is_present) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+
+      // Recent events (last 10)
+      const recentEvents = sortedRecords.slice(0, 10).map(r => ({
+        id: r.id,
+        name: r.attendance_events?.name || '',
+        date: r.attendance_events?.event_date || '',
+        type: r.attendance_events?.dcg_id ? 'dcg' : 
+              r.attendance_events?.name?.toLowerCase().includes('prayer') ? 'prayer' : 'regional',
+        attended: r.is_present
+      }));
+
+      // Monthly trend for chart
+      const monthlyData = records.reduce((acc, record) => {
+        const eventDate = record.attendance_events?.event_date;
+        if (!eventDate) return acc;
+
+        const month = format(new Date(eventDate), 'MMM');
+        if (!acc[month]) {
+          acc[month] = { month, attended: 0, total: 0 };
+        }
+        acc[month].total++;
+        if (record.is_present) {
+          acc[month].attended++;
+        }
+        return acc;
+      }, {} as Record<string, { month: string; attended: number; total: number }>);
+
+      const monthlyTrend = Object.values(monthlyData)
+        .map(m => ({
+          ...m,
+          rate: m.total > 0 ? Math.round((m.attended / m.total) * 100) : 0
+        }))
+        .slice(-6);
+
+      return {
+        overall,
+        regional,
+        dcg,
+        prayerMeeting,
+        streak,
+        recentEvents,
+        monthlyTrend
+      };
+    },
+    enabled: !!memberId && !!regionId
+  });
+};
