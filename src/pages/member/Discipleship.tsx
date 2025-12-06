@@ -53,7 +53,7 @@ export default function MemberDiscipleship() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-0">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-px">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
