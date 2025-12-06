@@ -248,9 +248,33 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-16">
         {children}
       </main>
+
+      {/* Bottom navigation bar */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
+        <div className="flex justify-around items-center py-2">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  'flex flex-col items-center px-3 py-1 text-xs font-medium transition-colors',
+                  isActive
+                    ? 'text-primary'
+                    : 'text-muted-foreground'
+                )}
+              >
+                <item.icon className={cn("h-5 w-5 mb-1", isActive && "text-primary")} />
+                {item.name}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
