@@ -1,63 +1,72 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, 
-  User, 
-  Calendar, 
-  BarChart3, 
-  Users, 
-  DollarSign, 
-  Heart, 
-  Play, 
-  MessageCircle, 
-  ShoppingBag,
-  LogOut,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Menu
-} from 'lucide-react';
+import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-
 interface MemberLayoutProps {
   children: React.ReactNode;
 }
-
-const navigation = [
-  { name: 'Dashboard', href: '/member/dashboard', icon: Home },
-  { name: 'Events', href: '/member/events', icon: Calendar },
-  { name: 'Finances', href: '/member/finances', icon: DollarSign },
-  { name: 'Discipleship', href: '/member/discipleship', icon: Users },
-];
-
-const secondaryNavigation = [
-  { name: 'Attendance', href: '/member/attendance', icon: BarChart3 },
-  { name: 'Fundraising', href: '/member/fundraising', icon: Heart },
-  { name: 'Media', href: '/member/media', icon: Play },
-  { name: 'Counseling', href: '/member/counseling', icon: MessageCircle },
-  { name: 'Store', href: '/member/store', icon: ShoppingBag },
-  { name: 'Profile', href: '/member/profile', icon: User },
-];
-
-export default function MemberLayout({ children }: MemberLayoutProps) {
+const navigation = [{
+  name: 'Dashboard',
+  href: '/member/dashboard',
+  icon: Home
+}, {
+  name: 'Events',
+  href: '/member/events',
+  icon: Calendar
+}, {
+  name: 'Finances',
+  href: '/member/finances',
+  icon: DollarSign
+}, {
+  name: 'Discipleship',
+  href: '/member/discipleship',
+  icon: Users
+}];
+const secondaryNavigation = [{
+  name: 'Attendance',
+  href: '/member/attendance',
+  icon: BarChart3
+}, {
+  name: 'Fundraising',
+  href: '/member/fundraising',
+  icon: Heart
+}, {
+  name: 'Media',
+  href: '/member/media',
+  icon: Play
+}, {
+  name: 'Counseling',
+  href: '/member/counseling',
+  icon: MessageCircle
+}, {
+  name: 'Store',
+  href: '/member/store',
+  icon: ShoppingBag
+}, {
+  name: 'Profile',
+  href: '/member/profile',
+  icon: User
+}];
+export default function MemberLayout({
+  children
+}: MemberLayoutProps) {
   const isMobile = useIsMobile();
   const location = useLocation();
-  const { signOut, profile } = useAuth();
+  const {
+    signOut,
+    profile
+  } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
   if (!isMobile) {
     // Desktop layout with sidebar
-    return (
-      <div className="min-h-screen bg-background flex">
+    return <div className="min-h-screen bg-background flex">
         {/* Sidebar */}
-        <div className={cn(
-          "bg-card border-r border-border flex flex-col transition-all duration-300",
-          isCollapsed ? "w-16" : "w-64"
-        )}>
+        <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", isCollapsed ? "w-16" : "w-64")}>
           <div className="p-6 border-b border-border flex items-center justify-between">
             <div className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100")}>
               <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
@@ -65,69 +74,33 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
                 Welcome, {profile?.first_name}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="shrink-0"
-            >
+            <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="shrink-0">
               {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>
           </div>
           
           <nav className="flex-1 p-4 space-y-2">
             <div className="space-y-1">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                   <Link
-                    key={item.name}
-                    to={item.href}
-                    className={cn(
-                      'flex items-center rounded-lg text-sm font-medium transition-colors',
-                      isCollapsed ? 'justify-center p-3' : 'px-3 py-2',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
+              {navigation.map(item => {
+              const isActive = location.pathname === item.href;
+              return <Link key={item.name} to={item.href} className={cn('flex items-center rounded-lg text-sm font-medium transition-colors', isCollapsed ? 'justify-center p-3' : 'px-3 py-2', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
                     <item.icon className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
                     {!isCollapsed && item.name}
-                  </Link>
-                );
-              })}
+                  </Link>;
+            })}
             </div>
             
             <div className="pt-4 border-t border-border">
               {!isCollapsed && <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>}
-              {secondaryNavigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={cn(
-                      'flex items-center rounded-lg text-sm font-medium transition-colors',
-                      isCollapsed ? 'justify-center p-3' : 'px-3 py-2',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
+              {secondaryNavigation.map(item => {
+              const isActive = location.pathname === item.href;
+              return <Link key={item.name} to={item.href} className={cn('flex items-center rounded-lg text-sm font-medium transition-colors', isCollapsed ? 'justify-center p-3' : 'px-3 py-2', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
                     <item.icon className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
                     {!isCollapsed && item.name}
-                  </Link>
-                );
-              })}
+                  </Link>;
+            })}
               
-              <Button 
-                variant="ghost" 
-                onClick={signOut} 
-                className={cn(
-                  "w-full text-muted-foreground hover:text-foreground mt-2",
-                  isCollapsed ? "justify-center p-3" : "justify-start px-3 py-2"
-                )}
-              >
+              <Button variant="ghost" onClick={signOut} className={cn("w-full text-muted-foreground hover:text-foreground mt-2", isCollapsed ? "justify-center p-3" : "justify-start px-3 py-2")}>
                 <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
                 {!isCollapsed && "Sign Out"}
               </Button>
@@ -135,14 +108,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
           </nav>
           
           <div className="p-4 border-t border-border">
-            <Button 
-              variant="ghost" 
-              onClick={signOut} 
-              className={cn(
-                "w-full text-muted-foreground hover:text-foreground",
-                isCollapsed ? "justify-center p-3" : "justify-start"
-              )}
-            >
+            <Button variant="ghost" onClick={signOut} className={cn("w-full text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center p-3" : "justify-start")}>
               <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
               {!isCollapsed && "Sign Out"}
             </Button>
@@ -153,13 +119,11 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         <div className="flex-1 overflow-auto">
           {children}
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Mobile layout with slide-out menu
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
+  return <div className="min-h-screen bg-background flex flex-col">
       {/* Top header */}
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
         <div>
@@ -170,10 +134,7 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         </div>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button 
-              size="icon" 
-              className="bg-violet-600 hover:bg-violet-700 text-white"
-            >
+            <Button size="icon" className="text-white bg-primary">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
@@ -187,57 +148,29 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
               
               <nav className="flex-1 p-4 space-y-2">
                 <div className="space-y-1">
-                  {navigation.map((item) => {
-                    const isActive = location.pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={cn(
-                          'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        )}
-                      >
+                  {navigation.map(item => {
+                const isActive = location.pathname === item.href;
+                return <Link key={item.name} to={item.href} onClick={() => setMobileMenuOpen(false)} className={cn('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.name}
-                      </Link>
-                    );
-                  })}
+                      </Link>;
+              })}
                 </div>
                 
                 <div className="pt-4 border-t border-border">
                   <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>
-                  {secondaryNavigation.map((item) => {
-                    const isActive = location.pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        to={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={cn(
-                          'flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                        )}
-                      >
+                  {secondaryNavigation.map(item => {
+                const isActive = location.pathname === item.href;
+                return <Link key={item.name} to={item.href} onClick={() => setMobileMenuOpen(false)} className={cn('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
                         <item.icon className="h-5 w-5 mr-3" />
                         {item.name}
-                      </Link>
-                    );
-                  })}
+                      </Link>;
+              })}
                   
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      signOut();
-                    }} 
-                    className="w-full justify-start px-3 py-2 text-muted-foreground hover:text-foreground mt-2"
-                  >
+                  <Button variant="ghost" onClick={() => {
+                setMobileMenuOpen(false);
+                signOut();
+              }} className="w-full justify-start px-3 py-2 text-muted-foreground hover:text-foreground mt-2">
                     <LogOut className="h-5 w-5 mr-3" />
                     Sign Out
                   </Button>
@@ -256,43 +189,20 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
       <nav className="fixed bottom-4 left-4 right-4 z-50">
         <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/10">
           <div className="flex justify-around items-center py-2 px-2">
-            {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={cn(
-                    'relative flex flex-col items-center px-4 py-2 rounded-xl transition-all duration-300',
-                    isActive
-                      ? 'bg-primary/10'
-                      : 'hover:bg-muted/50'
-                  )}
-                >
-                  <div className={cn(
-                    "relative transition-transform duration-300",
-                    isActive && "scale-110"
-                  )}>
-                    <item.icon className={cn(
-                      "h-5 w-5 transition-colors duration-300",
-                      isActive ? "text-primary" : "text-muted-foreground"
-                    )} />
-                    {isActive && (
-                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                    )}
+            {navigation.map(item => {
+            const isActive = location.pathname === item.href;
+            return <Link key={item.name} to={item.href} className={cn('relative flex flex-col items-center px-4 py-2 rounded-xl transition-all duration-300', isActive ? 'bg-primary/10' : 'hover:bg-muted/50')}>
+                  <div className={cn("relative transition-transform duration-300", isActive && "scale-110")}>
+                    <item.icon className={cn("h-5 w-5 transition-colors duration-300", isActive ? "text-primary" : "text-muted-foreground")} />
+                    {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />}
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-medium mt-1 transition-colors duration-300",
-                    isActive ? "text-primary" : "text-muted-foreground"
-                  )}>
+                  <span className={cn("text-[10px] font-medium mt-1 transition-colors duration-300", isActive ? "text-primary" : "text-muted-foreground")}>
                     {item.name}
                   </span>
-                </Link>
-              );
-            })}
+                </Link>;
+          })}
           </div>
         </div>
       </nav>
-    </div>
-  );
+    </div>;
 }
