@@ -10,17 +10,21 @@ import { useAuth } from '@/hooks/useAuth';
 import { AddProgressDialog } from '@/components/member/discipleship/AddProgressDialog';
 import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
 import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
-
 export default function MemberDiscipleship() {
-  const { memberId } = useAuth();
-  const { data: relationships, isLoading: isLoadingRelationships } = useMemberDiscipleshipRelationships(memberId || undefined);
-  const { data: stats, isLoading: isLoadingStats } = useMemberDiscipleshipStats(memberId || undefined);
-
+  const {
+    memberId
+  } = useAuth();
+  const {
+    data: relationships,
+    isLoading: isLoadingRelationships
+  } = useMemberDiscipleshipRelationships(memberId || undefined);
+  const {
+    data: stats,
+    isLoading: isLoadingStats
+  } = useMemberDiscipleshipStats(memberId || undefined);
   const isLoading = isLoadingRelationships || isLoadingStats;
-
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-6 space-y-6">
+    return <div className="container mx-auto p-6 space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -31,8 +35,7 @@ export default function MemberDiscipleship() {
           </div>
           <div className="h-32 bg-muted rounded"></div>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Default stats if none exist
@@ -42,9 +45,7 @@ export default function MemberDiscipleship() {
     completed_disciples: 0,
     success_rate: 0
   };
-
-  return (
-    <div className="container mx-auto p-6 space-y-6">
+  return <div className="container mx-auto p-6 space-y-6">
       {/* Page heading - hidden on mobile as it shows in layout header */}
       <div className="hidden md:flex items-center gap-2 mb-6">
         <BookOpen className="h-6 w-6 text-primary" />
@@ -52,7 +53,7 @@ export default function MemberDiscipleship() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-0">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -104,8 +105,7 @@ export default function MemberDiscipleship() {
         </TabsList>
 
         <TabsContent value="mentoring" className="space-y-4">
-          {!relationships?.asMentor?.length ? (
-            <Card>
+          {!relationships?.asMentor?.length ? <Card>
               <CardContent className="p-8 text-center">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No Disciples Yet</h3>
@@ -114,11 +114,8 @@ export default function MemberDiscipleship() {
                 </p>
                 <Button variant="outline">Contact Leadership</Button>
               </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {relationships.asMentor.map((relationship) => (
-                <Card key={relationship.id}>
+            </Card> : <div className="grid gap-4">
+              {relationships.asMentor.map(relationship => <Card key={relationship.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -135,30 +132,20 @@ export default function MemberDiscipleship() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {relationship.notes && (
-                      <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>
-                    )}
+                    {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
                     <div className="flex gap-2 flex-wrap">
-                      <AddProgressDialog 
-                        relationshipId={relationship.id} 
-                        discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}
-                      >
+                      <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">+ Progress</Button>
                       </AddProgressDialog>
                       
-                      <ScheduleMeetingDialog 
-                        discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}
-                      >
+                      <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">
                           <Calendar className="h-4 w-4 mr-1" />
                           Schedule
                         </Button>
                       </ScheduleMeetingDialog>
                       
-                      <ProgressSummaryDialog 
-                        relationshipId={relationship.id}
-                        discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}
-                      >
+                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">
                           <TrendingUp className="h-4 w-4 mr-1" />
                           Summary
@@ -166,15 +153,12 @@ export default function MemberDiscipleship() {
                       </ProgressSummaryDialog>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                </Card>)}
+            </div>}
         </TabsContent>
 
         <TabsContent value="being-mentored" className="space-y-4">
-          {!relationships?.asDisciple?.length ? (
-            <Card>
+          {!relationships?.asDisciple?.length ? <Card>
               <CardContent className="p-8 text-center">
                 <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">No Mentor Assigned</h3>
@@ -183,11 +167,8 @@ export default function MemberDiscipleship() {
                 </p>
                 <Button variant="outline">Request Mentor</Button>
               </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {relationships.asDisciple.map((relationship) => (
-                <Card key={relationship.id}>
+            </Card> : <div className="grid gap-4">
+              {relationships.asDisciple.map(relationship => <Card key={relationship.id}>
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
@@ -204,29 +185,19 @@ export default function MemberDiscipleship() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {relationship.notes && (
-                      <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>
-                    )}
+                    {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
                     <div className="flex gap-2">
-                      <ProgressSummaryDialog 
-                        relationshipId={relationship.id}
-                        discipleName="My"
-                      >
+                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName="My">
                         <Button size="sm" variant="outline">View My Progress</Button>
                       </ProgressSummaryDialog>
-                      <ScheduleMeetingDialog 
-                        discipleName={`${relationship.mentor?.profiles?.first_name || ''} ${relationship.mentor?.profiles?.last_name || ''}`}
-                      >
+                      <ScheduleMeetingDialog discipleName={`${relationship.mentor?.profiles?.first_name || ''} ${relationship.mentor?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">Schedule Meeting</Button>
                       </ScheduleMeetingDialog>
                     </div>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                </Card>)}
+            </div>}
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 }
