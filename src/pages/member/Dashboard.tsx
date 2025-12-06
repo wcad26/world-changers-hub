@@ -30,7 +30,7 @@ export default function MemberDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 my-0">
         <Link to="/member/events">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4">
