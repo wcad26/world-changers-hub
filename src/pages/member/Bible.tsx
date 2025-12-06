@@ -28,7 +28,6 @@ export default function BiblePage() {
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
-  const [fontSize, setFontSize] = useState(16);
   const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
   
   const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
@@ -266,22 +265,6 @@ export default function BiblePage() {
               ))}
             </SelectContent>
           </Select>
-
-          <Select
-            value={fontSize.toString()}
-            onValueChange={(value) => setFontSize(parseInt(value))}
-          >
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[12, 14, 16, 18, 20, 22, 24].map(size => (
-                <SelectItem key={size} value={size.toString()}>
-                  {size}px
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Navigation */}
@@ -335,7 +318,7 @@ export default function BiblePage() {
                 )}
               </div>
             ) : verses && verses.length > 0 ? (
-              <div className="space-y-3" style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}>
+              <div className="space-y-3" style={{ fontSize: '16px', lineHeight: 1.8 }}>
                 {verses.map((verse) => (
                   <p 
                     key={verse.verse}
