@@ -117,6 +117,119 @@ export type Database = {
           },
         ]
       }
+      bible_books: {
+        Row: {
+          abbreviation: string
+          book_number: number
+          chapters_count: number
+          created_at: string | null
+          id: string
+          name: string
+          name_fr: string | null
+          testament: string
+        }
+        Insert: {
+          abbreviation: string
+          book_number: number
+          chapters_count: number
+          created_at?: string | null
+          id?: string
+          name: string
+          name_fr?: string | null
+          testament: string
+        }
+        Update: {
+          abbreviation?: string
+          book_number?: number
+          chapters_count?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          name_fr?: string | null
+          testament?: string
+        }
+        Relationships: []
+      }
+      bible_verses: {
+        Row: {
+          book_number: number
+          chapter: number
+          created_at: string | null
+          id: string
+          text: string
+          verse: number
+          version_id: string
+        }
+        Insert: {
+          book_number: number
+          chapter: number
+          created_at?: string | null
+          id?: string
+          text: string
+          verse: number
+          version_id: string
+        }
+        Update: {
+          book_number?: number
+          chapter?: number
+          created_at?: string | null
+          id?: string
+          text?: string
+          verse?: number
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bible_verses_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "bible_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bible_versions: {
+        Row: {
+          api_id: string | null
+          code: string
+          copyright_info: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_stored: boolean
+          language: string
+          name: string
+        }
+        Insert: {
+          api_id?: string | null
+          code: string
+          copyright_info?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_stored?: boolean
+          language?: string
+          name: string
+        }
+        Update: {
+          api_id?: string | null
+          code?: string
+          copyright_info?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_stored?: boolean
+          language?: string
+          name?: string
+        }
+        Relationships: []
+      }
       certificate_templates: {
         Row: {
           additional_fields: Json | null
