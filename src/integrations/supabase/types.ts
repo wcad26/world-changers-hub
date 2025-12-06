@@ -1911,6 +1911,7 @@ export type Database = {
           total_disciples: number
         }[]
       }
+      get_member_ids_for_user: { Args: { _user_id: string }; Returns: string[] }
       get_next_dcg_meeting: {
         Args: { _dcg_id: string }
         Returns: {
