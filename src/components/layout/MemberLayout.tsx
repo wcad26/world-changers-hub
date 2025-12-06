@@ -252,27 +252,45 @@ export default function MemberLayout({ children }: MemberLayoutProps) {
         {children}
       </main>
 
-      {/* Bottom navigation bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border">
-        <div className="flex justify-around items-center py-2">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex flex-col items-center px-3 py-1 text-xs font-medium transition-colors',
-                  isActive
-                    ? 'text-primary'
-                    : 'text-muted-foreground'
-                )}
-              >
-                <item.icon className={cn("h-5 w-5 mb-1", isActive && "text-primary")} />
-                {item.name}
-              </Link>
-            );
-          })}
+      {/* Bottom navigation bar - Modern floating pill design */}
+      <nav className="fixed bottom-4 left-4 right-4 z-50">
+        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/10">
+          <div className="flex justify-around items-center py-2 px-2">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    'relative flex flex-col items-center px-4 py-2 rounded-xl transition-all duration-300',
+                    isActive
+                      ? 'bg-primary/10'
+                      : 'hover:bg-muted/50'
+                  )}
+                >
+                  <div className={cn(
+                    "relative transition-transform duration-300",
+                    isActive && "scale-110"
+                  )}>
+                    <item.icon className={cn(
+                      "h-5 w-5 transition-colors duration-300",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )} />
+                    {isActive && (
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+                    )}
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-medium mt-1 transition-colors duration-300",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {item.name}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </nav>
     </div>
