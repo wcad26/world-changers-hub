@@ -105,7 +105,7 @@ export default function MemberFinances() {
         <Skeleton className="h-96" />
       </div>;
   }
-  return <div className="space-y-6 p-4 max-w-4xl mx-auto">
+  return <div className="space-y-6 p-4 max-w-4xl mx-auto px-[13px]">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">My Giving</h1>
