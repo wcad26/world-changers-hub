@@ -215,8 +215,8 @@ export default function MemberLayout({
           </Sheet>
       </header>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto pb-16">
+      {/* Main content - pb-24 ensures content is above the fixed bottom nav */}
+      <main className="flex-1 overflow-auto pb-24">
         {children}
       </main>
 
