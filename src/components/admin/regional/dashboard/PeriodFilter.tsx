@@ -1,7 +1,5 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -26,12 +24,11 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   onFiltersChange
 }) => {
   const quickDateOptions = [
-    { value: '1-month', label: '1 Month' },
-    { value: '3-months', label: '3 Months' },
-    { value: '6-months', label: '6 Months' },
-    { value: '1-year', label: '1 Year' },
-    { value: 'last-year', label: 'Last Year' },
-    { value: 'custom', label: 'Custom Period' }
+    { value: '1-month', label: '1M' },
+    { value: '3-months', label: '3M' },
+    { value: '6-months', label: '6M' },
+    { value: '1-year', label: '1Y' },
+    { value: 'custom', label: 'Custom' }
   ];
 
   const handleQuickDateChange = (value: string) => {
@@ -52,12 +49,9 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
       case '1-year':
         from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
         break;
-      case 'last-year':
-        from = new Date(now.getFullYear() - 1, 0, 1);
-        to = new Date(now.getFullYear() - 1, 11, 31);
-        break;
       case 'custom':
-        // Don't auto-set dates for custom
+        // Keep existing dates for custom, just switch mode
+        onFiltersChange({ quickDateRange: value });
         return;
       default:
         return;
@@ -70,80 +64,74 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   };
 
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Quick Date Range Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Period:</span>
-            <Select value={filters.quickDateRange} onValueChange={handleQuickDateChange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                {quickDateOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="flex flex-wrap items-center gap-2 mb-6">
+      <span className="text-sm font-medium text-muted-foreground mr-2">Period:</span>
+      
+      {/* Quick Date Range Buttons */}
+      <div className="flex items-center gap-1">
+        {quickDateOptions.map((option) => (
+          <Button
+            key={option.value}
+            variant={filters.quickDateRange === option.value ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => handleQuickDateChange(option.value)}
+            className="px-3 py-1 h-8"
+          >
+            {option.label}
+          </Button>
+        ))}
+      </div>
 
-          {/* Custom Date Range */}
-          {filters.quickDateRange === 'custom' && (
-            <div className="flex items-center gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-[240px] justify-start text-left font-normal",
-                      !filters.dateRange.from && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.dateRange.from ? (
-                      filters.dateRange.to ? (
-                        <>
-                          {format(filters.dateRange.from, "LLL dd, y")} -{" "}
-                          {format(filters.dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(filters.dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={filters.dateRange.from}
-                    selected={{
-                      from: filters.dateRange.from,
-                      to: filters.dateRange.to,
-                    }}
-                    onSelect={(range) =>
-                      onFiltersChange({
-                        dateRange: {
-                          from: range?.from,
-                          to: range?.to,
-                        },
-                      })
-                    }
-                    numberOfMonths={2}
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      {/* Custom Date Range Picker */}
+      {filters.quickDateRange === 'custom' && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                "ml-2 justify-start text-left font-normal h-8",
+                !filters.dateRange.from && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {filters.dateRange.from ? (
+                filters.dateRange.to ? (
+                  <>
+                    {format(filters.dateRange.from, "MMM d")} - {format(filters.dateRange.to, "MMM d, y")}
+                  </>
+                ) : (
+                  format(filters.dateRange.from, "MMM d, y")
+                )
+              ) : (
+                <span>Pick dates</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={filters.dateRange.from}
+              selected={{
+                from: filters.dateRange.from,
+                to: filters.dateRange.to,
+              }}
+              onSelect={(range) =>
+                onFiltersChange({
+                  dateRange: {
+                    from: range?.from,
+                    to: range?.to,
+                  },
+                })
+              }
+              numberOfMonths={2}
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
   );
 };
 
