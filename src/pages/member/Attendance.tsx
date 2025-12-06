@@ -33,7 +33,7 @@ export default function MemberAttendance() {
     data: attendanceData,
     isLoading
   } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, filters.dateRange);
-  return <div className="container mx-auto p-6 space-y-6">
+  return <div className="container mx-auto p-6 space-y-6 px-[15px]">
       <div className="flex items-center gap-2 mb-6">
         <Calendar className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">My Attendance</h1>
