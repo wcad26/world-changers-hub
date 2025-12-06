@@ -107,26 +107,28 @@ export default function MemberRegister() {
       },
       {
         onSuccess: (result) => {
+          // Check if this is a duplicate detection response
+          if (result.is_duplicate) {
+            setDuplicateInfo({
+              message: result.message,
+              isVisitor: result.is_visitor || false
+            });
+            return;
+          }
+          
+          // Normal success
           setRegistrationSuccess({
-            member_id: result.member_id,
+            member_id: result.member_id!,
             message: result.message,
-            login_email: result.login_email,
-            default_password: result.default_password
+            login_email: result.login_email!,
+            default_password: result.default_password!
           });
           form.reset();
         },
         onError: (error: any) => {
-          // Check if this is a duplicate error
-          if (error.is_duplicate) {
-            setDuplicateInfo({
-              message: error.message,
-              isVisitor: error.is_visitor || false
-            });
-          } else {
-            form.setError('root', {
-              message: error.message || t('registrationFailed')
-            });
-          }
+          form.setError('root', {
+            message: error.message || t('registrationFailed')
+          });
         }
       }
     );
