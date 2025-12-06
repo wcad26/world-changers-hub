@@ -22,12 +22,6 @@ export default function MemberDashboard() {
   const upcomingEvents = (events || []).filter(event => isFuture(parseISO(event.start_datetime))).slice(0, 3);
   const nextEvent = upcomingEvents[0];
   return <div className="p-4 space-y-6">
-      {/* Welcome Section - hidden on mobile as it's in the header */}
-      <div className="hidden md:block space-y-2">
-        <h1 className="text-2xl font-bold text-foreground">
-          Welcome back, {profile?.first_name}!
-        </h1>
-      </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4 my-0">
