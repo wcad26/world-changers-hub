@@ -1,14 +1,31 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu } from 'lucide-react';
+import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { LucideIcon } from 'lucide-react';
+
 interface MemberLayoutProps {
   children: React.ReactNode;
 }
+
+// Page info with custom titles and icons for header
+const pageInfo: Record<string, { title: string; icon: LucideIcon }> = {
+  '/member/dashboard': { title: 'Member Portal', icon: Home },
+  '/member/events': { title: 'My Events', icon: Calendar },
+  '/member/finances': { title: 'My Giving', icon: DollarSign },
+  '/member/discipleship': { title: 'My Discipleship Journey', icon: BookOpen },
+  '/member/attendance': { title: 'My Attendance', icon: BarChart3 },
+  '/member/fundraising': { title: 'Fundraising', icon: Heart },
+  '/member/media': { title: 'Media', icon: Play },
+  '/member/counseling': { title: 'Counseling', icon: MessageCircle },
+  '/member/store': { title: 'Store', icon: ShoppingBag },
+  '/member/profile': { title: 'My Profile', icon: User },
+};
+
 const navigation = [{
   name: 'Dashboard',
   href: '/member/dashboard',
@@ -122,15 +139,10 @@ export default function MemberLayout({
       </div>;
   }
 
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const allNavigation = [...navigation, ...secondaryNavigation];
-    const currentPage = allNavigation.find(item => location.pathname === item.href);
-    return currentPage?.name || 'Member Portal';
-  };
-
+  // Get page info based on current route
+  const currentPageInfo = pageInfo[location.pathname] || { title: 'Member Portal', icon: Home };
   const isDashboard = location.pathname === '/member/dashboard';
-  const pageTitle = getPageTitle();
+  const PageIcon = currentPageInfo.icon;
 
   // Mobile layout with slide-out menu
   return <div className="min-h-screen bg-background flex flex-col">
@@ -145,7 +157,10 @@ export default function MemberLayout({
               </p>
             </>
           ) : (
-            <h1 className="text-base font-semibold text-foreground">{pageTitle}</h1>
+            <div className="flex items-center gap-2">
+              <PageIcon className="h-5 w-5 text-primary" />
+              <h1 className="text-base font-semibold text-foreground">{currentPageInfo.title}</h1>
+            </div>
           )}
         </div>
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
