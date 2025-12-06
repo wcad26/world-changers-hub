@@ -2,14 +2,17 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useFinancialTransactions, useFinancialSummary } from '@/hooks/useFinancials';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
-import { DollarSign, TrendingUp, Gift, Heart, Calendar } from 'lucide-react';
+import { DollarSign, TrendingUp, Gift, Heart, CalendarIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
+import { cn } from '@/lib/utils';
+
 export default function MemberFinances() {
   const {
     userRegion
@@ -17,42 +20,60 @@ export default function MemberFinances() {
   const {
     data: regionCurrency
   } = useRegionCurrency(userRegion?.id);
-  const [dateFilter, setDateFilter] = useState('3months');
+  const [dateFilter, setDateFilter] = useState('3-months');
+  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined
+  });
+
+  const quickDateOptions = [
+    { value: '1-month', label: '1M' },
+    { value: '3-months', label: '3M' },
+    { value: '6-months', label: '6M' },
+    { value: '1-year', label: '1Y' },
+    { value: 'custom', label: 'Custom' }
+  ];
+
+  const handleQuickDateChange = (value: string) => {
+    setDateFilter(value);
+  };
 
   // Calculate date range based on filter
   const getDateRange = () => {
     const now = new Date();
-    const currentYear = now.getFullYear();
+    
+    if (dateFilter === 'custom' && customDateRange.from) {
+      return {
+        from: customDateRange.from.toISOString().split('T')[0],
+        to: (customDateRange.to || now).toISOString().split('T')[0]
+      };
+    }
+
     switch (dateFilter) {
-      case '1month':
+      case '1-month':
         return {
-          from: new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0],
-          to: new Date().toISOString().split('T')[0]
+          from: new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
         };
-      case '3months':
+      case '3-months':
         return {
-          from: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0],
-          to: new Date().toISOString().split('T')[0]
+          from: new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
         };
-      case '6months':
+      case '6-months':
         return {
-          from: new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0],
-          to: new Date().toISOString().split('T')[0]
+          from: new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()).toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
         };
-      case 'ytd':
+      case '1-year':
         return {
-          from: `${currentYear}-01-01`,
-          to: new Date().toISOString().split('T')[0]
-        };
-      case 'lastyear':
-        return {
-          from: `${currentYear - 1}-01-01`,
-          to: `${currentYear - 1}-12-31`
+          from: new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
         };
       default:
         return {
-          from: new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0],
-          to: new Date().toISOString().split('T')[0]
+          from: new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).toISOString().split('T')[0],
+          to: now.toISOString().split('T')[0]
         };
     }
   };
@@ -88,19 +109,69 @@ export default function MemberFinances() {
 
       {/* Period Filter */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <Calendar className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1month">Last Month</SelectItem>
-            <SelectItem value="3months">Last 3 Months</SelectItem>
-            <SelectItem value="6months">Last 6 Months</SelectItem>
-            <SelectItem value="ytd">Year to Date</SelectItem>
-            <SelectItem value="lastyear">Last Year</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
+            {quickDateOptions.map((option) => (
+              <Button
+                key={option.value}
+                variant={dateFilter === option.value ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleQuickDateChange(option.value)}
+                className="px-3 py-1 h-8"
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+
+          {/* Custom Date Range Picker */}
+          {dateFilter === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "justify-start text-left font-normal h-8",
+                    !customDateRange.from && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customDateRange.from ? (
+                    customDateRange.to ? (
+                      <>
+                        {format(customDateRange.from, "MMM d")} - {format(customDateRange.to, "MMM d, y")}
+                      </>
+                    ) : (
+                      format(customDateRange.from, "MMM d, y")
+                    )
+                  ) : (
+                    <span>Pick dates</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={customDateRange.from}
+                  selected={{
+                    from: customDateRange.from,
+                    to: customDateRange.to,
+                  }}
+                  onSelect={(range) =>
+                    setCustomDateRange({
+                      from: range?.from,
+                      to: range?.to,
+                    })
+                  }
+                  numberOfMonths={2}
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
         
         <Button className="w-full sm:w-auto">
           <DollarSign className="w-4 h-4 mr-2" />
