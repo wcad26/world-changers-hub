@@ -117,7 +117,7 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       if (error) throw error;
       
       // Process the data to get counts by member type
-      return data?.map(event => {
+      const processedData = data?.map(event => {
         const records = event.attendance_records || [];
         
         const membersPresent = records.filter(r => 
@@ -149,6 +149,24 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           date: new Date(event.event_date).toLocaleDateString()
         };
       }) || [];
+
+      // Aggregate by date to prevent duplicates on the chart
+      const aggregatedByDate = processedData.reduce((acc, event) => {
+        const existingEntry = acc.find(e => e.event_date === event.event_date);
+        if (existingEntry) {
+          existingEntry.members_present += event.members_present;
+          existingEntry.visitors_present += event.visitors_present;
+          existingEntry.members_absent += event.members_absent;
+          existingEntry.visitors_absent += event.visitors_absent;
+          existingEntry.total_present += event.total_present;
+          existingEntry.total_absent += event.total_absent;
+        } else {
+          acc.push({ ...event });
+        }
+        return acc;
+      }, [] as typeof processedData);
+
+      return aggregatedByDate;
     },
     enabled: !!regionId
   });
