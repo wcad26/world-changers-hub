@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +23,9 @@ export const useAuth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  // Ref to track pending signout redirect - prevents race condition
+  const signOutRedirectRef = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -31,10 +34,36 @@ export const useAuth = () => {
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('useAuth: Auth state change:', event, session?.user?.id);
         
         if (!mounted) return;
+
+        // Handle SIGNED_OUT event - perform navigation here to avoid race condition
+        if (event === 'SIGNED_OUT') {
+          console.log('useAuth: SIGNED_OUT event received, clearing state...');
+          setUser(null);
+          setProfile(null);
+          setUserRoles([]);
+          setUserRegion(null);
+          setUserDcg(null);
+          setMemberRecord(null);
+          setUserRegionalRoles([]);
+          setLoading(false);
+          
+          // If we have a pending redirect from signOut, perform it now
+          if (signOutRedirectRef.current) {
+            const redirectUrl = signOutRedirectRef.current;
+            signOutRedirectRef.current = null;
+            console.log('useAuth: Navigating to:', redirectUrl);
+            navigate(redirectUrl);
+            toast({
+              title: "Signed out successfully",
+              description: "You have been signed out of your account."
+            });
+          }
+          return;
+        }
 
         if (session?.user) {
           setUser(session.user);
@@ -288,38 +317,44 @@ export const useAuth = () => {
         }
       }
       
-      const { error } = await supabase.auth.signOut();
+      // Store the redirect URL - navigation will happen in onAuthStateChange
+      signOutRedirectRef.current = redirectUrl;
+      
+      // Use scope: 'global' to fully clear session from all tabs
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       // Handle session-not-found errors gracefully - user is already logged out
       if (error) {
         const isSessionError = error.message?.toLowerCase().includes('session');
         if (isSessionError) {
           console.log('useAuth: Session already expired, proceeding with cleanup...');
+          // Manually trigger cleanup since onAuthStateChange may not fire
+          setUser(null);
+          setProfile(null);
+          setUserRoles([]);
+          setUserRegion(null);
+          setUserDcg(null);
+          setMemberRecord(null);
+          setUserRegionalRoles([]);
+          setLoading(false);
+          navigate(redirectUrl);
+          signOutRedirectRef.current = null;
+          toast({
+            title: "Signed out successfully",
+            description: "You have been signed out of your account."
+          });
         } else {
           console.error('useAuth: Sign out error:', error);
+          setLoading(false);
         }
       } else {
-        console.log('useAuth: Sign out successful');
+        console.log('useAuth: Sign out API call successful, waiting for auth state change...');
+        // Don't navigate here - let onAuthStateChange handle it
       }
-      
-      // Always clear state and redirect, regardless of error
-      // If there was a session error, the user is effectively logged out anyway
-      setUser(null);
-      setProfile(null);
-      setUserRoles([]);
-      setUserRegion(null);
-      setUserDcg(null);
-      setMemberRecord(null);
-      setUserRegionalRoles([]);
-      
-      navigate(redirectUrl);
-      toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account."
-      });
     } catch (error) {
       console.error('useAuth: Sign out exception:', error);
-      // Even on exception, clear state and redirect
+      // On exception, clear state and redirect manually
+      signOutRedirectRef.current = null;
       setUser(null);
       setProfile(null);
       setUserRoles([]);
@@ -327,9 +362,8 @@ export const useAuth = () => {
       setUserDcg(null);
       setMemberRecord(null);
       setUserRegionalRoles([]);
-      navigate('/');
-    } finally {
       setLoading(false);
+      navigate('/');
     }
   };
 
