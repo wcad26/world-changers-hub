@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useCreateDiscipleshipRelationship, discipleshipRelationshipSchema, type NewDiscipleshipRelationshipData } from '@/hooks/useDiscipleship';
@@ -28,6 +31,9 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
   const { data: members, isLoading: membersLoading } = useMembers(userRegion?.id);
   const createRelationship = useCreateDiscipleshipRelationship();
   const { toast } = useToast();
+  
+  const [mentorOpen, setMentorOpen] = useState(false);
+  const [discipleOpen, setDiscipleOpen] = useState(false);
 
   const form = useForm<NewDiscipleshipRelationshipData>({
     resolver: zodResolver(discipleshipRelationshipSchema),
@@ -56,9 +62,20 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
     }
   };
 
-  // Show all members in both dropdowns
-  const mentorOptions = members || [];
+  // Filter mentor options to only include members (not visitors)
+  const mentorOptions = useMemo(() => 
+    members?.filter(member => member.member_type === 'member') || [], 
+    [members]
+  );
+  
+  // All members can be disciples
   const discipleOptions = members || [];
+
+  const getMemberLabel = (memberId: string) => {
+    const member = members?.find(m => m.id === memberId);
+    if (!member) return '';
+    return `${member.profiles?.first_name} ${member.profiles?.last_name} (${member.member_id})`;
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -76,26 +93,57 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
               control={form.control}
               name="mentor_id"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mentor (Active Member)</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value}
-                    disabled={!!preselectedMentor}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a mentor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mentorOptions.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <FormItem className="flex flex-col">
+                  <FormLabel>Mentor (Member)</FormLabel>
+                  <Popover open={mentorOpen} onOpenChange={setMentorOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={mentorOpen}
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                          disabled={!!preselectedMentor}
+                        >
+                          {field.value
+                            ? getMemberLabel(field.value)
+                            : "Search and select a mentor..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover z-50" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search members..." />
+                        <CommandList>
+                          <CommandEmpty>No member found.</CommandEmpty>
+                          <CommandGroup>
+                            {mentorOptions.map((member) => (
+                              <CommandItem
+                                key={member.id}
+                                value={`${member.profiles?.first_name} ${member.profiles?.last_name} ${member.member_id}`}
+                                onSelect={() => {
+                                  field.onChange(member.id);
+                                  setMentorOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === member.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
@@ -105,27 +153,58 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
               control={form.control}
               name="disciple_id"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="flex flex-col">
                   <FormLabel>Disciple (Member or Visitor)</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value}
-                    disabled={!!preselectedDisciple}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a disciple" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {discipleOptions.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
-                          {member.member_type === 'visitor' && ' - Visitor'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={discipleOpen} onOpenChange={setDiscipleOpen}>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={discipleOpen}
+                          className={cn(
+                            "w-full justify-between",
+                            !field.value && "text-muted-foreground"
+                          )}
+                          disabled={!!preselectedDisciple}
+                        >
+                          {field.value
+                            ? getMemberLabel(field.value)
+                            : "Search and select a disciple..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-popover z-50" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search members..." />
+                        <CommandList>
+                          <CommandEmpty>No member found.</CommandEmpty>
+                          <CommandGroup>
+                            {discipleOptions.map((member) => (
+                              <CommandItem
+                                key={member.id}
+                                value={`${member.profiles?.first_name} ${member.profiles?.last_name} ${member.member_id}`}
+                                onSelect={() => {
+                                  field.onChange(member.id);
+                                  setDiscipleOpen(false);
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    field.value === member.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
+                                {member.member_type === 'visitor' && ' - Visitor'}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   <FormMessage />
                 </FormItem>
               )}
