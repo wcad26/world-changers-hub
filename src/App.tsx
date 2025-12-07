@@ -18,7 +18,7 @@ import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
 import CertificateVerify from "./pages/CertificateVerify";
 import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
+
 import RegionalAuth from "./pages/RegionalAuth";
 import SuperAuth from "./pages/SuperAuth";
 import DcgAuth from "./pages/DcgAuth";
@@ -132,7 +132,6 @@ const App = () => {
             <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
             
             {/* Authentication Routes */}
-            <Route path="/auth" element={<Auth />} />
             <Route path="/auth/regional" element={<RegionalAuth />} />
             <Route path="/auth/regions" element={<RegionSelect />} />
             <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
