@@ -26,7 +26,7 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   }
 
   if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
   if (!hasAnyRole(allowedRoles)) {
