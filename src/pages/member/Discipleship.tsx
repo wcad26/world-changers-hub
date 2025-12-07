@@ -11,7 +11,6 @@ import { AddProgressDialog } from '@/components/member/discipleship/AddProgressD
 import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
 import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
 import MemberLayout from '@/components/layout/MemberLayout';
-
 export default function MemberDiscipleship() {
   const {
     memberId
@@ -26,8 +25,7 @@ export default function MemberDiscipleship() {
   } = useMemberDiscipleshipStats(memberId || undefined);
   const isLoading = isLoadingRelationships || isLoadingStats;
   if (isLoading) {
-    return (
-      <MemberLayout>
+    return <MemberLayout>
         <div className="container mx-auto p-6 pb-24 space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-1/3"></div>
@@ -40,8 +38,7 @@ export default function MemberDiscipleship() {
             <div className="h-32 bg-muted rounded"></div>
           </div>
         </div>
-      </MemberLayout>
-    );
+      </MemberLayout>;
   }
 
   // Default stats if none exist
@@ -51,8 +48,7 @@ export default function MemberDiscipleship() {
     completed_disciples: 0,
     success_rate: 0
   };
-  return (
-    <MemberLayout>
+  return <MemberLayout>
       <div className="container mx-auto p-6 pb-24 space-y-6">
         {/* Page heading - hidden on mobile as it shows in layout header */}
         <div className="hidden md:flex items-center gap-2 mb-6">
@@ -127,7 +123,7 @@ export default function MemberDiscipleship() {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">
+                        <CardTitle className="text-sm">
                           {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
                         </CardTitle>
                         <CardDescription>
@@ -208,6 +204,5 @@ export default function MemberDiscipleship() {
         </TabsContent>
       </Tabs>
       </div>
-    </MemberLayout>
-  );
+    </MemberLayout>;
 }
