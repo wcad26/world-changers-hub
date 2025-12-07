@@ -142,7 +142,8 @@ const App = () => {
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/dcg-auth" element={<DcgAuth />} />
-            <Route path="/member/auth" element={<MemberAuth />} />
+            <Route path="/auth/member" element={<MemberAuth />} />
+            <Route path="/member/auth" element={<Navigate to="/auth/member" replace />} />
             
             {/* Admin Redirects - For easier navigation */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
