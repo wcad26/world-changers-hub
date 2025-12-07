@@ -56,6 +56,8 @@ export const useAuth = () => {
             const redirectUrl = signOutRedirectRef.current;
             signOutRedirectRef.current = null;
             console.log('useAuth: Navigating to:', redirectUrl);
+            // Set flag to prevent auth pages from auto-redirecting back
+            sessionStorage.setItem('just_signed_out', 'true');
             navigate(redirectUrl);
             toast({
               title: "Signed out successfully",
