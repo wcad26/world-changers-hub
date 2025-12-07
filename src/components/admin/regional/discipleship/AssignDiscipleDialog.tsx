@@ -56,12 +56,9 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
     }
   };
 
-  const activeMembers = members?.filter(member => 
-    member.status === 'active' || member.member_type === 'visitor'
-  ) || [];
-
-  const mentorOptions = activeMembers.filter(member => member.status === 'active');
-  const discipleOptions = activeMembers;
+  // Show all members in both dropdowns
+  const mentorOptions = members || [];
+  const discipleOptions = members || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
