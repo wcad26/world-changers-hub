@@ -119,7 +119,7 @@ export default function MemberDiscipleship() {
                 <Button variant="outline">Contact Leadership</Button>
               </CardContent>
             </Card> : <div className="grid gap-4">
-              {relationships.asMentor.map(relationship => <Card key={relationship.id}>
+              {relationships.asMentor.map(relationship => <Card key={relationship.id} className="px-0">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
