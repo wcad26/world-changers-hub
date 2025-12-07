@@ -289,32 +289,45 @@ export const useAuth = () => {
       }
       
       const { error } = await supabase.auth.signOut();
+      
+      // Handle session-not-found errors gracefully - user is already logged out
       if (error) {
-        console.error('useAuth: Sign out error:', error);
-        toast({
-          title: "Error signing out",
-          description: error.message,
-          variant: "destructive"
-        });
+        const isSessionError = error.message?.toLowerCase().includes('session');
+        if (isSessionError) {
+          console.log('useAuth: Session already expired, proceeding with cleanup...');
+        } else {
+          console.error('useAuth: Sign out error:', error);
+        }
       } else {
         console.log('useAuth: Sign out successful');
-        // Clear state after determining redirect URL
-        setUser(null);
-        setProfile(null);
-        setUserRoles([]);
-        setUserRegion(null);
-        setUserDcg(null);
-        setMemberRecord(null);
-        setUserRegionalRoles([]);
-        
-        navigate(redirectUrl);
-        toast({
-          title: "Signed out successfully",
-          description: "You have been signed out of your account."
-        });
       }
+      
+      // Always clear state and redirect, regardless of error
+      // If there was a session error, the user is effectively logged out anyway
+      setUser(null);
+      setProfile(null);
+      setUserRoles([]);
+      setUserRegion(null);
+      setUserDcg(null);
+      setMemberRecord(null);
+      setUserRegionalRoles([]);
+      
+      navigate(redirectUrl);
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account."
+      });
     } catch (error) {
       console.error('useAuth: Sign out exception:', error);
+      // Even on exception, clear state and redirect
+      setUser(null);
+      setProfile(null);
+      setUserRoles([]);
+      setUserRegion(null);
+      setUserDcg(null);
+      setMemberRecord(null);
+      setUserRegionalRoles([]);
+      navigate('/');
     } finally {
       setLoading(false);
     }
