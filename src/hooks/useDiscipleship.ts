@@ -115,7 +115,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
           mentor:members!mentor_id (
             id,
             member_id,
-            profiles (first_name, last_name, phone)
+            profiles:profile_id (first_name, last_name, phone)
           )
         `)
         .eq('disciple_id', memberId);
@@ -133,7 +133,7 @@ export const useMemberDiscipleshipRelationships = (memberId?: string) => {
           disciple:members!disciple_id (
             id,
             member_id,
-            profiles (first_name, last_name, phone)
+            profiles:profile_id (first_name, last_name, phone)
           )
         `)
         .eq('mentor_id', memberId);
