@@ -137,7 +137,7 @@ export default function MemberDiscipleship() {
                   </CardHeader>
                   <CardContent className="px-0">
                     {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
-                    <div className="flex gap-2">
+                    <div className="gap-[4px] flex items-start justify-center">
                       <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">+ Progress</Button>
                       </AddProgressDialog>
