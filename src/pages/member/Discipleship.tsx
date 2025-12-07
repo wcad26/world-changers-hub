@@ -10,6 +10,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { AddProgressDialog } from '@/components/member/discipleship/AddProgressDialog';
 import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
 import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
+import MemberLayout from '@/components/layout/MemberLayout';
+
 export default function MemberDiscipleship() {
   const {
     memberId
@@ -24,18 +26,22 @@ export default function MemberDiscipleship() {
   } = useMemberDiscipleshipStats(memberId || undefined);
   const isLoading = isLoadingRelationships || isLoadingStats;
   if (isLoading) {
-    return <div className="container mx-auto p-6 space-y-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-muted rounded w-1/3"></div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="h-24 bg-muted rounded"></div>
-            <div className="h-24 bg-muted rounded"></div>
-            <div className="h-24 bg-muted rounded"></div>
-            <div className="h-24 bg-muted rounded"></div>
+    return (
+      <MemberLayout>
+        <div className="container mx-auto p-6 pb-24 space-y-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="h-24 bg-muted rounded"></div>
+              <div className="h-24 bg-muted rounded"></div>
+              <div className="h-24 bg-muted rounded"></div>
+              <div className="h-24 bg-muted rounded"></div>
+            </div>
+            <div className="h-32 bg-muted rounded"></div>
           </div>
-          <div className="h-32 bg-muted rounded"></div>
         </div>
-      </div>;
+      </MemberLayout>
+    );
   }
 
   // Default stats if none exist
@@ -45,12 +51,14 @@ export default function MemberDiscipleship() {
     completed_disciples: 0,
     success_rate: 0
   };
-  return <div className="container mx-auto p-6 space-y-6">
-      {/* Page heading - hidden on mobile as it shows in layout header */}
-      <div className="hidden md:flex items-center gap-2 mb-6">
-        <BookOpen className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">My Discipleship Journey</h1>
-      </div>
+  return (
+    <MemberLayout>
+      <div className="container mx-auto p-6 pb-24 space-y-6">
+        {/* Page heading - hidden on mobile as it shows in layout header */}
+        <div className="hidden md:flex items-center gap-2 mb-6">
+          <BookOpen className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">My Discipleship Journey</h1>
+        </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-0">
@@ -199,5 +207,7 @@ export default function MemberDiscipleship() {
             </div>}
         </TabsContent>
       </Tabs>
-    </div>;
+      </div>
+    </MemberLayout>
+  );
 }
