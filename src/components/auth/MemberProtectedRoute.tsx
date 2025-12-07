@@ -10,7 +10,7 @@ interface MemberProtectedRouteProps {
 
 export default function MemberProtectedRoute({ 
   children, 
-  redirectTo = '/member/auth' 
+  redirectTo = '/auth/member' 
 }: MemberProtectedRouteProps) {
   const { user, loading, isMember, isRegionalAdmin } = useAuth();
 

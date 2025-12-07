@@ -19,15 +19,19 @@ export default function MemberAuth() {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
-  const { user, isMember, isRegionalAdmin } = useAuth();
+  const { user, isMember, isRegionalAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
   // Redirect if already authenticated as member
+  // Only redirect if user has proper roles - check loading state first
   useEffect(() => {
+    // Don't redirect while loading - wait for auth state to settle
+    if (authLoading) return;
+    
     if (user && (isMember() || isRegionalAdmin())) {
       navigate('/member/dashboard');
     }
-  }, [user, isMember, isRegionalAdmin, navigate]);
+  }, [user, authLoading, isMember, isRegionalAdmin, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
