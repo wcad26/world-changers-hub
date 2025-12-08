@@ -2737,7 +2737,7 @@ const RegionalEvents: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Name *</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="Dr. John Smith" />
+                                      <Input {...field} value={field.value || ''} placeholder="Dr. John Smith" />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -2751,7 +2751,7 @@ const RegionalEvents: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Title/Role *</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="Keynote Speaker" />
+                                      <Input {...field} value={field.value || ''} placeholder="Keynote Speaker" />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -2766,7 +2766,7 @@ const RegionalEvents: React.FC = () => {
                                 <FormItem>
                                   <FormLabel>Biography</FormLabel>
                                   <FormControl>
-                                    <Textarea {...field} placeholder="Brief biography..." maxLength={500} rows={3} />
+                                    <Textarea {...field} value={field.value || ''} placeholder="Brief biography..." maxLength={500} rows={3} />
                                   </FormControl>
                                   <FormDescription>
                                     {field.value?.length || 0}/500 characters
@@ -2792,7 +2792,7 @@ const RegionalEvents: React.FC = () => {
                                     <FormItem>
                                       <FormLabel>Name (French)</FormLabel>
                                       <FormControl>
-                                        <Input placeholder="Nom" {...field} />
+                                        <Input placeholder="Nom" {...field} value={field.value || ''} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -2806,7 +2806,7 @@ const RegionalEvents: React.FC = () => {
                                     <FormItem>
                                       <FormLabel>Title (French)</FormLabel>
                                       <FormControl>
-                                        <Input placeholder="Titre" {...field} />
+                                        <Input placeholder="Titre" {...field} value={field.value || ''} />
                                       </FormControl>
                                       <FormMessage />
                                     </FormItem>
@@ -2824,6 +2824,7 @@ const RegionalEvents: React.FC = () => {
                                           placeholder="Biographie"
                                           className="min-h-[80px]"
                                           {...field}
+                                          value={field.value || ''}
                                         />
                                       </FormControl>
                                       <FormMessage />
@@ -2879,7 +2880,7 @@ const RegionalEvents: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>LinkedIn URL</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="https://linkedin.com/in/..." />
+                                      <Input {...field} value={field.value || ''} placeholder="https://linkedin.com/in/..." />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -2893,7 +2894,7 @@ const RegionalEvents: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Twitter/X URL</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="https://twitter.com/..." />
+                                      <Input {...field} value={field.value || ''} placeholder="https://twitter.com/..." />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -2907,7 +2908,7 @@ const RegionalEvents: React.FC = () => {
                                   <FormItem>
                                     <FormLabel>Website URL</FormLabel>
                                     <FormControl>
-                                      <Input {...field} placeholder="https://..." />
+                                      <Input {...field} value={field.value || ''} placeholder="https://..." />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
@@ -4009,7 +4010,7 @@ const RegionalEvents: React.FC = () => {
                                 <FormItem>
                                   <FormLabel>Name</FormLabel>
                                   <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} value={field.value || ''} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -4023,7 +4024,7 @@ const RegionalEvents: React.FC = () => {
                                 <FormItem>
                                   <FormLabel>Name (French)</FormLabel>
                                   <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} value={field.value || ''} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -4037,7 +4038,7 @@ const RegionalEvents: React.FC = () => {
                                 <FormItem>
                                   <FormLabel>Title</FormLabel>
                                   <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} value={field.value || ''} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -4051,7 +4052,7 @@ const RegionalEvents: React.FC = () => {
                                 <FormItem>
                                   <FormLabel>Title (French)</FormLabel>
                                   <FormControl>
-                                    <Input {...field} />
+                                    <Input {...field} value={field.value || ''} />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -4078,6 +4079,7 @@ const RegionalEvents: React.FC = () => {
                                         placeholder="Biography"
                                         className="min-h-[80px]"
                                         {...field}
+                                        value={field.value || ''}
                                       />
                                     </FormControl>
                                     <FormMessage />
@@ -4096,6 +4098,7 @@ const RegionalEvents: React.FC = () => {
                                         placeholder="Biographie"
                                         className="min-h-[80px]"
                                         {...field}
+                                        value={field.value || ''}
                                       />
                                     </FormControl>
                                     <FormMessage />
