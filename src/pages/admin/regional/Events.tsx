@@ -110,7 +110,7 @@ const eventSchema = z.object({
     answer_fr: z.string().max(500).optional(),
   })).optional(),
   speakers: z.array(z.object({
-    id: z.string().optional(),
+    id: z.string().optional().transform(val => val === '' ? undefined : val),
     name: z.string().min(2, "Speaker name is required"),
     name_fr: z.string().optional(),
     title: z.string().min(2, "Speaker title is required"),
@@ -1231,7 +1231,9 @@ const RegionalEvents: React.FC = () => {
           .eq('event_id', eventToEdit.id);
 
         const currentIds = currentSpeakers?.map(s => s.id) || [];
-        const updatedIds = values.speakers.map(s => s.id).filter(id => id);
+        const isValidUuid = (id: string | undefined): id is string => 
+          !!id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        const updatedIds = values.speakers.map(s => s.id).filter(isValidUuid);
 
         // Delete removed speakers
         const toDelete = currentIds.filter(id => !updatedIds.includes(id));
@@ -1280,7 +1282,7 @@ const RegionalEvents: React.FC = () => {
             display_order: speaker.display_order || i,
           };
 
-          if (speaker.id) {
+          if (isValidUuid(speaker.id)) {
             // Update existing
             await supabase
               .from('event_speakers')
