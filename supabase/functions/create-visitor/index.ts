@@ -63,14 +63,16 @@ serve(async (req) => {
         console.log('create-visitor: Duplicate found:', existingMember.member_id, 'type:', existingMember.member_type)
         return new Response(
           JSON.stringify({ 
-            success: false, 
+            success: true,
+            is_duplicate: true,
+            is_visitor: isVisitor,
             message: isVisitor 
               ? 'You are already registered as a visitor in this region.'
               : 'You are already registered as a member in this region.',
             visitor_id: existingMember.member_id,
             member_type: existingMember.member_type
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
     }
