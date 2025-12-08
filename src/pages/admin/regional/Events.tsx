@@ -1704,7 +1704,14 @@ const RegionalEvents: React.FC = () => {
           </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              console.error('Create Event form validation errors:', errors);
+              toast({
+                title: "Validation Error",
+                description: `Please fix the following fields: ${Object.keys(errors).join(', ')}`,
+                variant: "destructive",
+              });
+            })} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -3036,7 +3043,14 @@ const RegionalEvents: React.FC = () => {
           </DialogHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onEditSubmit, (errors) => {
+              console.error('Edit Event form validation errors:', errors);
+              toast({
+                title: "Validation Error",
+                description: `Please fix the following fields: ${Object.keys(errors).join(', ')}`,
+                variant: "destructive",
+              });
+            })} className="space-y-6">
               {/* Event details form fields - same structure as create dialog */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
