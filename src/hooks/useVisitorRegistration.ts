@@ -17,25 +17,25 @@ export const useVisitorRegistration = () => {
         body: data
       });
 
-      // Handle edge function errors and extract user-friendly messages
+      // Handle edge function errors
       if (error) {
         const errorMessage = error.context?.message || error.message || 'Registration failed';
         throw new Error(errorMessage);
       }
       
-      // Handle duplicate registration as a success-like response, not an error
-      if (!result.success && result.message?.includes('already registered')) {
+      // Handle duplicate registration - now returns HTTP 200 with is_duplicate flag
+      if (result.is_duplicate) {
         return {
           success: false,
           isDuplicate: true,
           visitor_id: result.visitor_id,
-          member_type: result.member_type || 'visitor',
+          member_type: result.member_type || (result.is_visitor ? 'visitor' : 'member'),
           message: result.message
         };
       }
       
       if (!result.success) {
-        throw new Error(result.message || 'Registration failed');
+        throw new Error(result.message || result.error || 'Registration failed');
       }
       
       return {
