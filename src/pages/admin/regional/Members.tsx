@@ -198,7 +198,6 @@ const Members: React.FC = () => {
         <Tabs defaultValue="members">
           <TabsList>
             <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="visitors">Visitors</TabsTrigger>
             <TabsTrigger value="discipleship">
               <Heart className="mr-2 h-4 w-4" />
               Discipleship
@@ -349,98 +348,6 @@ const Members: React.FC = () => {
                         ))
                       ) : (
                         <TableRow><TableCell colSpan={7} className="text-center">No members found.</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="visitors" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardTitle>Visitors</CardTitle>
-                  <CardDescription>View and manage visitor registrations for your region.</CardDescription>
-                </div>
-                <div className="flex justify-between items-center pt-4">
-                  <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                      placeholder="Search visitors..." 
-                      className="pl-8" 
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                  <Button variant="outline" asChild>
-                    <a href={`/visitor/register/${userRegion?.code.toLowerCase()}`} target="_blank" rel="noopener noreferrer">
-                      Visitor Registration Link
-                    </a>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Visitor ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Registered</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingMembers || !userRegion ? (
-                        <TableRow><TableCell colSpan={7} className="text-center">Loading visitors...</TableCell></TableRow>
-                      ) : filteredMembers?.filter(m => m.member_type === 'visitor').length > 0 ? (
-                        filteredMembers
-                          .filter(m => m.member_type === 'visitor')
-                          .map((visitor) => (
-                            <TableRow key={visitor.id} className="hover:bg-muted/50">
-                              <TableCell className="font-medium">{visitor.member_id}</TableCell>
-                              <TableCell>
-                                {visitor.profiles ? `${visitor.profiles.first_name} ${visitor.profiles.last_name}` : 'N/A'}
-                              </TableCell>
-                              <TableCell>{visitor.profiles?.phone || 'N/A'}</TableCell>
-                              <TableCell className="max-w-xs truncate">{visitor.profiles?.address || 'N/A'}</TableCell>
-                              <TableCell>{visitor.join_date ? new Date(visitor.join_date).toLocaleDateString() : 'N/A'}</TableCell>
-                              <TableCell>
-                                <Badge variant={visitor.status === 'new' ? 'default' : 'secondary'}>
-                                  {visitor.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setEditMember(visitor)}>
-                                      <Pen className="h-4 w-4 mr-2" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => setMemberToDelete(visitor)}
-                                      className="text-destructive focus:text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                      ) : (
-                        <TableRow><TableCell colSpan={7} className="text-center">No visitors found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
