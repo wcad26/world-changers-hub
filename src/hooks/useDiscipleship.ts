@@ -52,7 +52,7 @@ export type NewDiscipleshipRelationshipData = z.infer<typeof discipleshipRelatio
 // Schema for progress tracking
 export const discipleshipProgressSchema = z.object({
   relationship_id: z.string().uuid('Invalid relationship ID'),
-  milestone: z.enum(['first_visit', 'second_visit', 'committed', 'baptized', 'became_member', 'serving']),
+  milestone: z.enum(['talking_stage', 'first_visit', 'second_visit', 'committed', 'baptized', 'became_member', 'serving']),
   achieved_date: z.string().optional(),
   notes: z.string().optional(),
 });

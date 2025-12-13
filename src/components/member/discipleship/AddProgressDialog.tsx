@@ -84,6 +84,7 @@ export function AddProgressDialog({ relationshipId, discipleName, children }: Ad
                 <SelectValue placeholder="Select a milestone" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="talking_stage">Talking Stage</SelectItem>
                 <SelectItem value="first_visit">First Visit</SelectItem>
                 <SelectItem value="second_visit">Second Visit</SelectItem>
                 <SelectItem value="committed">Committed to Faith</SelectItem>

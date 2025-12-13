@@ -1963,6 +1963,7 @@ export type Database = {
         | "baptized"
         | "became_member"
         | "serving"
+        | "talking_stage"
       discipleship_status: "active" | "completed" | "transferred" | "inactive"
       email_delivery_status:
         | "pending"
@@ -2167,6 +2168,7 @@ export const Constants = {
         "baptized",
         "became_member",
         "serving",
+        "talking_stage",
       ],
       discipleship_status: ["active", "completed", "transferred", "inactive"],
       email_delivery_status: [

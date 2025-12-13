@@ -1,0 +1,1 @@
+ALTER TYPE discipleship_milestone ADD VALUE 'talking_stage';
