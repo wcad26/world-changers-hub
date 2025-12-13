@@ -49,9 +49,9 @@ export default function MemberDiscipleship() {
     success_rate: 0
   };
   return <MemberLayout>
-      <div className="container mx-auto p-6 pb-24 space-y-6 py-[10px] px-[10px]">
+      <div className="container mx-auto p-6 pb-24 space-y-6 py-[10px] px-[5px]">
         {/* Page heading - hidden on mobile as it shows in layout header */}
-        <div className="hidden lg:flex items-center gap-2 mb-6">
+        <div className="hidden md:flex items-center gap-2 mb-6">
           <BookOpen className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold text-foreground">My Discipleship Journey</h1>
         </div>
@@ -137,7 +137,7 @@ export default function MemberDiscipleship() {
                   </CardHeader>
                   <CardContent className="px-0">
                     {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
-                    <div className="gap-[4px] flex items-start justify-start">
+                    <div className="gap-[4px] flex items-start justify-start px-[5px]">
                       <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
                         <Button size="sm" variant="outline">+ Progress</Button>
                       </AddProgressDialog>
