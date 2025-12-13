@@ -197,7 +197,7 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
                                   )}
                                 />
                                 {member.profiles?.first_name} {member.profiles?.last_name} ({member.member_id})
-                                {member.member_type === 'visitor' && ' - Visitor'}
+                                {member.member_type === 'visitor' ? ' - Visitor' : ' - Member'}
                               </CommandItem>
                             ))}
                           </CommandGroup>
