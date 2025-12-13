@@ -284,56 +284,6 @@ const EventsTab: React.FC<EventsTabProps> = ({ selectedPeriod }) => {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Attendance Trend Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart2 className="h-5 w-5" />
-              Attendance Trend
-            </CardTitle>
-            <CardDescription>Event attendance over time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
-              {analyticsData.attendanceTrend.length > 0 ? (
-                <div className="space-y-3">
-                  {analyticsData.attendanceTrend.slice(0, 8).map((event, index) => (
-                    <div 
-                      key={index} 
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => setDrilldownEvent(event)}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{event.name}</div>
-                        <div className="text-xs text-muted-foreground">{format(new Date(event.date), 'MMM dd, yyyy')}</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <div className="font-bold text-lg">{event.attendance}</div>
-                          <div className="text-xs text-muted-foreground">attendees</div>
-                        </div>
-                        <div className="w-12 h-6 bg-primary/10 rounded-full relative overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full transition-all duration-300"
-                            style={{ width: `${Math.min((event.attendance / Math.max(...analyticsData.attendanceTrend.map(e => e.attendance))) * 100, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground">
-                  <div className="text-center">
-                    <BarChart2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No attendance data available</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Event Categories Breakdown */}
         <Card>
           <CardHeader>
