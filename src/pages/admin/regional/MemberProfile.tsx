@@ -60,7 +60,7 @@ const MemberProfile: React.FC = () => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'M';
   };
 
-  if (isLoading) {
+  if (isLoading || !userRegion) {
     return (
       <RegionalAdminLayout>
         <div className="flex items-center justify-center h-64">
