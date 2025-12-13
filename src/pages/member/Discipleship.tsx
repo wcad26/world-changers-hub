@@ -139,7 +139,7 @@ export default function MemberDiscipleship() {
                     {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
                     <div className="gap-2 flex items-center justify-start px-4 pb-4">
                       <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">+ Progress</Button>
+                        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-accent hover:text-white transition-colors">+ Progress</Button>
                       </AddProgressDialog>
                       
                       <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
