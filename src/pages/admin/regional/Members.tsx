@@ -279,7 +279,7 @@ const Members: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
+                        <TableHead>Address</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Role</TableHead>
                         <TableHead>Status</TableHead>
@@ -302,7 +302,7 @@ const Members: React.FC = () => {
                             <TableCell className="font-medium">
                               {member.profiles?.first_name} {member.profiles?.last_name}
                             </TableCell>
-                            <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
+                            <TableCell className="max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
                             <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
                             <TableCell>
                               <Badge 
@@ -388,7 +388,6 @@ const Members: React.FC = () => {
                       <TableRow>
                         <TableHead>Visitor ID</TableHead>
                         <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
                         <TableHead>Phone</TableHead>
                         <TableHead>Address</TableHead>
                         <TableHead>Registered</TableHead>
@@ -398,7 +397,7 @@ const Members: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {isLoadingMembers || !userRegion ? (
-                        <TableRow><TableCell colSpan={8} className="text-center">Loading visitors...</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center">Loading visitors...</TableCell></TableRow>
                       ) : filteredMembers?.filter(m => m.member_type === 'visitor').length > 0 ? (
                         filteredMembers
                           .filter(m => m.member_type === 'visitor')
@@ -408,7 +407,6 @@ const Members: React.FC = () => {
                               <TableCell>
                                 {visitor.profiles ? `${visitor.profiles.first_name} ${visitor.profiles.last_name}` : 'N/A'}
                               </TableCell>
-                              <TableCell>{visitor.profiles?.email || 'N/A'}</TableCell>
                               <TableCell>{visitor.profiles?.phone || 'N/A'}</TableCell>
                               <TableCell className="max-w-xs truncate">{visitor.profiles?.address || 'N/A'}</TableCell>
                               <TableCell>{visitor.join_date ? new Date(visitor.join_date).toLocaleDateString() : 'N/A'}</TableCell>
@@ -442,7 +440,7 @@ const Members: React.FC = () => {
                             </TableRow>
                           ))
                       ) : (
-                        <TableRow><TableCell colSpan={8} className="text-center">No visitors found.</TableCell></TableRow>
+                        <TableRow><TableCell colSpan={7} className="text-center">No visitors found.</TableCell></TableRow>
                       )}
                     </TableBody>
                   </Table>
