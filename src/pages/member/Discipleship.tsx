@@ -143,14 +143,14 @@ export default function MemberDiscipleship() {
                       </AddProgressDialog>
                       
                       <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
                           <Calendar className="h-4 w-4 mr-1" />
                           Schedule
                         </Button>
                       </ScheduleMeetingDialog>
                       
                       <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
                           <TrendingUp className="h-4 w-4 mr-1" />
                           Summary
                         </Button>
