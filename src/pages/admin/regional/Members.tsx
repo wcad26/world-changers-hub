@@ -288,7 +288,7 @@ const Members: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {isLoadingMembers ? (
+                      {isLoadingMembers || !userRegion ? (
                         <TableRow><TableCell colSpan={7} className="text-center">Loading members...</TableCell></TableRow>
                       ) : membersError ? (
                          <TableRow><TableCell colSpan={7} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
@@ -397,7 +397,7 @@ const Members: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {isLoadingMembers ? (
+                      {isLoadingMembers || !userRegion ? (
                         <TableRow><TableCell colSpan={8} className="text-center">Loading visitors...</TableCell></TableRow>
                       ) : filteredMembers?.filter(m => m.member_type === 'visitor').length > 0 ? (
                         filteredMembers
@@ -507,7 +507,7 @@ const Members: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {discipleshipLoading ? (
+                      {discipleshipLoading || !userRegion ? (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-8">Loading relationships...</TableCell>
                         </TableRow>
