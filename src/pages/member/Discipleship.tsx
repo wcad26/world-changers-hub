@@ -137,20 +137,20 @@ export default function MemberDiscipleship() {
                   </CardHeader>
                   <CardContent className="px-0">
                     {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
-                    <div className="gap-[4px] flex items-start justify-start px-[5px]">
+                    <div className="gap-2 flex items-center justify-start px-4 pb-4">
                       <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" variant="outline">+ Progress</Button>
+                        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">+ Progress</Button>
                       </AddProgressDialog>
                       
                       <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
                           <Calendar className="h-4 w-4 mr-1" />
                           Schedule
                         </Button>
                       </ScheduleMeetingDialog>
                       
                       <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary/10">
                           <TrendingUp className="h-4 w-4 mr-1" />
                           Summary
                         </Button>
