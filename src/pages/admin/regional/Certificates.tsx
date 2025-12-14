@@ -87,6 +87,7 @@ const Certificates = () => {
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
+  const [certificateStatusFilter, setCertificateStatusFilter] = useState<string>('all');
   
   // Email sending progress state
   const [isSendingEmails, setIsSendingEmails] = useState(false);
@@ -115,18 +116,38 @@ const Certificates = () => {
     profile?.region_id || undefined
   );
 
-  // Filter members based on event selection and search term
+  // Filter members based on event selection, search term, and certificate status
   const baseMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
+  
+  // Get member IDs who already have certificates for the selected event
+  const membersWithCertificatesForEvent = new Set(
+    issuedCertificates
+      ?.filter(cert => 
+        selectedEventId && 
+        selectedEventId !== 'none' && 
+        cert.event_name === eventName
+      )
+      .map(cert => cert.member_id)
+      .filter(Boolean) || []
+  );
+  
   const filteredMembers = baseMembers.filter((member) => {
-    if (!memberSearchTerm) return true;
-    
+    // Search filter
     const fullName = member.profiles?.first_name && member.profiles?.last_name
       ? `${member.profiles.first_name} ${member.profiles.last_name}`.toLowerCase()
       : (member.profiles?.email || '').toLowerCase();
     const memberId = (member.member_id || '').toLowerCase();
     const searchLower = memberSearchTerm.toLowerCase();
+    const matchesSearch = !memberSearchTerm || fullName.includes(searchLower) || memberId.includes(searchLower);
+    
+    // Certificate status filter (only applies when an event is selected)
+    if (selectedEventId && selectedEventId !== 'none' && certificateStatusFilter !== 'all') {
+      const hasCertificate = membersWithCertificatesForEvent.has(member.id);
+      if (certificateStatusFilter === 'pending' && hasCertificate) return false;
+      if (certificateStatusFilter === 'generated' && !hasCertificate) return false;
+    }
 
-    return fullName.includes(searchLower) || memberId.includes(searchLower);
+    return matchesSearch;
   });
 
   // Filter sent certificates by email status and search term
@@ -626,13 +647,15 @@ const Certificates = () => {
                   </Select>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="event-select">Associated Event (Optional)</Label>
                     <Select 
                       value={selectedEventId} 
                       onValueChange={(value) => {
                         setSelectedEventId(value);
+                        setCertificateStatusFilter('all');
+                        setSelectedMembers([]);
                         if (value === 'none') {
                           setEventName('');
                           setEventDate('');
@@ -676,6 +699,24 @@ const Certificates = () => {
                       placeholder="Auto-populated from event"
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label>Certificate Status</Label>
+                    <Select 
+                      value={certificateStatusFilter} 
+                      onValueChange={setCertificateStatusFilter}
+                      disabled={!selectedEventId || selectedEventId === 'none'}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Attendees</SelectItem>
+                        <SelectItem value="pending">Pending Generation</SelectItem>
+                        <SelectItem value="generated">Already Generated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -705,7 +746,12 @@ const Certificates = () => {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
                       <FileCheck className="h-4 w-4" />
                       <span>
-                        Showing {filteredMembers.length} attendee{filteredMembers.length !== 1 ? 's' : ''} marked present for this event
+                        {certificateStatusFilter === 'pending' 
+                          ? `Showing ${filteredMembers.length} attendee${filteredMembers.length !== 1 ? 's' : ''} without certificates`
+                          : certificateStatusFilter === 'generated'
+                          ? `Showing ${filteredMembers.length} attendee${filteredMembers.length !== 1 ? 's' : ''} with certificates already generated`
+                          : `Showing ${filteredMembers.length} attendee${filteredMembers.length !== 1 ? 's' : ''} marked present for this event`
+                        }
                       </span>
                     </div>
                   )}
