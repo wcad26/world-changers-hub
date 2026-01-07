@@ -344,7 +344,7 @@ const RegionSpecificAuth = () => {
               <Button
                 variant="link"
                 className="text-wca-teal hover:text-wca-teal/80 font-medium p-0 h-auto"
-                onClick={() => navigate(`/register/regions/${region.code.toLowerCase()}`)}
+                onClick={() => navigate(`/register/regions/${regionSlug}`)}
                 disabled={isLoading}
               >
                 Request access to {region.name}
