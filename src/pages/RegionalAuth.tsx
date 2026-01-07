@@ -2,10 +2,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Shield, ArrowRight } from 'lucide-react';
+import { Users, Shield, ArrowRight, Loader2 } from 'lucide-react';
+import { useRegions } from '@/hooks/useRegions';
+import { generateSlug } from '@/utils/slugUtils';
 
 const RegionalAuth = () => {
   const navigate = useNavigate();
+  const { data: regions, isLoading } = useRegions();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-primary/5 to-secondary/10 flex items-center justify-center p-4">
@@ -40,53 +43,30 @@ const RegionalAuth = () => {
 
           <CardContent>
             <div className="grid gap-3 mb-6">
-              <Button 
-                variant="modern" 
-                className="justify-between h-14 p-4" 
-                onClick={() => navigate('/auth/regions/wca-douala')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">WCA Douala</div>
-                  <div className="text-sm text-muted-foreground">Douala Regional Portal</div>
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
-                <ArrowRight size={16} />
-              </Button>
-              
-              <Button 
-                variant="modern" 
-                className="justify-between h-14 p-4" 
-                onClick={() => navigate('/auth/regions/wca-eu')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">WCA EU</div>
-                  <div className="text-sm text-muted-foreground">Europe Regional Portal</div>
-                </div>
-                <ArrowRight size={16} />
-              </Button>
-              
-              <Button 
-                variant="modern" 
-                className="justify-between h-14 p-4" 
-                onClick={() => navigate('/auth/regions/wca-usa')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">WCA USA</div>
-                  <div className="text-sm text-muted-foreground">USA Regional Portal</div>
-                </div>
-                <ArrowRight size={16} />
-              </Button>
-              
-              <Button 
-                variant="modern" 
-                className="justify-between h-14 p-4" 
-                onClick={() => navigate('/auth/regions/wca-yaounde')}
-              >
-                <div className="text-left">
-                  <div className="font-medium">WCA Yaounde</div>
-                  <div className="text-sm text-muted-foreground">Yaounde Regional Portal</div>
-                </div>
-                <ArrowRight size={16} />
-              </Button>
+              ) : regions && regions.length > 0 ? (
+                regions.map((region) => (
+                  <Button 
+                    key={region.id}
+                    variant="modern" 
+                    className="justify-between h-14 p-4" 
+                    onClick={() => navigate(`/auth/regions/${generateSlug(region.name)}`)}
+                  >
+                    <div className="text-left">
+                      <div className="font-medium">{region.name}</div>
+                      <div className="text-sm text-muted-foreground">{region.name} Regional Portal</div>
+                    </div>
+                    <ArrowRight size={16} />
+                  </Button>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No regions available
+                </p>
+              )}
             </div>
 
             <div className="pt-4 border-t border-gray-200">
