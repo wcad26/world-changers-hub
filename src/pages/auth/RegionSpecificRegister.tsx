@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
-
+import { generateSlug } from '@/utils/slugUtils';
+import type { Region } from '@/hooks/useRegions';
 const RegionSpecificRegister = () => {
   const { regionCode } = useParams<{ regionCode: string }>();
   const [email, setEmail] = useState('');
@@ -21,28 +23,34 @@ const RegionSpecificRegister = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Convert region code to slug format for the hook
-  const getRegionSlug = (code: string | undefined): string | undefined => {
-    if (!code) return undefined;
-    
-    const lowerCode = code.toLowerCase();
-    switch (lowerCode) {
-      case 'wcad':
-        return 'wca-douala';
-      case 'wcaeu':
-        return 'wca-eu';
-      case 'wcausa':
-        return 'wca-usa';
-      case 'wcayde':
-        return 'wca-yaounde';
-      default:
-        return undefined;
-    }
-  };
-  
-  const regionSlug = getRegionSlug(regionCode);
-  const { data: region, isLoading: regionLoading } = useRegionBySlug(regionSlug);
+  const regionIdentifier = regionCode?.toLowerCase();
+  const looksLikeSlug = !!regionIdentifier && regionIdentifier.includes('-');
 
+  const { data: regionFromSlug, isLoading: regionSlugLoading } = useRegionBySlug(
+    looksLikeSlug ? regionIdentifier : undefined
+  );
+
+  const { data: regionFromCode, isLoading: regionCodeLoading } = useQuery({
+    queryKey: ['region-by-code', regionIdentifier],
+    queryFn: async () => {
+      if (!regionIdentifier) return null;
+
+      const { data, error } = await supabase
+        .from('regions')
+        .select('*')
+        .eq('code', regionIdentifier.toUpperCase())
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) throw error;
+      return (data as Region | null) ?? null;
+    },
+    enabled: !!regionIdentifier && !looksLikeSlug,
+  });
+
+  const region = (regionFromSlug ?? regionFromCode) as Region | null;
+  const regionLoading = regionSlugLoading || regionCodeLoading;
+  const regionLoginSlug = region ? generateSlug(region.name) : undefined;
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -85,7 +93,7 @@ const RegionSpecificRegister = () => {
             last_name: lastName.trim(),
             region_id: region.id
           },
-          emailRedirectTo: `${window.location.origin}/auth/regions/${regionSlug}`
+          emailRedirectTo: `${window.location.origin}/auth/regions/${generateSlug(region.name)}`
         }
       });
 
@@ -224,7 +232,7 @@ const RegionSpecificRegister = () => {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => navigate(`/auth/regions/${regionSlug}`)}
+                  onClick={() => navigate(`/auth/regions/${regionLoginSlug}`)}
                 >
                   Sign In Page
                 </Button>
@@ -381,7 +389,7 @@ const RegionSpecificRegister = () => {
               <Button
                 variant="link"
                 className="text-wca-teal hover:text-wca-teal/80 font-medium p-0 h-auto"
-                onClick={() => navigate(`/auth/regions/${regionSlug}`)}
+                onClick={() => navigate(`/auth/regions/${regionLoginSlug}`)}
                 disabled={isLoading}
               >
                 Sign in instead
