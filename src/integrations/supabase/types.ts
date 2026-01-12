@@ -1834,6 +1834,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           region_id: string | null
+          requested_regional_role_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["user_role_status"] | null
           user_id: string
@@ -1844,6 +1845,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           region_id?: string | null
+          requested_regional_role_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_role_status"] | null
           user_id: string
@@ -1854,6 +1856,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           region_id?: string | null
+          requested_regional_role_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_role_status"] | null
           user_id?: string
@@ -1864,6 +1867,13 @@ export type Database = {
             columns: ["region_id"]
             isOneToOne: false
             referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_requested_regional_role_id_fkey"
+            columns: ["requested_regional_role_id"]
+            isOneToOne: false
+            referencedRelation: "regional_roles"
             referencedColumns: ["id"]
           },
         ]

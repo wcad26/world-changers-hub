@@ -10,14 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
-import { useAssignUserRole, useUserRegionalRoles } from '@/hooks/useUserPermissions';
+import { useAssignUserRole, useUserRegionalRoles, useIsApprovedAdmin } from '@/hooks/useUserPermissions';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AssignRoleDialogProps {
   userId?: string;
@@ -33,16 +35,27 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(userId || '');
   const [userComboboxOpen, setUserComboboxOpen] = useState(false);
+  const [requiresApproval, setRequiresApproval] = useState(true);
   const { userRegion } = useAuth();
   const { data: roles } = useRegionalRoles();
   const { data: members } = useMembers(userRegion?.id);
   const { data: userRoles } = useUserRegionalRoles(selectedUserId);
+  const { data: isApprovedAdmin } = useIsApprovedAdmin(selectedUserId, userRegion?.id);
   const assignRole = useAssignUserRole();
 
   // Reset selectedUserId when dialog opens or userId changes
   useEffect(() => {
     setSelectedUserId(userId || '');
+    setRequiresApproval(true);
   }, [userId, open]);
+
+  // Auto-set requiresApproval based on whether user is already an approved admin
+  useEffect(() => {
+    if (isApprovedAdmin !== undefined) {
+      // If user is already an approved admin, they don't need approval for additional roles
+      setRequiresApproval(!isApprovedAdmin);
+    }
+  }, [isApprovedAdmin]);
 
   const availableRoles = roles?.filter(role => 
     role.is_active && 
@@ -58,6 +71,7 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
       await assignRole.mutateAsync({
         userId: selectedUserId,
         roleId: selectedRoleId,
+        requiresApproval: requiresApproval && !isApprovedAdmin,
       });
       
       setSelectedRoleId('');
@@ -67,6 +81,8 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
       console.error('Error assigning role:', error);
     }
   };
+
+  const showApprovalWarning = requiresApproval && !isApprovedAdmin;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -152,6 +168,15 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
             </div>
           )}
 
+          {/* Approved Admin Status */}
+          {selectedUserId && isApprovedAdmin && (
+            <Alert className="bg-green-50 border-green-200">
+              <AlertDescription className="text-green-700">
+                This user is already an approved administrator. The role will be assigned immediately.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div>
             <Label htmlFor="role">Select Role *</Label>
             <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
@@ -181,6 +206,31 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
             </div>
           )}
 
+          {/* Approval Toggle - only show for non-approved admins */}
+          {selectedUserId && !isApprovedAdmin && (
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label className="text-base">Requires Super Admin Approval</Label>
+                <p className="text-sm text-muted-foreground">
+                  The role assignment will be pending until approved by a Super Admin.
+                </p>
+              </div>
+              <Switch
+                checked={requiresApproval}
+                onCheckedChange={setRequiresApproval}
+              />
+            </div>
+          )}
+
+          {showApprovalWarning && (
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-700">
+                This assignment will create a pending request that requires Super Admin approval before the user can access admin features.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
@@ -189,7 +239,7 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
               type="submit" 
               disabled={!selectedRoleId || !selectedUserId || assignRole.isPending || availableRoles.length === 0}
             >
-              {assignRole.isPending ? 'Assigning...' : 'Assign Role'}
+              {assignRole.isPending ? 'Assigning...' : (showApprovalWarning ? 'Submit for Approval' : 'Assign Role')}
             </Button>
           </div>
         </form>
