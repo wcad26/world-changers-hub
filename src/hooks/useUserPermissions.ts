@@ -22,6 +22,7 @@ export interface UserRegionalRole {
 export interface AssignRoleData {
   userId: string;
   roleId: string;
+  requiresApproval?: boolean;
 }
 
 export const useUserPermissions = (userId?: string, regionId?: string) => {
@@ -85,29 +86,82 @@ export const useAssignUserRole = () => {
   const { userRegion, user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ userId, roleId }: AssignRoleData) => {
+    mutationFn: async ({ userId, roleId, requiresApproval = false }: AssignRoleData) => {
       if (!userRegion?.id) throw new Error('No region available');
 
-      const { data, error } = await supabase
-        .from('regional_user_roles')
-        .insert({
-          user_id: userId,
-          region_id: userRegion.id,
-          regional_role_id: roleId,
-          assigned_by: user?.id,
-        })
-        .select()
-        .single();
+      if (requiresApproval) {
+        // Check if user already has a pending regional_admin request
+        const { data: existingRole, error: checkError } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('role', 'regional_admin')
+          .eq('region_id', userRegion.id)
+          .maybeSingle();
 
-      if (error) throw error;
-      return data;
+        if (checkError) throw checkError;
+
+        if (existingRole) {
+          // Update existing role to pending with requested regional role
+          const { error: updateError } = await supabase
+            .from('user_roles')
+            .update({
+              status: 'pending',
+              is_active: false,
+              requested_regional_role_id: roleId,
+            })
+            .eq('id', existingRole.id);
+
+          if (updateError) throw updateError;
+        } else {
+          // Create new pending role request
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: userId,
+              role: 'regional_admin',
+              region_id: userRegion.id,
+              status: 'pending',
+              is_active: false,
+              requested_regional_role_id: roleId,
+            });
+
+          if (insertError) throw insertError;
+        }
+
+        return { requiresApproval: true };
+      } else {
+        // Direct assignment (for already approved admins)
+        const { data, error } = await supabase
+          .from('regional_user_roles')
+          .insert({
+            user_id: userId,
+            region_id: userRegion.id,
+            regional_role_id: roleId,
+            assigned_by: user?.id,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['user-regional-roles'] });
-      toast({
-        title: "Role assigned",
-        description: "User role has been assigned successfully.",
-      });
+      queryClient.invalidateQueries({ queryKey: ['pending-users'] });
+      
+      if (data?.requiresApproval) {
+        toast({
+          title: "Role request submitted",
+          description: "The role assignment request has been submitted for Super Admin approval.",
+        });
+      } else {
+        toast({
+          title: "Role assigned",
+          description: "User role has been assigned successfully.",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -168,5 +222,29 @@ export const useHasPermission = (permission: string) => {
       return data as boolean;
     },
     enabled: !!(user?.id && userRegion?.id),
+  });
+};
+
+// Hook to check if a user already has a regional_admin role (approved)
+export const useIsApprovedAdmin = (userId?: string, regionId?: string) => {
+  return useQuery({
+    queryKey: ['is-approved-admin', userId, regionId],
+    queryFn: async () => {
+      if (!userId || !regionId) return false;
+
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('region_id', regionId)
+        .eq('role', 'regional_admin')
+        .eq('status', 'active')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (error) return false;
+      return !!data;
+    },
+    enabled: !!(userId && regionId),
   });
 };

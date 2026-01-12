@@ -4,18 +4,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { generateSlug } from '@/utils/slugUtils';
 import type { Region } from '@/hooks/useRegions';
+
 const RegionSpecificRegister = () => {
   const { regionCode } = useParams<{ regionCode: string }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
@@ -51,6 +54,26 @@ const RegionSpecificRegister = () => {
   const region = (regionFromSlug ?? regionFromCode) as Region | null;
   const regionLoading = regionSlugLoading || regionCodeLoading;
   const regionLoginSlug = region ? generateSlug(region.name) : undefined;
+
+  // Fetch regional roles for the region
+  const { data: regionalRoles, isLoading: rolesLoading } = useQuery({
+    queryKey: ['regional-roles-for-region', region?.id],
+    queryFn: async () => {
+      if (!region?.id) return [];
+
+      const { data, error } = await supabase
+        .from('regional_roles')
+        .select('id, name, description')
+        .eq('region_id', region.id)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!region?.id,
+  });
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -58,6 +81,15 @@ const RegionSpecificRegister = () => {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedRoleId) {
+      toast({
+        title: "Role Required",
+        description: "Please select a role to request access for.",
         variant: "destructive"
       });
       return;
@@ -108,7 +140,7 @@ const RegionSpecificRegister = () => {
       }
 
       if (authData.user) {
-        // Create pending role for approval with region association
+        // Create pending role for approval with region association and requested regional role
         try {
           const { error: roleError } = await supabase
             .from('user_roles')
@@ -117,7 +149,8 @@ const RegionSpecificRegister = () => {
               role: 'regional_admin',
               region_id: region.id,
               status: 'pending',
-              is_active: false
+              is_active: false,
+              requested_regional_role_id: selectedRoleId
             });
 
           if (roleError) {
@@ -359,6 +392,34 @@ const RegionSpecificRegister = () => {
                 </div>
               </div>
 
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Requested Role *
+                </label>
+                <Select value={selectedRoleId} onValueChange={setSelectedRoleId} disabled={isLoading || rolesLoading}>
+                  <SelectTrigger className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20">
+                    <SelectValue placeholder={rolesLoading ? "Loading roles..." : "Select a role"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {regionalRoles?.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{role.name}</span>
+                          {role.description && (
+                            <span className="text-xs text-muted-foreground">{role.description}</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {regionalRoles?.length === 0 && !rolesLoading && (
+                  <p className="text-sm text-amber-600 mt-1">
+                    No roles have been configured for this region yet. Please contact the regional administrator.
+                  </p>
+                )}
+              </div>
+
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-sm text-amber-700">
                   <strong>Note:</strong> Your registration for {region.name} will be reviewed by a Super Administrator. 
@@ -369,7 +430,7 @@ const RegionSpecificRegister = () => {
               <Button
                 type="submit"
                 className="w-full h-11 bg-gradient-to-r from-wca-teal to-wca-teal/80 hover:from-wca-teal/90 hover:to-wca-teal/70 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-                disabled={isLoading}
+                disabled={isLoading || !selectedRoleId || regionalRoles?.length === 0}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
