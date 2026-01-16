@@ -28,18 +28,42 @@ import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const RegionalDashboard: React.FC = () => {
-  const { userRegion } = useAuth();
+  const { userRegion, loading: authLoading } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const [activeTab, setActiveTab] = useState('members');
   const [selectedPeriod, setSelectedPeriod] = useState('1-month');
 
-  // Fetch all data
+  // Fetch all data - queries will wait until userRegion is available
   const { data: reports, isLoading: reportsLoading, isError: reportsError, error: reportsErrorDetail } = useRegionalReports();
   const { data: members, isLoading: membersLoading } = useMembers(userRegion?.id);
   const { data: events, isLoading: eventsLoading } = useRegionalEvents();
   const { data: financialSummary, isLoading: financialsLoading } = useFinancialSummary();
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: locations, isLoading: locationsLoading } = useLocations(userRegion?.id);
+
+  // Show skeleton immediately while auth is loading
+  if (authLoading || !userRegion) {
+    return (
+      <RegionalAdminLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-[600px]" />
+            <Skeleton className="h-10 w-[180px]" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-4 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </RegionalAdminLayout>
+    );
+  }
 
 
   // Calculate KPI data based on fetched data
@@ -178,7 +202,7 @@ const RegionalDashboard: React.FC = () => {
           ) : (
             <div className="mt-6 space-y-6">
               <KPICards data={kpiData} activeTab={activeTab} bankBalance={financialSummary?.net_balance || 0} selectedPeriod={selectedPeriod} regionCurrency={regionCurrency} />
-              {activeTab === 'members' && <MemberCards />}
+              {activeTab === 'members' && <MemberCards members={members} isLoading={membersLoading} />}
             </div>
           )}
 

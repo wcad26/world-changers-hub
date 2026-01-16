@@ -1,20 +1,24 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, CalendarCheck2, TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
-import { useMembers } from '@/hooks/useMembers';
+import { Users, TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
+import { useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
 import { useCurrentMemberTarget } from '@/hooks/useMemberTargets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
+import type { MemberWithProfile } from '@/hooks/useMembers';
 
-const MemberCards: React.FC = () => {
+interface MemberCardsProps {
+  members?: MemberWithProfile[];
+  isLoading?: boolean;
+}
+
+const MemberCards: React.FC<MemberCardsProps> = ({ members, isLoading: membersLoading }) => {
   const { userRegion } = useAuth();
-  const { data: members, isLoading, error } = useMembers(userRegion?.id);
-  const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
-  const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  // Only fetch attendance data - members come from props now
+  const { data: attendanceWithTypes, isLoading: isLoadingWithTypes, error: historyError } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: currentTarget, isLoading: isLoadingTarget } = useCurrentMemberTarget();
 
   // Component for percentage indicator
@@ -149,7 +153,9 @@ const MemberCards: React.FC = () => {
     };
   }, [attendanceWithTypes]);
 
-  if (isLoading || isLoadingHistory || isLoadingWithTypes) {
+  const isLoading = membersLoading || isLoadingWithTypes || isLoadingTarget;
+
+  if (isLoading) {
     return (
       <div className="grid gap-4 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
@@ -159,13 +165,13 @@ const MemberCards: React.FC = () => {
     );
   }
 
-  if (error || historyError) {
+  if (historyError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading members</AlertTitle>
+        <AlertTitle>Error loading attendance data</AlertTitle>
         <AlertDescription>
-          {error instanceof Error ? error.message : 'An unknown error occurred'}
+          {historyError instanceof Error ? historyError.message : 'An unknown error occurred'}
         </AlertDescription>
       </Alert>
     );

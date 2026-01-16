@@ -63,16 +63,11 @@ export const useDcgs = () => {
         throw memberCountsError;
       }
 
-      console.log('Member counts data:', memberCounts);
-      console.log('DCG IDs:', dcgIds);
-
       // Count members per DCG
       const memberCountMap = memberCounts?.reduce((acc, member) => {
         acc[member.dcg_id] = (acc[member.dcg_id] || 0) + 1;
         return acc;
       }, {} as Record<string, number>) || {};
-
-      console.log('Member count map:', memberCountMap);
 
       // Combine DCG data with member counts
       const dcgsWithCounts = dcgsData?.map(dcg => ({
@@ -83,6 +78,8 @@ export const useDcgs = () => {
       return dcgsWithCounts as DcgWithLeader[];
     },
     enabled: !!regionId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

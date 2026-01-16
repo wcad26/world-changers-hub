@@ -53,6 +53,8 @@ export const useLocations = (regionId?: string) => {
       return data as Location[];
     },
     enabled: !!regionId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 

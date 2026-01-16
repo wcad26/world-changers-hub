@@ -53,6 +53,8 @@ export const useFinancialTransactions = (filters?: { from?: string, to?: string 
       return data;
     },
     enabled: !!regionId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
@@ -144,6 +146,8 @@ export const useFinancialSummary = (filters?: { from?: string, to?: string }) =>
       };
     },
     enabled: !!regionId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
