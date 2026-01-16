@@ -56,7 +56,7 @@ const RegionSpecificRegister = () => {
   const regionLoginSlug = region ? generateSlug(region.name) : undefined;
 
   // Fetch regional roles for the region
-  const { data: regionalRoles, isLoading: rolesLoading } = useQuery({
+  const { data: regionalRoles, isLoading: rolesLoading, isFetched: rolesFetched } = useQuery({
     queryKey: ['regional-roles-for-region', region?.id],
     queryFn: async () => {
       if (!region?.id) return [];
@@ -413,7 +413,7 @@ const RegionSpecificRegister = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                {regionalRoles?.length === 0 && !rolesLoading && (
+                {rolesFetched && regionalRoles?.length === 0 && (
                   <p className="text-sm text-amber-600 mt-1">
                     No roles have been configured for this region yet. Please contact the regional administrator.
                   </p>
