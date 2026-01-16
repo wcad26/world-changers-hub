@@ -46,8 +46,6 @@ export const useMembers = (regionId?: string, memberType?: 'member' | 'visitor')
     queryFn: async () => {
       if (!regionId) return [];
       
-      console.log('useMembers: Fetching members for region:', regionId, 'type:', memberType);
-      
       let query = supabase
         .from('members')
         .select(`
@@ -65,35 +63,49 @@ export const useMembers = (regionId?: string, memberType?: 'member' | 'visitor')
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
-        console.error('useMembers: Error fetching members:', error);
         throw error;
       }
       
-      // Fetch user roles separately for each member
-      const membersWithRoles = await Promise.all(
-        (data || []).map(async (member) => {
-          if (!member.profiles?.id) return member;
-          
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role, is_active')
-            .eq('user_id', member.profiles.id)
-            .eq('is_active', true);
-          
-          return {
-            ...member,
-            profiles: {
-              ...member.profiles,
-              user_roles: roles || []
-            }
-          };
-        })
-      );
+      // Batch fetch all user roles at once instead of N+1 queries
+      const memberProfileIds = (data || [])
+        .map(m => m.profiles?.id)
+        .filter((id): id is string => !!id);
       
-      console.log('useMembers: Fetched members with roles:', membersWithRoles);
+      if (memberProfileIds.length === 0) {
+        return data as MemberWithProfile[];
+      }
+
+      const { data: allRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role, is_active')
+        .in('user_id', memberProfileIds)
+        .eq('is_active', true);
+      
+      // Create a map of user_id to roles for O(1) lookup
+      const rolesMap = (allRoles || []).reduce((acc, role) => {
+        if (!acc[role.user_id]) acc[role.user_id] = [];
+        acc[role.user_id].push({ role: role.role, is_active: role.is_active });
+        return acc;
+      }, {} as Record<string, Array<{ role: string; is_active: boolean | null }>>);
+      
+      // Map roles to members in memory (no additional queries)
+      const membersWithRoles = (data || []).map(member => {
+        if (!member.profiles?.id) return member;
+        
+        return {
+          ...member,
+          profiles: {
+            ...member.profiles,
+            user_roles: rolesMap[member.profiles.id] || []
+          }
+        };
+      });
+      
       return membersWithRoles as MemberWithProfile[];
     },
     enabled: !!regionId,
+    staleTime: 5 * 60 * 1000, // 5 minutes - don't refetch if data is fresh
+    gcTime: 10 * 60 * 1000, // 10 minutes cache
   });
 };
 

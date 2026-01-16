@@ -68,8 +68,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  console.log("Current location:", location.pathname);
-  console.log("Menu items:", menuItems);
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
