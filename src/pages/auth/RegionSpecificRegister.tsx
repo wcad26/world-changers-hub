@@ -18,6 +18,7 @@ const RegionSpecificRegister = () => {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -77,10 +78,21 @@ const RegionSpecificRegister = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !firstName || !lastName) {
+    if (!email || !password || !firstName || !lastName || !phone) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate phone number (minimum 9 digits)
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length < 9) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Phone number must have at least 9 digits.",
         variant: "destructive"
       });
       return;
@@ -123,6 +135,7 @@ const RegionSpecificRegister = () => {
           data: {
             first_name: firstName.trim(),
             last_name: lastName.trim(),
+            phone: phone.trim(),
             region_id: region.id
           },
           emailRedirectTo: `${window.location.origin}/auth/regions/${generateSlug(region.name)}`
@@ -364,8 +377,24 @@ const RegionSpecificRegister = () => {
               </div>
 
               <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number *
+                </label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="Enter your phone number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="h-11 bg-white/50 border-gray-200 focus:border-wca-teal focus:ring-wca-teal/20"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+
+              <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
+                  Password *
                 </label>
                 <div className="relative">
                   <Input
