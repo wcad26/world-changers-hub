@@ -535,6 +535,44 @@ export default function VisitorRegister() {
                   />
                 )}
 
+                {/* Join Interest */}
+                <FormField
+                  control={form.control}
+                  name="join_interest"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('joinInterest')}</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          className="flex flex-wrap gap-4"
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="join-yes" />
+                            <label htmlFor="join-yes" className="text-sm font-medium cursor-pointer">
+                              {t('joinYes')}
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="join-no" />
+                            <label htmlFor="join-no" className="text-sm font-medium cursor-pointer">
+                              {t('joinNo')}
+                            </label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="undecided" id="join-undecided" />
+                            <label htmlFor="join-undecided" className="text-sm font-medium cursor-pointer">
+                              {t('joinUndecided')}
+                            </label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <Button type="submit" className="w-full" disabled={isPending}>
                   {isPending ? <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

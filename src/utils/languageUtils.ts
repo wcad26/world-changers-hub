@@ -132,6 +132,10 @@ export const translations = {
     referralPersonName: "Who invited you?",
     enterPersonName: "Enter the person's name",
     referralOtherDetails: "Please explain",
+    joinInterest: "Would you like to join WCA?",
+    joinYes: "Yes",
+    joinNo: "No",
+    joinUndecided: "Undecided",
     explainReferralSource: "Tell us how you heard about us",
     // Member Registration
     memberRegistration: "Member Registration",
@@ -391,6 +395,10 @@ export const translations = {
     referralPersonName: "Qui vous a invité ?",
     enterPersonName: "Entrez le nom de la personne",
     referralOtherDetails: "Veuillez expliquer",
+    joinInterest: "Souhaitez-vous rejoindre WCA ?",
+    joinYes: "Oui",
+    joinNo: "Non",
+    joinUndecided: "Indécis",
     explainReferralSource: "Dites-nous comment vous avez entendu parler de nous",
     // Member Registration
     memberRegistration: "Inscription des membres",
