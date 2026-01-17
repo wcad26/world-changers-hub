@@ -1505,6 +1505,7 @@ export type Database = {
           id: string
           is_volunteer: boolean | null
           join_date: string | null
+          join_interest: string | null
           member_id: string
           member_type: string
           membership_class_completed: boolean | null
@@ -1529,6 +1530,7 @@ export type Database = {
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
+          join_interest?: string | null
           member_id: string
           member_type?: string
           membership_class_completed?: boolean | null
@@ -1553,6 +1555,7 @@ export type Database = {
           id?: string
           is_volunteer?: boolean | null
           join_date?: string | null
+          join_interest?: string | null
           member_id?: string
           member_type?: string
           membership_class_completed?: boolean | null
