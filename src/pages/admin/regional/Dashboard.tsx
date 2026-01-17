@@ -41,32 +41,7 @@ const RegionalDashboard: React.FC = () => {
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: locations, isLoading: locationsLoading } = useLocations(userRegion?.id);
 
-  // Show skeleton immediately while auth is loading
-  if (authLoading || !userRegion) {
-    return (
-      <RegionalAdminLayout>
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <Skeleton className="h-10 w-[600px]" />
-            <Skeleton className="h-10 w-[180px]" />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-          <div className="grid gap-4 md:grid-cols-4 mt-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-32" />
-            ))}
-          </div>
-        </div>
-      </RegionalAdminLayout>
-    );
-  }
-
-
-  // Calculate KPI data based on fetched data
+  // Calculate KPI data based on fetched data - MUST be before any early returns
   const kpiData = useMemo(() => {
     const now = new Date();
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -142,8 +117,33 @@ const RegionalDashboard: React.FC = () => {
     };
   }, [members, events, financialSummary, dcgs, locations, reports]);
 
+  // Calculate loading state - MUST be before any early returns
   const isLoading = reportsLoading || membersLoading || eventsLoading || 
                    financialsLoading || dcgsLoading || locationsLoading;
+
+  // Show skeleton immediately while auth is loading
+  if (authLoading || !userRegion) {
+    return (
+      <RegionalAdminLayout>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-[600px]" />
+            <Skeleton className="h-10 w-[180px]" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+          <div className="grid gap-4 md:grid-cols-4 mt-6">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+        </div>
+      </RegionalAdminLayout>
+    );
+  }
 
   if (reportsError) {
     return (
