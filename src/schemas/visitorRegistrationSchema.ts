@@ -74,7 +74,9 @@ export const visitorRegistrationSchema = z.object({
     .trim()
     .max(200, "Details must be less than 200 characters")
     .transform((val) => val === '' ? undefined : val)
-    .optional()
+    .optional(),
+  
+  join_interest: z.enum(['yes', 'no', 'undecided']).optional()
 }).refine((data) => {
   // If referral_source is "invited_by", referral_person_name is required
   if (data.referral_source === "invited_by" && !data.referral_person_name) {
