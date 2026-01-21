@@ -10,7 +10,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
@@ -139,6 +140,7 @@ const eventSchema = z.object({
 });
 
 const RegionalEvents: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -1543,6 +1545,11 @@ const RegionalEvents: React.FC = () => {
                 <UserCheck className="mr-2 h-4 w-4" />
                 Record Attendance
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/admin/regional/events/${event.id}/report`)}>
+                <FileText className="mr-2 h-4 w-4" />
+                Event Report
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <DropdownMenuItem 

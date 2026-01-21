@@ -38,6 +38,7 @@ import RegionalDashboard from "./pages/admin/regional/Dashboard";
 import RegionalMembers from "./pages/admin/regional/Members";
 import RegionalMemberProfile from "./pages/admin/regional/MemberProfile";
 import RegionalEvents from "./pages/admin/regional/Events";
+import RegionalEventReport from "./pages/admin/regional/EventReport";
 import RegionalFundraising from "./pages/admin/regional/Fundraising";
 import RegionalLocations from "./pages/admin/regional/Locations";
 import RegionalFinances from "./pages/admin/regional/Finances";
@@ -162,6 +163,9 @@ const App = () => {
                 </MultiRoleProtectedRoute>} />
             <Route path="/admin/regional/events" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalEvents />
+                </MultiRoleProtectedRoute>} />
+            <Route path="/admin/regional/events/:eventId/report" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
+                  <RegionalEventReport />
                 </MultiRoleProtectedRoute>} />
             <Route path="/admin/regional/fundraising" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalFundraising />
