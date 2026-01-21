@@ -5,7 +5,7 @@ import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { Calendar, Clock, MapPin, Search, Filter, ChevronDown, ArrowRight, AlertCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { usePublicEvents, Event } from '@/hooks/useEvents';
+import { usePublicEvents, usePublicPastEvents, Event } from '@/hooks/useEvents';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { format, parseISO } from 'date-fns';
@@ -136,8 +136,10 @@ const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [filteredPastEvents, setFilteredPastEvents] = useState<Event[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const { data: allEvents, isLoading, isError } = usePublicEvents();
+  const { data: allPastEvents, isLoading: isPastLoading, isError: isPastError } = usePublicPastEvents();
   const { language } = useLanguage();
 
   useEffect(() => {
@@ -145,9 +147,8 @@ const Events = () => {
   }, []);
 
   useEffect(() => {
-    // Use only real events
+    // Filter upcoming events
     const eventsToProcess = allEvents || [];
-    
     let result = eventsToProcess;
     
     if (selectedCategory !== 'All') {
@@ -166,18 +167,39 @@ const Events = () => {
     setFilteredEvents(result);
   }, [selectedCategory, searchQuery, allEvents]);
 
-  const renderEventList = (eventsToRender: Event[]) => {
-    if (isLoading) {
+  useEffect(() => {
+    // Filter past events
+    const pastEventsToProcess = allPastEvents || [];
+    let result = pastEventsToProcess;
+    
+    if (selectedCategory !== 'All') {
+      result = result.filter(event => event.category === selectedCategory);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(event => 
+        event.name.toLowerCase().includes(query) || 
+        (event.location_name && event.location_name.toLowerCase().includes(query)) ||
+        (event.description && event.description.toLowerCase().includes(query))
+      );
+    }
+    
+    setFilteredPastEvents(result);
+  }, [selectedCategory, searchQuery, allPastEvents]);
+
+  const renderEventList = (eventsToRender: Event[], loading: boolean, error: boolean, emptyMessage: string = "No events found") => {
+    if (loading) {
        return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
              <Skeleton key={i} className="w-full aspect-[4/3] rounded-lg" />
           ))}
         </div>
        );
     }
 
-    if (isError) {
+    if (error) {
       return (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -189,9 +211,9 @@ const Events = () => {
     
     if (eventsToRender.length === 0) {
       return (
-        <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-lg shadow">
-          <h3 className="text-xl font-medium mb-2">No events found</h3>
-          <p className="text-gray-600 dark:text-gray-400">
+        <div className="text-center py-12 bg-card rounded-lg shadow">
+          <h3 className="text-xl font-medium mb-2">{emptyMessage}</h3>
+          <p className="text-muted-foreground">
             Try adjusting your search or filter criteria.
           </p>
         </div>
@@ -307,11 +329,19 @@ const Events = () => {
         </section>
 
 
-        {/* All Events Section */}
+        {/* Upcoming Events Section */}
         <section className="py-12">
           <div className="container-custom">
             <h2 className="text-2xl font-bold mb-8">Upcoming Events</h2>
-            {renderEventList(filteredEvents)}
+            {renderEventList(filteredEvents, isLoading, isError, "No upcoming events found")}
+          </div>
+        </section>
+
+        {/* Past Events Section */}
+        <section className="py-12 bg-muted/30">
+          <div className="container-custom">
+            <h2 className="text-2xl font-bold mb-8">Past Events</h2>
+            {renderEventList(filteredPastEvents, isPastLoading, isPastError, "No past events found")}
           </div>
         </section>
 
