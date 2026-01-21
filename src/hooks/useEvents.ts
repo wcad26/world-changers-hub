@@ -31,7 +31,7 @@ export const useRegionalEvents = () => {
   });
 };
 
-// Hook to get all public events
+// Hook to get all public upcoming events
 export const usePublicEvents = () => {
     return useQuery({
         queryKey: ['publicEvents'],
@@ -43,6 +43,24 @@ export const usePublicEvents = () => {
                 .eq('is_public', true)
                 .gte('start_datetime', now)
                 .order('start_datetime', { ascending: true });
+            if (error) throw error;
+            return data;
+        }
+    });
+};
+
+// Hook to get all public past events
+export const usePublicPastEvents = () => {
+    return useQuery({
+        queryKey: ['publicPastEvents'],
+        queryFn: async () => {
+            const now = new Date().toISOString();
+            const { data, error } = await supabase
+                .from('events')
+                .select('*')
+                .eq('is_public', true)
+                .lt('start_datetime', now)
+                .order('start_datetime', { ascending: false });
             if (error) throw error;
             return data;
         }
