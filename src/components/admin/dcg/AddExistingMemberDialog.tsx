@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Plus, Mail, Phone, Loader2, MapPin, AlertCircle } from 'lucide-react';
+import { Search, Plus, Phone, Loader2, MapPin, AlertCircle } from 'lucide-react';
 import { useAvailableRegionalMembers, useAddMemberToDcg } from '@/hooks/useDcgMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -198,30 +198,22 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                           />
                         </TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">
-                              {member.profiles?.first_name || member.profiles?.last_name 
-                                ? `${member.profiles?.first_name || ''} ${member.profiles?.last_name || ''}`.trim()
-                                : member.profiles?.email || member.member_id || 'Unknown Member'
-                              }
-                            </div>
+                          <div className="font-medium">
+                            {member.profiles?.first_name && member.profiles?.last_name 
+                              ? `${member.profiles.first_name} ${member.profiles.last_name}`
+                              : member.profiles?.first_name || member.profiles?.last_name || 'Unknown Member'
+                            }
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="space-y-1">
-                            {member.profiles?.email && (
-                              <div className="flex items-center text-sm">
-                                <Mail className="mr-2 h-3 w-3" />
-                                {member.profiles.email}
-                              </div>
-                            )}
-                            {member.profiles?.phone && (
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Phone className="mr-2 h-3 w-3" />
-                                {member.profiles.phone}
-                              </div>
-                            )}
-                          </div>
+                          {member.profiles?.phone ? (
+                            <div className="flex items-center text-sm">
+                              <Phone className="mr-2 h-3 w-3 flex-shrink-0" />
+                              {member.profiles.phone}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {member.profiles?.address ? (
