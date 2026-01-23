@@ -58,11 +58,18 @@ const DcgMembers = () => {
             </p>
           </div>
           <div className="flex space-x-2">
-            <Button onClick={() => setAddExistingOpen(true)} variant="outline">
+            <Button 
+              onClick={() => setAddExistingOpen(true)} 
+              variant="outline"
+              disabled={!userDcg}
+            >
               <Users className="mr-2 h-4 w-4" />
               Add Existing
             </Button>
-            <Button onClick={() => setRegisterNewOpen(true)}>
+            <Button 
+              onClick={() => setRegisterNewOpen(true)}
+              disabled={!userDcg}
+            >
               <UserPlus className="mr-2 h-4 w-4" />
               Register New
             </Button>
@@ -187,21 +194,17 @@ const DcgMembers = () => {
         </Card>
       </div>
 
-      {/* Dialogs */}
-      {userDcg && (
-        <>
-          <AddExistingMemberDialog
-            open={addExistingOpen}
-            onOpenChange={setAddExistingOpen}
-            dcgId={userDcg.id}
-          />
-          <RegisterNewMemberDialog
-            open={registerNewOpen}
-            onOpenChange={setRegisterNewOpen}
-            dcgId={userDcg.id}
-          />
-        </>
-      )}
+      {/* Dialogs - always rendered but with dcgId check inside */}
+      <AddExistingMemberDialog
+        open={addExistingOpen}
+        onOpenChange={setAddExistingOpen}
+        dcgId={userDcg?.id || ''}
+      />
+      <RegisterNewMemberDialog
+        open={registerNewOpen}
+        onOpenChange={setRegisterNewOpen}
+        dcgId={userDcg?.id || ''}
+      />
     </DcgAdminLayout>
   );
 };

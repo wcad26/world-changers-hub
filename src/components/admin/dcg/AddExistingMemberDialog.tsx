@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Plus, Mail, Phone, Loader2 } from 'lucide-react';
+import { Search, Plus, Mail, Phone, Loader2, MapPin, AlertCircle } from 'lucide-react';
 import { useAvailableRegionalMembers, useAddMemberToDcg } from '@/hooks/useDcgMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Database } from '@/integrations/supabase/types';
 
 type DcgMemberRole = Database['public']['Enums']['dcg_member_role'];
@@ -77,6 +78,30 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
       console.error('Failed to add members:', error);
     }
   };
+
+  // Show error if dcgId is missing
+  if (!dcgId) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Existing Members to DCG</DialogTitle>
+          </DialogHeader>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              DCG information not available. Please try again later.
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,8 +182,8 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                       <TableHead className="w-12">Select</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Contact</TableHead>
+                      <TableHead>Address</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Join Date</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -169,7 +194,7 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                             type="checkbox"
                             checked={selectedMembers.has(member.id)}
                             onChange={() => handleMemberToggle(member.id)}
-                            className="rounded border-gray-300"
+                            className="rounded border-border"
                           />
                         </TableCell>
                         <TableCell>
@@ -199,12 +224,19 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                           </div>
                         </TableCell>
                         <TableCell>
+                          {member.profiles?.address ? (
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <MapPin className="mr-2 h-3 w-3 flex-shrink-0" />
+                              <span className="truncate max-w-[200px]">{member.profiles.address}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'}>
                             {member.member_type}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {member.join_date ? new Date(member.join_date).toLocaleDateString() : '-'}
                         </TableCell>
                       </TableRow>
                     ))}

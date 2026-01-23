@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 import RegisterMemberForm from '@/components/admin/regional/RegisterMemberForm';
 import { useCreateMemberForDcg } from '@/hooks/useDcgMembers';
 import type { Database } from '@/integrations/supabase/types';
@@ -38,6 +41,30 @@ const RegisterNewMemberDialog: React.FC<RegisterNewMemberDialogProps> = ({
       }
     );
   };
+
+  // Show error if dcgId is missing
+  if (!dcgId) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Register New Member for DCG</DialogTitle>
+          </DialogHeader>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              DCG information not available. Please try again later.
+            </AlertDescription>
+          </Alert>
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
