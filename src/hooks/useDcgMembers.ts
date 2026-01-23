@@ -61,13 +61,22 @@ export const useAvailableRegionalMembers = (dcgId?: string, regionId?: string) =
       
       console.log('useAvailableRegionalMembers: Fetching available members for DCG:', dcgId, 'region:', regionId);
       
-      // Get all regional members
+      // Get all regional members with their profile data
       const { data: allMembers, error: membersError } = await supabase
         .from('members')
         .select(`
-          *,
-          profiles (
-            *
+          id,
+          member_id,
+          member_type,
+          status,
+          profile_id,
+          profiles:profile_id (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            address
           )
         `)
         .eq('region_id', regionId)
