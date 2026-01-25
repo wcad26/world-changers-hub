@@ -6,7 +6,7 @@ import type { Database } from '@/integrations/supabase/types';
 export type Certificate = Database['public']['Tables']['certificates']['Row'];
 export type CertificateTemplate = Database['public']['Tables']['certificate_templates']['Row'];
 export type NewCertificateTemplate = Database['public']['Tables']['certificate_templates']['Insert'];
-
+export type UpdateCertificateTemplate = Database['public']['Tables']['certificate_templates']['Update'];
 // Fetch certificate templates
 export const useCertificateTemplates = (regionId?: string) => {
   return useQuery({
@@ -84,7 +84,83 @@ export const useUploadCertificateTemplate = () => {
   });
 };
 
-// Generate certificates (client-side)
+// Update certificate template
+export const useUpdateCertificateTemplate = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ 
+      templateId,
+      file, 
+      templateData 
+    }: { 
+      templateId: string;
+      file?: File; 
+      templateData: Omit<UpdateCertificateTemplate, 'template_url' | 'id'> 
+    }) => {
+      let updatePayload: UpdateCertificateTemplate = { ...templateData };
+
+      // If a new file is provided, upload it
+      if (file) {
+        // First, get the current template to find the old file path
+        const { data: currentTemplate, error: fetchError } = await supabase
+          .from('certificate_templates')
+          .select('template_url, region_id')
+          .eq('id', templateId)
+          .single();
+
+        if (fetchError) throw fetchError;
+
+        // Upload new file
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${fileExt}`;
+        const filePath = `${currentTemplate?.region_id || 'global'}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('certificate-templates')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Delete old file from storage (if it exists)
+        if (currentTemplate?.template_url) {
+          await supabase.storage
+            .from('certificate-templates')
+            .remove([currentTemplate.template_url]);
+        }
+
+        updatePayload.template_url = filePath;
+      }
+
+      // Update template record
+      const { data, error } = await supabase
+        .from('certificate_templates')
+        .update(updatePayload)
+        .eq('id', templateId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['certificate-templates'] });
+      toast({
+        title: 'Template updated',
+        description: 'Certificate template has been updated successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Update failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  });
+};
+
 export const useGenerateCertificates = () => {
   const queryClient = useQueryClient();
 
