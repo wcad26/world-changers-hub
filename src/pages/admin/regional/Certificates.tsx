@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle, ImageIcon } from 'lucide-react';
+import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle, ImageIcon, Pencil } from 'lucide-react';
 import { CertificatePositionPicker } from '@/components/admin/regional/CertificatePositionPicker';
 import { PreviewCertificateDialog } from '@/components/admin/regional/PreviewCertificateDialog';
+import { EditCertificateTemplateDialog } from '@/components/admin/regional/EditCertificateTemplateDialog';
 import EnhancedRegionalAdminLayout from '@/components/admin/EnhancedRegionalAdminLayout';
+import type { CertificateTemplate } from '@/hooks/useCertificates';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -85,6 +87,7 @@ const Certificates = () => {
   const [selectedCertificates, setSelectedCertificates] = useState<string[]>([]);
   const [selectedSentCertificates, setSelectedSentCertificates] = useState<string[]>([]);
   const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+  const [templateToEdit, setTemplateToEdit] = useState<CertificateTemplate | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
   const [certificateStatusFilter, setCertificateStatusFilter] = useState<string>('all');
@@ -911,16 +914,27 @@ const Certificates = () => {
                       <Badge variant={template.is_active ? 'default' : 'secondary'}>
                         {template.is_active ? 'Active' : 'Inactive'}
                       </Badge>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => setTemplateToDelete(template.id)}
-                        disabled={deleteTemplate.isPending}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => setTemplateToEdit(template)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => setTemplateToDelete(template.id)}
+                          disabled={deleteTemplate.isPending}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                     ))}
@@ -1476,6 +1490,13 @@ const Certificates = () => {
             qrPosition={qrPosition}
           />
         )}
+
+        {/* Edit Certificate Template Dialog */}
+        <EditCertificateTemplateDialog
+          template={templateToEdit}
+          open={!!templateToEdit}
+          onOpenChange={(open) => !open && setTemplateToEdit(null)}
+        />
       </div>
     </EnhancedRegionalAdminLayout>
   );
