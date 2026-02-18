@@ -68,6 +68,8 @@ import SuperCommunication from "./pages/admin/super/Communication";
 import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
 import HomepageSettings from "./pages/admin/super/HomepageSettings";
 import SuperUserManagement from "./pages/admin/super/UserManagement";
+import SuperCertificates from "./pages/admin/super/Certificates";
+import SelfAttendance from "./pages/SelfAttendance";
 
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
@@ -131,6 +133,7 @@ const App = () => {
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
             <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
+            <Route path="/attend/:eventId" element={<SelfAttendance />} />
             
             {/* Authentication Routes */}
             <Route path="/auth/regional" element={<RegionalAuth />} />
@@ -243,6 +246,9 @@ const App = () => {
                 </ProtectedRoute>} />
             <Route path="/admin/super/homepage-settings" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <HomepageSettings />
+                </ProtectedRoute>} />
+            <Route path="/admin/super/certificates" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                  <SuperCertificates />
                 </ProtectedRoute>} />
             <Route path="/admin/super/about-settings" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
                   <AboutUsSettings />

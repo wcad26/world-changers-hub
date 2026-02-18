@@ -23,7 +23,7 @@ export type Database = {
           event_date: string
           id: string
           name: string
-          region_id: string
+          region_id: string | null
           source_event_id: string | null
           updated_at: string | null
         }
@@ -35,7 +35,7 @@ export type Database = {
           event_date: string
           id?: string
           name: string
-          region_id: string
+          region_id?: string | null
           source_event_id?: string | null
           updated_at?: string | null
         }
@@ -47,7 +47,7 @@ export type Database = {
           event_date?: string
           id?: string
           name?: string
-          region_id?: string
+          region_id?: string | null
           source_event_id?: string | null
           updated_at?: string | null
         }
