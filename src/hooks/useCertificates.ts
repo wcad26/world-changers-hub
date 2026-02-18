@@ -550,3 +550,63 @@ export const useMemberCertificates = (memberId: string) => {
     enabled: !!memberId
   });
 };
+
+// Global certificate hooks for super admin (no region filter)
+export const useGlobalIssuedCertificates = () => {
+  return useQuery({
+    queryKey: ['certificates', 'global'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`*, members (member_id, profiles (first_name, last_name, email))`)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
+export const useGlobalUnsentCertificates = () => {
+  return useQuery({
+    queryKey: ['certificates', 'unsent', 'global'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`*, members (member_id, profiles (first_name, last_name, email))`)
+        .is('email_sent_at', null)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
+export const useGlobalSentCertificates = () => {
+  return useQuery({
+    queryKey: ['certificates', 'sent', 'global'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`*, members (member_id, profiles (first_name, last_name, email))`)
+        .not('email_sent_at', 'is', null)
+        .order('email_sent_at', { ascending: false });
+      if (error) throw error;
+      return data as Certificate[];
+    }
+  });
+};
+
+export const useGlobalCertificateTemplates = () => {
+  return useQuery({
+    queryKey: ['certificate-templates', 'global'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('certificate_templates')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as CertificateTemplate[];
+    }
+  });
+};

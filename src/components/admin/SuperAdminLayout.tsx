@@ -14,7 +14,8 @@ import {
   Info,
   UserPlus,
   Home,
-  Coins
+  Coins,
+  Award
 } from "lucide-react";
 
 interface SuperAdminLayoutProps {
@@ -35,6 +36,7 @@ const menuItems = [
   { title: "Reports", path: "/admin/super/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/super/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Homepage Settings", path: "/admin/super/homepage-settings", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Certificates", path: "/admin/super/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
   { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
 ];
 

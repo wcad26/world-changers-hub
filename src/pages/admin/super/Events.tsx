@@ -1,27 +1,485 @@
-
-import React from "react";
+import React, { useState, useMemo } from "react";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Calendar, MapPin, Plus, Search, MoreHorizontal, Edit, UserCheck, Eye, EyeOff, Link2, Copy, Trash2, Globe, BarChart2 } from "lucide-react";
+import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateGlobalEvent } from "@/hooks/useGlobalEvents";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
+import { formatDateRange } from "@/utils/dateUtils";
+import { generateSlug } from "@/utils/slugUtils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { GlobalAttendanceDialog } from "@/components/admin/super/events/GlobalAttendanceDialog";
+
+const eventCategories = [
+  'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'Other'
+] as const;
+
+const eventSchema = z.object({
+  name: z.string().min(3, "Event name must be at least 3 characters."),
+  description: z.string().optional(),
+  category: z.enum(eventCategories),
+  start_date: z.string().min(1, "Please select a start date."),
+  start_time: z.string().min(1, "Please provide a start time."),
+  end_date: z.string().optional(),
+  end_time: z.string().optional(),
+  location_name: z.string().min(3, "Please provide a location."),
+  address: z.string().optional(),
+  capacity: z.coerce.number().positive().int().optional(),
+  is_public: z.boolean().default(true),
+  is_featured: z.boolean().default(false),
+  attendance_target: z.coerce.number().positive().int().optional(),
+});
 
 const SuperEvents: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [eventToEdit, setEventToEdit] = useState<any>(null);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const { data: events, isLoading } = useGlobalEvents();
+  const createEvent = useCreateGlobalEvent();
+  const updateEvent = useUpdateGlobalEvent();
+  const deleteEvent = useDeleteGlobalEvent();
+
+  const form = useForm<z.infer<typeof eventSchema>>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: {
+      name: "", description: "", start_date: "", start_time: "",
+      end_date: "", end_time: "", location_name: "", address: "",
+      is_public: true, is_featured: false,
+    },
+  });
+
+  const editForm = useForm<z.infer<typeof eventSchema>>({
+    resolver: zodResolver(eventSchema),
+  });
+
+  const filteredEvents = useMemo(() => {
+    if (!events) return [];
+    return events.filter(event => {
+      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesCategory = selectedCategory === "all" || event.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [events, searchTerm, selectedCategory]);
+
+  const upcomingEvents = useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled'), [filteredEvents]);
+  const pastEvents = useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) < new Date() || e.status === 'Completed' || e.status === 'Cancelled'), [filteredEvents]);
+
+  const getAttendanceLink = (eventId: string) => `${window.location.origin}/attend/${eventId}`;
+
+  const copyAttendanceLink = (eventId: string) => {
+    navigator.clipboard.writeText(getAttendanceLink(eventId));
+    toast({ title: "Link Copied", description: "Self-attendance link copied to clipboard." });
+  };
+
+  async function onSubmit(values: z.infer<typeof eventSchema>) {
+    try {
+      const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
+      let end_datetime = null;
+      if (values.end_date) {
+        const endTime = values.end_time || values.start_time;
+        end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
+      }
+
+      let finalSlug = generateSlug(values.name);
+      const { data: existingEvent } = await supabase.from('events').select('slug').eq('slug', finalSlug).single();
+      if (existingEvent) {
+        finalSlug = `${finalSlug}-${Date.now().toString(36)}`;
+      }
+
+      await createEvent.mutateAsync({
+        name: values.name,
+        slug: finalSlug,
+        description: values.description || null,
+        category: values.category as any,
+        start_datetime,
+        end_datetime,
+        location_name: values.location_name,
+        address: values.address || null,
+        capacity: values.capacity || null,
+        attendance_target: values.attendance_target || null,
+        is_public: values.is_public,
+        is_featured: values.is_featured,
+        status: 'Upcoming',
+        region_id: null, // Global event
+      });
+
+      toast({ title: "Success", description: "Global event created successfully." });
+      form.reset();
+      setCreateDialogOpen(false);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not create event.", variant: "destructive" });
+    }
+  }
+
+  function openEditDialog(event: any) {
+    setEventToEdit(event);
+    const startDate = new Date(event.start_datetime);
+    const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
+    editForm.reset({
+      name: event.name,
+      description: event.description || "",
+      category: event.category || "Other",
+      start_date: format(startDate, 'yyyy-MM-dd'),
+      start_time: format(startDate, 'HH:mm'),
+      end_date: endDate ? format(endDate, 'yyyy-MM-dd') : "",
+      end_time: endDate ? format(endDate, 'HH:mm') : "",
+      location_name: event.location_name || "",
+      address: event.address || "",
+      capacity: event.capacity || undefined,
+      is_public: event.is_public,
+      is_featured: event.is_featured,
+      attendance_target: event.attendance_target || undefined,
+    });
+    setEditDialogOpen(true);
+  }
+
+  async function onEditSubmit(values: z.infer<typeof eventSchema>) {
+    if (!eventToEdit) return;
+    try {
+      const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
+      let end_datetime = null;
+      if (values.end_date) {
+        const endTime = values.end_time || values.start_time;
+        end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
+      }
+
+      await updateEvent.mutateAsync({
+        id: eventToEdit.id,
+        name: values.name,
+        description: values.description || null,
+        category: values.category as any,
+        start_datetime,
+        end_datetime,
+        location_name: values.location_name,
+        address: values.address || null,
+        capacity: values.capacity || null,
+        attendance_target: values.attendance_target || null,
+        is_public: values.is_public,
+        is_featured: values.is_featured,
+      });
+
+      toast({ title: "Success", description: "Event updated successfully." });
+      setEditDialogOpen(false);
+      setEventToEdit(null);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Could not update event.", variant: "destructive" });
+    }
+  }
+
+  const handleDelete = (id: string) => {
+    deleteEvent.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Success", description: "Event deleted successfully." });
+        setEventToDelete(null);
+      },
+      onError: (err: any) => {
+        toast({ title: "Error", description: err.message, variant: "destructive" });
+      }
+    });
+  };
+
+  const renderEventForm = (formInstance: any, onSubmitFn: any, isEdit = false) => (
+    <Form {...formInstance}>
+      <form onSubmit={formInstance.handleSubmit(onSubmitFn)} className="space-y-4 max-h-[60vh] overflow-auto p-1">
+        <FormField control={formInstance.control} name="name" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Event Name *</FormLabel>
+            <FormControl><Input placeholder="e.g. Annual Global Conference" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={formInstance.control} name="category" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Category *</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+              <SelectContent>{eventCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={formInstance.control} name="description" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl><Textarea placeholder="Event description..." {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField control={formInstance.control} name="start_date" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Start Date *</FormLabel>
+              <FormControl><Input type="date" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={formInstance.control} name="start_time" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Start Time *</FormLabel>
+              <FormControl><Input type="time" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField control={formInstance.control} name="end_date" render={({ field }) => (
+            <FormItem>
+              <FormLabel>End Date</FormLabel>
+              <FormControl><Input type="date" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={formInstance.control} name="end_time" render={({ field }) => (
+            <FormItem>
+              <FormLabel>End Time</FormLabel>
+              <FormControl><Input type="time" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+        <FormField control={formInstance.control} name="location_name" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Location *</FormLabel>
+            <FormControl><Input placeholder="e.g. Convention Center" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <FormField control={formInstance.control} name="address" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Address</FormLabel>
+            <FormControl><Input placeholder="Full address..." {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField control={formInstance.control} name="capacity" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Capacity</FormLabel>
+              <FormControl><Input type="number" placeholder="Max attendees" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={formInstance.control} name="attendance_target" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Attendance Target</FormLabel>
+              <FormControl><Input type="number" placeholder="Target attendees" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+        <div className="flex items-center gap-6">
+          <FormField control={formInstance.control} name="is_public" render={({ field }) => (
+            <FormItem className="flex items-center gap-2 space-y-0">
+              <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
+              <FormLabel className="font-normal">Public Event</FormLabel>
+            </FormItem>
+          )} />
+          <FormField control={formInstance.control} name="is_featured" render={({ field }) => (
+            <FormItem className="flex items-center gap-2 space-y-0">
+              <FormControl><input type="checkbox" checked={field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
+              <FormLabel className="font-normal">Featured</FormLabel>
+            </FormItem>
+          )} />
+        </div>
+        <DialogFooter>
+          <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
+            {(createEvent.isPending || updateEvent.isPending) ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
+  );
+
+  const renderEventsTable = (eventsList: any[], showAttendanceLink = false) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Event</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Location</TableHead>
+          <TableHead>Region</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {eventsList.length === 0 ? (
+          <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No events found</TableCell></TableRow>
+        ) : (
+          eventsList.map(event => (
+            <TableRow key={event.id}>
+              <TableCell>
+                <div className="font-medium">{event.name}</div>
+                <div className="flex items-center gap-1 mt-1">
+                  {event.is_public ? <Eye className="h-3 w-3 text-muted-foreground" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
+                  <span className="text-xs text-muted-foreground">{event.is_public ? 'Public' : 'Private'}</span>
+                </div>
+              </TableCell>
+              <TableCell><Badge variant="outline">{event.category || 'N/A'}</Badge></TableCell>
+              <TableCell className="text-sm">{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
+              <TableCell className="text-sm">{event.location_name || 'TBD'}</TableCell>
+              <TableCell>
+                <Badge variant={event.region_id ? "secondary" : "default"} className="text-xs">
+                  {event.region_id ? ((event as any).regions?.name || 'Regional') : <><Globe className="h-3 w-3 mr-1" />Global</>}
+                </Badge>
+              </TableCell>
+              <TableCell><Badge variant={event.status === 'Upcoming' ? 'default' : event.status === 'Completed' ? 'secondary' : 'destructive'}>{event.status}</Badge></TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => openEditDialog(event)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => copyAttendanceLink(event.id)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem className="text-destructive" onClick={() => setEventToDelete(event.id)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <SuperAdminLayout>
       <div className="space-y-6">
-        <p className="text-muted-foreground">
-          Manage events across all WCA regions.
-        </p>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Global Events Calendar</CardTitle>
-            <CardDescription>
-              Coordinate and manage all WCA events worldwide.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center py-8">Global event management functionality will be implemented here.</p>
-          </CardContent>
-        </Card>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">Global Events Management</h2>
+            <p className="text-muted-foreground">Manage events across all WCA regions and create inter-regional events.</p>
+          </div>
+          <Button onClick={() => setCreateDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Create Global Event</Button>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input type="search" placeholder="Search events..." className="pl-8" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {eventCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card><CardContent className="pt-6"><div className="text-2xl font-bold">{events?.length || 0}</div><p className="text-xs text-muted-foreground">Total Events</p></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="text-2xl font-bold">{upcomingEvents.length}</div><p className="text-xs text-muted-foreground">Upcoming</p></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="text-2xl font-bold">{pastEvents.length}</div><p className="text-xs text-muted-foreground">Past Events</p></CardContent></Card>
+          <Card><CardContent className="pt-6"><div className="text-2xl font-bold">{events?.filter(e => !e.region_id).length || 0}</div><p className="text-xs text-muted-foreground">Global Events</p></CardContent></Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="upcoming" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="upcoming">Upcoming ({upcomingEvents.length})</TabsTrigger>
+            <TabsTrigger value="past">Past ({pastEvents.length})</TabsTrigger>
+          </TabsList>
+          <TabsContent value="upcoming">
+            <Card>
+              <CardContent className="pt-6">
+                {isLoading ? (
+                  <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+                ) : renderEventsTable(upcomingEvents, true)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="past">
+            <Card>
+              <CardContent className="pt-6">
+                {isLoading ? (
+                  <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+                ) : renderEventsTable(pastEvents)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Create Event Dialog */}
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Create Global Event</DialogTitle>
+              <DialogDescription>Create an inter-regional event visible across all regions.</DialogDescription>
+            </DialogHeader>
+            {renderEventForm(form, onSubmit)}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Event Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Event</DialogTitle>
+              <DialogDescription>Update event details.</DialogDescription>
+            </DialogHeader>
+            {renderEventForm(editForm, onEditSubmit, true)}
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={!!eventToDelete} onOpenChange={() => setEventToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Event</AlertDialogTitle>
+              <AlertDialogDescription>This will permanently delete this event and all associated attendance records. This action cannot be undone.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => eventToDelete && handleDelete(eventToDelete)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Attendance Dialog */}
+        {selectedEvent && (
+          <GlobalAttendanceDialog
+            isOpen={attendanceDialogOpen}
+            onClose={() => { setAttendanceDialogOpen(false); setSelectedEvent(null); }}
+            event={selectedEvent}
+          />
+        )}
       </div>
     </SuperAdminLayout>
   );
