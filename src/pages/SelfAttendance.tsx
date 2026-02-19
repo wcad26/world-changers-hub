@@ -12,6 +12,8 @@ import { format } from "date-fns";
 
 const emailSchema = z.string().trim().email("Please enter a valid email address").max(255);
 
+const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 const SelfAttendance: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [email, setEmail] = useState("");
@@ -25,13 +27,48 @@ const SelfAttendance: React.FC = () => {
     if (!eventId) return;
     const fetchEvent = async () => {
       setLoadingEvent(true);
-      const { data, error } = await supabase
-        .from('events')
-        .select('id, name, start_datetime, end_datetime, location_name, address')
-        .eq('id', eventId)
-        .single();
+      
+      let query;
+      if (isUUID(eventId)) {
+        query = supabase
+          .from('events')
+          .select('id, name, start_datetime, end_datetime, location_name, address')
+          .eq('id', eventId)
+          .single();
+      } else {
+        // Try slug lookup
+        query = supabase
+          .from('events')
+          .select('id, name, start_datetime, end_datetime, location_name, address')
+          .eq('slug', eventId)
+          .single();
+      }
+
+      const { data, error } = await query;
 
       if (error || !data) {
+        // If slug failed, try slug history
+        if (!isUUID(eventId)) {
+          const { data: historyEntry } = await supabase
+            .from('event_slug_history')
+            .select('event_id')
+            .eq('old_slug', eventId)
+            .maybeSingle();
+          
+          if (historyEntry) {
+            const { data: historicalEvent } = await supabase
+              .from('events')
+              .select('id, name, start_datetime, end_datetime, location_name, address')
+              .eq('id', historyEntry.event_id)
+              .single();
+            
+            if (historicalEvent) {
+              setEvent(historicalEvent);
+              setLoadingEvent(false);
+              return;
+            }
+          }
+        }
         setEvent(null);
       } else {
         setEvent(data);
@@ -55,7 +92,7 @@ const SelfAttendance: React.FC = () => {
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('self-attendance', {
-        body: { event_id: eventId, email: validation.data },
+        body: { event_id: event.id, email: validation.data },
       });
 
       if (error) {

@@ -5,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,18 +44,53 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // 1. Verify the event exists
-    const { data: event, error: eventError } = await supabaseAdmin
-      .from('events')
-      .select('id, name, start_datetime, region_id')
-      .eq('id', event_id)
-      .single();
+    // 1. Verify the event exists - support both UUID and slug
+    let event: any = null;
 
-    if (eventError || !event) {
+    if (isUUID(event_id)) {
+      const { data, error } = await supabaseAdmin
+        .from('events')
+        .select('id, name, start_datetime, region_id')
+        .eq('id', event_id)
+        .single();
+      if (!error && data) event = data;
+    }
+
+    // If not found by UUID, try slug
+    if (!event) {
+      const { data, error } = await supabaseAdmin
+        .from('events')
+        .select('id, name, start_datetime, region_id')
+        .eq('slug', event_id)
+        .single();
+      if (!error && data) event = data;
+    }
+
+    // If still not found, try slug history
+    if (!event) {
+      const { data: historyEntry } = await supabaseAdmin
+        .from('event_slug_history')
+        .select('event_id')
+        .eq('old_slug', event_id)
+        .maybeSingle();
+
+      if (historyEntry) {
+        const { data, error } = await supabaseAdmin
+          .from('events')
+          .select('id, name, start_datetime, region_id')
+          .eq('id', historyEntry.event_id)
+          .single();
+        if (!error && data) event = data;
+      }
+    }
+
+    if (!event) {
       return new Response(JSON.stringify({ error: 'Event not found' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const resolvedEventId = event.id;
 
     // 2. Look up profile by email
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -92,7 +129,7 @@ Deno.serve(async (req) => {
     const { data: existingAe } = await supabaseAdmin
       .from('attendance_events')
       .select('id')
-      .eq('source_event_id', event_id)
+      .eq('source_event_id', resolvedEventId)
       .limit(1)
       .maybeSingle();
 
@@ -105,7 +142,7 @@ Deno.serve(async (req) => {
           name: `Attendance - ${event.name}`,
           event_date: new Date(event.start_datetime).toISOString().split('T')[0],
           region_id: event.region_id, // Can be null for global events
-          source_event_id: event_id,
+          source_event_id: resolvedEventId,
           description: `Self-service attendance for ${event.name}`,
         })
         .select('id')
