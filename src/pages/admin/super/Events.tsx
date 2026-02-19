@@ -51,6 +51,8 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
+  registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
+  attendance_url: z.string().optional(),
 });
 
 const SuperEvents: React.FC = () => {
@@ -75,7 +77,7 @@ const SuperEvents: React.FC = () => {
     defaultValues: {
       name: "", description: "", start_date: "", start_time: "",
       end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false,
+      is_public: true, is_featured: false, registration_url: "", attendance_url: "",
     },
   });
 
@@ -131,6 +133,7 @@ const SuperEvents: React.FC = () => {
         attendance_target: values.attendance_target || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
+        registration_url: values.registration_url || null,
         status: 'Upcoming',
         region_id: null, // Global event
       });
@@ -161,6 +164,8 @@ const SuperEvents: React.FC = () => {
       is_public: event.is_public,
       is_featured: event.is_featured,
       attendance_target: event.attendance_target || undefined,
+      registration_url: event.registration_url || "",
+      attendance_url: getAttendanceLink(event.id),
     });
     setEditDialogOpen(true);
   }
@@ -188,6 +193,7 @@ const SuperEvents: React.FC = () => {
         attendance_target: values.attendance_target || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
+        registration_url: values.registration_url || null,
       });
 
       toast({ title: "Success", description: "Event updated successfully." });
@@ -283,6 +289,25 @@ const SuperEvents: React.FC = () => {
             <FormMessage />
           </FormItem>
         )} />
+        <FormField control={formInstance.control} name="registration_url" render={({ field }) => (
+          <FormItem>
+            <FormLabel>Event Page URL</FormLabel>
+            <FormControl><Input type="url" placeholder="https://example.com/event-page" {...field} /></FormControl>
+            <FormMessage />
+          </FormItem>
+        )} />
+        {isEdit && (
+          <FormField control={formInstance.control} name="attendance_url" render={({ field }) => (
+            <FormItem>
+              <FormLabel>Attendance Submission URL</FormLabel>
+              <div className="flex gap-2">
+                <FormControl><Input readOnly className="bg-muted" {...field} /></FormControl>
+                <Button type="button" variant="outline" size="icon" onClick={() => { navigator.clipboard.writeText(field.value || ""); toast({ title: "Copied", description: "Attendance link copied." }); }}><Copy className="h-4 w-4" /></Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Auto-generated link for self-service attendance.</p>
+            </FormItem>
+          )} />
+        )}
         <div className="grid grid-cols-2 gap-4">
           <FormField control={formInstance.control} name="capacity" render={({ field }) => (
             <FormItem>
