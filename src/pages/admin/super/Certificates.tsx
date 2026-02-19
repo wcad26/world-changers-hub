@@ -90,6 +90,8 @@ const SuperCertificates = () => {
   } | null>(null);
   const [memberSearchTerm, setMemberSearchTerm] = useState('');
   const [sentCertificateSearchTerm, setSentCertificateSearchTerm] = useState('');
+  const [issuedEventFilter, setIssuedEventFilter] = useState('all');
+  const [issuedTypeFilter, setIssuedTypeFilter] = useState('all');
   
   // Global queries - no region filter
   const { data: templates, isLoading: templatesLoading } = useGlobalCertificateTemplates();
@@ -510,13 +512,44 @@ const SuperCertificates = () => {
                     <Progress value={(emailProgress.current / emailProgress.total) * 100} />
                   </div>
                 )}
-                {certificatesLoading ? <p className="text-muted-foreground">Loading...</p> : unsentCertificates && unsentCertificates.length > 0 ? (
+              <div className="flex gap-3 mb-4 flex-wrap">
+                  <div className="w-48">
+                    <Select value={issuedEventFilter} onValueChange={setIssuedEventFilter}>
+                      <SelectTrigger><SelectValue placeholder="Filter by event" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Events</SelectItem>
+                        <SelectItem value="none">No Event</SelectItem>
+                        {[...new Set(unsentCertificates?.map(c => c.event_name).filter(Boolean))].map(name => (
+                          <SelectItem key={name} value={name!}>{name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-48">
+                    <Select value={issuedTypeFilter} onValueChange={setIssuedTypeFilter}>
+                      <SelectTrigger><SelectValue placeholder="Filter by type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        {[...new Set(unsentCertificates?.map(c => c.certificate_type).filter(Boolean))].map(type => (
+                          <SelectItem key={type} value={type}>{formatCertificateType(type)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {(() => {
+                  const filteredUnsent = unsentCertificates?.filter(cert => {
+                    const matchesEvent = issuedEventFilter === 'all' || (issuedEventFilter === 'none' ? !cert.event_name : cert.event_name === issuedEventFilter);
+                    const matchesType = issuedTypeFilter === 'all' || cert.certificate_type === issuedTypeFilter;
+                    return matchesEvent && matchesType;
+                  }) || [];
+                  return certificatesLoading ? <p className="text-muted-foreground">Loading...</p> : filteredUnsent.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">
-                          <Checkbox checked={selectedCertificates.length === unsentCertificates.length}
-                            onCheckedChange={(checked) => setSelectedCertificates(checked ? unsentCertificates.map(c => c.id) : [])} />
+                          <Checkbox checked={selectedCertificates.length === filteredUnsent.length && filteredUnsent.length > 0}
+                            onCheckedChange={(checked) => setSelectedCertificates(checked ? filteredUnsent.map(c => c.id) : [])} />
                         </TableHead>
                         <TableHead>Recipient</TableHead>
                         <TableHead>Type</TableHead>
@@ -527,7 +560,7 @@ const SuperCertificates = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {unsentCertificates.map(cert => (
+                      {filteredUnsent.map(cert => (
                         <TableRow key={cert.id} className={cn(!cert.is_active && "opacity-60 bg-muted/50")}>
                           <TableCell><Checkbox checked={selectedCertificates.includes(cert.id)} onCheckedChange={() => toggleCertificateSelection(cert.id)} disabled={!cert.is_active} /></TableCell>
                           <TableCell>{cert.recipient_name}</TableCell>
@@ -555,7 +588,8 @@ const SuperCertificates = () => {
                       ))}
                     </TableBody>
                   </Table>
-                ) : <p className="text-muted-foreground">No unsent certificates.</p>}
+                ) : <p className="text-muted-foreground">No unsent certificates.</p>;
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
