@@ -1496,6 +1496,67 @@ export type Database = {
         }
         Relationships: []
       }
+      member_transfers: {
+        Row: {
+          from_region_id: string
+          id: string
+          member_id: string
+          new_member_code: string
+          notes: string | null
+          old_member_code: string
+          reason: string | null
+          to_region_id: string
+          transferred_at: string
+          transferred_by: string | null
+        }
+        Insert: {
+          from_region_id: string
+          id?: string
+          member_id: string
+          new_member_code: string
+          notes?: string | null
+          old_member_code: string
+          reason?: string | null
+          to_region_id: string
+          transferred_at?: string
+          transferred_by?: string | null
+        }
+        Update: {
+          from_region_id?: string
+          id?: string
+          member_id?: string
+          new_member_code?: string
+          notes?: string | null
+          old_member_code?: string
+          reason?: string | null
+          to_region_id?: string
+          transferred_at?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_transfers_from_region_id_fkey"
+            columns: ["from_region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_transfers_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_transfers_to_region_id_fkey"
+            columns: ["to_region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           baptism_date: string | null

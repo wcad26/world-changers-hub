@@ -6,13 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw, ArrowRightLeft, History } from 'lucide-react';
 import { useMemberById } from '@/hooks/useAllMembers';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
 import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
+import TransferMemberDialog from '@/components/admin/super/TransferMemberDialog';
+import { useMemberTransferHistory } from '@/hooks/useMemberTransfer';
 
 const SuperMemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -20,6 +22,7 @@ const SuperMemberProfile: React.FC = () => {
   const queryClient = useQueryClient();
   const { data: member, isLoading, error, refetch } = useMemberById(memberId);
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+  const [isTransferDialogOpen, setIsTransferDialogOpen] = React.useState(false);
 
   // Fetch real discipleship data
   const { data: discipleshipStats } = useMemberDiscipleshipStats(member?.id);
@@ -28,6 +31,7 @@ const SuperMemberProfile: React.FC = () => {
   
   // Fetch real attendance data
   const { data: attendanceStats } = useMemberAttendanceStats(member?.id, member?.region_id);
+  const { data: transferHistory = [] } = useMemberTransferHistory(member?.id);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,6 +104,14 @@ const SuperMemberProfile: React.FC = () => {
             Back to Members
           </Button>
           <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={() => setIsTransferDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              Transfer Region
+            </Button>
             <Button 
               variant="outline"
               onClick={() => setIsEditDialogOpen(true)}
@@ -494,6 +506,45 @@ const SuperMemberProfile: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Transfer History */}
+        {transferHistory.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Transfer History
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {transferHistory.map((transfer: any) => (
+                  <div key={transfer.id} className="flex items-start gap-3 p-3 border rounded-lg bg-muted/20">
+                    <ArrowRightLeft className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="flex-1 text-sm space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline">{transfer.from_region?.name}</Badge>
+                        <span className="text-muted-foreground">→</span>
+                        <Badge>{transfer.to_region?.name}</Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {transfer.old_member_code} → {transfer.new_member_code}
+                      </p>
+                      {transfer.reason && (
+                        <p className="text-xs"><strong>Reason:</strong> {transfer.reason}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(transfer.transferred_at).toLocaleDateString('en-US', {
+                          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Edit Member Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -512,6 +563,16 @@ const SuperMemberProfile: React.FC = () => {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Transfer Member Dialog */}
+        {member && (
+          <TransferMemberDialog
+            open={isTransferDialogOpen}
+            onOpenChange={setIsTransferDialogOpen}
+            member={member}
+            onSuccess={() => refetch()}
+          />
+        )}
       </div>
     </SuperAdminLayout>
   );
