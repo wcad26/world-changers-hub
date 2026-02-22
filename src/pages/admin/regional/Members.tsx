@@ -177,7 +177,7 @@ const Members: React.FC = () => {
       <div className="space-y-6">
 
         {/* Edit Member Dialog */}
-        <Dialog open={!!editMember} onOpenChange={() => setEditMember(null)}>
+        <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
           <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Member</DialogTitle>

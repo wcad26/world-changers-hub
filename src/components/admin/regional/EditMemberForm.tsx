@@ -81,7 +81,8 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       if (userRegion?.id) {
         queryClient.invalidateQueries({ queryKey: ['members', userRegion.id] });
       }
-      onSuccess();
+      // Delay closing to let React finish rendering before dialog unmounts
+      setTimeout(() => onSuccess(), 100);
     },
     onError: (error) => {
       console.error('Update member error:', error);
