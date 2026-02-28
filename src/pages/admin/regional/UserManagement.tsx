@@ -187,7 +187,7 @@ const UserManagement: React.FC = () => {
                       {filteredUsers.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
-                            {user.first_name} {user.last_name}
+                            {user.last_name} {user.first_name}
                           </TableCell>
                           <TableCell>{user.email || 'N/A'}</TableCell>
                           <TableCell>{user.phone || 'N/A'}</TableCell>
@@ -252,7 +252,7 @@ const UserManagement: React.FC = () => {
               <p>
                 This will permanently delete the account for{' '}
                 <strong className="text-foreground">
-                  {selectedUser?.first_name} {selectedUser?.last_name}
+                  {selectedUser?.last_name} {selectedUser?.first_name}
                 </strong>
                 {selectedUser?.email && (
                   <span> ({selectedUser.email})</span>

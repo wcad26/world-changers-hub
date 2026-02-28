@@ -137,7 +137,7 @@ const Certificates = () => {
   const filteredMembers = baseMembers.filter((member) => {
     // Search filter
     const fullName = member.profiles?.first_name && member.profiles?.last_name
-      ? `${member.profiles.first_name} ${member.profiles.last_name}`.toLowerCase()
+      ? `${member.profiles.last_name} ${member.profiles.first_name}`.toLowerCase()
       : (member.profiles?.email || '').toLowerCase();
     const memberId = (member.member_id || '').toLowerCase();
     const searchLower = memberSearchTerm.toLowerCase();
@@ -326,7 +326,7 @@ const Certificates = () => {
             continue;
           }
 
-          recipientName = `${member.profiles.first_name} ${member.profiles.last_name}`;
+          recipientName = `${member.profiles.last_name} ${member.profiles.first_name}`;
           const certificateNumber = await generateUniqueCode('certificate', profile.region_id);
           const verificationCode = await generateUniqueCode('verification', profile.region_id);
 
@@ -765,7 +765,7 @@ const Certificates = () => {
                       <div className="divide-y">
                         {filteredMembers.map((member) => {
                           const fullName = member.profiles?.first_name && member.profiles?.last_name
-                            ? `${member.profiles.first_name} ${member.profiles.last_name}`
+                            ? `${member.profiles.last_name} ${member.profiles.first_name}`
                             : member.profiles?.email || 'Unknown';
                           
                           return (

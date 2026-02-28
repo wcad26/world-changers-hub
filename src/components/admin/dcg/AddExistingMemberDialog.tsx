@@ -200,8 +200,8 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
                         <TableCell>
                           <div className="font-medium">
                             {member.profiles?.first_name && member.profiles?.last_name 
-                              ? `${member.profiles.first_name} ${member.profiles.last_name}`
-                              : member.profiles?.first_name || member.profiles?.last_name || 'Unknown Member'
+                              ? `${member.profiles.last_name} ${member.profiles.first_name}`
+                              : member.profiles?.last_name || member.profiles?.first_name || 'Unknown Member'
                             }
                           </div>
                         </TableCell>

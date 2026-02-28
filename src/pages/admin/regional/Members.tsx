@@ -73,8 +73,8 @@ const Members: React.FC = () => {
 
   // Filter relationships based on search and status
   const filteredRelationships = relationships?.filter(relationship => {
-    const mentorName = `${relationship.mentor?.profiles?.first_name} ${relationship.mentor?.profiles?.last_name}`.toLowerCase();
-    const discipleName = `${relationship.disciple?.profiles?.first_name} ${relationship.disciple?.profiles?.last_name}`.toLowerCase();
+    const mentorName = `${relationship.mentor?.profiles?.last_name} ${relationship.mentor?.profiles?.first_name}`.toLowerCase();
+    const discipleName = `${relationship.disciple?.profiles?.last_name} ${relationship.disciple?.profiles?.first_name}`.toLowerCase();
     const searchMatch = mentorName.includes(discipleshipSearchTerm.toLowerCase()) || discipleName.includes(discipleshipSearchTerm.toLowerCase());
     const statusMatch = statusFilter === 'all' || relationship.status === statusFilter;
     
@@ -299,7 +299,7 @@ const Members: React.FC = () => {
                             onClick={() => navigate(`/admin/regional/members/${member.id}`)}
                           >
                             <TableCell className="font-medium">
-                              {member.profiles?.first_name} {member.profiles?.last_name}
+                              {member.profiles?.last_name} {member.profiles?.first_name}
                             </TableCell>
                             <TableCell className="max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
                             <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
@@ -435,7 +435,7 @@ const Members: React.FC = () => {
                             <TableCell>
                               <div>
                                 <p className="font-medium">
-                                  {relationship.mentor?.profiles?.first_name} {relationship.mentor?.profiles?.last_name}
+                                  {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                   {relationship.mentor?.member_id}
@@ -445,7 +445,7 @@ const Members: React.FC = () => {
                             <TableCell>
                               <div>
                                 <p className="font-medium">
-                                  {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
+                                  {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
                                   {relationship.disciple?.member_id}
@@ -517,7 +517,7 @@ const Members: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {memberToDelete?.profiles?.first_name} {memberToDelete?.profiles?.last_name} 
+              This will permanently delete {memberToDelete?.profiles?.last_name} {memberToDelete?.profiles?.first_name} 
               and all associated data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>

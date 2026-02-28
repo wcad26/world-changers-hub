@@ -238,7 +238,7 @@ const UsersList: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <Shield className="h-4 w-4 text-primary" />
                     {user.first_name || user.last_name
-                      ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                      ? `${user.last_name || ''} ${user.first_name || ''}`.trim()
                       : 'N/A'}
                   </div>
                 </TableCell>

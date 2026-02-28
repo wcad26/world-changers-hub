@@ -124,7 +124,7 @@ export default function MemberDiscipleship() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-sm">
-                          {relationship.disciple?.profiles?.first_name} {relationship.disciple?.profiles?.last_name}
+                          {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
                         </CardTitle>
                         <CardDescription>
                           Started: {relationship.start_date ? new Date(relationship.start_date).toLocaleDateString() : 'N/A'}
@@ -138,18 +138,18 @@ export default function MemberDiscipleship() {
                   <CardContent className="px-0">
                     {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
                     <div className="gap-2 flex items-center justify-start px-4 pb-4">
-                      <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
+                      <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
                         <Button size="sm" className="bg-primary text-primary-foreground hover:bg-accent hover:text-white transition-colors">+ Progress</Button>
                       </AddProgressDialog>
                       
-                      <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
+                      <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
                         <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
                           <Calendar className="h-4 w-4 mr-1" />
                           Schedule
                         </Button>
                       </ScheduleMeetingDialog>
                       
-                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.first_name || ''} ${relationship.disciple?.profiles?.last_name || ''}`}>
+                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
                         <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
                           <TrendingUp className="h-4 w-4 mr-1" />
                           Summary
@@ -177,7 +177,7 @@ export default function MemberDiscipleship() {
                     <div className="flex justify-between items-start">
                       <div>
                         <CardTitle className="text-lg">
-                          {relationship.mentor?.profiles?.first_name} {relationship.mentor?.profiles?.last_name}
+                          {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
                         </CardTitle>
                         <CardDescription>
                           Started: {relationship.start_date ? new Date(relationship.start_date).toLocaleDateString() : 'N/A'}
@@ -194,7 +194,7 @@ export default function MemberDiscipleship() {
                       <ProgressSummaryDialog relationshipId={relationship.id} discipleName="My">
                         <Button size="sm" variant="outline">View My Progress</Button>
                       </ProgressSummaryDialog>
-                      <ScheduleMeetingDialog discipleName={`${relationship.mentor?.profiles?.first_name || ''} ${relationship.mentor?.profiles?.last_name || ''}`}>
+                      <ScheduleMeetingDialog discipleName={`${relationship.mentor?.profiles?.last_name || ''} ${relationship.mentor?.profiles?.first_name || ''}`}>
                         <Button size="sm" variant="outline">Schedule Meeting</Button>
                       </ScheduleMeetingDialog>
                     </div>

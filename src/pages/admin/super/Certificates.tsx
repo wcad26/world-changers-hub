@@ -114,7 +114,7 @@ const SuperCertificates = () => {
   
   const filteredMembers = baseMembers.filter((member) => {
     const fullName = member.profiles?.first_name && member.profiles?.last_name
-      ? `${member.profiles.first_name} ${member.profiles.last_name}`.toLowerCase()
+      ? `${member.profiles.last_name} ${member.profiles.first_name}`.toLowerCase()
       : (member.profiles?.email || '').toLowerCase();
     const memberId = (member.member_id || '').toLowerCase();
     const searchLower = memberSearchTerm.toLowerCase();
@@ -206,7 +206,7 @@ const SuperCertificates = () => {
             .select('profiles(first_name, last_name, email), region_id').eq('id', memberId).single();
           if (!member?.profiles) { failCount++; continue; }
 
-          recipientName = `${(member.profiles as any).first_name} ${(member.profiles as any).last_name}`;
+          recipientName = `${(member.profiles as any).last_name} ${(member.profiles as any).first_name}`;
           const memberRegionId = (member as any).region_id;
           const certificateNumber = await generateUniqueCode('certificate');
           const verificationCode = await generateUniqueCode('verification');
@@ -386,7 +386,7 @@ const SuperCertificates = () => {
                       <div className="divide-y">
                         {filteredMembers.map(member => {
                           const fullName = member.profiles?.first_name && member.profiles?.last_name
-                            ? `${member.profiles.first_name} ${member.profiles.last_name}` : member.profiles?.email || 'Unknown';
+                            ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.profiles?.email || 'Unknown';
                           return (
                             <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
                               <Checkbox checked={selectedMembers.includes(member.id)} onCheckedChange={() => toggleMemberSelection(member.id)} />

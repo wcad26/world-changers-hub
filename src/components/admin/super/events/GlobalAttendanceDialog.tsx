@@ -179,7 +179,7 @@ export function GlobalAttendanceDialog({ isOpen, onClose, event }: GlobalAttenda
 
   const getDisplayName = (member: MemberWithDetails) => {
     if (member.profiles?.first_name && member.profiles?.last_name) {
-      return `${member.profiles.first_name} ${member.profiles.last_name}`;
+      return `${member.profiles.last_name} ${member.profiles.first_name}`;
     }
     return member.profiles?.email || member.member_id || 'Unknown';
   };
