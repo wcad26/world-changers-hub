@@ -142,7 +142,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
 
   const getDisplayName = (member: MemberWithProfile) => {
     if (member.profiles?.first_name && member.profiles?.last_name) {
-      return `${member.profiles.first_name} ${member.profiles.last_name}`;
+      return `${member.profiles.last_name} ${member.profiles.first_name}`;
     }
     return member.profiles?.email || member.member_id || 'Unknown Member';
   };

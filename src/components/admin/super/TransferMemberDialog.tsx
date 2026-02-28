@@ -62,7 +62,7 @@ const TransferMemberDialog: React.FC<TransferMemberDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Transfer Member to Another Region</DialogTitle>
           <DialogDescription>
-            Move {member?.profiles?.first_name} {member?.profiles?.last_name} to a different region. All historical records will be preserved.
+            Move {member?.profiles?.last_name} {member?.profiles?.first_name} to a different region. All historical records will be preserved.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,7 +133,7 @@ const TransferMemberDialog: React.FC<TransferMemberDialogProps> = ({
               </div>
 
               <div className="text-xs text-muted-foreground space-y-1">
-                <p><strong>Member:</strong> {member?.profiles?.first_name} {member?.profiles?.last_name}</p>
+                <p><strong>Member:</strong> {member?.profiles?.last_name} {member?.profiles?.first_name}</p>
                 <p><strong>Current ID:</strong> {member?.member_id} → <strong>New ID:</strong> Will be generated for {selectedRegion?.code || selectedRegion?.name}</p>
                 {reason && <p><strong>Reason:</strong> {reason}</p>}
                 {notes && <p><strong>Notes:</strong> {notes}</p>}

@@ -204,7 +204,7 @@ const PendingApprovalsList: React.FC = () => {
             <TableRow key={user.role_id}>
               <TableCell className="font-medium">
                 {user.first_name && user.last_name 
-                  ? `${user.first_name} ${user.last_name}`
+                  ? `${user.last_name} ${user.first_name}`
                   : "N/A"
                 }
               </TableCell>
@@ -245,7 +245,7 @@ const PendingApprovalsList: React.FC = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Approve Access Request</AlertDialogTitle>
                         <AlertDialogDescription className="space-y-2">
-                          <p>Are you sure you want to approve access for <strong>{user.first_name} {user.last_name}</strong>?</p>
+                          <p>Are you sure you want to approve access for <strong>{user.last_name} {user.first_name}</strong>?</p>
                           {user.requested_role_name && (
                             <p>They will be assigned the <strong>{user.requested_role_name}</strong> role in <strong>{user.region_name}</strong>.</p>
                           )}
@@ -278,7 +278,7 @@ const PendingApprovalsList: React.FC = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Reject Access Request</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Are you sure you want to reject the access request for {user.first_name} {user.last_name}? 
+                          Are you sure you want to reject the access request for {user.last_name} {user.first_name}? 
                           This action cannot be easily undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

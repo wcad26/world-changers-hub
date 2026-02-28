@@ -313,11 +313,11 @@ const RegionalLocations: React.FC = () => {
                                >
                                  <option value="">Select contact person</option>
                                  {members.map((member) => (
-                                   <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.first_name} ${member.profiles.last_name}` : member.member_id}>
-                                     {member.profiles?.first_name && member.profiles?.last_name 
-                                       ? `${member.profiles.first_name} ${member.profiles.last_name} (${member.member_id})`
-                                       : member.member_id
-                                     }
+                                    <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.member_id}>
+                                      {member.profiles?.first_name && member.profiles?.last_name 
+                                        ? `${member.profiles.last_name} ${member.profiles.first_name} (${member.member_id})`
+                                        : member.member_id
+                                      }
                                    </option>
                                  ))}
                                </select>
@@ -488,11 +488,11 @@ const RegionalLocations: React.FC = () => {
                                >
                                  <option value="">Select contact person</option>
                                  {members.map((member) => (
-                                   <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.first_name} ${member.profiles.last_name}` : member.member_id}>
-                                     {member.profiles?.first_name && member.profiles?.last_name 
-                                       ? `${member.profiles.first_name} ${member.profiles.last_name} (${member.member_id})`
-                                       : member.member_id
-                                     }
+                                    <option key={member.id} value={member.profiles?.first_name && member.profiles?.last_name ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.member_id}>
+                                      {member.profiles?.first_name && member.profiles?.last_name 
+                                        ? `${member.profiles.last_name} ${member.profiles.first_name} (${member.member_id})`
+                                        : member.member_id
+                                      }
                                    </option>
                                  ))}
                                </select>

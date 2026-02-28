@@ -105,7 +105,7 @@ const SuperMembers: React.FC = () => {
                           onClick={() => navigate(`/admin/super/members/${member.id}`)}
                         >
                           <TableCell className="font-medium">
-                            {member.profiles?.first_name} {member.profiles?.last_name}
+                            {member.profiles?.last_name} {member.profiles?.first_name}
                           </TableCell>
                           <TableCell>{member.profiles?.email || 'N/A'}</TableCell>
                           <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>

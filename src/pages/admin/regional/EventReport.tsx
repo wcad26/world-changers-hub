@@ -77,7 +77,7 @@ const EventReport: React.FC = () => {
     
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Member Type', 'Member ID', 'Join Interest'];
     const rows = filteredAttendees.map(a => [
-      `${a.member?.profile?.first_name || ''} ${a.member?.profile?.last_name || ''}`.trim(),
+      `${a.member?.profile?.last_name || ''} ${a.member?.profile?.first_name || ''}`.trim(),
       a.member?.profile?.email || '',
       a.member?.profile?.phone || '',
       a.member?.profile?.gender || '',
@@ -333,7 +333,7 @@ const EventReport: React.FC = () => {
                         {filteredAttendees.map((attendee) => (
                           <TableRow key={attendee.id || attendee.member_id}>
                             <TableCell className="font-medium">
-                              {attendee.member?.profile?.first_name} {attendee.member?.profile?.last_name}
+                              {attendee.member?.profile?.last_name} {attendee.member?.profile?.first_name}
                             </TableCell>
                             <TableCell>{attendee.member?.profile?.email || '-'}</TableCell>
                             <TableCell>{attendee.member?.profile?.phone || '-'}</TableCell>

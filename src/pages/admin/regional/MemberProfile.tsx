@@ -54,7 +54,7 @@ const MemberProfile: React.FC = () => {
     if (!activeMentorship?.mentor?.profiles) {
       return 'No active mentor';
     }
-    return `${activeMentorship.mentor.profiles.first_name} ${activeMentorship.mentor.profiles.last_name}`;
+    return `${activeMentorship.mentor.profiles.last_name} ${activeMentorship.mentor.profiles.first_name}`;
   };
     const getInitials = (firstName?: string, lastName?: string) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'M';
@@ -139,7 +139,7 @@ const MemberProfile: React.FC = () => {
                     <div className="w-20 h-20 rounded-full overflow-hidden bg-muted">
                       <img 
                         src={member.photo_url} 
-                        alt={`${member.profiles?.first_name} ${member.profiles?.last_name}`}
+                        alt={`${member.profiles?.last_name} ${member.profiles?.first_name}`}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -155,7 +155,7 @@ const MemberProfile: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">
-                    {member.profiles?.first_name} {member.profiles?.last_name}
+                    {member.profiles?.last_name} {member.profiles?.first_name}
                   </h3>
                   <p className="text-muted-foreground">{member.profiles?.email}</p>
                 </div>

@@ -26,7 +26,7 @@ const DcgListTab = () => {
 
   const getLeaderName = (dcg: DcgWithLeader) => {
     if (dcg.leader?.profiles) {
-      return `${dcg.leader.profiles.first_name || ''} ${dcg.leader.profiles.last_name || ''}`.trim() || 'N/A';
+      return `${dcg.leader.profiles.last_name || ''} ${dcg.leader.profiles.first_name || ''}`.trim() || 'N/A';
     }
     return "N/A";
   };
