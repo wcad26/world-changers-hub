@@ -10,13 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Check, ChevronsUpDown, AlertCircle } from 'lucide-react';
+import { Check, ChevronsUpDown, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
-import { useAssignUserRole, useUserRegionalRoles, useIsApprovedAdmin } from '@/hooks/useUserPermissions';
+import { useAssignUserRole, useUserRegionalRoles } from '@/hooks/useUserPermissions';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -35,27 +34,16 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
   const [selectedRoleId, setSelectedRoleId] = useState('');
   const [selectedUserId, setSelectedUserId] = useState(userId || '');
   const [userComboboxOpen, setUserComboboxOpen] = useState(false);
-  const [requiresApproval, setRequiresApproval] = useState(true);
   const { userRegion } = useAuth();
   const { data: roles } = useRegionalRoles();
   const { data: members } = useMembers(userRegion?.id);
   const { data: userRoles } = useUserRegionalRoles(selectedUserId);
-  const { data: isApprovedAdmin } = useIsApprovedAdmin(selectedUserId, userRegion?.id);
   const assignRole = useAssignUserRole();
 
-  // Reset selectedUserId when dialog opens or userId changes
   useEffect(() => {
     setSelectedUserId(userId || '');
-    setRequiresApproval(true);
+    setSelectedRoleId('');
   }, [userId, open]);
-
-  // Auto-set requiresApproval based on whether user is already an approved admin
-  useEffect(() => {
-    if (isApprovedAdmin !== undefined) {
-      // If user is already an approved admin, they don't need approval for additional roles
-      setRequiresApproval(!isApprovedAdmin);
-    }
-  }, [isApprovedAdmin]);
 
   const availableRoles = roles?.filter(role => 
     role.is_active && 
@@ -71,60 +59,66 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
       await assignRole.mutateAsync({
         userId: selectedUserId,
         roleId: selectedRoleId,
-        requiresApproval: requiresApproval && !isApprovedAdmin,
+        requiresApproval: true,
       });
       
       setSelectedRoleId('');
-      if (!userId) setSelectedUserId(''); // Reset user selection if this was a general assignment
+      if (!userId) setSelectedUserId('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error assigning role:', error);
     }
   };
 
-  const showApprovalWarning = requiresApproval && !isApprovedAdmin;
+  const selectedMember = members?.find(m => m.profile_id === selectedUserId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Assign Role</DialogTitle>
           <DialogDescription>
-            Assign a role to this user to grant specific permissions.
+            Assign a regional role to a member. All assignments require Super Admin approval.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* User Selection - only show if no specific userId was provided */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Info banner */}
+          <Alert className="border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm text-muted-foreground">
+              Role assignments will be submitted for Super Admin approval before taking effect.
+            </AlertDescription>
+          </Alert>
+
+          {/* User Selection */}
           {!userId && (
-            <div>
-              <Label htmlFor="user">Select User *</Label>
+            <div className="space-y-2">
+              <Label>Select Member *</Label>
               <Popover open={userComboboxOpen} onOpenChange={setUserComboboxOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={userComboboxOpen}
-                    className="w-full justify-between"
+                    className="w-full justify-between font-normal"
                   >
-                    {selectedUserId
-                      ? members?.find((member) => member.profile_id === selectedUserId)
-                        ? `${members.find((member) => member.profile_id === selectedUserId)?.profiles?.first_name} ${members.find((member) => member.profile_id === selectedUserId)?.profiles?.last_name}`
-                        : "Select user..."
-                      : "Select user..."}
+                    {selectedMember
+                      ? `${selectedMember.profiles?.last_name} ${selectedMember.profiles?.first_name}`
+                      : "Select a member..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0">
+                <PopoverContent className="w-full p-0" align="start">
                   <Command>
-                    <CommandInput placeholder="Search users..." />
+                    <CommandInput placeholder="Search members..." />
                     <CommandList>
-                      <CommandEmpty>No users found.</CommandEmpty>
+                      <CommandEmpty>No members found.</CommandEmpty>
                       <CommandGroup>
                         {members?.map((member) => (
                           <CommandItem
                             key={member.id}
-                            value={`${member.profiles?.first_name} ${member.profiles?.last_name} ${member.profiles?.email}`}
+                            value={`${member.profiles?.last_name} ${member.profiles?.first_name} ${member.profiles?.email}`}
                             onSelect={() => {
                               setSelectedUserId(member.profile_id || '');
                               setUserComboboxOpen(false);
@@ -137,12 +131,12 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
                               )}
                             />
                             <div className="flex flex-col">
-                              <div className="font-medium">
-                                {member.profiles?.first_name} {member.profiles?.last_name}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
+                              <span className="font-medium">
+                                {member.profiles?.last_name} {member.profiles?.first_name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
                                 {member.profiles?.email}
-                              </div>
+                              </span>
                             </div>
                           </CommandItem>
                         ))}
@@ -156,9 +150,9 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
 
           {/* Current Roles */}
           {userRoles && userRoles.length > 0 && (
-            <div>
+            <div className="space-y-2">
               <Label className="text-sm font-medium">Current Roles</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-2">
                 {userRoles.map((userRole) => (
                   <Badge key={userRole.id} variant="secondary">
                     {userRole.regional_roles.name}
@@ -168,17 +162,9 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
             </div>
           )}
 
-          {/* Approved Admin Status */}
-          {selectedUserId && isApprovedAdmin && (
-            <Alert className="bg-green-50 border-green-200">
-              <AlertDescription className="text-green-700">
-                This user is already an approved administrator. The role will be assigned immediately.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div>
-            <Label htmlFor="role">Select Role *</Label>
+          {/* Role Selection */}
+          <div className="space-y-2">
+            <Label>Select Role *</Label>
             <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a role to assign" />
@@ -186,52 +172,27 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
               <SelectContent>
                 {availableRoles.map((role) => (
                   <SelectItem key={role.id} value={role.id}>
-                    <div>
-                      <div className="font-medium">{role.name}</div>
-                      {role.description && (
-                        <div className="text-sm text-muted-foreground">
-                          {role.description}
-                        </div>
-                      )}
-                    </div>
+                    {role.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {/* Show selected role description below */}
+            {selectedRoleId && (() => {
+              const selectedRole = availableRoles.find(r => r.id === selectedRoleId);
+              return selectedRole?.description ? (
+                <p className="text-xs text-muted-foreground">{selectedRole.description}</p>
+              ) : null;
+            })()}
           </div>
 
-          {availableRoles.length === 0 && (
-            <div className="text-sm text-muted-foreground">
+          {availableRoles.length === 0 && selectedUserId && (
+            <p className="text-sm text-muted-foreground">
               No additional roles available to assign.
-            </div>
+            </p>
           )}
 
-          {/* Approval Toggle - only show for non-approved admins */}
-          {selectedUserId && !isApprovedAdmin && (
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <Label className="text-base">Requires Super Admin Approval</Label>
-                <p className="text-sm text-muted-foreground">
-                  The role assignment will be pending until approved by a Super Admin.
-                </p>
-              </div>
-              <Switch
-                checked={requiresApproval}
-                onCheckedChange={setRequiresApproval}
-              />
-            </div>
-          )}
-
-          {showApprovalWarning && (
-            <Alert className="bg-amber-50 border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-700">
-                This assignment will create a pending request that requires Super Admin approval before the user can access admin features.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -239,7 +200,7 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
               type="submit" 
               disabled={!selectedRoleId || !selectedUserId || assignRole.isPending || availableRoles.length === 0}
             >
-              {assignRole.isPending ? 'Assigning...' : (showApprovalWarning ? 'Submit for Approval' : 'Assign Role')}
+              {assignRole.isPending ? 'Submitting...' : 'Submit for Approval'}
             </Button>
           </div>
         </form>
