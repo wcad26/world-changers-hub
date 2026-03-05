@@ -156,7 +156,7 @@ const UserRoleAssignmentTab: React.FC = () => {
                   {filteredMembers.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell className="font-medium">
-                        {member.profiles?.first_name} {member.profiles?.last_name}
+                        {member.profiles?.last_name} {member.profiles?.first_name}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {member.profiles?.email}
