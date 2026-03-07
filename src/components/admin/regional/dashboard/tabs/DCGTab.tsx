@@ -64,7 +64,7 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
 
   return (
     <div className="space-y-6">
-      <PeriodFilter filters={filters} setFilters={setFilters} />
+      <PeriodFilter filters={filters} onFiltersChange={(partial) => setFilters(prev => ({ ...prev, ...partial }))} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
