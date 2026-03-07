@@ -82,6 +82,8 @@ const SuperCertificates = () => {
   const [templateToEdit, setTemplateToEdit] = useState<CertificateTemplate | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [certificateStatusFilter, setCertificateStatusFilter] = useState<string>('all');
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
