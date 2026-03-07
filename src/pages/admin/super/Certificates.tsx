@@ -269,6 +269,31 @@ const SuperCertificates = () => {
     await downloadCertificatesAsZip(certs);
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedCertificates.length === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const certsToDelete = issuedCertificates?.filter(cert => selectedCertificates.includes(cert.id)) || [];
+      let successCount = 0;
+      let failCount = 0;
+      for (const cert of certsToDelete) {
+        try {
+          await permanentlyDeleteCertificate.mutateAsync({ id: cert.id, certificate_url: cert.certificate_url });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      if (successCount > 0) {
+        toast({ title: 'Bulk delete complete', description: `${successCount} certificate(s) deleted permanently${failCount > 0 ? `, ${failCount} failed` : ''}` });
+      }
+      setSelectedCertificates([]);
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteDialog(false);
+    }
+  };
+
   const handleBulkEmail = async () => {
     if (selectedCertificates.length === 0) return;
     setIsSendingEmails(true);
