@@ -72,6 +72,16 @@ const SuperDashboard: React.FC = () => {
 
   const timeFrame = useMemo(() => getTimeFrameDates(selectedPeriod), [selectedPeriod, customDateRange]);
   const { data: reports, isLoading, isError, error } = useSuperAdminReports(timeFrame);
+  const { data: globalDcgReports } = useGlobalDcgReports({ startDate: timeFrame.startDate, endDate: timeFrame.endDate });
+
+  const toggleRegionExpand = (regionId: string) => {
+    setExpandedRegions(prev => {
+      const next = new Set(prev);
+      if (next.has(regionId)) next.delete(regionId);
+      else next.add(regionId);
+      return next;
+    });
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
