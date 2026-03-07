@@ -82,6 +82,8 @@ const SuperCertificates = () => {
   const [templateToEdit, setTemplateToEdit] = useState<CertificateTemplate | null>(null);
   const [certificateToDelete, setCertificateToDelete] = useState<string | null>(null);
   const [emailStatusFilter, setEmailStatusFilter] = useState<string>('all');
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [certificateStatusFilter, setCertificateStatusFilter] = useState<string>('all');
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
@@ -265,6 +267,31 @@ const SuperCertificates = () => {
     const certs = issuedCertificates?.filter(cert => selectedCertificates.includes(cert.id))
       .map(cert => ({ url: cert.certificate_url, filename: `${cert.certificate_number}.png` })) || [];
     await downloadCertificatesAsZip(certs);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCertificates.length === 0) return;
+    setIsBulkDeleting(true);
+    try {
+      const certsToDelete = issuedCertificates?.filter(cert => selectedCertificates.includes(cert.id)) || [];
+      let successCount = 0;
+      let failCount = 0;
+      for (const cert of certsToDelete) {
+        try {
+          await permanentlyDeleteCertificate.mutateAsync({ id: cert.id, certificate_url: cert.certificate_url });
+          successCount++;
+        } catch {
+          failCount++;
+        }
+      }
+      if (successCount > 0) {
+        toast({ title: 'Bulk delete complete', description: `${successCount} certificate(s) deleted permanently${failCount > 0 ? `, ${failCount} failed` : ''}` });
+      }
+      setSelectedCertificates([]);
+    } finally {
+      setIsBulkDeleting(false);
+      setShowBulkDeleteDialog(false);
+    }
   };
 
   const handleBulkEmail = async () => {
@@ -503,6 +530,10 @@ const SuperCertificates = () => {
                       <Send className="mr-2 h-4 w-4" />
                       {isSendingEmails ? `Sending ${emailProgress.current}/${emailProgress.total}...` : `Email (${selectedCertificates.length})`}
                     </Button>
+                    <Button variant="destructive" onClick={() => setShowBulkDeleteDialog(true)} disabled={selectedCertificates.length === 0 || isBulkDeleting}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isBulkDeleting ? 'Deleting...' : `Delete (${selectedCertificates.length})`}
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -712,6 +743,21 @@ const SuperCertificates = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setCertificateToDeletePermanently(null)}>Cancel</Button>
               <Button variant="destructive" onClick={() => { if (certificateToDeletePermanently) { permanentlyDeleteCertificate.mutateAsync({ id: certificateToDeletePermanently.id, certificate_url: certificateToDeletePermanently.certificate_url }); setCertificateToDeletePermanently(null); } }}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Permanently Delete {selectedCertificates.length} Certificate(s)?</DialogTitle>
+              <DialogDescription>This action cannot be undone. All selected certificates will be permanently removed from the system and storage.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)} disabled={isBulkDeleting}>Cancel</Button>
+              <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+                {isBulkDeleting ? 'Deleting...' : 'Delete All'}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
