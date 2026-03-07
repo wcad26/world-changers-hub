@@ -1,42 +1,39 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Eye, Edit } from "lucide-react";
-
-// Mock data will be replaced later
-const mockDcgs = [ { id: 1, name: "Victory DCG" }, { id: 2, name: "Faith DCG" } ];
-const mockAttendance = [
-  { dcgId: 1, dcgName: "Victory DCG", date: "2023-09-05", present: 12, absent: 3, rate: "80%" },
-  { dcgId: 1, dcgName: "Victory DCG", date: "2023-09-12", present: 15, absent: 0, rate: "100%" },
-];
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDcgs } from '@/hooks/useDCGs';
+import { useDcgAttendanceHistory } from '@/hooks/useDcgAttendance';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 
 const DcgAttendanceTab = () => {
+  const [selectedDcgId, setSelectedDcgId] = useState<string>('');
+  const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
+  const { data: attendanceHistory, isLoading: historyLoading } = useDcgAttendanceHistory(selectedDcgId || undefined);
+
+  const isLoading = dcgsLoading || historyLoading;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Attendance Tracking</CardTitle>
-        <CardDescription>
-          Track and monitor attendance across all DCGs.
-        </CardDescription>
+        <CardDescription>Track and monitor attendance across all DCGs.</CardDescription>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="flex-1">
-            <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">All DCGs</option>
-              {mockDcgs.map(dcg => (
-                <option key={dcg.id} value={dcg.id}>{dcg.name}</option>
-              ))}
-            </select>
+            <Select value={selectedDcgId} onValueChange={setSelectedDcgId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a DCG" />
+              </SelectTrigger>
+              <SelectContent>
+                {dcgs?.map(dcg => (
+                  <SelectItem key={dcg.id} value={dcg.id}>{dcg.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div className="flex-1">
-            <Input type="date" className="flex h-10 w-full" />
-          </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Record Attendance
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
@@ -45,30 +42,54 @@ const DcgAttendanceTab = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>DCG Name</TableHead>
+                  <TableHead>Event Name</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Present</TableHead>
-                  <TableHead>Absent</TableHead>
-                  <TableHead>Attendance Rate</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="text-right">Present</TableHead>
+                  <TableHead className="text-right">Absent</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockAttendance.map((record, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-medium">{record.dcgName}</TableCell>
-                    <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.present}</TableCell>
-                    <TableCell>{record.absent}</TableCell>
-                    <TableCell>{record.rate}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="sm"><Edit className="h-4 w-4" /></Button>
-                      </div>
+                {isLoading && (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={5}><Skeleton className="h-6 w-full" /></TableCell>
+                    </TableRow>
+                  ))
+                )}
+                {!isLoading && !selectedDcgId && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      Select a DCG to view attendance records
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
+                {!isLoading && selectedDcgId && attendanceHistory && attendanceHistory.length > 0 && (
+                  attendanceHistory.map(record => {
+                    const total = record.total_present + record.total_absent;
+                    const rate = total > 0 ? (record.total_present / total) * 100 : 0;
+                    return (
+                      <TableRow key={record.event_id}>
+                        <TableCell className="font-medium">{record.event_name}</TableCell>
+                        <TableCell>{new Date(record.event_date).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-right">{record.total_present}</TableCell>
+                        <TableCell className="text-right">{record.total_absent}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant={rate >= 70 ? 'default' : rate >= 40 ? 'secondary' : 'destructive'}>
+                            {rate.toFixed(0)}%
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+                {!isLoading && selectedDcgId && (!attendanceHistory || attendanceHistory.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      No attendance records found for this DCG
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
@@ -77,4 +98,5 @@ const DcgAttendanceTab = () => {
     </Card>
   );
 };
+
 export default DcgAttendanceTab;

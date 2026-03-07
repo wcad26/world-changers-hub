@@ -12,13 +12,20 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddTransactionDialog } from './AddTransactionDialog';
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { formatWithCurrency } from '@/utils/currencyUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 const DcgFinancialsTab = () => {
   const [selectedDcgId, setSelectedDcgId] = useState<string>('all');
   const [isAddTransactionDialogOpen, setAddTransactionDialogOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>("current_month");
+  const { userRegion } = useAuth();
+  const { data: currency } = useRegionCurrency(userRegion?.id);
   
   const { data: dcgs, isLoading: isLoadingDcgs } = useDcgs();
+  
+  const fmt = (amount: number) => formatWithCurrency(amount, currency);
 
   // Calculate date range based on filter
   const dateRange = useMemo(() => {
@@ -107,7 +114,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Income</p>
                       <p className="text-2xl font-bold text-green-600">
-                        ${dcgSummary.total_income.toLocaleString()}
+                        {fmt(dcgSummary.total_income)}
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-600" />
@@ -120,7 +127,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
                       <p className="text-2xl font-bold text-red-600">
-                        ${dcgSummary.total_expenses.toLocaleString()}
+                        {fmt(dcgSummary.total_expenses)}
                       </p>
                     </div>
                     <TrendingDown className="h-8 w-8 text-red-600" />
@@ -133,7 +140,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Net Balance</p>
                       <p className={`text-2xl font-bold ${dcgSummary.net_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${dcgSummary.net_balance.toLocaleString()}
+                        {fmt(dcgSummary.net_balance)}
                       </p>
                     </div>
                     <DollarSign className="h-8 w-8 text-blue-600" />
@@ -201,7 +208,7 @@ const DcgFinancialsTab = () => {
                             {transaction.category?.type === 'income' ? 'Income' : 'Expense'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-medium">${Number(transaction.amount).toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">{fmt(Number(transaction.amount))}</TableCell>
                         <TableCell>{transaction.description || transaction.category?.name || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
