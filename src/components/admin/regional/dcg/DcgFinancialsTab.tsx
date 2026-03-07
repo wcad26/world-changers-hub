@@ -12,13 +12,20 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AddTransactionDialog } from './AddTransactionDialog';
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { formatWithCurrency } from '@/utils/currencyUtils';
+import { useAuth } from '@/hooks/useAuth';
 
 const DcgFinancialsTab = () => {
   const [selectedDcgId, setSelectedDcgId] = useState<string>('all');
   const [isAddTransactionDialogOpen, setAddTransactionDialogOpen] = useState(false);
   const [dateFilter, setDateFilter] = useState<string>("current_month");
+  const { userRegion } = useAuth();
+  const { data: currency } = useRegionCurrency(userRegion?.id);
   
   const { data: dcgs, isLoading: isLoadingDcgs } = useDcgs();
+  
+  const fmt = (amount: number) => formatWithCurrency(amount, currency);
 
   // Calculate date range based on filter
   const dateRange = useMemo(() => {

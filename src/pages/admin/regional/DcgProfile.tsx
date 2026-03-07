@@ -1,29 +1,40 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, Calendar, MapPin, Phone, Clock, Edit } from "lucide-react";
+import { ArrowLeft, Users, Calendar, MapPin, Phone, Clock, Edit, DollarSign, BarChart2 } from "lucide-react";
 import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatWithCurrency } from "@/utils/currencyUtils";
+import { useDcgAttendanceHistory } from "@/hooks/useDcgAttendance";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
+import DcgAttendanceTrendChart from "@/components/admin/regional/dashboard/tabs/DcgAttendanceTrendChart";
 
 const DcgProfile: React.FC = () => {
   const { dcgId } = useParams<{ dcgId: string }>();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { userRegion } = useAuth();
   
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: members, isLoading: membersLoading } = useDcgMembers(dcgId || "");
   const { data: transactions, isLoading: financialsLoading } = useFinancialTransactions();
+  const { data: currency } = useRegionCurrency(userRegion?.id);
+  const { data: attendanceHistory, isLoading: attLoading } = useDcgAttendanceHistory(dcgId || undefined);
 
   const dcg = dcgs?.find(d => d.id === dcgId);
   const dcgTransactions = transactions?.filter(t => t.dcg_id === dcgId) || [];
+
+  const fmt = (amount: number) => formatWithCurrency(amount, currency);
 
   if (dcgsLoading) {
     return (
@@ -58,15 +69,15 @@ const DcgProfile: React.FC = () => {
   const getLeaderName = (dcg: any): string => {
     if (!dcg.leader || !dcg.leader.profiles) return "No leader assigned";
     const profile = dcg.leader.profiles;
-    return `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Unknown leader";
+    return `${profile.last_name || ""} ${profile.first_name || ""}`.trim() || "Unknown leader";
   };
 
   const activeMembers = members?.filter(m => m.is_active) || [];
   const totalIncome = dcgTransactions
-    .filter(t => t.category?.type === 'Income')
+    .filter(t => t.category?.type?.toLowerCase() === 'income')
     .reduce((sum, t) => sum + Number(t.amount), 0);
   const totalExpenses = dcgTransactions
-    .filter(t => t.category?.type === 'Expense')
+    .filter(t => t.category?.type?.toLowerCase() === 'expense')
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
@@ -94,11 +105,7 @@ const DcgProfile: React.FC = () => {
                   <p className="text-muted-foreground mt-2">{dcg.description}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditDialogOpen(true)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Location
                   </Button>
@@ -116,12 +123,12 @@ const DcgProfile: React.FC = () => {
                   <span className="text-sm">{getLeaderName(dcg)}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-accent" />
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Location:</span>
                   <span className="text-sm">{dcg.location || "Not set"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-secondary" />
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Meeting Day:</span>
                   <span className="text-sm">{dcg.meeting_day || "Not set"}</span>
                 </div>
@@ -132,7 +139,7 @@ const DcgProfile: React.FC = () => {
                 </div>
                 {dcg.contact_phone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-accent" />
+                    <Phone className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Contact:</span>
                     <span className="text-sm">{dcg.contact_phone}</span>
                   </div>
@@ -155,28 +162,30 @@ const DcgProfile: React.FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                <div className="h-4 w-4 text-secondary font-bold">₦</div>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₦{totalIncome.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-green-600">{fmt(totalIncome)}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                <div className="h-4 w-4 text-accent font-bold">₦</div>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₦{totalExpenses.toLocaleString()}</div>
+                <div className="text-2xl font-bold text-red-600">{fmt(totalExpenses)}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Net Balance</CardTitle>
-                <div className="h-4 w-4 text-primary font-bold">₦</div>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₦{(totalIncome - totalExpenses).toLocaleString()}</div>
+                <div className={`text-2xl font-bold ${(totalIncome - totalExpenses) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {fmt(totalIncome - totalExpenses)}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -197,9 +206,7 @@ const DcgProfile: React.FC = () => {
                 <CardContent>
                   {membersLoading ? (
                     <div className="space-y-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                      ))}
+                      {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                     </div>
                   ) : activeMembers.length > 0 ? (
                     <div className="space-y-2">
@@ -207,7 +214,7 @@ const DcgProfile: React.FC = () => {
                         <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
                           <div>
                             <p className="font-medium">
-                              {member.members?.profiles?.first_name} {member.members?.profiles?.last_name}
+                              {member.members?.profiles?.last_name} {member.members?.profiles?.first_name}
                             </p>
                             <p className="text-sm text-muted-foreground">
                               Role: {member.role} • Joined: {new Date(member.joined_date).toLocaleDateString()}
@@ -225,12 +232,46 @@ const DcgProfile: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="attendance" className="space-y-4">
+              <DcgAttendanceTrendChart dcgId={dcgId} />
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Attendance</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Attendance tracking coming soon</p>
+                  {attLoading ? (
+                    <Skeleton className="h-48 w-full" />
+                  ) : attendanceHistory && attendanceHistory.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Event</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Present</TableHead>
+                          <TableHead className="text-right">Absent</TableHead>
+                          <TableHead className="text-right">Rate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {attendanceHistory.slice(0, 10).map(r => {
+                          const total = r.total_present + r.total_absent;
+                          const rate = total > 0 ? (r.total_present / total) * 100 : 0;
+                          return (
+                            <TableRow key={r.event_id}>
+                              <TableCell className="font-medium">{r.event_name}</TableCell>
+                              <TableCell>{new Date(r.event_date).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-right">{r.total_present}</TableCell>
+                              <TableCell className="text-right">{r.total_absent}</TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant={rate >= 70 ? 'default' : 'secondary'}>{rate.toFixed(0)}%</Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-muted-foreground">No attendance events recorded yet</p>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -243,9 +284,7 @@ const DcgProfile: React.FC = () => {
                 <CardContent>
                   {financialsLoading ? (
                     <div className="space-y-2">
-                      {[...Array(5)].map((_, i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                      ))}
+                      {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                     </div>
                   ) : dcgTransactions.length > 0 ? (
                     <div className="space-y-2">
@@ -260,12 +299,12 @@ const DcgProfile: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <p className={`font-medium ${
-                              transaction.category?.type === 'Income' 
+                              transaction.category?.type?.toLowerCase() === 'income' 
                                 ? 'text-green-600' 
                                 : 'text-red-600'
                             }`}>
-                              {transaction.category?.type === 'Income' ? '+' : '-'}
-                              ₦{Number(transaction.amount).toLocaleString()}
+                              {transaction.category?.type?.toLowerCase() === 'income' ? '+' : '-'}
+                              {fmt(Number(transaction.amount))}
                             </p>
                             <Badge variant="outline" className="text-xs">
                               {transaction.category?.type}
@@ -283,7 +322,6 @@ const DcgProfile: React.FC = () => {
           </Tabs>
         </div>
         
-        {/* Edit DCG Dialog */}
         <EditDcgDialog
           open={isEditDialogOpen}
           setOpen={setIsEditDialogOpen}
