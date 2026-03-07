@@ -321,14 +321,43 @@ const SuperDashboard: React.FC = () => {
             </Card>
           </TabsContent>
           <TabsContent value="dcg-overview" className="space-y-4">
+            {/* Global DCG KPIs */}
+            {globalDcgReports && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Total DCGs</p>
+                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.totalDcgs}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Total DCG Members</p>
+                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.totalMembers}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Avg Attendance Rate</p>
+                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.attendanceRate.toFixed(1)}%</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <p className="text-sm font-medium text-muted-foreground">Net Balance (All)</p>
+                    <p className={`text-2xl font-bold ${globalDcgReports.globalSummary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(globalDcgReports.globalSummary.netBalance)}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle>Regional DCG Overview</CardTitle>
-                    <CardDescription>
-                      DCG performance overview across WCA regions.
-                    </CardDescription>
+                    <CardDescription>Click a region to see individual DCGs.</CardDescription>
                   </div>
                   <Button variant="outline" size="sm" onClick={handleDcgExport} disabled={isLoading || !reports}>
                     <Download className="mr-2 h-4 w-4" />
@@ -337,30 +366,71 @@ const SuperDashboard: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {isLoading ? <Skeleton className="h-64" /> : isError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load DCG regional data.</AlertDescription></Alert> : reports && reports.regionalDcgData ? (
+                {globalDcgReports ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Region</TableHead>
-                        <TableHead>DCG</TableHead>
-                        <TableHead>Members</TableHead>
-                        <TableHead>Active</TableHead>
-                        <TableHead>Growth</TableHead>
+                        <TableHead></TableHead>
+                        <TableHead>Region / DCG</TableHead>
+                        <TableHead className="text-right">DCGs</TableHead>
+                        <TableHead className="text-right">Members</TableHead>
+                        <TableHead className="text-right">Attendance</TableHead>
+                        <TableHead className="text-right">Income</TableHead>
+                        <TableHead className="text-right">Expenses</TableHead>
+                        <TableHead className="text-right">Net</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {reports.regionalDcgData.map(region => (
-                        <TableRow key={region.id}>
-                          <TableCell>{region.name}</TableCell>
-                          <TableCell>{formatNumber(region.dcgCount)}</TableCell>
-                          <TableCell>{formatNumber(region.dcgMembers)}</TableCell>
-                          <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
-                        </TableRow>
+                      {globalDcgReports.regionSummaries.map(region => (
+                        <React.Fragment key={region.regionId}>
+                          <TableRow
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => toggleRegionExpand(region.regionId)}
+                          >
+                            <TableCell className="w-8">
+                              {expandedRegions.has(region.regionId) ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                            </TableCell>
+                            <TableCell className="font-medium">{region.regionName}</TableCell>
+                            <TableCell className="text-right">{region.dcgCount}</TableCell>
+                            <TableCell className="text-right">{region.totalMembers}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge variant={region.attendanceRate >= 70 ? 'default' : region.attendanceRate >= 40 ? 'secondary' : 'destructive'}>
+                                {region.attendanceRate.toFixed(1)}%
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right text-green-600">{formatCurrency(region.totalIncome)}</TableCell>
+                            <TableCell className="text-right text-red-600">{formatCurrency(region.totalExpenses)}</TableCell>
+                            <TableCell className={`text-right font-medium ${region.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(region.netBalance)}
+                            </TableCell>
+                          </TableRow>
+                          {expandedRegions.has(region.regionId) && region.dcgDetails.map(dcg => (
+                            <TableRow key={dcg.dcgId} className="bg-muted/30">
+                              <TableCell></TableCell>
+                              <TableCell className="pl-8 text-sm">{dcg.dcgName}</TableCell>
+                              <TableCell></TableCell>
+                              <TableCell className="text-right text-sm">{dcg.memberCount}</TableCell>
+                              <TableCell className="text-right text-sm">
+                                <Badge variant={dcg.attendanceRate >= 70 ? 'default' : 'secondary'} className="text-xs">
+                                  {dcg.attendanceRate.toFixed(1)}%
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right text-sm text-green-600">{formatCurrency(dcg.totalIncome)}</TableCell>
+                              <TableCell className="text-right text-sm text-red-600">{formatCurrency(dcg.totalExpenses)}</TableCell>
+                              <TableCell className={`text-right text-sm font-medium ${dcg.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(dcg.netBalance)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </React.Fragment>
                       ))}
                     </TableBody>
                   </Table>
-                ) : null}
+                ) : isLoading ? <Skeleton className="h-64" /> : null}
               </CardContent>
               <CardFooter>
                 <p className="text-sm text-muted-foreground">
