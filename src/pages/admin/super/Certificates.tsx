@@ -747,6 +747,21 @@ const SuperCertificates = () => {
           </DialogContent>
         </Dialog>
 
+        <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Permanently Delete {selectedCertificates.length} Certificate(s)?</DialogTitle>
+              <DialogDescription>This action cannot be undone. All selected certificates will be permanently removed from the system and storage.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)} disabled={isBulkDeleting}>Cancel</Button>
+              <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+                {isBulkDeleting ? 'Deleting...' : 'Delete All'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {showPreviewDialog && templatePreviewUrl && (
           <PreviewCertificateDialog
             open={showPreviewDialog}
