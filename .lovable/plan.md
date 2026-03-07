@@ -1,71 +1,116 @@
-## Fix Role Assignment RLS and Clarify Super Admin Approval Flow
 
-### Problem
 
-The error "new row violates row-level security policy for table user_roles" occurs because there is no RLS policy allowing regional admins to INSERT pending role requests into the `user_roles` table. The only INSERT policy for regional admins is restricted to `role = 'dcg_leader'`.
+## Comprehensive DCG Reporting Across All Portals
 
-### Root Cause
+This is a large feature that touches 4 portals. The plan is organized by portal with shared hooks.
 
-In `useAssignUserRole`, when `requiresApproval: true`, the code either:
+### 1. New Shared Hook: `useRegionalDcgReports`
 
-1. **Updates** an existing `user_roles` row to `status: 'pending'` -- no UPDATE policy for regional admins
-2. **Inserts** a new `user_roles` row with `role: 'regional_admin', status: 'pending'` -- no INSERT policy for this case
+**File: `src/hooks/useRegionalDcgReports.ts`** (new)
 
-### Fix: Add RLS Policy (Database Migration)
+A reusable hook that fetches real DCG attendance and financial data for a region, with optional filtering by specific DCG ID and date range. Returns:
+- Per-DCG breakdown: attendance events, attendance rate, member count, financial summary (income/expenses/net), growth rate
+- Aggregated regional totals
+- Trend data (monthly attendance rates and financial totals over last 6 months)
+- Uses `useRegionCurrency` for proper currency formatting
 
-Add two policies to `user_roles`:
+This hook queries:
+- `attendance_events` + `attendance_records` (where `dcg_id IS NOT NULL`) for attendance
+- `financial_transactions` (where `dcg_id IS NOT NULL`) for financials
+- `dcgs` + `dcg_members` for member counts
 
-1. **INSERT policy** -- allow regional admins to create pending role requests in their region
-2. **UPDATE policy** -- allow regional admins to update roles in their region to pending status
+### 2. Regional Admin Dashboard DCG Tab
 
-```sql
--- Allow regional admins to submit pending role assignment requests
-CREATE POLICY "Regional admins can submit pending role requests in their region"
-ON public.user_roles
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  has_role(auth.uid(), 'regional_admin')
-  AND role = 'regional_admin'
-  AND region_id = get_user_region(auth.uid())
-  AND status = 'pending'
-  AND is_active = false
-);
+**File: `src/components/admin/regional/dashboard/tabs/DCGTab.tsx`** (rewrite)
 
--- Allow regional admins to update existing roles to pending in their region
-CREATE POLICY "Regional admins can update roles to pending in their region"
-ON public.user_roles
-FOR UPDATE
-TO authenticated
-USING (
-  has_role(auth.uid(), 'regional_admin')
-  AND region_id = get_user_region(auth.uid())
-)
-WITH CHECK (
-  has_role(auth.uid(), 'regional_admin')
-  AND region_id = get_user_region(auth.uid())
-  AND status = 'pending'
-  AND is_active = false
-);
-```
+Replace the current minimal view (just a mock chart) with:
+- **KPI Cards**: Total DCGs, Total DCG Members, Average Attendance Rate (real data), DCG Growth Rate
+- **Real Attendance Trend Chart**: Replace `DcgAttendanceTrendChart` mock data with actual monthly attendance from `attendance_events`/`attendance_records`
+- **DCG Comparison Table**: Each DCG with columns: Name, Members, Attendance Rate, Income, Expenses, Net Balance -- clickable rows to drill into `/admin/regional/dcg/{id}`
+- **Financial Trend Chart**: Monthly income vs expenses across all DCGs
+- Uses `useRegionCurrency` + `formatWithCurrency` for all amounts
 
-These policies are secure because they only allow creating/updating rows with `status = 'pending'` and `is_active = false`, preventing privilege escalation. Only Super Admins can set `status = 'active'`.
+**File: `src/components/admin/regional/dashboard/tabs/DcgAttendanceTrendChart.tsx`** (rewrite)
 
-### How the Super Admin Approval Works
+Accept optional `dcgId` prop. Fetch real attendance data from `attendance_events` grouped by month. No more mock data.
 
-The approval flow is already implemented and functional:
+### 3. Regional Admin DCG Profile Page
 
-1. **Regional Admin** assigns a role via the dialog -- creates a pending `user_roles` entry with the `requested_regional_role_id`
-2. **Super Admin** goes to **User Management > Pending Approvals** tab in the Super Admin portal
-3. The `PendingApprovalsList` component shows all pending requests with the user's name, email, region, and the specific regional role requested
-4. Super Admin clicks **Approve** -- this updates `user_roles` to `status: active, is_active: true` and inserts a corresponding entry into `regional_user_roles`
-5. Or clicks **Reject** -- sets `status: rejected, is_active: false`
+**File: `src/pages/admin/regional/DcgProfile.tsx`** (update)
 
-No code changes needed in the Super Admin portal -- the approval UI and logic already exist and work correctly once the RLS fix allows the initial request to be created.
+- Replace hardcoded `₦` with `useRegionCurrency` + `formatWithCurrency`
+- Add real attendance data in the Attendance tab using `useDcgAttendanceHistory`
+- Show attendance trend chart (reuse updated `DcgAttendanceTrendChart` with `dcgId` prop)
+- Show financial trend chart in Financials tab
+- Fix name order to "Last First" in member list
+- Fix financial category type comparison (currently checking `'Income'`/`'Expense'` but DB stores lowercase `'income'`/`'expense'`)
 
-### Summary
+### 4. Regional Admin DCG Reports (DcgReportsTab)
 
-- **1 database migration** to add INSERT and UPDATE RLS policies on `user_roles` for regional admins (restricted to pending/inactive only)
-- **No application code changes** needed  
-  
-also ensure that regional admins can change roles and strip users off roles but it should still require super admin confirmation.
+**File: `src/components/admin/regional/dcg/DcgReportsTab.tsx`** (rewrite)
+
+Replace placeholder with functional reports:
+- DCG selector dropdown (single DCG or "All DCGs")
+- Date range filter
+- KPI summary cards (attendance rate, member growth, income, expenses)
+- Attendance trend chart
+- Financial summary table
+- CSV export capability
+
+### 5. DCG Portal Reports Page
+
+**File: `src/pages/dcg/Reports.tsx`** (rewrite)
+
+Replace "coming soon" with real reports for the logged-in DCG leader's DCG:
+- Date range filter
+- KPI cards: Members, Attendance Rate, Total Income, Total Expenses, Net Balance
+- Attendance trend chart (monthly)
+- Financial trend chart (monthly income vs expenses)
+- Recent attendance events table with drill-down
+- Recent transactions table
+- CSV export for attendance and financials
+- Uses `useRegionCurrency` for currency, `useDcgAttendanceHistory` and `useDcgFinancialTransactions` for data
+
+### 6. Super Admin DCG Reports
+
+**File: `src/pages/admin/super/Reports.tsx`** (update existing DCG section)
+
+Enhance the existing "Regional DCG Performance" table:
+- Add clickable region rows that expand to show individual DCGs within that region
+- Add financial columns: Total Income, Total Expenses per region's DCGs
+- Add a "Global DCG Summary" section with aggregate KPIs
+- Add attendance trend chart across all regions
+
+**File: `src/pages/admin/super/Dashboard.tsx`** (update DCG overview tab)
+
+Enhance the existing `dcg-overview` tab:
+- Add per-DCG drill-down within each region
+- Add financial summary columns
+- Add attendance rate column with color coding
+
+### 7. Remove All Mock Data
+
+- `DcgAttendanceTab.tsx`: Replace mock arrays with real queries
+- `DcgAttendanceTrendChart.tsx`: Replace mock chart data with real attendance history
+- `DcgFinancialsTab.tsx`: Replace hardcoded `$` with `formatWithCurrency`
+
+### Files Changed (Summary)
+
+| File | Action |
+|------|--------|
+| `src/hooks/useRegionalDcgReports.ts` | New - shared DCG reporting hook |
+| `src/components/admin/regional/dashboard/tabs/DCGTab.tsx` | Rewrite - real KPIs, tables, charts |
+| `src/components/admin/regional/dashboard/tabs/DcgAttendanceTrendChart.tsx` | Rewrite - real data, accept dcgId prop |
+| `src/pages/admin/regional/DcgProfile.tsx` | Update - currency, attendance tab, name order |
+| `src/components/admin/regional/dcg/DcgReportsTab.tsx` | Rewrite - functional reports |
+| `src/components/admin/regional/dcg/DcgAttendanceTab.tsx` | Rewrite - real data |
+| `src/components/admin/regional/dcg/DcgFinancialsTab.tsx` | Update - use region currency |
+| `src/pages/dcg/Reports.tsx` | Rewrite - full DCG portal reports |
+| `src/pages/admin/super/Reports.tsx` | Update - DCG drill-down, financials |
+| `src/pages/admin/super/Dashboard.tsx` | Update - DCG tab enhancements |
+| `src/hooks/useSuperAdminReports.ts` | Update - add DCG financial data |
+
+### No Database Changes Required
+
+All data already exists in `attendance_events`, `attendance_records`, `financial_transactions`, `dcgs`, and `dcg_members` tables with appropriate RLS policies.
+
