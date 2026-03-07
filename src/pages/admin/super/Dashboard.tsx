@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, subMonths, subYears, startOfYear } from "date-fns";
 
 const SuperDashboard: React.FC = () => {
+  const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set());
   const [selectedPeriod, setSelectedPeriod] = useState<string>('ytd');
   const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
