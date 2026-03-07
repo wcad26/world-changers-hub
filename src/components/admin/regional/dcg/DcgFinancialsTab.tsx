@@ -114,7 +114,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Income</p>
                       <p className="text-2xl font-bold text-green-600">
-                        ${dcgSummary.total_income.toLocaleString()}
+                        {fmt(dcgSummary.total_income)}
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-600" />
@@ -127,7 +127,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Expenses</p>
                       <p className="text-2xl font-bold text-red-600">
-                        ${dcgSummary.total_expenses.toLocaleString()}
+                        {fmt(dcgSummary.total_expenses)}
                       </p>
                     </div>
                     <TrendingDown className="h-8 w-8 text-red-600" />
@@ -140,7 +140,7 @@ const DcgFinancialsTab = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Net Balance</p>
                       <p className={`text-2xl font-bold ${dcgSummary.net_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${dcgSummary.net_balance.toLocaleString()}
+                        {fmt(dcgSummary.net_balance)}
                       </p>
                     </div>
                     <DollarSign className="h-8 w-8 text-blue-600" />
@@ -208,7 +208,7 @@ const DcgFinancialsTab = () => {
                             {transaction.category?.type === 'income' ? 'Income' : 'Expense'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="font-medium">${Number(transaction.amount).toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">{fmt(Number(transaction.amount))}</TableCell>
                         <TableCell>{transaction.description || transaction.category?.name || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
