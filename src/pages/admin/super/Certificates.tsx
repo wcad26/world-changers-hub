@@ -530,6 +530,10 @@ const SuperCertificates = () => {
                       <Send className="mr-2 h-4 w-4" />
                       {isSendingEmails ? `Sending ${emailProgress.current}/${emailProgress.total}...` : `Email (${selectedCertificates.length})`}
                     </Button>
+                    <Button variant="destructive" onClick={() => setShowBulkDeleteDialog(true)} disabled={selectedCertificates.length === 0 || isBulkDeleting}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isBulkDeleting ? 'Deleting...' : `Delete (${selectedCertificates.length})`}
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
