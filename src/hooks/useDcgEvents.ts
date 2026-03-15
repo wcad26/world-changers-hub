@@ -135,12 +135,68 @@ export const useDeleteDcgEvent = () => {
   });
 };
 
-// Hook to get attendance records for a specific event
-export const useEventAttendanceRecords = (eventId?: string) => {
+// Helper to find or create an attendance_event for a DCG source event
+const findOrCreateAttendanceEvent = async (
+  sourceEventId: string,
+  dcgId: string,
+  regionId: string,
+  eventName: string,
+  eventDate: string,
+  userId: string
+): Promise<string> => {
+  // Check if attendance_event already exists for this source event + dcg
+  const { data: existing, error: fetchError } = await supabase
+    .from('attendance_events')
+    .select('id')
+    .eq('source_event_id', sourceEventId)
+    .eq('dcg_id', dcgId)
+    .limit(1)
+    .maybeSingle();
+
+  if (fetchError) throw fetchError;
+  if (existing) return existing.id;
+
+  // Create a new attendance_event
+  const { data: created, error: createError } = await supabase
+    .from('attendance_events')
+    .insert({
+      name: eventName,
+      event_date: eventDate,
+      source_event_id: sourceEventId,
+      dcg_id: dcgId,
+      region_id: regionId,
+      created_by: userId,
+    })
+    .select('id')
+    .single();
+
+  if (createError) throw createError;
+  return created.id;
+};
+
+// Hook to get attendance records for a specific source event (from events table)
+export const useEventAttendanceRecords = (sourceEventId?: string, dcgId?: string) => {
   return useQuery({
-    queryKey: ['event-attendance-records', eventId],
+    queryKey: ['event-attendance-records', sourceEventId, dcgId],
     queryFn: async () => {
-      if (!eventId) return [];
+      if (!sourceEventId) return [];
+
+      // First find the attendance_event for this source event
+      let query = supabase
+        .from('attendance_events')
+        .select('id')
+        .eq('source_event_id', sourceEventId);
+      
+      if (dcgId) {
+        query = query.eq('dcg_id', dcgId);
+      }
+
+      const { data: attendanceEvents, error: aeError } = await query;
+      if (aeError) throw aeError;
+      if (!attendanceEvents || attendanceEvents.length === 0) return [];
+
+      const aeIds = attendanceEvents.map(ae => ae.id);
+
       const { data, error } = await supabase
         .from('attendance_records')
         .select(`
@@ -154,33 +210,58 @@ export const useEventAttendanceRecords = (eventId?: string) => {
             )
           )
         `)
-        .eq('event_id', eventId);
-      
+        .in('event_id', aeIds);
+
       if (error) throw error;
       return data || [];
     },
-    enabled: !!eventId,
+    enabled: !!sourceEventId,
   });
 };
 
 // Hook to save attendance for an event
 export const useSaveEventAttendance = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, userDcg, userRegion } = useAuth();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ 
-      eventId, 
-      attendanceRecords 
-    }: { 
-      eventId: string; 
-      attendanceRecords: { member_id: string; is_present: boolean }[] 
+    mutationFn: async ({
+      eventId,
+      eventName,
+      eventDate,
+      attendanceRecords,
+    }: {
+      eventId: string;
+      eventName: string;
+      eventDate: string;
+      attendanceRecords: { member_id: string; is_present: boolean }[];
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
+      if (!userDcg?.id) throw new Error('DCG not found');
 
+      const regionId = userRegion?.id || userDcg?.region_id;
+      if (!regionId) throw new Error('Region not found');
+
+      // Find or create the attendance_event
+      const attendanceEventId = await findOrCreateAttendanceEvent(
+        eventId,
+        userDcg.id,
+        regionId,
+        eventName,
+        eventDate,
+        user.id
+      );
+
+      // Delete existing records for this attendance event to replace them
+      await supabase
+        .from('attendance_records')
+        .delete()
+        .eq('event_id', attendanceEventId);
+
+      // Insert new records
       const recordsToInsert = attendanceRecords.map(record => ({
-        event_id: eventId,
+        event_id: attendanceEventId,
         member_id: record.member_id,
         is_present: record.is_present,
         recorded_by: user.id,
@@ -188,9 +269,7 @@ export const useSaveEventAttendance = () => {
 
       const { data, error } = await supabase
         .from('attendance_records')
-        .upsert(recordsToInsert, {
-          onConflict: 'event_id,member_id'
-        });
+        .insert(recordsToInsert);
 
       if (error) throw error;
       return data;
@@ -198,6 +277,7 @@ export const useSaveEventAttendance = () => {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['event-attendance-records', variables.eventId] });
       queryClient.invalidateQueries({ queryKey: ['dcg-events'] });
+      queryClient.invalidateQueries({ queryKey: ['dcg-attendance'] });
       toast({
         title: "Success",
         description: "Attendance recorded successfully",
