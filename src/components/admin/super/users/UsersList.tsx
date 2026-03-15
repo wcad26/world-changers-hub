@@ -1,13 +1,24 @@
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, UserX, Shield, Users } from "lucide-react";
+import { Search, Filter, UserX, Shield, Users, Crown, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface RegionalRole {
   id: string;
@@ -27,12 +38,14 @@ interface UserWithProfile {
   regional_roles: RegionalRole[];
   created_at: string;
   is_active: boolean;
+  is_super_admin: boolean;
 }
 
 const UsersList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Fetch all regions for filtering
   const { data: regions } = useQuery({
@@ -52,11 +65,11 @@ const UsersList: React.FC = () => {
   const { data: users, isLoading, refetch } = useQuery({
     queryKey: ['admin-users', searchTerm, regionFilter],
     queryFn: async () => {
-      // Get users with regional_admin role
+      // Get all admin users (regional_admin and super_admin)
       let userRolesQuery = supabase
         .from('user_roles')
         .select('user_id, role, region_id, is_active, status')
-        .eq('role', 'regional_admin')
+        .in('role', ['regional_admin', 'super_admin'])
         .eq('status', 'active');
 
       if (regionFilter !== "all") {
@@ -108,8 +121,10 @@ const UsersList: React.FC = () => {
 
       // Transform data
       const transformedData: UserWithProfile[] = profiles?.map((profile) => {
-        const userRole = userRoles.find(ur => ur.user_id === profile.id);
-        const region = regionsData?.find(r => r.id === userRole?.region_id);
+        const userRolesForUser = userRoles.filter(ur => ur.user_id === profile.id);
+        const regionalAdminRole = userRolesForUser.find(ur => ur.role === 'regional_admin');
+        const isSuperAdmin = userRolesForUser.some(ur => ur.role === 'super_admin' && ur.is_active);
+        const region = regionsData?.find(r => r.id === regionalAdminRole?.region_id);
         const userRegionalRoles = regionalUserRoles
           ?.filter(rur => rur.user_id === profile.id)
           ?.map(rur => ({
@@ -124,12 +139,13 @@ const UsersList: React.FC = () => {
           first_name: profile.first_name,
           last_name: profile.last_name,
           phone: profile.phone,
-          region_id: userRole?.region_id || null,
+          region_id: regionalAdminRole?.region_id || null,
           region_name: region?.name || null,
-          app_roles: ['regional_admin'],
+          app_roles: userRolesForUser.map(ur => ur.role),
           regional_roles: userRegionalRoles,
           created_at: profile.created_at || '',
-          is_active: userRole?.is_active || false,
+          is_active: userRolesForUser.some(ur => ur.is_active),
+          is_super_admin: isSuperAdmin,
         };
       }) || [];
 
@@ -137,10 +153,62 @@ const UsersList: React.FC = () => {
     },
   });
 
+  const promoteMutation = useMutation({
+    mutationFn: async ({ userId, promote }: { userId: string; promote: boolean }) => {
+      if (promote) {
+        // Add super_admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: userId,
+            role: 'super_admin' as any,
+            is_active: true,
+            status: 'active' as any,
+          });
+        if (error) {
+          // If duplicate, just activate it
+          if (error.code === '23505') {
+            const { error: updateError } = await supabase
+              .from('user_roles')
+              .update({ is_active: true, status: 'active' as any })
+              .eq('user_id', userId)
+              .eq('role', 'super_admin');
+            if (updateError) throw updateError;
+          } else {
+            throw error;
+          }
+        }
+      } else {
+        // Remove super_admin role
+        const { error } = await supabase
+          .from('user_roles')
+          .update({ is_active: false })
+          .eq('user_id', userId)
+          .eq('role', 'super_admin');
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: "Success",
+        description: variables.promote
+          ? "User has been promoted to Super Admin."
+          : "Super Admin access has been revoked.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user role.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleUserRole = async (userId: string, isActive: boolean) => {
     try {
       if (isActive) {
-        // Deactivate role
         const { error } = await supabase
           .from('user_roles')
           .update({ is_active: false })
@@ -149,7 +217,6 @@ const UsersList: React.FC = () => {
 
         if (error) throw error;
 
-        // Also deactivate regional user roles
         await supabase
           .from('regional_user_roles')
           .update({ is_active: false })
@@ -160,7 +227,6 @@ const UsersList: React.FC = () => {
           description: "User access has been deactivated.",
         });
       } else {
-        // Reactivate role
         const { error } = await supabase
           .from('user_roles')
           .update({ is_active: true })
@@ -187,7 +253,7 @@ const UsersList: React.FC = () => {
   };
 
   if (isLoading) {
-    return <div className="text-center p-4">Loading regional administrators...</div>;
+    return <div className="text-center p-4">Loading administrators...</div>;
   }
 
   return (
@@ -225,7 +291,7 @@ const UsersList: React.FC = () => {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Region</TableHead>
-              <TableHead>Regional Roles</TableHead>
+              <TableHead>Roles</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead>Actions</TableHead>
@@ -236,7 +302,11 @@ const UsersList: React.FC = () => {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
+                    {user.is_super_admin ? (
+                      <Crown className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Shield className="h-4 w-4 text-primary" />
+                    )}
                     {user.first_name || user.last_name
                       ? `${user.last_name || ''} ${user.first_name || ''}`.trim()
                       : 'N/A'}
@@ -252,20 +322,27 @@ const UsersList: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {user.regional_roles.length > 0 ? (
-                      user.regional_roles.map((role) => (
-                        <Badge
-                          key={role.id}
-                          variant="secondary"
-                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                        >
-                          <Users className="w-3 h-3 mr-1" />
-                          {role.name}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground text-sm">No regional roles</span>
+                    {user.is_super_admin && (
+                      <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-300">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Super Admin
+                      </Badge>
                     )}
+                    {user.app_roles.includes('regional_admin') && (
+                      <Badge variant="secondary" className="text-xs">
+                        Regional Admin
+                      </Badge>
+                    )}
+                    {user.regional_roles.map((role) => (
+                      <Badge
+                        key={role.id}
+                        variant="secondary"
+                        className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                      >
+                        <Users className="w-3 h-3 mr-1" />
+                        {role.name}
+                      </Badge>
+                    ))}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -280,15 +357,51 @@ const UsersList: React.FC = () => {
                   {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant={user.is_active ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => toggleUserRole(user.id, user.is_active)}
-                    className={user.is_active ? "" : "bg-green-600 hover:bg-green-700"}
-                  >
-                    <UserX className="h-4 w-4 mr-1" />
-                    {user.is_active ? "Deactivate" : "Reactivate"}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant={user.is_super_admin ? "outline" : "default"}
+                          size="sm"
+                          className={user.is_super_admin ? "border-amber-300 text-amber-700" : "bg-amber-600 hover:bg-amber-700"}
+                        >
+                          <Crown className="h-4 w-4 mr-1" />
+                          {user.is_super_admin ? "Revoke SA" : "Promote SA"}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>
+                            {user.is_super_admin ? "Revoke Super Admin Access" : "Promote to Super Admin"}
+                          </AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {user.is_super_admin
+                              ? `Are you sure you want to revoke Super Admin access for ${user.first_name || ''} ${user.last_name || ''} (${user.email})? They will retain their regional admin role.`
+                              : `Are you sure you want to promote ${user.first_name || ''} ${user.last_name || ''} (${user.email}) to Super Admin? They will have full access to the entire system.`}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => promoteMutation.mutate({ userId: user.id, promote: !user.is_super_admin })}
+                            className={user.is_super_admin ? "bg-destructive hover:bg-destructive/90" : "bg-amber-600 hover:bg-amber-700"}
+                          >
+                            {user.is_super_admin ? "Revoke Access" : "Promote"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <Button
+                      variant={user.is_active ? "outline" : "default"}
+                      size="sm"
+                      onClick={() => toggleUserRole(user.id, user.is_active)}
+                      className={user.is_active ? "" : "bg-green-600 hover:bg-green-700"}
+                    >
+                      <UserX className="h-4 w-4 mr-1" />
+                      {user.is_active ? "Deactivate" : "Reactivate"}
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -296,7 +409,7 @@ const UsersList: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   <Users className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                  <p>No regional administrators found.</p>
+                  <p>No administrators found.</p>
                 </TableCell>
               </TableRow>
             )}
