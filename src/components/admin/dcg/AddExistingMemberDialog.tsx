@@ -25,12 +25,13 @@ const AddExistingMemberDialog: React.FC<AddExistingMemberDialogProps> = ({
   onOpenChange,
   dcgId,
 }) => {
-  const { userRegion } = useAuth();
+  const { userRegion, userDcg } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<DcgMemberRole>('Member');
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
 
-  const { data: availableMembers, isLoading } = useAvailableRegionalMembers(dcgId, userRegion?.id);
+  const regionId = userRegion?.id || userDcg?.region_id;
+  const { data: availableMembers, isLoading } = useAvailableRegionalMembers(dcgId, regionId);
   const addMemberToDcg = useAddMemberToDcg();
 
   // Filter members based on search term
