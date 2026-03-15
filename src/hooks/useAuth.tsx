@@ -313,7 +313,7 @@ export const useAuth = () => {
         } else if (hasRole('regional_admin')) {
           redirectUrl = '/auth/regional';
         } else if (hasRole('dcg_admin')) {
-          redirectUrl = '/auth/dcg';
+          redirectUrl = '/dcg-auth';
         } else if (hasRole('member')) {
           redirectUrl = '/auth/member';
         }
