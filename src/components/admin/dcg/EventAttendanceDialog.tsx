@@ -35,7 +35,7 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
 
   const { data: dcgMembers, isLoading: loadingMembers } = useDcgMembers(dcgId);
-  const { data: existingRecords } = useEventAttendanceRecords(event.id);
+  const { data: existingRecords } = useEventAttendanceRecords(event.id, dcgId);
   const saveAttendance = useSaveEventAttendance();
 
   // Helper function to get display name
