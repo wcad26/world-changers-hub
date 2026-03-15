@@ -93,6 +93,8 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
     try {
       await saveAttendance.mutateAsync({
         eventId: event.id,
+        eventName: event.name,
+        eventDate: new Date(event.start_datetime).toISOString().split('T')[0],
         attendanceRecords,
       });
       onClose();
