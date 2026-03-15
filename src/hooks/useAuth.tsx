@@ -303,7 +303,7 @@ export const useAuth = () => {
       } else if (pathname.startsWith('/admin/regional') || pathname.startsWith('/regional/')) {
         redirectUrl = '/auth/regional';
       } else if (pathname.startsWith('/dcg/')) {
-        redirectUrl = '/auth/dcg';
+        redirectUrl = '/dcg-auth';
       } else if (pathname.startsWith('/member/')) {
         redirectUrl = '/auth/member';
       } else {
