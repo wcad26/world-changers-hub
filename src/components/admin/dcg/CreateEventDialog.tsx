@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
@@ -162,14 +163,15 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Create New Event</DialogTitle>
           <DialogDescription>
             Create a new event for your DCG. This event will be visible to DCG members.
           </DialogDescription>
         </DialogHeader>
 
+        <ScrollArea className="flex-1 overflow-y-auto pr-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -464,7 +466,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
@@ -474,6 +476,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             </DialogFooter>
           </form>
         </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
