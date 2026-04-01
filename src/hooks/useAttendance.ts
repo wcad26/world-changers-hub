@@ -97,13 +97,23 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
     queryFn: async () => {
       if (!regionId) return [];
       
-      // Get attendance events with detailed breakdown by member type
-      const { data, error } = await supabase
+      // First fetch DCG IDs belonging to this region
+      const { data: regionalDcgs } = await supabase
+        .from('dcgs')
+        .select('id')
+        .eq('region_id', regionId);
+      
+      const dcgIds = regionalDcgs?.map(d => d.id) || [];
+      
+      // Fetch attendance events for this region OR linked via regional DCGs
+      let query = supabase
         .from('attendance_events')
         .select(`
           id,
           name,
           event_date,
+          dcg_id,
+          source_event_id,
           attendance_records!inner (
             is_present,
             members!inner (
@@ -111,8 +121,16 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
             )
           )
         `)
-        .eq('region_id', regionId)
         .order('event_date', { ascending: false });
+      
+      // Filter: region_id matches OR dcg_id is in regional DCGs
+      if (dcgIds.length > 0) {
+        query = query.or(`region_id.eq.${regionId},dcg_id.in.(${dcgIds.join(',')})`);
+      } else {
+        query = query.eq('region_id', regionId);
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
