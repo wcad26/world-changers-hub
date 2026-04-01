@@ -158,6 +158,8 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           event_id: event.id,
           event_name: event.name,
           event_date: event.event_date,
+          dcg_id: event.dcg_id || null,
+          source_event_id: event.source_event_id || null,
           members_present: membersPresent,
           visitors_present: visitorsPresent,
           members_absent: membersAbsent,
