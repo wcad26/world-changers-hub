@@ -466,7 +466,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               )}
             />
 
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
@@ -476,6 +476,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             </DialogFooter>
           </form>
         </Form>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
