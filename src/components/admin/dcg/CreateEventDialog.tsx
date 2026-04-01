@@ -170,6 +170,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
+        <ScrollArea className="flex-1 overflow-y-auto pr-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
