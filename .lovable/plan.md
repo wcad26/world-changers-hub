@@ -1,71 +1,92 @@
-## Fix Role Assignment RLS and Clarify Super Admin Approval Flow
 
-### Problem
 
-The error "new row violates row-level security policy for table user_roles" occurs because there is no RLS policy allowing regional admins to INSERT pending role requests into the `user_roles` table. The only INSERT policy for regional admins is restricted to `role = 'dcg_leader'`.
+## Rebuild Regional Admin Dashboard: Fix Reporting, Include DCG Events, Modern Glassy UI
 
-### Root Cause
+### Problems Identified
 
-In `useAssignUserRole`, when `requiresApproval: true`, the code either:
+1. **Events tab does NOT include DCG events in reporting** -- `useAttendanceHistoryWithMemberTypes` filters by `region_id` only, but DCG attendance events have `dcg_id` set (not `region_id` in some cases). The attendance trend chart and category breakdown miss DCG Meeting events entirely.
+2. **Card overlap issues** -- KPI cards grid uses `md:grid-cols-4` but some tabs render 3 cards while MemberCards also renders 4 cards below, causing visual collision. The KPICards component renders for some tabs but not others, creating inconsistent spacing.
+3. **Hardcoded/mock values** -- `dcgAttendance = 85` (line 78), `utilizationRate = 75` (line 84), `+12%` hardcoded in Events tab (line 179), "Expected" attendance is fabricated (`* 0.85`).
+4. **useMemo inside JSX** -- EventsTab uses `React.useMemo` inline inside JSX return (lines 202-275), which is an anti-pattern and can cause rendering issues.
+5. **Bland card design** -- Standard `Card` components with no visual distinction. No glassmorphism or soft design despite having CSS custom properties for it.
+6. **Category matching uses event name** -- `attendanceData.filter(a => events.find(e => e.name === a.event_name)?.category === category)` is fragile; should use event ID linkage.
 
-1. **Updates** an existing `user_roles` row to `status: 'pending'` -- no UPDATE policy for regional admins
-2. **Inserts** a new `user_roles` row with `role: 'regional_admin', status: 'pending'` -- no INSERT policy for this case
+### Plan
 
-### Fix: Add RLS Policy (Database Migration)
+#### 1. Fix `useAttendanceHistoryWithMemberTypes` to include DCG events
 
-Add two policies to `user_roles`:
+**File: `src/hooks/useAttendance.ts`**
 
-1. **INSERT policy** -- allow regional admins to create pending role requests in their region
-2. **UPDATE policy** -- allow regional admins to update roles in their region to pending status
+Update the query to fetch attendance events where `region_id = regionId` OR where the DCG belongs to the region (via `dcg_id` linked to `dcgs.region_id`). This ensures DCG Meeting attendance records appear in the Events tab charts and KPI calculations.
 
-```sql
--- Allow regional admins to submit pending role assignment requests
-CREATE POLICY "Regional admins can submit pending role requests in their region"
-ON public.user_roles
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  has_role(auth.uid(), 'regional_admin')
-  AND role = 'regional_admin'
-  AND region_id = get_user_region(auth.uid())
-  AND status = 'pending'
-  AND is_active = false
-);
+Change: Remove the strict `.eq('region_id', regionId)` filter. Instead, fetch all attendance events for the region including those linked via DCG:
+- First fetch DCG IDs for the region
+- Then query attendance_events where `region_id = regionId` OR `dcg_id IN (regional_dcg_ids)`
 
--- Allow regional admins to update existing roles to pending in their region
-CREATE POLICY "Regional admins can update roles to pending in their region"
-ON public.user_roles
-FOR UPDATE
-TO authenticated
-USING (
-  has_role(auth.uid(), 'regional_admin')
-  AND region_id = get_user_region(auth.uid())
-)
-WITH CHECK (
-  has_role(auth.uid(), 'regional_admin')
-  AND region_id = get_user_region(auth.uid())
-  AND status = 'pending'
-  AND is_active = false
-);
+#### 2. Rebuild Dashboard.tsx with glassy UI
+
+**File: `src/pages/admin/regional/Dashboard.tsx`**
+
+- Remove the separate KPICards component rendering outside tab content (causes overlap)
+- Each tab content is self-contained with its own KPI section
+- Apply `glass-panel-soft` styling to the tab container
+- Use softer rounded cards with gradient backgrounds and subtle shadows
+- Remove the top-level period filter (each tab has its own PeriodFilter)
+
+#### 3. Rebuild EventsTab with proper data inclusion
+
+**File: `src/components/admin/regional/dashboard/tabs/EventsTab.tsx`**
+
+- Fix the inline `useMemo` anti-pattern -- move all calculations to the top of the component
+- Remove hardcoded `+12%` -- calculate real month-over-month change
+- Remove fabricated "Expected" values
+- Include DCG events in category breakdown by using the updated attendance hook
+- Apply glassy card styling with `backdrop-blur`, soft gradients, and rounded corners
+- Show event source (Regional vs DCG) in category breakdown
+
+#### 4. Rebuild KPICards with glass design
+
+**File: `src/components/admin/regional/dashboard/KPICards.tsx`**
+
+- Replace plain `Card` with glass-styled cards: `bg-gradient-to-br from-white/80 to-white/40 backdrop-blur-lg border border-white/20 shadow-lg rounded-2xl`
+- Remove mock values (`dcgAttendance = 85`, `utilizationRate = 75`)
+- Only render for tabs that actually use it (finance, dcg, locations)
+- Add subtle icon background circles for visual appeal
+
+#### 5. Rebuild MemberCards with glass design
+
+**File: `src/components/admin/regional/dashboard/MemberCards.tsx`**
+
+- Apply same glass card styling
+- Fix the placeholder attendance logic (lines 64-67 return `true` always)
+
+#### 6. Update EventAttendanceTrendChart
+
+**File: `src/components/admin/regional/dashboard/tabs/EventAttendanceTrendChart.tsx`**
+
+- Remove mock "Expected" line (calculated as `total * 0.85`)
+- Use actual `attendance_target` from events table if available
+- Apply glass card styling
+
+#### 7. Style consistency across all dashboard tabs
+
+Apply glass-panel styling to DCGTab, FinanceTab, LocationsTab, FundraisingTab cards using:
+```css
+className="bg-gradient-to-br from-white/90 to-purple-50/30 backdrop-blur-sm border-white/40 shadow-soft rounded-2xl"
 ```
 
-These policies are secure because they only allow creating/updating rows with `status = 'pending'` and `is_active = false`, preventing privilege escalation. Only Super Admins can set `status = 'active'`.
+### Files Changed
 
-### How the Super Admin Approval Works
+| File | Action |
+|------|--------|
+| `src/hooks/useAttendance.ts` | Update `useAttendanceHistoryWithMemberTypes` to include DCG events |
+| `src/pages/admin/regional/Dashboard.tsx` | Restructure layout, remove overlap, add glass styling |
+| `src/components/admin/regional/dashboard/KPICards.tsx` | Glass card design, remove mock data |
+| `src/components/admin/regional/dashboard/MemberCards.tsx` | Glass card design |
+| `src/components/admin/regional/dashboard/tabs/EventsTab.tsx` | Fix inline useMemo, remove hardcoded values, glass UI |
+| `src/components/admin/regional/dashboard/tabs/EventAttendanceTrendChart.tsx` | Remove mock Expected line, glass styling |
 
-The approval flow is already implemented and functional:
+### No Database Changes Required
 
-1. **Regional Admin** assigns a role via the dialog -- creates a pending `user_roles` entry with the `requested_regional_role_id`
-2. **Super Admin** goes to **User Management > Pending Approvals** tab in the Super Admin portal
-3. The `PendingApprovalsList` component shows all pending requests with the user's name, email, region, and the specific regional role requested
-4. Super Admin clicks **Approve** -- this updates `user_roles` to `status: active, is_active: true` and inserts a corresponding entry into `regional_user_roles`
-5. Or clicks **Reject** -- sets `status: rejected, is_active: false`
+All attendance data already exists. The fix is in query logic to include DCG-linked attendance events.
 
-No code changes needed in the Super Admin portal -- the approval UI and logic already exist and work correctly once the RLS fix allows the initial request to be created.
-
-### Summary
-
-- **1 database migration** to add INSERT and UPDATE RLS policies on `user_roles` for regional admins (restricted to pending/inactive only)
-- **No application code changes** needed  
-  
-also ensure that regional admins can change roles and strip users off roles but it should still require super admin confirmation.
