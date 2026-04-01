@@ -162,8 +162,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Create New Event</DialogTitle>
           <DialogDescription>
             Create a new event for your DCG. This event will be visible to DCG members.
