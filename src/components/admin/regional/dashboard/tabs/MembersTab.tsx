@@ -1,210 +1,232 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Eye, Edit, UserPlus, Users, CalendarCheck2, BarChartHorizontal, TrendingUp, TrendingDown } from 'lucide-react';
+import { Users, UserPlus, CalendarCheck2, TrendingUp, TrendingDown, UserCheck, Percent } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
-import { useAttendanceHistory, useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
+import { useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
 interface MembersTabProps {
   selectedPeriod: string;
 }
 
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
+
 const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
-    dateRange: { 
-      from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, new Date().getDate()),
-      to: new Date()
-    },
+    dateRange: { from: subMonths(new Date(), 1), to: new Date() },
     quickDateRange: '1-month'
   });
   const { userRegion } = useAuth();
   const { data: members, isLoading, error } = useMembers(userRegion?.id);
-  const { data: attendanceHistory, isLoading: isLoadingHistory, error: historyError } = useAttendanceHistory(userRegion?.id);
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
-
-  // Component for percentage indicator
-  const PercentageIndicator = ({ percentage }: { percentage: number }) => {
-    const isPositive = percentage > 0;
-    const isNegative = percentage < 0;
-    
-    if (percentage === 0) {
-      return (
-        <div className="flex items-center gap-1 text-primary">
-          <span className="text-xs font-medium">0%</span>
-        </div>
-      );
-    }
-    
-    const Icon = isPositive ? TrendingUp : TrendingDown;
-    const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
-    
-    return (
-      <div className={`flex items-center gap-1 ${colorClass}`}>
-        <Icon className="h-3 w-3" />
-        <span className="text-xs font-medium">
-          {isPositive ? '+' : ''}{percentage}%
-        </span>
-      </div>
-    );
-  };
 
   const totalMembers = members?.filter(m => m.member_type === 'member').length || 0;
   const totalVisitors = members?.filter(m => m.member_type === 'visitor').length || 0;
 
-  // Calculate active members based on attendance (haven't missed last 3 events)
-  const activeMembers = React.useMemo(() => {
-    if (!attendanceWithTypes || !members) return 0;
-    const last3Events = attendanceWithTypes.slice(0, 3);
-    if (last3Events.length === 0) return totalMembers;
+  const newThisMonth = useMemo(() => {
+    if (!members) return 0;
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    return members.filter(m => m.join_date && new Date(m.join_date) >= monthStart).length;
+  }, [members]);
 
-    return members.filter(member => {
-      if (member.member_type !== 'member') return false;
-      
-      // Count how many of the last 3 events this member attended
-      const attendedEvents = last3Events.filter(event => {
-        // This is a simplified check - in reality you'd need attendance_records data for each member
-        // For now, we'll use a placeholder logic
-        return true; // Placeholder - would need actual attendance record lookup
-      });
-      
-      // Member is active if they attended at least 1 of the last 3 events
-      return attendedEvents.length > 0;
-    }).length;
-  }, [attendanceWithTypes, members, totalMembers]);
+  const memberToVisitorRatio = useMemo(() => {
+    if (totalVisitors === 0) return totalMembers > 0 ? '∞' : '0';
+    return (totalMembers / totalVisitors).toFixed(1);
+  }, [totalMembers, totalVisitors]);
 
-  // Calculate inactive visitors (missed last 2 events)
-  const inactiveVisitors = React.useMemo(() => {
-    if (!attendanceWithTypes || !members) return 0;
-    const last2Events = attendanceWithTypes.slice(0, 2);
-    if (last2Events.length === 0) return 0;
-
-    return members.filter(member => {
-      if (member.member_type !== 'visitor') return false;
-      
-      // Count how many of the last 2 events this visitor attended
-      const attendedEvents = last2Events.filter(event => {
-        // This is a simplified check - in reality you'd need attendance_records data for each member
-        // For now, we'll use a placeholder logic
-        return true; // Placeholder - would need actual attendance record lookup
-      });
-      
-      // Visitor is inactive if they missed both of the last 2 events
-      return attendedEvents.length === 0;
-    }).length;
-  }, [attendanceWithTypes, members]);
-
-  const attendanceSummary = React.useMemo(() => {
-    if (!attendanceWithTypes || attendanceWithTypes.length === 0) return { avgAttendance: 0, lastEvent: null };
-    const totalAttendance = attendanceWithTypes.reduce((sum, event) => sum + event.total_present, 0);
-    const avgAttendance = attendanceWithTypes.length > 0 ? (totalAttendance / attendanceWithTypes.length) : 0;
-    return {
-      avgAttendance: Math.round(avgAttendance),
-      lastEvent: attendanceWithTypes[0]
-    };
+  const avgAttendance = useMemo(() => {
+    if (!attendanceWithTypes || attendanceWithTypes.length === 0) return 0;
+    const total = attendanceWithTypes.reduce((sum, e) => sum + e.total_present, 0);
+    return Math.round(total / attendanceWithTypes.length);
   }, [attendanceWithTypes]);
 
-  // Calculate growth trends for the cards
-  const growthTrends = React.useMemo(() => {
-    if (!attendanceWithTypes || attendanceWithTypes.length < 2) {
-      return {
-        memberGrowth: 0,
-        visitorGrowth: 0,
-        avgAttendanceGrowth: 0,
-        lastEventGrowth: 0
-      };
+  const attendanceRate = useMemo(() => {
+    if (!attendanceWithTypes || attendanceWithTypes.length === 0 || totalMembers === 0) return 0;
+    const latestEvent = attendanceWithTypes[0];
+    return Math.round((latestEvent.total_present / totalMembers) * 100);
+  }, [attendanceWithTypes, totalMembers]);
+
+  // Gender distribution from profiles
+  const genderData = useMemo(() => {
+    if (!members) return [];
+    const genderCounts: Record<string, number> = {};
+    members.forEach(m => {
+      const gender = m.profiles?.gender || 'Unknown';
+      const capitalized = gender.charAt(0).toUpperCase() + gender.slice(1);
+      genderCounts[capitalized] = (genderCounts[capitalized] || 0) + 1;
+    });
+    return Object.entries(genderCounts).map(([name, value]) => ({ name, value }));
+  }, [members]);
+
+  // Monthly growth chart
+  const monthlyGrowth = useMemo(() => {
+    if (!members) return [];
+    const months: Record<string, { members: number; visitors: number }> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = subMonths(new Date(), i);
+      const key = format(d, 'MMM yyyy');
+      months[key] = { members: 0, visitors: 0 };
     }
+    members.forEach(m => {
+      if (m.join_date) {
+        const key = format(new Date(m.join_date), 'MMM yyyy');
+        if (months[key]) {
+          if (m.member_type === 'member') months[key].members++;
+          else months[key].visitors++;
+        }
+      }
+    });
+    return Object.entries(months).map(([month, data]) => ({ month, ...data }));
+  }, [members]);
 
-    // Get recent vs previous period data
-    const recentEvents = attendanceWithTypes.slice(0, Math.ceil(attendanceWithTypes.length / 2));
-    const previousEvents = attendanceWithTypes.slice(Math.ceil(attendanceWithTypes.length / 2));
+  // Recent joiners
+  const recentJoiners = useMemo(() => {
+    if (!members) return [];
+    return [...members]
+      .sort((a, b) => new Date(b.join_date || 0).getTime() - new Date(a.join_date || 0).getTime())
+      .slice(0, 8);
+  }, [members]);
 
-    if (recentEvents.length === 0 || previousEvents.length === 0) {
-      return {
-        memberGrowth: 0,
-        visitorGrowth: 0,
-        avgAttendanceGrowth: 0,
-        lastEventGrowth: 0
-      };
-    }
-
-    // Calculate averages for recent vs previous periods
-    const recentAvgMembers = recentEvents.reduce((sum, e) => sum + e.members_present, 0) / recentEvents.length;
-    const previousAvgMembers = previousEvents.reduce((sum, e) => sum + e.members_present, 0) / previousEvents.length;
-    
-    const recentAvgVisitors = recentEvents.reduce((sum, e) => sum + e.visitors_present, 0) / recentEvents.length;
-    const previousAvgVisitors = previousEvents.reduce((sum, e) => sum + e.visitors_present, 0) / previousEvents.length;
-
-    const recentAvgTotal = recentEvents.reduce((sum, e) => sum + e.total_present, 0) / recentEvents.length;
-    const previousAvgTotal = previousEvents.reduce((sum, e) => sum + e.total_present, 0) / previousEvents.length;
-
-    // Calculate growth percentages
-    const memberGrowth = previousAvgMembers > 0 ? Math.round(((recentAvgMembers - previousAvgMembers) / previousAvgMembers) * 100) : 0;
-    const visitorGrowth = previousAvgVisitors > 0 ? Math.round(((recentAvgVisitors - previousAvgVisitors) / previousAvgVisitors) * 100) : 0;
-    const avgAttendanceGrowth = previousAvgTotal > 0 ? Math.round(((recentAvgTotal - previousAvgTotal) / previousAvgTotal) * 100) : 0;
-
-    // For last event growth, compare with previous event
-    const lastEventGrowth = attendanceWithTypes.length > 1 ? 
-      Math.round(((attendanceWithTypes[0].total_present - attendanceWithTypes[1].total_present) / attendanceWithTypes[1].total_present) * 100) : 0;
-
-    return {
-      memberGrowth,
-      visitorGrowth,
-      avgAttendanceGrowth,
-      lastEventGrowth
-    };
-  }, [attendanceWithTypes]);
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: { variant: 'default' as const, label: 'Active' },
-      inactive: { variant: 'secondary' as const, label: 'Inactive' },
-      new: { variant: 'outline' as const, label: 'New' },
-      visitor: { variant: 'outline' as const, label: 'Visitor' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
-  };
-
-
-  if (isLoading || isLoadingHistory || isLoadingWithTypes) {
+  if (isLoading || isLoadingWithTypes) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
+        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
         <Skeleton className="h-96" />
       </div>
     );
   }
 
-  if (error || historyError) {
+  if (error) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error loading members</AlertTitle>
-        <AlertDescription>
-          {error instanceof Error ? error.message : 'An unknown error occurred'}
-        </AlertDescription>
+        <AlertDescription>{error instanceof Error ? error.message : 'An unknown error occurred'}</AlertDescription>
       </Alert>
     );
   }
 
+  const kpis = [
+    { label: 'Total Members', value: totalMembers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+    { label: 'Total Visitors', value: totalVisitors, icon: UserPlus, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+    { label: 'New This Month', value: newThisMonth, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
+    { label: 'Avg Attendance', value: avgAttendance, icon: CalendarCheck2, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: 'Member:Visitor', value: memberToVisitorRatio, icon: UserCheck, color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-900/20' },
+    { label: 'Attendance Rate', value: `${attendanceRate}%`, icon: Percent, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Member/Visitor Trend Chart - only shown in Members tab */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Members Analytics</h3>
+        <PeriodFilter filters={filters} onFiltersChange={(f) => setFilters({ ...filters, ...f })} />
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {kpis.map((kpi, i) => (
+          <Card key={i} className="bg-gradient-to-br from-background to-muted/30 backdrop-blur-sm border-border/50 shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`p-1.5 rounded-lg ${kpi.bg}`}>
+                  <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold">{kpi.value}</p>
+              <p className="text-xs text-muted-foreground">{kpi.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Attendance Trend */}
       <TrendChart />
+
+      {/* Charts Row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Gender Distribution */}
+        <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-sm">Gender Distribution</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {genderData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {genderData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <p className="text-center text-sm text-muted-foreground py-8">No gender data available</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Monthly Growth */}
+        <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-sm">Monthly New Joiners (Last 6 Months)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={monthlyGrowth}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" fontSize={10} />
+                <YAxis fontSize={10} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="members" fill="hsl(var(--primary))" name="Members" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="visitors" fill="hsl(var(--secondary))" name="Visitors" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Joiners */}
+      <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-sm">Recent Joiners</CardTitle>
+          <CardDescription>Latest members and visitors</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {recentJoiners.map(m => (
+              <div key={m.id} className="flex items-center justify-between p-2 border rounded-lg bg-muted/10">
+                <div>
+                  <p className="text-sm font-medium">{m.profiles?.last_name} {m.profiles?.first_name}</p>
+                  <p className="text-xs text-muted-foreground">{m.member_id}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant={m.member_type === 'member' ? 'default' : 'secondary'}>
+                    {m.member_type}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {m.join_date ? format(new Date(m.join_date), 'MMM d, yyyy') : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {recentJoiners.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">No members found</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

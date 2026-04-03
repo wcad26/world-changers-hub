@@ -27,13 +27,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useDcgEvents, useDeleteDcgEvent } from '@/hooks/useDcgEvents';
+import { useDcgEvents, useDeleteDcgEvent, useRegionalEventsForDcg } from '@/hooks/useDcgEvents';
 import { CreateEventDialog } from '@/components/admin/dcg/CreateEventDialog';
 import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDialog';
 import type { Event } from '@/hooks/useDcgEvents';
 
 const DcgEvents = () => {
-  const { userDcg } = useAuth();
+  const { userDcg, userRegion } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
@@ -42,6 +42,11 @@ const DcgEvents = () => {
     isLoading: loadingEvents,
     error: eventsError 
   } = useDcgEvents(userDcg?.id);
+
+  const {
+    data: regionalEvents,
+    isLoading: loadingRegional,
+  } = useRegionalEventsForDcg(userRegion?.id || userDcg?.region_id);
   
   const deleteEvent = useDeleteDcgEvent();
 
@@ -215,12 +220,15 @@ const DcgEvents = () => {
 
         {/* Events Tabs */}
         <Tabs defaultValue="current" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="current">
               Current & Future ({currentEvents.length})
             </TabsTrigger>
             <TabsTrigger value="past">
               Past Events ({pastEvents.length})
+            </TabsTrigger>
+            <TabsTrigger value="regional">
+              Regional Events ({regionalEvents?.length || 0})
             </TabsTrigger>
           </TabsList>
 
@@ -253,6 +261,23 @@ const DcgEvents = () => {
                 {renderEventsTable(
                   pastEvents,
                   "No past events found."
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="regional" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Regional Events</CardTitle>
+                <CardDescription>
+                  Events created by the regional admin. Record attendance for your DCG members.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderEventsTable(
+                  regionalEvents || [],
+                  "No regional events found."
                 )}
               </CardContent>
             </Card>

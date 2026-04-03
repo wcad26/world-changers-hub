@@ -13,6 +13,7 @@ import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
+import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
 import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
 
 const MemberProfile: React.FC = () => {
@@ -516,7 +517,14 @@ const MemberProfile: React.FC = () => {
               </>
             )}
           </CardContent>
-        </Card>
+          </Card>
+
+          {/* Family Relationships */}
+          {member?.id && (
+            <div className="md:col-span-3">
+              <FamilyRelationshipsSection memberId={member.id} />
+            </div>
+          )}
 
 
         {/* Edit Member Dialog */}
