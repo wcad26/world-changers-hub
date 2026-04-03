@@ -517,7 +517,14 @@ const MemberProfile: React.FC = () => {
               </>
             )}
           </CardContent>
-        </Card>
+          </Card>
+
+          {/* Family Relationships */}
+          {member?.id && (
+            <div className="md:col-span-3">
+              <FamilyRelationshipsSection memberId={member.id} />
+            </div>
+          )}
 
 
         {/* Edit Member Dialog */}
