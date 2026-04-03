@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 import { formatCurrencyWithSymbol, getCurrencySymbol } from '@/utils/currencyUtils';
+import { useFinancialTransactions } from '@/hooks/useFinancials';
 import type { Currency } from '@/hooks/useCurrencies';
+import { format } from 'date-fns';
 
 interface FinancialTrendChartProps {
   selectedPeriod: string;
@@ -12,79 +14,73 @@ interface FinancialTrendChartProps {
 
 const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPeriod, regionCurrency }) => {
   const currencySymbol = getCurrencySymbol(regionCurrency);
-  
-  // Mock financial data for demonstration
-  const mockFinancialData = [
-    { month: 'Jan 2024', income: 45000, expenses: 32000, net: 13000 },
-    { month: 'Feb 2024', income: 52000, expenses: 35000, net: 17000 },
-    { month: 'Mar 2024', income: 48000, expenses: 31000, net: 17000 },
-    { month: 'Apr 2024', income: 55000, expenses: 38000, net: 17000 },
-    { month: 'May 2024', income: 61000, expenses: 42000, net: 19000 },
-    { month: 'Jun 2024', income: 58000, expenses: 39000, net: 19000 },
-    { month: 'Jul 2024', income: 63000, expenses: 41000, net: 22000 }
-  ];
+  const { data: transactions } = useFinancialTransactions();
 
-  const formatCurrency = (value: number) => {
-    return formatCurrencyWithSymbol(value, regionCurrency);
-  };
+  const monthlyData = useMemo(() => {
+    if (!transactions || transactions.length === 0) return [];
+
+    const months: Record<string, { income: number; expenses: number }> = {};
+    transactions.forEach(t => {
+      const monthKey = format(new Date(t.transaction_date), 'MMM yyyy');
+      if (!months[monthKey]) months[monthKey] = { income: 0, expenses: 0 };
+      const catType = (t as any).category?.type || '';
+      if (catType?.toLowerCase() === 'income') {
+        months[monthKey].income += Number(t.amount);
+      } else if (catType?.toLowerCase() === 'expense') {
+        months[monthKey].expenses += Number(t.amount);
+      }
+    });
+
+    return Object.entries(months)
+      .map(([month, data]) => ({
+        month,
+        income: data.income,
+        expenses: data.expenses,
+        net: data.income - data.expenses,
+      }))
+      .reverse()
+      .slice(-7);
+  }, [transactions]);
+
+  const formatCurrency = (value: number) => formatCurrencyWithSymbol(value, regionCurrency);
+
+  if (monthlyData.length === 0) {
+    return (
+      <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Financial Trends
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-center text-sm text-muted-foreground py-12">No financial data available yet</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card>
+    <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <TrendingUp className="h-5 w-5" />
           Financial Trends
         </CardTitle>
-        <CardDescription>
-          Income vs Expenses over time ({selectedPeriod})
-        </CardDescription>
+        <CardDescription>Income vs Expenses over time ({selectedPeriod})</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[400px] w-full">
+        <div className="h-[350px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={mockFinancialData}>
+            <LineChart data={monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="month" 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis 
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${currencySymbol}${value / 1000}k`}
-              />
-              <Tooltip 
-                formatter={(value, name) => [formatCurrency(Number(value)), name]}
-                labelStyle={{ color: '#000' }}
-              />
+              <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${currencySymbol}${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
+              <Tooltip formatter={(value, name) => [formatCurrency(Number(value)), name]} />
               <Legend />
-              <Line 
-                type="monotone" 
-                dataKey="income" 
-                stroke="#22c55e" 
-                strokeWidth={3}
-                name="Income"
-                dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="expenses" 
-                stroke="#ef4444" 
-                strokeWidth={3}
-                name="Expenses"
-                dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="net" 
-                stroke="#3b82f6" 
-                strokeWidth={3}
-                name="Net Balance"
-                dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-              />
+              <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={3} name="Income" dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={3} name="Expenses" dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="net" stroke="#3b82f6" strokeWidth={3} name="Net Balance" dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
