@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
-import { useDcgEvents, useDeleteDcgEvent } from '@/hooks/useDcgEvents';
+import { useDcgEvents, useDeleteDcgEvent, useRegionalEventsForDcg } from '@/hooks/useDcgEvents';
 import { CreateEventDialog } from '@/components/admin/dcg/CreateEventDialog';
 import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDialog';
 import type { Event } from '@/hooks/useDcgEvents';
