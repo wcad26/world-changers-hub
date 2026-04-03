@@ -28,27 +28,22 @@ export interface MemberRelationship {
 export const useMemberRelationships = (memberId?: string) => {
   return useQuery({
     queryKey: ['member-relationships', memberId],
-    queryFn: async () => {
+    queryFn: async (): Promise<MemberRelationship[]> => {
       if (!memberId) return [];
+
+      // Fetch relationships
       const { data, error } = await supabase
-        .from('member_relationships')
-        .select(`
-          id,
-          member_id,
-          related_member_id,
-          relationship_type,
-          notes,
-          created_at,
-          created_by
-        `)
+        .from('member_relationships' as any)
+        .select('*')
         .eq('member_id', memberId);
 
       if (error) throw error;
-
-      // Fetch related member details
       if (!data || data.length === 0) return [];
 
-      const relatedMemberIds = data.map(r => r.related_member_id);
+      const rows = data as any[];
+      const relatedMemberIds = rows.map((r: any) => r.related_member_id);
+
+      // Fetch related member details
       const { data: relatedMembers, error: membersError } = await supabase
         .from('members')
         .select('id, member_id, profiles(first_name, last_name, phone, email)')
@@ -56,10 +51,10 @@ export const useMemberRelationships = (memberId?: string) => {
 
       if (membersError) throw membersError;
 
-      return data.map(rel => ({
+      return rows.map((rel: any) => ({
         ...rel,
         related_member: relatedMembers?.find(m => m.id === rel.related_member_id),
-      })) as MemberRelationship[];
+      }));
     },
     enabled: !!memberId,
   });
@@ -85,14 +80,14 @@ export const useCreateMemberRelationship = () => {
       if (!user?.id) throw new Error('Not authenticated');
 
       const { data, error } = await supabase
-        .from('member_relationships')
+        .from('member_relationships' as any)
         .insert({
           member_id: memberId,
           related_member_id: relatedMemberId,
-          relationship_type: relationshipType as any,
+          relationship_type: relationshipType,
           notes: notes || null,
           created_by: user.id,
-        })
+        } as any)
         .select()
         .single();
 
@@ -117,7 +112,7 @@ export const useDeleteMemberRelationship = () => {
   return useMutation({
     mutationFn: async ({ id, memberId }: { id: string; memberId: string }) => {
       const { error } = await supabase
-        .from('member_relationships')
+        .from('member_relationships' as any)
         .delete()
         .eq('id', id);
 

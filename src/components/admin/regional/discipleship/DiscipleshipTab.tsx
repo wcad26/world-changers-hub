@@ -224,7 +224,7 @@ const DiscipleshipTab: React.FC = () => {
         </CardContent>
       </Card>
 
-      <AssignDiscipleDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} />
+      <AssignDiscipleDialog isOpen={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} />
     </div>
   );
 };

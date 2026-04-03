@@ -24,7 +24,7 @@ const LocationsTab: React.FC<LocationsTabProps> = ({ selectedPeriod }) => {
   });
   const { userRegion } = useAuth();
   const { data: locations, isLoading, error } = useLocations(userRegion?.id);
-  const { data: dcgs } = useDCGs(userRegion?.id);
+  const { data: dcgs } = useDcgs();
 
   const locationStats = useMemo(() => {
     if (!locations) return { total: 0, wcaCenters: 0, dcgLocations: 0, active: 0, totalCapacity: 0, withFellowship: 0 };
