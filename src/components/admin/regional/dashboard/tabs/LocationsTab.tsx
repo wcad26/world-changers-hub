@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit, MapPin, Users, Phone, Plus, Building, BarChart3 } from 'lucide-react';
 import { useLocations } from '@/hooks/useLocations';
-import { useDCGs } from '@/hooks/useDCGs';
+import { useDcgs } from '@/hooks/useDCGs';
 import { useAuth } from '@/hooks/useAuth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
