@@ -265,6 +265,23 @@ const DcgEvents = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="regional" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Regional Events</CardTitle>
+                <CardDescription>
+                  Events created by the regional admin. Record attendance for your DCG members.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderEventsTable(
+                  regionalEvents || [],
+                  "No regional events found."
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Create Event Dialog */}

@@ -27,6 +27,25 @@ export const useDcgEvents = (dcgId?: string) => {
   });
 };
 
+// Hook to get regional events visible to DCG portal
+export const useRegionalEventsForDcg = (regionId?: string) => {
+  return useQuery({
+    queryKey: ['regional-events-for-dcg', regionId],
+    queryFn: async () => {
+      if (!regionId) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('region_id', regionId)
+        .is('dcg_id', null)
+        .order('start_datetime', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!regionId,
+  });
+};
+
 // Hook to create DCG event
 export const useCreateDcgEvent = () => {
   const queryClient = useQueryClient();
