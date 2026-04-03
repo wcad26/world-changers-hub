@@ -13,7 +13,7 @@ import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
-import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
+import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
