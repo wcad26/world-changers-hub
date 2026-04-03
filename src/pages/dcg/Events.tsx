@@ -33,7 +33,7 @@ import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDia
 import type { Event } from '@/hooks/useDcgEvents';
 
 const DcgEvents = () => {
-  const { userDcg } = useAuth();
+  const { userDcg, userRegion } = useAuth();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
@@ -42,6 +42,11 @@ const DcgEvents = () => {
     isLoading: loadingEvents,
     error: eventsError 
   } = useDcgEvents(userDcg?.id);
+
+  const {
+    data: regionalEvents,
+    isLoading: loadingRegional,
+  } = useRegionalEventsForDcg(userRegion?.id || userDcg?.region_id);
   
   const deleteEvent = useDeleteDcgEvent();
 
