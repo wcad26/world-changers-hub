@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
 import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
+import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
