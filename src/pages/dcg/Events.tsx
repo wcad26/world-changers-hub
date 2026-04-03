@@ -220,12 +220,15 @@ const DcgEvents = () => {
 
         {/* Events Tabs */}
         <Tabs defaultValue="current" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="current">
               Current & Future ({currentEvents.length})
             </TabsTrigger>
             <TabsTrigger value="past">
               Past Events ({pastEvents.length})
+            </TabsTrigger>
+            <TabsTrigger value="regional">
+              Regional Events ({regionalEvents?.length || 0})
             </TabsTrigger>
           </TabsList>
 
