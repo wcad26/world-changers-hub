@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
 import { formatEventDuration } from '@/utils/dateUtils';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,44 +9,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Plus, 
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  MoreHorizontal,
-  UserCheck,
-  Edit,
-  Trash2
+  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2
 } from 'lucide-react';
 import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { useDcgEvents, useDeleteDcgEvent, useRegionalEventsForDcg } from '@/hooks/useDcgEvents';
 import { CreateEventDialog } from '@/components/admin/dcg/CreateEventDialog';
 import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDialog';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Event } from '@/hooks/useDcgEvents';
 
 const DcgEvents = () => {
   const { userDcg, userRegion } = useAuth();
+  const isMobile = useIsMobile();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
-  const { 
-    data: events, 
-    isLoading: loadingEvents,
-    error: eventsError 
-  } = useDcgEvents(userDcg?.id);
-
-  const {
-    data: regionalEvents,
-    isLoading: loadingRegional,
-  } = useRegionalEventsForDcg(userRegion?.id || userDcg?.region_id);
-  
+  const { data: events, isLoading: loadingEvents, error: eventsError } = useDcgEvents(userDcg?.id);
+  const { data: regionalEvents, isLoading: loadingRegional } = useRegionalEventsForDcg(userRegion?.id || userDcg?.region_id);
   const deleteEvent = useDeleteDcgEvent();
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -56,138 +37,175 @@ const DcgEvents = () => {
     }
   };
 
-  // Separate events into current/future and past
   const now = new Date();
   const currentEvents = events?.filter(event => new Date(event.start_datetime) >= now) || [];
   const pastEvents = events?.filter(event => new Date(event.start_datetime) < now) || [];
 
   const getEventStatusBadge = (event: Event) => {
-    const startDate = new Date(event.start_datetime);
-    
-    if (event.status === 'Cancelled') {
-      return <Badge variant="destructive">Cancelled</Badge>;
-    }
-    
-    if (startDate < now) {
-      return <Badge variant="secondary">Completed</Badge>;
-    }
-    
+    if (event.status === 'Cancelled') return <Badge variant="destructive">Cancelled</Badge>;
+    if (new Date(event.start_datetime) < now) return <Badge variant="secondary">Completed</Badge>;
     return <Badge variant="default">Upcoming</Badge>;
   };
 
-  // Render events table for a given list of events
-  const renderEventsTable = (eventsList: Event[], noEventsMessage: string) => (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Event Name</TableHead>
-            <TableHead>Date & Time</TableHead>
-            <TableHead>Location</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-[70px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {loadingEvents ? (
-            Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
-                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                <TableCell><Skeleton className="h-4 w-8" /></TableCell>
-              </TableRow>
-            ))
-          ) : eventsList.length === 0 ? (
+  const renderEventCard = (event: Event) => {
+    const duration = formatEventDuration(event.start_datetime, event.end_datetime);
+    return (
+      <div key={event.id} className="border border-border rounded-lg p-3 space-y-2">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate">{event.name}</p>
+            {event.description && (
+              <p className="text-xs text-muted-foreground line-clamp-1">{event.description}</p>
+            )}
+          </div>
+          {getEventStatusBadge(event)}
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {duration.dateRange}
+          </span>
+          {event.location_name && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> {event.location_name}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <Badge variant="outline" className="text-[10px]">{event.category}</Badge>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setSelectedEventForAttendance(event)}
+            >
+              <UserCheck className="h-3 w-3 mr-1" /> Attendance
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs text-destructive"
+              onClick={() => handleDeleteEvent(event.id)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderEventsTable = (eventsList: Event[], noEventsMessage: string) => {
+    if (loadingEvents) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    if (eventsList.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          {noEventsMessage}
+        </div>
+      );
+    }
+
+    if (isMobile) {
+      return <div className="space-y-3">{eventsList.map(renderEventCard)}</div>;
+    }
+
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                {noEventsMessage}
-              </TableCell>
+              <TableHead>Event Name</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[70px]">Actions</TableHead>
             </TableRow>
-          ) : (
-            eventsList.map((event) => (
-              <TableRow key={event.id}>
-                <TableCell className="font-medium">
-                  <div>
-                    <div>{event.name}</div>
-                    {event.description && (
-                      <div className="text-sm text-muted-foreground truncate max-w-xs">
-                        {event.description}
+          </TableHeader>
+          <TableBody>
+            {eventsList.map((event) => {
+              const duration = formatEventDuration(event.start_datetime, event.end_datetime);
+              return (
+                <TableRow key={event.id}>
+                  <TableCell className="font-medium">
+                    <div>
+                      <div>{event.name}</div>
+                      {event.description && (
+                        <div className="text-sm text-muted-foreground truncate max-w-xs">
+                          {event.description}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div>{duration.dateRange}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {duration.timeRange}
+                          {duration.isMultiDay && (
+                            <div className="text-xs text-amber-600">Multi-day event</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {event.location_name && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{event.location_name}</span>
                       </div>
                     )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <div>{formatEventDuration(event.start_datetime, event.end_datetime).dateRange}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatEventDuration(event.start_datetime, event.end_datetime).timeRange}
-                        {formatEventDuration(event.start_datetime, event.end_datetime).isMultiDay && (
-                          <div className="text-xs text-amber-600">Multi-day event</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {event.location_name && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{event.location_name}</span>
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{event.category}</Badge>
-                </TableCell>
-                <TableCell>
-                  {getEventStatusBadge(event)}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem 
-                        onClick={() => setSelectedEventForAttendance(event)}
-                      >
-                        <UserCheck className="mr-2 h-4 w-4" />
-                        Record Attendance
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteEvent(event.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Event
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{event.category}</Badge>
+                  </TableCell>
+                  <TableCell>{getEventStatusBadge(event)}</TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setSelectedEventForAttendance(event)}>
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          Record Attendance
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteEvent(event.id)} className="text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Event
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
 
   if (!userDcg) {
     return (
       <DcgAdminLayout>
-        <div className="space-y-6">
+        <div className="p-4">
           <Alert variant="destructive">
-            <AlertDescription>
-              DCG information not found. Please contact your administrator.
-            </AlertDescription>
+            <AlertDescription>DCG information not found. Please contact your administrator.</AlertDescription>
           </Alert>
         </div>
       </DcgAdminLayout>
@@ -196,101 +214,75 @@ const DcgEvents = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-start">
-          <div>
+      <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+          <div className="hidden lg:block">
             <h1 className="text-3xl font-bold">DCG Events</h1>
-            <p className="text-muted-foreground">
-              Create and manage events for your DCG
-            </p>
+            <p className="text-muted-foreground">Create and manage events for your DCG</p>
           </div>
-          <Button onClick={() => setShowCreateDialog(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
+          <Button onClick={() => setShowCreateDialog(true)} size={isMobile ? "sm" : "default"} className="w-full sm:w-auto">
+            <Plus className="h-4 w-4 mr-1.5" />
             Create Event
           </Button>
         </div>
 
         {eventsError && (
           <Alert variant="destructive">
-            <AlertDescription>
-              Error loading events: {eventsError.message}
-            </AlertDescription>
+            <AlertDescription>Error loading events: {eventsError.message}</AlertDescription>
           </Alert>
         )}
 
-        {/* Events Tabs */}
         <Tabs defaultValue="current" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="current">
-              Current & Future ({currentEvents.length})
+          <TabsList className={cn("w-full", isMobile && "overflow-x-auto flex")}>
+            <TabsTrigger value="current" className="flex-1 text-xs md:text-sm">
+              Current ({currentEvents.length})
             </TabsTrigger>
-            <TabsTrigger value="past">
-              Past Events ({pastEvents.length})
+            <TabsTrigger value="past" className="flex-1 text-xs md:text-sm">
+              Past ({pastEvents.length})
             </TabsTrigger>
-            <TabsTrigger value="regional">
-              Regional Events ({regionalEvents?.length || 0})
+            <TabsTrigger value="regional" className="flex-1 text-xs md:text-sm">
+              Regional ({regionalEvents?.length || 0})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="current" className="space-y-4">
+          <TabsContent value="current" className="space-y-4 mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Current & Future Events</CardTitle>
-                <CardDescription>
-                  Upcoming and ongoing events for your DCG
-                </CardDescription>
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg">Current & Future Events</CardTitle>
               </CardHeader>
-              <CardContent>
-                {renderEventsTable(
-                  currentEvents, 
-                  "No current or future events found. Create your first event to get started."
-                )}
+              <CardContent className="p-4 md:p-6 pt-0">
+                {renderEventsTable(currentEvents, "No upcoming events. Create your first event!")}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="past" className="space-y-4">
+          <TabsContent value="past" className="space-y-4 mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Past Events</CardTitle>
-                <CardDescription>
-                  Completed events and their history
-                </CardDescription>
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg">Past Events</CardTitle>
               </CardHeader>
-              <CardContent>
-                {renderEventsTable(
-                  pastEvents,
-                  "No past events found."
-                )}
+              <CardContent className="p-4 md:p-6 pt-0">
+                {renderEventsTable(pastEvents, "No past events found.")}
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="regional" className="space-y-4">
+          <TabsContent value="regional" className="space-y-4 mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Regional Events</CardTitle>
-                <CardDescription>
-                  Events created by the regional admin. Record attendance for your DCG members.
+              <CardHeader className="p-4 md:p-6">
+                <CardTitle className="text-base md:text-lg">Regional Events</CardTitle>
+                <CardDescription className="text-xs md:text-sm">
+                  Events created by the regional admin
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {renderEventsTable(
-                  regionalEvents || [],
-                  "No regional events found."
-                )}
+              <CardContent className="p-4 md:p-6 pt-0">
+                {renderEventsTable(regionalEvents || [], "No regional events found.")}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Create Event Dialog */}
-        <CreateEventDialog
-          isOpen={showCreateDialog}
-          onClose={() => setShowCreateDialog(false)}
-        />
-
-        {/* Attendance Dialog */}
+        <CreateEventDialog isOpen={showCreateDialog} onClose={() => setShowCreateDialog(false)} />
         {selectedEventForAttendance && (
           <EventAttendanceDialog
             isOpen={!!selectedEventForAttendance}
@@ -303,5 +295,8 @@ const DcgEvents = () => {
     </DcgAdminLayout>
   );
 };
+
+// cn utility import
+import { cn } from '@/lib/utils';
 
 export default DcgEvents;
