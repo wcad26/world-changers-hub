@@ -32,7 +32,6 @@ const menuItems = [
   { title: "Reports", path: "/dcg/reports", icon: BarChart2 },
 ];
 
-// Bottom tab items (same as menu but limited for mobile)
 const bottomTabs = menuItems;
 
 const pageInfo: Record<string, { title: string; icon: LucideIcon }> = {
@@ -63,10 +62,10 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
   if (!useMobileLayout) {
     return (
       <div className="min-h-screen bg-background flex">
-        {/* Sidebar */}
+        {/* Fixed Sidebar */}
         <div
           className={cn(
-            "bg-card border-r border-border flex flex-col transition-all duration-300",
+            "fixed top-0 left-0 h-screen bg-card border-r border-border flex flex-col transition-all duration-300 z-30",
             isCollapsed ? "w-16" : "w-64"
           )}
         >
@@ -98,7 +97,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
             </Button>
           </div>
 
-          <nav className="flex-1 p-3 space-y-1">
+          <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -120,28 +119,31 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
                 </Link>
               );
             })}
-          </nav>
 
-          <div className="p-3 border-t border-border space-y-2">
-            <PortalSwitcher />
-            <Button
-              variant="ghost"
-              onClick={handleSignOut}
-              className={cn(
-                "w-full text-muted-foreground hover:text-foreground",
-                isCollapsed ? "justify-center p-3" : "justify-start px-3 py-2"
-              )}
-            >
-              <LogOut
-                className={cn(isCollapsed ? "h-5 w-5" : "h-5 w-5 mr-3")}
-              />
-              {!isCollapsed && "Sign Out"}
-            </Button>
-          </div>
+            {/* Portal Switcher and Sign Out in nav panel */}
+            <div className="pt-4 mt-4 border-t border-border space-y-1">
+              <div className={cn(isCollapsed ? "px-1" : "px-1")}>
+                <PortalSwitcher />
+              </div>
+              <Button
+                variant="ghost"
+                onClick={handleSignOut}
+                className={cn(
+                  "w-full text-muted-foreground hover:text-foreground",
+                  isCollapsed ? "justify-center p-3" : "justify-start px-3 py-2"
+                )}
+              >
+                <LogOut
+                  className={cn(isCollapsed ? "h-5 w-5" : "h-5 w-5 mr-3")}
+                />
+                {!isCollapsed && "Sign Out"}
+              </Button>
+            </div>
+          </nav>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 flex flex-col min-w-0">
+        {/* Main content with margin for fixed sidebar */}
+        <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-300", isCollapsed ? "ml-16" : "ml-64")}>
           <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-md border-b border-border px-6 py-3 flex items-center justify-between">
             <h1 className="text-xl font-semibold text-foreground">
               {pageInfo[location.pathname]?.title || "DCG Portal"}
@@ -209,7 +211,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
                 );
               })}
 
-              <div className="pt-4 border-t border-border mt-4">
+              <div className="pt-4 border-t border-border mt-4 space-y-1">
                 <div className="px-3 py-2">
                   <PortalSwitcher />
                 </div>
@@ -219,7 +221,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
                     setMobileMenuOpen(false);
                     handleSignOut();
                   }}
-                  className="w-full justify-start px-3 py-2.5 text-muted-foreground hover:text-foreground mt-1"
+                  className="w-full justify-start px-3 py-2.5 text-muted-foreground hover:text-foreground"
                 >
                   <LogOut className="h-5 w-5 mr-3" />
                   Sign Out

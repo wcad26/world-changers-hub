@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from "react";
 import DcgAdminLayout from "@/components/admin/DcgAdminLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign, Receipt, PiggyBank, TrendingUp, Plus } from "lucide-react";
+import { DollarSign, Receipt, PiggyBank, TrendingUp, Plus, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const DcgFinances: React.FC = () => {
-  const { userDcg } = useAuth();
+  const { userDcg, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { data: dcgs } = useDcgs();
   const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
@@ -62,6 +62,18 @@ const DcgFinances: React.FC = () => {
 
   const periods = ["Last 30 days", "Last 3 months", "Last 6 months", "This year", "Last year"];
   const fmt = (amount: number) => formatWithCurrency(amount, regionCurrency);
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <DcgAdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading...</span>
+        </div>
+      </DcgAdminLayout>
+    );
+  }
 
   if (!userDcg) {
     return (
@@ -155,7 +167,7 @@ const DcgFinances: React.FC = () => {
           </div>
         </div>
 
-        {/* Period Filter - scrollable on mobile */}
+        {/* Period Filter */}
         <ScrollArea className="w-full">
           <div className="flex gap-2 pb-2">
             {periods.map((period) => (

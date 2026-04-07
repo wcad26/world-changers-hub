@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2
+  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2, Loader2
 } from 'lucide-react';
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -19,11 +19,15 @@ import { useDcgEvents, useDeleteDcgEvent, useRegionalEventsForDcg } from '@/hook
 import { CreateEventDialog } from '@/components/admin/dcg/CreateEventDialog';
 import { EventAttendanceDialog } from '@/components/admin/dcg/EventAttendanceDialog';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsTablet } from '@/hooks/use-tablet';
+import { cn } from '@/lib/utils';
 import type { Event } from '@/hooks/useDcgEvents';
 
 const DcgEvents = () => {
-  const { userDcg, userRegion } = useAuth();
+  const { userDcg, userRegion, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
+  const useCardView = isMobile || isTablet;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
@@ -47,7 +51,8 @@ const DcgEvents = () => {
     return <Badge variant="default">Upcoming</Badge>;
   };
 
-  const renderEventCard = (event: Event) => {
+  // DCG event card (with delete action)
+  const renderDcgEventCard = (event: Event) => {
     const duration = formatEventDuration(event.start_datetime, event.end_datetime);
     return (
       <div key={event.id} className="border border-border rounded-lg p-3 space-y-2">
@@ -95,7 +100,47 @@ const DcgEvents = () => {
     );
   };
 
-  const renderEventsTable = (eventsList: Event[], noEventsMessage: string) => {
+  // Regional event card (no delete, only attendance)
+  const renderRegionalEventCard = (event: Event) => {
+    const duration = formatEventDuration(event.start_datetime, event.end_datetime);
+    return (
+      <div key={event.id} className="border border-border rounded-lg p-3 space-y-2">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate">{event.name}</p>
+            {event.description && (
+              <p className="text-xs text-muted-foreground line-clamp-1">{event.description}</p>
+            )}
+          </div>
+          {getEventStatusBadge(event)}
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" /> {duration.dateRange}
+          </span>
+          {event.location_name && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" /> {event.location_name}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <Badge variant="outline" className="text-[10px]">{event.category}</Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setSelectedEventForAttendance(event)}
+          >
+            <UserCheck className="h-3 w-3 mr-1" /> Attendance
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // DCG events table (with actions)
+  const renderDcgEventsTable = (eventsList: Event[], noEventsMessage: string) => {
     if (loadingEvents) {
       return (
         <div className="space-y-3">
@@ -114,8 +159,8 @@ const DcgEvents = () => {
       );
     }
 
-    if (isMobile) {
-      return <div className="space-y-3">{eventsList.map(renderEventCard)}</div>;
+    if (useCardView) {
+      return <div className="space-y-3">{eventsList.map(renderDcgEventCard)}</div>;
     }
 
     return (
@@ -153,9 +198,6 @@ const DcgEvents = () => {
                         <div>{duration.dateRange}</div>
                         <div className="text-sm text-muted-foreground">
                           {duration.timeRange}
-                          {duration.isMultiDay && (
-                            <div className="text-xs text-amber-600">Multi-day event</div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -200,6 +242,98 @@ const DcgEvents = () => {
     );
   };
 
+  // Regional events table (no actions column)
+  const renderRegionalEventsTable = (eventsList: Event[], noEventsMessage: string) => {
+    if (loadingRegional) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      );
+    }
+
+    if (eventsList.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          {noEventsMessage}
+        </div>
+      );
+    }
+
+    if (useCardView) {
+      return <div className="space-y-3">{eventsList.map(renderRegionalEventCard)}</div>;
+    }
+
+    return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Event Name</TableHead>
+              <TableHead>Date & Time</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-[100px]">Attendance</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {eventsList.map((event) => {
+              const duration = formatEventDuration(event.start_datetime, event.end_datetime);
+              return (
+                <TableRow key={event.id}>
+                  <TableCell className="font-medium">{event.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div>{duration.dateRange}</div>
+                        <div className="text-sm text-muted-foreground">{duration.timeRange}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {event.location_name && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{event.location_name}</span>
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell><Badge variant="outline">{event.category}</Badge></TableCell>
+                  <TableCell>{getEventStatusBadge(event)}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedEventForAttendance(event)}
+                    >
+                      <UserCheck className="h-4 w-4 mr-1" /> Record
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <DcgAdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading...</span>
+        </div>
+      </DcgAdminLayout>
+    );
+  }
+
   if (!userDcg) {
     return (
       <DcgAdminLayout>
@@ -233,7 +367,7 @@ const DcgEvents = () => {
         )}
 
         <Tabs defaultValue="current" className="w-full">
-          <TabsList className={cn("w-full", isMobile && "overflow-x-auto flex")}>
+          <TabsList className={cn("w-full", useCardView && "overflow-x-auto flex")}>
             <TabsTrigger value="current" className="flex-1 text-xs md:text-sm">
               Current ({currentEvents.length})
             </TabsTrigger>
@@ -251,7 +385,7 @@ const DcgEvents = () => {
                 <CardTitle className="text-base md:text-lg">Current & Future Events</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6 pt-0">
-                {renderEventsTable(currentEvents, "No upcoming events. Create your first event!")}
+                {renderDcgEventsTable(currentEvents, "No upcoming events. Create your first event!")}
               </CardContent>
             </Card>
           </TabsContent>
@@ -262,7 +396,7 @@ const DcgEvents = () => {
                 <CardTitle className="text-base md:text-lg">Past Events</CardTitle>
               </CardHeader>
               <CardContent className="p-4 md:p-6 pt-0">
-                {renderEventsTable(pastEvents, "No past events found.")}
+                {renderDcgEventsTable(pastEvents, "No past events found.")}
               </CardContent>
             </Card>
           </TabsContent>
@@ -276,7 +410,7 @@ const DcgEvents = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6 pt-0">
-                {renderEventsTable(regionalEvents || [], "No regional events found.")}
+                {renderRegionalEventsTable(regionalEvents || [], "No regional events found.")}
               </CardContent>
             </Card>
           </TabsContent>
@@ -295,8 +429,5 @@ const DcgEvents = () => {
     </DcgAdminLayout>
   );
 };
-
-// cn utility import
-import { cn } from '@/lib/utils';
 
 export default DcgEvents;

@@ -13,7 +13,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UserCheck, Users } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
 import { useSaveEventAttendance, useEventAttendanceRecords } from '@/hooks/useDcgEvents';
 import type { Event } from '@/hooks/useDcgEvents';
@@ -33,21 +35,20 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
 
   const { data: dcgMembers, isLoading: loadingMembers } = useDcgMembers(dcgId);
   const { data: existingRecords } = useEventAttendanceRecords(event.id, dcgId);
   const saveAttendance = useSaveEventAttendance();
 
-  // Helper function to get display name
   const getDisplayName = (dcgMember: any) => {
     const profile = dcgMember.members?.profiles;
-    if (profile?.first_name || profile?.last_name) {
-      return `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+    if (profile?.last_name || profile?.first_name) {
+      return `${profile.last_name || ''} ${profile.first_name || ''}`.trim();
     }
     return dcgMember.members?.member_id || 'Unknown Member';
   };
 
-  // Load existing attendance records
   useEffect(() => {
     if (existingRecords) {
       const presentMemberIds = new Set(
@@ -105,8 +106,8 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0">
+        <DialogHeader className="p-4 md:p-6 pb-0">
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5" />
             Record Attendance
@@ -116,83 +117,117 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search members..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <div className="flex-1 overflow-hidden px-4 md:px-6">
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="relative flex-1 w-full sm:max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Search members..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  {presentMembers.size === filteredMembers.length ? 'Deselect All' : 'Select All'}
+                </Button>
+                <span className="text-sm text-muted-foreground whitespace-nowrap">
+                  {presentMembers.size}/{filteredMembers.length}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                {presentMembers.size === filteredMembers.length ? 'Deselect All' : 'Select All'}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {presentMembers.size} of {filteredMembers.length} present
-              </span>
-            </div>
-          </div>
 
-          <div className="rounded-md border max-h-96 overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50px]">Present</TableHead>
-                  <TableHead>Member Name</TableHead>
-                  <TableHead>Member ID</TableHead>
-                  <TableHead>Role</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingMembers ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : filteredMembers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+            <ScrollArea className="h-[calc(85vh-250px)] sm:h-[calc(85vh-220px)]">
+              {isMobile ? (
+                /* Mobile card list */
+                <div className="space-y-2 pr-2">
+                  {loadingMembers ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                    ))
+                  ) : filteredMembers.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground text-sm">
                       {searchTerm ? "No members match your search" : "No members found"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMembers.map((dcgMember) => (
-                    <TableRow key={dcgMember.id}>
-                      <TableCell>
+                    </div>
+                  ) : (
+                    filteredMembers.map((dcgMember) => (
+                      <div
+                        key={dcgMember.id}
+                        className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleToggleMember(dcgMember.member_id)}
+                      >
                         <Checkbox
                           checked={presentMembers.has(dcgMember.member_id)}
                           onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
                         />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {getDisplayName(dcgMember)}
-                      </TableCell>
-                      <TableCell>{dcgMember.members?.member_id}</TableCell>
-                      <TableCell>{dcgMember.role}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{getDisplayName(dcgMember)}</p>
+                          <p className="text-xs text-muted-foreground">{dcgMember.role}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : (
+                /* Desktop table */
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">Present</TableHead>
+                        <TableHead>Member Name</TableHead>
+                        <TableHead>Role</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loadingMembers ? (
+                        Array.from({ length: 5 }).map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                          </TableRow>
+                        ))
+                      ) : filteredMembers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                            {searchTerm ? "No members match your search" : "No members found"}
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        filteredMembers.map((dcgMember) => (
+                          <TableRow key={dcgMember.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={presentMembers.has(dcgMember.member_id)}
+                                onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
+                              />
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {getDisplayName(dcgMember)}
+                            </TableCell>
+                            <TableCell>{dcgMember.role}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </ScrollArea>
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="p-4 md:p-6 pt-2 border-t">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
