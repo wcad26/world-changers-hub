@@ -74,6 +74,7 @@ import SelfAttendance from "./pages/SelfAttendance";
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
 import DcgMembers from "./pages/dcg/Members";
+import DcgMemberProfile from "./pages/dcg/MemberProfile";
 import DcgEvents from "./pages/dcg/Events";
 import DcgFinances from "./pages/dcg/Finances";
 import DcgReports from "./pages/dcg/Reports";
@@ -315,6 +316,9 @@ const App = () => {
                 </MultiRoleProtectedRoute>} />
             <Route path="/dcg/members" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgMembers />
+                </MultiRoleProtectedRoute>} />
+            <Route path="/dcg/member/:memberId" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
+                  <DcgMemberProfile />
                 </MultiRoleProtectedRoute>} />
             <Route path="/dcg/events" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
                   <DcgEvents />

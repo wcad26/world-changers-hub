@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Mail, Phone, UserPlus, Users, Loader2, Calendar, Trash2 } from 'lucide-react';
-import { useDcgMembers, useUpdateDcgMemberRole, useRemoveMemberFromDcg } from '@/hooks/useDcgMembers';
+import { Search, Mail, Phone, UserPlus, Users, Loader2, Calendar } from 'lucide-react';
+import { useDcgMembers, useUpdateDcgMemberRole } from '@/hooks/useDcgMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import AddExistingMemberDialog from '@/components/admin/dcg/AddExistingMemberDialog';
@@ -21,11 +22,11 @@ const DcgMembers = () => {
   const [addExistingOpen, setAddExistingOpen] = useState(false);
   const [registerNewOpen, setRegisterNewOpen] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   
   const { userDcg } = useAuth();
   const { data: dcgMembers, isLoading } = useDcgMembers(userDcg?.id);
   const updateRole = useUpdateDcgMemberRole();
-  const removeMember = useRemoveMemberFromDcg();
 
   const filteredMembers = dcgMembers?.filter(dcgMember => {
     if (!searchTerm) return true;
@@ -37,13 +38,13 @@ const DcgMembers = () => {
     return fullName.includes(searchLower) || email.includes(searchLower) || member.member_id.toLowerCase().includes(searchLower);
   }) || [];
 
-  const handleRoleUpdate = (dcgMemberId: string, newRole: DcgMemberRole) => {
+  const handleRoleUpdate = (e: React.MouseEvent, dcgMemberId: string, newRole: DcgMemberRole) => {
+    e.stopPropagation();
     updateRole.mutate({ dcgMemberId, role: newRole });
   };
 
-  const handleRemoveMember = (dcgMemberId: string) => {
-    if (!userDcg) return;
-    removeMember.mutate({ dcgMemberId, dcgId: userDcg.id });
+  const handleRowClick = (memberId: string) => {
+    navigate(`/dcg/member/${memberId}`);
   };
 
   return (
@@ -115,25 +116,18 @@ const DcgMembers = () => {
                   const member = dcgMember.members;
                   if (!member) return null;
                   return (
-                    <div key={dcgMember.id} className="border border-border rounded-lg p-3 space-y-2">
+                    <div
+                      key={dcgMember.id}
+                      className="border border-border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => handleRowClick(dcgMember.member_id)}
+                    >
                       <div className="flex items-center justify-between">
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm truncate">
-                            {member.profiles?.last_name} {member.profiles?.first_name}
-                          </p>
-                          <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'} className="text-[10px] mt-0.5">
-                            {member.member_type}
-                          </Badge>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveMember(dcgMember.id)}
-                          disabled={removeMember.isPending}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <p className="font-medium text-sm truncate min-w-0 flex-1">
+                          {member.profiles?.last_name} {member.profiles?.first_name}
+                        </p>
+                        <Badge variant={member.member_type === 'member' ? 'default' : 'secondary'} className="text-[10px] ml-2 shrink-0">
+                          {member.member_type}
+                        </Badge>
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                         {member.profiles?.email && (
@@ -148,20 +142,22 @@ const DcgMembers = () => {
                         )}
                       </div>
                       <div className="flex items-center justify-between">
-                        <Select
-                          value={dcgMember.role}
-                          onValueChange={(value) => handleRoleUpdate(dcgMember.id, value as DcgMemberRole)}
-                          disabled={updateRole.isPending}
-                        >
-                          <SelectTrigger className="w-28 h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Member">Member</SelectItem>
-                            <SelectItem value="Assistant">Assistant</SelectItem>
-                            <SelectItem value="Leader">Leader</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={dcgMember.role}
+                            onValueChange={(value) => handleRoleUpdate({stopPropagation: () => {}} as any, dcgMember.id, value as DcgMemberRole)}
+                            disabled={updateRole.isPending}
+                          >
+                            <SelectTrigger className="w-28 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Member">Member</SelectItem>
+                              <SelectItem value="Assistant">Assistant</SelectItem>
+                              <SelectItem value="Leader">Leader</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           {new Date(dcgMember.joined_date).toLocaleDateString()}
@@ -172,7 +168,7 @@ const DcgMembers = () => {
                 })}
               </div>
             ) : (
-              /* Desktop table view */
+              /* Desktop/Tablet table view */
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -181,7 +177,6 @@ const DcgMembers = () => {
                     <TableHead>Type</TableHead>
                     <TableHead>DCG Role</TableHead>
                     <TableHead>Joined DCG</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -189,7 +184,11 @@ const DcgMembers = () => {
                     const member = dcgMember.members;
                     if (!member) return null;
                     return (
-                      <TableRow key={dcgMember.id}>
+                      <TableRow
+                        key={dcgMember.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleRowClick(dcgMember.member_id)}
+                      >
                         <TableCell>
                           <div className="font-medium">
                             {member.profiles?.last_name} {member.profiles?.first_name}
@@ -216,10 +215,10 @@ const DcgMembers = () => {
                             {member.member_type}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={dcgMember.role}
-                            onValueChange={(value) => handleRoleUpdate(dcgMember.id, value as DcgMemberRole)}
+                            onValueChange={(value) => updateRole.mutate({ dcgMemberId: dcgMember.id, role: value as DcgMemberRole })}
                             disabled={updateRole.isPending}
                           >
                             <SelectTrigger className="w-32">
@@ -237,17 +236,6 @@ const DcgMembers = () => {
                             <Calendar className="mr-2 h-3 w-3" />
                             {new Date(dcgMember.joined_date).toLocaleDateString()}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveMember(dcgMember.id)}
-                            disabled={removeMember.isPending}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </TableCell>
                       </TableRow>
                     );
