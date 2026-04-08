@@ -30,6 +30,7 @@ export const useTransferMember = () => {
         .update({
           region_id: params.toRegionId,
           member_id: newMemberCode,
+          status: 'active' as any,
           updated_at: new Date().toISOString(),
         })
         .eq('id', params.memberId);

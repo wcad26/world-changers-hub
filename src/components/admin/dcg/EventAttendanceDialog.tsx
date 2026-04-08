@@ -146,7 +146,7 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
               </div>
             </div>
 
-            <ScrollArea className="h-[calc(85vh-250px)] sm:h-[calc(85vh-220px)]">
+            <ScrollArea className="h-[calc(85vh-280px)] sm:h-[calc(85vh-220px)]">
               {isMobile ? (
                 /* Mobile card list */
                 <div className="space-y-2 pr-2">
@@ -228,9 +228,11 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
         </div>
 
         <DialogFooter className="p-4 md:p-6 pt-2 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
+          {!isMobile && (
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
           <Button
             onClick={handleRecordAttendance}
             disabled={saveAttendance.isPending || loadingMembers}

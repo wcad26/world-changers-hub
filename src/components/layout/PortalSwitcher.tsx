@@ -76,7 +76,7 @@ const PortalSwitcher = () => {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <CurrentIcon className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentPortal?.title}</span>
+          <span>{currentPortal?.title}</span>
           <ChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
