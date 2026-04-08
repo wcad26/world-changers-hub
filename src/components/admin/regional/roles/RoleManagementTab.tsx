@@ -3,22 +3,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Edit, Trash2, Shield, Eye, MoreHorizontal } from 'lucide-react';
-import { useRegionalRoles, useDeleteRegionalRole } from '@/hooks/useRegionalRoles';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Edit, Trash2, Shield, Eye, MoreHorizontal, XCircle } from 'lucide-react';
+import { useRegionalRoles, useDeleteRegionalRole, useHardDeleteRegionalRole } from '@/hooks/useRegionalRoles';
 import EditRoleDialog from './EditRoleDialog';
 import RoleDetailsDialog from './RoleDetailsDialog';
 
 const RoleManagementTab: React.FC = () => {
   const { data: roles, isLoading } = useRegionalRoles();
   const deleteRole = useDeleteRegionalRole();
+  const hardDeleteRole = useHardDeleteRegionalRole();
   const [editingRole, setEditingRole] = useState<any>(null);
   const [viewingRole, setViewingRole] = useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ role: any; type: 'soft' | 'hard' } | null>(null);
 
-  const handleDeleteRole = async (roleId: string) => {
-    if (window.confirm('Are you sure you want to deactivate this role?')) {
-      await deleteRole.mutateAsync(roleId);
+  const handleDeleteRole = (role: any, type: 'soft' | 'hard') => {
+    setDeleteConfirm({ role, type });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    if (deleteConfirm.type === 'hard') {
+      await hardDeleteRole.mutateAsync(deleteConfirm.role.id);
+    } else {
+      await deleteRole.mutateAsync(deleteConfirm.role.id);
     }
+    setDeleteConfirm(null);
   };
 
   if (isLoading) {
@@ -86,13 +97,22 @@ const RoleManagementTab: React.FC = () => {
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem 
-                            onClick={() => handleDeleteRole(role.id)}
+                            onClick={() => handleDeleteRole(role, 'soft')}
+                            disabled={role.name === 'Regional Admin'}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Deactivate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteRole(role, 'hard')}
                             disabled={role.name === 'Regional Admin'}
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
+                            Delete Permanently
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -120,6 +140,31 @@ const RoleManagementTab: React.FC = () => {
           onOpenChange={(open) => !open && setViewingRole(null)}
         />
       )}
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteConfirm?.type === 'hard' ? 'Permanently Delete Role?' : 'Deactivate Role?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirm?.type === 'hard' 
+                ? `This will permanently delete the role "${deleteConfirm?.role?.name}". This action cannot be undone. The role must have no users assigned to it.`
+                : `This will deactivate the role "${deleteConfirm?.role?.name}". Users with this role will lose their associated permissions.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteConfirm?.type === 'hard' ? 'Delete Permanently' : 'Deactivate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

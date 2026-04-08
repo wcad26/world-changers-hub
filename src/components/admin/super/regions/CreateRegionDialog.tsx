@@ -64,7 +64,7 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
         <DialogHeader>
           <DialogTitle>Create New Region</DialogTitle>
           <DialogDescription>
-            Add a new regional branch to the WCA network.
+            Add a new regional branch to the WCA network. You can assign a president after the region is created and members are registered.
           </DialogDescription>
         </DialogHeader>
 
@@ -144,7 +144,7 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
                 id="regional_president"
                 value={formData.regional_president}
                 onChange={(e) => handleInputChange('regional_president', e.target.value)}
-                placeholder="President John Doe"
+                placeholder="Assign after creation"
               />
             </div>
             <div className="space-y-2">

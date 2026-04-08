@@ -32,7 +32,7 @@ const DcgEvents = () => {
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
   const { data: events, isLoading: loadingEvents, error: eventsError } = useDcgEvents(userDcg?.id);
-  const { data: regionalEvents, isLoading: loadingRegional } = useRegionalEventsForDcg(userRegion?.id || userDcg?.region_id);
+  const { data: regionalEvents, isLoading: loadingRegional } = useRegionalEventsForDcg(userDcg?.region_id);
   const deleteEvent = useDeleteDcgEvent();
 
   const handleDeleteEvent = async (eventId: string) => {

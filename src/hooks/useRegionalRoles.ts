@@ -153,3 +153,45 @@ export const useDeleteRegionalRole = () => {
     },
   });
 };
+
+export const useHardDeleteRegionalRole = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (roleId: string) => {
+      // Check if any users are assigned to this role
+      const { data: assignments, error: checkError } = await supabase
+        .from('regional_user_roles')
+        .select('id')
+        .eq('regional_role_id', roleId)
+        .limit(1);
+
+      if (checkError) throw checkError;
+      if (assignments && assignments.length > 0) {
+        throw new Error('Cannot delete a role that has users assigned to it. Remove all user assignments first.');
+      }
+
+      const { error } = await supabase
+        .from('regional_roles')
+        .delete()
+        .eq('id', roleId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['regional-roles'] });
+      toast({
+        title: "Role deleted",
+        description: "Regional role has been permanently deleted.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error deleting role",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
