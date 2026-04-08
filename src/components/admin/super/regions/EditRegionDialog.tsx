@@ -5,14 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRegionMutations } from '@/hooks/useRegionMutations';
-import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2, ChevronsUpDown, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Region } from '@/hooks/useAllRegions';
 
 interface EditRegionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   region: Region | null;
+}
+
+interface MemberOption {
+  id: string;
+  name: string;
+  member_id: string;
+  profile_id: string | null;
 }
 
 const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange, region }) => {
@@ -26,6 +37,10 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
     regional_president: '',
     established_date: ''
   });
+  const [memberSearch, setMemberSearch] = useState('');
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [presidentPopoverOpen, setPresidentPopoverOpen] = useState(false);
 
   const { updateRegion } = useRegionMutations();
 
@@ -43,6 +58,32 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
       });
     }
   }, [region]);
+
+  // Fetch members for this region
+  useEffect(() => {
+    if (!region?.id || !open) return;
+    
+    const fetchMembers = async () => {
+      setLoadingMembers(true);
+      const { data, error } = await supabase
+        .from('members')
+        .select('id, member_id, profile_id, profiles:profile_id(first_name, last_name)')
+        .eq('region_id', region.id)
+        .eq('status', 'active')
+        .order('member_id');
+
+      if (!error && data) {
+        setMembers(data.map((m: any) => ({
+          id: m.id,
+          member_id: m.member_id,
+          profile_id: m.profile_id,
+          name: `${m.profiles?.last_name || ''} ${m.profiles?.first_name || ''}`.trim() || m.member_id,
+        })));
+      }
+      setLoadingMembers(false);
+    };
+    fetchMembers();
+  }, [region?.id, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +106,11 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const filteredMembers = members.filter(m => 
+    m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+    m.member_id.toLowerCase().includes(memberSearch.toLowerCase())
+  );
 
   if (!region) return null;
 
@@ -149,13 +195,60 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="regional_president">Regional President</Label>
-              <Input
-                id="regional_president"
-                value={formData.regional_president}
-                onChange={(e) => handleInputChange('regional_president', e.target.value)}
-                placeholder="President John Doe"
-              />
+              <Label>Regional President</Label>
+              <Popover open={presidentPopoverOpen} onOpenChange={setPresidentPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-between font-normal"
+                    type="button"
+                  >
+                    <span className="truncate">
+                      {formData.regional_president || 'Select member...'}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search members..." 
+                      value={memberSearch}
+                      onValueChange={setMemberSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {loadingMembers ? 'Loading...' : 'No members found.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {filteredMembers.slice(0, 50).map((member) => (
+                          <CommandItem
+                            key={member.id}
+                            value={member.name}
+                            onSelect={() => {
+                              handleInputChange('regional_president', member.name);
+                              setPresidentPopoverOpen(false);
+                              setMemberSearch('');
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.regional_president === member.name ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span className="text-sm">{member.name}</span>
+                              <span className="text-xs text-muted-foreground">{member.member_id}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="established_date">Established Date</Label>
