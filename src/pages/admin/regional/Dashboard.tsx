@@ -21,7 +21,7 @@ import DCGTab from "@/components/admin/regional/dashboard/tabs/DCGTab";
 import LocationsTab from "@/components/admin/regional/dashboard/tabs/LocationsTab";
 import FundraisingTab from "@/components/admin/regional/dashboard/tabs/FundraisingTab";
 import DiscipleshipTab from "@/components/admin/regional/discipleship/DiscipleshipTab";
-import MemberCards from "@/components/admin/regional/dashboard/MemberCards";
+
 
 const RegionalDashboard: React.FC = () => {
   const { userRegion, loading: authLoading } = useAuth();
@@ -127,12 +127,6 @@ const RegionalDashboard: React.FC = () => {
             </TabsList>
           </div>
 
-          {/* Members tab KPI cards */}
-          {activeTab === 'members' && !isLoading && (
-            <div className="mt-6">
-              <MemberCards members={members} isLoading={membersLoading} />
-            </div>
-          )}
 
           {/* Finance/DCG/Locations KPI cards */}
           {['finance', 'dcg', 'locations'].includes(activeTab) && !isLoading && (
