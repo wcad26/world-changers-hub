@@ -47,19 +47,24 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: currentTarget, isLoading: isLoadingTarget } = useCurrentMemberTarget();
 
-  const totalMembers = members?.filter(m => m.member_type === 'member').length || 0;
-  const totalVisitors = members?.filter(m => m.member_type === 'visitor').length || 0;
-  const activeMembers = members?.filter(m => m.member_type === 'member' && m.status === 'active').length || 0;
-
-  // Children count: members/visitors whose date_of_birth makes them under 18
-  const childrenCount = useMemo(() => {
-    if (!members) return 0;
+  // Separate children (under 18) from adult members and visitors
+  const { totalMembers, totalVisitors, activeMembers, childrenCount } = useMemo(() => {
+    if (!members) return { totalMembers: 0, totalVisitors: 0, activeMembers: 0, childrenCount: 0 };
     const now = new Date();
-    return members.filter(m => {
+    let mem = 0, vis = 0, active = 0, children = 0;
+    members.forEach(m => {
       const dob = m.profiles?.date_of_birth;
-      if (!dob) return false;
-      return differenceInYears(now, new Date(dob)) < 18;
-    }).length;
+      const isChild = dob ? differenceInYears(now, new Date(dob)) < 18 : false;
+      if (isChild) {
+        children++;
+      } else if (m.member_type === 'member') {
+        mem++;
+        if (m.status === 'active') active++;
+      } else if (m.member_type === 'visitor') {
+        vis++;
+      }
+    });
+    return { totalMembers: mem, totalVisitors: vis, activeMembers: active, childrenCount: children };
   }, [members]);
 
   // Period-filtered new joiners

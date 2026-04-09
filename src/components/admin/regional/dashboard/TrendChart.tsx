@@ -17,13 +17,14 @@ const TrendChart: React.FC = () => {
     if (!attendanceHistory) return [];
     
     return attendanceHistory
-      .slice(0, 12) // Last 12 events
-      .reverse() // Show chronological order
+      .slice(0, 12)
+      .reverse()
       .map((event, index) => ({
         name: `Event ${index + 1}`,
         date: new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         Members: event.members_present || 0,
         Visitors: event.visitors_present || 0,
+        Children: (event as any).children_present || 0,
         Total: event.total_present || 0
       }));
   }, [attendanceHistory]);
@@ -58,7 +59,7 @@ const TrendChart: React.FC = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div>
-          <CardTitle className="text-lg font-semibold">Member & Visitor Attendance Trends</CardTitle>
+          <CardTitle className="text-lg font-semibold">Member, Visitor & Children Attendance Trends</CardTitle>
           <CardDescription>
             Attendance patterns over the last {chartData.length} events
           </CardDescription>
@@ -110,6 +111,14 @@ const TrendChart: React.FC = () => {
                 stroke="hsl(220, 100%, 60%)" 
                 strokeWidth={2}
                 dot={{ fill: 'hsl(220, 100%, 60%)', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Children" 
+                stroke="hsl(330, 80%, 60%)" 
+                strokeWidth={2}
+                dot={{ fill: 'hsl(330, 80%, 60%)', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line 
