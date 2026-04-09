@@ -1,23 +1,41 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, CalendarCheck2, TrendingUp, TrendingDown, UserCheck, Percent } from 'lucide-react';
+import { Users, UserPlus, TrendingUp, TrendingDown, Target, Calendar, Baby } from 'lucide-react';
 import { useMembers } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useAttendanceHistoryWithMemberTypes } from '@/hooks/useAttendance';
+import { useCurrentMemberTarget } from '@/hooks/useMemberTargets';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, startOfMonth, differenceInDays, differenceInYears, eachMonthOfInterval } from 'date-fns';
 
 interface MembersTabProps {
   selectedPeriod: string;
 }
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+const GlassCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl shadow-sm p-5 hover:shadow-md transition-all duration-300">
+    {children}
+  </div>
+);
+
+const TrendBadge = ({ value }: { value: number }) => {
+  if (value === 0) return <span className="text-xs text-muted-foreground">0%</span>;
+  const pos = value > 0;
+  return (
+    <div className={`flex items-center gap-1 ${pos ? 'text-green-600' : 'text-red-600'}`}>
+      {pos ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      <span className="text-xs font-medium">{pos ? '+' : ''}{value}%</span>
+    </div>
+  );
+};
 
 const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
@@ -27,33 +45,59 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const { userRegion } = useAuth();
   const { data: members, isLoading, error } = useMembers(userRegion?.id);
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: currentTarget, isLoading: isLoadingTarget } = useCurrentMemberTarget();
 
   const totalMembers = members?.filter(m => m.member_type === 'member').length || 0;
   const totalVisitors = members?.filter(m => m.member_type === 'visitor').length || 0;
+  const activeMembers = members?.filter(m => m.member_type === 'member' && m.status === 'active').length || 0;
 
-  const newThisMonth = useMemo(() => {
+  // Children count: members/visitors whose date_of_birth makes them under 18
+  const childrenCount = useMemo(() => {
     if (!members) return 0;
     const now = new Date();
-    const monthStart = startOfMonth(now);
-    return members.filter(m => m.join_date && new Date(m.join_date) >= monthStart).length;
+    return members.filter(m => {
+      const dob = m.profiles?.date_of_birth;
+      if (!dob) return false;
+      return differenceInYears(now, new Date(dob)) < 18;
+    }).length;
   }, [members]);
 
-  const memberToVisitorRatio = useMemo(() => {
-    if (totalVisitors === 0) return totalMembers > 0 ? '∞' : '0';
-    return (totalMembers / totalVisitors).toFixed(1);
-  }, [totalMembers, totalVisitors]);
+  // Period-filtered new joiners
+  const newInPeriod = useMemo(() => {
+    if (!members || !filters.dateRange?.from) return 0;
+    const from = filters.dateRange.from;
+    const to = filters.dateRange.to || new Date();
+    return members.filter(m => {
+      if (!m.join_date) return false;
+      const d = new Date(m.join_date);
+      return d >= from && d <= to;
+    }).length;
+  }, [members, filters.dateRange]);
 
-  const avgAttendance = useMemo(() => {
-    if (!attendanceWithTypes || attendanceWithTypes.length === 0) return 0;
-    const total = attendanceWithTypes.reduce((sum, e) => sum + e.total_present, 0);
-    return Math.round(total / attendanceWithTypes.length);
+  // Growth trends from attendance data
+  const growthTrends = useMemo(() => {
+    if (!attendanceWithTypes || attendanceWithTypes.length < 2) {
+      return { memberGrowth: 0, visitorGrowth: 0 };
+    }
+    const half = Math.ceil(attendanceWithTypes.length / 2);
+    const recent = attendanceWithTypes.slice(0, half);
+    const prev = attendanceWithTypes.slice(half);
+    if (!recent.length || !prev.length) return { memberGrowth: 0, visitorGrowth: 0 };
+
+    const recentAvgM = recent.reduce((s, e) => s + e.members_present, 0) / recent.length;
+    const prevAvgM = prev.reduce((s, e) => s + e.members_present, 0) / prev.length;
+    const recentAvgV = recent.reduce((s, e) => s + e.visitors_present, 0) / recent.length;
+    const prevAvgV = prev.reduce((s, e) => s + e.visitors_present, 0) / prev.length;
+
+    return {
+      memberGrowth: prevAvgM > 0 ? Math.round(((recentAvgM - prevAvgM) / prevAvgM) * 100) : 0,
+      visitorGrowth: prevAvgV > 0 ? Math.round(((recentAvgV - prevAvgV) / prevAvgV) * 100) : 0,
+    };
   }, [attendanceWithTypes]);
 
-  const attendanceRate = useMemo(() => {
-    if (!attendanceWithTypes || attendanceWithTypes.length === 0 || totalMembers === 0) return 0;
-    const latestEvent = attendanceWithTypes[0];
-    return Math.round((latestEvent.total_present / totalMembers) * 100);
-  }, [attendanceWithTypes, totalMembers]);
+  // Target progress
+  const targetProgress = currentTarget ? Math.round((totalMembers / currentTarget.target_members) * 100) : null;
+  const daysLeft = currentTarget ? differenceInDays(new Date(currentTarget.target_date), new Date()) : null;
 
   // Gender distribution from profiles
   const genderData = useMemo(() => {
@@ -67,40 +111,68 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
     return Object.entries(genderCounts).map(([name, value]) => ({ name, value }));
   }, [members]);
 
-  // Monthly growth chart
+  // Monthly growth chart filtered by period
   const monthlyGrowth = useMemo(() => {
     if (!members) return [];
+    const from = filters.dateRange?.from || subMonths(new Date(), 5);
+    const to = filters.dateRange?.to || new Date();
+    const monthStarts = eachMonthOfInterval({ start: from, end: to });
+    
     const months: Record<string, { members: number; visitors: number }> = {};
-    for (let i = 5; i >= 0; i--) {
-      const d = subMonths(new Date(), i);
+    monthStarts.forEach(d => {
       const key = format(d, 'MMM yyyy');
       months[key] = { members: 0, visitors: 0 };
-    }
+    });
+
     members.forEach(m => {
       if (m.join_date) {
-        const key = format(new Date(m.join_date), 'MMM yyyy');
-        if (months[key]) {
-          if (m.member_type === 'member') months[key].members++;
-          else months[key].visitors++;
+        const jd = new Date(m.join_date);
+        if (jd >= from && jd <= to) {
+          const key = format(jd, 'MMM yyyy');
+          if (months[key]) {
+            if (m.member_type === 'member') months[key].members++;
+            else months[key].visitors++;
+          }
         }
       }
     });
     return Object.entries(months).map(([month, data]) => ({ month, ...data }));
-  }, [members]);
+  }, [members, filters.dateRange]);
 
-  // Recent joiners
+  // Recent joiners filtered by period
   const recentJoiners = useMemo(() => {
     if (!members) return [];
+    const from = filters.dateRange?.from;
+    const to = filters.dateRange?.to || new Date();
     return [...members]
+      .filter(m => {
+        if (!from) return true;
+        if (!m.join_date) return false;
+        const d = new Date(m.join_date);
+        return d >= from && d <= to;
+      })
       .sort((a, b) => new Date(b.join_date || 0).getTime() - new Date(a.join_date || 0).getTime())
       .slice(0, 8);
-  }, [members]);
+  }, [members, filters.dateRange]);
 
-  if (isLoading || isLoadingWithTypes) {
+  // Period label
+  const periodLabel = useMemo(() => {
+    const q = filters.quickDateRange;
+    if (q === '1-month') return 'This month';
+    if (q === '3-months') return 'Last 3 months';
+    if (q === '6-months') return 'Last 6 months';
+    if (q === '1-year') return 'Last year';
+    if (filters.dateRange?.from && filters.dateRange?.to) {
+      return `${format(filters.dateRange.from, 'MMM d')} - ${format(filters.dateRange.to, 'MMM d')}`;
+    }
+    return 'Selected period';
+  }, [filters]);
+
+  if (isLoading || isLoadingWithTypes || isLoadingTarget) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-28" />)}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
         </div>
         <Skeleton className="h-96" />
       </div>
@@ -117,15 +189,6 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
     );
   }
 
-  const kpis = [
-    { label: 'Total Members', value: totalMembers, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: 'Total Visitors', value: totalVisitors, icon: UserPlus, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: 'New This Month', value: newThisMonth, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
-    { label: 'Avg Attendance', value: avgAttendance, icon: CalendarCheck2, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-    { label: 'Member:Visitor', value: memberToVisitorRatio, icon: UserCheck, color: 'text-teal-600', bg: 'bg-teal-50 dark:bg-teal-900/20' },
-    { label: 'Attendance Rate', value: `${attendanceRate}%`, icon: Percent, color: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/20' },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -134,20 +197,88 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {kpis.map((kpi, i) => (
-          <Card key={i} className="bg-gradient-to-br from-background to-muted/30 backdrop-blur-sm border-border/50 shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`p-1.5 rounded-lg ${kpi.bg}`}>
-                  <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Total Members */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Total Members</span>
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{totalMembers}</div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-muted-foreground">{activeMembers} active</p>
+            <TrendBadge value={growthTrends.memberGrowth} />
+          </div>
+        </GlassCard>
+
+        {/* Total Visitors */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Total Visitors</span>
+            <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <UserPlus className="h-4 w-4 text-purple-600" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{totalVisitors}</div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-muted-foreground">Registered visitors</p>
+            <TrendBadge value={growthTrends.visitorGrowth} />
+          </div>
+        </GlassCard>
+
+        {/* New In Period */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">New Joiners</span>
+            <div className="h-8 w-8 rounded-xl bg-green-500/10 flex items-center justify-center">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{newInPeriod}</div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-muted-foreground">{periodLabel}</p>
+          </div>
+        </GlassCard>
+
+        {/* Member Target */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Member Target</span>
+            <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Target className="h-4 w-4 text-amber-600" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{targetProgress !== null ? `${targetProgress}%` : 'No Target'}</div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-muted-foreground">
+              {currentTarget ? `${totalMembers} of ${currentTarget.target_members}` : 'Set a target'}
+            </p>
+            {daysLeft !== null && (
+              <div className={`flex items-center gap-1 text-xs font-medium ${
+                daysLeft < 0 ? 'text-red-600' : daysLeft < 30 ? 'text-orange-500' : 'text-blue-600'
+              }`}>
+                <Calendar className="h-3 w-3" />
+                {daysLeft < 0 ? 'Overdue' : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}
               </div>
-              <p className="text-2xl font-bold">{kpi.value}</p>
-              <p className="text-xs text-muted-foreground">{kpi.label}</p>
-            </CardContent>
-          </Card>
-        ))}
+            )}
+          </div>
+        </GlassCard>
+
+        {/* Children */}
+        <GlassCard>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Children</span>
+            <div className="h-8 w-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
+              <Baby className="h-4 w-4 text-pink-600" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold">{childrenCount}</div>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-muted-foreground">Under 18 years</p>
+          </div>
+        </GlassCard>
       </div>
 
       {/* Attendance Trend */}
@@ -179,7 +310,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
         {/* Monthly Growth */}
         <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-sm">Monthly New Joiners (Last 6 Months)</CardTitle>
+            <CardTitle className="text-sm">New Joiners ({periodLabel})</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -201,7 +332,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
       <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
         <CardHeader>
           <CardTitle className="text-sm">Recent Joiners</CardTitle>
-          <CardDescription>Latest members and visitors</CardDescription>
+          <CardDescription>Latest members and visitors ({periodLabel})</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -222,7 +353,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
               </div>
             ))}
             {recentJoiners.length === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-4">No members found</p>
+              <p className="text-center text-sm text-muted-foreground py-4">No members found in this period</p>
             )}
           </div>
         </CardContent>
