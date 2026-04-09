@@ -117,7 +117,10 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           attendance_records!inner (
             is_present,
             members!inner (
-              member_type
+              member_type,
+              profiles (
+                date_of_birth
+              )
             )
           )
         `)
@@ -133,25 +136,38 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       const { data, error } = await query;
       
       if (error) throw error;
+
+      const now = new Date();
+      const isChild = (record: any) => {
+        const dob = record.members?.profiles?.date_of_birth;
+        if (!dob) return false;
+        const age = now.getFullYear() - new Date(dob).getFullYear();
+        const m = now.getMonth() - new Date(dob).getMonth();
+        const adjustedAge = m < 0 || (m === 0 && now.getDate() < new Date(dob).getDate()) ? age - 1 : age;
+        return adjustedAge < 18;
+      };
       
-      // Process the data to get counts by member type
+      // Process the data to get counts by member type, separating children
       const processedData = data?.map(event => {
         const records = event.attendance_records || [];
         
+        const childrenPresent = records.filter(r => r.is_present && isChild(r)).length;
+        const childrenAbsent = records.filter(r => !r.is_present && isChild(r)).length;
+        
         const membersPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'member'
+          r.is_present && r.members?.member_type === 'member' && !isChild(r)
         ).length;
         
         const visitorsPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'visitor'
+          r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
         ).length;
         
         const membersAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'member'
+          !r.is_present && r.members?.member_type === 'member' && !isChild(r)
         ).length;
         
         const visitorsAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'visitor'
+          !r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
         ).length;
         
         return {
@@ -162,10 +178,12 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           source_event_id: event.source_event_id || null,
           members_present: membersPresent,
           visitors_present: visitorsPresent,
+          children_present: childrenPresent,
           members_absent: membersAbsent,
           visitors_absent: visitorsAbsent,
-          total_present: membersPresent + visitorsPresent,
-          total_absent: membersAbsent + visitorsAbsent,
+          children_absent: childrenAbsent,
+          total_present: membersPresent + visitorsPresent + childrenPresent,
+          total_absent: membersAbsent + visitorsAbsent + childrenAbsent,
           date: new Date(event.event_date).toLocaleDateString()
         };
       }) || [];
@@ -176,8 +194,10 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
         if (existingEntry) {
           existingEntry.members_present += event.members_present;
           existingEntry.visitors_present += event.visitors_present;
+          existingEntry.children_present += event.children_present;
           existingEntry.members_absent += event.members_absent;
           existingEntry.visitors_absent += event.visitors_absent;
+          existingEntry.children_absent += event.children_absent;
           existingEntry.total_present += event.total_present;
           existingEntry.total_absent += event.total_absent;
         } else {
