@@ -176,7 +176,9 @@ export default function MemberRegister() {
     registerMember(
       {
         ...data,
-        region_id: region.id
+        region_id: region.id,
+        relationship_member_id: relatedMemberId || undefined,
+        relationship_type: relationshipType || undefined
       },
       {
         onSuccess: (result) => {
