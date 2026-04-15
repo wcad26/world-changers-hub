@@ -29,6 +29,7 @@ serve(async (req) => {
       rated_event_id,
       event_satisfaction_rating,
       referral_source,
+      referral_social_media,
       referral_member_ids,
       referral_other_details,
       join_interest
