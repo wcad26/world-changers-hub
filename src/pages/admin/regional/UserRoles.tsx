@@ -70,24 +70,24 @@ const UserRoles: React.FC = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="roles" className="space-y-4">
+        <Tabs defaultValue="assignments" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="roles" className="gap-2">
-              <Shield className="h-4 w-4" />
-              Manage Roles
-            </TabsTrigger>
             <TabsTrigger value="assignments" className="gap-2">
               <Users className="h-4 w-4" />
               User Assignments
             </TabsTrigger>
+            <TabsTrigger value="roles" className="gap-2">
+              <Shield className="h-4 w-4" />
+              Manage Roles
+            </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="roles">
-            <RoleManagementTab />
-          </TabsContent>
 
           <TabsContent value="assignments">
             <UserRoleAssignmentTab />
+          </TabsContent>
+
+          <TabsContent value="roles">
+            <RoleManagementTab />
           </TabsContent>
         </Tabs>
 

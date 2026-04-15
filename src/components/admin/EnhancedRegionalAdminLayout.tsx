@@ -50,12 +50,8 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       icon: DollarSign as React.ComponentType<{ className?: string; size?: number }>,
       permission: "fundraising_view"
     },
-    { 
-      title: "Locations", 
-      path: "/admin/regional/locations", 
-      icon: MapPin as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "locations_view"
-    },
+
+
     { 
       title: "Finances", 
       path: "/admin/regional/finances", 
@@ -81,7 +77,7 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "communication_view"
     },
     { 
-      title: "Branch Settings", 
+      title: "Regional Website Info", 
       path: "/admin/regional/branch-settings", 
       icon: Building2 as React.ComponentType<{ className?: string; size?: number }>,
       permission: "settings_view"
