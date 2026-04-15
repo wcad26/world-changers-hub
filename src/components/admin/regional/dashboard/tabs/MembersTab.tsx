@@ -12,7 +12,10 @@ import { AlertCircle } from 'lucide-react';
 import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { format, subMonths, startOfMonth, differenceInDays, differenceInYears, eachMonthOfInterval } from 'date-fns';
+import { format, subMonths, differenceInDays, differenceInYears, eachMonthOfInterval } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
+import { isChildMember, CHILD_AGE_THRESHOLD } from '@/utils/childUtils';
 
 interface MembersTabProps {
   selectedPeriod: string;
@@ -37,6 +40,24 @@ const TrendBadge = ({ value }: { value: number }) => {
   );
 };
 
+// Hook to fetch all member relationships for a region's members
+const useRegionMemberRelationships = (memberIds: string[]) => {
+  return useQuery({
+    queryKey: ['region-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      // Fetch relationships where any of our members is involved
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return (data || []) as Array<{ member_id: string; related_member_id: string }>;
+    },
+    enabled: memberIds.length > 0,
+  });
+};
+
 const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const [filters, setFilters] = useState<PeriodFilters>({
     dateRange: { from: subMonths(new Date(), 1), to: new Date() },
@@ -47,15 +68,18 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const { data: attendanceWithTypes, isLoading: isLoadingWithTypes } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: currentTarget, isLoading: isLoadingTarget } = useCurrentMemberTarget();
 
-  // Separate children (under 18) from adult members and visitors
+  // Fetch relationships for child detection
+  const memberIds = useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: relationships = [] } = useRegionMemberRelationships(memberIds);
+
+  // Separate children (under 16 + has relationship) from adult members and visitors
   const { totalMembers, totalVisitors, activeMembers, childrenCount } = useMemo(() => {
     if (!members) return { totalMembers: 0, totalVisitors: 0, activeMembers: 0, childrenCount: 0 };
-    const now = new Date();
     let mem = 0, vis = 0, active = 0, children = 0;
     members.forEach(m => {
       const dob = m.profiles?.date_of_birth;
-      const isChild = dob ? differenceInYears(now, new Date(dob)) < 18 : false;
-      if (isChild) {
+      const child = isChildMember(dob, m.id, relationships);
+      if (child) {
         children++;
       } else if (m.member_type === 'member') {
         mem++;
@@ -65,7 +89,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
       }
     });
     return { totalMembers: mem, totalVisitors: vis, activeMembers: active, childrenCount: children };
-  }, [members]);
+  }, [members, relationships]);
 
   // Period-filtered new joiners
   const newInPeriod = useMemo(() => {
@@ -104,17 +128,33 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const targetProgress = currentTarget ? Math.round((totalMembers / currentTarget.target_members) * 100) : null;
   const daysLeft = currentTarget ? differenceInDays(new Date(currentTarget.target_date), new Date()) : null;
 
-  // Gender distribution from profiles
+  // Gender distribution: 5 categories (Adult Male, Adult Female, Young Male, Young Female, Unknown)
   const genderData = useMemo(() => {
     if (!members) return [];
-    const genderCounts: Record<string, number> = {};
+    const counts: Record<string, number> = {};
+    
     members.forEach(m => {
-      const gender = m.profiles?.gender || 'Unknown';
-      const capitalized = gender.charAt(0).toUpperCase() + gender.slice(1);
-      genderCounts[capitalized] = (genderCounts[capitalized] || 0) + 1;
+      const dob = m.profiles?.date_of_birth;
+      const gender = m.profiles?.gender?.toLowerCase();
+      const child = isChildMember(dob, m.id, relationships);
+      
+      let category: string;
+      if (!gender || (gender !== 'male' && gender !== 'female')) {
+        category = 'Unknown';
+      } else if (child) {
+        category = gender === 'male' ? 'Young Male' : 'Young Female';
+      } else {
+        category = gender === 'male' ? 'Adult Male' : 'Adult Female';
+      }
+      
+      counts[category] = (counts[category] || 0) + 1;
     });
-    return Object.entries(genderCounts).map(([name, value]) => ({ name, value }));
-  }, [members]);
+    
+    // Only include Unknown if there are actually unknown entries
+    return Object.entries(counts)
+      .filter(([name, value]) => value > 0)
+      .map(([name, value]) => ({ name, value }));
+  }, [members, relationships]);
 
   // Monthly growth chart filtered by period
   const monthlyGrowth = useMemo(() => {
@@ -281,7 +321,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
           </div>
           <div className="text-2xl font-bold">{childrenCount}</div>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-muted-foreground">Under 18 years</p>
+            <p className="text-xs text-muted-foreground">Under {CHILD_AGE_THRESHOLD} years</p>
           </div>
         </GlassCard>
       </div>
