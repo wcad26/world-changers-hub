@@ -123,19 +123,17 @@ export default function MemberRegister() {
   const [memberSearchOpen, setMemberSearchOpen] = useState(false);
   const [memberSearchText, setMemberSearchText] = useState('');
 
-  // Fetch members for relationship search
-  const { data: regionMembers = [] } = useQuery({
-    queryKey: ['region-members-search', region?.id, memberSearchText],
+  // Fetch members for relationship search (across all regions)
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ['all-members-search', memberSearchText],
     queryFn: async () => {
-      if (!region?.id) return [];
-      const { data, error } = await supabase.rpc('search_region_members', {
-        _region_id: region.id,
+      const { data, error } = await supabase.rpc('search_all_members', {
         _search: memberSearchText
       });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!region?.id
+    enabled: true
   });
 
   const addRelationship = () => {
