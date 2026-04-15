@@ -7,13 +7,15 @@ import {
   SidebarContent, 
   SidebarHeader,
   SidebarFooter,
-  SidebarTrigger
+  SidebarTrigger,
+  useSidebar
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu, ChevronLeft } from "lucide-react";
+import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import PortalSwitcher from "../layout/PortalSwitcher";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AdminLayoutProps {
   children?: React.ReactNode;
@@ -25,13 +27,14 @@ interface AdminLayoutProps {
   }[];
 }
 
-const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems }) => {
+const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user, profile, userRegion, signOut } = useAuth();
+  const { state: sidebarState, toggleSidebar } = useSidebar();
+  const isCollapsed = sidebarState === "collapsed";
 
-  // Create route-to-title mapping
   const getPageTitle = () => {
     if (title) return title;
     
@@ -68,78 +71,110 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
   };
 
   return (
-    <SidebarProvider defaultOpen={!isMobile}>
-      <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
-        <Sidebar className="border-r border-gray-200 dark:border-gray-800">
-          <SidebarHeader className="p-4 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {userRegion?.name?.toUpperCase() || 'PORTAL'}
-              </span>
-            </Link>
-          </SidebarHeader>
-          <SidebarContent className="px-2">
-            <div className="py-2">
-              <nav className="mt-2 space-y-1">
-                {menuItems.map((item) => {
-                  const isActive = location.pathname === item.path;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg ${
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      <Icon size={18} />
-                      <span>{item.title}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-          </SidebarContent>
-          <SidebarFooter className="p-4 mt-auto space-y-2">
-            <PortalSwitcher />
-            <Button
-              variant="outline"
-              className="w-full flex items-center gap-2"
-              onClick={signOut}
-            >
-              <LogOut size={16} />
-              <span>Logout</span>
+    <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
+      <Sidebar collapsible="icon" className="border-r border-gray-200 dark:border-gray-800">
+        <SidebarHeader className="p-4 flex items-center justify-between">
+          {!isCollapsed ? (
+            <>
+              <Link to="/" className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
+                  {userRegion?.name?.toUpperCase() || 'PORTAL'}
+                </span>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="shrink-0 h-8 w-8">
+                <PanelLeftClose className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mx-auto h-8 w-8">
+              <PanelLeftOpen className="h-4 w-4" />
             </Button>
-          </SidebarFooter>
-        </Sidebar>
+          )}
+        </SidebarHeader>
+        <SidebarContent className="px-2">
+          <div className="py-2">
+            <nav className="mt-2 space-y-1">
+              {menuItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                const Icon = item.icon;
+                const linkContent = (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg ${
+                      isCollapsed ? "justify-center px-2" : ""
+                    } ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <Icon size={18} className="shrink-0" />
+                    {!isCollapsed && <span>{item.title}</span>}
+                  </Link>
+                );
 
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 bg-white dark:bg-gray-900 shadow z-20">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-2">
-                <SidebarTrigger className="p-1">
-                  <Menu size={22} />
-                </SidebarTrigger>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {getPageTitle()}
-                </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                {user && (
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {user.email}
-                  </span>
-                )}
-              </div>
+                if (isCollapsed) {
+                  return (
+                    <Tooltip key={item.path}>
+                      <TooltipTrigger asChild>
+                        {linkContent}
+                      </TooltipTrigger>
+                      <TooltipContent side="right">
+                        {item.title}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return linkContent;
+              })}
+            </nav>
+          </div>
+        </SidebarContent>
+        <SidebarFooter className="p-4 mt-auto space-y-2">
+          {!isCollapsed && <PortalSwitcher />}
+          <Button
+            variant="outline"
+            className={`w-full flex items-center gap-2 ${isCollapsed ? "justify-center px-2" : ""}`}
+            onClick={signOut}
+          >
+            <LogOut size={16} className="shrink-0" />
+            {!isCollapsed && <span>Logout</span>}
+          </Button>
+        </SidebarFooter>
+      </Sidebar>
+
+      <div className="flex-1 flex flex-col min-w-0">
+        <header className="sticky top-0 bg-white dark:bg-gray-900 shadow z-20">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {getPageTitle()}
+              </h1>
             </div>
-          </header>
-          <main className="flex-1 overflow-hidden p-4 md:p-6 h-screen">
-            {children || <Outlet />}
-          </main>
-        </div>
+            <div className="flex items-center gap-2">
+              {user && (
+                <span className="text-sm text-gray-600 dark:text-gray-300">
+                  {user.email}
+                </span>
+              )}
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 overflow-hidden p-4 md:p-6 h-screen">
+          {children || <Outlet />}
+        </main>
       </div>
+    </div>
+  );
+};
+
+const AdminLayout: React.FC<AdminLayoutProps> = (props) => {
+  const isMobile = useIsMobile();
+  return (
+    <SidebarProvider defaultOpen={!isMobile}>
+      <AdminLayoutInner {...props} />
     </SidebarProvider>
   );
 };
