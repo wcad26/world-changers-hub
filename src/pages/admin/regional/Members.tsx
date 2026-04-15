@@ -291,6 +291,7 @@ const Members: React.FC = () => {
                         <SelectItem value="all">All Types</SelectItem>
                         <SelectItem value="member">Member</SelectItem>
                         <SelectItem value="visitor">Visitor</SelectItem>
+                        <SelectItem value="children">Children</SelectItem>
                       </SelectContent>
                     </Select>
                     
