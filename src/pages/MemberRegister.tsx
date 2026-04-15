@@ -748,15 +748,40 @@ export default function MemberRegister() {
                   <Collapsible open={isRelationshipOpen} onOpenChange={setIsRelationshipOpen}>
                     <CollapsibleTrigger asChild>
                       <Button type="button" variant="outline" className="w-full justify-between">
-                        <span className="text-lg font-medium">Family Relationship (Optional)</span>
+                        <span className="text-lg font-medium">Family Relationships (Optional)</span>
                         {isRelationshipOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="space-y-4 pt-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Already added relationships */}
+                      {relationships.length > 0 && (
+                        <div className="space-y-2">
+                          {relationships.map((rel, index) => (
+                            <div key={index} className="flex items-center gap-2 p-3 rounded-md border bg-muted/50">
+                              <Badge variant="secondary" className="capitalize">{rel.type}</Badge>
+                              <div className="flex-1 flex flex-wrap gap-1">
+                                {rel.memberIds.map(mid => {
+                                  const member = regionMembers.find(m => m.id === mid);
+                                  return (
+                                    <Badge key={mid} variant="outline">
+                                      {member ? `${member.last_name} ${member.first_name}` : mid}
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                              <Button type="button" variant="ghost" size="sm" onClick={() => removeRelationship(index)}>
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Add new relationship */}
+                      <div className="space-y-4 p-4 rounded-md border border-dashed">
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Relationship Type</label>
-                          <Select value={relationshipType} onValueChange={(v) => setRelationshipType(v as FamilyRelationshipType)}>
+                          <Select value={currentRelType} onValueChange={(v) => setCurrentRelType(v as FamilyRelationshipType)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select relationship type" />
                             </SelectTrigger>
@@ -768,50 +793,95 @@ export default function MemberRegister() {
                           </Select>
                         </div>
 
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Related Member</label>
-                          <Popover open={memberSearchOpen} onOpenChange={setMemberSearchOpen}>
-                            <PopoverTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                role="combobox"
-                                className="w-full justify-between font-normal"
-                              >
-                                {selectedRelatedMember
-                                  ? `${selectedRelatedMember.last_name} ${selectedRelatedMember.first_name}`
-                                  : 'Search for a member...'}
-                                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-full p-0" align="start">
-                              <Command>
-                                <CommandInput 
-                                  placeholder="Search members..." 
-                                  onValueChange={setMemberSearchText}
-                                />
-                                <CommandList>
-                                  <CommandEmpty>No members found.</CommandEmpty>
-                                  <CommandGroup className="max-h-60 overflow-auto">
-                                    {regionMembers.map(m => (
-                                      <CommandItem
-                                        key={m.id}
-                                        value={`${m.last_name} ${m.first_name} ${m.member_id}`}
-                                        onSelect={() => {
-                                          setRelatedMemberId(m.id);
-                                          setMemberSearchOpen(false);
-                                        }}
-                                      >
-                                        <span>{m.last_name} {m.first_name}</span>
-                                        <span className="ml-2 text-xs text-muted-foreground">{m.member_id}</span>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+                        {currentRelType && (
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">
+                              Select Related Members
+                              {currentRelMemberIds.length > 0 && (
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  ({currentRelMemberIds.length} selected)
+                                </span>
+                              )}
+                            </label>
+                            <Popover open={memberSearchOpen} onOpenChange={setMemberSearchOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between font-normal"
+                                >
+                                  {currentRelMemberIds.length > 0
+                                    ? `${currentRelMemberIds.length} member(s) selected`
+                                    : 'Search and select members...'}
+                                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-full p-0" align="start">
+                                <Command>
+                                  <CommandInput 
+                                    placeholder="Search members..." 
+                                    onValueChange={setMemberSearchText}
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>No members found.</CommandEmpty>
+                                    <CommandGroup className="max-h-60 overflow-auto">
+                                      {regionMembers.map(m => {
+                                        const isSelected = currentRelMemberIds.includes(m.id);
+                                        return (
+                                          <CommandItem
+                                            key={m.id}
+                                            value={`${m.last_name} ${m.first_name} ${m.member_id}`}
+                                            onSelect={() => toggleMemberSelection(m.id)}
+                                          >
+                                            <div className={cn(
+                                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                              isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
+                                            )}>
+                                              {isSelected && <Check className="h-3 w-3" />}
+                                            </div>
+                                            <span>{m.last_name} {m.first_name}</span>
+                                            <span className="ml-2 text-xs text-muted-foreground">{m.member_id}</span>
+                                          </CommandItem>
+                                        );
+                                      })}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+
+                            {/* Selected members preview */}
+                            {currentRelMemberIds.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {currentRelMemberIds.map(mid => {
+                                  const member = regionMembers.find(m => m.id === mid);
+                                  return (
+                                    <Badge key={mid} variant="outline" className="gap-1">
+                                      {member ? `${member.last_name} ${member.first_name}` : mid}
+                                      <X 
+                                        className="h-3 w-3 cursor-pointer" 
+                                        onClick={() => toggleMemberSelection(mid)}
+                                      />
+                                    </Badge>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={addRelationship}
+                          disabled={!currentRelType || currentRelMemberIds.length === 0}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Relationship
+                        </Button>
                       </div>
                     </CollapsibleContent>
                   </Collapsible>
