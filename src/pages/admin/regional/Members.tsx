@@ -252,44 +252,83 @@ const Members: React.FC = () => {
         </Dialog>
         
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
+        {(() => {
+          const totalCount = members?.length || 0;
+          const memberCount = members?.filter(m => m.member_type === 'member').length || 0;
+          const specialVisitorCount = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id && specialEventIds.has(m.rated_event_id)).length || 0;
+          const regularVisitorCount = members?.filter(m => m.member_type === 'visitor' && (!m.rated_event_id || !specialEventIds.has(m.rated_event_id))).length || 0;
+          
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const newTotal30d = members?.filter(m => m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const newMembers30d = members?.filter(m => m.member_type === 'member' && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const totalGrowth = (totalCount - newTotal30d) > 0 ? Math.round((newTotal30d / (totalCount - newTotal30d)) * 100) : newTotal30d > 0 ? 100 : 0;
+          const memberGrowth = (memberCount - newMembers30d) > 0 ? Math.round((newMembers30d / (memberCount - newMembers30d)) * 100) : newMembers30d > 0 ? 100 : 0;
+
+          return (
+            <div className="grid gap-4 md:grid-cols-5">
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Total</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : totalCount}</p>
+                  {!isLoadingMembers && (
+                    <span className={`text-xs font-medium ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {totalGrowth >= 0 ? '+' : ''}{totalGrowth}%
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Total</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <CheckCircle className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <CheckCircle className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Members</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : memberCount}</p>
+                  {!isLoadingMembers && (
+                    <span className={`text-xs font-medium ${memberGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {memberGrowth >= 0 ? '+' : ''}{memberGrowth}%
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Members</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'member').length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Clock className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <Star className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Special Event Visitors</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : specialVisitorCount}</p>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Visitors</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'visitor').length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TrendingUp className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Regular Visitors</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : regularVisitorCount}</p>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Active</span>
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Active</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
-          </div>
-        </div>
+          );
+        })()}
         
         <Tabs defaultValue="members">
           <TabsList>
