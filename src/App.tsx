@@ -40,7 +40,7 @@ import RegionalMemberProfile from "./pages/admin/regional/MemberProfile";
 import RegionalEvents from "./pages/admin/regional/Events";
 import RegionalEventReport from "./pages/admin/regional/EventReport";
 import RegionalFundraising from "./pages/admin/regional/Fundraising";
-import RegionalLocations from "./pages/admin/regional/Locations";
+
 import RegionalFinances from "./pages/admin/regional/Finances";
 import RegionalDCG from "./pages/admin/regional/DCG";
 import DcgProfile from "./pages/admin/regional/DcgProfile";
@@ -49,7 +49,7 @@ import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 import UserRoles from "./pages/admin/regional/UserRoles";
-import RegionalUserManagement from "./pages/admin/regional/UserManagement";
+
 import RegionalCertificates from "./pages/admin/regional/Certificates";
 
 // Super Admin Portal Routes
@@ -174,9 +174,8 @@ const App = () => {
             <Route path="/admin/regional/fundraising" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalFundraising />
                 </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/locations" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalLocations />
-                </MultiRoleProtectedRoute>} />
+
+
             <Route path="/admin/regional/finances" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalFinances />
                 </MultiRoleProtectedRoute>} />
@@ -201,9 +200,8 @@ const App = () => {
             <Route path="/admin/regional/user-roles" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <UserRoles />
                 </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/user-management" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalUserManagement />
-                </MultiRoleProtectedRoute>} />
+
+
             <Route path="/admin/regional/settings" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
                   <RegionalSettings />
                 </MultiRoleProtectedRoute>} />
