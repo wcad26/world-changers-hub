@@ -152,7 +152,6 @@ const RegionalEvents: React.FC = () => {
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
-  const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
