@@ -513,77 +513,95 @@ export default function VisitorRegister() {
                   )}
                 />
 
-                {/* Invited By — Member Search (similar to family relationships in MemberRegister) */}
+                {/* Invited By — Relationship-style layout (member left, relationship right) */}
                 {form.watch('referral_source') === 'invited_by' && (
                   <div className="space-y-3">
                     <label className="text-sm font-medium">
                       {t('referralPersonName') || 'Who invited you?'} *
-                      {referralMemberIds.length > 0 && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          ({referralMemberIds.length} selected)
-                        </span>
-                      )}
                     </label>
-                    <Popover open={referralSearchOpen} onOpenChange={setReferralSearchOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          className="w-full justify-between font-normal rounded-xl bg-background/60"
-                        >
-                          {referralMemberIds.length > 0
-                            ? `${referralMemberIds.length} person(s) selected`
-                            : 'Search and select members...'}
-                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0" align="start">
-                        <Command>
-                          <CommandInput
-                            placeholder="Search members..."
-                            onValueChange={setReferralSearchText}
-                          />
-                          <CommandList>
-                            <CommandEmpty>No members found.</CommandEmpty>
-                            <CommandGroup className="max-h-60 overflow-auto">
-                              {allMembers.map(m => {
-                                const isSelected = referralMemberIds.includes(m.id);
-                                return (
-                                  <CommandItem
-                                    key={m.id}
-                                    value={`${m.last_name} ${m.first_name}`}
-                                    onSelect={() => toggleReferralMember(m.id)}
-                                  >
-                                    <div className={cn(
-                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                      isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
-                                    )}>
-                                      {isSelected && <Check className="h-3 w-3" />}
-                                    </div>
-                                    <span>{m.last_name} {m.first_name}</span>
-                                  </CommandItem>
-                                );
-                              })}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                    <div className="space-y-4 p-4 rounded-xl border border-dashed border-border/40 bg-muted/20">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Member Select (Left) */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">
+                            Select Member(s)
+                            {referralMemberIds.length > 0 && (
+                              <span className="ml-2 text-xs text-muted-foreground">
+                                ({referralMemberIds.length} selected)
+                              </span>
+                            )}
+                          </label>
+                          <Popover open={referralSearchOpen} onOpenChange={setReferralSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between font-normal rounded-xl bg-background/60"
+                              >
+                                {referralMemberIds.length > 0
+                                  ? `${referralMemberIds.length} member(s) selected`
+                                  : 'Search and select members...'}
+                                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput
+                                  placeholder="Search members..."
+                                  onValueChange={setReferralSearchText}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>No members found.</CommandEmpty>
+                                  <CommandGroup className="max-h-60 overflow-auto">
+                                    {allMembers.map(m => {
+                                      const isSelected = referralMemberIds.includes(m.id);
+                                      return (
+                                        <CommandItem
+                                          key={m.id}
+                                          value={`${m.last_name} ${m.first_name}`}
+                                          onSelect={() => toggleReferralMember(m.id)}
+                                        >
+                                          <div className={cn(
+                                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                            isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
+                                          )}>
+                                            {isSelected && <Check className="h-3 w-3" />}
+                                          </div>
+                                          <span>{m.last_name} {m.first_name}</span>
+                                        </CommandItem>
+                                      );
+                                    })}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
 
-                    {referralMemberIds.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {referralMemberIds.map(mid => {
-                          const member = allMembers.find(m => m.id === mid);
-                          return (
-                            <Badge key={mid} variant="outline" className="gap-1 rounded-lg">
-                              {member ? `${member.last_name} ${member.first_name}` : mid}
-                              <X className="h-3 w-3 cursor-pointer" onClick={() => toggleReferralMember(mid)} />
-                            </Badge>
-                          );
-                        })}
+                        {/* Relationship Type (Right) */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Relationship</label>
+                          <div className="flex items-center h-10 px-3 rounded-xl border border-border/40 bg-muted/30">
+                            <Badge variant="secondary" className="capitalize rounded-lg">Invited By</Badge>
+                          </div>
+                        </div>
                       </div>
-                    )}
+
+                      {referralMemberIds.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {referralMemberIds.map(mid => {
+                            const member = allMembers.find(m => m.id === mid);
+                            return (
+                              <Badge key={mid} variant="outline" className="gap-1 rounded-lg">
+                                {member ? `${member.last_name} ${member.first_name}` : mid}
+                                <X className="h-3 w-3 cursor-pointer" onClick={() => toggleReferralMember(mid)} />
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
 
                     {form.formState.errors.referral_member_ids && (
                       <p className="text-sm font-medium text-destructive">
@@ -591,6 +609,38 @@ export default function VisitorRegister() {
                       </p>
                     )}
                   </div>
+                )}
+
+                {/* Social Media App Selection */}
+                {form.watch('referral_source') === 'social_media' && (
+                  <FormField
+                    control={form.control}
+                    name="referral_social_media"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Which social media platform? *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="rounded-xl bg-background/60">
+                              <SelectValue placeholder="Select social media platform" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="facebook">Facebook</SelectItem>
+                            <SelectItem value="instagram">Instagram</SelectItem>
+                            <SelectItem value="twitter">Twitter / X</SelectItem>
+                            <SelectItem value="tiktok">TikTok</SelectItem>
+                            <SelectItem value="youtube">YouTube</SelectItem>
+                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                            <SelectItem value="telegram">Telegram</SelectItem>
+                            <SelectItem value="linkedin">LinkedIn</SelectItem>
+                            <SelectItem value="other_social">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
 
                 {/* Other Details */}
