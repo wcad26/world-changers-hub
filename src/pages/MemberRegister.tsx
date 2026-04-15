@@ -200,8 +200,10 @@ export default function MemberRegister() {
       {
         ...data,
         region_id: region.id,
-        relationship_member_id: relatedMemberId || undefined,
-        relationship_type: relationshipType || undefined
+        relationships: relationships.length > 0 ? relationships.map(r => ({
+          relationship_type: r.type,
+          member_ids: r.memberIds,
+        })) : undefined,
       },
       {
         onSuccess: (result) => {
