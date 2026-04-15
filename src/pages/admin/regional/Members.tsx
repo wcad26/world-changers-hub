@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -202,7 +201,7 @@ const Members: React.FC = () => {
 
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
 
         {/* Edit Member Dialog */}
@@ -562,7 +561,7 @@ const Members: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

@@ -1,12 +1,11 @@
 
 import React from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SuperFinances: React.FC = () => {
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Oversee finances across all WCA regions worldwide.
@@ -92,7 +91,7 @@ const SuperFinances: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

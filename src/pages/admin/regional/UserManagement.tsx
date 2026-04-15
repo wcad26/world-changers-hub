@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -130,7 +129,7 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">User Management</h1>
@@ -277,7 +276,7 @@ const UserManagement: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

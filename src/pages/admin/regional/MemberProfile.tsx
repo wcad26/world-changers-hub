@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,20 +62,20 @@ const MemberProfile: React.FC = () => {
 
   if (isLoading || !userRegion) {
     return (
-      <RegionalAdminLayout>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Loading member profile...</p>
           </div>
         </div>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   if (error || !member) {
     return (
-      <RegionalAdminLayout>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-500">Error loading member profile or member not found.</p>
@@ -90,12 +89,12 @@ const MemberProfile: React.FC = () => {
             </Button>
           </div>
         </div>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Button 
@@ -545,7 +544,7 @@ const MemberProfile: React.FC = () => {
           </DialogContent>
         </Dialog>
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

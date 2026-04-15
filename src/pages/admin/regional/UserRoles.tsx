@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import RegionalAdminLayout from '@/components/admin/RegionalAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,7 +15,7 @@ const UserRoles: React.FC = () => {
   const [createRoleOpen, setCreateRoleOpen] = useState(false);
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -96,7 +95,7 @@ const UserRoles: React.FC = () => {
           onOpenChange={setCreateRoleOpen} 
         />
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

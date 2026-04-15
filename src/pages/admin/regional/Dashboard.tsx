@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRegionalReports } from "@/hooks/useReports";
 import { useMembers } from "@/hooks/useMembers";
@@ -73,7 +72,7 @@ const RegionalDashboard: React.FC = () => {
 
   if (authLoading || !userRegion) {
     return (
-      <RegionalAdminLayout>
+      <>
         <div className="space-y-6">
           <Skeleton className="h-10 w-[600px]" />
           <div className="grid gap-4 md:grid-cols-4 mt-6">
@@ -82,13 +81,13 @@ const RegionalDashboard: React.FC = () => {
             ))}
           </div>
         </div>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   if (reportsError) {
     return (
-      <RegionalAdminLayout>
+      <>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading dashboard</AlertTitle>
@@ -96,12 +95,12 @@ const RegionalDashboard: React.FC = () => {
             {reportsErrorDetail instanceof Error ? reportsErrorDetail.message : "An unknown error occurred."}
           </AlertDescription>
         </Alert>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="bg-gradient-to-r from-background/80 to-muted/30 backdrop-blur-sm rounded-2xl p-1.5 border border-border/40 shadow-sm">
@@ -151,7 +150,7 @@ const RegionalDashboard: React.FC = () => {
           <TabsContent value="discipleship"><DiscipleshipTab /></TabsContent>
         </Tabs>
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

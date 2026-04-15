@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useSuperAdminCommunications, useSuperAdminCreateCommunication } from "@/hooks/useCommunications";
@@ -180,7 +179,7 @@ const SuperCommunication: React.FC = () => {
   const { data: regions, isLoading: isLoadingRegions } = useRegions();
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-start">
             <p className="text-muted-foreground">Manage organization-wide communication and announcements.</p>
@@ -251,7 +250,7 @@ const SuperCommunication: React.FC = () => {
             regions={regions}
         />
       )}
-    </SuperAdminLayout>
+    </>
   );
 };
 

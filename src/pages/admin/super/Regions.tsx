@@ -1,6 +1,5 @@
 
 import React from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import RegionStatsCards from "@/components/admin/super/regions/RegionStatsCards";
@@ -8,7 +7,7 @@ import RegionsTable from "@/components/admin/super/regions/RegionsTable";
 
 const SuperRegions: React.FC = () => {
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Manage all WCA regions from a global perspective.
@@ -90,7 +89,7 @@ const SuperRegions: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

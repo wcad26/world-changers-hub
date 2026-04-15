@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import MemberLayout from '@/components/layout/MemberLayout';
 import { useBibleVersions, useBibleBooks, useBibleChapter, BibleVersion, BibleBook } from '@/hooks/useBible';
 import { useLanguage } from '@/hooks/useLanguage';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -150,18 +149,18 @@ export default function BiblePage() {
 
   if (versionsLoading || booksLoading) {
     return (
-      <MemberLayout>
+      <>
         <div className="p-4 md:p-6 space-y-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-[60vh] w-full" />
         </div>
-      </MemberLayout>
+      </>
     );
   }
 
   return (
-    <MemberLayout>
+    <>
       <div className="p-4 md:p-6 space-y-4">
         {/* Version and Book Selection */}
         <div className="grid grid-cols-2 gap-2">
@@ -372,6 +371,6 @@ export default function BiblePage() {
           </p>
         )}
       </div>
-    </MemberLayout>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { 
   SidebarProvider, 
   Sidebar, 
@@ -13,10 +13,10 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Menu, ChevronLeft } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import PortalSwitcher from "./PortalSwitcher";
+import PortalSwitcher from "../layout/PortalSwitcher";
 
 interface AdminLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   title?: string;
   menuItems: {
     title: string;
@@ -29,7 +29,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
   const { user, profile, userRegion, signOut } = useAuth();
 
   // Create route-to-title mapping
@@ -44,8 +43,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
       '/admin/regional/communication': 'Communication Center',
       '/admin/regional/dcg': 'DCG Management',
       '/admin/regional/fundraising': 'Fundraising Management',
-      '/admin/regional/locations': 'Location Management',
       '/admin/regional/reports': 'Reports & Analytics',
+      '/admin/regional/certificates': 'Certificate Management',
+      '/admin/regional/branch-settings': 'Regional Website Information',
+      '/admin/regional/user-roles': 'User Roles',
+      '/admin/regional/settings': 'Settings',
       '/admin/super/dashboard': 'Super Admin Dashboard',
       '/admin/super/regions': 'Regional Branches Management',
       '/admin/super/members': 'Global Member Management',
@@ -59,15 +61,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
       '/admin/super/currencies': 'Currency Management',
       '/admin/super/homepage-settings': 'Homepage Settings',
       '/admin/super/about-settings': 'About Us Settings',
+      '/admin/super/certificates': 'Certificate Management',
     };
 
     return routeTitleMap[location.pathname] || 'Admin Dashboard';
   };
-
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
@@ -79,11 +77,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
                 {userRegion?.name?.toUpperCase() || 'PORTAL'}
               </span>
             </Link>
-            {isMobile && (
-              <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-                <ChevronLeft size={20} />
-              </Button>
-            )}
           </SidebarHeader>
           <SidebarContent className="px-2">
             <div className="py-2">
@@ -109,7 +102,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
               </nav>
             </div>
           </SidebarContent>
-          <SidebarFooter className="p-4 mt-auto">
+          <SidebarFooter className="p-4 mt-auto space-y-2">
+            <PortalSwitcher />
             <Button
               variant="outline"
               className="w-full flex items-center gap-2"
@@ -133,7 +127,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
                 </h1>
               </div>
               <div className="flex items-center gap-2">
-                <PortalSwitcher />
                 {user && (
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {user.email}
@@ -143,7 +136,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title, menuItems })
             </div>
           </header>
           <main className="flex-1 overflow-hidden p-4 md:p-6 h-screen">
-            {children}
+            {children || <Outlet />}
           </main>
         </div>
       </div>

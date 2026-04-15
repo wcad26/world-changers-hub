@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, Calendar, MapPin, Phone, Clock, Edit, DollarSign, BarChart2 } from "lucide-react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,22 +37,22 @@ const DcgProfile: React.FC = () => {
 
   if (dcgsLoading) {
     return (
-      <RegionalAdminLayout>
+      <>
         <div className="space-y-6">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-48 w-full" />
         </div>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   if (!dcg) {
     return (
-      <RegionalAdminLayout>
+      <>
         <Alert>
           <AlertDescription>DCG not found</AlertDescription>
         </Alert>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
@@ -81,7 +80,7 @@ const DcgProfile: React.FC = () => {
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button
@@ -328,7 +327,7 @@ const DcgProfile: React.FC = () => {
           dcg={dcg}
         />
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

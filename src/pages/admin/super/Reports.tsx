@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
 import { useGlobalDcgReports } from "@/hooks/useRegionalDcgReports";
@@ -65,7 +64,7 @@ const SuperReports: React.FC = () => {
   };
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Access comprehensive reports and analytics for the entire organization.
@@ -261,7 +260,7 @@ const SuperReports: React.FC = () => {
           <p className="text-center py-8">No data available for reports.</p>
         )}
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

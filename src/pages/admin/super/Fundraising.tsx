@@ -1,11 +1,10 @@
 
 import React from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SuperFundraising: React.FC = () => {
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Coordinate fundraising efforts across all WCA regions.
@@ -23,7 +22,7 @@ const SuperFundraising: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

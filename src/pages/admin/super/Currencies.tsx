@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Search } from 'lucide-react';
-import SuperAdminLayout from '@/components/admin/SuperAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -48,7 +47,7 @@ export default function Currencies() {
   };
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Manage currencies available across all regional portals
@@ -155,6 +154,6 @@ export default function Currencies() {
           onOpenChange={(open) => !open && setEditingCurrency(null)}
         />
       )}
-    </SuperAdminLayout>
+    </>
   );
 }

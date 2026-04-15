@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Outlet } from 'react-router-dom';
 import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
+import PortalSwitcher from './PortalSwitcher';
 
 interface MemberLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 // Page info with custom titles and icons for header
@@ -91,6 +92,8 @@ export default function MemberLayout({
   
   // Use mobile layout for both mobile and tablet views
   const useMobileLayout = isMobile || isTablet;
+
+  const content = children || <Outlet />;
   
   if (!useMobileLayout) {
     // Desktop layout with sidebar
@@ -129,15 +132,11 @@ export default function MemberLayout({
                     {!isCollapsed && item.name}
                   </Link>;
             })}
-              
-              <Button variant="ghost" onClick={signOut} className={cn("w-full text-muted-foreground hover:text-foreground mt-2", isCollapsed ? "justify-center p-3" : "justify-start px-3 py-2")}>
-                <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
-                {!isCollapsed && "Sign Out"}
-              </Button>
             </div>
           </nav>
-          
-          <div className="p-4 border-t border-border">
+
+          <div className="p-4 border-t border-border space-y-2">
+            {!isCollapsed && <PortalSwitcher />}
             <Button variant="ghost" onClick={signOut} className={cn("w-full text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center p-3" : "justify-start")}>
               <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
               {!isCollapsed && "Sign Out"}
@@ -147,7 +146,7 @@ export default function MemberLayout({
 
         {/* Main content */}
         <div className="flex-1 overflow-auto">
-          {children}
+          {content}
         </div>
       </div>;
   }
@@ -208,7 +207,12 @@ export default function MemberLayout({
                         {item.name}
                       </Link>;
               })}
-                  
+                </div>
+
+                <div className="pt-4 border-t border-border space-y-1">
+                  <div className="px-3 py-2">
+                    <PortalSwitcher />
+                  </div>
                   <Button variant="ghost" onClick={() => {
                 setMobileMenuOpen(false);
                 signOut();
@@ -224,7 +228,7 @@ export default function MemberLayout({
 
       {/* Main content - pt-14 for fixed header, pb-24 for fixed bottom nav */}
       <main className="flex-1 overflow-auto pt-14 pb-24">
-        {children}
+        {content}
       </main>
 
       {/* Bottom navigation bar - Modern floating pill design */}

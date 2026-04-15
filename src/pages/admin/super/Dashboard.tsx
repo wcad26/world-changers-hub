@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, ChevronUp, ChevronDown, ChevronRight, Calendar as CalendarIcon, DollarSign, Globe, AlertCircle, Download } from "lucide-react";
@@ -156,7 +155,7 @@ const SuperDashboard: React.FC = () => {
   };
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <p className="text-muted-foreground">
@@ -517,7 +516,7 @@ const SuperDashboard: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 
