@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 interface SuperAdminLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 // Create an array of menu items with properly typed icons
