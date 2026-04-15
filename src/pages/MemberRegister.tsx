@@ -26,6 +26,8 @@ import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+import { Plus, X, Check } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const RELATIONSHIP_TYPES: { value: FamilyRelationshipType; label: string }[] = [
   { value: 'spouse', label: 'Spouse' },
@@ -35,6 +37,11 @@ const RELATIONSHIP_TYPES: { value: FamilyRelationshipType; label: string }[] = [
   { value: 'guardian', label: 'Guardian' },
   { value: 'other', label: 'Other' },
 ];
+
+interface RelationshipEntry {
+  type: FamilyRelationshipType;
+  memberIds: string[];
+}
 
 const MINISTRY_OPTIONS = [
   'Music & Worship',
