@@ -55,10 +55,6 @@ export const memberRegistrationSchema = z.object({
   
   ministry_interests: z.array(z.string()).optional(),
   
-  skills_talents: z.string()
-    .trim()
-    .max(500, "Skills and talents must be less than 500 characters")
-    .optional(),
   
   has_completed_foundation_school: z.string().optional(),
   

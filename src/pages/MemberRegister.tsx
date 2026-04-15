@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowLeft, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -23,6 +23,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+
+const RELATIONSHIP_TYPES: { value: FamilyRelationshipType; label: string }[] = [
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'parent', label: 'Parent' },
+  { value: 'child', label: 'Child' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'other', label: 'Other' },
+];
 
 const MINISTRY_OPTIONS = [
   'Music & Worship',
