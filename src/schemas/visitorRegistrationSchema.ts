@@ -33,23 +33,6 @@ export const visitorRegistrationSchema = z.object({
     .optional(),
   
   occupation: z.string()
-    .trim()
-    .min(2, "Occupation must be at least 2 characters")
-    .max(100, "Occupation must be less than 100 characters")
-    .transform((val) => val === '' ? undefined : val)
-    .optional(),
-  
-  emergency_contact_name: z.string()
-    .trim()
-    .max(100, "Name must be less than 100 characters")
-    .transform((val) => val === '' ? undefined : val)
-    .optional(),
-  
-  emergency_contact_phone: z.string()
-    .trim()
-    .min(6, "Phone must be at least 6 characters")
-    .max(20, "Phone must be less than 20 characters")
-    .transform((val) => val === '' ? undefined : val)
     .optional(),
   
   rated_event_id: z.string().uuid().optional(),
@@ -64,11 +47,7 @@ export const visitorRegistrationSchema = z.object({
     .trim()
     .optional(),
   
-  referral_person_name: z.string()
-    .trim()
-    .max(100, "Name must be less than 100 characters")
-    .transform((val) => val === '' ? undefined : val)
-    .optional(),
+  referral_member_ids: z.array(z.string().uuid()).optional(),
   
   referral_other_details: z.string()
     .trim()
@@ -77,20 +56,15 @@ export const visitorRegistrationSchema = z.object({
     .optional(),
   
   join_interest: z.enum(['yes', 'no', 'undecided']).optional(),
-  
-  relationship_member_id: z.string().uuid().optional(),
-  relationship_type: z.string().optional(),
 }).refine((data) => {
-  // If referral_source is "invited_by", referral_person_name is required
-  if (data.referral_source === "invited_by" && !data.referral_person_name) {
+  if (data.referral_source === "invited_by" && (!data.referral_member_ids || data.referral_member_ids.length === 0)) {
     return false;
   }
   return true;
 }, {
-  message: "Please provide the name of the person who invited you",
-  path: ["referral_person_name"]
+  message: "Please select at least one person who invited you",
+  path: ["referral_member_ids"]
 }).refine((data) => {
-  // If referral_source is "other", referral_other_details is required
   if (data.referral_source === "other" && !data.referral_other_details) {
     return false;
   }

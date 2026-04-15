@@ -1,20 +1,23 @@
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useVisitorRegistration } from '@/hooks/useVisitorRegistration';
 import { usePublicRegionEvents } from '@/hooks/usePublicRegionEvents';
+import { useOccupations } from '@/hooks/useOccupations';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { visitorRegistrationSchema, VisitorRegistrationFormData } from '@/schemas/visitorRegistrationSchema';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle2, ArrowLeft, UserCheck } from 'lucide-react';
+import { Loader2, CheckCircle2, User, UserCheck, CalendarDays, Heart, Search, X, Check, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useState, useMemo } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
@@ -22,26 +25,32 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+
+// Glassy section wrapper - matching MemberRegister style
+function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 md:p-6 space-y-4 shadow-sm">
+      <div className="flex items-center gap-2.5 pb-3 border-b border-border/30">
+        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary/10">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function VisitorRegister() {
-  const {
-    regionCode
-  } = useParams<{
-    regionCode: string;
-  }>();
+  const { regionCode } = useParams<{ regionCode: string }>();
   const navigate = useNavigate();
-  const {
-    data: region,
-    isLoading: regionLoading
-  } = useRegionBySlug(regionCode);
-  const { data: events = [], isLoading: eventsLoading } = usePublicRegionEvents(region?.id);
-  
-  // Events from the hook are already filtered to past public events from the last month
+  const { data: region, isLoading: regionLoading } = useRegionBySlug(regionCode);
+  const { data: events = [] } = usePublicRegionEvents(region?.id);
+  const { data: occupations = [] } = useOccupations();
   const pastEvents = events;
-  
-  const {
-    mutate: registerVisitor,
-    isPending
-  } = useVisitorRegistration();
+
+  const { mutate: registerVisitor, isPending } = useVisitorRegistration();
   const [registrationSuccess, setRegistrationSuccess] = useState<{
     visitor_id: string;
     message: string;
@@ -51,10 +60,35 @@ export default function VisitorRegister() {
     member_type?: 'visitor' | 'member';
     message: string;
   } | null>(null);
-  const {
-    t,
-    localizedField
-  } = useLanguage();
+  const { t, localizedField } = useLanguage();
+
+  // Member search for "invited by" referral
+  const [referralMemberIds, setReferralMemberIds] = useState<string[]>([]);
+  const [referralSearchOpen, setReferralSearchOpen] = useState(false);
+  const [referralSearchText, setReferralSearchText] = useState('');
+
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ['all-members-search', referralSearchText],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('search_all_members', {
+        _search: referralSearchText
+      });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: true
+  });
+
+  const toggleReferralMember = (memberId: string) => {
+    setReferralMemberIds(prev => {
+      const updated = prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId];
+      form.setValue('referral_member_ids', updated, { shouldValidate: true });
+      return updated;
+    });
+  };
+
   const form = useForm<VisitorRegistrationFormData>({
     resolver: zodResolver(visitorRegistrationSchema),
     defaultValues: {
@@ -66,221 +100,232 @@ export default function VisitorRegister() {
       date_of_birth: '',
       gender: '',
       occupation: '',
-      emergency_contact_name: '',
-      emergency_contact_phone: '',
       rated_event_id: undefined,
       event_satisfaction_rating: undefined,
       referral_source: '',
-      referral_person_name: '',
+      referral_member_ids: [],
       referral_other_details: ''
     }
   });
+
   const onSubmit = (data: VisitorRegistrationFormData) => {
     if (!region?.id) return;
-    registerVisitor({
-      ...data,
-      region_id: region.id
-    }, {
-      onSuccess: result => {
-        // Handle duplicate registration as a friendly message
-        if (result.isDuplicate) {
-          setAlreadyEnrolled({
-            visitor_id: result.visitor_id,
-            member_type: result.member_type,
-            message: result.message || t('alreadyRegisteredMessage')
-          });
-        } else {
-          setRegistrationSuccess({
-            visitor_id: result.visitor_id || '',
-            message: result.message || ''
-          });
-          form.reset();
-        }
+    registerVisitor(
+      {
+        ...data,
+        referral_member_ids: referralMemberIds.length > 0 ? referralMemberIds : undefined,
+        region_id: region.id
       },
-      onError: (error: any) => {
-        form.setError('root', {
-          message: error.message || t('registrationFailed')
-        });
+      {
+        onSuccess: result => {
+          if (result.isDuplicate) {
+            setAlreadyEnrolled({
+              visitor_id: result.visitor_id,
+              member_type: result.member_type,
+              message: result.message || t('alreadyRegisteredMessage')
+            });
+          } else {
+            setRegistrationSuccess({
+              visitor_id: result.visitor_id || '',
+              message: result.message || ''
+            });
+            form.reset();
+            setReferralMemberIds([]);
+          }
+        },
+        onError: (error: any) => {
+          form.setError('root', {
+            message: error.message || t('registrationFailed')
+          });
+        }
       }
-    });
+    );
   };
+
+  // --- Loading State ---
   if (regionLoading) {
-    return <>
+    return (
+      <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </>;
+      </>
+    );
   }
+
+  // --- Region Not Found ---
   if (!region) {
-    return <>
+    return (
+      <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{t('regionNotFound')}</CardTitle>
-              <CardDescription>
-                {t('regionNotFoundDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => navigate('/')} className="w-full">
-                {t('returnToHome')}
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+          <div className="glass-panel-soft max-w-md w-full p-8 text-center space-y-4">
+            <h2 className="text-xl font-semibold text-foreground">{t('regionNotFound')}</h2>
+            <p className="text-muted-foreground text-sm">{t('regionNotFoundDesc')}</p>
+            <Button onClick={() => navigate('/')} className="w-full rounded-xl">
+              {t('returnToHome')}
+            </Button>
+          </div>
         </div>
-      </>;
+      </>
+    );
   }
-  // Already enrolled screen
+
+  // --- Already Enrolled ---
   if (alreadyEnrolled) {
     const isMember = alreadyEnrolled.member_type === 'member';
-    const messageKey = isMember ? 'alreadyRegisteredAsMember' : 'alreadyRegisteredAsVisitor';
-    const idLabelKey = isMember ? 'yourMemberId' : 'yourVisitorId';
-    
-    return <>
+    return (
+      <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <Card className="w-full max-w-md border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="rounded-full bg-blue-100 dark:bg-blue-900/50 p-4">
-                  <UserCheck className="h-12 w-12 text-blue-600 dark:text-blue-400" />
-                </div>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+          <div className="glass-panel-soft max-w-md w-full p-8 text-center space-y-5">
+            <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto">
+              <UserCheck className="h-7 w-7 text-accent" />
+            </div>
+            <h2 className="text-xl font-semibold">{t('welcomeBack')}</h2>
+            <p className="text-muted-foreground text-sm">
+              {isMember ? t('alreadyRegisteredAsMember') : t('alreadyRegisteredAsVisitor')}
+            </p>
+            {alreadyEnrolled.visitor_id && (
+              <div className="bg-muted/30 rounded-xl p-4 text-center">
+                <p className="text-sm text-muted-foreground mb-1">{isMember ? t('yourMemberId') : t('yourVisitorId')}</p>
+                <p className="font-mono font-semibold">{alreadyEnrolled.visitor_id}</p>
               </div>
-              <CardTitle className="text-2xl text-blue-900 dark:text-blue-100">
-                {t('welcomeBack')}
-              </CardTitle>
-              <CardDescription className="text-blue-700 dark:text-blue-300">
-                {t(messageKey)}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {alreadyEnrolled.visitor_id && (
-                <div className="bg-blue-100/50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-1">{t(idLabelKey)}</p>
-                  <p className="font-mono font-semibold text-blue-900 dark:text-blue-100">
-                    {alreadyEnrolled.visitor_id}
-                  </p>
-                </div>
-              )}
-              <div className="flex flex-col gap-2">
-                <Button 
-                  onClick={() => navigate(`/${regionCode}`)} 
-                  variant="default"
-                  className="w-full"
-                >
-                  {t('goToHomepage')}
-                </Button>
-                <Button 
-                  onClick={() => setAlreadyEnrolled(null)} 
-                  variant="outline"
-                  className="w-full"
-                >
-                  {t('tryDifferentEmail')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+            )}
+            <div className="flex flex-col gap-3 pt-2">
+              <Button onClick={() => navigate(`/${regionCode}`)} className="w-full rounded-xl">
+                {t('goToHomepage')}
+              </Button>
+              <Button variant="outline" onClick={() => setAlreadyEnrolled(null)} className="w-full rounded-xl">
+                {t('tryDifferentEmail')}
+              </Button>
+            </div>
+          </div>
         </div>
-      </>;
+      </>
+    );
   }
 
+  // --- Success State ---
   if (registrationSuccess) {
-    return <>
+    return (
+      <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-background p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <CheckCircle2 className="h-16 w-16 text-green-600" />
-              </div>
-              <CardTitle className="text-2xl">{t('registrationSuccessful')}</CardTitle>
-              <CardDescription>{t('vipWelcomeMessage')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              
-              
-              <div className="flex gap-2">
-                <Button onClick={() => setRegistrationSuccess(null)} variant="default" className="flex-1">
-                  {t('registerAnotherVisitor')}
-                </Button>
-                
-              </div>
-            </CardContent>
-          </Card>
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
+          <div className="glass-panel-soft max-w-md w-full p-8 text-center space-y-5">
+            <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-8 w-8 text-green-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground">{t('registrationSuccessful')}</h2>
+            <p className="text-muted-foreground text-sm">{t('vipWelcomeMessage')}</p>
+            <Button onClick={() => setRegistrationSuccess(null)} className="w-full rounded-xl">
+              {t('registerAnotherVisitor')}
+            </Button>
+          </div>
         </div>
-      </>;
+      </>
+    );
   }
-  return <>
+
+  // --- Main Form ---
+  return (
+    <>
       <Navbar />
-      <div className="min-h-screen bg-background">
-        <div className="container max-w-2xl mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl text-center">{t('visitorRegTitle')}</CardTitle>
-            <CardDescription className="text-base text-center">
-              {t('visitorRegDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {form.formState.errors.root && <Alert variant="destructive">
-                    <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
-                  </Alert>}
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-6 px-4">
+        <div className="max-w-3xl mx-auto space-y-6">
+          {/* Hero Header */}
+          <div className="glass-panel-hero text-primary-foreground p-6 md:p-8 text-center space-y-2 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.08%22%3E%3Ccircle%20cx%3D%2230%22%20cy%3D%2230%22%20r%3D%222%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-60" />
+            <div className="relative z-10">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{t('visitorRegTitle')}</h1>
+              <p className="text-sm md:text-base opacity-90 font-medium">{region.name}</p>
+              <p className="text-xs md:text-sm opacity-75 mt-1">{t('visitorRegDescription')}</p>
+            </div>
+          </div>
+
+          {/* Form */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              {form.formState.errors.root && (
+                <Alert variant="destructive" className="rounded-xl">
+                  <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Personal Information */}
+              <GlassSection icon={User} title={t('personalInformation')}>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="first_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('firstName')} *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John" className="rounded-xl bg-background/60" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="last_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('lastName')} *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" className="rounded-xl bg-background/60" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="first_name" render={({
-                    field
-                  }) => <FormItem>
-                        <FormLabel>{t('firstName')}</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('emailAddress')} *</FormLabel>
                         <FormControl>
-                          <Input placeholder="John" {...field} />
+                          <Input type="email" placeholder="john.doe@example.com" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>} />
-
-                  <FormField control={form.control} name="last_name" render={({
-                    field
-                  }) => <FormItem>
-                        <FormLabel>{t('lastName')}</FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('phoneNumber')} *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" {...field} />
+                          <Input type="tel" placeholder="+1 (555) 123-4567" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
                         <FormMessage />
-                      </FormItem>} />
+                      </FormItem>
+                    )}
+                  />
                 </div>
 
-                <FormField control={form.control} name="email" render={({
-                  field
-                }) => <FormItem>
-                      <FormLabel>{t('emailAddress')}</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('address')} *</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="john.doe@example.com" {...field} />
+                        <Textarea placeholder="123 Main St, City, State, ZIP" className="min-h-[80px] rounded-xl bg-background/60" {...field} />
                       </FormControl>
                       <FormMessage />
-                    </FormItem>} />
-
-                <FormField control={form.control} name="phone" render={({
-                  field
-                }) => <FormItem>
-                      <FormLabel>{t('phoneNumber')}</FormLabel>
-                      <FormControl>
-                        <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>} />
-
-                <FormField control={form.control} name="address" render={({
-                  field
-                }) => <FormItem>
-                      <FormLabel>{t('address')}</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="123 Main St, City, State, ZIP" className="min-h-[80px]" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>} />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <FormField
@@ -296,15 +341,11 @@ export default function VisitorRegister() {
                                 type="button"
                                 variant="outline"
                                 className={cn(
-                                  "w-full pl-3 text-left font-normal",
+                                  "w-full pl-3 text-left font-normal rounded-xl bg-background/60",
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
-                                {field.value ? (
-                                  format(new Date(field.value), "PPP")
-                                ) : (
-                                  <span>Pick a date</span>
-                                )}
+                                {field.value ? format(new Date(field.value), "PPP") : <span>Pick a date</span>}
                                 <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                               </Button>
                             </FormControl>
@@ -314,9 +355,7 @@ export default function VisitorRegister() {
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
                               onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                              disabled={(date) =>
-                                date > new Date() || date < new Date("1900-01-01")
-                              }
+                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               initialFocus
                               className={cn("p-3 pointer-events-auto")}
                             />
@@ -326,7 +365,6 @@ export default function VisitorRegister() {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="gender"
@@ -335,7 +373,7 @@ export default function VisitorRegister() {
                         <FormLabel>{t('gender')}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="rounded-xl bg-background/60">
                               <SelectValue placeholder={t('selectGender')} />
                             </SelectTrigger>
                           </FormControl>
@@ -356,45 +394,29 @@ export default function VisitorRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('occupation')}</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Teacher, Engineer, Student" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="rounded-xl bg-background/60">
+                            <SelectValue placeholder="Select your occupation" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent className="max-h-[40vh]" position="popper">
+                          {occupations.map((occ) => (
+                            <SelectItem key={occ.id} value={occ.name}>
+                              {occ.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </GlassSection>
 
-                <div className="grid md:grid-cols-2 gap-4 pt-4 border-t">
-                  <FormField
-                    control={form.control}
-                    name="emergency_contact_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('emergencyContactName')}</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Contact name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="emergency_contact_phone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('emergencyContactPhone')}</FormLabel>
-                        <FormControl>
-                          <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Event Selection - Only show if events are available */}
+              {/* Event & Referral */}
+              <GlassSection icon={CalendarDays} title="Event & Referral">
+                {/* Event Selection */}
                 {pastEvents.length > 0 && (
                   <FormField
                     control={form.control}
@@ -402,19 +424,19 @@ export default function VisitorRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('selectEvent')}</FormLabel>
-                        <p className="text-sm text-muted-foreground mb-2">
+                        <p className="text-xs text-muted-foreground mb-2">
                           Select the event you attended
                         </p>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <SelectTrigger className="h-auto min-h-[2.5rem]">
+                            <SelectTrigger className="h-auto min-h-[2.5rem] rounded-xl bg-background/60">
                               <SelectValue placeholder={t('selectEventPlaceholder')} className="whitespace-normal text-left" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-w-[calc(100vw-2rem)] md:max-w-md">
                             {pastEvents.map((event) => (
-                              <SelectItem 
-                                key={event.id} 
+                              <SelectItem
+                                key={event.id}
                                 value={event.id}
                                 className="whitespace-normal h-auto py-3"
                               >
@@ -436,7 +458,7 @@ export default function VisitorRegister() {
                   />
                 )}
 
-                {/* Event Satisfaction Rating - Only show if an event is selected */}
+                {/* Event Satisfaction Rating */}
                 {form.watch('rated_event_id') && (
                   <FormField
                     control={form.control}
@@ -453,10 +475,7 @@ export default function VisitorRegister() {
                             {[1, 2, 3, 4, 5].map((rating) => (
                               <div key={rating} className="flex items-center space-x-2">
                                 <RadioGroupItem value={rating.toString()} id={`rating-${rating}`} />
-                                <label
-                                  htmlFor={`rating-${rating}`}
-                                  className="text-sm font-medium cursor-pointer"
-                                >
+                                <label htmlFor={`rating-${rating}`} className="text-sm font-medium cursor-pointer">
                                   {rating}
                                 </label>
                               </div>
@@ -478,14 +497,14 @@ export default function VisitorRegister() {
                       <FormLabel>{t('referralSource')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="rounded-xl bg-background/60">
                             <SelectValue placeholder={t('selectReferralSource')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
                           <SelectItem value="social_media">{t('socialMedia')}</SelectItem>
                           <SelectItem value="website">{t('website')}</SelectItem>
-                          <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
                           <SelectItem value="other">{t('other')}</SelectItem>
                         </SelectContent>
                       </Select>
@@ -494,27 +513,87 @@ export default function VisitorRegister() {
                   )}
                 />
 
-                {/* Conditional Person Name Input */}
+                {/* Invited By — Member Search (similar to family relationships in MemberRegister) */}
                 {form.watch('referral_source') === 'invited_by' && (
-                  <FormField
-                    control={form.control}
-                    name="referral_person_name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('referralPersonName')}</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder={t('enterPersonName')} 
-                            {...field} 
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">
+                      {t('referralPersonName') || 'Who invited you?'} *
+                      {referralMemberIds.length > 0 && (
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({referralMemberIds.length} selected)
+                        </span>
+                      )}
+                    </label>
+                    <Popover open={referralSearchOpen} onOpenChange={setReferralSearchOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          className="w-full justify-between font-normal rounded-xl bg-background/60"
+                        >
+                          {referralMemberIds.length > 0
+                            ? `${referralMemberIds.length} person(s) selected`
+                            : 'Search and select members...'}
+                          <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput
+                            placeholder="Search members..."
+                            onValueChange={setReferralSearchText}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                          <CommandList>
+                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandGroup className="max-h-60 overflow-auto">
+                              {allMembers.map(m => {
+                                const isSelected = referralMemberIds.includes(m.id);
+                                return (
+                                  <CommandItem
+                                    key={m.id}
+                                    value={`${m.last_name} ${m.first_name}`}
+                                    onSelect={() => toggleReferralMember(m.id)}
+                                  >
+                                    <div className={cn(
+                                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                      isSelected ? "bg-primary text-primary-foreground" : "opacity-50"
+                                    )}>
+                                      {isSelected && <Check className="h-3 w-3" />}
+                                    </div>
+                                    <span>{m.last_name} {m.first_name}</span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+
+                    {referralMemberIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {referralMemberIds.map(mid => {
+                          const member = allMembers.find(m => m.id === mid);
+                          return (
+                            <Badge key={mid} variant="outline" className="gap-1 rounded-lg">
+                              {member ? `${member.last_name} ${member.first_name}` : mid}
+                              <X className="h-3 w-3 cursor-pointer" onClick={() => toggleReferralMember(mid)} />
+                            </Badge>
+                          );
+                        })}
+                      </div>
                     )}
-                  />
+
+                    {form.formState.errors.referral_member_ids && (
+                      <p className="text-sm font-medium text-destructive">
+                        {form.formState.errors.referral_member_ids.message}
+                      </p>
+                    )}
+                  </div>
                 )}
 
-                {/* Conditional Other Details Input */}
+                {/* Other Details */}
                 {form.watch('referral_source') === 'other' && (
                   <FormField
                     control={form.control}
@@ -523,10 +602,10 @@ export default function VisitorRegister() {
                       <FormItem>
                         <FormLabel>{t('referralOtherDetails')}</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            placeholder={t('explainReferralSource')} 
-                            className="min-h-[80px]"
-                            {...field} 
+                          <Textarea
+                            placeholder={t('explainReferralSource')}
+                            className="min-h-[80px] rounded-xl bg-background/60"
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -534,8 +613,10 @@ export default function VisitorRegister() {
                     )}
                   />
                 )}
+              </GlassSection>
 
-                {/* Join Interest */}
+              {/* Join Interest */}
+              <GlassSection icon={Heart} title={t('joinInterest') || 'Interest'}>
                 <FormField
                   control={form.control}
                   name="join_interest"
@@ -572,20 +653,27 @@ export default function VisitorRegister() {
                     </FormItem>
                   )}
                 />
+              </GlassSection>
 
-                <Button type="submit" className="w-full" disabled={isPending}>
-                  {isPending ? <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('completeRegistration')}...
-                    </> : t('completeRegistration')}
-                </Button>
-
-                
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+              {/* Submit */}
+              <Button
+                type="submit"
+                className="w-full h-12 rounded-xl text-base font-semibold bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {t('completeRegistration')}...
+                  </>
+                ) : (
+                  t('completeRegistration')
+                )}
+              </Button>
+            </form>
+          </Form>
+        </div>
       </div>
-    </div>
-    </>;
+    </>
+  );
 }
