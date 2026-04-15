@@ -103,6 +103,7 @@ export default function VisitorRegister() {
       rated_event_id: undefined,
       event_satisfaction_rating: undefined,
       referral_source: '',
+      referral_social_media: '',
       referral_member_ids: [],
       referral_other_details: ''
     }
