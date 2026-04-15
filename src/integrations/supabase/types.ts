@@ -1657,6 +1657,33 @@ export type Database = {
           },
         ]
       }
+      occupations: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          name_fr: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          name_fr?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          name_fr?: string | null
+        }
+        Relationships: []
+      }
       password_reset_otps: {
         Row: {
           created_at: string
