@@ -275,7 +275,7 @@ const RegionalEvents: React.FC = () => {
   };
 
   const analyticsData = useMemo(() => {
-    if (!periodFilteredEvents || !attendanceData) return {
+    if (!filteredEvents || !attendanceData) return {
       total: { count: 0, avgAttendance: 0, growth: 0 },
       regional: { count: 0, avgAttendance: 0, growth: 0 },
       dcg: { count: 0, avgAttendance: 0, growth: 0 },
@@ -288,17 +288,17 @@ const RegionalEvents: React.FC = () => {
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    const regionalEvents = periodFilteredEvents.filter(e => !e.dcg_id && !e.is_special);
-    const dcgEvents = periodFilteredEvents.filter(e => !!e.dcg_id);
-    const specialEvents = periodFilteredEvents.filter(e => e.is_special);
+    const regionalEvents = filteredEvents.filter(e => !e.dcg_id && !e.is_special);
+    const dcgEvents = filteredEvents.filter(e => !!e.dcg_id);
+    const specialEvents = filteredEvents.filter(e => e.is_special);
 
-    const getAvgAttendance = (eventList: typeof periodFilteredEvents) => {
+    const getAvgAttendance = (eventList: typeof filteredEvents) => {
       const eventIds = eventList.map(e => e.id);
       const matched = attendanceData.filter(a => a.source_event_id && eventIds.includes(a.source_event_id));
       return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
     };
 
-    const getGrowth = (eventList: typeof periodFilteredEvents) => {
+    const getGrowth = (eventList: typeof filteredEvents) => {
       const eventIds = eventList.map(e => e.id);
       const thisMonthAtt = attendanceData.filter(a => {
         const d = new Date(a.event_date);
@@ -313,20 +313,21 @@ const RegionalEvents: React.FC = () => {
       return lastAvg > 0 ? Math.round(((thisAvg - lastAvg) / lastAvg) * 100) : 0;
     };
 
-    const totalAvg = getAvgAttendance(periodFilteredEvents);
-    const thisMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; });
-    const lastMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; });
+    const totalAvg = getAvgAttendance(filteredEvents);
+    const filteredEventIds = filteredEvents.map(e => e.id);
+    const thisMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear && a.source_event_id && filteredEventIds.includes(a.source_event_id); });
+    const lastMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && a.source_event_id && filteredEventIds.includes(a.source_event_id); });
     const thisAllAvg = thisMonthAll.length > 0 ? thisMonthAll.reduce((s, a) => s + a.total_present, 0) / thisMonthAll.length : 0;
     const lastAllAvg = lastMonthAll.length > 0 ? lastMonthAll.reduce((s, a) => s + a.total_present, 0) / lastMonthAll.length : 0;
     const totalGrowth = lastAllAvg > 0 ? Math.round(((thisAllAvg - lastAllAvg) / lastAllAvg) * 100) : 0;
 
     return {
-      total: { count: periodFilteredEvents.length, avgAttendance: totalAvg, growth: totalGrowth },
+      total: { count: filteredEvents.length, avgAttendance: totalAvg, growth: totalGrowth },
       regional: { count: regionalEvents.length, avgAttendance: getAvgAttendance(regionalEvents), growth: getGrowth(regionalEvents) },
       dcg: { count: dcgEvents.length, avgAttendance: getAvgAttendance(dcgEvents), growth: getGrowth(dcgEvents) },
       special: { count: specialEvents.length, avgAttendance: getAvgAttendance(specialEvents), growth: getGrowth(specialEvents) },
     };
-  }, [periodFilteredEvents, attendanceData]);
+  }, [filteredEvents, attendanceData]);
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
     try {
