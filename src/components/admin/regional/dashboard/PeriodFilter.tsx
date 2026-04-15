@@ -17,11 +17,13 @@ export interface PeriodFilters {
 interface PeriodFilterProps {
   filters: PeriodFilters;
   onFiltersChange: (filters: Partial<PeriodFilters>) => void;
+  className?: string;
 }
 
 const PeriodFilter: React.FC<PeriodFilterProps> = ({
   filters,
-  onFiltersChange
+  onFiltersChange,
+  className
 }) => {
   const quickDateOptions = [
     { value: '1-month', label: '1M' },
@@ -64,7 +66,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={cn("flex flex-wrap items-center gap-2 mb-6", className)}>
       <span className="text-sm font-medium text-muted-foreground mr-2">Period:</span>
       
       {/* Quick Date Range Buttons */}
