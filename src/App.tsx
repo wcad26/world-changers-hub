@@ -33,6 +33,12 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
 import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
 
+// Layout Components
+import RegionalAdminLayout from "./components/admin/RegionalAdminLayout";
+import SuperAdminLayout from "./components/admin/SuperAdminLayout";
+import MemberLayout from "./components/layout/MemberLayout";
+import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
+
 // Admin Portal Routes
 import RegionalDashboard from "./pages/admin/regional/Dashboard";
 import RegionalMembers from "./pages/admin/regional/Members";
@@ -52,7 +58,6 @@ import UserRoles from "./pages/admin/regional/UserRoles";
 
 import RegionalCertificates from "./pages/admin/regional/Certificates";
 
-// Super Admin Portal Routes
 // Super Admin Portal Routes
 import SuperDashboard from "./pages/admin/super/Dashboard";
 import SuperMembers from "./pages/admin/super/Members";
@@ -82,8 +87,6 @@ import DcgCommunication from "./pages/dcg/Communication";
 
 // Member Portal Routes
 import MemberAuth from "./pages/MemberAuth";
-import MemberLayout from "./components/layout/MemberLayout";
-import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 import MemberDashboard from "./pages/member/Dashboard";
 import MemberEvents from "./pages/member/Events";
 import MemberProfile from "./pages/member/Profile";
@@ -127,7 +130,7 @@ const App = () => {
             <Route path="/locations" element={<Locations />} />
             <Route path="/locations/:slug" element={<RegionalBranchHome />} />
             <Route path="/events" element={<Events />} />
-            <Route path="/events/:eventId" element={<EventDetail />} /> {/* Supports both UUID and slug */}
+            <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />
@@ -150,162 +153,76 @@ const App = () => {
             <Route path="/auth/member" element={<MemberAuth />} />
             <Route path="/member/auth" element={<Navigate to="/auth/member" replace />} />
             
-            {/* Admin Redirects - For easier navigation */}
+            {/* Admin Redirects */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
             <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
             <Route path="/admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
             
-            {/* Regional Admin Portal Routes - Allow super admins access */}
-            <Route path="/admin/regional/dashboard" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalDashboard />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/members" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalMembers />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/members/:memberId" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalMemberProfile />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/events" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalEvents />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/events/:eventId/report" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalEventReport />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/fundraising" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalFundraising />
-                </MultiRoleProtectedRoute>} />
-
-
-            <Route path="/admin/regional/finances" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalFinances />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/dcg" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalDCG />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/dcg/:dcgId" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <DcgProfile />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/certificates" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalCertificates />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/reports" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalReports />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/communication" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalCommunication />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/branch-settings" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalBranchSettings />
-                </MultiRoleProtectedRoute>} />
-            <Route path="/admin/regional/user-roles" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <UserRoles />
-                </MultiRoleProtectedRoute>} />
-
-
-            <Route path="/admin/regional/settings" element={<MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
-                  <RegionalSettings />
-                </MultiRoleProtectedRoute>} />
+            {/* Regional Admin Portal - Nested Routes with shared layout */}
+            <Route path="/admin/regional" element={
+              <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
+                <RegionalAdminLayout />
+              </MultiRoleProtectedRoute>
+            }>
+              <Route path="dashboard" element={<RegionalDashboard />} />
+              <Route path="members" element={<RegionalMembers />} />
+              <Route path="members/:memberId" element={<RegionalMemberProfile />} />
+              <Route path="events" element={<RegionalEvents />} />
+              <Route path="events/:eventId/report" element={<RegionalEventReport />} />
+              <Route path="fundraising" element={<RegionalFundraising />} />
+              <Route path="finances" element={<RegionalFinances />} />
+              <Route path="dcg" element={<RegionalDCG />} />
+              <Route path="dcg/:dcgId" element={<DcgProfile />} />
+              <Route path="certificates" element={<RegionalCertificates />} />
+              <Route path="reports" element={<RegionalReports />} />
+              <Route path="communication" element={<RegionalCommunication />} />
+              <Route path="branch-settings" element={<RegionalBranchSettings />} />
+              <Route path="user-roles" element={<UserRoles />} />
+              <Route path="settings" element={<RegionalSettings />} />
+            </Route>
             
-            {/* Super Admin Portal Routes */}
-            <Route path="/admin/super/dashboard" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperDashboard />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/members" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperMembers />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/members/:memberId" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperMemberProfile />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/events" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperEvents />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/fundraising" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperFundraising />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/locations" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperLocations />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/finances" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperFinances />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/regions" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperRegions />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/currencies" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperCurrencies />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/reports" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperReports />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/communication" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperCommunication />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/user-management" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperUserManagement />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/homepage-settings" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <HomepageSettings />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/certificates" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <SuperCertificates />
-                </ProtectedRoute>} />
-            <Route path="/admin/super/about-settings" element={<ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
-                  <AboutUsSettings />
-                </ProtectedRoute>} />
+            {/* Super Admin Portal - Nested Routes with shared layout */}
+            <Route path="/admin/super" element={
+              <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+                <SuperAdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<SuperDashboard />} />
+              <Route path="members" element={<SuperMembers />} />
+              <Route path="members/:memberId" element={<SuperMemberProfile />} />
+              <Route path="events" element={<SuperEvents />} />
+              <Route path="fundraising" element={<SuperFundraising />} />
+              <Route path="locations" element={<SuperLocations />} />
+              <Route path="finances" element={<SuperFinances />} />
+              <Route path="regions" element={<SuperRegions />} />
+              <Route path="currencies" element={<SuperCurrencies />} />
+              <Route path="reports" element={<SuperReports />} />
+              <Route path="communication" element={<SuperCommunication />} />
+              <Route path="user-management" element={<SuperUserManagement />} />
+              <Route path="homepage-settings" element={<HomepageSettings />} />
+              <Route path="certificates" element={<SuperCertificates />} />
+              <Route path="about-settings" element={<AboutUsSettings />} />
+            </Route>
             
-            {/* Member Portal Routes */}
-            <Route path="/member" element={<Navigate to="/member/dashboard" replace />} />
-            <Route path="/member/dashboard" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberDashboard />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/events" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberEvents />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/profile" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberProfile />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/finances" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberFinances />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/discipleship" element={<MemberProtectedRoute>
-                  <MemberDiscipleship />
-                </MemberProtectedRoute>} />
-            <Route path="/member/bible" element={<MemberProtectedRoute>
-                  <MemberBible />
-                </MemberProtectedRoute>} />
-            <Route path="/member/attendance" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberAttendance />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/fundraising" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberFundraising />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/media" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberMedia />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/counseling" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberCounseling />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
-            <Route path="/member/store" element={<MemberProtectedRoute>
-                  <MemberLayout>
-                    <MemberStore />
-                  </MemberLayout>
-                </MemberProtectedRoute>} />
+            {/* Member Portal - Nested Routes with shared layout */}
+            <Route path="/member" element={
+              <MemberProtectedRoute>
+                <MemberLayout />
+              </MemberProtectedRoute>
+            }>
+              <Route index element={<Navigate to="/member/dashboard" replace />} />
+              <Route path="dashboard" element={<MemberDashboard />} />
+              <Route path="events" element={<MemberEvents />} />
+              <Route path="profile" element={<MemberProfile />} />
+              <Route path="finances" element={<MemberFinances />} />
+              <Route path="discipleship" element={<MemberDiscipleship />} />
+              <Route path="bible" element={<MemberBible />} />
+              <Route path="attendance" element={<MemberAttendance />} />
+              <Route path="fundraising" element={<MemberFundraising />} />
+              <Route path="media" element={<MemberMedia />} />
+              <Route path="counseling" element={<MemberCounseling />} />
+              <Route path="store" element={<MemberStore />} />
+            </Route>
             
             {/* DCG Portal Routes - Allow regional admins and super admins access */}
             <Route path="/dcg" element={<Navigate to="/dcg/dashboard" replace />} />
