@@ -609,7 +609,7 @@ const Certificates = () => {
                   <p className="text-sm text-muted-foreground">Select a template, choose members, and generate certificates in bulk</p>
                 </div>
               </div>
-              <CardContent className="space-y-6">
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="template">Certificate Template</Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
