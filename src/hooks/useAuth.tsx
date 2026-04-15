@@ -259,10 +259,10 @@ export const useAuth = () => {
 
   const getAvailablePortals = () => {
     const portals = [];
-    if (hasRole('super_admin')) portals.push('super');
-    if (hasRole('regional_admin')) portals.push('regional');
-    if (hasRole('dcg_admin')) portals.push('dcg');
-    if (hasRole('member')) portals.push('member');
+    if (canAccessPortal('super')) portals.push('super');
+    if (canAccessPortal('regional')) portals.push('regional');
+    if (canAccessPortal('dcg')) portals.push('dcg');
+    if (canAccessPortal('member')) portals.push('member');
     return portals;
   };
 

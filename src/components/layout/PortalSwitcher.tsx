@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Crown, Users, MessageSquare, UserCheck, ChevronDown } from 'lucide-react';
 
 const PortalSwitcher = () => {
-  const { hasRole, getAvailablePortals } = useAuth();
+  const { canAccessPortal } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -47,7 +47,7 @@ const PortalSwitcher = () => {
     }
   ];
 
-  const availablePortals = portals.filter(portal => hasRole(portal.requiredRole as 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin'));
+  const availablePortals = portals.filter(portal => canAccessPortal(portal.id));
 
   // Don't show switcher if user only has access to one portal
   if (availablePortals.length <= 1) {
