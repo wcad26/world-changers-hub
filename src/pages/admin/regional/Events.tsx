@@ -1483,7 +1483,7 @@ const RegionalEvents: React.FC = () => {
     if (isLoading || !userRegion) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          {Array.from({ length: 7 }).map((_, j) => (
+          {Array.from({ length: 8 }).map((_, j) => (
             <TableCell key={j}><Skeleton className="h-6 w-full rounded-lg" /></TableCell>
           ))}
         </TableRow>
@@ -1492,19 +1492,32 @@ const RegionalEvents: React.FC = () => {
     if (!eventList || eventList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+          <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
             {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
           </TableCell>
         </TableRow>
       );
     }
-    return eventList.map((event) => (
+    return eventList.map((event) => {
+      const now = new Date();
+      const eventStatus = event.status === 'Cancelled' ? 'Cancelled' : new Date(event.start_datetime) >= now ? 'Upcoming' : 'Completed';
+      const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
+      return (
       <TableRow key={event.id}>
         <TableCell className="font-medium">{event.name}</TableCell>
-        <TableCell>{event.category}</TableCell>
+        <TableCell>
+          <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
+            {eventType}
+          </Badge>
+        </TableCell>
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{event.location_name}</TableCell>
+        <TableCell>
+          <Badge variant={eventStatus === 'Upcoming' ? 'default' : eventStatus === 'Completed' ? 'secondary' : 'destructive'} className="text-xs">
+            {eventStatus}
+          </Badge>
+        </TableCell>
         <TableCell>{event.capacity ?? 'N/A'}</TableCell>
         <TableCell>
           <DropdownMenu>
