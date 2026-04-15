@@ -229,27 +229,34 @@ const RegionalEvents: React.FC = () => {
 
   const filteredEvents = React.useMemo(() => {
     if (!events) return [];
-    return events.filter(event => 
-      (event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
-  }, [events, searchTerm]);
-  
-  const upcomingEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled'), [filteredEvents]);
-  const pastEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) < new Date() || e.status === 'Completed' || e.status === 'Cancelled'), [filteredEvents]);
+    const now = new Date();
+    return events.filter(event => {
+      // Search filter
+      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
+      if (!matchesSearch) return false;
+
+      // Event type filter
+      if (eventTypeFilter === 'regional' && (event.dcg_id || event.is_special)) return false;
+      if (eventTypeFilter === 'dcg' && !event.dcg_id) return false;
+      if (eventTypeFilter === 'special' && !event.is_special) return false;
+
+      // Time filter
+      if (timeFilter === 'upcoming' && new Date(event.start_datetime) < now) return false;
+      if (timeFilter === 'past' && new Date(event.start_datetime) >= now) return false;
+
+      return true;
+    });
+  }, [events, searchTerm, eventTypeFilter, timeFilter]);
 
   // Analytics calculations using real data
   const analyticsData = React.useMemo(() => {
     if (!events || !attendanceData) return {
-      totalEvents: 0,
-      avgAttendance: 0,
-      totalAttendance: 0,
-      categoryBreakdown: [],
-      attendanceTrend: [],
-      topPerformingEvents: [],
-      categoryPerformance: [],
-      monthlyComparison: { thisMonth: 0, lastMonth: 0, change: 0 }
+      total: { count: 0, avgAttendance: 0, growth: 0 },
+      regional: { count: 0, avgAttendance: 0, growth: 0 },
+      dcg: { count: 0, avgAttendance: 0, growth: 0 },
+      special: { count: 0, avgAttendance: 0, growth: 0 },
     };
 
     const now = new Date();
@@ -258,60 +265,46 @@ const RegionalEvents: React.FC = () => {
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    // Event counts by category
-    const categoryBreakdown = eventCategories.map(category => ({
-      category,
-      count: events.filter(e => e.category === category).length,
-      attendance: attendanceData
-        .filter(a => events.find(e => e.name === a.event_name)?.category === category)
-        .reduce((sum, a) => sum + a.total_present, 0)
-    })).filter(c => c.count > 0);
+    const regionalEvents = events.filter(e => !e.dcg_id && !e.is_special);
+    const dcgEvents = events.filter(e => !!e.dcg_id);
+    const specialEvents = events.filter(e => e.is_special);
 
-    // Top performing events by attendance
-    const topPerformingEvents = attendanceData
-      .sort((a, b) => b.total_present - a.total_present)
-      .slice(0, 5)
-      .map(event => ({
-        name: event.event_name,
-        attendance: event.total_present,
-        date: event.event_date,
-        attendanceRate: event.total_present > 0 ? Math.round((event.total_present / (event.total_present + event.total_absent)) * 100) : 0
-      }));
+    const getAvgAttendance = (eventList: typeof events) => {
+      const eventIds = eventList.map(e => e.id);
+      const matched = attendanceData.filter(a => a.source_event_id && eventIds.includes(a.source_event_id));
+      return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
+    };
 
-    // Monthly attendance trend
-    const attendanceTrend = attendanceData
-      .slice(0, 12)
-      .reverse()
-      .map(event => ({
-        date: event.event_date,
-        attendance: event.total_present,
-        name: event.event_name.length > 20 ? `${event.event_name.substring(0, 20)}...` : event.event_name
-      }));
+    const getGrowth = (eventList: typeof events) => {
+      const eventIds = eventList.map(e => e.id);
+      const thisMonthAtt = attendanceData
+        .filter(a => {
+          const d = new Date(a.event_date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear && a.source_event_id && eventIds.includes(a.source_event_id);
+        });
+      const lastMonthAtt = attendanceData
+        .filter(a => {
+          const d = new Date(a.event_date);
+          return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && a.source_event_id && eventIds.includes(a.source_event_id);
+        });
+      const thisAvg = thisMonthAtt.length > 0 ? thisMonthAtt.reduce((s, a) => s + a.total_present, 0) / thisMonthAtt.length : 0;
+      const lastAvg = lastMonthAtt.length > 0 ? lastMonthAtt.reduce((s, a) => s + a.total_present, 0) / lastMonthAtt.length : 0;
+      return lastAvg > 0 ? Math.round(((thisAvg - lastAvg) / lastAvg) * 100) : 0;
+    };
 
-    // This month vs last month
-    const thisMonthEvents = attendanceData.filter(event => {
-      const eventDate = new Date(event.event_date);
-      return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
-    });
-
-    const lastMonthEvents = attendanceData.filter(event => {
-      const eventDate = new Date(event.event_date);
-      return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
-    });
-
-    const thisMonthAttendance = thisMonthEvents.reduce((sum, e) => sum + e.total_present, 0);
-    const lastMonthAttendance = lastMonthEvents.reduce((sum, e) => sum + e.total_present, 0);
-    const monthlyChange = lastMonthAttendance > 0 ? Math.round(((thisMonthAttendance - lastMonthAttendance) / lastMonthAttendance) * 100) : 0;
+    const totalAvg = attendanceData.length > 0 ? Math.round(attendanceData.reduce((s, a) => s + a.total_present, 0) / attendanceData.length) : 0;
+    // Total growth uses all attendance data
+    const thisMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; });
+    const lastMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; });
+    const thisAllAvg = thisMonthAll.length > 0 ? thisMonthAll.reduce((s, a) => s + a.total_present, 0) / thisMonthAll.length : 0;
+    const lastAllAvg = lastMonthAll.length > 0 ? lastMonthAll.reduce((s, a) => s + a.total_present, 0) / lastMonthAll.length : 0;
+    const totalGrowth = lastAllAvg > 0 ? Math.round(((thisAllAvg - lastAllAvg) / lastAllAvg) * 100) : 0;
 
     return {
-      totalEvents: events.length,
-      avgAttendance: attendanceData.length > 0 ? Math.round(attendanceData.reduce((sum, e) => sum + e.total_present, 0) / attendanceData.length) : 0,
-      totalAttendance: attendanceData.reduce((sum, e) => sum + e.total_present, 0),
-      categoryBreakdown,
-      attendanceTrend,
-      topPerformingEvents,
-      categoryPerformance: categoryBreakdown,
-      monthlyComparison: { thisMonth: thisMonthAttendance, lastMonth: lastMonthAttendance, change: monthlyChange }
+      total: { count: events.length, avgAttendance: totalAvg, growth: totalGrowth },
+      regional: { count: regionalEvents.length, avgAttendance: getAvgAttendance(regionalEvents), growth: getGrowth(regionalEvents) },
+      dcg: { count: dcgEvents.length, avgAttendance: getAvgAttendance(dcgEvents), growth: getGrowth(dcgEvents) },
+      special: { count: specialEvents.length, avgAttendance: getAvgAttendance(specialEvents), growth: getGrowth(specialEvents) },
     };
   }, [events, attendanceData]);
 
