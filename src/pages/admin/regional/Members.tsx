@@ -109,15 +109,8 @@ const Members: React.FC = () => {
     return set;
   }, [visitorEvents]);
 
-  // Filter relationships based on search and status
-  const filteredRelationships = relationships?.filter(relationship => {
-    const mentorName = `${relationship.mentor?.profiles?.last_name} ${relationship.mentor?.profiles?.first_name}`.toLowerCase();
-    const discipleName = `${relationship.disciple?.profiles?.last_name} ${relationship.disciple?.profiles?.first_name}`.toLowerCase();
-    const searchMatch = mentorName.includes(discipleshipSearchTerm.toLowerCase()) || discipleName.includes(discipleshipSearchTerm.toLowerCase());
-    const statusMatch = statusFilter === 'all' || relationship.status === statusFilter;
-    
-    return searchMatch && statusMatch;
-  }) || [];
+
+
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
