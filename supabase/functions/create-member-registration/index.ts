@@ -197,7 +197,6 @@ serve(async (req) => {
         membership_class_completed: has_completed_foundation_school === 'yes',
         foundation_school_date: (has_completed_foundation_school === 'yes' && foundation_school_date) ? foundation_school_date : null,
         baptism_date: (is_baptized === 'yes' && baptism_date) ? baptism_date : null,
-        skills_talents: skillsArray,
         preferred_service_areas: ministryArray,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
