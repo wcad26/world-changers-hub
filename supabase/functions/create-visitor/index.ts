@@ -25,13 +25,11 @@ serve(async (req) => {
       date_of_birth,
       gender,
       occupation,
-      emergency_contact_name,
-      emergency_contact_phone,
       region_id,
       rated_event_id,
       event_satisfaction_rating,
       referral_source,
-      referral_person_name,
+      referral_member_ids,
       referral_other_details,
       join_interest
     } = await req.json()
@@ -52,7 +50,6 @@ serve(async (req) => {
       .maybeSingle()
 
     if (existingProfile) {
-      // Check if this profile has ANY member record (visitor OR member)
       const { data: existingMember } = await supabaseAdmin
         .from('members')
         .select('id, member_id, member_type')
@@ -95,8 +92,6 @@ serve(async (req) => {
         date_of_birth: date_of_birth || null,
         gender: gender ? gender.toLowerCase() : null,
         occupation: occupation || null,
-        emergency_contact_name: emergency_contact_name || null,
-        emergency_contact_phone: emergency_contact_phone || null,
         region_id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -122,6 +117,21 @@ serve(async (req) => {
 
     console.log('create-visitor: Member ID generated:', memberId)
 
+    // Resolve referral member names for backward compatibility
+    let referralPersonName = null
+    if (referral_member_ids && referral_member_ids.length > 0) {
+      const { data: referralMembers } = await supabaseAdmin
+        .from('members')
+        .select('id, profiles(first_name, last_name)')
+        .in('id', referral_member_ids)
+      
+      if (referralMembers && referralMembers.length > 0) {
+        referralPersonName = referralMembers
+          .map((m: any) => `${m.profiles?.last_name || ''} ${m.profiles?.first_name || ''}`.trim())
+          .join(', ')
+      }
+    }
+
     // Create visitor member record
     const { data: newVisitor, error: visitorError } = await supabaseAdmin
       .from('members')
@@ -135,7 +145,7 @@ serve(async (req) => {
         rated_event_id: rated_event_id || null,
         event_satisfaction_rating: event_satisfaction_rating || null,
         referral_source: referral_source || null,
-        referral_person_name: referral_person_name || null,
+        referral_person_name: referralPersonName,
         referral_other_details: referral_other_details || null,
         join_interest: join_interest || null,
         created_at: new Date().toISOString(),
@@ -151,12 +161,34 @@ serve(async (req) => {
 
     console.log('create-visitor: Visitor created successfully:', newVisitor)
 
+    // Create member_relationships for referral members
+    if (referral_member_ids && referral_member_ids.length > 0) {
+      try {
+        const relationshipRecords = referral_member_ids.map((refMemberId: string) => ({
+          member_id: newVisitor.id,
+          related_member_id: refMemberId,
+          relationship_type: 'referred_by'
+        }))
+
+        const { error: relError } = await supabaseAdmin
+          .from('member_relationships')
+          .insert(relationshipRecords)
+
+        if (relError) {
+          console.error('create-visitor: Non-fatal error creating referral relationships:', relError)
+        } else {
+          console.log('create-visitor: Referral relationships created:', referral_member_ids.length)
+        }
+      } catch (relErr) {
+        console.error('create-visitor: Non-fatal error in referral relationship creation:', relErr)
+      }
+    }
+
     // Automatically create attendance record if visitor attended an event
     if (rated_event_id) {
       try {
         console.log('create-visitor: Creating attendance record for event:', rated_event_id)
         
-        // 1. Get the event details
         const { data: event, error: eventError } = await supabaseAdmin
           .from('events')
           .select('name, start_datetime, region_id')
@@ -169,7 +201,6 @@ serve(async (req) => {
           console.log('create-visitor: Event found:', event.name)
           const eventDate = new Date(event.start_datetime).toISOString().split('T')[0]
           
-          // 2. Check for existing attendance_event by source_event_id (most reliable)
           let { data: attendanceEvent, error: attendanceEventFetchError } = await supabaseAdmin
             .from('attendance_events')
             .select('id')
@@ -181,7 +212,6 @@ serve(async (req) => {
             console.error('create-visitor: Error checking for attendance event:', attendanceEventFetchError)
           }
           
-          // 3. Create attendance_event if it doesn't exist
           if (!attendanceEvent) {
             console.log('create-visitor: Creating new attendance event')
             const { data: newAttendanceEvent, error: createAttendanceEventError } = await supabaseAdmin
@@ -206,7 +236,6 @@ serve(async (req) => {
             console.log('create-visitor: Using existing attendance event:', attendanceEvent.id)
           }
           
-          // 4. Create attendance record for visitor
           if (attendanceEvent) {
             const { error: attendanceRecordError } = await supabaseAdmin
               .from('attendance_records')
@@ -225,7 +254,6 @@ serve(async (req) => {
           }
         }
       } catch (attendanceError) {
-        // Don't fail visitor registration if attendance tracking fails
         console.error('create-visitor: Non-fatal error in attendance tracking:', attendanceError)
       }
     }
