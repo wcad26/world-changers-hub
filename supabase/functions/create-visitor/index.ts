@@ -31,6 +31,7 @@ serve(async (req) => {
       referral_source,
       referral_social_media,
       referral_member_ids,
+      referral_relationship_type,
       referral_other_details,
       join_interest
     } = await req.json()
@@ -170,7 +171,7 @@ serve(async (req) => {
         const relationshipRecords = referral_member_ids.map((refMemberId: string) => ({
           member_id: newVisitor.id,
           related_member_id: refMemberId,
-          relationship_type: 'referred_by'
+          relationship_type: referral_relationship_type || 'other'
         }))
 
         const { error: relError } = await supabaseAdmin
