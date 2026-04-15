@@ -6,14 +6,12 @@ import {
   Users, 
   Calendar, 
   DollarSign, 
-  MapPin, 
   PiggyBank, 
   Home, 
    
   MessageSquare,
   Settings,
   Building2,
-  UserCog,
   Award
 } from "lucide-react";
 
