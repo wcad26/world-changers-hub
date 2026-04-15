@@ -9,7 +9,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText, Star, Layers } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
@@ -149,6 +150,8 @@ const RegionalEvents: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("3months");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
+  const [eventTypeFilter, setEventTypeFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
@@ -226,27 +229,34 @@ const RegionalEvents: React.FC = () => {
 
   const filteredEvents = React.useMemo(() => {
     if (!events) return [];
-    return events.filter(event => 
-      (event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase())))
-    );
-  }, [events, searchTerm]);
-  
-  const upcomingEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) >= new Date() && e.status !== 'Cancelled'), [filteredEvents]);
-  const pastEvents = React.useMemo(() => filteredEvents.filter(e => new Date(e.start_datetime) < new Date() || e.status === 'Completed' || e.status === 'Cancelled'), [filteredEvents]);
+    const now = new Date();
+    return events.filter(event => {
+      // Search filter
+      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
+      if (!matchesSearch) return false;
+
+      // Event type filter
+      if (eventTypeFilter === 'regional' && (event.dcg_id || event.is_special)) return false;
+      if (eventTypeFilter === 'dcg' && !event.dcg_id) return false;
+      if (eventTypeFilter === 'special' && !event.is_special) return false;
+
+      // Time filter
+      if (timeFilter === 'upcoming' && new Date(event.start_datetime) < now) return false;
+      if (timeFilter === 'past' && new Date(event.start_datetime) >= now) return false;
+
+      return true;
+    });
+  }, [events, searchTerm, eventTypeFilter, timeFilter]);
 
   // Analytics calculations using real data
   const analyticsData = React.useMemo(() => {
     if (!events || !attendanceData) return {
-      totalEvents: 0,
-      avgAttendance: 0,
-      totalAttendance: 0,
-      categoryBreakdown: [],
-      attendanceTrend: [],
-      topPerformingEvents: [],
-      categoryPerformance: [],
-      monthlyComparison: { thisMonth: 0, lastMonth: 0, change: 0 }
+      total: { count: 0, avgAttendance: 0, growth: 0 },
+      regional: { count: 0, avgAttendance: 0, growth: 0 },
+      dcg: { count: 0, avgAttendance: 0, growth: 0 },
+      special: { count: 0, avgAttendance: 0, growth: 0 },
     };
 
     const now = new Date();
@@ -255,60 +265,46 @@ const RegionalEvents: React.FC = () => {
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    // Event counts by category
-    const categoryBreakdown = eventCategories.map(category => ({
-      category,
-      count: events.filter(e => e.category === category).length,
-      attendance: attendanceData
-        .filter(a => events.find(e => e.name === a.event_name)?.category === category)
-        .reduce((sum, a) => sum + a.total_present, 0)
-    })).filter(c => c.count > 0);
+    const regionalEvents = events.filter(e => !e.dcg_id && !e.is_special);
+    const dcgEvents = events.filter(e => !!e.dcg_id);
+    const specialEvents = events.filter(e => e.is_special);
 
-    // Top performing events by attendance
-    const topPerformingEvents = attendanceData
-      .sort((a, b) => b.total_present - a.total_present)
-      .slice(0, 5)
-      .map(event => ({
-        name: event.event_name,
-        attendance: event.total_present,
-        date: event.event_date,
-        attendanceRate: event.total_present > 0 ? Math.round((event.total_present / (event.total_present + event.total_absent)) * 100) : 0
-      }));
+    const getAvgAttendance = (eventList: typeof events) => {
+      const eventIds = eventList.map(e => e.id);
+      const matched = attendanceData.filter(a => a.source_event_id && eventIds.includes(a.source_event_id));
+      return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
+    };
 
-    // Monthly attendance trend
-    const attendanceTrend = attendanceData
-      .slice(0, 12)
-      .reverse()
-      .map(event => ({
-        date: event.event_date,
-        attendance: event.total_present,
-        name: event.event_name.length > 20 ? `${event.event_name.substring(0, 20)}...` : event.event_name
-      }));
+    const getGrowth = (eventList: typeof events) => {
+      const eventIds = eventList.map(e => e.id);
+      const thisMonthAtt = attendanceData
+        .filter(a => {
+          const d = new Date(a.event_date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear && a.source_event_id && eventIds.includes(a.source_event_id);
+        });
+      const lastMonthAtt = attendanceData
+        .filter(a => {
+          const d = new Date(a.event_date);
+          return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && a.source_event_id && eventIds.includes(a.source_event_id);
+        });
+      const thisAvg = thisMonthAtt.length > 0 ? thisMonthAtt.reduce((s, a) => s + a.total_present, 0) / thisMonthAtt.length : 0;
+      const lastAvg = lastMonthAtt.length > 0 ? lastMonthAtt.reduce((s, a) => s + a.total_present, 0) / lastMonthAtt.length : 0;
+      return lastAvg > 0 ? Math.round(((thisAvg - lastAvg) / lastAvg) * 100) : 0;
+    };
 
-    // This month vs last month
-    const thisMonthEvents = attendanceData.filter(event => {
-      const eventDate = new Date(event.event_date);
-      return eventDate.getMonth() === currentMonth && eventDate.getFullYear() === currentYear;
-    });
-
-    const lastMonthEvents = attendanceData.filter(event => {
-      const eventDate = new Date(event.event_date);
-      return eventDate.getMonth() === lastMonth && eventDate.getFullYear() === lastMonthYear;
-    });
-
-    const thisMonthAttendance = thisMonthEvents.reduce((sum, e) => sum + e.total_present, 0);
-    const lastMonthAttendance = lastMonthEvents.reduce((sum, e) => sum + e.total_present, 0);
-    const monthlyChange = lastMonthAttendance > 0 ? Math.round(((thisMonthAttendance - lastMonthAttendance) / lastMonthAttendance) * 100) : 0;
+    const totalAvg = attendanceData.length > 0 ? Math.round(attendanceData.reduce((s, a) => s + a.total_present, 0) / attendanceData.length) : 0;
+    // Total growth uses all attendance data
+    const thisMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; });
+    const lastMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; });
+    const thisAllAvg = thisMonthAll.length > 0 ? thisMonthAll.reduce((s, a) => s + a.total_present, 0) / thisMonthAll.length : 0;
+    const lastAllAvg = lastMonthAll.length > 0 ? lastMonthAll.reduce((s, a) => s + a.total_present, 0) / lastMonthAll.length : 0;
+    const totalGrowth = lastAllAvg > 0 ? Math.round(((thisAllAvg - lastAllAvg) / lastAllAvg) * 100) : 0;
 
     return {
-      totalEvents: events.length,
-      avgAttendance: attendanceData.length > 0 ? Math.round(attendanceData.reduce((sum, e) => sum + e.total_present, 0) / attendanceData.length) : 0,
-      totalAttendance: attendanceData.reduce((sum, e) => sum + e.total_present, 0),
-      categoryBreakdown,
-      attendanceTrend,
-      topPerformingEvents,
-      categoryPerformance: categoryBreakdown,
-      monthlyComparison: { thisMonth: thisMonthAttendance, lastMonth: lastMonthAttendance, change: monthlyChange }
+      total: { count: events.length, avgAttendance: totalAvg, growth: totalGrowth },
+      regional: { count: regionalEvents.length, avgAttendance: getAvgAttendance(regionalEvents), growth: getGrowth(regionalEvents) },
+      dcg: { count: dcgEvents.length, avgAttendance: getAvgAttendance(dcgEvents), growth: getGrowth(dcgEvents) },
+      special: { count: specialEvents.length, avgAttendance: getAvgAttendance(specialEvents), growth: getGrowth(specialEvents) },
     };
   }, [events, attendanceData]);
 
@@ -1487,7 +1483,7 @@ const RegionalEvents: React.FC = () => {
     if (isLoading || !userRegion) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          {Array.from({ length: 7 }).map((_, j) => (
+          {Array.from({ length: 8 }).map((_, j) => (
             <TableCell key={j}><Skeleton className="h-6 w-full rounded-lg" /></TableCell>
           ))}
         </TableRow>
@@ -1496,19 +1492,32 @@ const RegionalEvents: React.FC = () => {
     if (!eventList || eventList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+          <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
             {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
           </TableCell>
         </TableRow>
       );
     }
-    return eventList.map((event) => (
+    return eventList.map((event) => {
+      const now = new Date();
+      const eventStatus = event.status === 'Cancelled' ? 'Cancelled' : new Date(event.start_datetime) >= now ? 'Upcoming' : 'Completed';
+      const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
+      return (
       <TableRow key={event.id}>
         <TableCell className="font-medium">{event.name}</TableCell>
-        <TableCell>{event.category}</TableCell>
+        <TableCell>
+          <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
+            {eventType}
+          </Badge>
+        </TableCell>
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{event.location_name}</TableCell>
+        <TableCell>
+          <Badge variant={eventStatus === 'Upcoming' ? 'default' : eventStatus === 'Completed' ? 'secondary' : 'destructive'} className="text-xs">
+            {eventStatus}
+          </Badge>
+        </TableCell>
         <TableCell>{event.capacity ?? 'N/A'}</TableCell>
         <TableCell>
           <DropdownMenu>
@@ -1580,7 +1589,9 @@ const RegionalEvents: React.FC = () => {
           </DropdownMenu>
         </TableCell>
       </TableRow>
-    ));
+      );
+    });
+  };
   };
 
   return (
@@ -1588,152 +1599,108 @@ const RegionalEvents: React.FC = () => {
       <div className="space-y-6">
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <CalendarDays className="h-5 w-5" />
+          {[
+            { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
+            { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-500/10' },
+            { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-green-600', bg: 'bg-green-500/10' },
+            { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+          ].map(({ label, data, icon: Icon, color, bg }) => (
+            <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">{label}</span>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Total Events</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{analyticsData.totalEvents}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
+              <p className="text-2xl font-bold text-foreground">{data.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">Avg: {data.avgAttendance} attendees</p>
+              <div className="mt-2">
+                {data.growth !== 0 ? (
+                  <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">0% growth</span>
+                )}
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Total Attendance</span>
             </div>
-            <p className="text-2xl font-bold text-foreground">{analyticsData.totalAttendance}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <BarChart2 className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">Avg Attendance</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{analyticsData.avgAttendance}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                {analyticsData.monthlyComparison.change >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">Monthly Trend</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">
-              {analyticsData.monthlyComparison.change >= 0 ? '+' : ''}{analyticsData.monthlyComparison.change}%
-            </p>
-          </div>
+          ))}
         </div>
 
-        <Tabs defaultValue="upcoming">
-          <TabsList className="grid grid-cols-1 md:grid-cols-2 w-full max-w-lg">
-            <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
-            <TabsTrigger value="past">Past Events</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="upcoming">
-            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                    <Calendar className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
-                    <p className="text-sm text-muted-foreground">View and manage scheduled events in your region</p>
-                  </div>
-                </div>
-                <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 shrink-0">
-                  <Plus className="h-4 w-4" />
-                  Add Event
-                </Button>
+        {/* Unified Events Table */}
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                <Calendar className="h-5 w-5" />
               </div>
-              <div className="mb-4">
-                <div className="relative max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-              </div>
-              {isError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error loading events</AlertTitle>
-                  <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-                </Alert>
-              )}
-              <div className="rounded-xl border border-border/40 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead>Event Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Time</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Capacity</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {renderTableBody(upcomingEvents)}
-                    </TableBody>
-                  </Table>
-                </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Events</h2>
+                <p className="text-sm text-muted-foreground">View and manage all events in your region</p>
               </div>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="past">
-            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                  <Clock className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">Past Events</h2>
-                  <p className="text-sm text-muted-foreground">View history of completed events</p>
-                </div>
-              </div>
-              <div className="mb-4">
-                <div className="relative max-w-md">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="search" placeholder="Search past events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-              </div>
-              {isError && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error loading events</AlertTitle>
-                  <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-                </Alert>
-              )}
-              <div className="rounded-xl border border-border/40 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30">
-                        <TableHead>Event Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Capacity</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {renderTableBody(pastEvents)}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
+            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 shrink-0">
+              <Plus className="h-4 w-4" />
+              Add Event
+            </Button>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
-          </TabsContent>
-        </Tabs>
+            <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+              <SelectTrigger className="w-[160px] bg-background/60">
+                <SelectValue placeholder="Event Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="regional">Regional</SelectItem>
+                <SelectItem value="dcg">DCG</SelectItem>
+                <SelectItem value="special">Special</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="w-[160px] bg-background/60">
+                <SelectValue placeholder="Time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="past">Past</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {isError && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error loading events</AlertTitle>
+              <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+            </Alert>
+          )}
+          <div className="rounded-xl border border-border/40 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead>Event Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Capacity</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {renderTableBody(filteredEvents)}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Create Event Dialog */}
