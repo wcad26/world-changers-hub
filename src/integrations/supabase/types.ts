@@ -2010,6 +2010,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      search_all_members: {
+        Args: { _search?: string }
+        Returns: {
+          first_name: string
+          id: string
+          last_name: string
+          member_id: string
+        }[]
+      }
       search_region_members: {
         Args: { _region_id: string; _search?: string }
         Returns: {
