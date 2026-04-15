@@ -178,8 +178,6 @@ serve(async (req) => {
 
     console.log('create-member-registration: Member ID generated:', memberId)
 
-    // Prepare skills and interests arrays
-    const skillsArray = skills_talents ? [skills_talents] : null
     const ministryArray = ministry_interests && ministry_interests.length > 0 ? ministry_interests : null
 
     // Determine member_type: 'member' if completed foundation school, 'visitor' otherwise
