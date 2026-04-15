@@ -49,6 +49,9 @@ import ManageDiscipleshipDialog from "@/components/admin/regional/discipleship/M
 import type { DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import RoleBadge from "@/components/ui/RoleBadge";
 import Papa from 'papaparse';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { isChildMember } from '@/utils/childUtils';
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -70,6 +73,25 @@ const Members: React.FC = () => {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
   const [selectedRelationship, setSelectedRelationship] = React.useState<DiscipleshipRelationshipWithMembers | null>(null);
   const { data: relationships, isLoading: discipleshipLoading, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
+
+  // Fetch member relationships for children filter
+  const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['region-member-relationships-filter', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return ((data || []) as any[]).map((r: any) => ({
+        member_id: r.member_id as string,
+        related_member_id: r.related_member_id as string,
+      }));
+    },
+    enabled: memberIds.length > 0,
+  });
 
   // Filter relationships based on search and status
   const filteredRelationships = relationships?.filter(relationship => {
@@ -97,8 +119,15 @@ const Members: React.FC = () => {
       // Status filter
       const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
       
-      // Member type filter
-      const typeMatch = memberTypeFilter === 'all' || member.member_type === memberTypeFilter;
+      // Member type filter (includes children)
+      let typeMatch = false;
+      if (memberTypeFilter === 'all') {
+        typeMatch = true;
+      } else if (memberTypeFilter === 'children') {
+        typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships);
+      } else {
+        typeMatch = member.member_type === memberTypeFilter;
+      }
       
       return searchMatch && statusMatch && typeMatch;
     });
@@ -262,6 +291,7 @@ const Members: React.FC = () => {
                         <SelectItem value="all">All Types</SelectItem>
                         <SelectItem value="member">Member</SelectItem>
                         <SelectItem value="visitor">Visitor</SelectItem>
+                        <SelectItem value="children">Children</SelectItem>
                       </SelectContent>
                     </Select>
                     

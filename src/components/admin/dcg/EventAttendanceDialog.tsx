@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -14,10 +14,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserCheck, Users } from 'lucide-react';
+import { Search, UserCheck, Users, Baby } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
 import { useSaveEventAttendance, useEventAttendanceRecords } from '@/hooks/useDcgEvents';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { isChildMember } from '@/utils/childUtils';
 import type { Event } from '@/hooks/useDcgEvents';
 
 interface EventAttendanceDialogProps {
@@ -35,11 +39,31 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
+  const [showChildrenOnly, setShowChildrenOnly] = useState(false);
   const isMobile = useIsMobile();
 
   const { data: dcgMembers, isLoading: loadingMembers } = useDcgMembers(dcgId);
   const { data: existingRecords } = useEventAttendanceRecords(event.id, dcgId);
   const saveAttendance = useSaveEventAttendance();
+
+  // Fetch relationships for children filter
+  const memberIds = useMemo(() => dcgMembers?.map(m => m.member_id) || [], [dcgMembers]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['dcg-attendance-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return ((data || []) as any[]).map((r: any) => ({
+        member_id: r.member_id as string,
+        related_member_id: r.related_member_id as string,
+      }));
+    },
+    enabled: memberIds.length > 0,
+  });
 
   const getDisplayName = (dcgMember: any) => {
     const profile = dcgMember.members?.profiles;
@@ -47,6 +71,10 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
       return `${profile.last_name || ''} ${profile.first_name || ''}`.trim();
     }
     return dcgMember.members?.member_id || 'Unknown Member';
+  };
+
+  const getDob = (dcgMember: any): string | null => {
+    return dcgMember.members?.profiles?.date_of_birth || null;
   };
 
   useEffect(() => {
@@ -60,10 +88,19 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
     }
   }, [existingRecords]);
 
-  const filteredMembers = dcgMembers?.filter(dcgMember => {
-    const fullName = getDisplayName(dcgMember);
-    return fullName.toLowerCase().includes(searchTerm.toLowerCase());
-  }) || [];
+  const filteredMembers = useMemo(() => {
+    const list = dcgMembers || [];
+    return list.filter(dcgMember => {
+      const fullName = getDisplayName(dcgMember);
+      const searchMatch = fullName.toLowerCase().includes(searchTerm.toLowerCase());
+      if (!searchMatch) return false;
+
+      if (showChildrenOnly) {
+        return isChildMember(getDob(dcgMember), dcgMember.member_id, memberRelationships);
+      }
+      return true;
+    });
+  }, [dcgMembers, searchTerm, showChildrenOnly, memberRelationships]);
 
   const handleToggleMember = (memberId: string) => {
     const newPresentMembers = new Set(presentMembers);
@@ -131,6 +168,16 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
                 />
               </div>
               <div className="flex items-center gap-2">
+                <Toggle
+                  pressed={showChildrenOnly}
+                  onPressedChange={setShowChildrenOnly}
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                >
+                  <Baby className="h-4 w-4" />
+                  Children
+                </Toggle>
                 <Button
                   variant="outline"
                   size="sm"
@@ -148,7 +195,6 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 
             <ScrollArea className="h-[calc(85vh-280px)] sm:h-[calc(85vh-220px)]">
               {isMobile ? (
-                /* Mobile card list */
                 <div className="space-y-2 pr-2">
                   {loadingMembers ? (
                     Array.from({ length: 5 }).map((_, i) => (
@@ -156,7 +202,7 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
                     ))
                   ) : filteredMembers.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground text-sm">
-                      {searchTerm ? "No members match your search" : "No members found"}
+                      {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
                     </div>
                   ) : (
                     filteredMembers.map((dcgMember) => (
@@ -178,7 +224,6 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
                   )}
                 </div>
               ) : (
-                /* Desktop table */
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
@@ -200,7 +245,7 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
                       ) : filteredMembers.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                            {searchTerm ? "No members match your search" : "No members found"}
+                            {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
                           </TableCell>
                         </TableRow>
                       ) : (

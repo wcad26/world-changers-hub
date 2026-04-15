@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,12 +11,17 @@ import { useAllMembers } from "@/hooks/useAllMembers";
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { isChildMember } from '@/utils/childUtils';
 
 const SuperMembers: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   
   // Fetch real data from database
   const { data: regions, isLoading: regionsLoading } = useAllRegions();
@@ -25,6 +30,34 @@ const SuperMembers: React.FC = () => {
     regionId: selectedRegion || undefined,
     status: statusFilter || undefined,
   });
+
+  // Fetch relationships for children filter
+  const memberIds = useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['super-member-relationships-filter', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return ((data || []) as any[]).map((r: any) => ({
+        member_id: r.member_id as string,
+        related_member_id: r.related_member_id as string,
+      }));
+    },
+    enabled: memberIds.length > 0,
+  });
+
+  const filteredMembers = useMemo(() => {
+    if (!members) return [];
+    if (typeFilter === 'all') return members;
+    if (typeFilter === 'children') {
+      return members.filter(m => isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships));
+    }
+    return members.filter(m => m.member_type === typeFilter);
+  }, [members, typeFilter, memberRelationships]);
 
   return (
     <SuperAdminLayout>
@@ -67,13 +100,24 @@ const SuperMembers: React.FC = () => {
               <option value="new">New</option>
               <option value="transferred">Transferred</option>
             </select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="member">Member</SelectItem>
+                <SelectItem value="visitor">Visitor</SelectItem>
+                <SelectItem value="children">Children</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         
         <Card>
           <CardHeader>
             <div className="text-sm text-muted-foreground">
-              Showing {members?.length || 0} members
+              Showing {filteredMembers.length} members
             </div>
           </CardHeader>
           <CardContent>
@@ -97,8 +141,8 @@ const SuperMembers: React.FC = () => {
                           <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                         </TableCell>
                       </TableRow>
-                    ) : members && members.length > 0 ? (
-                      members.map((member) => (
+                    ) : filteredMembers.length > 0 ? (
+                      filteredMembers.map((member) => (
                         <TableRow 
                           key={member.id}
                           className="cursor-pointer hover:bg-muted/50 transition-colors"

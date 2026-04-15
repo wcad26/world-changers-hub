@@ -76,7 +76,10 @@ export const visitorRegistrationSchema = z.object({
     .transform((val) => val === '' ? undefined : val)
     .optional(),
   
-  join_interest: z.enum(['yes', 'no', 'undecided']).optional()
+  join_interest: z.enum(['yes', 'no', 'undecided']).optional(),
+  
+  relationship_member_id: z.string().uuid().optional(),
+  relationship_type: z.string().optional(),
 }).refine((data) => {
   // If referral_source is "invited_by", referral_person_name is required
   if (data.referral_source === "invited_by" && !data.referral_person_name) {

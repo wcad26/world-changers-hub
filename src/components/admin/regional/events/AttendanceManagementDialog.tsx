@@ -9,9 +9,13 @@ import { useCreateAttendanceEvent, useSaveAttendance } from "@/hooks/useAttendan
 import { useExistingEventAttendance } from "@/hooks/useExistingEventAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
-import { Search, UserCheck, Save, Loader2, Users } from "lucide-react";
+import { Search, UserCheck, Save, Loader2, Users, Baby } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Toggle } from "@/components/ui/toggle";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { isChildMember } from '@/utils/childUtils';
 
 interface AttendanceManagementDialogProps {
   isOpen: boolean;
@@ -30,11 +34,31 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
   const [isRecording, setIsRecording] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showChildrenOnly, setShowChildrenOnly] = useState(false);
 
   const { data: members, isLoading: loadingMembers, error: membersError } = useMembers(userRegion?.id);
   const { data: existingAttendance, isLoading: loadingExisting } = useExistingEventAttendance(event.id, userRegion?.id);
   const createAttendanceEvent = useCreateAttendanceEvent();
   const saveAttendance = useSaveAttendance();
+
+  // Fetch relationships for children filter
+  const memberIds = useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['attendance-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return ((data || []) as any[]).map((r: any) => ({
+        member_id: r.member_id as string,
+        related_member_id: r.related_member_id as string,
+      }));
+    },
+    enabled: memberIds.length > 0,
+  });
 
   // Initialize presentMembers with existing attendance data
   useEffect(() => {
@@ -50,6 +74,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
       setIsInitialized(false);
       setPresentMembers(new Set());
       setSearchTerm("");
+      setShowChildrenOnly(false);
     }
   }, [isOpen]);
 
@@ -62,12 +87,20 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
       const email = member.profiles?.email?.toLowerCase() || '';
       const memberId = member.member_id?.toLowerCase() || '';
       
-      return firstName.includes(searchLower) || 
+      const searchMatch = firstName.includes(searchLower) || 
              lastName.includes(searchLower) || 
              email.includes(searchLower) ||
              memberId.includes(searchLower);
+
+      if (!searchMatch) return false;
+
+      if (showChildrenOnly) {
+        return isChildMember(member.profiles?.date_of_birth, member.id, memberRelationships);
+      }
+
+      return true;
     });
-  }, [members, searchTerm]);
+  }, [members, searchTerm, showChildrenOnly, memberRelationships]);
 
   const handleToggleMember = (memberId: string) => {
     const newPresentMembers = new Set(presentMembers);
@@ -94,7 +127,6 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
     try {
       let attendanceEventId = existingAttendance?.attendanceEventId;
 
-      // Only create a new attendance event if one doesn't exist
       if (!attendanceEventId) {
         const attendanceEventData = {
           name: `Attendance - ${event.name}`,
@@ -108,7 +140,6 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
         attendanceEventId = attendanceEvent.id;
       }
 
-      // Create/update attendance records for all members
       const attendanceRecords = members.map(member => ({
         event_id: attendanceEventId!,
         member_id: member.id,
@@ -187,6 +218,15 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <Toggle
+              pressed={showChildrenOnly}
+              onPressedChange={setShowChildrenOnly}
+              variant="outline"
+              className="gap-2"
+            >
+              <Baby className="h-4 w-4" />
+              Children Only
+            </Toggle>
             <Button
               variant="outline"
               onClick={handleSelectAll}
@@ -201,6 +241,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
             <p className="text-sm">
               <strong>{presentMembers.size}</strong> of <strong>{filteredMembers.length}</strong> members selected as present
               {searchTerm && ` (filtered from ${members?.length || 0} total members)`}
+              {showChildrenOnly && ' (showing children only)'}
             </p>
           </div>
 
@@ -236,7 +277,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
                 ) : filteredMembers.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      {searchTerm ? "No members match your search" : "No members found"}
+                      {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
                     </TableCell>
                   </TableRow>
                 ) : (

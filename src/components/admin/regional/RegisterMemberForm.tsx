@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCreateMember, memberSchema, type NewMemberData } from '@/hooks/useMembers';
+import { useMembers } from '@/hooks/useMembers';
+import { useCreateMemberRelationship, FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface RegisterMemberFormProps {
   onSuccess?: () => void;
@@ -16,9 +22,26 @@ interface RegisterMemberFormProps {
   isLoading?: boolean;
 }
 
+const RELATIONSHIP_TYPES: { value: FamilyRelationshipType; label: string }[] = [
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'parent', label: 'Parent' },
+  { value: 'child', label: 'Child' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'other', label: 'Other' },
+];
+
 const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, customSubmit, isLoading }) => {
   const { toast } = useToast();
+  const { userRegion } = useAuth();
   const createMember = useCreateMember();
+  const createRelationship = useCreateMemberRelationship();
+  const { data: existingMembers } = useMembers(userRegion?.id);
+
+  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
+  const [relationshipType, setRelationshipType] = useState<FamilyRelationshipType | ''>('');
+  const [relatedMemberId, setRelatedMemberId] = useState('');
+  const [memberSearchOpen, setMemberSearchOpen] = useState(false);
 
   const form = useForm<NewMemberData>({
     resolver: zodResolver(memberSchema),
@@ -37,6 +60,8 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
     },
   });
 
+  const selectedRelatedMember = existingMembers?.find(m => m.id === relatedMemberId);
+
   const onSubmit = (values: NewMemberData) => {
     console.log('RegisterMemberForm: Submitting form with values:', values);
     
@@ -48,11 +73,23 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
     createMember.mutate(values, {
       onSuccess: (data) => {
         console.log('RegisterMemberForm: Member creation successful:', data);
+        
+        // If relationship fields are filled, create the relationship
+        if (relationshipType && relatedMemberId && data?.id) {
+          createRelationship.mutate({
+            memberId: data.id,
+            relatedMemberId,
+            relationshipType: relationshipType as FamilyRelationshipType,
+          });
+        }
+        
         toast({
           title: 'Member Registered Successfully',
           description: `${values.first_name} ${values.last_name} has been registered. An invitation email has been sent to ${values.email}.`,
         });
         form.reset();
+        setRelationshipType('');
+        setRelatedMemberId('');
         if (onSuccess) {
           onSuccess();
         }
@@ -254,6 +291,75 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
             />
           </div>
         </div>
+
+        {/* Family Relationship Section */}
+        <Collapsible open={isRelationshipOpen} onOpenChange={setIsRelationshipOpen}>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="outline" className="w-full justify-between">
+              <span className="text-lg font-medium">Family Relationship (Optional)</span>
+              {isRelationshipOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Relationship Type</label>
+                <Select value={relationshipType} onValueChange={(v) => setRelationshipType(v as FamilyRelationshipType)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select relationship type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RELATIONSHIP_TYPES.map(rt => (
+                      <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Related Member</label>
+                <Popover open={memberSearchOpen} onOpenChange={setMemberSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between font-normal"
+                    >
+                      {selectedRelatedMember
+                        ? `${selectedRelatedMember.profiles?.last_name} ${selectedRelatedMember.profiles?.first_name}`
+                        : 'Search for a member...'}
+                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search members..." />
+                      <CommandList>
+                        <CommandEmpty>No members found.</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-auto">
+                          {existingMembers?.map(m => (
+                            <CommandItem
+                              key={m.id}
+                              value={`${m.profiles?.last_name} ${m.profiles?.first_name} ${m.profiles?.email}`}
+                              onSelect={() => {
+                                setRelatedMemberId(m.id);
+                                setMemberSearchOpen(false);
+                              }}
+                            >
+                              <span>{m.profiles?.last_name} {m.profiles?.first_name}</span>
+                              <span className="ml-2 text-xs text-muted-foreground">{m.member_id}</span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <div className="flex justify-end space-x-4 pt-4 border-t">
           <Button

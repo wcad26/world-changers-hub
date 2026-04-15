@@ -9,7 +9,7 @@ import {
   MapPin, 
   PiggyBank, 
   Home, 
-  BarChart2, 
+   
   MessageSquare,
   Settings,
   Building2,
@@ -73,12 +73,6 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       path: "/admin/regional/certificates", 
       icon: Award as React.ComponentType<{ className?: string; size?: number }>,
       permission: "members_view"
-    },
-    { 
-      title: "Reports", 
-      path: "/admin/regional/reports", 
-      icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "reports_view"
     },
     { 
       title: "Communication", 
