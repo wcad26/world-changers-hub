@@ -105,6 +105,7 @@ export default function VisitorRegister() {
       referral_source: '',
       referral_social_media: '',
       referral_member_ids: [],
+      referral_relationship_type: undefined,
       referral_other_details: ''
     }
   });
