@@ -449,8 +449,8 @@ const Members: React.FC = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Address</TableHead>
+                      <TableHead className="w-[20%]">Name</TableHead>
+                      <TableHead className="w-[20%]">Address</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
