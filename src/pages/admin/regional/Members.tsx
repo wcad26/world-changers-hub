@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2, Star } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
@@ -253,20 +253,48 @@ const Members: React.FC = () => {
         
         {/* KPI Cards */}
         {(() => {
+          // Identify children first (16 and under + has relationship)
+          const childrenSet = new Set<string>();
+          members?.forEach(m => {
+            if (isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships)) {
+              childrenSet.add(m.id);
+            }
+          });
+          const childrenCount = childrenSet.size;
+
           const totalCount = members?.length || 0;
-          const memberCount = members?.filter(m => m.member_type === 'member').length || 0;
-          const specialVisitorCount = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id && specialEventIds.has(m.rated_event_id)).length || 0;
-          const regularVisitorCount = members?.filter(m => m.member_type === 'visitor' && (!m.rated_event_id || !specialEventIds.has(m.rated_event_id))).length || 0;
+          const memberCount = members?.filter(m => m.member_type === 'member' && !childrenSet.has(m.id)).length || 0;
+          const specialVisitorCount = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id && specialEventIds.has(m.rated_event_id) && !childrenSet.has(m.id)).length || 0;
+          const regularVisitorCount = members?.filter(m => m.member_type === 'visitor' && (!m.rated_event_id || !specialEventIds.has(m.rated_event_id)) && !childrenSet.has(m.id)).length || 0;
           
           const thirtyDaysAgo = new Date();
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
           const newTotal30d = members?.filter(m => m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
-          const newMembers30d = members?.filter(m => m.member_type === 'member' && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
-          const totalGrowth = (totalCount - newTotal30d) > 0 ? Math.round((newTotal30d / (totalCount - newTotal30d)) * 100) : newTotal30d > 0 ? 100 : 0;
-          const memberGrowth = (memberCount - newMembers30d) > 0 ? Math.round((newMembers30d / (memberCount - newMembers30d)) * 100) : newMembers30d > 0 ? 100 : 0;
+          const newMembers30d = members?.filter(m => m.member_type === 'member' && !childrenSet.has(m.id) && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const newChildren30d = members?.filter(m => childrenSet.has(m.id) && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const newRegular30d = members?.filter(m => m.member_type === 'visitor' && (!m.rated_event_id || !specialEventIds.has(m.rated_event_id)) && !childrenSet.has(m.id) && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const newSpecial30d = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id && specialEventIds.has(m.rated_event_id) && !childrenSet.has(m.id) && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+
+          const calcGrowth = (current: number, newCount: number) => {
+            const prev = current - newCount;
+            return prev > 0 ? Math.round((newCount / prev) * 100) : newCount > 0 ? 100 : 0;
+          };
+
+          const totalGrowth = calcGrowth(totalCount, newTotal30d);
+          const memberGrowth = calcGrowth(memberCount, newMembers30d);
+          const childrenGrowth = calcGrowth(childrenCount, newChildren30d);
+          const regularGrowth = calcGrowth(regularVisitorCount, newRegular30d);
+          const specialGrowth = calcGrowth(specialVisitorCount, newSpecial30d);
+
+          const GrowthBadge = ({ value }: { value: number }) => (
+            <span className={`text-xs font-medium ${value >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              {value >= 0 ? '+' : ''}{value}%
+            </span>
+          );
 
           return (
             <div className="grid gap-4 md:grid-cols-5">
+              {/* Total */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -276,13 +304,10 @@ const Members: React.FC = () => {
                 </div>
                 <div className="flex items-end justify-between">
                   <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : totalCount}</p>
-                  {!isLoadingMembers && (
-                    <span className={`text-xs font-medium ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {totalGrowth >= 0 ? '+' : ''}{totalGrowth}%
-                    </span>
-                  )}
+                  {!isLoadingMembers && <GrowthBadge value={totalGrowth} />}
                 </div>
               </div>
+              {/* Members */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -292,22 +317,23 @@ const Members: React.FC = () => {
                 </div>
                 <div className="flex items-end justify-between">
                   <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : memberCount}</p>
-                  {!isLoadingMembers && (
-                    <span className={`text-xs font-medium ${memberGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {memberGrowth >= 0 ? '+' : ''}{memberGrowth}%
-                    </span>
-                  )}
+                  {!isLoadingMembers && <GrowthBadge value={memberGrowth} />}
                 </div>
               </div>
+              {/* Children */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
-                    <Star className="h-5 w-5" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 text-pink-500">
+                    <Baby className="h-5 w-5" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Special Event Visitors</span>
+                  <span className="text-sm font-medium text-muted-foreground">Children</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : specialVisitorCount}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : childrenCount}</p>
+                  {!isLoadingMembers && <GrowthBadge value={childrenGrowth} />}
+                </div>
               </div>
+              {/* Regular Visitors */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -315,16 +341,23 @@ const Members: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">Regular Visitors</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : regularVisitorCount}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : regularVisitorCount}</p>
+                  {!isLoadingMembers && <GrowthBadge value={regularGrowth} />}
+                </div>
               </div>
+              {/* Special Event Visitors */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <TrendingUp className="h-5 w-5" />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <Star className="h-5 w-5" />
                   </div>
-                  <span className="text-sm font-medium text-muted-foreground">Active</span>
+                  <span className="text-sm font-medium text-muted-foreground">Special Event Visitors</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : specialVisitorCount}</p>
+                  {!isLoadingMembers && <GrowthBadge value={specialGrowth} />}
+                </div>
               </div>
             </div>
           );
