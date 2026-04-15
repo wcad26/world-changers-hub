@@ -772,21 +772,21 @@ export default function MemberRegister() {
 
                       {/* Add new relationship */}
                       <div className="space-y-4 p-4 rounded-md border border-dashed">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Relationship Type</label>
-                          <Select value={currentRelType} onValueChange={(v) => setCurrentRelType(v as FamilyRelationshipType)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select relationship type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {RELATIONSHIP_TYPES.map(rt => (
-                                <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium">Relationship Type</label>
+                            <Select value={currentRelType} onValueChange={(v) => setCurrentRelType(v as FamilyRelationshipType)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select relationship type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {RELATIONSHIP_TYPES.map(rt => (
+                                  <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
 
-                        {currentRelType && (
                           <div className="space-y-2">
                             <label className="text-sm font-medium">
                               Select Related Members
@@ -803,6 +803,7 @@ export default function MemberRegister() {
                                   variant="outline"
                                   role="combobox"
                                   className="w-full justify-between font-normal"
+                                  disabled={!currentRelType}
                                 >
                                   {currentRelMemberIds.length > 0
                                     ? `${currentRelMemberIds.length} member(s) selected`
@@ -824,7 +825,7 @@ export default function MemberRegister() {
                                         return (
                                           <CommandItem
                                             key={m.id}
-                                            value={`${m.last_name} ${m.first_name} ${m.member_id}`}
+                                            value={`${m.last_name} ${m.first_name}`}
                                             onSelect={() => toggleMemberSelection(m.id)}
                                           >
                                             <div className={cn(
@@ -834,7 +835,6 @@ export default function MemberRegister() {
                                               {isSelected && <Check className="h-3 w-3" />}
                                             </div>
                                             <span>{m.last_name} {m.first_name}</span>
-                                            <span className="ml-2 text-xs text-muted-foreground">{m.member_id}</span>
                                           </CommandItem>
                                         );
                                       })}
@@ -843,24 +843,24 @@ export default function MemberRegister() {
                                 </Command>
                               </PopoverContent>
                             </Popover>
+                          </div>
+                        </div>
 
-                            {/* Selected members preview */}
-                            {currentRelMemberIds.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {currentRelMemberIds.map(mid => {
-                                  const member = allMembers.find(m => m.id === mid);
-                                  return (
-                                    <Badge key={mid} variant="outline" className="gap-1">
-                                      {member ? `${member.last_name} ${member.first_name}` : mid}
-                                      <X 
-                                        className="h-3 w-3 cursor-pointer" 
-                                        onClick={() => toggleMemberSelection(mid)}
-                                      />
-                                    </Badge>
-                                  );
-                                })}
-                              </div>
-                            )}
+                        {/* Selected members preview */}
+                        {currentRelMemberIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {currentRelMemberIds.map(mid => {
+                              const member = allMembers.find(m => m.id === mid);
+                              return (
+                                <Badge key={mid} variant="outline" className="gap-1">
+                                  {member ? `${member.last_name} ${member.first_name}` : mid}
+                                  <X 
+                                    className="h-3 w-3 cursor-pointer" 
+                                    onClick={() => toggleMemberSelection(mid)}
+                                  />
+                                </Badge>
+                              );
+                            })}
                           </div>
                         )}
 
