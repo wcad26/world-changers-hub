@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2 } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
@@ -92,6 +92,31 @@ const Members: React.FC = () => {
     enabled: memberIds.length > 0,
   });
 
+  // Fetch events for visitor rated_event_id to distinguish special vs regular visitors
+  const visitorEventIds = React.useMemo(() => {
+    const ids = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id)
+      .map(m => m.rated_event_id as string) || [];
+    return [...new Set(ids)];
+  }, [members]);
+
+  const { data: visitorEvents = [] } = useQuery({
+    queryKey: ['visitor-events-special', visitorEventIds.sort().join(',')],
+    queryFn: async () => {
+      if (visitorEventIds.length === 0) return [];
+      const { data } = await supabase.from('events')
+        .select('id, is_special')
+        .in('id', visitorEventIds);
+      return data || [];
+    },
+    enabled: visitorEventIds.length > 0,
+  });
+
+  const specialEventIds = React.useMemo(() => {
+    const set = new Set<string>();
+    visitorEvents.forEach(e => { if (e.is_special) set.add(e.id); });
+    return set;
+  }, [visitorEvents]);
+
   // Filter relationships based on search and status
   const filteredRelationships = relationships?.filter(relationship => {
     const mentorName = `${relationship.mentor?.profiles?.last_name} ${relationship.mentor?.profiles?.first_name}`.toLowerCase();
@@ -118,19 +143,23 @@ const Members: React.FC = () => {
       // Status filter
       const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
       
-      // Member type filter (includes children)
+      // Member type filter (includes children and visitor subtypes)
       let typeMatch = false;
       if (memberTypeFilter === 'all') {
         typeMatch = true;
       } else if (memberTypeFilter === 'children') {
         typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships);
+      } else if (memberTypeFilter === 'visitor_special') {
+        typeMatch = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
+      } else if (memberTypeFilter === 'visitor_regular') {
+        typeMatch = member.member_type === 'visitor' && (!member.rated_event_id || !specialEventIds.has(member.rated_event_id));
       } else {
         typeMatch = member.member_type === memberTypeFilter;
       }
       
       return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -223,44 +252,83 @@ const Members: React.FC = () => {
         </Dialog>
         
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
+        {(() => {
+          const totalCount = members?.length || 0;
+          const memberCount = members?.filter(m => m.member_type === 'member').length || 0;
+          const specialVisitorCount = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id && specialEventIds.has(m.rated_event_id)).length || 0;
+          const regularVisitorCount = members?.filter(m => m.member_type === 'visitor' && (!m.rated_event_id || !specialEventIds.has(m.rated_event_id))).length || 0;
+          
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const newTotal30d = members?.filter(m => m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const newMembers30d = members?.filter(m => m.member_type === 'member' && m.join_date && new Date(m.join_date) >= thirtyDaysAgo).length || 0;
+          const totalGrowth = (totalCount - newTotal30d) > 0 ? Math.round((newTotal30d / (totalCount - newTotal30d)) * 100) : newTotal30d > 0 ? 100 : 0;
+          const memberGrowth = (memberCount - newMembers30d) > 0 ? Math.round((newMembers30d / (memberCount - newMembers30d)) * 100) : newMembers30d > 0 ? 100 : 0;
+
+          return (
+            <div className="grid gap-4 md:grid-cols-5">
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Total</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : totalCount}</p>
+                  {!isLoadingMembers && (
+                    <span className={`text-xs font-medium ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {totalGrowth >= 0 ? '+' : ''}{totalGrowth}%
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Total</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <CheckCircle className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <CheckCircle className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Members</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : memberCount}</p>
+                  {!isLoadingMembers && (
+                    <span className={`text-xs font-medium ${memberGrowth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      {memberGrowth >= 0 ? '+' : ''}{memberGrowth}%
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Members</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'member').length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Clock className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                    <Star className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Special Event Visitors</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : specialVisitorCount}</p>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Visitors</span>
-            </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'visitor').length || 0}</p>
-          </div>
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <TrendingUp className="h-5 w-5" />
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Regular Visitors</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : regularVisitorCount}</p>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Active</span>
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Active</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
+              </div>
             </div>
-            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
-          </div>
-        </div>
+          );
+        })()}
         
         <Tabs defaultValue="members">
           <TabsList>
@@ -332,7 +400,8 @@ const Members: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="visitor">Visitor</SelectItem>
+                    <SelectItem value="visitor_special">Special Event Visitors</SelectItem>
+                    <SelectItem value="visitor_regular">Regular Visitors</SelectItem>
                     <SelectItem value="children">Children</SelectItem>
                   </SelectContent>
                 </Select>
