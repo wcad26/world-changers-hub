@@ -861,9 +861,9 @@ export default function MemberRegister() {
                                   <SelectValue placeholder={t('selectDcgPlaceholder')} />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="max-h-[40vh]" position="popper" sideOffset={4}>
+                              <SelectContent className="max-h-[40vh] max-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)]" position="popper" sideOffset={4}>
                                 {dcgs.map((dcg) => (
-                                  <SelectItem key={dcg.id} value={dcg.id}>
+                                  <SelectItem key={dcg.id} value={dcg.id} className="whitespace-normal break-words">
                                     {dcg.name} {dcg.location && `- ${dcg.location}`}
                                   </SelectItem>
                                 ))}
