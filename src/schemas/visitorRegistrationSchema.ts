@@ -52,6 +52,8 @@ export const visitorRegistrationSchema = z.object({
     .optional(),
   
   referral_member_ids: z.array(z.string().uuid()).optional(),
+
+  referral_relationship_type: z.enum(['spouse', 'parent', 'child', 'sibling', 'guardian', 'other']).optional(),
   
   referral_other_details: z.string()
     .trim()
@@ -68,6 +70,14 @@ export const visitorRegistrationSchema = z.object({
 }, {
   message: "Please select at least one person who invited you",
   path: ["referral_member_ids"]
+}).refine((data) => {
+  if (data.referral_source === "invited_by" && !data.referral_relationship_type) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please select a relationship type",
+  path: ["referral_relationship_type"]
 }).refine((data) => {
   if (data.referral_source === "other" && !data.referral_other_details) {
     return false;

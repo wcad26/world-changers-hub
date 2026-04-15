@@ -105,6 +105,7 @@ export default function VisitorRegister() {
       referral_source: '',
       referral_social_media: '',
       referral_member_ids: [],
+      referral_relationship_type: undefined,
       referral_other_details: ''
     }
   });
@@ -582,10 +583,23 @@ export default function VisitorRegister() {
 
                         {/* Relationship Type (Right) */}
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Relationship</label>
-                          <div className="flex items-center h-10 px-3 rounded-xl border border-border/40 bg-muted/30">
-                            <Badge variant="secondary" className="capitalize rounded-lg">Invited By</Badge>
-                          </div>
+                          <label className="text-sm font-medium">Relationship *</label>
+                          <Select
+                            value={form.watch('referral_relationship_type') || ''}
+                            onValueChange={(v) => form.setValue('referral_relationship_type', v as any, { shouldValidate: true })}
+                          >
+                            <SelectTrigger className="rounded-xl bg-background/60">
+                              <SelectValue placeholder="Select relationship" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="spouse">Spouse</SelectItem>
+                              <SelectItem value="parent">Parent</SelectItem>
+                              <SelectItem value="child">Child</SelectItem>
+                              <SelectItem value="sibling">Sibling</SelectItem>
+                              <SelectItem value="guardian">Guardian</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
