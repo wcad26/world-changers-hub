@@ -561,7 +561,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
                   <span className="flex-1 text-sm">
                     {rel.related_member?.profiles?.last_name} {rel.related_member?.profiles?.first_name}
                   </span>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => deleteRelationship.mutate(rel.id)}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => deleteRelationship.mutate({ id: rel.id, memberId: member.id })}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
