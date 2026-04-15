@@ -754,7 +754,7 @@ export default function MemberRegister() {
                               <Badge variant="secondary" className="capitalize">{rel.type}</Badge>
                               <div className="flex-1 flex flex-wrap gap-1">
                                 {rel.memberIds.map(mid => {
-                                  const member = regionMembers.find(m => m.id === mid);
+                                  const member = allMembers.find(m => m.id === mid);
                                   return (
                                     <Badge key={mid} variant="outline">
                                       {member ? `${member.last_name} ${member.first_name}` : mid}
@@ -819,7 +819,7 @@ export default function MemberRegister() {
                                   <CommandList>
                                     <CommandEmpty>No members found.</CommandEmpty>
                                     <CommandGroup className="max-h-60 overflow-auto">
-                                      {regionMembers.map(m => {
+                                      {allMembers.map(m => {
                                         const isSelected = currentRelMemberIds.includes(m.id);
                                         return (
                                           <CommandItem
@@ -848,7 +848,7 @@ export default function MemberRegister() {
                             {currentRelMemberIds.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-2">
                                 {currentRelMemberIds.map(mid => {
-                                  const member = regionMembers.find(m => m.id === mid);
+                                  const member = allMembers.find(m => m.id === mid);
                                   return (
                                     <Badge key={mid} variant="outline" className="gap-1">
                                       {member ? `${member.last_name} ${member.first_name}` : mid}
