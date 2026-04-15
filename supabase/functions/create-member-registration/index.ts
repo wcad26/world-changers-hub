@@ -32,9 +32,10 @@ serve(async (req) => {
       is_baptized,
       baptism_date,
       ministry_interests,
-      skills_talents,
       dcg_id,
-      region_id
+      region_id,
+      relationship_member_id,
+      relationship_type
     } = await req.json()
 
     console.log('create-member-registration: Received data for', email)
@@ -177,8 +178,6 @@ serve(async (req) => {
 
     console.log('create-member-registration: Member ID generated:', memberId)
 
-    // Prepare skills and interests arrays
-    const skillsArray = skills_talents ? [skills_talents] : null
     const ministryArray = ministry_interests && ministry_interests.length > 0 ? ministry_interests : null
 
     // Determine member_type: 'member' if completed foundation school, 'visitor' otherwise
@@ -198,7 +197,6 @@ serve(async (req) => {
         membership_class_completed: has_completed_foundation_school === 'yes',
         foundation_school_date: (has_completed_foundation_school === 'yes' && foundation_school_date) ? foundation_school_date : null,
         baptism_date: (is_baptized === 'yes' && baptism_date) ? baptism_date : null,
-        skills_talents: skillsArray,
         preferred_service_areas: ministryArray,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -260,6 +258,30 @@ serve(async (req) => {
         }
       } catch (dcgError) {
         console.error('create-member-registration: Non-fatal DCG error:', dcgError)
+      }
+    }
+
+    // Add family relationship if specified
+    if (relationship_member_id && relationship_type) {
+      try {
+        console.log('create-member-registration: Adding family relationship:', relationship_type, 'with', relationship_member_id)
+        
+        const { error: relError } = await supabaseAdmin
+          .from('member_relationships')
+          .insert({
+            member_id: newMember.id,
+            related_member_id: relationship_member_id,
+            relationship_type: relationship_type,
+            created_by: authUser.user.id,
+          })
+
+        if (relError) {
+          console.error('create-member-registration: Relationship creation failed:', relError)
+        } else {
+          console.log('create-member-registration: Family relationship added successfully')
+        }
+      } catch (relErr) {
+        console.error('create-member-registration: Non-fatal relationship error:', relErr)
       }
     }
 

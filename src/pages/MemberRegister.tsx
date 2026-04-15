@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowLeft, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
@@ -23,6 +23,18 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+
+const RELATIONSHIP_TYPES: { value: FamilyRelationshipType; label: string }[] = [
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'parent', label: 'Parent' },
+  { value: 'child', label: 'Child' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'other', label: 'Other' },
+];
 
 const MINISTRY_OPTIONS = [
   'Music & Worship',
@@ -92,10 +104,34 @@ export default function MemberRegister() {
       is_baptized: '',
       baptism_date: '',
       ministry_interests: [],
-      skills_talents: '',
-      dcg_id: undefined
+      dcg_id: undefined,
+      relationship_member_id: undefined,
+      relationship_type: undefined
     }
   });
+
+  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
+  const [relationshipType, setRelationshipType] = useState<FamilyRelationshipType | ''>('');
+  const [relatedMemberId, setRelatedMemberId] = useState('');
+  const [memberSearchOpen, setMemberSearchOpen] = useState(false);
+  const [memberSearchText, setMemberSearchText] = useState('');
+
+  // Fetch members for relationship search
+  const { data: regionMembers = [] } = useQuery({
+    queryKey: ['region-members-search', region?.id, memberSearchText],
+    queryFn: async () => {
+      if (!region?.id) return [];
+      const { data, error } = await supabase.rpc('search_region_members', {
+        _region_id: region.id,
+        _search: memberSearchText
+      });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!region?.id
+  });
+
+  const selectedRelatedMember = regionMembers.find(m => m.id === relatedMemberId);
 
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
@@ -140,7 +176,9 @@ export default function MemberRegister() {
     registerMember(
       {
         ...data,
-        region_id: region.id
+        region_id: region.id,
+        relationship_member_id: relatedMemberId || undefined,
+        relationship_type: relationshipType || undefined
       },
       {
         onSuccess: (result) => {
@@ -679,27 +717,79 @@ export default function MemberRegister() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="skills_talents"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('skillsTalents')}</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder={t('skillsTalentsPlaceholder')}
-                              className="min-h-[100px]" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            {t('skillsTalentsDescription')}
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </div>
+
+                  {/* Family Relationship Section */}
+                  <Collapsible open={isRelationshipOpen} onOpenChange={setIsRelationshipOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="outline" className="w-full justify-between">
+                        <span className="text-lg font-medium">Family Relationship (Optional)</span>
+                        {isRelationshipOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="space-y-4 pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Relationship Type</label>
+                          <Select value={relationshipType} onValueChange={(v) => setRelationshipType(v as FamilyRelationshipType)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select relationship type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {RELATIONSHIP_TYPES.map(rt => (
+                                <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Related Member</label>
+                          <Popover open={memberSearchOpen} onOpenChange={setMemberSearchOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                role="combobox"
+                                className="w-full justify-between font-normal"
+                              >
+                                {selectedRelatedMember
+                                  ? `${selectedRelatedMember.last_name} ${selectedRelatedMember.first_name}`
+                                  : 'Search for a member...'}
+                                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0" align="start">
+                              <Command>
+                                <CommandInput 
+                                  placeholder="Search members..." 
+                                  onValueChange={setMemberSearchText}
+                                />
+                                <CommandList>
+                                  <CommandEmpty>No members found.</CommandEmpty>
+                                  <CommandGroup className="max-h-60 overflow-auto">
+                                    {regionMembers.map(m => (
+                                      <CommandItem
+                                        key={m.id}
+                                        value={`${m.last_name} ${m.first_name} ${m.member_id}`}
+                                        onSelect={() => {
+                                          setRelatedMemberId(m.id);
+                                          setMemberSearchOpen(false);
+                                        }}
+                                      >
+                                        <span>{m.last_name} {m.first_name}</span>
+                                        <span className="ml-2 text-xs text-muted-foreground">{m.member_id}</span>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
 
                   {/* DCG Selection */}
                   {dcgs.length > 0 && (
