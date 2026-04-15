@@ -29,6 +29,7 @@ serve(async (req) => {
       rated_event_id,
       event_satisfaction_rating,
       referral_source,
+      referral_social_media,
       referral_member_ids,
       referral_other_details,
       join_interest
@@ -146,7 +147,9 @@ serve(async (req) => {
         event_satisfaction_rating: event_satisfaction_rating || null,
         referral_source: referral_source || null,
         referral_person_name: referralPersonName,
-        referral_other_details: referral_other_details || null,
+        referral_other_details: referral_source === 'social_media' 
+          ? (referral_social_media || null) 
+          : (referral_other_details || null),
         join_interest: join_interest || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

@@ -46,6 +46,10 @@ export const visitorRegistrationSchema = z.object({
   referral_source: z.string()
     .trim()
     .optional(),
+
+  referral_social_media: z.string()
+    .trim()
+    .optional(),
   
   referral_member_ids: z.array(z.string().uuid()).optional(),
   
@@ -72,6 +76,14 @@ export const visitorRegistrationSchema = z.object({
 }, {
   message: "Please provide details about how you heard about us",
   path: ["referral_other_details"]
+}).refine((data) => {
+  if (data.referral_source === "social_media" && !data.referral_social_media) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please select a social media platform",
+  path: ["referral_social_media"]
 });
 
 export type VisitorRegistrationFormData = z.infer<typeof visitorRegistrationSchema>;
