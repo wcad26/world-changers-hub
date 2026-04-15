@@ -112,14 +112,14 @@ export default function MemberRegister() {
       baptism_date: '',
       ministry_interests: [],
       dcg_id: undefined,
-      relationship_member_id: undefined,
-      relationship_type: undefined
+      relationships: []
     }
   });
 
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
-  const [relationshipType, setRelationshipType] = useState<FamilyRelationshipType | ''>('');
-  const [relatedMemberId, setRelatedMemberId] = useState('');
+  const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
+  const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
+  const [currentRelMemberIds, setCurrentRelMemberIds] = useState<string[]>([]);
   const [memberSearchOpen, setMemberSearchOpen] = useState(false);
   const [memberSearchText, setMemberSearchText] = useState('');
 
@@ -138,7 +138,23 @@ export default function MemberRegister() {
     enabled: !!region?.id
   });
 
-  const selectedRelatedMember = regionMembers.find(m => m.id === relatedMemberId);
+  const addRelationship = () => {
+    if (!currentRelType || currentRelMemberIds.length === 0) return;
+    setRelationships(prev => [...prev, { type: currentRelType, memberIds: [...currentRelMemberIds] }]);
+    setCurrentRelType('');
+    setCurrentRelMemberIds([]);
+  };
+
+  const removeRelationship = (index: number) => {
+    setRelationships(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleMemberSelection = (memberId: string) => {
+    setCurrentRelMemberIds(prev =>
+      prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]
+    );
+  };
+
 
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
