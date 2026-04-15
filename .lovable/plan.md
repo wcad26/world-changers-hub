@@ -1,71 +1,61 @@
 
 
-## Plan: Enhance Members Page KPIs, Visitor Differentiation, and Fix Filters
+## Plan: Redesign Events Page KPIs and Merge Tables
 
-### Changes
+### KPI Cards Redesign
 
-**1. Fix Children Filter Bug**
-The `filteredMembers` useMemo (line 133) is missing `memberRelationships` in its dependency array. When `memberRelationships` loads after the initial render, the filter doesn't recompute. Add it to the deps.
+Replace the 4 current KPI cards (Total Events, Total Attendance, Avg Attendance, Monthly Trend) with:
 
-**2. Split Visitors into Special vs Regular KPIs**
-Replace the single "Visitors" KPI card with two cards:
-- **Event Visitors** — visitors whose `rated_event_id` links to an event with `is_special = true`
-- **Regular Visitors** — visitors whose `rated_event_id` links to a non-special event or has no linked event
+1. **Total Events** — count of all events, avg attendance across all, growth rate bottom-left
+2. **Regional Events** — count where `dcg_id IS NULL && !is_special`, avg attendance, growth rate
+3. **DCG Events** — count where `dcg_id IS NOT NULL`, avg attendance, growth rate
+4. **Special Events** — count where `is_special === true`, avg attendance, growth rate
 
-This requires fetching event data for visitors. Add a query to fetch events for all visitor `rated_event_id` values, then compute counts.
+Each card shows:
+- Top: icon + label, count as large number
+- Middle: "Avg: X attendees" as secondary text
+- Bottom-left: growth percentage badge (comparing avg attendance this month vs last month)
 
-**3. Add Growth Percentage to Total and Members KPIs**
-Compare current count vs count from 30 days ago (using `join_date`). Display a green/red percentage badge in the bottom-right of the Total and Members cards.
+**Attendance mapping**: Link events to attendance data via `source_event_id` on `attendanceData`. For each event, find matching attendance records and compute average attendance per category.
 
-**4. Update Type Filter Dropdown**
-Replace the single "Visitor" option with:
-- `visitor_special` — "Special Event Visitors"
-- `visitor_regular` — "Regular Visitors"
+### Unified Events Table
 
-Update the filter logic to use the event linkage data.
+Remove the `Tabs` (Upcoming/Past) and replace with a single glass panel containing:
+- Header with "Events" title + "Add Event" button
+- Filter row: search input + event type dropdown (All, Regional, DCG, Special) + time filter dropdown (All, Upcoming, Past)
+- Single table showing all events with columns: Event Name, Type, Date, Time, Location, Status, Capacity, Actions
 
-**5. Expand Grid to 5 KPI Cards**
-Change from `md:grid-cols-4` to `md:grid-cols-5` to accommodate the extra card.
+New state variables: `eventTypeFilter` and `timeFilter` replacing the tabs.
+
+Filter logic:
+- **Regional**: `dcg_id === null && !is_special`
+- **DCG**: `dcg_id !== null`
+- **Special**: `is_special === true`
+- **Upcoming**: `start_datetime >= now`
+- **Past**: `start_datetime < now`
+
+Add a "Status" column showing Upcoming/Completed/Cancelled badge.
+
+### Files Modified
+- `src/pages/admin/regional/Events.tsx` — KPI cards, analytics computation, table structure, filter state
 
 ### Technical Details
 
-**New query** — Fetch events for visitor `rated_event_id`:
+Update `analyticsData` useMemo to compute per-category metrics:
+
 ```tsx
-const visitorEventIds = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id)
-  .map(m => m.rated_event_id) || [];
+const regionalEvents = events.filter(e => !e.dcg_id && !e.is_special);
+const dcgEvents = events.filter(e => !!e.dcg_id);
+const specialEvents = events.filter(e => e.is_special);
 
-const { data: visitorEvents } = useQuery({
-  queryKey: ['visitor-events', visitorEventIds.sort().join(',')],
-  queryFn: async () => {
-    const { data } = await supabase.from('events')
-      .select('id, is_special')
-      .in('id', visitorEventIds);
-    return data || [];
-  },
-  enabled: visitorEventIds.length > 0,
-});
+// Map attendance to events via source_event_id
+const getAvgAttendance = (eventList) => {
+  const matched = attendanceData.filter(a => 
+    eventList.some(e => e.id === a.source_event_id)
+  );
+  return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
+};
+
+// Growth: compare this month's avg vs last month's avg per category
 ```
-
-**Growth calculation:**
-```tsx
-const thirtyDaysAgo = new Date();
-thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-const newMembersThisMonth = members?.filter(m => 
-  m.member_type === 'member' && m.join_date && new Date(m.join_date) >= thirtyDaysAgo
-).length || 0;
-const totalMembers = members?.filter(m => m.member_type === 'member').length || 0;
-const growthPct = totalMembers > 0 ? Math.round((newMembersThisMonth / (totalMembers - newMembersThisMonth)) * 100) : 0;
-```
-
-**Filter logic update:**
-```tsx
-} else if (memberTypeFilter === 'visitor_special') {
-  typeMatch = member.member_type === 'visitor' && specialEventIds.has(member.rated_event_id);
-} else if (memberTypeFilter === 'visitor_regular') {
-  typeMatch = member.member_type === 'visitor' && !specialEventIds.has(member.rated_event_id);
-}
-```
-
-### Files Modified
-- `src/pages/admin/regional/Members.tsx` — All changes in this single file
 
