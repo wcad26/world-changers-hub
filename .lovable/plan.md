@@ -1,47 +1,99 @@
 
 
-## Redesign Members Tab KPI Cards and Remove Old MemberCards
+## Full Plan: Children Criteria, Attendance Graph, Gender Distribution, Registration Relationships, Children Filter, and Menu Cleanup
 
-### What Changes
+### 1. Age Threshold: 18 → 16
 
-1. **Redesign MembersTab KPI cards** to match the GlassCard style from MemberCards (title top-left, icon top-right, value below, detail bottom-left, trend bottom-right)
-2. **Keep only these KPI cards**: Total Members, Total Visitors, New This Month, Member Target, Children
-3. **Remove**: Avg Attendance, Attendance Rate, Member:Visitor cards
-4. **Add Children KPI card** -- counts members whose `date_of_birth` makes them under 18 years old
-5. **Add Member Target KPI card** -- same design as the old MemberCards version with target progress and days remaining
-6. **Delete the old MemberCards component** and its usage from Dashboard.tsx
-7. **Make period filter functional** -- filter "New This Month", monthly growth chart, and recent joiners by the selected date range
+**Files**: `useAttendance.ts` (line 147), `MembersTab.tsx` (line 57, line 284)
 
-### Technical Details
+- Change `< 18` to `< 16` in all `isChild` / age checks
+- Update label "Under 18 years" to "Under 16 years"
 
-#### `src/components/admin/regional/dashboard/tabs/MembersTab.tsx`
-- Replace the 6-card grid with 5 GlassCard-style KPI cards in a `grid-cols-2 md:grid-cols-3 lg:grid-cols-5` layout
-- Each card: title (top-left, small text), icon (top-right, rounded bg), value (large bold), description + trend (bottom row)
-- **Total Members**: value = count of `member_type === 'member'`, bottom-left = "X active", bottom-right = growth trend
-- **Total Visitors**: value = count of `member_type === 'visitor'`, bottom-left = "Registered visitors", bottom-right = visitor growth trend
-- **New This Month**: value = count joined within period, bottom-left = period label
-- **Member Target**: value = target progress % or "No Target", bottom-left = "X of Y" or "Set a target", bottom-right = days remaining badge
-- **Children**: value = count of members with `date_of_birth` indicating age < 18, bottom-left = "Under 18 years"
-- Import and use `useCurrentMemberTarget` from `useMemberTargets`
-- Filter `newThisMonth` and `monthlyGrowth` based on `filters.dateRange` instead of hardcoded current month
-- Growth trends use attendance data already available
+---
 
-#### `src/pages/admin/regional/Dashboard.tsx`
-- Remove the `MemberCards` import and its conditional render block (lines 130-135)
-- Remove `MemberCards` from imports
+### 2. Fix Attendance Trend Graph
 
-#### `src/components/admin/regional/dashboard/MemberCards.tsx`
-- Delete this file (no longer needed)
+**File**: `TrendChart.tsx` (line 27)
+- Remove `(event as any)` cast -- the hook already returns `children_present` as a typed field
+
+**File**: `useAttendance.ts`
+- Replace manual year math in `isChild` (lines 141-148) with `differenceInYears` from date-fns for consistency, using `< 16`
+- Ensure `children_present` correctly separates children regardless of `member_type`
+
+---
+
+### 3. Gender Distribution: 5 Categories
+
+**File**: `MembersTab.tsx` (lines 108-117)
+
+- Replace simple gender grouping with age+relationship-aware categorization
+- Fetch `member_relationships` for all members in the region
+- A person is "Young" if age < 16 AND has at least one relationship in `member_relationships`
+- Categories: **Adult Male**, **Adult Female**, **Young Male**, **Young Female**, **Unknown** (only shown if records with no gender exist)
+- Anyone not meeting "Young" criteria is "Adult"
+
+---
+
+### 4. Add Relationship Field to Registration Forms
+
+**Files**: `memberRegistrationSchema.ts`, `visitorRegistrationSchema.ts`
+- Add optional `relationship_member_id` (string) and `relationship_type` (string)
+
+**File**: `RegisterMemberForm.tsx`
+- Add collapsible "Family Relationship" section with:
+  - Relationship type dropdown (Spouse, Parent, Child, Sibling, Guardian, Other -- matching existing types)
+  - Searchable member selector
+- After member creation, if relationship fields filled, call `useCreateMemberRelationship`
+
+---
+
+### 5. Children Filter on Member Lists and Attendance Dialogs
+
+**New file**: `src/utils/childUtils.ts`
+- `isChildMember(dob, memberId, relationships)`: true if age < 16 AND has at least one relationship entry
+
+**Files with children filter added**:
+- `src/pages/admin/regional/Members.tsx` -- add "children" to member type filter dropdown
+- `src/pages/admin/super/Members.tsx` -- same children filter
+- `src/components/admin/regional/events/AttendanceManagementDialog.tsx` -- "Show Children Only" toggle
+- `src/components/admin/dcg/EventAttendanceDialog.tsx` -- same toggle
+
+All require fetching `member_relationships` to determine child status.
+
+---
+
+### 6. Remove Reports from Regional Sidebar
+
+- `RegionalAdminLayout.tsx` line 34: remove Reports menu item
+- `EnhancedRegionalAdminLayout.tsx` lines 77-82: remove Reports entry
+
+---
+
+### 7. Keep Existing Relationship Types (No Changes)
+
+Current types (`spouse | parent | child | sibling | guardian | other`) remain unchanged. No database migration needed.
+
+---
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/admin/regional/dashboard/tabs/MembersTab.tsx` | Redesign KPI cards, add Children + Target, remove 3 cards, wire period filter |
-| `src/pages/admin/regional/Dashboard.tsx` | Remove MemberCards usage |
-| `src/components/admin/regional/dashboard/MemberCards.tsx` | Delete |
+| `src/hooks/useAttendance.ts` | Age 18→16, fix isChild logic |
+| `src/components/admin/regional/dashboard/tabs/MembersTab.tsx` | Age 18→16, 5-category gender chart, label update |
+| `src/components/admin/regional/dashboard/TrendChart.tsx` | Remove `as any` cast |
+| `src/utils/childUtils.ts` | **New** -- shared child detection utility |
+| `src/schemas/memberRegistrationSchema.ts` | Add optional relationship fields |
+| `src/schemas/visitorRegistrationSchema.ts` | Add optional relationship fields |
+| `src/components/admin/regional/RegisterMemberForm.tsx` | Add relationship section + post-creation insert |
+| `src/pages/admin/regional/Members.tsx` | Add "children" filter option |
+| `src/pages/admin/super/Members.tsx` | Add "children" filter option |
+| `src/components/admin/regional/events/AttendanceManagementDialog.tsx` | Add children filter toggle |
+| `src/components/admin/dcg/EventAttendanceDialog.tsx` | Add children filter toggle |
+| `src/components/admin/RegionalAdminLayout.tsx` | Remove Reports menu item |
+| `src/components/admin/EnhancedRegionalAdminLayout.tsx` | Remove Reports menu item |
 
 ### No Database Changes Required
 
-Children count derived from existing `profiles.date_of_birth` column.
+All logic uses existing `profiles.date_of_birth` and `member_relationships` table.
 
