@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 interface EnhancedRegionalAdminLayoutProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = ({ children }) => {
