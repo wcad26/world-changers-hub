@@ -1,61 +1,62 @@
 
 
-## Plan: Redesign Events Page KPIs and Merge Tables
+## Plan: Fix Events Table, Add Attendance Column, Add Period Filter
 
-### KPI Cards Redesign
+### 1. Fix Build Error
+Line 1595 has a duplicate `};` causing the syntax error. Remove the extra closing brace.
 
-Replace the 4 current KPI cards (Total Events, Total Attendance, Avg Attendance, Monthly Trend) with:
+### 2. Fix Table Column Alignment
+The Actions dropdown button currently shows "Actions" text. Change to only show the `MoreHorizontal` icon (three dots) so it fits properly under the Actions column header.
 
-1. **Total Events** — count of all events, avg attendance across all, growth rate bottom-left
-2. **Regional Events** — count where `dcg_id IS NULL && !is_special`, avg attendance, growth rate
-3. **DCG Events** — count where `dcg_id IS NOT NULL`, avg attendance, growth rate
-4. **Special Events** — count where `is_special === true`, avg attendance, growth rate
+### 3. Replace Status Column with Attendance Column
+- Remove the "Status" column header and cell
+- Add "Attendance" column after Capacity
+- For each event, look up attendance via `attendanceData` (which has `source_event_id` mapping to `event.id`) and show `total_present`
+- For future events (`start_datetime >= now`), show "-" instead of a number
 
-Each card shows:
-- Top: icon + label, count as large number
-- Middle: "Avg: X attendees" as secondary text
-- Bottom-left: growth percentage badge (comparing avg attendance this month vs last month)
+### 4. Add Period Filter at Top of Page
+Reuse the existing `PeriodFilter` component pattern from the dashboard. Place it at the very top of the page, above the KPI cards.
 
-**Attendance mapping**: Link events to attendance data via `source_event_id` on `attendanceData`. For each event, find matching attendance records and compute average attendance per category.
+Add state:
+```tsx
+const [periodFilters, setPeriodFilters] = useState<PeriodFilters>({
+  dateRange: { from: undefined, to: undefined },
+  quickDateRange: '1-year',
+});
+```
 
-### Unified Events Table
+Initialize with a default range (e.g., 1Y).
 
-Remove the `Tabs` (Upcoming/Past) and replace with a single glass panel containing:
-- Header with "Events" title + "Add Event" button
-- Filter row: search input + event type dropdown (All, Regional, DCG, Special) + time filter dropdown (All, Upcoming, Past)
-- Single table showing all events with columns: Event Name, Type, Date, Time, Location, Status, Capacity, Actions
-
-New state variables: `eventTypeFilter` and `timeFilter` replacing the tabs.
-
-Filter logic:
-- **Regional**: `dcg_id === null && !is_special`
-- **DCG**: `dcg_id !== null`
-- **Special**: `is_special === true`
-- **Upcoming**: `start_datetime >= now`
-- **Past**: `start_datetime < now`
-
-Add a "Status" column showing Upcoming/Completed/Cancelled badge.
+### 5. Apply Period Filter to Events and KPIs
+- Filter `events` by `start_datetime` within the selected date range before computing `analyticsData` and `filteredEvents`
+- Create a `periodFilteredEvents` intermediate that applies date range, then pass that into both analytics and table filtering
 
 ### Files Modified
-- `src/pages/admin/regional/Events.tsx` — KPI cards, analytics computation, table structure, filter state
+- `src/pages/admin/regional/Events.tsx` — Fix duplicate `};`, add period filter state, import PeriodFilter, add attendance column, remove status column, apply period filtering to analytics and table
 
 ### Technical Details
 
-Update `analyticsData` useMemo to compute per-category metrics:
-
+**Attendance lookup per event:**
 ```tsx
-const regionalEvents = events.filter(e => !e.dcg_id && !e.is_special);
-const dcgEvents = events.filter(e => !!e.dcg_id);
-const specialEvents = events.filter(e => e.is_special);
-
-// Map attendance to events via source_event_id
-const getAvgAttendance = (eventList) => {
-  const matched = attendanceData.filter(a => 
-    eventList.some(e => e.id === a.source_event_id)
-  );
-  return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
+const getEventAttendance = (eventId: string) => {
+  if (!attendanceData) return 0;
+  const matched = attendanceData.filter(a => a.source_event_id === eventId);
+  return matched.reduce((sum, a) => sum + a.total_present, 0);
 };
-
-// Growth: compare this month's avg vs last month's avg per category
 ```
+
+**Period filtering applied before analytics:**
+```tsx
+const periodFilteredEvents = React.useMemo(() => {
+  if (!events) return [];
+  return events.filter(e => {
+    const d = new Date(e.start_datetime);
+    if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
+    if (periodFilters.dateRange.to && d > periodFilters.dateRange.to) return false;
+    return true;
+  });
+}, [events, periodFilters]);
+```
+
+Then `analyticsData` and `filteredEvents` use `periodFilteredEvents` instead of raw `events`.
 
