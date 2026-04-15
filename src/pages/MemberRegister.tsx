@@ -104,10 +104,34 @@ export default function MemberRegister() {
       is_baptized: '',
       baptism_date: '',
       ministry_interests: [],
-      skills_talents: '',
-      dcg_id: undefined
+      dcg_id: undefined,
+      relationship_member_id: undefined,
+      relationship_type: undefined
     }
   });
+
+  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
+  const [relationshipType, setRelationshipType] = useState<FamilyRelationshipType | ''>('');
+  const [relatedMemberId, setRelatedMemberId] = useState('');
+  const [memberSearchOpen, setMemberSearchOpen] = useState(false);
+  const [memberSearchText, setMemberSearchText] = useState('');
+
+  // Fetch members for relationship search
+  const { data: regionMembers = [] } = useQuery({
+    queryKey: ['region-members-search', region?.id, memberSearchText],
+    queryFn: async () => {
+      if (!region?.id) return [];
+      const { data, error } = await supabase.rpc('search_region_members', {
+        _region_id: region.id,
+        _search: memberSearchText
+      });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!region?.id
+  });
+
+  const selectedRelatedMember = regionMembers.find(m => m.id === relatedMemberId);
 
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
