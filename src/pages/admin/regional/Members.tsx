@@ -320,19 +320,6 @@ const Members: React.FC = () => {
                   {!isLoadingMembers && <GrowthBadge value={memberGrowth} />}
                 </div>
               </div>
-              {/* Children */}
-              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 text-pink-500">
-                    <Baby className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground">Children</span>
-                </div>
-                <div className="flex items-end justify-between">
-                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : childrenCount}</p>
-                  {!isLoadingMembers && <GrowthBadge value={childrenGrowth} />}
-                </div>
-              </div>
               {/* Regular Visitors */}
               <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
                 <div className="flex items-center gap-3 mb-3">
@@ -344,6 +331,19 @@ const Members: React.FC = () => {
                 <div className="flex items-end justify-between">
                   <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : regularVisitorCount}</p>
                   {!isLoadingMembers && <GrowthBadge value={regularGrowth} />}
+                </div>
+              </div>
+              {/* Children */}
+              <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 text-pink-500">
+                    <Baby className="h-5 w-5" />
+                  </div>
+                  <span className="text-sm font-medium text-muted-foreground">Children</span>
+                </div>
+                <div className="flex items-end justify-between">
+                  <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : childrenCount}</p>
+                  {!isLoadingMembers && <GrowthBadge value={childrenGrowth} />}
                 </div>
               </div>
               {/* Special Event Visitors */}
