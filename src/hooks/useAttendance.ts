@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { format } from 'date-fns';
+import { format, differenceInYears } from 'date-fns';
 
 type AttendanceEvent = Database['public']['Tables']['attendance_events']['Row'];
 type AttendanceRecordInsert = Database['public']['Tables']['attendance_records']['Insert'];
@@ -137,14 +137,10 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       
       if (error) throw error;
 
-      const now = new Date();
       const isChild = (record: any) => {
         const dob = record.members?.profiles?.date_of_birth;
         if (!dob) return false;
-        const age = now.getFullYear() - new Date(dob).getFullYear();
-        const m = now.getMonth() - new Date(dob).getMonth();
-        const adjustedAge = m < 0 || (m === 0 && now.getDate() < new Date(dob).getDate()) ? age - 1 : age;
-        return adjustedAge < 18;
+        return differenceInYears(new Date(), new Date(dob)) < 16;
       };
       
       // Process the data to get counts by member type, separating children

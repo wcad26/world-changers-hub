@@ -75,12 +75,6 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "members_view"
     },
     { 
-      title: "Reports", 
-      path: "/admin/regional/reports", 
-      icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "reports_view"
-    },
-    { 
       title: "Communication", 
       path: "/admin/regional/communication", 
       icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }>,

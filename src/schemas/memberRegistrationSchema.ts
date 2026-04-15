@@ -69,6 +69,9 @@ export const memberRegistrationSchema = z.object({
   baptism_date: z.string().optional(),
   
   dcg_id: z.string().uuid().optional(),
+  
+  relationship_member_id: z.string().uuid().optional(),
+  relationship_type: z.string().optional(),
 });
 
 export type MemberRegistrationFormData = z.infer<typeof memberRegistrationSchema>;

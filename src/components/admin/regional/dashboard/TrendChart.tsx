@@ -24,7 +24,7 @@ const TrendChart: React.FC = () => {
         date: new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         Members: event.members_present || 0,
         Visitors: event.visitors_present || 0,
-        Children: (event as any).children_present || 0,
+        Children: event.children_present || 0,
         Total: event.total_present || 0
       }));
   }, [attendanceHistory]);

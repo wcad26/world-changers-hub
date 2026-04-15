@@ -31,7 +31,7 @@ const menuItems = [
   { title: "Finances", path: "/admin/regional/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
   { title: "DCG Management", path: "/admin/regional/dcg", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Certificates", path: "/admin/regional/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Reports", path: "/admin/regional/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
+  
   { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Branch Settings", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "User Management", path: "/admin/regional/user-management", icon: UserCog as React.ComponentType<{ className?: string; size?: number }> },
