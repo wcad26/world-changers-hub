@@ -400,7 +400,8 @@ const Members: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="visitor">Visitor</SelectItem>
+                    <SelectItem value="visitor_special">Special Event Visitors</SelectItem>
+                    <SelectItem value="visitor_regular">Regular Visitors</SelectItem>
                     <SelectItem value="children">Children</SelectItem>
                   </SelectContent>
                 </Select>
