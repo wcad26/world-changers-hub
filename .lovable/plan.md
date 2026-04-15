@@ -1,99 +1,23 @@
 
+## Fix: Make Member Portal Available to All Authenticated Users
 
-## Full Plan: Children Criteria, Attendance Graph, Gender Distribution, Registration Relationships, Children Filter, and Menu Cleanup
+### Problem
+The `getAvailablePortals()` function and both `PortalSelector`/`PortalSwitcher` components check for an explicit `member` role in the `user_roles` table. Users who only have `dcg_admin` or `regional_admin` roles don't have a `member` entry, so the Member Portal never appears for them.
 
-### 1. Age Threshold: 18 → 16
+### Solution
+Update `getAvailablePortals()` in `useAuth.tsx` to always include the member portal for any authenticated user, matching the existing `canAccessPortal('member')` logic which already grants access to all role holders.
 
-**Files**: `useAttendance.ts` (line 147), `MembersTab.tsx` (line 57, line 284)
-
-- Change `< 18` to `< 16` in all `isChild` / age checks
-- Update label "Under 18 years" to "Under 16 years"
-
----
-
-### 2. Fix Attendance Trend Graph
-
-**File**: `TrendChart.tsx` (line 27)
-- Remove `(event as any)` cast -- the hook already returns `children_present` as a typed field
-
-**File**: `useAttendance.ts`
-- Replace manual year math in `isChild` (lines 141-148) with `differenceInYears` from date-fns for consistency, using `< 16`
-- Ensure `children_present` correctly separates children regardless of `member_type`
-
----
-
-### 3. Gender Distribution: 5 Categories
-
-**File**: `MembersTab.tsx` (lines 108-117)
-
-- Replace simple gender grouping with age+relationship-aware categorization
-- Fetch `member_relationships` for all members in the region
-- A person is "Young" if age < 16 AND has at least one relationship in `member_relationships`
-- Categories: **Adult Male**, **Adult Female**, **Young Male**, **Young Female**, **Unknown** (only shown if records with no gender exist)
-- Anyone not meeting "Young" criteria is "Adult"
-
----
-
-### 4. Add Relationship Field to Registration Forms
-
-**Files**: `memberRegistrationSchema.ts`, `visitorRegistrationSchema.ts`
-- Add optional `relationship_member_id` (string) and `relationship_type` (string)
-
-**File**: `RegisterMemberForm.tsx`
-- Add collapsible "Family Relationship" section with:
-  - Relationship type dropdown (Spouse, Parent, Child, Sibling, Guardian, Other -- matching existing types)
-  - Searchable member selector
-- After member creation, if relationship fields filled, call `useCreateMemberRelationship`
-
----
-
-### 5. Children Filter on Member Lists and Attendance Dialogs
-
-**New file**: `src/utils/childUtils.ts`
-- `isChildMember(dob, memberId, relationships)`: true if age < 16 AND has at least one relationship entry
-
-**Files with children filter added**:
-- `src/pages/admin/regional/Members.tsx` -- add "children" to member type filter dropdown
-- `src/pages/admin/super/Members.tsx` -- same children filter
-- `src/components/admin/regional/events/AttendanceManagementDialog.tsx` -- "Show Children Only" toggle
-- `src/components/admin/dcg/EventAttendanceDialog.tsx` -- same toggle
-
-All require fetching `member_relationships` to determine child status.
-
----
-
-### 6. Remove Reports from Regional Sidebar
-
-- `RegionalAdminLayout.tsx` line 34: remove Reports menu item
-- `EnhancedRegionalAdminLayout.tsx` lines 77-82: remove Reports entry
-
----
-
-### 7. Keep Existing Relationship Types (No Changes)
-
-Current types (`spouse | parent | child | sibling | guardian | other`) remain unchanged. No database migration needed.
-
----
+Update `PortalSelector.tsx` and both `PortalSwitcher.tsx` files to use `canAccessPortal()` instead of `hasRole()` for filtering available portals.
 
 ### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/hooks/useAttendance.ts` | Age 18→16, fix isChild logic |
-| `src/components/admin/regional/dashboard/tabs/MembersTab.tsx` | Age 18→16, 5-category gender chart, label update |
-| `src/components/admin/regional/dashboard/TrendChart.tsx` | Remove `as any` cast |
-| `src/utils/childUtils.ts` | **New** -- shared child detection utility |
-| `src/schemas/memberRegistrationSchema.ts` | Add optional relationship fields |
-| `src/schemas/visitorRegistrationSchema.ts` | Add optional relationship fields |
-| `src/components/admin/regional/RegisterMemberForm.tsx` | Add relationship section + post-creation insert |
-| `src/pages/admin/regional/Members.tsx` | Add "children" filter option |
-| `src/pages/admin/super/Members.tsx` | Add "children" filter option |
-| `src/components/admin/regional/events/AttendanceManagementDialog.tsx` | Add children filter toggle |
-| `src/components/admin/dcg/EventAttendanceDialog.tsx` | Add children filter toggle |
-| `src/components/admin/RegionalAdminLayout.tsx` | Remove Reports menu item |
-| `src/components/admin/EnhancedRegionalAdminLayout.tsx` | Remove Reports menu item |
+| `src/hooks/useAuth.tsx` | Update `getAvailablePortals()` to always include `'member'` for any authenticated user |
+| `src/components/auth/PortalSelector.tsx` | Use `canAccessPortal(portal.id)` instead of `hasRole(portal.requiredRole)` |
+| `src/components/layout/PortalSwitcher.tsx` | Use `canAccessPortal(portal.id)` instead of `hasRole(portal.requiredRole)` |
+| `src/components/admin/PortalSwitcher.tsx` | Use `canAccessPortal(portal.id)` instead of `hasRole(portal.requiredRole)` |
 
-### No Database Changes Required
-
-All logic uses existing `profiles.date_of_birth` and `member_relationships` table.
-
+### Technical Detail
+- `getAvailablePortals()` line 260-266: Always push `'member'` if user has any role at all
+- PortalSelector/PortalSwitcher: Change filter from `hasRole(portal.requiredRole)` to `canAccessPortal(portal.id)` which already implements the cascading access logic (super_admin can access all, regional_admin can access regional+dcg+member, etc.)
