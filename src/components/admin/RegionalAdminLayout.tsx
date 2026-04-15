@@ -9,7 +9,7 @@ import {
   MapPin, 
   PiggyBank, 
   Home, 
-  BarChart2, 
+   
   MessageSquare,
   Settings,
   Building2,
