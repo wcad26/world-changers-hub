@@ -1589,7 +1589,9 @@ const RegionalEvents: React.FC = () => {
           </DropdownMenu>
         </TableCell>
       </TableRow>
-    ));
+      );
+    });
+  };
   };
 
   return (
