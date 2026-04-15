@@ -236,7 +236,7 @@ const Members: React.FC = () => {
 
         {/* Edit Member Dialog */}
         <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
             <DialogHeader>
               <DialogTitle>Edit Member</DialogTitle>
               <DialogDescription>
