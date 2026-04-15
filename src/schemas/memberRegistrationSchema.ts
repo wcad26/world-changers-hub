@@ -37,9 +37,6 @@ export const memberRegistrationSchema = z.object({
     .optional(),
   
   occupation: z.string()
-    .trim()
-    .min(2, "Occupation must be at least 2 characters")
-    .max(100, "Occupation must be less than 100 characters")
     .optional(),
   
   emergency_contact_name: z.string()
@@ -55,7 +52,6 @@ export const memberRegistrationSchema = z.object({
   
   ministry_interests: z.array(z.string()).optional(),
   
-  
   has_completed_foundation_school: z.string().optional(),
   
   foundation_school_date: z.string().optional(),
@@ -64,7 +60,7 @@ export const memberRegistrationSchema = z.object({
   
   baptism_date: z.string().optional(),
   
-  dcg_id: z.string().uuid().optional(),
+  dcg_id: z.string().uuid("Please select a DCG"),
   
   relationships: z.array(z.object({
     relationship_type: z.string(),
