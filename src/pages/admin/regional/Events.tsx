@@ -150,6 +150,9 @@ const RegionalEvents: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState("3months");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
+  const [eventTypeFilter, setEventTypeFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
