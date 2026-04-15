@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Input } from "@/components/ui/input";
@@ -60,7 +59,7 @@ const SuperMembers: React.FC = () => {
   }, [members, typeFilter, memberRelationships]);
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Manage membership across all WCA regions.
@@ -178,7 +177,7 @@ const SuperMembers: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

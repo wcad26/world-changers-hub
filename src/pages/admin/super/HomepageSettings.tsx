@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import SuperAdminLayout from '@/components/admin/SuperAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -292,7 +291,7 @@ export default function HomepageSettings() {
   };
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <p className="text-muted-foreground">
@@ -670,6 +669,6 @@ export default function HomepageSettings() {
           </TabsContent>
         </Tabs>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 }

@@ -1,11 +1,10 @@
 
 import React from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const SuperLocations: React.FC = () => {
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <p className="text-muted-foreground">
           Manage all WCA centers and locations worldwide.
@@ -23,7 +22,7 @@ const SuperLocations: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

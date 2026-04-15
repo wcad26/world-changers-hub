@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -60,20 +59,20 @@ const SuperMemberProfile: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SuperAdminLayout>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Loading member profile...</p>
           </div>
         </div>
-      </SuperAdminLayout>
+      </>
     );
   }
 
   if (error || !member) {
     return (
-      <SuperAdminLayout>
+      <>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <p className="text-red-500">Error loading member profile or member not found.</p>
@@ -87,12 +86,12 @@ const SuperMemberProfile: React.FC = () => {
             </Button>
           </div>
         </div>
-      </SuperAdminLayout>
+      </>
     );
   }
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <Button 
@@ -574,7 +573,7 @@ const SuperMemberProfile: React.FC = () => {
           />
         )}
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

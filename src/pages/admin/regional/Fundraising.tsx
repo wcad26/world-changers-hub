@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,7 @@ const RegionalFundraising: React.FC = () => {
   };
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -244,7 +243,7 @@ const RegionalFundraising: React.FC = () => {
           onOpenChange={setDetailsDialogOpen}
         />
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

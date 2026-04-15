@@ -1,5 +1,4 @@
 import React from "react";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateRegionalAdminForm from "@/components/admin/super/users/CreateRegionalAdminForm";
@@ -8,7 +7,7 @@ import PendingApprovalsList from "@/components/admin/super/users/PendingApproval
 
 const SuperUserManagement: React.FC = () => {
   return (
-    <SuperAdminLayout>
+    <>
       <div className="container mx-auto p-6">
         <p className="text-muted-foreground mb-6">
           Create and manage regional administrator accounts
@@ -65,7 +64,7 @@ const SuperUserManagement: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ const RegionalFinances: React.FC = () => {
   };
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -441,7 +440,7 @@ const RegionalFinances: React.FC = () => {
         onOpenChange={setRecordExpenseDialogOpen}
         onSubmit={handleExpenseSubmit}
       />
-    </RegionalAdminLayout>
+    </>
   );
 };
 

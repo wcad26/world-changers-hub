@@ -10,7 +10,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { AddProgressDialog } from '@/components/member/discipleship/AddProgressDialog';
 import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
 import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
-import MemberLayout from '@/components/layout/MemberLayout';
 export default function MemberDiscipleship() {
   const {
     memberId
@@ -25,7 +24,7 @@ export default function MemberDiscipleship() {
   } = useMemberDiscipleshipStats(memberId || undefined);
   const isLoading = isLoadingRelationships || isLoadingStats;
   if (isLoading) {
-    return <MemberLayout>
+    return <>
         <div className="container mx-auto p-6 pb-24 space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-1/3"></div>
@@ -38,7 +37,7 @@ export default function MemberDiscipleship() {
             <div className="h-32 bg-muted rounded"></div>
           </div>
         </div>
-      </MemberLayout>;
+      </>;
   }
 
   // Default stats if none exist
@@ -48,7 +47,7 @@ export default function MemberDiscipleship() {
     completed_disciples: 0,
     success_rate: 0
   };
-  return <MemberLayout>
+  return <>
       <div className="container mx-auto p-6 pb-24 space-y-6 py-[10px] px-[5px]">
         {/* Page heading - hidden on mobile as it shows in layout header */}
         <div className="hidden md:flex items-center gap-2 mb-6">
@@ -204,5 +203,5 @@ export default function MemberDiscipleship() {
         </TabsContent>
       </Tabs>
       </div>
-    </MemberLayout>;
+    </>;
 }

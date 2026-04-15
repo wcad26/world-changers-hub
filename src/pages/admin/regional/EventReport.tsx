@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +97,7 @@ const EventReport: React.FC = () => {
 
   if (authLoading || !userRegion) {
     return (
-      <RegionalAdminLayout>
+      <>
         <div className="space-y-6">
           <Skeleton className="h-10 w-48" />
           <div className="grid gap-4 md:grid-cols-4">
@@ -108,13 +107,13 @@ const EventReport: React.FC = () => {
           </div>
           <Skeleton className="h-96" />
         </div>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   if (error) {
     return (
-      <RegionalAdminLayout>
+      <>
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading report</AlertTitle>
@@ -122,12 +121,12 @@ const EventReport: React.FC = () => {
             {error instanceof Error ? error.message : "An unknown error occurred."}
           </AlertDescription>
         </Alert>
-      </RegionalAdminLayout>
+      </>
     );
   }
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -362,7 +361,7 @@ const EventReport: React.FC = () => {
           </>
         )}
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

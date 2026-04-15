@@ -3,7 +3,6 @@ import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, 
 import { CertificatePositionPicker } from '@/components/admin/regional/CertificatePositionPicker';
 import { PreviewCertificateDialog } from '@/components/admin/regional/PreviewCertificateDialog';
 import { EditCertificateTemplateDialog } from '@/components/admin/regional/EditCertificateTemplateDialog';
-import SuperAdminLayout from '@/components/admin/SuperAdminLayout';
 import type { CertificateTemplate } from '@/hooks/useCertificates';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -309,7 +308,7 @@ const SuperCertificates = () => {
   const toggleSentCertificateSelection = (id: string) => setSelectedSentCertificates(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
 
   return (
-    <SuperAdminLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -780,7 +779,7 @@ const SuperCertificates = () => {
           />
         )}
       </div>
-    </SuperAdminLayout>
+    </>
   );
 };
 

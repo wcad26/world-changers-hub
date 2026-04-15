@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ const RegionalCommunication: React.FC = () => {
   }
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         
         <Tabs defaultValue="compose">
@@ -591,7 +590,7 @@ const RegionalCommunication: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

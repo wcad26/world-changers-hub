@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -108,7 +107,7 @@ const RegionalReports: React.FC = () => {
   };
   
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="space-y-6">
         
         <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
@@ -829,7 +828,7 @@ const RegionalReports: React.FC = () => {
           </Tabs>
         )}
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 

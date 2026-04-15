@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import RegionalAdminLayout from "@/components/admin/RegionalAdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -95,7 +94,7 @@ const Settings = () => {
   };
 
   return (
-    <RegionalAdminLayout>
+    <>
       <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <SettingsIcon className="h-6 w-6 text-primary" />
@@ -420,7 +419,7 @@ const Settings = () => {
         </Button>
       </div>
       </div>
-    </RegionalAdminLayout>
+    </>
   );
 };
 
