@@ -17,13 +17,11 @@ export const useVisitorRegistration = () => {
         body: data
       });
 
-      // Handle edge function errors
       if (error) {
         const errorMessage = error.context?.message || error.message || 'Registration failed';
         throw new Error(errorMessage);
       }
       
-      // Handle duplicate registration - now returns HTTP 200 with is_duplicate flag
       if (result.is_duplicate) {
         return {
           success: false,
