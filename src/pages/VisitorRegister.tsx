@@ -415,7 +415,7 @@ export default function VisitorRegister() {
               </GlassSection>
 
               {/* Event & Referral */}
-              <GlassSection icon={CalendarDays} title={t('eventReferral') || 'Event & Referral'}>
+              <GlassSection icon={CalendarDays} title="Event & Referral">
                 {/* Event Selection */}
                 {pastEvents.length > 0 && (
                   <FormField
