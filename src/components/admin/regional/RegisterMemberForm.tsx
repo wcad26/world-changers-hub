@@ -38,6 +38,7 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
   const createMember = useCreateMember();
   const createRelationship = useCreateMemberRelationship();
   const { data: existingMembers } = useMembers(userRegion?.id);
+  const { data: occupations = [] } = useOccupations();
 
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [relationshipType, setRelationshipType] = useState<FamilyRelationshipType | ''>('');
@@ -249,9 +250,20 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Occupation</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Software Engineer" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select occupation" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[40vh]" position="popper">
+                      {occupations.map((occ) => (
+                        <SelectItem key={occ.id} value={occ.name}>
+                          {occ.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
