@@ -1,57 +1,56 @@
 
 
-## Plan: Upgrade Member KPI Cards with Active % and Events-Style Design
+## Plan: Rename Menu Items, Add Discipleship Management Page, Rebuild Access Management
 
-### What Changes
+### 1. Rename sidebar menu items in `EnhancedRegionalAdminLayout.tsx`
 
-Update the 5 KPI cards on the Members page to match the Events page design pattern, adding:
-1. **30-day growth rate** with trend icons (TrendingUp/TrendingDown) — already calculated, just needs visual upgrade
-2. **Active percentage** — new metric showing what % of individuals in each card category attended ≥50% of the last 5 regional events
+| Current | New |
+|---------|-----|
+| Members | Member Management |
+| Events | Event Management |
+| Certificates | Certificate Management |
+| User Roles | Access Management |
 
-### Data Fetching (New Query)
+- Change the "User Roles" icon from `Shield` to `KeyRound` (better reflects access management)
+- Add new menu item **"Discipleship Management"** after "Member Management" with `Heart` icon, path `/admin/regional/discipleship`, permission `members_view`
 
-Add a query to fetch the last 5 regional (non-DCG) attendance events and their attendance records for the region:
+### 2. Update route title map in `AdminLayout.tsx`
 
-```tsx
-const { data: recentAttendance } = useQuery({
-  queryKey: ['member-kpi-activity', userRegion?.id],
-  queryFn: async () => {
-    // Get last 5 regional events (no dcg_id)
-    const { data: events } = await supabase
-      .from('attendance_events')
-      .select('id')
-      .eq('region_id', userRegion!.id)
-      .is('dcg_id', null)
-      .order('event_date', { ascending: false })
-      .limit(5);
-    if (!events?.length) return { eventCount: 0, records: [] };
-    const eventIds = events.map(e => e.id);
-    // Get attendance records for those events
-    const { data: records } = await supabase
-      .from('attendance_records')
-      .select('member_id, is_present')
-      .in('event_id', eventIds)
-      .eq('is_present', true);
-    return { eventCount: events.length, records: records || [] };
-  },
-  enabled: !!userRegion?.id,
-});
-```
+- `/admin/regional/user-roles` → `'Access Management'`
+- Add `/admin/regional/discipleship` → `'Discipleship Management'`
 
-### Active Percentage Calculation
+### 3. Update `UserRoles.tsx` page content
 
-Build a `Set` of active member IDs (attended ≥50% of last 5 regional events), then for each KPI category compute:
-- `activeCount` = members in that category who are in the active set
-- `activePercent` = `Math.round((activeCount / totalInCategory) * 100)`
+- Change all references from "User Roles" / "Role Management" to "Access Management" where appropriate (section titles, descriptions)
+- Update icon usage from `Shield` to `KeyRound` where it represents the page identity
 
-### KPI Card Visual Upgrade
+### 4. Create new page `src/pages/admin/regional/Discipleship.tsx`
 
-Match the Events page pattern — each card gets 3 rows:
-1. **Icon + Label** (top)
-2. **Count** (large number)
-3. **Active: X%** (small text, like "Avg: N attendees" on events)
-4. **Growth trend** with TrendingUp/TrendingDown icons and colored text
+A standalone page with:
+- **KPI Cards** (4 cards, glassmorphism style):
+  - Total Relationships (count all)
+  - Active (count active, with growth % from last 30 days)
+  - Completed (count completed)
+  - Success Rate (% of relationships where disciple reached `became_member` milestone)
+- **Main content section** — the discipleship table currently in Members.tsx (search, status filter, assign button, relationships table, manage dialog), rebuilt with glassmorphism styling matching other pages
+- Uses `useDiscipleshipRelationships` hook and existing `AssignDiscipleDialog` / `ManageDiscipleshipDialog`
+
+### 5. Remove discipleship from `Members.tsx`
+
+- Remove the `Tabs` wrapper — render member directory content directly (no tabs needed anymore)
+- Remove all discipleship-related state, imports, and the discipleship `TabsContent`
+- Keep everything else (KPI cards, member table, register/edit dialogs, delete dialog)
+
+### 6. Add route in `App.tsx`
+
+- Import the new `RegionalDiscipleship` page
+- Add route: `<Route path="discipleship" element={<RegionalDiscipleship />} />`
 
 ### Files Modified
-- `src/pages/admin/regional/Members.tsx` — Add attendance query, compute active %, update KPI card rendering to match Events page style
+- `src/components/admin/EnhancedRegionalAdminLayout.tsx` — rename items, add discipleship, change icon
+- `src/components/admin/AdminLayout.tsx` — update route title map
+- `src/pages/admin/regional/UserRoles.tsx` — update page content to "Access Management"
+- `src/pages/admin/regional/Members.tsx` — remove discipleship tab and tabs wrapper
+- `src/pages/admin/regional/Discipleship.tsx` — **new file**, standalone discipleship page with KPIs
+- `src/App.tsx` — add discipleship route
 
