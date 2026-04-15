@@ -46,13 +46,15 @@ const useRegionMemberRelationships = (memberIds: string[]) => {
     queryKey: ['region-member-relationships', memberIds.sort().join(',')],
     queryFn: async () => {
       if (memberIds.length === 0) return [];
-      // Fetch relationships where any of our members is involved
       const { data, error } = await supabase
         .from('member_relationships' as any)
         .select('member_id, related_member_id')
         .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
       if (error) throw error;
-      return (data || []) as Array<{ member_id: string; related_member_id: string }>;
+      return ((data || []) as any[]).map((r: any) => ({
+        member_id: r.member_id as string,
+        related_member_id: r.related_member_id as string,
+      }));
     },
     enabled: memberIds.length > 0,
   });
