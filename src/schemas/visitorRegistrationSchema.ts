@@ -52,6 +52,8 @@ export const visitorRegistrationSchema = z.object({
     .optional(),
   
   referral_member_ids: z.array(z.string().uuid()).optional(),
+
+  referral_relationship_type: z.enum(['spouse', 'parent', 'child', 'sibling', 'guardian', 'other']).optional(),
   
   referral_other_details: z.string()
     .trim()
