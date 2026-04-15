@@ -1,62 +1,89 @@
 
 
-## Plan: Modernize Visitor Registration Form
+## Plan: Modernize Regional Admin Pages with Glassmorphism UI + Fix Loading States
 
-This plan mirrors the member registration form changes onto the visitor form: glassmorphism UI, occupation dropdown, emergency contact removal, and replacing the "invited by" free-text field with a member search/select system.
+This is a large-scale UI modernization of 6 regional admin pages, applying the same glassmorphism design language used in the member/visitor registration forms. Additionally, fixing the DCG and Events pages to show proper loading skeletons instead of premature "No data found" messages.
 
-### Schema Changes
+### Design Pattern
 
-1. **Update `visitorRegistrationSchema.ts`**
-   - Remove `emergency_contact_name` and `emergency_contact_phone` fields
-   - Change `occupation` from free-text with min/max to a simple optional string (dropdown selection)
-   - Replace `referral_person_name` (free text) with `referral_member_ids` (array of UUIDs) for the "invited by" case — this enables selecting existing members instead of typing a name
-   - Keep `referral_person_name` as optional fallback for the free text (in case user types a name not in system — actually, remove it and use only member selection)
-   - Update the refinement: if `referral_source === 'invited_by'`, require `referral_member_ids` to have at least one entry
+Reuse the existing `GlassSection` pattern from MemberRegister.tsx:
+- `rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm` for section wrappers
+- Icon + title headers with `bg-primary/10` icon badges
+- `bg-background/60` inputs
+- Skeleton loading states that match the glass aesthetic
+- Gradient accent elements using brand primary/secondary
 
-### Edge Function Update
+### Changes by Page
 
-2. **Update `create-visitor/index.ts`**
-   - Remove `emergency_contact_name` and `emergency_contact_phone` from destructuring and profile insert
-   - Accept `referral_member_ids` (array of UUIDs) instead of `referral_person_name`
-   - After creating the visitor, if `referral_member_ids` is provided, create `member_relationships` records linking the new visitor to each referral member with relationship type "referred_by" or store the referral member IDs in the `referral_person_name` field as a comma-separated list (simpler, no schema change needed)
-   - Actually, keep it simple: store the first referral member name in `referral_person_name` column for backward compatibility, and create relationship records
+**1. DCG Management (`DcgOverviewTab.tsx`, `DCG.tsx`)**
+- Replace plain `Card` wrappers with glass panels
+- Fix loading: Show skeleton table rows while `isLoading` is true; only show "No DCGs found" after loading completes with empty data
+- Add glass-styled KPI summary cards (Total DCGs, Total Members, Active Groups)
+- Glass-styled search bar and action button
 
-### UI Rebuild — `VisitorRegister.tsx`
+**2. Event Management (`Events.tsx`)**
+- Apply glass panels to the event listing cards and tabs
+- Fix loading: Same pattern — skeleton rows during load, "No events found" only after data resolves empty
+- Glass-styled analytics summary cards
+- Glass-styled filter/search bar area
 
-3. **Apply glassmorphism aesthetic** matching MemberRegister.tsx:
-   - Gradient background (`from-primary/5 via-background to-accent/5`)
-   - Reuse the `GlassSection` component pattern with icons
-   - Glass hero header with region name
-   - Rounded-xl inputs with `bg-background/60`
-   - Gradient submit button with hover lift
+**3. Members Management (`Members.tsx`)**
+- Wrap member list table in glass panel
+- Glass-styled filter row (search, status, type dropdowns)
+- Glass KPI cards for member counts
+- Proper loading skeletons matching glass aesthetic
 
-4. **Remove emergency contact section entirely**
+**4. Certificates Management (`Certificates.tsx`)**
+- Glass panels for template management and issued certificates sections
+- Glass-styled tab navigation
+- Loading skeletons for certificate tables
 
-5. **Replace occupation free-text Input with Select dropdown** fetching from `occupations` table via `useOccupations` hook
+**5. Settings (`Settings.tsx`)**
+- Glass section wrappers for each settings group (Currency, Notifications, etc.)
+- Icon-headed sections matching the registration form pattern
 
-6. **Restructure referral section — "How did you hear about us?"**
-   - Reorder options: "Invited by someone" first, then Social Media, Website, Other
-   - When "Invited by someone" is selected, show a member search/select UI identical to the family relationships section in MemberRegister:
-     - Multi-select popover with Command search across all regions using `search_all_members` RPC
-     - Selected members shown as badges with remove buttons
-     - This replaces the free-text "Who invited you?" field
+**6. User Roles (`UserRoles.tsx`)**
+- Glass KPI cards replacing plain cards
+- Glass panel wrapper for tab content
+- Consistent icon styling
 
-7. **Organize form into GlassSection groups:**
-   - Personal Information (name, email, phone, address, DOB, gender, occupation)
-   - Event & Referral (event selection, satisfaction rating, how did you hear about us, invited-by member select)
-   - Interest (join interest radio)
+### Loading State Fix Pattern
 
-### Hook Update
+For DCG and Events pages, the fix is:
+```tsx
+// Before (broken):
+{filteredDcgs.length > 0 ? (...) : null}
+{!isLoading && filteredDcgs.length === 0 && <"No DCGs found">}
 
-8. **Update `useVisitorRegistration.ts`** to pass the new `referral_member_ids` field
+// After (correct):
+{isLoading ? (
+  <SkeletonRows count={3} />
+) : filteredDcgs.length > 0 ? (
+  filteredDcgs.map(...)
+) : (
+  <"No DCGs found">
+)}
+```
 
-### Edge Function — Relationship Creation
+The `DcgOverviewTab.tsx` already has skeleton loading but the conditional logic allows "No DCGs found" to flash before data arrives because `isLoading` may briefly be false before the query is enabled (when `regionId` is still undefined). Fix: Also check `!userRegion` in the loading condition.
 
-9. **Update `create-visitor/index.ts`** to create `member_relationships` records when `referral_member_ids` are provided, linking the new visitor to the referral members
+### Shared GlassSection Component
+
+Extract the `GlassSection` component from `MemberRegister.tsx` into a shared location (`src/components/ui/GlassSection.tsx`) so all 6 pages can import it consistently.
 
 ### Files Modified
-- `src/schemas/visitorRegistrationSchema.ts`
-- `src/pages/VisitorRegister.tsx` — Full UI rebuild
-- `src/hooks/useVisitorRegistration.ts`
-- `supabase/functions/create-visitor/index.ts`
+- `src/components/ui/GlassSection.tsx` — New shared component
+- `src/components/admin/regional/dcg/DcgOverviewTab.tsx` — Glass UI + loading fix
+- `src/pages/admin/regional/DCG.tsx` — Glass wrapper
+- `src/pages/admin/regional/Events.tsx` — Glass UI + loading fix
+- `src/pages/admin/regional/Members.tsx` — Glass UI + loading states
+- `src/pages/admin/regional/Certificates.tsx` — Glass UI
+- `src/pages/admin/regional/Settings.tsx` — Glass sections
+- `src/pages/admin/regional/UserRoles.tsx` — Glass KPI cards + panels
+
+### Technical Notes
+- No database changes required
+- No new dependencies
+- All changes are purely presentational + loading state logic fixes
+- The glass styling classes (`border-border/40 bg-card/60 backdrop-blur-sm rounded-2xl`) are already defined in the project's CSS
 
