@@ -156,7 +156,7 @@ const RegionalEvents: React.FC = () => {
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
     const now = new Date();
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
-    return { dateRange: { from, to: now }, quickDateRange: '1-year' };
+    return { dateRange: { from, to: undefined }, quickDateRange: '1-year' };
   });
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
