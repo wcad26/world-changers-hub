@@ -1,62 +1,47 @@
 
 
-## Plan: Fix Events Table, Add Attendance Column, Add Period Filter
+## Plan: Rebuild Record Attendance Dialog
 
-### 1. Fix Build Error
-Line 1595 has a duplicate `};` causing the syntax error. Remove the extra closing brace.
+### Changes to `src/components/admin/regional/events/AttendanceManagementDialog.tsx`
 
-### 2. Fix Table Column Alignment
-The Actions dropdown button currently shows "Actions" text. Change to only show the `MoreHorizontal` icon (three dots) so it fits properly under the Actions column header.
+**1. Glassmorphism styling** — Match regional admin pages: `bg-card/60 backdrop-blur-sm` on dialog content, subtle borders, rounded corners.
 
-### 3. Replace Status Column with Attendance Column
-- Remove the "Status" column header and cell
-- Add "Attendance" column after Capacity
-- For each event, look up attendance via `attendanceData` (which has `source_event_id` mapping to `event.id`) and show `total_present`
-- For future events (`start_datetime >= now`), show "-" instead of a number
+**2. Table columns** — Replace current 4 columns (Present, Name, Member ID, Email) with:
+- **Present** — checkbox (narrow)
+- **Name** — `Last Name First Name` format
+- **DCG** — fetch from `dcg_members` joined with `dcgs` table to get DCG name per member; show "—" if not in any DCG
+- **Member Type** — derive from: `member_type === 'member'` → "Member", `member_type === 'visitor'` + check if special event visitor vs regular → "Regular Visitor" / "Special Event Visitor", child check via `isChildMember()` → "Child"
 
-### 4. Add Period Filter at Top of Page
-Reuse the existing `PeriodFilter` component pattern from the dashboard. Place it at the very top of the page, above the KPI cards.
+**3. Filter row** — Replace the current search + Children Only toggle + Select All with:
+- Search input (left)
+- Single dropdown filter: All, Members, Regular Visitors, Special Event Visitors, Children (replaces the old Children Only toggle)
+- Select All button stays
 
-Add state:
+**4. Remove Cancel button** — Only keep the "Record Attendance" / "Update Attendance" button in footer.
+
+**5. Mobile/tablet optimization** — Responsive dialog sizing using `w-full max-w-4xl` with `max-h-[85vh]`. On mobile: stack search and filter vertically, make table horizontally scrollable, compact padding. Use `pb-24` for bottom nav clearance.
+
+**6. DCG data fetching** — Add a query inside the component to fetch `dcg_members` with `dcgs.name` for all members in the region:
 ```tsx
-const [periodFilters, setPeriodFilters] = useState<PeriodFilters>({
-  dateRange: { from: undefined, to: undefined },
-  quickDateRange: '1-year',
+const { data: dcgMemberships } = useQuery({
+  queryKey: ['attendance-dcg-memberships', regionId],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('dcg_members')
+      .select('member_id, dcgs!inner(name)')
+      .eq('is_active', true);
+    return data;
+  },
 });
+// Build a Map<memberId, dcgName> for O(1) lookup
 ```
 
-Initialize with a default range (e.g., 1Y).
-
-### 5. Apply Period Filter to Events and KPIs
-- Filter `events` by `start_datetime` within the selected date range before computing `analyticsData` and `filteredEvents`
-- Create a `periodFilteredEvents` intermediate that applies date range, then pass that into both analytics and table filtering
+**7. Member type derivation logic:**
+- If `isChildMember(dob, id, relationships)` → "Child"
+- If `member_type === 'visitor'` and member has `source_event_id` or is linked to a special event → "Special Event Visitor" (check via `join_interest` or source event linkage)
+- If `member_type === 'visitor'` → "Regular Visitor"
+- If `member_type === 'member'` → "Member"
 
 ### Files Modified
-- `src/pages/admin/regional/Events.tsx` — Fix duplicate `};`, add period filter state, import PeriodFilter, add attendance column, remove status column, apply period filtering to analytics and table
-
-### Technical Details
-
-**Attendance lookup per event:**
-```tsx
-const getEventAttendance = (eventId: string) => {
-  if (!attendanceData) return 0;
-  const matched = attendanceData.filter(a => a.source_event_id === eventId);
-  return matched.reduce((sum, a) => sum + a.total_present, 0);
-};
-```
-
-**Period filtering applied before analytics:**
-```tsx
-const periodFilteredEvents = React.useMemo(() => {
-  if (!events) return [];
-  return events.filter(e => {
-    const d = new Date(e.start_datetime);
-    if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
-    if (periodFilters.dateRange.to && d > periodFilters.dateRange.to) return false;
-    return true;
-  });
-}, [events, periodFilters]);
-```
-
-Then `analyticsData` and `filteredEvents` use `periodFilteredEvents` instead of raw `events`.
+- `src/components/admin/regional/events/AttendanceManagementDialog.tsx` — Full rebuild of UI, filter logic, table columns, DCG fetch, remove Cancel button
 
