@@ -804,8 +804,8 @@ const Certificates = () => {
                     : `Generate ${selectedMembers.length} Certificate(s)`
                   }
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Templates Tab */}
