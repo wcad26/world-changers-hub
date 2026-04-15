@@ -1613,84 +1613,41 @@ const RegionalEvents: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-        {/* Period Filter */}
-        <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} />
-
-        {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
-            { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-            { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-green-600', bg: 'bg-green-500/10' },
-            { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-          ].map(({ label, data, icon: Icon, color, bg }) => (
-            <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">{label}</span>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{data.count}</p>
-              <p className="text-xs text-muted-foreground mt-1">Avg: {data.avgAttendance} attendees</p>
-              <div className="mt-2">
-                {data.growth !== 0 ? (
-                  <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">0% growth</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Unified Events Table */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Events</h2>
-                <p className="text-sm text-muted-foreground">View and manage all events in your region</p>
-              </div>
-            </div>
-            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 shrink-0">
+        {/* Period Filter + Search + Filters + Add Event */}
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60 h-8 w-[200px] text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
+          <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+            <SelectTrigger className="w-[130px] bg-background/60 h-8 text-sm">
+              <SelectValue placeholder="Event Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="regional">Regional</SelectItem>
+              <SelectItem value="dcg">DCG</SelectItem>
+              <SelectItem value="special">Special</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={timeFilter} onValueChange={setTimeFilter}>
+            <SelectTrigger className="w-[130px] bg-background/60 h-8 text-sm">
+              <SelectValue placeholder="Time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Events</SelectItem>
+              <SelectItem value="upcoming">Upcoming</SelectItem>
+              <SelectItem value="past">Past</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="ml-auto">
+            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm">
               <Plus className="h-4 w-4" />
               Add Event
             </Button>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-            </div>
-            <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-              <SelectTrigger className="w-[160px] bg-background/60">
-                <SelectValue placeholder="Event Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="regional">Regional</SelectItem>
-                <SelectItem value="dcg">DCG</SelectItem>
-                <SelectItem value="special">Special</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[160px] bg-background/60">
-                <SelectValue placeholder="Time" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Events</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="past">Past</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        </div>
           {isError && (
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
