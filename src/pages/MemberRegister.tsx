@@ -509,40 +509,6 @@ export default function MemberRegister() {
                     />
                   </div>
 
-                  {/* Emergency Contact */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">{t('emergencyContact')}</h3>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="emergency_contact_name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('emergencyContactName')}</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Contact name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="emergency_contact_phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>{t('emergencyContactPhone')}</FormLabel>
-                            <FormControl>
-                              <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
 
                   {/* Spiritual Information */}
                   <div className="space-y-4">
@@ -895,7 +861,7 @@ export default function MemberRegister() {
                                   <SelectValue placeholder={t('selectDcgPlaceholder')} />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent className="max-h-[40vh]" position="popper" sideOffset={4}>
                                 {dcgs.map((dcg) => (
                                   <SelectItem key={dcg.id} value={dcg.id}>
                                     {dcg.name} {dcg.location && `- ${dcg.location}`}
