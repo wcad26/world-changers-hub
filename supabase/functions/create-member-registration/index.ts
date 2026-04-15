@@ -32,9 +32,10 @@ serve(async (req) => {
       is_baptized,
       baptism_date,
       ministry_interests,
-      skills_talents,
       dcg_id,
-      region_id
+      region_id,
+      relationship_member_id,
+      relationship_type
     } = await req.json()
 
     console.log('create-member-registration: Received data for', email)
