@@ -64,7 +64,7 @@ const PeriodFilter: React.FC<PeriodFilterProps> = ({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-6">
+    <div className="flex flex-wrap items-center gap-2">
       <span className="text-sm font-medium text-muted-foreground mr-2">Period:</span>
       
       {/* Quick Date Range Buttons */}
