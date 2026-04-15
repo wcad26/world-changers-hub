@@ -92,6 +92,31 @@ const Members: React.FC = () => {
     enabled: memberIds.length > 0,
   });
 
+  // Fetch events for visitor rated_event_id to distinguish special vs regular visitors
+  const visitorEventIds = React.useMemo(() => {
+    const ids = members?.filter(m => m.member_type === 'visitor' && m.rated_event_id)
+      .map(m => m.rated_event_id as string) || [];
+    return [...new Set(ids)];
+  }, [members]);
+
+  const { data: visitorEvents = [] } = useQuery({
+    queryKey: ['visitor-events-special', visitorEventIds.sort().join(',')],
+    queryFn: async () => {
+      if (visitorEventIds.length === 0) return [];
+      const { data } = await supabase.from('events')
+        .select('id, is_special')
+        .in('id', visitorEventIds);
+      return data || [];
+    },
+    enabled: visitorEventIds.length > 0,
+  });
+
+  const specialEventIds = React.useMemo(() => {
+    const set = new Set<string>();
+    visitorEvents.forEach(e => { if (e.is_special) set.add(e.id); });
+    return set;
+  }, [visitorEvents]);
+
   // Filter relationships based on search and status
   const filteredRelationships = relationships?.filter(relationship => {
     const mentorName = `${relationship.mentor?.profiles?.last_name} ${relationship.mentor?.profiles?.first_name}`.toLowerCase();
