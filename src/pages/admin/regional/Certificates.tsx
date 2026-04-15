@@ -589,34 +589,27 @@ const Certificates = () => {
   return (
     <>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Award className="h-8 w-8" />
-            Certificate Management
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Generate, manage, and distribute certificates for events and training programs
-          </p>
-        </div>
 
         <Tabs value={activeTab} onValueChange={(value) => !isGenerating && setActiveTab(value)}>
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="generate" disabled={isGenerating}>Generate Certificates</TabsTrigger>
+            <TabsTrigger value="generate" disabled={isGenerating}>Generate</TabsTrigger>
             <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
-            <TabsTrigger value="issued" disabled={isGenerating}>Issued Certificates</TabsTrigger>
-            <TabsTrigger value="sent" disabled={isGenerating}>Sent Certificates</TabsTrigger>
+            <TabsTrigger value="issued" disabled={isGenerating}>Issued</TabsTrigger>
+            <TabsTrigger value="sent" disabled={isGenerating}>Sent</TabsTrigger>
           </TabsList>
 
-          {/* Generate Certificates Tab */}
           <TabsContent value="generate" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bulk Generate Certificates</CardTitle>
-                <CardDescription>
-                  Select a template, choose members, and generate certificates in bulk
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                  <Award className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Bulk Generate Certificates</h2>
+                  <p className="text-sm text-muted-foreground">Select a template, choose members, and generate certificates in bulk</p>
+                </div>
+              </div>
+              <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="template">Certificate Template</Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -811,8 +804,8 @@ const Certificates = () => {
                     : `Generate ${selectedMembers.length} Certificate(s)`
                   }
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
 
           {/* Templates Tab */}

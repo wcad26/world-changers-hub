@@ -1484,17 +1484,21 @@ const RegionalEvents: React.FC = () => {
   };
 
   const renderTableBody = (eventList: typeof events) => {
-    if (isLoading) {
+    if (isLoading || !userRegion) {
       return Array.from({ length: 4 }).map((_, i) => (
         <TableRow key={i}>
-          <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
+          {Array.from({ length: 7 }).map((_, j) => (
+            <TableCell key={j}><Skeleton className="h-6 w-full rounded-lg" /></TableCell>
+          ))}
         </TableRow>
       ));
     }
     if (!eventList || eventList.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={7} className="text-center h-24">No events found</TableCell>
+          <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+            {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
+          </TableCell>
         </TableRow>
       );
     }
@@ -1582,7 +1586,48 @@ const RegionalEvents: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-        
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Total Events</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{analyticsData.totalEvents}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Users className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Total Attendance</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{analyticsData.totalAttendance}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <BarChart2 className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Avg Attendance</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{analyticsData.avgAttendance}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                {analyticsData.monthlyComparison.change >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Monthly Trend</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">
+              {analyticsData.monthlyComparison.change >= 0 ? '+' : ''}{analyticsData.monthlyComparison.change}%
+            </p>
+          </div>
+        </div>
+
         <Tabs defaultValue="upcoming">
           <TabsList className="grid grid-cols-1 md:grid-cols-2 w-full max-w-lg">
             <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
@@ -1590,111 +1635,103 @@ const RegionalEvents: React.FC = () => {
           </TabsList>
           
           <TabsContent value="upcoming">
-            <Card>
-              <CardHeader>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>
-                  View and manage scheduled events in your region.
-                </CardDescription>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search events..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                    <Calendar className="h-5 w-5" />
                   </div>
-                  <Button onClick={() => setCreateEventDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Event
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error loading events</AlertTitle>
-                    <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Event Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Time</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Capacity</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {renderTableBody(upcomingEvents)}
-                      </TableBody>
-                    </Table>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
+                    <p className="text-sm text-muted-foreground">View and manage scheduled events in your region</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+                <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 shrink-0">
+                  <Plus className="h-4 w-4" />
+                  Add Event
+                </Button>
+              </div>
+              <div className="mb-4">
+                <div className="relative max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+              </div>
+              {isError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error loading events</AlertTitle>
+                  <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+                </Alert>
+              )}
+              <div className="rounded-xl border border-border/40 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead>Event Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Capacity</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {renderTableBody(upcomingEvents)}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
           </TabsContent>
           
           <TabsContent value="past">
-            <Card>
-              <CardHeader>
-                <CardTitle>Past Events</CardTitle>
-                <CardDescription>
-                  View history of completed events.
-                </CardDescription>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="search"
-                      placeholder="Search past events..."
-                      className="pl-8"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                  <Clock className="h-5 w-5" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                {isError && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error loading events</AlertTitle>
-                    <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-                  </Alert>
-                )}
-                <div className="rounded-md border overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Event Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Location</TableHead>
-                          <TableHead>Capacity</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {renderTableBody(pastEvents)}
-                      </TableBody>
-                    </Table>
-                  </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-foreground">Past Events</h2>
+                  <p className="text-sm text-muted-foreground">View history of completed events</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="mb-4">
+                <div className="relative max-w-md">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input type="search" placeholder="Search past events..." className="pl-9 bg-background/60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+              </div>
+              {isError && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error loading events</AlertTitle>
+                  <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+                </Alert>
+              )}
+              <div className="rounded-xl border border-border/40 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/30">
+                        <TableHead>Event Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Capacity</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {renderTableBody(pastEvents)}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

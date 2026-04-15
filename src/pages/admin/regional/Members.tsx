@@ -222,6 +222,45 @@ const Members: React.FC = () => {
           </DialogContent>
         </Dialog>
         
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Users className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Total</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.length || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CheckCircle className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Members</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'member').length || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Clock className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Visitors</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.member_type === 'visitor').length || 0}</p>
+          </div>
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Active</span>
+            </div>
+            <p className="text-2xl font-bold text-foreground">{isLoadingMembers ? '...' : members?.filter(m => m.status === 'active').length || 0}</p>
+          </div>
+        </div>
         
         <Tabs defaultValue="members">
           <TabsList>
@@ -233,302 +272,311 @@ const Members: React.FC = () => {
           </TabsList>
           
           <TabsContent value="members" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                    <Users className="h-5 w-5" />
+                  </div>
                   <div>
-                    <CardTitle>Member List</CardTitle>
-                    <CardDescription>A list of all members in your region.</CardDescription>
+                    <h2 className="text-lg font-semibold text-foreground">Member Directory</h2>
+                    <p className="text-sm text-muted-foreground">A list of all members in your region</p>
                   </div>
-                  <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Register Member
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Register New Member</DialogTitle>
-                        <DialogDescription>
-                          Fill out the form below to register a new member. An invitation email will be sent to them to complete their account setup.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
-                    </DialogContent>
-                  </Dialog>
                 </div>
-                <div className="flex flex-col gap-4 pt-4">
-                  <div className="flex flex-wrap gap-4 items-center">
-                    <div className="relative flex-1 min-w-[250px]">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="Search by name, email, or phone..." 
-                        className="pl-8" 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Select value={memberStatusFilter} onValueChange={setMemberStatusFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="transferred">Transferred</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="member">Member</SelectItem>
-                        <SelectItem value="visitor">Visitor</SelectItem>
-                        <SelectItem value="children">Children</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Button variant="outline" onClick={handleExportMembers}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Export ({filteredMembers.length})
+                <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="gap-2 shrink-0">
+                      <PlusCircle className="h-4 w-4" /> Register Member
                     </Button>
-                  </div>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Register New Member</DialogTitle>
+                      <DialogDescription>
+                        Fill out the form below to register a new member.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              <div className="flex flex-wrap gap-4 items-center mb-4">
+                <div className="relative flex-1 min-w-[250px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Search by name, email, or phone..." 
+                    className="pl-9 bg-background/60" 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Address</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingMembers || !userRegion ? (
-                        <TableRow><TableCell colSpan={7} className="text-center">Loading members...</TableCell></TableRow>
-                      ) : membersError ? (
-                         <TableRow><TableCell colSpan={7} className="text-center text-red-500">Error loading members.</TableCell></TableRow>
-                       ) : filteredMembers.length > 0 ? (
-                        filteredMembers.map(member => (
-                          <TableRow 
-                            key={member.id} 
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => navigate(`/admin/regional/members/${member.id}`)}
-                          >
-                            <TableCell className="font-medium">
-                              {member.profiles?.last_name} {member.profiles?.first_name}
-                            </TableCell>
-                            <TableCell className="max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
-                            <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
-                                className={member.member_type === 'visitor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}
-                              >
-                                <Users className="w-3 h-3 mr-1" />
-                                {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(member.status || 'new')}>
-                                {member.status || 'new'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setEditMember(member)}>
-                                    <Pen className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={() => setMemberToDelete(member)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow><TableCell colSpan={7} className="text-center">No members found.</TableCell></TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+                
+                <Select value={memberStatusFilter} onValueChange={setMemberStatusFilter}>
+                  <SelectTrigger className="w-[180px] bg-background/60">
+                    <SelectValue placeholder="Filter by Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="transferred">Transferred</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
+                  <SelectTrigger className="w-[180px] bg-background/60">
+                    <SelectValue placeholder="Filter by Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="visitor">Visitor</SelectItem>
+                    <SelectItem value="children">Children</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button variant="outline" onClick={handleExportMembers}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export ({filteredMembers.length})
+                </Button>
+              </div>
+
+              <div className="rounded-xl border border-border/40 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Join Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingMembers || !userRegion ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 7 }).map((_, j) => (
+                            <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : membersError ? (
+                       <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading members.</TableCell></TableRow>
+                     ) : filteredMembers.length > 0 ? (
+                      filteredMembers.map(member => (
+                        <TableRow 
+                          key={member.id} 
+                          className="cursor-pointer hover:bg-muted/20 transition-colors"
+                          onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                        >
+                          <TableCell className="font-medium">
+                            {member.profiles?.last_name} {member.profiles?.first_name}
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
+                          <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
+                              className={member.member_type === 'visitor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}
+                            >
+                              <Users className="w-3 h-3 mr-1" />
+                              {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(member.status || 'new')}>
+                              {member.status || 'new'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                  <Pen className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => setMemberToDelete(member)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow><TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                        {searchTerm ? 'No members match your search.' : 'No members found.'}
+                      </TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="discipleship">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
+            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                    <Heart className="h-5 w-5" />
+                  </div>
                   <div>
-                    <CardTitle>Discipleship Relationships</CardTitle>
-                    <CardDescription>
-                      Manage mentor-disciple relationships and track progress
-                    </CardDescription>
+                    <h2 className="text-lg font-semibold text-foreground">Discipleship Relationships</h2>
+                    <p className="text-sm text-muted-foreground">Manage mentor-disciple relationships and track progress</p>
                   </div>
-                  <Button onClick={() => setIsAssignDialogOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Assign Relationship
-                  </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Filters */}
-                <div className="flex gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search mentors or disciples..."
-                      value={discipleshipSearchTerm}
-                      onChange={(e) => setDiscipleshipSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="transferred">Transferred</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <Button onClick={() => setIsAssignDialogOpen(true)} className="gap-2 shrink-0">
+                  <UserPlus className="h-4 w-4" />
+                  Assign Relationship
+                </Button>
+              </div>
+              
+              <div className="flex gap-4 mb-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search mentors or disciples..."
+                    value={discipleshipSearchTerm}
+                    onChange={(e) => setDiscipleshipSearchTerm(e.target.value)}
+                    className="pl-9 bg-background/60"
+                  />
                 </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40 bg-background/60">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="transferred">Transferred</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Relationships Table */}
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
+              <div className="rounded-xl border border-border/40 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead>Mentor</TableHead>
+                      <TableHead>Disciple</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>Notes</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {discipleshipLoading || !userRegion ? (
+                      Array.from({ length: 3 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 6 }).map((_, j) => (
+                            <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : discipleshipError ? (
                       <TableRow>
-                        <TableHead>Mentor</TableHead>
-                        <TableHead>Disciple</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>Notes</TableHead>
-                        <TableHead>Actions</TableHead>
+                        <TableCell colSpan={6} className="text-center py-8 text-destructive">Error loading relationships</TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {discipleshipLoading || !userRegion ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8">Loading relationships...</TableCell>
-                        </TableRow>
-                      ) : discipleshipError ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-red-500">Error loading relationships</TableCell>
-                        </TableRow>
-                      ) : filteredRelationships.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            {discipleshipSearchTerm || statusFilter !== 'all' 
-                              ? 'No relationships match your filters'
-                              : 'No discipleship relationships found. Create your first one!'
+                    ) : filteredRelationships.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          {discipleshipSearchTerm || statusFilter !== 'all' 
+                            ? 'No relationships match your filters'
+                            : 'No discipleship relationships found. Create your first one!'
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRelationships.map((relationship) => (
+                        <TableRow key={relationship.id} className="hover:bg-muted/20 transition-colors">
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {relationship.mentor?.member_id}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">
+                                {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {relationship.disciple?.member_id}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(relationship.status || 'active')}>
+                              {relationship.status || 'active'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {relationship.start_date ? 
+                              new Date(relationship.start_date).toLocaleDateString() : 
+                              'N/A'
                             }
                           </TableCell>
+                          <TableCell className="max-w-xs">
+                            {relationship.notes ? (
+                              <p className="text-sm truncate" title={relationship.notes}>
+                                {relationship.notes}
+                              </p>
+                            ) : (
+                              <span className="text-muted-foreground">No notes</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRelationship(relationship);
+                              }}
+                            >
+                              Manage
+                            </Button>
+                          </TableCell>
                         </TableRow>
-                      ) : (
-                        filteredRelationships.map((relationship) => (
-                          <TableRow key={relationship.id}>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">
-                                  {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {relationship.mentor?.member_id}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">
-                                  {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {relationship.disciple?.member_id}
-                                </p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(relationship.status || 'active')}>
-                                {relationship.status || 'active'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {relationship.start_date ? 
-                                new Date(relationship.start_date).toLocaleDateString() : 
-                                'N/A'
-                              }
-                            </TableCell>
-                            <TableCell className="max-w-xs">
-                              {relationship.notes ? (
-                                <p className="text-sm truncate" title={relationship.notes}>
-                                  {relationship.notes}
-                                </p>
-                              ) : (
-                                <span className="text-muted-foreground">No notes</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedRelationship(relationship);
-                                }}
-                              >
-                                Manage
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
             
-            {/* Assign Disciple Dialog */}
             <AssignDiscipleDialog
               isOpen={isAssignDialogOpen}
               onOpenChange={setIsAssignDialogOpen}
             />
             
-            {/* Manage Discipleship Dialog */}
             <ManageDiscipleshipDialog
               relationship={selectedRelationship}
               isOpen={!!selectedRelationship}
@@ -536,8 +584,6 @@ const Members: React.FC = () => {
             />
           </TabsContent>
         </Tabs>
-        
-        {/* Existing dialogs remain outside the tabs */}
       </div>
 
       {/* Delete Confirmation Dialog */}
