@@ -73,23 +73,19 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
   return (
     <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
       <Sidebar collapsible="icon" className="border-r border-gray-200 dark:border-gray-800">
-        <SidebarHeader className="p-4 flex items-center justify-between">
-          {!isCollapsed ? (
-            <>
+        <SidebarHeader className="p-4">
+          <div className="flex items-center justify-between w-full">
+            {!isCollapsed && (
               <Link to="/" className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
                   {userRegion?.name?.toUpperCase() || 'PORTAL'}
                 </span>
               </Link>
-              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="shrink-0 h-8 w-8">
-                <PanelLeftClose className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mx-auto h-8 w-8">
-              <PanelLeftOpen className="h-4 w-4" />
+            )}
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className={`shrink-0 h-8 w-8 ${isCollapsed ? "mx-auto" : ""}`}>
+              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>
-          )}
+          </div>
         </SidebarHeader>
         <SidebarContent className="px-2">
           <div className="py-2">
