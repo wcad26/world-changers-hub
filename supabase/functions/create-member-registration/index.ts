@@ -261,6 +261,30 @@ serve(async (req) => {
       }
     }
 
+    // Add family relationship if specified
+    if (relationship_member_id && relationship_type) {
+      try {
+        console.log('create-member-registration: Adding family relationship:', relationship_type, 'with', relationship_member_id)
+        
+        const { error: relError } = await supabaseAdmin
+          .from('member_relationships')
+          .insert({
+            member_id: newMember.id,
+            related_member_id: relationship_member_id,
+            relationship_type: relationship_type,
+            created_by: authUser.user.id,
+          })
+
+        if (relError) {
+          console.error('create-member-registration: Relationship creation failed:', relError)
+        } else {
+          console.log('create-member-registration: Family relationship added successfully')
+        }
+      } catch (relErr) {
+        console.error('create-member-registration: Non-fatal relationship error:', relErr)
+      }
+    }
+
     const roleLabel = memberType === 'member' ? 'member' : 'visitor'
     return new Response(
       JSON.stringify({ 
