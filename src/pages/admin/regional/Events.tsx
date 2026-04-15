@@ -1649,6 +1649,37 @@ const RegionalEvents: React.FC = () => {
           </div>
         </div>
 
+        {/* KPI Cards */}
+        <div className="grid gap-4 md:grid-cols-4">
+          {[
+            { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
+            { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-500/10' },
+            { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-green-600', bg: 'bg-green-500/10' },
+            { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+          ].map(({ label, data, icon: Icon, color, bg }) => (
+            <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground">{label}</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{data.count}</p>
+              <p className="text-xs text-muted-foreground mt-1">Avg: {data.avgAttendance} attendees</p>
+              <div className="mt-2">
+                {data.growth !== 0 ? (
+                  <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">0% growth</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Events Table */}
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
           <div className="flex items-center gap-3 mb-6">
