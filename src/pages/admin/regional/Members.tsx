@@ -62,12 +62,8 @@ const Members: React.FC = () => {
   const [memberStatusFilter, setMemberStatusFilter] = React.useState('all');
   const [memberTypeFilter, setMemberTypeFilter] = React.useState('all');
   
-  // Discipleship state
-  const [discipleshipSearchTerm, setDiscipleshipSearchTerm] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [selectedRelationship, setSelectedRelationship] = React.useState<DiscipleshipRelationshipWithMembers | null>(null);
-  const { data: relationships, isLoading: discipleshipLoading, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
+
+
 
   // Fetch member relationships for children filter
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
