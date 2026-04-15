@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Crown, Users, MessageSquare, UserCheck, ArrowRight } from 'lucide-react';
 
 const PortalSelector = () => {
-  const { user, hasRole, signOut } = useAuth();
+  const { user, canAccessPortal, signOut } = useAuth();
   const navigate = useNavigate();
 
   const portals = [
@@ -52,7 +52,7 @@ const PortalSelector = () => {
     }
   ];
 
-  const availablePortals = portals.filter(portal => hasRole(portal.requiredRole as 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin'));
+  const availablePortals = portals.filter(portal => canAccessPortal(portal.id));
 
   const handlePortalSelect = (path: string) => {
     navigate(path);
