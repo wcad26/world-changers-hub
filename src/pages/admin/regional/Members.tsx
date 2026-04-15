@@ -143,19 +143,23 @@ const Members: React.FC = () => {
       // Status filter
       const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
       
-      // Member type filter (includes children)
+      // Member type filter (includes children and visitor subtypes)
       let typeMatch = false;
       if (memberTypeFilter === 'all') {
         typeMatch = true;
       } else if (memberTypeFilter === 'children') {
         typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships);
+      } else if (memberTypeFilter === 'visitor_special') {
+        typeMatch = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
+      } else if (memberTypeFilter === 'visitor_regular') {
+        typeMatch = member.member_type === 'visitor' && (!member.rated_event_id || !specialEventIds.has(member.rated_event_id));
       } else {
         typeMatch = member.member_type === memberTypeFilter;
       }
       
       return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
