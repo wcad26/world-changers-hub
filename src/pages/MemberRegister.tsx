@@ -744,15 +744,10 @@ export default function MemberRegister() {
 
                   </div>
 
-                  {/* Family Relationship Section */}
-                  <Collapsible open={isRelationshipOpen} onOpenChange={setIsRelationshipOpen}>
-                    <CollapsibleTrigger asChild>
-                      <Button type="button" variant="outline" className="w-full justify-between">
-                        <span className="text-lg font-medium">Family Relationships (Optional)</span>
-                        {isRelationshipOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="space-y-4 pt-4">
+                  {/* Family Relationships */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold border-b pb-2">Family Relationships (Optional)</h3>
+
                       {/* Already added relationships */}
                       {relationships.length > 0 && (
                         <div className="space-y-2">
@@ -883,8 +878,7 @@ export default function MemberRegister() {
                           Add Relationship
                         </Button>
                       </div>
-                    </CollapsibleContent>
-                  </Collapsible>
+                  </div>
 
                   {/* DCG Selection */}
                   {dcgs.length > 0 && (
