@@ -2,12 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
@@ -40,12 +39,8 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Users, TrendingUp, CheckCircle, Clock } from 'lucide-react';
-import AssignDiscipleDialog from "@/components/admin/regional/discipleship/AssignDiscipleDialog";
-import ManageDiscipleshipDialog from "@/components/admin/regional/discipleship/ManageDiscipleshipDialog";
-import type { DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { Users } from 'lucide-react';
 import RoleBadge from "@/components/ui/RoleBadge";
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
@@ -67,12 +62,8 @@ const Members: React.FC = () => {
   const [memberStatusFilter, setMemberStatusFilter] = React.useState('all');
   const [memberTypeFilter, setMemberTypeFilter] = React.useState('all');
   
-  // Discipleship state
-  const [discipleshipSearchTerm, setDiscipleshipSearchTerm] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
-  const [selectedRelationship, setSelectedRelationship] = React.useState<DiscipleshipRelationshipWithMembers | null>(null);
-  const { data: relationships, isLoading: discipleshipLoading, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
+
+
 
   // Fetch member relationships for children filter
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
@@ -118,15 +109,8 @@ const Members: React.FC = () => {
     return set;
   }, [visitorEvents]);
 
-  // Filter relationships based on search and status
-  const filteredRelationships = relationships?.filter(relationship => {
-    const mentorName = `${relationship.mentor?.profiles?.last_name} ${relationship.mentor?.profiles?.first_name}`.toLowerCase();
-    const discipleName = `${relationship.disciple?.profiles?.last_name} ${relationship.disciple?.profiles?.first_name}`.toLowerCase();
-    const searchMatch = mentorName.includes(discipleshipSearchTerm.toLowerCase()) || discipleName.includes(discipleshipSearchTerm.toLowerCase());
-    const statusMatch = statusFilter === 'all' || relationship.status === statusFilter;
-    
-    return searchMatch && statusMatch;
-  }) || [];
+
+
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
@@ -261,16 +245,7 @@ const Members: React.FC = () => {
           regionId={userRegion?.id}
         />
         
-        <Tabs defaultValue="members">
-          <TabsList>
-            <TabsTrigger value="members">Members</TabsTrigger>
-            <TabsTrigger value="discipleship">
-              <Heart className="mr-2 h-4 w-4" />
-              Discipleship
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="members" className="space-y-4">
+        <div className="space-y-4">
             <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
@@ -431,159 +406,7 @@ const Members: React.FC = () => {
                 </Table>
               </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="discipleship">
-            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                    <Heart className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Discipleship Relationships</h2>
-                    <p className="text-sm text-muted-foreground">Manage mentor-disciple relationships and track progress</p>
-                  </div>
-                </div>
-                <Button onClick={() => setIsAssignDialogOpen(true)} className="gap-2 shrink-0">
-                  <UserPlus className="h-4 w-4" />
-                  Assign Relationship
-                </Button>
-              </div>
-              
-              <div className="flex gap-4 mb-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search mentors or disciples..."
-                    value={discipleshipSearchTerm}
-                    onChange={(e) => setDiscipleshipSearchTerm(e.target.value)}
-                    className="pl-9 bg-background/60"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40 bg-background/60">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="transferred">Transferred</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="rounded-xl border border-border/40 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead>Mentor</TableHead>
-                      <TableHead>Disciple</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {discipleshipLoading || !userRegion ? (
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          {Array.from({ length: 6 }).map((_, j) => (
-                            <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : discipleshipError ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-destructive">Error loading relationships</TableCell>
-                      </TableRow>
-                    ) : filteredRelationships.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          {discipleshipSearchTerm || statusFilter !== 'all' 
-                            ? 'No relationships match your filters'
-                            : 'No discipleship relationships found. Create your first one!'
-                          }
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredRelationships.map((relationship) => (
-                        <TableRow key={relationship.id} className="hover:bg-muted/20 transition-colors">
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">
-                                {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {relationship.mentor?.member_id}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">
-                                {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {relationship.disciple?.member_id}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(relationship.status || 'active')}>
-                              {relationship.status || 'active'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {relationship.start_date ? 
-                              new Date(relationship.start_date).toLocaleDateString() : 
-                              'N/A'
-                            }
-                          </TableCell>
-                          <TableCell className="max-w-xs">
-                            {relationship.notes ? (
-                              <p className="text-sm truncate" title={relationship.notes}>
-                                {relationship.notes}
-                              </p>
-                            ) : (
-                              <span className="text-muted-foreground">No notes</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedRelationship(relationship);
-                              }}
-                            >
-                              Manage
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-            
-            <AssignDiscipleDialog
-              isOpen={isAssignDialogOpen}
-              onOpenChange={setIsAssignDialogOpen}
-            />
-            
-            <ManageDiscipleshipDialog
-              relationship={selectedRelationship}
-              isOpen={!!selectedRelationship}
-              onOpenChange={(open) => !open && setSelectedRelationship(null)}
-            />
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
 
       {/* Delete Confirmation Dialog */}

@@ -1,8 +1,7 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Shield } from 'lucide-react';
+import { Plus, Users, KeyRound } from 'lucide-react';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
 import { useAuth } from '@/hooks/useAuth';
 import RoleManagementTab from '@/components/admin/regional/roles/RoleManagementTab';
@@ -22,7 +21,7 @@ const UserRoles: React.FC = () => {
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <GlassKPICard
-            icon={<Shield className="h-5 w-5" />}
+            icon={<KeyRound className="h-5 w-5" />}
             label="Total Roles"
             value={roles?.filter(r => r.is_active).length || 0}
             isLoading={isLoading}
@@ -35,7 +34,7 @@ const UserRoles: React.FC = () => {
             isLoading={isLoading}
           />
           <GlassKPICard
-            icon={<Shield className="h-5 w-5" />}
+            icon={<KeyRound className="h-5 w-5" />}
             label="Custom Roles"
             value={roles?.filter(r => r.is_active && r.name !== 'Regional Admin').length || 0}
             isLoading={isLoading}
@@ -45,8 +44,8 @@ const UserRoles: React.FC = () => {
         {/* Main Content */}
         <GlassSection>
           <GlassSectionHeader
-            icon={<Shield className="h-5 w-5" />}
-            title="Role Management"
+            icon={<KeyRound className="h-5 w-5" />}
+            title="Access Management"
             description={`Manage user roles and permissions for ${userRegion?.name || 'your region'}`}
             action={
               <Button onClick={() => setCreateRoleOpen(true)} className="gap-2">
@@ -63,7 +62,7 @@ const UserRoles: React.FC = () => {
                 User Assignments
               </TabsTrigger>
               <TabsTrigger value="roles" className="gap-2">
-                <Shield className="h-4 w-4" />
+                <KeyRound className="h-4 w-4" />
                 Manage Roles
               </TabsTrigger>
             </TabsList>

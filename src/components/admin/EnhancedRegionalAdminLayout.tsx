@@ -9,11 +9,11 @@ import {
   MapPin, 
   PiggyBank, 
   Home, 
-   
+  Heart,
   MessageSquare,
   Settings,
   Building2,
-  Shield,
+  KeyRound,
   Award
 } from "lucide-react";
 
@@ -33,13 +33,19 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "dashboard_view"
     },
     { 
-      title: "Members", 
+      title: "Member Management", 
       path: "/admin/regional/members", 
       icon: Users as React.ComponentType<{ className?: string; size?: number }>,
       permission: "members_view"
     },
     { 
-      title: "Events", 
+      title: "Discipleship Management", 
+      path: "/admin/regional/discipleship", 
+      icon: Heart as React.ComponentType<{ className?: string; size?: number }>,
+      permission: "members_view"
+    },
+    { 
+      title: "Event Management", 
       path: "/admin/regional/events", 
       icon: Calendar as React.ComponentType<{ className?: string; size?: number }>,
       permission: "events_view"
@@ -65,7 +71,7 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "dcg_view"
     },
     { 
-      title: "Certificates", 
+      title: "Certificate Management", 
       path: "/admin/regional/certificates", 
       icon: Award as React.ComponentType<{ className?: string; size?: number }>,
       permission: "members_view"
@@ -83,10 +89,10 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "settings_view"
     },
     { 
-      title: "User Roles", 
+      title: "Access Management", 
       path: "/admin/regional/user-roles", 
-      icon: Shield as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "settings_edit"  // Only users who can edit settings can manage roles
+      icon: KeyRound as React.ComponentType<{ className?: string; size?: number }>,
+      permission: "settings_edit"
     },
     { 
       title: "Settings", 
