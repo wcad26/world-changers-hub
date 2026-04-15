@@ -2,12 +2,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, Heart, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth.tsx';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
@@ -40,12 +39,8 @@ import {
   AlertDialogTitle 
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Users, TrendingUp, CheckCircle, Clock } from 'lucide-react';
-import AssignDiscipleDialog from "@/components/admin/regional/discipleship/AssignDiscipleDialog";
-import ManageDiscipleshipDialog from "@/components/admin/regional/discipleship/ManageDiscipleshipDialog";
-import type { DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { Users } from 'lucide-react';
 import RoleBadge from "@/components/ui/RoleBadge";
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
