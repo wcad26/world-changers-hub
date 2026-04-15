@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,11 @@ const RegionalEvents: React.FC = () => {
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
+  const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
+    const now = new Date();
+    const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    return { dateRange: { from, to: now }, quickDateRange: '1-year' };
+  });
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
@@ -227,32 +233,49 @@ const RegionalEvents: React.FC = () => {
     name: "speakers",
   });
 
-  const filteredEvents = React.useMemo(() => {
+  // Period-filtered events used for both KPIs and table
+  const periodFilteredEvents = useMemo(() => {
     if (!events) return [];
+    return events.filter(e => {
+      const d = new Date(e.start_datetime);
+      if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
+      if (periodFilters.dateRange.to) {
+        const endOfDay = new Date(periodFilters.dateRange.to);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (d > endOfDay) return false;
+      }
+      return true;
+    });
+  }, [events, periodFilters]);
+
+  const filteredEvents = useMemo(() => {
     const now = new Date();
-    return events.filter(event => {
-      // Search filter
+    return periodFilteredEvents.filter(event => {
       const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
       if (!matchesSearch) return false;
 
-      // Event type filter
       if (eventTypeFilter === 'regional' && (event.dcg_id || event.is_special)) return false;
       if (eventTypeFilter === 'dcg' && !event.dcg_id) return false;
       if (eventTypeFilter === 'special' && !event.is_special) return false;
 
-      // Time filter
       if (timeFilter === 'upcoming' && new Date(event.start_datetime) < now) return false;
       if (timeFilter === 'past' && new Date(event.start_datetime) >= now) return false;
 
       return true;
     });
-  }, [events, searchTerm, eventTypeFilter, timeFilter]);
+  }, [periodFilteredEvents, searchTerm, eventTypeFilter, timeFilter]);
 
   // Analytics calculations using real data
-  const analyticsData = React.useMemo(() => {
-    if (!events || !attendanceData) return {
+  const getEventAttendance = (eventId: string): number => {
+    if (!attendanceData) return 0;
+    const matched = attendanceData.filter(a => a.source_event_id === eventId);
+    return matched.reduce((sum, a) => sum + a.total_present, 0);
+  };
+
+  const analyticsData = useMemo(() => {
+    if (!periodFilteredEvents || !attendanceData) return {
       total: { count: 0, avgAttendance: 0, growth: 0 },
       regional: { count: 0, avgAttendance: 0, growth: 0 },
       dcg: { count: 0, avgAttendance: 0, growth: 0 },
@@ -265,35 +288,32 @@ const RegionalEvents: React.FC = () => {
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    const regionalEvents = events.filter(e => !e.dcg_id && !e.is_special);
-    const dcgEvents = events.filter(e => !!e.dcg_id);
-    const specialEvents = events.filter(e => e.is_special);
+    const regionalEvents = periodFilteredEvents.filter(e => !e.dcg_id && !e.is_special);
+    const dcgEvents = periodFilteredEvents.filter(e => !!e.dcg_id);
+    const specialEvents = periodFilteredEvents.filter(e => e.is_special);
 
-    const getAvgAttendance = (eventList: typeof events) => {
+    const getAvgAttendance = (eventList: typeof periodFilteredEvents) => {
       const eventIds = eventList.map(e => e.id);
       const matched = attendanceData.filter(a => a.source_event_id && eventIds.includes(a.source_event_id));
       return matched.length > 0 ? Math.round(matched.reduce((s, a) => s + a.total_present, 0) / matched.length) : 0;
     };
 
-    const getGrowth = (eventList: typeof events) => {
+    const getGrowth = (eventList: typeof periodFilteredEvents) => {
       const eventIds = eventList.map(e => e.id);
-      const thisMonthAtt = attendanceData
-        .filter(a => {
-          const d = new Date(a.event_date);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear && a.source_event_id && eventIds.includes(a.source_event_id);
-        });
-      const lastMonthAtt = attendanceData
-        .filter(a => {
-          const d = new Date(a.event_date);
-          return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && a.source_event_id && eventIds.includes(a.source_event_id);
-        });
+      const thisMonthAtt = attendanceData.filter(a => {
+        const d = new Date(a.event_date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear && a.source_event_id && eventIds.includes(a.source_event_id);
+      });
+      const lastMonthAtt = attendanceData.filter(a => {
+        const d = new Date(a.event_date);
+        return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && a.source_event_id && eventIds.includes(a.source_event_id);
+      });
       const thisAvg = thisMonthAtt.length > 0 ? thisMonthAtt.reduce((s, a) => s + a.total_present, 0) / thisMonthAtt.length : 0;
       const lastAvg = lastMonthAtt.length > 0 ? lastMonthAtt.reduce((s, a) => s + a.total_present, 0) / lastMonthAtt.length : 0;
       return lastAvg > 0 ? Math.round(((thisAvg - lastAvg) / lastAvg) * 100) : 0;
     };
 
-    const totalAvg = attendanceData.length > 0 ? Math.round(attendanceData.reduce((s, a) => s + a.total_present, 0) / attendanceData.length) : 0;
-    // Total growth uses all attendance data
+    const totalAvg = getAvgAttendance(periodFilteredEvents);
     const thisMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === currentMonth && d.getFullYear() === currentYear; });
     const lastMonthAll = attendanceData.filter(a => { const d = new Date(a.event_date); return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear; });
     const thisAllAvg = thisMonthAll.length > 0 ? thisMonthAll.reduce((s, a) => s + a.total_present, 0) / thisMonthAll.length : 0;
@@ -301,12 +321,12 @@ const RegionalEvents: React.FC = () => {
     const totalGrowth = lastAllAvg > 0 ? Math.round(((thisAllAvg - lastAllAvg) / lastAllAvg) * 100) : 0;
 
     return {
-      total: { count: events.length, avgAttendance: totalAvg, growth: totalGrowth },
+      total: { count: periodFilteredEvents.length, avgAttendance: totalAvg, growth: totalGrowth },
       regional: { count: regionalEvents.length, avgAttendance: getAvgAttendance(regionalEvents), growth: getGrowth(regionalEvents) },
       dcg: { count: dcgEvents.length, avgAttendance: getAvgAttendance(dcgEvents), growth: getGrowth(dcgEvents) },
       special: { count: specialEvents.length, avgAttendance: getAvgAttendance(specialEvents), growth: getGrowth(specialEvents) },
     };
-  }, [events, attendanceData]);
+  }, [periodFilteredEvents, attendanceData]);
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
     try {
@@ -1500,8 +1520,9 @@ const RegionalEvents: React.FC = () => {
     }
     return eventList.map((event) => {
       const now = new Date();
-      const eventStatus = event.status === 'Cancelled' ? 'Cancelled' : new Date(event.start_datetime) >= now ? 'Upcoming' : 'Completed';
+      const isFutureEvent = new Date(event.start_datetime) >= now;
       const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
+      const attendance = getEventAttendance(event.id);
       return (
       <TableRow key={event.id}>
         <TableCell className="font-medium">{event.name}</TableCell>
@@ -1513,12 +1534,8 @@ const RegionalEvents: React.FC = () => {
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{event.location_name}</TableCell>
-        <TableCell>
-          <Badge variant={eventStatus === 'Upcoming' ? 'default' : eventStatus === 'Completed' ? 'secondary' : 'destructive'} className="text-xs">
-            {eventStatus}
-          </Badge>
-        </TableCell>
-        <TableCell>{event.capacity ?? 'N/A'}</TableCell>
+        <TableCell className="text-center">{event.capacity ?? 'N/A'}</TableCell>
+        <TableCell className="text-center">{isFutureEvent ? '-' : attendance}</TableCell>
         <TableCell>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1592,11 +1609,13 @@ const RegionalEvents: React.FC = () => {
       );
     });
   };
-  };
 
   return (
     <>
       <div className="space-y-6">
+        {/* Period Filter */}
+        <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} />
+
         {/* KPI Cards */}
         <div className="grid gap-4 md:grid-cols-4">
           {[
@@ -1689,9 +1708,9 @@ const RegionalEvents: React.FC = () => {
                     <TableHead>Date</TableHead>
                     <TableHead>Time</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Capacity</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="text-center">Capacity</TableHead>
+                    <TableHead className="text-center">Attendance</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
