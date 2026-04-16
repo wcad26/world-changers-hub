@@ -167,23 +167,23 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       const processedData = data?.map(event => {
         const records = event.attendance_records || [];
         
-        const childrenPresent = records.filter(r => r.is_present && isChild(r)).length;
-        const childrenAbsent = records.filter(r => !r.is_present && isChild(r)).length;
+        const childrenPresent = records.filter(r => r.is_present && checkIsChild(r)).length;
+        const childrenAbsent = records.filter(r => !r.is_present && checkIsChild(r)).length;
         
         const membersPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'member' && !isChild(r)
+          r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
         
         const visitorsPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
+          r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
         
         const membersAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'member' && !isChild(r)
+          !r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
         
         const visitorsAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
+          !r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
         
         return {
