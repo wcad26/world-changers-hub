@@ -284,6 +284,8 @@ export const useAuth = () => {
     );
   };
 
+  const hasRegionalPortalAccess = hasRole('super_admin') || hasRole('regional_admin') || userRegionalRoles.length > 0;
+
   const isSuperAdmin = () => hasRole('super_admin');
   const isRegionalAdmin = () => hasRole('regional_admin');
   const isMember = () => hasRole('member');
@@ -381,6 +383,7 @@ export const useAuth = () => {
     loading,
     hasRole,
     hasAnyRole,
+    hasRegionalPortalAccess,
     getAvailablePortals,
     canAccessPortal,
     hasRegionalPermission,
