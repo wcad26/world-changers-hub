@@ -1,56 +1,88 @@
 
 
-## Plan: Rename Menu Items, Add Discipleship Management Page, Rebuild Access Management
+## Plan: Rebuild Regional Admin Dashboard — Single-Page Overview
 
-### 1. Rename sidebar menu items in `EnhancedRegionalAdminLayout.tsx`
+Complete rewrite of `src/pages/admin/regional/Dashboard.tsx` to replace the tabbed layout with a single scrollable dashboard providing a global view of all management areas.
 
-| Current | New |
-|---------|-----|
-| Members | Member Management |
-| Events | Event Management |
-| Certificates | Certificate Management |
-| User Roles | Access Management |
+### Layout Structure
 
-- Change the "User Roles" icon from `Shield` to `KeyRound` (better reflects access management)
-- Add new menu item **"Discipleship Management"** after "Member Management" with `Heart` icon, path `/admin/regional/discipleship`, permission `members_view`
+```text
+┌─────────────────────────────────────────────────────┐
+│ STICKY FILTER BAR                                   │
+│ [1M][3M][6M][1Y][Custom]  [Regional▾/DCG]  [🔍]    │
+├─────────────────────────────────────────────────────┤
+│ KPI ROW (6 cards)                                   │
+│ Members | Children | Discipleship | Regional Events │
+│         | DCG Events | Attendance Target            │
+├─────────────────────────────────────────────────────┤
+│ ATTENDANCE TREND CHART (full width)                 │
+│ Lines: Members, Regular Visitors, Children          │
+│ Horizontal dashed line = attendance target          │
+├─────────────────┬───────────────────────────────────┤
+│ GENDER DIST.    │  TITHERS & INCOME                 │
+│ Bar Chart (2/3) │  Card (1/3)                       │
+│ Adult F, Young F│  Total tithers count              │
+│ Adult M, Young M│  Income growth indicator          │
+│ Unknown (cond.) │                                   │
+└─────────────────┴───────────────────────────────────┘
+```
 
-### 2. Update route title map in `AdminLayout.tsx`
+### 1. Sticky Filter Bar (top, fixed on scroll)
 
-- `/admin/regional/user-roles` → `'Access Management'`
-- Add `/admin/regional/discipleship` → `'Discipleship Management'`
+- **Period filter**: 1M, 3M, 6M, 1Y, Custom (reuse `PeriodFilter` component pattern)
+- **Event type dropdown**: "All Events", "Regional Events", "DCG Events"
+- **Search input**: filters events by keyword (event name)
+- Wrapped in `sticky top-0 z-10 bg-background/95 backdrop-blur-sm` to stay fixed during scroll
 
-### 3. Update `UserRoles.tsx` page content
+### 2. KPI Cards (6 cards, glassmorphism style)
 
-- Change all references from "User Roles" / "Role Management" to "Access Management" where appropriate (section titles, descriptions)
-- Update icon usage from `Shield` to `KeyRound` where it represents the page identity
+| Card | Value | Sub-metric |
+|------|-------|------------|
+| Members | members + regular visitors count | Active %, 30-day growth |
+| Children | children count | Active %, 30-day growth |
+| Discipleship Success Rate | % (became_member milestone) | "Reached membership milestone" |
+| Regional Events | count of non-DCG/non-special events | Avg attendees, attendance growth |
+| DCG Events | count of DCG events | Avg attendees, attendance growth |
+| Attendance Target | % of capacity reached | Based on sum of regional event `attendance_target` vs actual attendance |
 
-### 4. Create new page `src/pages/admin/regional/Discipleship.tsx`
+### 3. Attendance Trend Chart (full width, Recharts)
 
-A standalone page with:
-- **KPI Cards** (4 cards, glassmorphism style):
-  - Total Relationships (count all)
-  - Active (count active, with growth % from last 30 days)
-  - Completed (count completed)
-  - Success Rate (% of relationships where disciple reached `became_member` milestone)
-- **Main content section** — the discipleship table currently in Members.tsx (search, status filter, assign button, relationships table, manage dialog), rebuilt with glassmorphism styling matching other pages
-- Uses `useDiscipleshipRelationships` hook and existing `AssignDiscipleDialog` / `ManageDiscipleshipDialog`
+- **Lines**: Members (blue), Regular Visitors (green), Children (pink)
+- **Horizontal reference line**: attendance target from `member_targets` or event capacity
+- Uses `useAttendanceHistoryWithMemberTypes` data, filtered by period and event type
+- Smooth curves (`type="monotone"`), modern styling with gradients
+- Responsive container, clean axis formatting
 
-### 5. Remove discipleship from `Members.tsx`
+### 4. Bottom Row: Gender Distribution + Tithers Card
 
-- Remove the `Tabs` wrapper — render member directory content directly (no tabs needed anymore)
-- Remove all discipleship-related state, imports, and the discipleship `TabsContent`
-- Keep everything else (KPI cards, member table, register/edit dialogs, delete dialog)
+**Gender Distribution Bar Chart (2/3 width)**:
+- Query members' `gender` and `date_of_birth` from profiles
+- Categories: Adult Females (≥16, female), Young Females (<16, female), Adult Males (≥16, male), Young Males (<16, male)
+- "Unknown" bar only if count > 0
+- Vertical bar chart with distinct colors
 
-### 6. Add route in `App.tsx`
+**Tithers & Income Card (1/3 width)**:
+- Count distinct members who have tithe transactions in the period
+- Income growth: compare current period income to previous equivalent period
+- Glassmorphism card matching other KPI cards
 
-- Import the new `RegionalDiscipleship` page
-- Add route: `<Route path="discipleship" element={<RegionalDiscipleship />} />`
+### Data Sources
+
+- `useMembers(regionId)` — member/visitor/child categorization
+- `useAttendanceHistoryWithMemberTypes(regionId)` — attendance trend with member type breakdown
+- `useDiscipleshipRelationships(regionId)` + `discipleship_progress` — success rate
+- `useRegionalEvents()` — event counts and capacity/attendance_target
+- `useFinancialSummary(filters)` + `useFinancialTransactions(filters)` — tithe count, income growth
+- `useCurrentMemberTarget()` — attendance target line
+- Activity query (reuse pattern from `MemberKPICards`) — active %
 
 ### Files Modified
-- `src/components/admin/EnhancedRegionalAdminLayout.tsx` — rename items, add discipleship, change icon
-- `src/components/admin/AdminLayout.tsx` — update route title map
-- `src/pages/admin/regional/UserRoles.tsx` — update page content to "Access Management"
-- `src/pages/admin/regional/Members.tsx` — remove discipleship tab and tabs wrapper
-- `src/pages/admin/regional/Discipleship.tsx` — **new file**, standalone discipleship page with KPIs
-- `src/App.tsx` — add discipleship route
+- `src/pages/admin/regional/Dashboard.tsx` — **full rewrite**, no tabs, single-page dashboard with all sections
+
+### Technical Notes
+- Recharts `LineChart`, `BarChart`, `ReferenceLine` for charts
+- All computations filtered by period filter state and event type dropdown
+- Gender query uses existing `profiles.gender` and `profiles.date_of_birth` fields
+- Tithe transactions identified by `financial_transaction_categories.name === 'Tithes'`
+- Mobile responsive: KPI grid collapses to 2 cols, charts stack vertically
 
