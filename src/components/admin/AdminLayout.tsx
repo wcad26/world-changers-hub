@@ -71,8 +71,10 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
     return routeTitleMap[location.pathname] || 'Admin Dashboard';
   };
 
+  const isDashboard = location.pathname === '/admin/regional/dashboard';
+
   return (
-    <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
+    <div className="h-svh flex w-full overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar collapsible="icon" className="border-r border-gray-200 dark:border-gray-800">
         <SidebarHeader className="p-4">
           <div className="flex items-center justify-between w-full">
