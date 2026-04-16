@@ -14,7 +14,7 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   allowedRoles,
   redirectTo = '/portal-selector'
 }) => {
-  const { user, loading, hasAnyRole } = useAuth();
+  const { user, loading, hasAnyRole, hasRegionalPortalAccess } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -29,11 +29,13 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
-  if (!hasAnyRole(allowedRoles)) {
-    return <Navigate to="/unauthorized" replace />;
+  // If regional_admin is in allowedRoles, also accept users with regional role assignments
+  const hasRegionalInAllowed = allowedRoles.includes('regional_admin');
+  if (hasAnyRole(allowedRoles) || (hasRegionalInAllowed && hasRegionalPortalAccess)) {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  return <Navigate to="/unauthorized" replace />;
 };
 
 export default MultiRoleProtectedRoute;
