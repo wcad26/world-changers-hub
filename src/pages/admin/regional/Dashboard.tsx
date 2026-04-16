@@ -180,18 +180,25 @@ const RegionalDashboard: React.FC = () => {
     const newChildrenPrev = childrenList.filter(m => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
     const childGrowth = newChildrenPrev > 0 ? Math.round(((newChildren30 - newChildrenPrev) / newChildrenPrev) * 100) : newChildren30 > 0 ? 100 : 0;
 
-    // Filter events by period and type
-    const filteredEvents = (events || []).filter(e => {
+    // Filter events by period, search, and type
+    const periodFilteredEvents = (events || []).filter(e => {
       if (dateRange.from && new Date(e.start_datetime) < dateRange.from) return false;
       if (dateRange.to && new Date(e.start_datetime) > dateRange.to) return false;
       if (searchQuery && !e.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
 
+    // Apply eventType filter to events
+    const filteredEvents = periodFilteredEvents.filter(e => {
+      if (eventType === "regional") return !e.dcg_id && !e.is_special;
+      if (eventType === "dcg") return !!e.dcg_id;
+      return true;
+    });
+
     const regionalEvents = filteredEvents.filter(e => !e.dcg_id && !e.is_special);
     const dcgEvents = filteredEvents.filter(e => !!e.dcg_id);
 
-    // Filter attendance data
+    // Filter attendance data — apply ALL filters uniformly
     const filteredAttendance = (attendanceData || []).filter(a => {
       if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
       if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
@@ -201,23 +208,15 @@ const RegionalDashboard: React.FC = () => {
       return true;
     });
 
-    const regionalAttendance = (attendanceData || []).filter(a => {
-      if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
-      if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
-      return !a.dcg_id;
-    });
-    const dcgAttendance = (attendanceData || []).filter(a => {
-      if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
-      if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
-      return !!a.dcg_id;
-    });
+    const regionalAttendance = filteredAttendance.filter(a => !a.dcg_id);
+    const dcgAttendance = filteredAttendance.filter(a => !!a.dcg_id);
 
     const avgRegionalAttendees = regionalAttendance.length > 0
       ? Math.round(regionalAttendance.reduce((s, a) => s + a.total_present, 0) / regionalAttendance.length) : 0;
     const avgDcgAttendees = dcgAttendance.length > 0
       ? Math.round(dcgAttendance.reduce((s, a) => s + a.total_present, 0) / dcgAttendance.length) : 0;
 
-    // Attendance target %
+    // Attendance target % — use filtered attendance and events
     const totalCapacity = regionalEvents.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
     const totalActual = regionalAttendance.reduce((s, a) => s + a.total_present, 0);
     const attendanceTargetPct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;

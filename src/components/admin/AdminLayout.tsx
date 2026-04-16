@@ -71,8 +71,10 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
     return routeTitleMap[location.pathname] || 'Admin Dashboard';
   };
 
+  const isDashboard = location.pathname === '/admin/regional/dashboard';
+
   return (
-    <div className="min-h-screen flex w-full bg-gray-50 dark:bg-gray-950">
+    <div className="h-svh flex w-full overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Sidebar collapsible="icon" className="border-r border-gray-200 dark:border-gray-800">
         <SidebarHeader className="p-4">
           <div className="flex items-center justify-between w-full">
@@ -142,8 +144,8 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
         </SidebarFooter>
       </Sidebar>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 bg-white dark:bg-gray-900 shadow z-20">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <header className="shrink-0 bg-white dark:bg-gray-900 shadow z-20">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -160,8 +162,8 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
           </div>
         </header>
         <main className={cn(
-          "flex-1 h-[calc(100vh-56px)]",
-          location.pathname === '/admin/regional/dashboard'
+          "flex-1 min-h-0",
+          isDashboard
             ? "overflow-hidden p-0"
             : "overflow-y-auto p-4 md:p-6"
         )}>
