@@ -118,6 +118,7 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           attendance_records!inner (
             is_present,
             members!inner (
+              id,
               member_type,
               profiles (
                 date_of_birth
