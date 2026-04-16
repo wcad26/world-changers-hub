@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { 
   SidebarProvider, 
   Sidebar, 
