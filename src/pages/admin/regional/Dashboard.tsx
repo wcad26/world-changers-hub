@@ -28,7 +28,6 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, BarChart, Bar, Legend, Area, AreaChart, Cell
 } from "recharts";
-import React from "react";
 
 const CHILD_AGE = 16;
 
@@ -99,7 +98,7 @@ const RegionalDashboard: React.FC = () => {
         .select('member_id, related_member_id')
         .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
       if (error) throw error;
-      return (data || []) as { member_id: string; related_member_id: string }[];
+      return (data || []) as unknown as { member_id: string; related_member_id: string }[];
     },
     enabled: memberIds.length > 0,
   });
