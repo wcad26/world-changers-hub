@@ -261,7 +261,7 @@ const RegionalDashboard: React.FC = () => {
 
   const GrowthIndicator = ({ value }: { value: number }) => (
     <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium",
-      value > 0 ? "text-emerald-500" : value < 0 ? "text-red-500" : "text-muted-foreground"
+      value > 0 ? "text-chart-2" : value < 0 ? "text-destructive" : "text-muted-foreground"
     )}>
       {value > 0 ? <TrendingUp className="h-3 w-3" /> : value < 0 ? <TrendingDown className="h-3 w-3" /> : null}
       {value > 0 ? "+" : ""}{value}%
@@ -477,7 +477,7 @@ const RegionalDashboard: React.FC = () => {
 
           <div className="border-t border-border/40 pt-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-chart-2/10 text-chart-2">
                 <DollarSign className="h-5 w-5" />
               </div>
               <span className="text-sm font-medium text-muted-foreground">Total Income</span>
