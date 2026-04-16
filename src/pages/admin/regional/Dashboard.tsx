@@ -8,7 +8,6 @@ import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
-import { useMemberRelationships } from "@/hooks/useMemberRelationships";
 import { isChildMember } from "@/utils/childUtils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ReferenceLine, BarChart, Bar, Legend, Area, AreaChart, Cell
 } from "recharts";
+import React from "react";
 
 const CHILD_AGE = 16;
 
@@ -87,7 +87,22 @@ const RegionalDashboard: React.FC = () => {
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
-  const { data: memberRelationships } = useMemberRelationships(userRegion?.id);
+
+  // Fetch member relationships for child detection
+  const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['dashboard-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return (data || []) as { member_id: string; related_member_id: string }[];
+    },
+    enabled: memberIds.length > 0,
+  });
 
   // Fetch special event IDs to exclude special event visitors
   const { data: specialEventIds } = useQuery({
