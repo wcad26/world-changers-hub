@@ -1,67 +1,55 @@
-## Plan: Dashboard Brand Colors, Filter Fixes, Tithers Card Upgrade, Menu Restructuring & Events KPI
 
-### Summary
+Goal: make the dashboard filter section permanently fixed while only the dashboard content below it scrolls.
 
-Fix dashboard chart colors to use WCA brand palette, exclude special event visitors, make filter bar truly sticky, restructure the Tithers/Income card into a 4-quadrant layout, rename and restructure menu items, and add Attendance Target KPI to Events page.
+What I found:
+- The selected filter section is hardcoded in `src/pages/admin/regional/Dashboard.tsx`.
+- Right now it sits inside the same scrolling content flow as the KPI cards/charts.
+- `sticky` alone is not enough here because the dashboard page is still being rendered inside the `main` scroll container from `src/components/admin/AdminLayout.tsx`.
 
-### 1. Define Chart CSS Variables (`src/index.css`)
+Implementation plan:
 
-Add `--chart-1` through `--chart-5` in both light and dark themes using WCA brand colors:
+1. Update `src/components/admin/AdminLayout.tsx`
+- Make the regional dashboard route use a route-specific `<main>` layout.
+- For `/admin/regional/dashboard`, switch `<main>` from page-scrolling to `overflow-hidden` so the page itself can own its internal scroll behavior.
+- Keep current scroll behavior unchanged for all other admin pages.
 
-- `--chart-1`: WCA purple (#773b6e) — Members
-- `--chart-2`: WCA teal (#35adaf) — Regular Visitors
-- `--chart-3`: WCA violet (#542a8f) — Adult Males
-- `--chart-4`: Soft pink (derived) — Children
-- `--chart-5`: Muted gray — Unknown
+2. Rebuild the top-level layout in `src/pages/admin/regional/Dashboard.tsx`
+- Replace the current single scrolling column with a two-part shell:
+```text
+Dashboard shell
+├─ Fixed filter bar (never scrolls)
+└─ Scrollable content area (KPIs, charts, cards)
+```
+- Use a full-height flex layout such as:
+  - outer wrapper: `h-full min-h-0 flex flex-col`
+  - filter bar: `shrink-0`
+  - content area: `flex-1 min-h-0 overflow-y-auto`
 
-### 2. Dashboard (`src/pages/admin/regional/Dashboard.tsx`)
+3. Move the filter bar out of the scrolling section
+- Remove reliance on `sticky` for the dashboard filter itself.
+- Keep the filter row in a dedicated top section with its own background, border, spacing, and z-index.
+- Ensure all dashboard sections start below it and scroll independently underneath.
 
-**Brand colors for charts**: Replace any hardcoded black/default colors with the CSS var-based brand colors. Update area chart gradients and bar chart fills to use the new `--chart-*` vars.
+4. Preserve spacing and visual alignment
+- Move dashboard padding from the old shared wrapper into:
+  - the fixed filter section
+  - the inner scrollable content container
+- Keep the glassmorphism styling and brand appearance consistent with the rebuilt pages.
 
-**Exclude special event visitors**: Replicate the `MemberKPICards` logic — visitors whose `rated_event_id` maps to a special event are excluded from:
+5. Protect interactions
+- Ensure the custom date popover still opens above charts/cards.
+- Keep filters responsive on wrap without causing the fixed area to collapse or overlap content.
 
-- Members KPI count
-- Children KPI count
-- Attendance trend
-- Gender & Age Distribution (remember the criteria for Young Male and Young Female are our criteria for Children (age and relationship basis) but now separated into male and female. the adult male and adult female are the members and regular visitors that are not children.  
-This requires fetching special event IDs (events where `is_special = true`) and filtering them out.
+6. QA after implementation
+- Confirm the filter section remains visible at all times while scrolling the dashboard.
+- Confirm only KPI/cards/charts scroll.
+- Verify behavior on the current desktop viewport and a narrower tablet/mobile width.
 
-**Sticky filter bar**: Update the sticky div to use `sticky top-0 z-20` with proper background to ensure it stays fixed. Add `overflow-y-auto` to the parent if needed.
+Files to modify:
+- `src/components/admin/AdminLayout.tsx`
+- `src/pages/admin/regional/Dashboard.tsx`
 
-**Income growth as percentage**: Calculate income growth by comparing current period income to the equivalent previous period income, display as `+X%` or `-X%` instead of an amount.
-
-**Tithers card → 4-quadrant card**: Restructure the 1/3 card into a 2x2 grid with cross-line separators:
-
-- **Top-left**: Tithers (unique tithe payers count)
-- **Top-right**: Givers (unique individuals who gave any income transaction)
-- **Bottom-left**: Income Growth (% comparing current vs previous period)
-- **Bottom-right**: Fundraising Target (% of total raised / total goal across all campaigns)
-
-### 3. Menu Restructuring (`src/components/admin/RegionalAdminLayout.tsx`)
-
-- Remove "Fundraising" from menu items (will be accessed from Finance page)
-- Rename "Finances" → "Finance Management"
-- Rename "Communication" → "Communication Mgmt"
-
-### 4. Update route title map (`src/components/admin/AdminLayout.tsx`)
-
-- `/admin/regional/finances` → "Finance Management"
-- `/admin/regional/communication` → "Communication Mgmt"
-- Remove fundraising route title
-
-### 5. Finance page integration (`src/pages/admin/regional/Finances.tsx`)
-
-Add a "Fundraising" tab or section link within the Finance Management page so fundraising is accessible from there.
-
-### 6. Events page Attendance Target KPI (`src/pages/admin/regional/Events.tsx`)
-
-Add a 5th KPI card "Attendance Target" to the Events page KPI grid (change from `md:grid-cols-4` to `md:grid-cols-5`). Calculate attendance target % the same way as the dashboard: sum of actual attendance / sum of regional event capacity.
-
-### Files Modified
-
-- `src/index.css` — Add chart color CSS variables
-- `src/pages/admin/regional/Dashboard.tsx` — Brand colors, exclude special visitors, sticky fix, income growth %, 4-quadrant tithers card, fundraising target
-- `src/components/admin/RegionalAdminLayout.tsx` — Rename menu items, remove Fundraising
-- `src/components/admin/AdminLayout.tsx` — Update route title map
-- `src/pages/admin/regional/Finances.tsx` — Add Fundraising access
-- `src/pages/admin/regional/Events.tsx` — Add Attendance Target KPI card
+Technical details:
+- This should be solved by layout separation, not by increasing `sticky`/`z-index`.
+- The robust fix is: dashboard owns its own internal scroll region; the filter bar is rendered outside that region.
+- No dashboard data logic needs to change for this request.
