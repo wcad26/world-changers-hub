@@ -61,21 +61,8 @@ const RegionSpecificAuth = () => {
 
   const checkRegionalAdminRole = async (userId: string, regionId: string): Promise<boolean> => {
     try {
-      console.log(`RegionSpecificAuth: Checking regional admin role for user ${userId} in region ${regionId}`);
+      console.log(`RegionSpecificAuth: Checking regional access for user ${userId} in region ${regionId}`);
       
-      // Check if user has regional_admin role and belongs to this region
-      const { data: userRoles, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role, is_active, region_id')
-        .eq('user_id', userId)
-        .eq('role', 'regional_admin')
-        .eq('status', 'active');
-
-      if (roleError) {
-        console.error('RegionSpecificAuth: Role check error:', roleError);
-        return false;
-      }
-
       // Check if user's profile belongs to this region
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -88,11 +75,47 @@ const RegionSpecificAuth = () => {
         return false;
       }
 
-      const hasRole = userRoles && userRoles.length > 0;
       const belongsToRegion = profile?.region_id === regionId;
+      if (!belongsToRegion) {
+        console.log('RegionSpecificAuth: User does not belong to this region', { userRegion: profile?.region_id, targetRegion: regionId });
+        return false;
+      }
 
-      console.log('RegionSpecificAuth: Role check result:', { hasRole, belongsToRegion, userRegion: profile?.region_id, targetRegion: regionId });
-      return hasRole && belongsToRegion;
+      // Check 1: Does user have super_admin or regional_admin role?
+      const { data: userRoles, error: roleError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .in('role', ['super_admin', 'regional_admin'])
+        .eq('is_active', true);
+
+      if (roleError) {
+        console.error('RegionSpecificAuth: Role check error:', roleError);
+      }
+
+      const hasBaseRole = userRoles && userRoles.length > 0;
+      if (hasBaseRole) {
+        console.log('RegionSpecificAuth: User has base admin role, granting access');
+        return true;
+      }
+
+      // Check 2: Does user have any active regional_user_roles for this region?
+      const { data: regionalRoles, error: regionalRoleError } = await supabase
+        .from('regional_user_roles')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('region_id', regionId)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (regionalRoleError) {
+        console.error('RegionSpecificAuth: Regional role check error:', regionalRoleError);
+        return false;
+      }
+
+      const hasRegionalRole = regionalRoles && regionalRoles.length > 0;
+      console.log('RegionSpecificAuth: Role check result:', { hasBaseRole, hasRegionalRole });
+      return hasRegionalRole;
     } catch (error) {
       console.error('RegionSpecificAuth: Role check exception:', error);
       return false;
