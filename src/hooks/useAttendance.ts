@@ -2,7 +2,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { format, differenceInYears } from 'date-fns';
+import { format } from 'date-fns';
+import { isChildMember } from '@/utils/childUtils';
 
 type AttendanceEvent = Database['public']['Tables']['attendance_events']['Row'];
 type AttendanceRecordInsert = Database['public']['Tables']['attendance_records']['Insert'];
@@ -117,6 +118,7 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           attendance_records!inner (
             is_present,
             members!inner (
+              id,
               member_type,
               profiles (
                 date_of_birth
@@ -137,33 +139,52 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       
       if (error) throw error;
 
-      const isChild = (record: any) => {
+      // Collect unique member IDs from attendance records
+      const memberIds = new Set<string>();
+      data?.forEach(event => {
+        (event.attendance_records || []).forEach((r: any) => {
+          if (r.members?.id) memberIds.add(r.members.id);
+        });
+      });
+
+      // Fetch relationships for these members
+      let relationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (memberIds.size > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${Array.from(memberIds).join(',')}),related_member_id.in.(${Array.from(memberIds).join(',')})`);
+        relationships = (relData as any[]) || [];
+      }
+
+      const checkIsChild = (record: any) => {
         const dob = record.members?.profiles?.date_of_birth;
-        if (!dob) return false;
-        return differenceInYears(new Date(), new Date(dob)) < 16;
+        const memberId = record.members?.id;
+        if (!dob || !memberId) return false;
+        return isChildMember(dob, memberId, relationships);
       };
       
       // Process the data to get counts by member type, separating children
       const processedData = data?.map(event => {
         const records = event.attendance_records || [];
         
-        const childrenPresent = records.filter(r => r.is_present && isChild(r)).length;
-        const childrenAbsent = records.filter(r => !r.is_present && isChild(r)).length;
+        const childrenPresent = records.filter(r => r.is_present && checkIsChild(r)).length;
+        const childrenAbsent = records.filter(r => !r.is_present && checkIsChild(r)).length;
         
         const membersPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'member' && !isChild(r)
+          r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
         
         const visitorsPresent = records.filter(r => 
-          r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
+          r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
         
         const membersAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'member' && !isChild(r)
+          !r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
         
         const visitorsAbsent = records.filter(r => 
-          !r.is_present && r.members?.member_type === 'visitor' && !isChild(r)
+          !r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
         
         return {
