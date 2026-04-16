@@ -1,88 +1,67 @@
+## Plan: Dashboard Brand Colors, Filter Fixes, Tithers Card Upgrade, Menu Restructuring & Events KPI
 
+### Summary
 
-## Plan: Rebuild Regional Admin Dashboard — Single-Page Overview
+Fix dashboard chart colors to use WCA brand palette, exclude special event visitors, make filter bar truly sticky, restructure the Tithers/Income card into a 4-quadrant layout, rename and restructure menu items, and add Attendance Target KPI to Events page.
 
-Complete rewrite of `src/pages/admin/regional/Dashboard.tsx` to replace the tabbed layout with a single scrollable dashboard providing a global view of all management areas.
+### 1. Define Chart CSS Variables (`src/index.css`)
 
-### Layout Structure
+Add `--chart-1` through `--chart-5` in both light and dark themes using WCA brand colors:
 
-```text
-┌─────────────────────────────────────────────────────┐
-│ STICKY FILTER BAR                                   │
-│ [1M][3M][6M][1Y][Custom]  [Regional▾/DCG]  [🔍]    │
-├─────────────────────────────────────────────────────┤
-│ KPI ROW (6 cards)                                   │
-│ Members | Children | Discipleship | Regional Events │
-│         | DCG Events | Attendance Target            │
-├─────────────────────────────────────────────────────┤
-│ ATTENDANCE TREND CHART (full width)                 │
-│ Lines: Members, Regular Visitors, Children          │
-│ Horizontal dashed line = attendance target          │
-├─────────────────┬───────────────────────────────────┤
-│ GENDER DIST.    │  TITHERS & INCOME                 │
-│ Bar Chart (2/3) │  Card (1/3)                       │
-│ Adult F, Young F│  Total tithers count              │
-│ Adult M, Young M│  Income growth indicator          │
-│ Unknown (cond.) │                                   │
-└─────────────────┴───────────────────────────────────┘
-```
+- `--chart-1`: WCA purple (#773b6e) — Members
+- `--chart-2`: WCA teal (#35adaf) — Regular Visitors
+- `--chart-3`: WCA violet (#542a8f) — Adult Males
+- `--chart-4`: Soft pink (derived) — Children
+- `--chart-5`: Muted gray — Unknown
 
-### 1. Sticky Filter Bar (top, fixed on scroll)
+### 2. Dashboard (`src/pages/admin/regional/Dashboard.tsx`)
 
-- **Period filter**: 1M, 3M, 6M, 1Y, Custom (reuse `PeriodFilter` component pattern)
-- **Event type dropdown**: "All Events", "Regional Events", "DCG Events"
-- **Search input**: filters events by keyword (event name)
-- Wrapped in `sticky top-0 z-10 bg-background/95 backdrop-blur-sm` to stay fixed during scroll
+**Brand colors for charts**: Replace any hardcoded black/default colors with the CSS var-based brand colors. Update area chart gradients and bar chart fills to use the new `--chart-*` vars.
 
-### 2. KPI Cards (6 cards, glassmorphism style)
+**Exclude special event visitors**: Replicate the `MemberKPICards` logic — visitors whose `rated_event_id` maps to a special event are excluded from:
 
-| Card | Value | Sub-metric |
-|------|-------|------------|
-| Members | members + regular visitors count | Active %, 30-day growth |
-| Children | children count | Active %, 30-day growth |
-| Discipleship Success Rate | % (became_member milestone) | "Reached membership milestone" |
-| Regional Events | count of non-DCG/non-special events | Avg attendees, attendance growth |
-| DCG Events | count of DCG events | Avg attendees, attendance growth |
-| Attendance Target | % of capacity reached | Based on sum of regional event `attendance_target` vs actual attendance |
+- Members KPI count
+- Children KPI count
+- Attendance trend
+- Gender & Age Distribution (remember the criteria for Young Male and Young Female are our criteria for Children (age and relationship basis) but now separated into male and female. the adult male and adult female are the members and regular visitors that are not children.  
+This requires fetching special event IDs (events where `is_special = true`) and filtering them out.
 
-### 3. Attendance Trend Chart (full width, Recharts)
+**Sticky filter bar**: Update the sticky div to use `sticky top-0 z-20` with proper background to ensure it stays fixed. Add `overflow-y-auto` to the parent if needed.
 
-- **Lines**: Members (blue), Regular Visitors (green), Children (pink)
-- **Horizontal reference line**: attendance target from `member_targets` or event capacity
-- Uses `useAttendanceHistoryWithMemberTypes` data, filtered by period and event type
-- Smooth curves (`type="monotone"`), modern styling with gradients
-- Responsive container, clean axis formatting
+**Income growth as percentage**: Calculate income growth by comparing current period income to the equivalent previous period income, display as `+X%` or `-X%` instead of an amount.
 
-### 4. Bottom Row: Gender Distribution + Tithers Card
+**Tithers card → 4-quadrant card**: Restructure the 1/3 card into a 2x2 grid with cross-line separators:
 
-**Gender Distribution Bar Chart (2/3 width)**:
-- Query members' `gender` and `date_of_birth` from profiles
-- Categories: Adult Females (≥16, female), Young Females (<16, female), Adult Males (≥16, male), Young Males (<16, male)
-- "Unknown" bar only if count > 0
-- Vertical bar chart with distinct colors
+- **Top-left**: Tithers (unique tithe payers count)
+- **Top-right**: Givers (unique individuals who gave any income transaction)
+- **Bottom-left**: Income Growth (% comparing current vs previous period)
+- **Bottom-right**: Fundraising Target (% of total raised / total goal across all campaigns)
 
-**Tithers & Income Card (1/3 width)**:
-- Count distinct members who have tithe transactions in the period
-- Income growth: compare current period income to previous equivalent period
-- Glassmorphism card matching other KPI cards
+### 3. Menu Restructuring (`src/components/admin/RegionalAdminLayout.tsx`)
 
-### Data Sources
+- Remove "Fundraising" from menu items (will be accessed from Finance page)
+- Rename "Finances" → "Finance Management"
+- Rename "Communication" → "Communication Mgmt"
 
-- `useMembers(regionId)` — member/visitor/child categorization
-- `useAttendanceHistoryWithMemberTypes(regionId)` — attendance trend with member type breakdown
-- `useDiscipleshipRelationships(regionId)` + `discipleship_progress` — success rate
-- `useRegionalEvents()` — event counts and capacity/attendance_target
-- `useFinancialSummary(filters)` + `useFinancialTransactions(filters)` — tithe count, income growth
-- `useCurrentMemberTarget()` — attendance target line
-- Activity query (reuse pattern from `MemberKPICards`) — active %
+### 4. Update route title map (`src/components/admin/AdminLayout.tsx`)
+
+- `/admin/regional/finances` → "Finance Management"
+- `/admin/regional/communication` → "Communication Mgmt"
+- Remove fundraising route title
+
+### 5. Finance page integration (`src/pages/admin/regional/Finances.tsx`)
+
+Add a "Fundraising" tab or section link within the Finance Management page so fundraising is accessible from there.
+
+### 6. Events page Attendance Target KPI (`src/pages/admin/regional/Events.tsx`)
+
+Add a 5th KPI card "Attendance Target" to the Events page KPI grid (change from `md:grid-cols-4` to `md:grid-cols-5`). Calculate attendance target % the same way as the dashboard: sum of actual attendance / sum of regional event capacity.
 
 ### Files Modified
-- `src/pages/admin/regional/Dashboard.tsx` — **full rewrite**, no tabs, single-page dashboard with all sections
 
-### Technical Notes
-- Recharts `LineChart`, `BarChart`, `ReferenceLine` for charts
-- All computations filtered by period filter state and event type dropdown
-- Gender query uses existing `profiles.gender` and `profiles.date_of_birth` fields
-- Tithe transactions identified by `financial_transaction_categories.name === 'Tithes'`
-- Mobile responsive: KPI grid collapses to 2 cols, charts stack vertically
-
+- `src/index.css` — Add chart color CSS variables
+- `src/pages/admin/regional/Dashboard.tsx` — Brand colors, exclude special visitors, sticky fix, income growth %, 4-quadrant tithers card, fundraising target
+- `src/components/admin/RegionalAdminLayout.tsx` — Rename menu items, remove Fundraising
+- `src/components/admin/AdminLayout.tsx` — Update route title map
+- `src/pages/admin/regional/Finances.tsx` — Add Fundraising access
+- `src/pages/admin/regional/Events.tsx` — Add Attendance Target KPI card
