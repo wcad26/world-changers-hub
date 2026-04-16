@@ -40,12 +40,11 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
     
     const routeTitleMap: Record<string, string> = {
       '/admin/regional/dashboard': 'Dashboard',
-      '/admin/regional/finances': 'Financial Management',
+      '/admin/regional/finances': 'Finance Management',
       '/admin/regional/members': 'Member Management',
       '/admin/regional/events': 'Event Management',
-      '/admin/regional/communication': 'Communication Center',
+      '/admin/regional/communication': 'Communication Mgmt',
       '/admin/regional/dcg': 'DCG Management',
-      '/admin/regional/fundraising': 'Fundraising Management',
       '/admin/regional/reports': 'Reports & Analytics',
       '/admin/regional/certificates': 'Certificate Management',
       '/admin/regional/branch-settings': 'Regional Website Information',

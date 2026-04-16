@@ -37,6 +37,13 @@
 
     --radius: 0.5rem;
 
+    /* Chart brand colors */
+    --chart-1: 290 32% 33%;
+    --chart-2: 181 54% 45%;
+    --chart-3: 265 50% 38%;
+    --chart-4: 340 55% 60%;
+    --chart-5: 240 5% 60%;
+
     /* Modern soft design tokens */
     --gradient-soft: linear-gradient(135deg, hsl(284 32% 35% / 0.8), hsl(267 54% 36% / 0.6));
     --gradient-hero: linear-gradient(135deg, hsl(284 32% 35% / 0.95), hsl(267 54% 36% / 0.85), hsl(181 53% 45% / 0.8));
@@ -86,6 +93,13 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 142 71% 45%;
+
+    /* Chart brand colors (dark) */
+    --chart-1: 290 32% 45%;
+    --chart-2: 181 54% 55%;
+    --chart-3: 265 50% 50%;
+    --chart-4: 340 55% 65%;
+    --chart-5: 240 5% 55%;
 
     /* Dark mode soft tokens */
     --gradient-soft: linear-gradient(135deg, hsl(284 32% 45% / 0.9), hsl(267 54% 46% / 0.7));

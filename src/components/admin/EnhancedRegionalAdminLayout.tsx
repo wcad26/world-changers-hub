@@ -51,15 +51,7 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "events_view"
     },
     { 
-      title: "Fundraising", 
-      path: "/admin/regional/fundraising", 
-      icon: DollarSign as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "fundraising_view"
-    },
-
-
-    { 
-      title: "Finances", 
+      title: "Finance Management", 
       path: "/admin/regional/finances", 
       icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }>,
       permission: "finances_view"
@@ -77,7 +69,7 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
       permission: "members_view"
     },
     { 
-      title: "Communication", 
+      title: "Communication Mgmt", 
       path: "/admin/regional/communication", 
       icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }>,
       permission: "communication_view"
