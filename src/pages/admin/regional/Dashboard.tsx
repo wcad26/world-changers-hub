@@ -350,9 +350,9 @@ const RegionalDashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 relative">
-      {/* ── STICKY FILTER BAR ── */}
-      <div className="sticky top-0 z-20 bg-background/98 backdrop-blur-md pb-4 pt-1 -mt-1 border-b border-border/30">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* ── FIXED FILTER BAR (never scrolls) ── */}
+      <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Period */}
           <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
