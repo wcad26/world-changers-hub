@@ -1,35 +1,43 @@
 
 
-## Plan: Align Child Detection Between KPI Cards and Attendance Trend Chart
+## Plan: Allow Users with Regional Roles to Access the Regional Portal
 
-### Root Cause
+### Problem
 
-Two different definitions of "child" are in use:
+The regional admin granted access to users via the Access Management page, which assigns **regional roles** (stored in `regional_user_roles` table with granular permissions like `dashboard_view`, `members_view`). However, the login page and route guard both require the user to have a `regional_admin` role in the `user_roles` table — a completely separate system. So users get "Access Denied" even though they have legitimate regional permissions.
 
-- **KPI cards** (Dashboard.tsx) use `isChildMember()` from `childUtils.ts` — requires age < 16 **AND** a record in `member_relationships`. This is the strict, correct definition per project memory.
-- **Attendance hook** (`useAttendance.ts` line 140-144) uses a simple age-only check (`differenceInYears < 16`). This catches anyone under 16 regardless of whether they have a family relationship recorded.
+For example, `tsiviola@gmail.com` has an "Integration" regional role with dashboard, members, DCG, and communication permissions, but only has `member` and `dcg_admin` in `user_roles` — no `regional_admin`, so login is blocked.
 
-Result: A person under 16 who has no relationship record appears as "Children: 1" in the chart but "Children: 0" in the KPI.
+### Solution
 
-### Fix
-
-Update the attendance hook's child detection to match the KPI logic. This means the hook needs access to `member_relationships` data to apply the same two-criteria check.
+Update the login gate and route guard to also accept users who have active regional role assignments, not just those with the `regional_admin` base role.
 
 ### Changes
 
-**`src/hooks/useAttendance.ts`** — In `useAttendanceHistoryWithMemberTypes`:
+**1. `src/components/auth/RegionSpecificAuth.tsx`** — Update `checkRegionalAdminRole`
+- After checking for `regional_admin` in `user_roles`, also check for any active entry in `regional_user_roles` for that user + region
+- If either check passes, allow login
 
-1. After fetching attendance records, collect all unique member IDs from the results.
-2. Fetch their relationships from `member_relationships` (same query pattern as Dashboard.tsx).
-3. Replace the simple age check (`isChild`) with the full `isChildMember()` logic that checks both age and relationship status.
+**2. `src/hooks/useAuth.tsx`** — Add a new helper
+- Add a `hasRegionalAccess()` method that returns true if the user has `regional_admin` OR has any active `regional_user_roles` entry
+- This is already partially covered by `userRegionalRoles` state, which is fetched on login
 
-This ensures the chart's Members/Regular Visitors/Children breakdown matches the KPI cards exactly.
+**3. `src/components/auth/MultiRoleProtectedRoute.tsx`** — Update the route guard for regional admin routes
+- For the regional portal specifically, also check if the user has active regional role assignments (not just `regional_admin` in `user_roles`)
 
-### Files Modified
+**4. `src/App.tsx`** — Widen the allowed roles on the regional admin route
+- The current guard uses `allowedRoles={['regional_admin', 'super_admin']}`. We need to incorporate users with regional roles. This could be done by passing a custom check or adding the regional role check inside the protected route.
 
-- `src/hooks/useAttendance.ts` — Update `useAttendanceHistoryWithMemberTypes` to use relationship-aware child detection
+### Technical approach
 
-### Technical Detail
+The cleanest fix:
+- In `useAuth`, expose a computed boolean `hasRegionalPortalAccess` that checks: `hasRole('super_admin') || hasRole('regional_admin') || userRegionalRoles.length > 0`
+- Update `RegionSpecificAuth.checkRegionalAdminRole` to also query `regional_user_roles` for the user+region
+- Update `MultiRoleProtectedRoute` (or create a dedicated `RegionalProtectedRoute`) to use this combined check
 
-The `isChild` function at line 140 will be replaced with a call that mirrors `isChildMember(dob, memberId, relationships)`, using relationship data fetched within the same query function.
+### Files to modify
+- `src/components/auth/RegionSpecificAuth.tsx`
+- `src/hooks/useAuth.tsx`
+- `src/App.tsx` (route guard adjustment)
+- Possibly `src/components/auth/MultiRoleProtectedRoute.tsx`
 
