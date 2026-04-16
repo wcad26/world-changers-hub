@@ -1651,34 +1651,60 @@ const RegionalEvents: React.FC = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          {[
-            { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
-            { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-blue-600', bg: 'bg-blue-500/10' },
-            { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-green-600', bg: 'bg-green-500/10' },
-            { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
-          ].map(({ label, data, icon: Icon, color, bg }) => (
-            <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">{label}</span>
-              </div>
-              <p className="text-2xl font-bold text-foreground">{data.count}</p>
-              <p className="text-xs text-muted-foreground mt-1">Avg: {data.avgAttendance} attendees</p>
-              <div className="mt-2">
-                {data.growth !== 0 ? (
-                  <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
+        <div className="grid gap-4 md:grid-cols-5">
+          {(() => {
+            // Calculate attendance target %
+            const regionalEventsForTarget = periodFilteredEvents.filter(e => !e.dcg_id && !e.is_special);
+            const totalCapacity = regionalEventsForTarget.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
+            const regionalAtt = (attendanceData || []).filter(a => {
+              const d = new Date(a.event_date);
+              if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
+              if (periodFilters.dateRange.to) {
+                const endOfDay = new Date(periodFilters.dateRange.to);
+                endOfDay.setHours(23, 59, 59, 999);
+                if (d > endOfDay) return false;
+              }
+              return !a.dcg_id;
+            });
+            const totalActual = regionalAtt.reduce((s, a) => s + a.total_present, 0);
+            const attendanceTargetPct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;
+
+            return [
+              { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
+              { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-primary', bg: 'bg-primary/10' },
+              { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
+              { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-secondary', bg: 'bg-secondary/10' },
+              { label: 'Attendance Target', data: { count: `${attendanceTargetPct}%`, avgAttendance: totalActual, growth: 0 }, icon: Target, color: 'text-primary', bg: 'bg-primary/10', isTarget: true },
+            ].map(({ label, data, icon: Icon, color, bg, isTarget }) => (
+              <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
+                    <Icon className="h-5 w-5" />
                   </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">0% growth</span>
+                  <span className="text-sm font-medium text-muted-foreground">{label}</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">{isTarget ? data.count : data.count}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isTarget ? `${data.avgAttendance} total attendees` : `Avg: ${data.avgAttendance} attendees`}
+                </p>
+                {!isTarget && (
+                  <div className="mt-2">
+                    {data.growth !== 0 ? (
+                      <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-destructive'}`}>
+                        {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                        <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">0% growth</span>
+                    )}
+                  </div>
+                )}
+                {isTarget && (
+                  <p className="text-xs text-muted-foreground mt-2">Of regional event capacity</p>
                 )}
               </div>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
 
         {/* Events Table */}
