@@ -26,13 +26,11 @@ const menuItems = [
   { title: "Member Management", path: "/admin/regional/members", icon: Users as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Discipleship Management", path: "/admin/regional/discipleship", icon: Heart as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Event Management", path: "/admin/regional/events", icon: Calendar as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Fundraising", path: "/admin/regional/fundraising", icon: DollarSign as React.ComponentType<{ className?: string; size?: number }> },
-  
-  { title: "Finances", path: "/admin/regional/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Finance Management", path: "/admin/regional/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
   { title: "DCG Management", path: "/admin/regional/dcg", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Certificate Management", path: "/admin/regional/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
   
-  { title: "Communication", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Communication Mgmt", path: "/admin/regional/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Regional Website Info", path: "/admin/regional/branch-settings", icon: Building2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Access Management", path: "/admin/regional/user-roles", icon: KeyRound as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Settings", path: "/admin/regional/settings", icon: Settings as React.ComponentType<{ className?: string; size?: number }> },

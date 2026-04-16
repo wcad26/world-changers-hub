@@ -16,6 +16,7 @@ import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatWithCurrency } from "@/utils/currencyUtils";
+import RegionalFundraising from "./Fundraising";
 
 const RegionalFinances: React.FC = () => {
   console.log('RegionalFinances component loaded successfully');
@@ -159,6 +160,7 @@ const RegionalFinances: React.FC = () => {
               <TabsTrigger value="offerings">Offerings</TabsTrigger>
               <TabsTrigger value="special">Special Giving</TabsTrigger>
               <TabsTrigger value="expenses">Expenses</TabsTrigger>
+              <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
             </TabsList>
             
             <div className="flex items-center gap-2">
@@ -418,6 +420,10 @@ const RegionalFinances: React.FC = () => {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="fundraising" className="space-y-4">
+            <RegionalFundraising />
           </TabsContent>
         </Tabs>
       </div>

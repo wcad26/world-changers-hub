@@ -7,8 +7,9 @@ import { useDiscipleshipRelationships } from "@/hooks/useDiscipleship";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
+import { isChildMember } from "@/utils/childUtils";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,16 +17,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { GlassKPICard } from "@/components/ui/GlassSection";
 import {
-  AlertCircle, Users, Baby, Heart, CalendarDays, UsersRound, Target,
-  TrendingUp, TrendingDown, Search, CalendarIcon, DollarSign, Banknote
+  Users, Baby, Heart, CalendarDays, UsersRound, Target,
+  TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, BarChart3, Crosshair
 } from "lucide-react";
-import { format, differenceInYears, subMonths, subDays } from "date-fns";
+import { format, subMonths, subDays, differenceInYears } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, BarChart, Bar, Legend, Area, AreaChart
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ReferenceLine, BarChart, Bar, Legend, Area, AreaChart, Cell
 } from "recharts";
 
 const CHILD_AGE = 16;
@@ -33,7 +34,6 @@ const CHILD_AGE = 16;
 const RegionalDashboard: React.FC = () => {
   const { userRegion, loading: authLoading } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
-  const currencySymbol = regionCurrency?.symbol || "$";
 
   // Filter state
   const [quickPeriod, setQuickPeriod] = useState("1-month");
@@ -41,7 +41,7 @@ const RegionalDashboard: React.FC = () => {
   const [eventType, setEventType] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Compute date range from period
+  // Compute date range
   const dateRange = useMemo(() => {
     const now = new Date();
     let from: Date;
@@ -64,16 +64,61 @@ const RegionalDashboard: React.FC = () => {
     };
   }, [dateRange]);
 
+  // Previous period for income growth comparison
+  const prevDateFilters = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return undefined;
+    const duration = dateRange.to.getTime() - dateRange.from.getTime();
+    const prevTo = new Date(dateRange.from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - duration);
+    return {
+      from: format(prevFrom, "yyyy-MM-dd"),
+      to: format(prevTo, "yyyy-MM-dd"),
+    };
+  }, [dateRange]);
+
   // Data hooks
   const { data: members, isLoading: membersLoading } = useMembers(userRegion?.id);
   const { data: events, isLoading: eventsLoading } = useRegionalEvents();
   const { data: financialSummary } = useFinancialSummary(dateFilters);
+  const { data: prevFinancialSummary } = useFinancialSummary(prevDateFilters);
   const { data: financialTransactions } = useFinancialTransactions(dateFilters);
   const { data: discipleshipRelationships } = useDiscipleshipRelationships(userRegion?.id);
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
+  const { data: fundraisingCampaigns } = useFundraisingCampaigns();
 
-  // Fetch discipleship progress for success rate
+  // Fetch member relationships for child detection
+  const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['dashboard-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return (data || []) as unknown as { member_id: string; related_member_id: string }[];
+    },
+    enabled: memberIds.length > 0,
+  });
+
+  // Fetch special event IDs to exclude special event visitors
+  const { data: specialEventIds } = useQuery({
+    queryKey: ['special-event-ids', userRegion?.id],
+    queryFn: async () => {
+      if (!userRegion?.id) return new Set<string>();
+      const { data } = await supabase
+        .from('events')
+        .select('id')
+        .eq('region_id', userRegion.id)
+        .eq('is_special', true);
+      return new Set((data || []).map(e => e.id));
+    },
+    enabled: !!userRegion?.id,
+  });
+
+  // Discipleship progress
   const { data: allProgress } = useQuery({
     queryKey: ['all-discipleship-progress', userRegion?.id],
     queryFn: async () => {
@@ -92,27 +137,48 @@ const RegionalDashboard: React.FC = () => {
   const kpis = useMemo(() => {
     if (!members) return null;
 
-    const isChild = (m: any) => {
-      const dob = m.profiles?.date_of_birth;
-      if (!dob) return false;
-      return differenceInYears(new Date(), new Date(dob)) < CHILD_AGE;
-    };
+    const rels = (memberRelationships || []).map(r => ({
+      member_id: r.member_id,
+      related_member_id: r.related_member_id,
+    }));
 
-    const adults = members.filter(m => !isChild(m));
-    const children = members.filter(m => isChild(m));
-    const adultMembers = adults.filter(m => m.member_type === 'member');
-    const adultVisitors = adults.filter(m => m.member_type === 'visitor');
+    const specIds = specialEventIds || new Set<string>();
+
+    // Categorize members exactly like MemberKPICards
+    const childrenSet = new Set<string>();
+    members.forEach(m => {
+      if (isChildMember(m.profiles?.date_of_birth, m.id, rels)) {
+        childrenSet.add(m.id);
+      }
+    });
+
+    const adultMembersAndVisitors: typeof members = [];
+    const childrenList: typeof members = [];
+
+    members.forEach(m => {
+      if (childrenSet.has(m.id)) {
+        childrenList.push(m);
+      } else if (m.member_type === 'visitor' && m.rated_event_id && specIds.has(m.rated_event_id)) {
+        // Special event visitor — EXCLUDED from dashboard
+        return;
+      } else {
+        adultMembersAndVisitors.push(m);
+      }
+    });
+
+    const memberCount = adultMembersAndVisitors.filter(m => m.member_type === 'member').length;
+    const visitorCount = adultMembersAndVisitors.filter(m => m.member_type === 'visitor').length;
 
     // 30-day growth
     const thirtyDaysAgo = subDays(new Date(), 30);
     const sixtyDaysAgo = subDays(new Date(), 60);
-    const newAdults30 = adults.filter(m => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
-    const newAdultsPrev = adults.filter(m => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
-    const adultGrowth = newAdultsPrev > 0 ? ((newAdults30 - newAdultsPrev) / newAdultsPrev) * 100 : newAdults30 > 0 ? 100 : 0;
+    const newAdults30 = adultMembersAndVisitors.filter(m => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
+    const newAdultsPrev = adultMembersAndVisitors.filter(m => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
+    const adultGrowth = newAdultsPrev > 0 ? Math.round(((newAdults30 - newAdultsPrev) / newAdultsPrev) * 100) : newAdults30 > 0 ? 100 : 0;
 
-    const newChildren30 = children.filter(m => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
-    const newChildrenPrev = children.filter(m => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
-    const childGrowth = newChildrenPrev > 0 ? ((newChildren30 - newChildrenPrev) / newChildrenPrev) * 100 : newChildren30 > 0 ? 100 : 0;
+    const newChildren30 = childrenList.filter(m => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
+    const newChildrenPrev = childrenList.filter(m => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
+    const childGrowth = newChildrenPrev > 0 ? Math.round(((newChildren30 - newChildrenPrev) / newChildrenPrev) * 100) : newChildren30 > 0 ? 100 : 0;
 
     // Filter events by period and type
     const filteredEvents = (events || []).filter(e => {
@@ -135,7 +201,6 @@ const RegionalDashboard: React.FC = () => {
       return true;
     });
 
-    // Attendance by event type for KPIs
     const regionalAttendance = (attendanceData || []).filter(a => {
       if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
       if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
@@ -148,11 +213,9 @@ const RegionalDashboard: React.FC = () => {
     });
 
     const avgRegionalAttendees = regionalAttendance.length > 0
-      ? Math.round(regionalAttendance.reduce((s, a) => s + a.total_present, 0) / regionalAttendance.length)
-      : 0;
+      ? Math.round(regionalAttendance.reduce((s, a) => s + a.total_present, 0) / regionalAttendance.length) : 0;
     const avgDcgAttendees = dcgAttendance.length > 0
-      ? Math.round(dcgAttendance.reduce((s, a) => s + a.total_present, 0) / dcgAttendance.length)
-      : 0;
+      ? Math.round(dcgAttendance.reduce((s, a) => s + a.total_present, 0) / dcgAttendance.length) : 0;
 
     // Attendance target %
     const totalCapacity = regionalEvents.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
@@ -166,36 +229,52 @@ const RegionalDashboard: React.FC = () => {
     );
     const successRate = totalRelationships > 0 ? Math.round((successSet.size / totalRelationships) * 100) : 0;
 
-    // Gender distribution
+    // Gender distribution — exclude special event visitors, include members+regular visitors+children
+    const includedMembers = [...adultMembersAndVisitors, ...childrenList];
     const genderCounts = { adultFemale: 0, youngFemale: 0, adultMale: 0, youngMale: 0, unknown: 0 };
-    members.forEach(m => {
+    includedMembers.forEach(m => {
       const gender = m.profiles?.gender?.toLowerCase();
-      const child = isChild(m);
+      const isChild = childrenSet.has(m.id);
       if (!gender || (gender !== 'male' && gender !== 'female')) {
         genderCounts.unknown++;
       } else if (gender === 'female') {
-        child ? genderCounts.youngFemale++ : genderCounts.adultFemale++;
+        isChild ? genderCounts.youngFemale++ : genderCounts.adultFemale++;
       } else {
-        child ? genderCounts.youngMale++ : genderCounts.adultMale++;
+        isChild ? genderCounts.youngMale++ : genderCounts.adultMale++;
       }
     });
 
-    // Tithers count
+    // Tithers & Givers
     const titheTransactions = (financialTransactions || []).filter(
       (t: any) => t.category?.name === 'Tithes'
     );
     const uniqueTithers = new Set(titheTransactions.map((t: any) => t.recorded_by)).size;
 
-    // Income growth
-    const totalIncome = financialSummary?.total_income || 0;
+    const incomeTransactions = (financialTransactions || []).filter(
+      (t: any) => t.category?.type?.toLowerCase() === 'income'
+    );
+    const uniqueGivers = new Set(incomeTransactions.map((t: any) => t.recorded_by)).size;
+
+    // Income growth %
+    const currentIncome = financialSummary?.total_income || 0;
+    const previousIncome = prevFinancialSummary?.total_income || 0;
+    const incomeGrowthPct = previousIncome > 0
+      ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100)
+      : currentIncome > 0 ? 100 : 0;
+
+    // Fundraising target %
+    const campaigns = fundraisingCampaigns || [];
+    const totalGoal = campaigns.reduce((s, c) => s + (c.goal || 0), 0);
+    const totalRaised = campaigns.reduce((s, c) => s + (c.raised || 0), 0);
+    const fundraisingTargetPct = totalGoal > 0 ? Math.round((totalRaised / totalGoal) * 100) : 0;
 
     return {
-      totalAdults: adults.length,
-      adultMembers: adultMembers.length,
-      adultVisitors: adultVisitors.length,
-      adultGrowth: Math.round(adultGrowth),
-      totalChildren: children.length,
-      childGrowth: Math.round(childGrowth),
+      totalAdults: adultMembersAndVisitors.length,
+      memberCount,
+      visitorCount,
+      adultGrowth,
+      totalChildren: childrenList.length,
+      childGrowth,
       successRate,
       regionalEventsCount: regionalEvents.length,
       avgRegionalAttendees,
@@ -204,11 +283,13 @@ const RegionalDashboard: React.FC = () => {
       attendanceTargetPct,
       genderCounts,
       uniqueTithers,
-      totalIncome,
+      uniqueGivers,
+      incomeGrowthPct,
+      fundraisingTargetPct,
       filteredAttendance,
       targetMembers: memberTarget?.target_members || 0,
     };
-  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, dateRange, searchQuery, eventType, memberTarget]);
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
@@ -227,9 +308,9 @@ const RegionalDashboard: React.FC = () => {
     if (!kpis) return [];
     const data: { name: string; count: number; fill: string }[] = [
       { name: "Adult Females", count: kpis.genderCounts.adultFemale, fill: "hsl(var(--chart-1))" },
-      { name: "Young Females", count: kpis.genderCounts.youngFemale, fill: "hsl(var(--chart-2))" },
+      { name: "Young Females", count: kpis.genderCounts.youngFemale, fill: "hsl(var(--chart-4))" },
       { name: "Adult Males", count: kpis.genderCounts.adultMale, fill: "hsl(var(--chart-3))" },
-      { name: "Young Males", count: kpis.genderCounts.youngMale, fill: "hsl(var(--chart-4))" },
+      { name: "Young Males", count: kpis.genderCounts.youngMale, fill: "hsl(var(--chart-2))" },
     ];
     if (kpis.genderCounts.unknown > 0) {
       data.push({ name: "Unknown", count: kpis.genderCounts.unknown, fill: "hsl(var(--chart-5))" });
@@ -261,7 +342,7 @@ const RegionalDashboard: React.FC = () => {
 
   const GrowthIndicator = ({ value }: { value: number }) => (
     <span className={cn("inline-flex items-center gap-0.5 text-xs font-medium",
-      value > 0 ? "text-chart-2" : value < 0 ? "text-destructive" : "text-muted-foreground"
+      value > 0 ? "text-green-600" : value < 0 ? "text-destructive" : "text-muted-foreground"
     )}>
       {value > 0 ? <TrendingUp className="h-3 w-3" /> : value < 0 ? <TrendingDown className="h-3 w-3" /> : null}
       {value > 0 ? "+" : ""}{value}%
@@ -269,9 +350,9 @@ const RegionalDashboard: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       {/* ── STICKY FILTER BAR ── */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm pb-4 pt-1 -mt-1 border-b border-border/30">
+      <div className="sticky top-0 z-20 bg-background/98 backdrop-blur-md pb-4 pt-1 -mt-1 border-b border-border/30">
         <div className="flex flex-wrap items-center gap-3">
           {/* Period */}
           <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
@@ -281,7 +362,10 @@ const RegionalDashboard: React.FC = () => {
                 variant={quickPeriod === opt.value ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setQuickPeriod(opt.value)}
-                className="h-8 px-3 rounded-lg text-xs"
+                className={cn(
+                  "h-8 px-3 rounded-lg text-xs",
+                  quickPeriod === opt.value && "bg-primary text-primary-foreground hover:bg-primary/90"
+                )}
               >
                 {opt.label}
               </Button>
@@ -342,7 +426,7 @@ const RegionalDashboard: React.FC = () => {
             icon={<Users className="h-5 w-5" />}
             label="Members"
             value={kpis.totalAdults}
-            subtitle={`${kpis.adultMembers} members · ${kpis.adultVisitors} visitors`}
+            subtitle={`${kpis.memberCount} members · ${kpis.visitorCount} visitors`}
           />
           <GlassKPICard
             icon={<Baby className="h-5 w-5" />}
@@ -429,7 +513,7 @@ const RegionalDashboard: React.FC = () => {
         )}
       </div>
 
-      {/* ── BOTTOM ROW: Gender Distribution + Tithers ── */}
+      {/* ── BOTTOM ROW: Gender Distribution + Tithers/Givers/Income/Fundraising ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gender Distribution (2/3) */}
         <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
@@ -450,7 +534,7 @@ const RegionalDashboard: React.FC = () => {
                 />
                 <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={60}>
                   {genderChartData.map((entry, idx) => (
-                    <rect key={idx} fill={entry.fill} />
+                    <Cell key={idx} fill={entry.fill} />
                   ))}
                 </Bar>
               </BarChart>
@@ -462,30 +546,64 @@ const RegionalDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Tithers & Income (1/3) */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 flex flex-col gap-6">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Banknote className="h-5 w-5" />
+        {/* 4-Quadrant Card (1/3) */}
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden">
+          <div className="grid grid-cols-2 grid-rows-2 h-full">
+            {/* Tithers */}
+            <div className="p-5 border-r border-b border-border/30 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Banknote className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Tithers</span>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Tithers</span>
+              <p className="text-2xl font-bold text-foreground">{kpis?.uniqueTithers ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
             </div>
-            <p className="text-3xl font-bold text-foreground">{kpis?.uniqueTithers ?? 0}</p>
-            <p className="text-xs text-muted-foreground mt-1">Unique tithers this period</p>
-          </div>
 
-          <div className="border-t border-border/40 pt-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-chart-2/10 text-chart-2">
-                <DollarSign className="h-5 w-5" />
+            {/* Givers */}
+            <div className="p-5 border-b border-border/30 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                  <HandCoins className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Givers</span>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Total Income</span>
+              <p className="text-2xl font-bold text-foreground">{kpis?.uniqueGivers ?? 0}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
             </div>
-            <p className="text-3xl font-bold text-foreground">
-              {currencySymbol}{(kpis?.totalIncome ?? 0).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">For the selected period</p>
+
+            {/* Income Growth */}
+            <div className="p-5 border-r border-border/30 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-lg",
+                  (kpis?.incomeGrowthPct ?? 0) >= 0 ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"
+                )}>
+                  {(kpis?.incomeGrowthPct ?? 0) >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Income Growth</span>
+              </div>
+              <p className={cn(
+                "text-2xl font-bold",
+                (kpis?.incomeGrowthPct ?? 0) >= 0 ? "text-green-600" : "text-destructive"
+              )}>
+                {(kpis?.incomeGrowthPct ?? 0) > 0 ? "+" : ""}{kpis?.incomeGrowthPct ?? 0}%
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">vs previous period</p>
+            </div>
+
+            {/* Fundraising Target */}
+            <div className="p-5 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+                  <Crosshair className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">Fundraising</span>
+              </div>
+              <p className="text-2xl font-bold text-foreground">{kpis?.fundraisingTargetPct ?? 0}%</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">Of all campaign goals</p>
+            </div>
           </div>
         </div>
       </div>
