@@ -1,55 +1,63 @@
 
-Goal: make the dashboard filter section permanently fixed while only the dashboard content below it scrolls.
+Goal
 
-What I found:
-- The selected filter section is hardcoded in `src/pages/admin/regional/Dashboard.tsx`.
-- Right now it sits inside the same scrolling content flow as the KPI cards/charts.
-- `sticky` alone is not enough here because the dashboard page is still being rendered inside the `main` scroll container from `src/components/admin/AdminLayout.tsx`.
+Fix the regional dashboard so the filter bar is locked under the portal header and never moves, while the event/search filters drive every dashboard section consistently.
 
-Implementation plan:
+What I found
 
-1. Update `src/components/admin/AdminLayout.tsx`
-- Make the regional dashboard route use a route-specific `<main>` layout.
-- For `/admin/regional/dashboard`, switch `<main>` from page-scrolling to `overflow-hidden` so the page itself can own its internal scroll behavior.
-- Keep current scroll behavior unchanged for all other admin pages.
+- The dashboard filter bar is already outside the inner content scroll, but the shared admin shell still uses a brittle height setup (`min-h-screen` + `h-[calc(100vh-56px)]`). That can still allow page-level scrolling, so the filter rail appears to move.
+- The dashboard currently applies `eventType` only to `filteredAttendance`. The KPI cards still use partially unfiltered event/attendance data, so the dropdown does not fully affect the page.
+- The current attendance shaping aggregates by date too early, which makes event-name/search filtering unreliable for dashboard-wide reporting.
 
-2. Rebuild the top-level layout in `src/pages/admin/regional/Dashboard.tsx`
-- Replace the current single scrolling column with a two-part shell:
-```text
-Dashboard shell
-├─ Fixed filter bar (never scrolls)
-└─ Scrollable content area (KPIs, charts, cards)
-```
-- Use a full-height flex layout such as:
-  - outer wrapper: `h-full min-h-0 flex flex-col`
-  - filter bar: `shrink-0`
-  - content area: `flex-1 min-h-0 overflow-y-auto`
+Implementation plan
 
-3. Move the filter bar out of the scrolling section
-- Remove reliance on `sticky` for the dashboard filter itself.
-- Keep the filter row in a dedicated top section with its own background, border, spacing, and z-index.
-- Ensure all dashboard sections start below it and scroll independently underneath.
+1. Rebuild the dashboard route shell in `src/components/admin/AdminLayout.tsx`
+- Replace the current dashboard height logic with a true full-height flex shell (`h-svh`, `flex-1`, `min-h-0`).
+- Keep the shared page header as fixed top chrome.
+- Make `main` a non-scrolling container for `/admin/regional/dashboard` so the body/page itself no longer scrolls.
 
-4. Preserve spacing and visual alignment
-- Move dashboard padding from the old shared wrapper into:
-  - the fixed filter section
-  - the inner scrollable content container
-- Keep the glassmorphism styling and brand appearance consistent with the rebuilt pages.
+2. Rebuild the dashboard page layout in `src/pages/admin/regional/Dashboard.tsx`
+- Split it into two explicit layers:
+  - fixed filter rail under the header (`shrink-0`, bordered surface, z-index)
+  - scrollable dashboard body only (`flex-1 min-h-0 overflow-y-auto`)
+- This fully separates the filter section from KPIs/charts, so content scrolls underneath it.
 
-5. Protect interactions
-- Ensure the custom date popover still opens above charts/cards.
-- Keep filters responsive on wrap without causing the fixed area to collapse or overlap content.
+3. Create one source of truth for dashboard filters
+- Build a single filtered event set that applies:
+  - period
+  - search query
+  - event type (all / regional / dcg)
+  - special-event exclusion
+- Derive `filteredEventIds` from that set and use those IDs for all downstream calculations.
 
-6. QA after implementation
-- Confirm the filter section remains visible at all times while scrolling the dashboard.
-- Confirm only KPI/cards/charts scroll.
-- Verify behavior on the current desktop viewport and a narrower tablet/mobile width.
+4. Make every dashboard section use the same filtered dataset
+- Recompute from the same filter pipeline:
+  - KPI event counts
+  - average attendance
+  - attendance target %
+  - attendance trend chart
+  - gender/age distribution
+- For members/children/demographics, use the filtered participant cohort when the event filter/search is narrowing the view; keep region-wide totals only when the dashboard is not narrowed.
 
-Files to modify:
+5. Fix event search/event-type behavior at the data layer
+- Filter by real source event metadata first, then aggregate attendance after filtering.
+- This avoids the current issue where date-grouped attendance rows break event-based filtering.
+
+6. Preserve existing reporting rules
+- Keep special event visitors excluded.
+- Keep child/member/visitor categorization aligned with the Members page KPI rules.
+- Preserve the current branded styling and popover behavior.
+
+Files to update
+
 - `src/components/admin/AdminLayout.tsx`
 - `src/pages/admin/regional/Dashboard.tsx`
+- Possibly `src/hooks/useAttendance.ts` only if a small hook extension is cleaner than a dashboard-local query
 
-Technical details:
-- This should be solved by layout separation, not by increasing `sticky`/`z-index`.
-- The robust fix is: dashboard owns its own internal scroll region; the filter bar is rendered outside that region.
-- No dashboard data logic needs to change for this request.
+QA after implementation
+
+- On `/admin/regional/dashboard`, only the dashboard body scrolls.
+- The page header and filter rail stay fixed at all times.
+- Switching All / Regional / DCG updates every section consistently.
+- Searching by event name updates every dashboard output consistently.
+- Custom date range still works and opens correctly above the content.
