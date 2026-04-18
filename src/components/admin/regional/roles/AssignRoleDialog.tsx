@@ -45,8 +45,10 @@ const AssignRoleDialog: React.FC<AssignRoleDialogProps> = ({
     setSelectedRoleId('');
   }, [userId, open]);
 
-  const availableRoles = roles?.filter(role => 
-    role.is_active && 
+  // Hide the auto-created "Regional Admin" role — it's region-owner only.
+  const availableRoles = roles?.filter(role =>
+    role.is_active &&
+    role.name !== 'Regional Admin' &&
     !userRoles?.some(ur => ur.regional_role_id === role.id && ur.is_active)
   ) || [];
 
