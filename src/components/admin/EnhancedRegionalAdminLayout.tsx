@@ -22,20 +22,20 @@ import { REGIONAL_PAGES } from '@/config/regionalPermissions';
 type IconType = React.ComponentType<{ className?: string; size?: number }>;
 
 const ICON_BY_PATH: Record<string, IconType> = {
-  '/admin/regional/dashboard':       LayoutDashboard,
-  '/admin/regional/members':         Users,
-  '/admin/regional/discipleship':    Heart,
-  '/admin/regional/events':          Calendar,
-  '/admin/regional/dcg':             Home,
-  '/admin/regional/certificates':    Award,
-  '/admin/regional/finances':        PiggyBank,
-  '/admin/regional/fundraising':     HandCoins,
-  '/admin/regional/reports':         BarChart3,
-  '/admin/regional/communication':   MessageSquare,
-  '/admin/regional/locations':       MapPin,
-  '/admin/regional/branch-settings': Building2,
-  '/admin/regional/user-roles':      KeyRound,
-  '/admin/regional/settings':        Settings,
+  '/admin/regional/dashboard':       LayoutDashboard as IconType,
+  '/admin/regional/members':         Users as IconType,
+  '/admin/regional/discipleship':    Heart as IconType,
+  '/admin/regional/events':          Calendar as IconType,
+  '/admin/regional/dcg':             Home as IconType,
+  '/admin/regional/certificates':    Award as IconType,
+  '/admin/regional/finances':        PiggyBank as IconType,
+  '/admin/regional/fundraising':     HandCoins as IconType,
+  '/admin/regional/reports':         BarChart3 as IconType,
+  '/admin/regional/communication':   MessageSquare as IconType,
+  '/admin/regional/locations':       MapPin as IconType,
+  '/admin/regional/branch-settings': Building2 as IconType,
+  '/admin/regional/user-roles':      KeyRound as IconType,
+  '/admin/regional/settings':        Settings as IconType,
 };
 
 interface EnhancedRegionalAdminLayoutProps {
