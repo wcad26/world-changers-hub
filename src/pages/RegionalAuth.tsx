@@ -74,9 +74,9 @@ const RegionalAuth = () => {
                 Other portals:
               </p>
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 h-11" onClick={() => navigate('/auth/super')}>
-                  <Shield size={16} className="mr-2" />
-                  Super Admin Portal
+                <Button variant="outline" className="flex-1 h-11" onClick={() => navigate('/dcg-auth')}>
+                  <Users size={16} className="mr-2" />
+                  DCG Portal
                 </Button>
               </div>
             </div>
