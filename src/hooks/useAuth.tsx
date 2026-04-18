@@ -329,12 +329,14 @@ export const useAuth = () => {
     return portals;
   };
 
+  const isDcgMember = userDcg !== null;
+
   const canAccessPortal = (portalType: string): boolean => {
     switch (portalType) {
       case 'super': return hasRole('super_admin');
-      case 'regional': return hasRole('super_admin') || hasRole('regional_admin');
-      case 'dcg': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin');
-      case 'member': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin') || hasRole('member');
+      case 'regional': return hasRole('regional_admin') || userRegionalRoles.length > 0;
+      case 'dcg': return hasRole('dcg_admin') || isDcgMember;
+      case 'member': return hasRole('member') || memberRecord !== null;
       default: return false;
     }
   };
@@ -352,7 +354,7 @@ export const useAuth = () => {
     );
   };
 
-  const hasRegionalPortalAccess = hasRole('super_admin') || hasRole('regional_admin') || userRegionalRoles.length > 0;
+  const hasRegionalPortalAccess = hasRole('regional_admin') || userRegionalRoles.length > 0;
 
   const isSuperAdmin = () => hasRole('super_admin');
   const isRegionalAdmin = () => hasRole('regional_admin');
