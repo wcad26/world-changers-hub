@@ -2,59 +2,42 @@
 
 ## Problem
 
-Christian Collins's data is fully correct in the DB (base `regional_admin` role active, profile.region_id matches, granular "Regional Admin" role assigned). He successfully authenticates, but immediately gets bounced from `/admin/regional/dashboard` back to `/auth/regional`, looking like an instant sign-out.
+In the regional portal "Assign Access" dialog, the **Regional Admin** role is missing from the dropdown — only Finance, Children Ministry, and Integration appear. So a regional admin cannot delegate full admin access to another member.
 
 ## Root cause
 
-Two race-condition bugs in the regional-portal guards, not a data/permissions issue.
-
-### Bug 1 — `useAuth.tsx` flips `loading` to `false` on a transient null session
-
-In `onAuthStateChange`, when an event arrives with no session (which happens momentarily during `INITIAL_SESSION` boot, token refresh hiccups, or when a second `useAuth()` instance mounts before Supabase has rehydrated), the hook does:
+In `src/components/admin/regional/roles/AssignRoleDialog.tsx`, the role list is built with:
 
 ```text
-setUser(null);
-setLoading(false);   // ← problem
+availableRoles = roles.filter(role =>
+  role.is_active
+  && role.name !== 'Regional Admin'   // ← always hides it
+  && !alreadyAssigned
+)
 ```
 
-`MultiRoleProtectedRoute` then sees `loading=false && user=null` and redirects to `/auth/regional`. A few ms later the real session arrives, `user` is set, but the route has already navigated away. This is exactly the "sign in, then immediately sign out" symptom.
+The hardcoded exclusion was added under the assumption that "Regional Admin" is a region-owner-only role and shouldn't be re-assignable. But that's the exact role the user now wants to delegate, so the filter is the bug. The same constant (`RESERVED_ROLE_NAME = 'Regional Admin'`) is also used in `UsersWithAccessTable.tsx` to hide it from the *filter* dropdown — that one is fine and we'll leave it.
 
-Christian is more affected than other admins because he holds two base roles (`regional_admin` + `dcg_admin`) and a granular regional role, so `fetchUserData` has more queries to run, lengthening the window where the transient-null state can be observed by guards.
+The downstream flow is already safe for this: `useAssignUserRole` is called with `requiresApproval: true`, which writes a row to `user_roles` with `role='regional_admin'`, `status='pending'`, `is_active=false`, and `requested_regional_role_id = <Regional Admin granular role id>`. Super Admin then approves it from the Pending Approvals tab — no privilege escalation risk.
 
-### Bug 2 — `MultiRoleProtectedRoute` redirects on transient `user=null`
+DB confirms WCA Douala has the active "Regional Admin" granular role (`50b48078-…`); it's just being filtered out client-side.
 
-The guard treats `!user` as "log them out", with no grace for the boot phase. Combined with Bug 1, this makes the bounce inevitable. It should only redirect when `loading=false` AND we are confident there is genuinely no session (i.e. we have actually received a non-INITIAL auth event).
+## Fix
 
-## Fix (code only, no DB or schema changes)
+Single-file change in `src/components/admin/regional/roles/AssignRoleDialog.tsx`:
 
-### 1. `src/hooks/useAuth.tsx`
-- In `onAuthStateChange`, when a non-`SIGNED_OUT` event arrives without a session, do NOT immediately flip `loading` to `false` and clear state. Only treat the user as logged-out after the initial-session probe has resolved.
-- Track an `initialized` ref. `getInitialSession` sets it to `true` once it has run. Auth-state-change events that report no session before initialization simply no-op (Supabase's INITIAL_SESSION will deliver the truth).
-- Keep the `SIGNED_OUT` branch as-is (explicit logout still clears state and redirects).
-- Verify the `fetchUserData` braces — they parse correctly today, but indentation is misleading; tidy it up so future edits don't accidentally nest the regional-roles fetch under `if (hasDcgRole)`.
+- Remove the `role.name !== 'Regional Admin'` filter so the role appears in the dropdown.
+- Keep the "already assigned" filter (don't show roles the user already holds).
+- Keep the `is_active` filter.
 
-### 2. `src/components/auth/MultiRoleProtectedRoute.tsx`
-- While `loading` is true, render the spinner (already done).
-- When `loading=false && !user`, also check that we haven't just transitioned from `user=truthy` within the same render burst. Simplest implementation: only redirect if `user` is null AND the hook has completed at least one fetch cycle (expose an `initialized` flag from `useAuth` and gate the redirect on it).
+No DB changes, no schema migration, no changes to the assignment flow itself, no changes to the Users-with-Access table filter.
 
-### 3. `src/components/auth/RegionalPermissionRoute.tsx`
-- Same `initialized` gate so it doesn't redirect to `/unauthorized` while `userRegionalRoles` is still loading on first mount.
+## Verification
 
-### 4. `src/components/auth/RegionSpecificAuth.tsx`
-- Add a final log line in `checkRegionalAdminRole` (`Role check result: …`) so the next time we debug, we can see whether the function returned true/false vs. silently hung. Today the trail goes cold after `Checking regional access...`.
-
-## Why this is the real fix, not another data patch
-
-- Christian's DB rows are all correct — verified live: `user_roles` has `regional_admin` (active, status=active, region matches), `regional_user_roles` has the granular Regional Admin row (active), `profiles.region_id` matches.
-- The `RegionSpecificAuth` form-side check would succeed (he passes both base role and granular role gates) and call `navigate('/admin/regional/dashboard')`.
-- Therefore the bounce can only come from the dashboard's own guard, and the only way that guard sees `user=null` is the transient-null race in `useAuth`.
-
-After this fix, any user (not just Christian) who had intermittent dashboard kick-outs after login will be unblocked.
-
-## Verification steps
-
-1. Christian re-logs in at `/auth/regions/wca-douala` and lands on `/admin/regional/dashboard` without bouncing.
-2. Sidebar shows the full menu (he has the "Regional Admin" granular role with all permissions).
-3. Hard refresh on `/admin/regional/dashboard` keeps him on the page (does not bounce to `/auth/regional`).
-4. Confirm sign-out from the dashboard still works and lands on `/auth/regional`.
+1. As regional admin, open Access Management → Assign Access.
+2. Pick a member who doesn't currently hold the Regional Admin role.
+3. The role dropdown now lists **Regional Admin** alongside Finance, Children Ministry, Integration.
+4. Selecting it and submitting shows the existing toast: "Role request submitted… for Super Admin approval."
+5. The request appears in Super Admin → User Management → Pending Approvals.
+6. After approval, the assigned member gets full regional portal access on next login.
 
