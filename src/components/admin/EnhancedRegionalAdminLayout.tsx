@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { REGIONAL_PAGES } from '@/config/regionalPermissions';
 
-const ICON_BY_PATH: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+type IconType = React.ComponentType<{ className?: string; size?: number }>;
+
+const ICON_BY_PATH: Record<string, IconType> = {
   '/admin/regional/dashboard':       LayoutDashboard,
   '/admin/regional/members':         Users,
   '/admin/regional/discipleship':    Heart,
