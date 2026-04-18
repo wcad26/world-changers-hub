@@ -14,10 +14,13 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   allowedRoles,
   redirectTo = '/portal-selector'
 }) => {
-  const { user, loading, hasAnyRole, hasRegionalPortalAccess } = useAuth();
+  const { user, loading, initialized, hasAnyRole, hasRegionalPortalAccess } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Wait until both the loading flag is cleared AND the auth hook has
+  // completed its initial probe. Prevents redirect-on-transient-null
+  // races during INITIAL_SESSION boot or token refresh.
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

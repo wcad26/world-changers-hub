@@ -25,10 +25,12 @@ const RegionalPermissionRoute: React.FC<RegionalPermissionRouteProps> = ({
   permission,
   children,
 }) => {
-  const { loading, user, hasRole, hasRegionalPermission, userRegionalRoles } = useAuth();
+  const { loading, initialized, user, hasRole, hasRegionalPermission, userRegionalRoles } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Gate on `initialized` so we don't redirect to /unauthorized while
+  // userRegionalRoles is still being fetched on first mount.
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

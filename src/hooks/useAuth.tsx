@@ -20,12 +20,17 @@ export const useAuth = () => {
   const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   
   // Ref to track pending signout redirect - prevents race condition
   const signOutRedirectRef = useRef<string | null>(null);
+  // Ref to track whether the initial session probe has resolved.
+  // Prevents transient null sessions (during INITIAL_SESSION boot or token
+  // refresh hiccups) from being interpreted as a logout by route guards.
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -50,6 +55,8 @@ export const useAuth = () => {
           setMemberRecord(null);
           setUserRegionalRoles([]);
           setLoading(false);
+          initializedRef.current = true;
+          setInitialized(true);
           
           // If we have a pending redirect from signOut, perform it now
           if (signOutRedirectRef.current) {
@@ -77,6 +84,14 @@ export const useAuth = () => {
             }
           }, 100);
         } else {
+          // No session in the event. If the initial probe hasn't run yet,
+          // do NOT clear state or flip loading=false — INITIAL_SESSION will
+          // deliver the truth shortly. This prevents guards from seeing a
+          // transient (loading=false, user=null) state and bouncing the user.
+          if (!initializedRef.current) {
+            console.log('useAuth: Ignoring transient null session before initialization');
+            return;
+          }
           console.log('useAuth: No session, clearing user data...');
           setUser(null);
           setProfile(null);
@@ -84,6 +99,7 @@ export const useAuth = () => {
           setUserRegion(null);
           setUserDcg(null);
           setMemberRecord(null);
+          setUserRegionalRoles([]);
           setLoading(false);
         }
       }
@@ -97,6 +113,8 @@ export const useAuth = () => {
         
         if (error) {
           console.error('useAuth: Error getting initial session:', error);
+          initializedRef.current = true;
+          setInitialized(true);
           setLoading(false);
           return;
         }
@@ -111,9 +129,13 @@ export const useAuth = () => {
           console.log('useAuth: No initial session found');
           setLoading(false);
         }
+        initializedRef.current = true;
+        setInitialized(true);
       } catch (error) {
         console.error('useAuth: Exception getting initial session:', error);
         if (mounted) {
+          initializedRef.current = true;
+          setInitialized(true);
           setLoading(false);
         }
       }
@@ -214,28 +236,28 @@ export const useAuth = () => {
             setUserDcg(dcgData);
           }
         }
-        }
+      }
 
-        // Fetch regional roles if user has region
-        if (profileData && profileData.region_id) {
-          const { data: regionalRolesData } = await supabase
-            .from('regional_user_roles')
-            .select(`
-              *,
-              regional_roles (
-                id,
-                name,
-                description,
-                permissions
-              )
-            `)
-            .eq('user_id', userId)
-            .eq('region_id', profileData.region_id)
-            .eq('is_active', true);
+      // Fetch regional roles if user has region
+      if (profileData && profileData.region_id) {
+        const { data: regionalRolesData } = await supabase
+          .from('regional_user_roles')
+          .select(`
+            *,
+            regional_roles (
+              id,
+              name,
+              description,
+              permissions
+            )
+          `)
+          .eq('user_id', userId)
+          .eq('region_id', profileData.region_id)
+          .eq('is_active', true);
 
-          setUserRegionalRoles(regionalRolesData || []);
-        }
-      } catch (error) {
+        setUserRegionalRoles(regionalRolesData || []);
+      }
+    } catch (error) {
       console.error('useAuth: Exception fetching user data:', error);
       toast({
         title: "Error loading user data",
@@ -243,6 +265,8 @@ export const useAuth = () => {
         variant: "destructive"
       });
     } finally {
+      initializedRef.current = true;
+      setInitialized(true);
       setLoading(false);
     }
   };
@@ -386,6 +410,7 @@ export const useAuth = () => {
     memberId: memberRecord?.id || null,
     userRegionalRoles,
     loading,
+    initialized,
     hasRole,
     hasAnyRole,
     hasRegionalPortalAccess,
