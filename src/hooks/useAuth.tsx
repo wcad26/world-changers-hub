@@ -462,6 +462,7 @@ export const useAuth = () => {
     isRegionalAdmin,
     isMember,
     isDcgAdmin,
+    isDcgMember,
     signOut,
     refetchUserData: () => user ? fetchUserData(user.id) : null
   };
