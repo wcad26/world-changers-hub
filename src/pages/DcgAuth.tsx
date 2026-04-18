@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
+import wcaLogo from '@/assets/wca-logo.png';
 
 
 const DcgAuth = () => {
@@ -86,7 +87,12 @@ const DcgAuth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
+      <img
+        src={wcaLogo}
+        alt="World Changers Association logo"
+        className="w-full max-w-xs md:max-w-sm h-auto mb-6 object-contain"
+      />
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4">
           <CardTitle className="text-2xl font-bold text-center">DCG Portal</CardTitle>
