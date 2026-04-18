@@ -423,7 +423,7 @@ const RegionalFinances: React.FC = () => {
           </TabsContent>
 
           <TabsContent value="fundraising" className="space-y-4">
-            <RegionalFundraising />
+            <FundraisingTabContent />
           </TabsContent>
         </Tabs>
       </div>
