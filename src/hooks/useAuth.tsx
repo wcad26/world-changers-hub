@@ -264,7 +264,7 @@ export const useAuth = () => {
             if (memberships && memberships.length > 0) {
               const preferred =
                 memberships.find(m => m.role === 'Leader') ||
-                memberships.find(m => m.role === 'Co-Leader') ||
+                memberships.find(m => m.role === 'Assistant') ||
                 memberships[0];
               if (preferred?.dcgs) resolvedDcg = preferred.dcgs as Dcg;
             }
