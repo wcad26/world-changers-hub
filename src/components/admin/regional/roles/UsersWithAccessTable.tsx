@@ -214,9 +214,9 @@ const UsersWithAccessTable: React.FC = () => {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filter by role" />
               </SelectTrigger>
               <SelectContent>
@@ -230,7 +230,7 @@ const UsersWithAccessTable: React.FC = () => {
             </Select>
           </div>
         </div>
-        <Button onClick={() => openAssignFor()} className="gap-2">
+        <Button onClick={() => openAssignFor()} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Assign Access
         </Button>
@@ -253,13 +253,14 @@ const UsersWithAccessTable: React.FC = () => {
             </div>
           </div>
         ) : (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Member</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead className="hidden md:table-cell">Email</TableHead>
                 <TableHead>Assigned roles</TableHead>
-                <TableHead>Last updated</TableHead>
+                <TableHead className="hidden lg:table-cell">Last updated</TableHead>
                 <TableHead className="w-32 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -281,7 +282,7 @@ const UsersWithAccessTable: React.FC = () => {
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{row.email}</TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">{row.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {row.roles.map((r) => (
@@ -313,7 +314,7 @@ const UsersWithAccessTable: React.FC = () => {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="hidden lg:table-cell text-muted-foreground">
                     {formatDistanceToNow(new Date(row.lastUpdated), { addSuffix: true })}
                   </TableCell>
                   <TableCell className="text-right">
@@ -349,6 +350,7 @@ const UsersWithAccessTable: React.FC = () => {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
 

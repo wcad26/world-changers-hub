@@ -153,30 +153,32 @@ const RegionalFinances: React.FC = () => {
         </div>
 
         <Tabs defaultValue="transactions" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <TabsList>
-              <TabsTrigger value="transactions">All Transactions</TabsTrigger>
-              <TabsTrigger value="tithes">Tithes</TabsTrigger>
-              <TabsTrigger value="offerings">Offerings</TabsTrigger>
-              <TabsTrigger value="special">Special Giving</TabsTrigger>
-              <TabsTrigger value="expenses">Expenses</TabsTrigger>
-              <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
+              <TabsList className="w-max">
+                <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+                <TabsTrigger value="tithes">Tithes</TabsTrigger>
+                <TabsTrigger value="offerings">Offerings</TabsTrigger>
+                <TabsTrigger value="special">Special Giving</TabsTrigger>
+                <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
+              </TabsList>
+            </div>
             
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-64"
+                  className="pl-8 w-full sm:w-64"
                 />
               </div>
               
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Record Transaction
                   <ChevronDown className="ml-2 h-4 w-4" />
