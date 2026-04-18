@@ -591,7 +591,7 @@ const Certificates = () => {
       <div className="space-y-6">
 
         <Tabs value={activeTab} onValueChange={(value) => !isGenerating && setActiveTab(value)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
             <TabsTrigger value="generate" disabled={isGenerating}>Generate</TabsTrigger>
             <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
             <TabsTrigger value="issued" disabled={isGenerating}>Issued</TabsTrigger>
