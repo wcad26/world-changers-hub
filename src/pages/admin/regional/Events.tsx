@@ -1615,14 +1615,14 @@ const RegionalEvents: React.FC = () => {
     <>
       <div className="space-y-6">
         {/* Period Filter + Search + Filters + Add Event */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
           <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} className="mb-0" />
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60 h-8 w-[200px] text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60 h-8 w-full sm:w-[200px] text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
           <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-            <SelectTrigger className="w-[130px] bg-background/60 h-8 text-sm">
+            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
               <SelectValue placeholder="Event Type" />
             </SelectTrigger>
             <SelectContent>
@@ -1633,7 +1633,7 @@ const RegionalEvents: React.FC = () => {
             </SelectContent>
           </Select>
           <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-[130px] bg-background/60 h-8 text-sm">
+            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
               <SelectValue placeholder="Time" />
             </SelectTrigger>
             <SelectContent>
@@ -1642,8 +1642,8 @@ const RegionalEvents: React.FC = () => {
               <SelectItem value="past">Past</SelectItem>
             </SelectContent>
           </Select>
-          <div className="ml-auto">
-            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm">
+          <div className="sm:ml-auto">
+            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
               <Plus className="h-4 w-4" />
               Add Event
             </Button>

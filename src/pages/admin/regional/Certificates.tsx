@@ -1127,15 +1127,15 @@ const Certificates = () => {
                       View and resend certificates that have been sent via email
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2 items-center flex-wrap">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:flex-wrap w-full sm:w-auto">
                     <Input
                       placeholder="Search by name or email..."
                       value={sentCertificateSearchTerm}
                       onChange={(e) => setSentCertificateSearchTerm(e.target.value)}
-                      className="w-[220px]"
+                      className="w-full sm:w-[220px]"
                     />
                     <Select value={emailStatusFilter} onValueChange={setEmailStatusFilter}>
-                      <SelectTrigger className="w-[200px]">
+                      <SelectTrigger className="w-full sm:w-[200px]">
                         <SelectValue placeholder="Email Status" />
                       </SelectTrigger>
                       <SelectContent>

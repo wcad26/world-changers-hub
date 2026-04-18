@@ -263,8 +263,8 @@ const EventReport: React.FC = () => {
                 </div>
                 
                 {/* Filters */}
-                <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                  <div className="relative flex-1">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mt-4">
+                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       type="search"
@@ -275,7 +275,7 @@ const EventReport: React.FC = () => {
                     />
                   </div>
                   <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-full sm:w-[150px]">
                       <SelectValue placeholder="Member Type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -285,7 +285,7 @@ const EventReport: React.FC = () => {
                     </SelectContent>
                   </Select>
                   <Select value={genderFilter} onValueChange={setGenderFilter}>
-                    <SelectTrigger className="w-[130px]">
+                    <SelectTrigger className="w-full sm:w-[130px]">
                       <SelectValue placeholder="Gender" />
                     </SelectTrigger>
                     <SelectContent>
@@ -295,7 +295,7 @@ const EventReport: React.FC = () => {
                     </SelectContent>
                   </Select>
                   <Select value={joinInterestFilter} onValueChange={setJoinInterestFilter}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                       <SelectValue placeholder="Join Interest" />
                     </SelectTrigger>
                     <SelectContent>
