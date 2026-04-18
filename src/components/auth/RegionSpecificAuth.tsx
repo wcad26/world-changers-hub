@@ -383,11 +383,11 @@ const RegionSpecificAuth = () => {
                   variant="outline"
                   size="sm"
                   className="flex-1 h-9"
-                  onClick={() => navigate('/auth/super')}
+                  onClick={() => navigate('/dcg-auth')}
                   disabled={isLoading}
                 >
-                  <Shield size={16} className="mr-1" />
-                  Super Admin
+                  <Users size={16} className="mr-1" />
+                  DCG Portal
                 </Button>
                 <Button
                   variant="outline"
@@ -397,7 +397,7 @@ const RegionSpecificAuth = () => {
                   disabled={isLoading}
                 >
                   <Users size={16} className="mr-1" />
-                  General
+                  Regional
                 </Button>
               </div>
             </div>
