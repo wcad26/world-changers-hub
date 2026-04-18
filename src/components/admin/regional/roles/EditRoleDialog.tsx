@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useUpdateRegionalRole, type RegionalRole } from '@/hooks/useRegionalRoles';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useUpdateRegionalRole, type RegionalRole } from '@/hooks/useRegionalRoles';
+import {
+  PERMISSION_CATALOG,
+  PERMISSION_GROUPS,
+  getPermissionsByGroup,
+} from '@/config/regionalPermissions';
 
 interface EditRoleDialogProps {
   role: RegionalRole;
@@ -20,151 +25,139 @@ interface EditRoleDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const PERMISSION_GROUPS = {
-  'Dashboard': ['dashboard_view'],
-  'Members': ['members_view', 'members_create', 'members_edit', 'members_export'],
-  'Events': ['events_view', 'events_create', 'events_edit', 'events_delete'],
-  'Finances': ['finances_view', 'finances_create', 'finances_edit'],
-  'DCG': ['dcg_view', 'dcg_create', 'dcg_edit'],
-  'Reports': ['reports_view', 'reports_export'],
-  'Communication': ['communication_view', 'communication_create', 'communication_send'],
-  'Locations': ['locations_view', 'locations_create', 'locations_edit'],
-  'Fundraising': ['fundraising_view', 'fundraising_create', 'fundraising_edit'],
-  'Settings': ['settings_view', 'settings_edit'],
-};
+const ALL_KEYS = PERMISSION_CATALOG.map((p) => p.key);
 
 const EditRoleDialog: React.FC<EditRoleDialogProps> = ({ role, open, onOpenChange }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const updateRole = useUpdateRegionalRole();
 
   useEffect(() => {
-    if (role) {
-      setName(role.name);
-      setDescription(role.description || '');
-      setSelectedPermissions(role.permissions || []);
-    }
+    if (!role) return;
+    setName(role.name);
+    setDescription(role.description || '');
+    setSelected(new Set(role.permissions || []));
   }, [role]);
+
+  const toggle = (key: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+
+  const toggleGroup = (keys: string[]) => {
+    const allOn = keys.every((k) => selected.has(k));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      keys.forEach((k) => (allOn ? next.delete(k) : next.add(k)));
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    const allOn = ALL_KEYS.every((k) => selected.has(k));
+    setSelected(allOn ? new Set() : new Set(ALL_KEYS));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!name.trim()) return;
-
     try {
       await updateRole.mutateAsync({
         id: role.id,
         updates: {
           name: name.trim(),
           description: description.trim() || undefined,
-          permissions: selectedPermissions,
-        }
+          permissions: Array.from(selected),
+        },
       });
-      
       onOpenChange(false);
-    } catch (error) {
-      console.error('Error updating role:', error);
-    }
-  };
-
-  const togglePermission = (permission: string) => {
-    setSelectedPermissions(prev =>
-      prev.includes(permission)
-        ? prev.filter(p => p !== permission)
-        : [...prev, permission]
-    );
-  };
-
-  const toggleGroupPermissions = (groupPermissions: string[]) => {
-    const allSelected = groupPermissions.every(p => selectedPermissions.includes(p));
-    
-    if (allSelected) {
-      setSelectedPermissions(prev => prev.filter(p => !groupPermissions.includes(p)));
-    } else {
-      setSelectedPermissions(prev => [
-        ...prev.filter(p => !groupPermissions.includes(p)),
-        ...groupPermissions
-      ]);
+    } catch (err) {
+      console.error('Error updating role:', err);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] max-w-4xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Role</DialogTitle>
+          <DialogTitle>Edit role</DialogTitle>
           <DialogDescription>
-            Update the role details and permissions.
+            Update what this role can see and do.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid gap-4">
-            <div>
-              <Label htmlFor="name">Role Name *</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name">Role name *</Label>
               <Input
-                id="name"
+                id="edit-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Finance Manager, Event Coordinator"
                 required
               />
             </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-description">Description</Label>
               <Textarea
-                id="description"
+                id="edit-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the role and its responsibilities..."
-                rows={3}
+                rows={2}
               />
             </div>
           </div>
 
           <div>
-            <Label className="text-base font-semibold">Permissions</Label>
-            <p className="text-sm text-muted-foreground mb-4">
-              Select the permissions this role should have access to.
-            </p>
-            
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <Label className="text-base font-semibold">Permissions</Label>
+                <p className="text-sm text-muted-foreground">
+                  Each permission unlocks a specific page or action.
+                </p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={toggleAll}>
+                {ALL_KEYS.every((k) => selected.has(k)) ? 'Clear all' : 'Select all'}
+              </Button>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
-              {Object.entries(PERMISSION_GROUPS).map(([group, permissions]) => {
-                const allSelected = permissions.every(p => selectedPermissions.includes(p));
-                const someSelected = permissions.some(p => selectedPermissions.includes(p));
-                
+              {PERMISSION_GROUPS.map((group) => {
+                const perms = getPermissionsByGroup(group);
+                const keys = perms.map((p) => p.key);
+                const allOn = keys.every((k) => selected.has(k));
+                const someOn = keys.some((k) => selected.has(k));
                 return (
                   <Card key={group}>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-sm">
                         <Checkbox
-                          checked={allSelected}
-                          ref={(el) => {
-                            if (el) {
-                              const checkbox = el.querySelector('input[type="checkbox"]') as HTMLInputElement;
-                              if (checkbox) checkbox.indeterminate = someSelected && !allSelected;
-                            }
-                          }}
-                          onCheckedChange={() => toggleGroupPermissions(permissions)}
+                          checked={allOn ? true : someOn ? 'indeterminate' : false}
+                          onCheckedChange={() => toggleGroup(keys)}
                         />
                         {group}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
-                      {permissions.map((permission) => (
-                        <div key={permission} className="flex items-center gap-2 ml-6">
+                    <CardContent className="space-y-2.5">
+                      {perms.map((p) => (
+                        <div key={p.key} className="flex items-start gap-2 pl-6">
                           <Checkbox
-                            id={permission}
-                            checked={selectedPermissions.includes(permission)}
-                            onCheckedChange={() => togglePermission(permission)}
+                            id={`edit-${role.id}-${p.key}`}
+                            checked={selected.has(p.key)}
+                            onCheckedChange={() => toggle(p.key)}
+                            className="mt-0.5"
                           />
-                          <Label 
-                            htmlFor={permission}
-                            className="text-sm text-muted-foreground cursor-pointer"
+                          <Label
+                            htmlFor={`edit-${role.id}-${p.key}`}
+                            className="cursor-pointer text-sm leading-tight"
                           >
-                            {permission.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            <span className="font-medium">{p.label}</span>
+                            <span className="block text-xs text-muted-foreground">
+                              {p.hint}
+                            </span>
                           </Label>
                         </div>
                       ))}
@@ -180,7 +173,7 @@ const EditRoleDialog: React.FC<EditRoleDialogProps> = ({ role, open, onOpenChang
               Cancel
             </Button>
             <Button type="submit" disabled={!name.trim() || updateRole.isPending}>
-              {updateRole.isPending ? 'Updating...' : 'Update Role'}
+              {updateRole.isPending ? 'Updating…' : 'Update role'}
             </Button>
           </div>
         </form>
