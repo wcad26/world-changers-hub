@@ -51,10 +51,8 @@ export const REGIONAL_PAGES: PageDef[] = [
   { permission: 'dcg_view',             title: 'DCG Management',           path: '/admin/regional/dcg' },
   { permission: 'certificates_view',    title: 'Certificate Management',   path: '/admin/regional/certificates' },
   { permission: 'finances_view',        title: 'Finance Management',       path: '/admin/regional/finances' },
-  { permission: 'fundraising_view',     title: 'Fundraising',              path: '/admin/regional/fundraising' },
   { permission: 'reports_view',         title: 'Reports & Analytics',      path: '/admin/regional/reports' },
   { permission: 'communication_view',   title: 'Communication Mgmt',       path: '/admin/regional/communication' },
-  { permission: 'locations_view',       title: 'Locations',                path: '/admin/regional/locations' },
   { permission: 'website_info_view',    title: 'Regional Website Info',    path: '/admin/regional/branch-settings' },
   { permission: 'access_management',    title: 'Access Management',        path: '/admin/regional/user-roles' },
   { permission: 'settings_view',        title: 'Settings',                 path: '/admin/regional/settings' },
@@ -86,12 +84,9 @@ export const PERMISSION_CATALOG: PermissionDef[] = [
   { key: 'certificates_view',  group: 'Programs', label: 'Certificate Management',   hint: 'Issue, view and email certificates' },
 
   // Money
-  { key: 'finances_view',      group: 'Money',    label: 'View Finances',            hint: 'Open the Finance Management page' },
+  { key: 'finances_view',      group: 'Money',    label: 'View Finances',            hint: 'Open the Finance Management page (includes fundraising)' },
   { key: 'finances_create',    group: 'Money',    label: 'Record Transactions',      hint: 'Add tithes, offerings, expenses' },
   { key: 'finances_edit',      group: 'Money',    label: 'Edit Transactions',        hint: 'Update or correct existing financial records' },
-  { key: 'fundraising_view',   group: 'Money',    label: 'View Fundraising',         hint: 'Open the Fundraising page' },
-  { key: 'fundraising_create', group: 'Money',    label: 'Create Campaigns',         hint: 'Launch new fundraising campaigns' },
-  { key: 'fundraising_edit',   group: 'Money',    label: 'Edit Campaigns',           hint: 'Update or close campaigns' },
   { key: 'reports_view',       group: 'Money',    label: 'View Reports',             hint: 'Open the Reports & Analytics page' },
   { key: 'reports_export',     group: 'Money',    label: 'Export Reports',           hint: 'Download reports as files' },
 
@@ -99,9 +94,6 @@ export const PERMISSION_CATALOG: PermissionDef[] = [
   { key: 'communication_view', group: 'Outreach', label: 'View Communications',      hint: 'Open the Communication page' },
   { key: 'communication_create', group: 'Outreach', label: 'Draft Messages',         hint: 'Compose announcements and templates' },
   { key: 'communication_send', group: 'Outreach', label: 'Send Messages',            hint: 'Broadcast messages to members' },
-  { key: 'locations_view',     group: 'Outreach', label: 'View Locations',           hint: 'Open the Locations page' },
-  { key: 'locations_create',   group: 'Outreach', label: 'Add Locations',            hint: 'Register new fellowship locations' },
-  { key: 'locations_edit',     group: 'Outreach', label: 'Edit Locations',           hint: 'Update or remove locations' },
 
   // Admin
   { key: 'website_info_view',  group: 'Admin',    label: 'View Regional Website Info', hint: 'Open the Regional Website Info page' },

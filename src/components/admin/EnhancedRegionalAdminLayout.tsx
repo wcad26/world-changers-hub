@@ -48,7 +48,9 @@ interface EnhancedRegionalAdminLayoutProps {
  */
 const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = ({ children }) => {
   const { hasRole, hasRegionalPermission } = useAuth();
-  const isPrivileged = hasRole('super_admin') || hasRole('regional_admin');
+  // Only super admins skip the per-page permission filter.
+  // Region owners keep full access via the auto-created "Regional Admin" granular role.
+  const isPrivileged = hasRole('super_admin');
 
   const menuItems = REGIONAL_PAGES
     .filter((page) => isPrivileged || hasRegionalPermission(page.permission))

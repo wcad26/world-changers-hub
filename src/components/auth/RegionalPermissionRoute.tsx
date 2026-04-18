@@ -40,8 +40,10 @@ const RegionalPermissionRoute: React.FC<RegionalPermissionRouteProps> = ({
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
-  // Super admins and base regional_admin always pass.
-  if (hasRole('super_admin') || hasRole('regional_admin')) {
+  // Only super admins skip the granular permission check.
+  // The base `regional_admin` role is just a login token — region owners still
+  // pass via the auto-created "Regional Admin" granular role they hold.
+  if (hasRole('super_admin')) {
     return <>{children}</>;
   }
 

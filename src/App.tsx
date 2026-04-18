@@ -46,7 +46,6 @@ import RegionalMembers from "./pages/admin/regional/Members";
 import RegionalMemberProfile from "./pages/admin/regional/MemberProfile";
 import RegionalEvents from "./pages/admin/regional/Events";
 import RegionalEventReport from "./pages/admin/regional/EventReport";
-import RegionalFundraising from "./pages/admin/regional/Fundraising";
 
 import RegionalFinances from "./pages/admin/regional/Finances";
 import RegionalDCG from "./pages/admin/regional/DCG";
@@ -171,7 +170,6 @@ const App = () => {
               <Route path="members/:memberId" element={<RegionalPermissionRoute permission="members_view"><RegionalMemberProfile /></RegionalPermissionRoute>} />
               <Route path="events" element={<RegionalPermissionRoute permission="events_view"><RegionalEvents /></RegionalPermissionRoute>} />
               <Route path="events/:eventId/report" element={<RegionalPermissionRoute permission="events_view"><RegionalEventReport /></RegionalPermissionRoute>} />
-              <Route path="fundraising" element={<RegionalPermissionRoute permission="fundraising_view"><RegionalFundraising /></RegionalPermissionRoute>} />
               <Route path="finances" element={<RegionalPermissionRoute permission="finances_view"><RegionalFinances /></RegionalPermissionRoute>} />
               <Route path="dcg" element={<RegionalPermissionRoute permission="dcg_view"><RegionalDCG /></RegionalPermissionRoute>} />
               <Route path="dcg/:dcgId" element={<RegionalPermissionRoute permission="dcg_view"><DcgProfile /></RegionalPermissionRoute>} />

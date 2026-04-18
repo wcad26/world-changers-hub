@@ -277,9 +277,14 @@ export const useAuth = () => {
   };
 
   const hasRegionalPermission = (permission: string) => {
-    if (hasRole('super_admin') || hasRole('regional_admin')) return true;
-    
-    return userRegionalRoles.some(userRole => 
+    // Only super_admin gets an unconditional bypass.
+    // The base `regional_admin` role is just a login token — granular regional
+    // role permissions decide what's visible/reachable inside the portal.
+    // True region owners still see everything because they hold the auto-created
+    // "Regional Admin" granular role which contains every permission key.
+    if (hasRole('super_admin')) return true;
+
+    return userRegionalRoles.some(userRole =>
       userRole.regional_roles?.permissions?.includes(permission)
     );
   };
