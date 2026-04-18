@@ -352,7 +352,7 @@ const RegionalDashboard: React.FC = () => {
     <div className="h-full flex flex-col overflow-hidden">
       {/* ── FIXED FILTER BAR (never scrolls) ── */}
       <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
           {/* Period */}
           <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
             {periodOptions.map(opt => (
@@ -395,7 +395,7 @@ const RegionalDashboard: React.FC = () => {
 
           {/* Event type dropdown */}
           <Select value={eventType} onValueChange={setEventType}>
-            <SelectTrigger className="w-[160px] h-8 text-xs rounded-lg">
+            <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -406,7 +406,7 @@ const RegionalDashboard: React.FC = () => {
           </Select>
 
           {/* Search */}
-          <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <div className="relative flex-1 sm:min-w-[180px] sm:max-w-xs">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Search events..."

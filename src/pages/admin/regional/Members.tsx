@@ -275,8 +275,8 @@ const Members: React.FC = () => {
                 </Dialog>
               </div>
               
-              <div className="flex flex-wrap gap-4 items-center mb-4">
-                <div className="relative flex-1 min-w-[250px]">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
+                <div className="relative flex-1 sm:min-w-[250px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     placeholder="Search by name, email, or phone..." 
@@ -287,7 +287,7 @@ const Members: React.FC = () => {
                 </div>
                 
                 <Select value={memberStatusFilter} onValueChange={setMemberStatusFilter}>
-                  <SelectTrigger className="w-[180px] bg-background/60">
+                  <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
                     <SelectValue placeholder="Filter by Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -300,7 +300,7 @@ const Members: React.FC = () => {
                 </Select>
 
                 <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
-                  <SelectTrigger className="w-[180px] bg-background/60">
+                  <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
                     <SelectValue placeholder="Filter by Type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -312,22 +312,23 @@ const Members: React.FC = () => {
                   </SelectContent>
                 </Select>
                 
-                <Button variant="outline" onClick={handleExportMembers}>
+                <Button variant="outline" onClick={handleExportMembers} className="w-full sm:w-auto">
                   <Download className="mr-2 h-4 w-4" />
                   Export ({filteredMembers.length})
                 </Button>
               </div>
 
-              <div className="rounded-xl border border-border/40 overflow-hidden">
+              <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       <TableHead className="w-[20%]">Name</TableHead>
-                      <TableHead className="w-[20%]">Address</TableHead>
-                      <TableHead>Phone</TableHead>
+                      <TableHead className="hidden md:table-cell w-[20%]">Address</TableHead>
+                      <TableHead className="hidden sm:table-cell">Phone</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Join Date</TableHead>
+                      <TableHead className="hidden lg:table-cell">Join Date</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -352,8 +353,8 @@ const Members: React.FC = () => {
                           <TableCell className="font-medium">
                             {member.profiles?.last_name} {member.profiles?.first_name}
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
-                          <TableCell>{member.profiles?.phone || 'N/A'}</TableCell>
+                          <TableCell className="hidden md:table-cell max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
+                          <TableCell className="hidden sm:table-cell">{member.profiles?.phone || 'N/A'}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
@@ -368,7 +369,7 @@ const Members: React.FC = () => {
                               {member.status || 'new'}
                             </Badge>
                           </TableCell>
-                          <TableCell>{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -404,6 +405,7 @@ const Members: React.FC = () => {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             </div>
         </div>

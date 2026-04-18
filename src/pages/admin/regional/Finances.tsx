@@ -153,30 +153,32 @@ const RegionalFinances: React.FC = () => {
         </div>
 
         <Tabs defaultValue="transactions" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <TabsList>
-              <TabsTrigger value="transactions">All Transactions</TabsTrigger>
-              <TabsTrigger value="tithes">Tithes</TabsTrigger>
-              <TabsTrigger value="offerings">Offerings</TabsTrigger>
-              <TabsTrigger value="special">Special Giving</TabsTrigger>
-              <TabsTrigger value="expenses">Expenses</TabsTrigger>
-              <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-3">
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
+              <TabsList className="w-max">
+                <TabsTrigger value="transactions">All Transactions</TabsTrigger>
+                <TabsTrigger value="tithes">Tithes</TabsTrigger>
+                <TabsTrigger value="offerings">Offerings</TabsTrigger>
+                <TabsTrigger value="special">Special Giving</TabsTrigger>
+                <TabsTrigger value="expenses">Expenses</TabsTrigger>
+                <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
+              </TabsList>
+            </div>
             
-            <div className="flex items-center gap-2">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search transactions..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8 w-64"
+                  className="pl-8 w-full sm:w-64"
                 />
               </div>
               
               <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Record Transaction
                   <ChevronDown className="ml-2 h-4 w-4" />
@@ -235,12 +237,13 @@ const RegionalFinances: React.FC = () => {
                     )}
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
@@ -248,19 +251,20 @@ const RegionalFinances: React.FC = () => {
                      <TableBody>
                        {filteredTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
-                          <TableCell>{format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{transaction.category?.name}</TableCell>
-                          <TableCell>{transaction.description || '-'}</TableCell>
+                          <TableCell className="hidden md:table-cell">{transaction.description || '-'}</TableCell>
                           <TableCell>
                             <Badge variant={transaction.category?.type?.toLowerCase() === 'income' ? 'default' : 'secondary'}>
                               {transaction.category?.type}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(transaction.amount))}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(transaction.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -280,26 +284,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No tithe transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Member</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tithes.map((tithe) => (
                         <TableRow key={tithe.id}>
-                          <TableCell>{format(new Date(tithe.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(tithe.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>Member</TableCell>
-                          <TableCell>{tithe.description || 'Tithe payment'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(tithe.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{tithe.description || 'Tithe payment'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(tithe.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -319,26 +325,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No offering transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Service</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {offerings.map((offering) => (
                         <TableRow key={offering.id}>
-                          <TableCell>{format(new Date(offering.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(offering.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{offering.category?.name}</TableCell>
-                          <TableCell>{offering.description || 'Service offering'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(offering.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{offering.description || 'Service offering'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(offering.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -358,26 +366,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No special giving transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Fund</TableHead>
-                        <TableHead>Donor</TableHead>
+                        <TableHead className="hidden md:table-cell">Donor</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {specialGiving.map((gift) => (
                         <TableRow key={gift.id}>
-                          <TableCell>{format(new Date(gift.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(gift.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{gift.category?.name}</TableCell>
-                          <TableCell>Donor</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(gift.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">Donor</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(gift.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -397,26 +407,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No expense transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {expenses.map((expense) => (
                         <TableRow key={expense.id}>
-                          <TableCell>{format(new Date(expense.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(expense.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{expense.category?.name}</TableCell>
-                          <TableCell>{expense.description || '-'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(expense.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{expense.description || '-'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(expense.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>

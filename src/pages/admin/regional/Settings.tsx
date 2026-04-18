@@ -73,7 +73,7 @@ const Settings = () => {
     <>
       <div className="space-y-6">
         <Tabs defaultValue="regional" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto">
             <TabsTrigger value="regional">Regional Portal</TabsTrigger>
             <TabsTrigger value="branch">Branch Details</TabsTrigger>
             <TabsTrigger value="dcg">DCG Management</TabsTrigger>
