@@ -16,7 +16,7 @@ import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatWithCurrency } from "@/utils/currencyUtils";
-import RegionalFundraising from "./Fundraising";
+import FundraisingTabContent from "@/components/admin/regional/FundraisingTabContent";
 
 const RegionalFinances: React.FC = () => {
   console.log('RegionalFinances component loaded successfully');
