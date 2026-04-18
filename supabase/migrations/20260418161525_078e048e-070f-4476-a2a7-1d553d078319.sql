@@ -1,0 +1,2 @@
+INSERT INTO public.regional_user_roles (user_id, region_id, regional_role_id, is_active)
+VALUES ('3bf68690-2278-4115-bb26-1a6d91ea797b', 'dbf432ef-5844-4558-b385-698e17be919e', '50b48078-2dc8-4e19-8edc-8ca5334dc5c3', true);
