@@ -55,7 +55,7 @@ const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = 
     .map((page) => ({
       title: page.title,
       path: page.path,
-      icon: ICON_BY_PATH[page.path] ?? LayoutDashboard,
+      icon: ICON_BY_PATH[page.path] ?? (LayoutDashboard as IconType),
     }));
 
   return <AdminLayout menuItems={menuItems}>{children}</AdminLayout>;
