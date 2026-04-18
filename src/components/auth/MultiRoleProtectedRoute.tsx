@@ -34,7 +34,8 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
 
   // If regional_admin is in allowedRoles, also accept users with regional role assignments
   const hasRegionalInAllowed = allowedRoles.includes('regional_admin');
-  if (hasAnyRole(allowedRoles) || (hasRegionalInAllowed && hasRegionalPortalAccess)) {
+  if (hasAnyRole(allowedRoles.filter(r => r !== 'super_admin' || hasRole('super_admin'))) ||
+      (hasRegionalInAllowed && hasRegionalPortalAccess)) {
     return <>{children}</>;
   }
 
