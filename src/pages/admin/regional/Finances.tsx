@@ -235,12 +235,13 @@ const RegionalFinances: React.FC = () => {
                     )}
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
@@ -248,19 +249,20 @@ const RegionalFinances: React.FC = () => {
                      <TableBody>
                        {filteredTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
-                          <TableCell>{format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(transaction.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{transaction.category?.name}</TableCell>
-                          <TableCell>{transaction.description || '-'}</TableCell>
+                          <TableCell className="hidden md:table-cell">{transaction.description || '-'}</TableCell>
                           <TableCell>
                             <Badge variant={transaction.category?.type?.toLowerCase() === 'income' ? 'default' : 'secondary'}>
                               {transaction.category?.type}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(transaction.amount))}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(transaction.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -280,26 +282,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No tithe transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Member</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tithes.map((tithe) => (
                         <TableRow key={tithe.id}>
-                          <TableCell>{format(new Date(tithe.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(tithe.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>Member</TableCell>
-                          <TableCell>{tithe.description || 'Tithe payment'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(tithe.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{tithe.description || 'Tithe payment'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(tithe.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -319,26 +323,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No offering transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Service</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {offerings.map((offering) => (
                         <TableRow key={offering.id}>
-                          <TableCell>{format(new Date(offering.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(offering.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{offering.category?.name}</TableCell>
-                          <TableCell>{offering.description || 'Service offering'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(offering.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{offering.description || 'Service offering'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(offering.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -358,26 +364,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No special giving transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Fund</TableHead>
-                        <TableHead>Donor</TableHead>
+                        <TableHead className="hidden md:table-cell">Donor</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {specialGiving.map((gift) => (
                         <TableRow key={gift.id}>
-                          <TableCell>{format(new Date(gift.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(gift.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{gift.category?.name}</TableCell>
-                          <TableCell>Donor</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(gift.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">Donor</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(gift.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -397,26 +405,28 @@ const RegionalFinances: React.FC = () => {
                     <p className="font-medium">No expense transactions found</p>
                   </div>
                 ) : (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Date</TableHead>
                         <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {expenses.map((expense) => (
                         <TableRow key={expense.id}>
-                          <TableCell>{format(new Date(expense.transaction_date), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(new Date(expense.transaction_date), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>{expense.category?.name}</TableCell>
-                          <TableCell>{expense.description || '-'}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(Number(expense.amount))}</TableCell>
+                          <TableCell className="hidden md:table-cell">{expense.description || '-'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">{formatCurrency(Number(expense.amount))}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
