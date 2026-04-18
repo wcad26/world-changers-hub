@@ -360,19 +360,7 @@ const RegionSpecificAuth = () => {
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Need to register for {region.name} access?
-              </p>
-              <Button
-                variant="link"
-                className="text-wca-teal hover:text-wca-teal/80 font-medium p-0 h-auto"
-                onClick={() => navigate(`/register/regions/${regionSlug}`)}
-                disabled={isLoading}
-              >
-                Request access to {region.name}
-              </Button>
-            </div>
+
 
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-xs text-center text-muted-foreground mb-2">
