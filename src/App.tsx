@@ -24,8 +24,6 @@ import SuperAuth from "./pages/SuperAuth";
 import DcgAuth from "./pages/DcgAuth";
 import RegionSelect from "./pages/RegionSelect";
 import RegionSpecificAuth from "./components/auth/RegionSpecificAuth";
-import RegionalRegister from "./pages/auth/RegionalRegister";
-import RegionSpecificRegister from "./pages/auth/RegionSpecificRegister";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import MemberRegister from "./pages/MemberRegister";
