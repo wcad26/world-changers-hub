@@ -141,10 +141,19 @@ const DcgAuth = () => {
               </div>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex-col gap-3">
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => navigate('/auth/regional')}
+              disabled={loading}
+            >
+              ← Back to Regional Login
             </Button>
           </CardFooter>
         </form>
