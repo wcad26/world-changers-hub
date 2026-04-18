@@ -1,107 +1,62 @@
-import React from "react";
-import AdminLayout from "./AdminLayout";
-import { useAuth } from "@/hooks/useAuth";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Calendar, 
-  DollarSign, 
-  MapPin, 
-  PiggyBank, 
-  Home, 
+import React from 'react';
+import AdminLayout from './AdminLayout';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  LayoutDashboard,
+  Users,
+  Calendar,
+  PiggyBank,
+  Home,
   Heart,
   MessageSquare,
   Settings,
   Building2,
   KeyRound,
-  Award
-} from "lucide-react";
+  Award,
+  HandCoins,
+  BarChart3,
+  MapPin,
+} from 'lucide-react';
+import { REGIONAL_PAGES } from '@/config/regionalPermissions';
+
+const ICON_BY_PATH: Record<string, React.ComponentType<{ className?: string; size?: number }>> = {
+  '/admin/regional/dashboard':       LayoutDashboard,
+  '/admin/regional/members':         Users,
+  '/admin/regional/discipleship':    Heart,
+  '/admin/regional/events':          Calendar,
+  '/admin/regional/dcg':             Home,
+  '/admin/regional/certificates':    Award,
+  '/admin/regional/finances':        PiggyBank,
+  '/admin/regional/fundraising':     HandCoins,
+  '/admin/regional/reports':         BarChart3,
+  '/admin/regional/communication':   MessageSquare,
+  '/admin/regional/locations':       MapPin,
+  '/admin/regional/branch-settings': Building2,
+  '/admin/regional/user-roles':      KeyRound,
+  '/admin/regional/settings':        Settings,
+};
 
 interface EnhancedRegionalAdminLayoutProps {
   children?: React.ReactNode;
 }
 
+/**
+ * Permission-aware regional admin layout.
+ * The sidebar only shows pages the current user has access to.
+ */
 const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = ({ children }) => {
-  const { hasRegionalPermission } = useAuth();
+  const { hasRole, hasRegionalPermission } = useAuth();
+  const isPrivileged = hasRole('super_admin') || hasRole('regional_admin');
 
-  // Define all possible menu items with their required permissions
-  const allMenuItems = [
-    { 
-      title: "Dashboard", 
-      path: "/admin/regional/dashboard", 
-      icon: LayoutDashboard as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "dashboard_view"
-    },
-    { 
-      title: "Member Management", 
-      path: "/admin/regional/members", 
-      icon: Users as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "members_view"
-    },
-    { 
-      title: "Discipleship Management", 
-      path: "/admin/regional/discipleship", 
-      icon: Heart as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "members_view"
-    },
-    { 
-      title: "Event Management", 
-      path: "/admin/regional/events", 
-      icon: Calendar as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "events_view"
-    },
-    { 
-      title: "Finance Management", 
-      path: "/admin/regional/finances", 
-      icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "finances_view"
-    },
-    { 
-      title: "DCG Management", 
-      path: "/admin/regional/dcg", 
-      icon: Home as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "dcg_view"
-    },
-    { 
-      title: "Certificate Management", 
-      path: "/admin/regional/certificates", 
-      icon: Award as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "members_view"
-    },
-    { 
-      title: "Communication Mgmt", 
-      path: "/admin/regional/communication", 
-      icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "communication_view"
-    },
-    { 
-      title: "Regional Website Info", 
-      path: "/admin/regional/branch-settings", 
-      icon: Building2 as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "settings_view"
-    },
-    { 
-      title: "Access Management", 
-      path: "/admin/regional/user-roles", 
-      icon: KeyRound as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "settings_edit"
-    },
-    { 
-      title: "Settings", 
-      path: "/admin/regional/settings", 
-      icon: Settings as React.ComponentType<{ className?: string; size?: number }>,
-      permission: "settings_view"
-    },
-  ];
+  const menuItems = REGIONAL_PAGES
+    .filter((page) => isPrivileged || hasRegionalPermission(page.permission))
+    .map((page) => ({
+      title: page.title,
+      path: page.path,
+      icon: ICON_BY_PATH[page.path] ?? LayoutDashboard,
+    }));
 
-  // Filter menu items based on user permissions
-  const menuItems = allMenuItems.filter(item => hasRegionalPermission(item.permission));
-
-  return (
-    <AdminLayout menuItems={menuItems}>
-      {children}
-    </AdminLayout>
-  );
+  return <AdminLayout menuItems={menuItems}>{children}</AdminLayout>;
 };
 
 export default EnhancedRegionalAdminLayout;
