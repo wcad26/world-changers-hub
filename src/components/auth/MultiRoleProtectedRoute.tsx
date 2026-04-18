@@ -32,7 +32,9 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
-  // If regional_admin is in allowedRoles, also accept users with regional role assignments
+  // If regional_admin is in allowedRoles, also accept users with regional role assignments.
+  // Note: super_admin no longer implicitly grants regional/dcg portal access — it must be
+  // explicitly listed in allowedRoles to be honored.
   const hasRegionalInAllowed = allowedRoles.includes('regional_admin');
   if (hasAnyRole(allowedRoles) || (hasRegionalInAllowed && hasRegionalPortalAccess)) {
     return <>{children}</>;

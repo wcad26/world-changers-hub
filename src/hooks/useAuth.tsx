@@ -214,28 +214,67 @@ export const useAuth = () => {
         }
       }
 
-      // Fetch user DCG if user has dcg_admin role
-      const hasDcgRole = rolesData?.some(role => role.role === 'dcg_admin' && role.is_active);
-      if (hasDcgRole) {
-        const { data: dcgId, error: dcgIdError } = await supabase
-          .rpc('get_user_dcg', { _user_id: userId });
+      // Resolve userDcg via any kind of association (session, leader, or member)
+      let resolvedDcg: Dcg | null = null;
 
-        if (dcgIdError) {
-          console.error('useAuth: DCG ID fetch error:', dcgIdError);
-        } else if (dcgId) {
-          const { data: dcgData, error: dcgError } = await supabase
+      // 1. Try dcg_user_sessions (dedicated leader provisioning)
+      const { data: dcgId, error: dcgIdError } = await supabase
+        .rpc('get_user_dcg', { _user_id: userId });
+
+      if (dcgIdError) {
+        console.error('useAuth: DCG session RPC error:', dcgIdError);
+      } else if (dcgId) {
+        const { data: dcgData } = await supabase
+          .from('dcgs')
+          .select('*')
+          .eq('id', dcgId)
+          .maybeSingle();
+        if (dcgData) resolvedDcg = dcgData;
+      }
+
+      // 2/3. Fall back to leader_id or dcg_members lookup using the user's member ids
+      if (!resolvedDcg) {
+        const { data: memberRows } = await supabase
+          .from('members')
+          .select('id')
+          .eq('profile_id', userId);
+
+        const memberIds = (memberRows || []).map(m => m.id);
+
+        if (memberIds.length > 0) {
+          // 2. Leader of a DCG
+          const { data: ledDcg } = await supabase
             .from('dcgs')
             .select('*')
-            .eq('id', dcgId)
-            .single();
+            .in('leader_id', memberIds)
+            .eq('is_active', true)
+            .limit(1)
+            .maybeSingle();
 
-          if (dcgError && dcgError.code !== 'PGRST116') {
-            console.error('useAuth: DCG fetch error:', dcgError);
-          } else if (dcgData) {
-            console.log('useAuth: User DCG loaded:', dcgData.name);
-            setUserDcg(dcgData);
+          if (ledDcg) {
+            resolvedDcg = ledDcg;
+          } else {
+            // 3. Regular dcg_members membership (prefer leader/co-leader role)
+            const { data: memberships } = await supabase
+              .from('dcg_members')
+              .select('dcg_id, role, dcgs:dcg_id (*)')
+              .in('member_id', memberIds)
+              .eq('is_active', true);
+
+            if (memberships && memberships.length > 0) {
+              const preferred =
+                memberships.find(m => m.role === 'Leader') ||
+                memberships.find(m => m.role === 'Assistant') ||
+                memberships[0];
+              if (preferred?.dcgs) resolvedDcg = preferred.dcgs as Dcg;
+            }
           }
         }
+      }
+
+      if (resolvedDcg) {
+        console.log('useAuth: User DCG resolved:', resolvedDcg.name);
+        setUserDcg(resolvedDcg);
       }
 
       // Fetch regional roles if user has region
@@ -290,12 +329,14 @@ export const useAuth = () => {
     return portals;
   };
 
+  const isDcgMember = userDcg !== null;
+
   const canAccessPortal = (portalType: string): boolean => {
     switch (portalType) {
       case 'super': return hasRole('super_admin');
-      case 'regional': return hasRole('super_admin') || hasRole('regional_admin');
-      case 'dcg': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin');
-      case 'member': return hasRole('super_admin') || hasRole('regional_admin') || hasRole('dcg_admin') || hasRole('member');
+      case 'regional': return hasRole('regional_admin') || userRegionalRoles.length > 0;
+      case 'dcg': return hasRole('dcg_admin') || isDcgMember;
+      case 'member': return hasRole('member') || memberRecord !== null;
       default: return false;
     }
   };
@@ -313,7 +354,7 @@ export const useAuth = () => {
     );
   };
 
-  const hasRegionalPortalAccess = hasRole('super_admin') || hasRole('regional_admin') || userRegionalRoles.length > 0;
+  const hasRegionalPortalAccess = hasRole('regional_admin') || userRegionalRoles.length > 0;
 
   const isSuperAdmin = () => hasRole('super_admin');
   const isRegionalAdmin = () => hasRole('regional_admin');
@@ -421,6 +462,7 @@ export const useAuth = () => {
     isRegionalAdmin,
     isMember,
     isDcgAdmin,
+    isDcgMember,
     signOut,
     refetchUserData: () => user ? fetchUserData(user.id) : null
   };
