@@ -142,8 +142,6 @@ const App = () => {
             <Route path="/auth/regional" element={<RegionalAuth />} />
             <Route path="/auth/regions" element={<RegionSelect />} />
             <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
-            <Route path="/register/regional" element={<RegionalRegister />} />
-            <Route path="/register/regions/:regionCode" element={<RegionSpecificRegister />} />
             <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
             <Route path="/member/register/:regionCode" element={<MemberRegister />} />
             <Route path="/auth/super" element={<SuperAuth />} />
