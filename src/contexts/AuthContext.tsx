@@ -248,6 +248,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
+      // Mid-signout: ignore noise until SIGNED_OUT lands
       if (isSigningOutRef.current && event !== 'SIGNED_OUT') {
         return;
       }
@@ -273,25 +274,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      // A real authenticated session: SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION w/ user
       if (session?.user) {
-        if (isJustSignedOut()) {
-          return;
+        // A new explicit sign-in invalidates any pending "just signed out" guard
+        if (event === 'SIGNED_IN') {
+          clearJustSignedOut();
         }
-        setUser((prev: any) => (prev?.id === session.user.id ? prev : session.user));
+
+        setUser((prev: any) => {
+          const isNewUser = prev?.id !== session.user.id;
+          if (isNewUser) {
+            // Reset derived state so route guards don't read stale roles/dcg
+            setProfile(null);
+            setUserRoles([]);
+            setUserRegion(null);
+            setUserDcg(null);
+            setMemberRecord(null);
+            setUserRegionalRoles([]);
+            setLoading(true);
+            setInitialized(false);
+            initializedRef.current = false;
+          }
+          return isNewUser ? session.user : prev;
+        });
+
+        // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
         setTimeout(() => {
           if (mounted) fetchUserData(session.user.id);
         }, 0);
-      } else {
-        if (!initializedRef.current) {
-          return;
-        }
-        clearAllState();
-        setLoading(false);
+        return;
       }
+
+      // No session
+      if (!initializedRef.current) return;
+      clearAllState();
+      setLoading(false);
     });
 
     const getInitialSession = async () => {
       try {
+        // Only the initial restore path honors the "just signed out" guard,
+        // to prevent local-storage rehydration immediately after logout.
         if (isJustSignedOut()) {
           await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
           clearJustSignedOut();
@@ -314,10 +337,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session.user);
           await fetchUserData(session.user.id);
         } else {
+          initializedRef.current = true;
+          setInitialized(true);
           setLoading(false);
         }
-        initializedRef.current = true;
-        setInitialized(true);
       } catch (error) {
         console.error('Auth: initial session exception', error);
         if (mounted) {
