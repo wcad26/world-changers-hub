@@ -21,19 +21,15 @@ const DcgAuth = () => {
   const navigate = useNavigate();
   const auth = useAuth();
   const userId = auth.user?.id;
+  const authReady = auth.initialized && !auth.loading;
 
   useEffect(() => {
-    // If user is already authenticated, route them to the appropriate destination.
-    // IMPORTANT: depend only on the user id — `hasRole` and `getAvailablePortals`
-    // are recreated every render by useAuth and would otherwise cause an
-    // infinite re-run / navigate loop that visibly reloads the preview.
-    if (!userId) return;
+    // Only redirect once auth is fully hydrated (roles, dcg, regional roles loaded).
+    if (!authReady || !userId) return;
 
     // If the user just signed out, do NOT auto-redirect them back into a portal.
-    // The flag is short-lived (5s) and prevents the local-storage rehydration race.
     try {
-      const flag = sessionStorage.getItem('wca:just_signed_out');
-      if (flag) return;
+      if (sessionStorage.getItem('wca:just_signed_out')) return;
     } catch {
       /* ignore */
     }
@@ -41,16 +37,16 @@ const DcgAuth = () => {
     const availablePortals = auth.getAvailablePortals();
 
     if (availablePortals.length > 1) {
-      navigate('/portal-selector');
+      navigate('/portal-selector', { replace: true });
     } else if (auth.hasRole('dcg_admin')) {
-      navigate('/dcg/dashboard');
+      navigate('/dcg/dashboard', { replace: true });
     } else if (auth.hasRole('regional_admin')) {
-      navigate('/admin/regional/dashboard');
+      navigate('/admin/regional/dashboard', { replace: true });
     } else if (auth.hasRole('super_admin')) {
-      navigate('/admin/super/dashboard');
+      navigate('/admin/super/dashboard', { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [authReady, userId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
