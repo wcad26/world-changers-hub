@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Crown, Users, MessageSquare, UserCheck, ArrowRight } from 'lucide-react';
+import { Crown, Users, MessageSquare, UserCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 const PortalSelector = () => {
-  const { user, canAccessPortal, signOut } = useAuth();
+  const { user, canAccessPortal, signOut, initialized, loading } = useAuth();
   const navigate = useNavigate();
+
+  // Bounce unauthenticated visitors to the regional auth landing page.
+  useEffect(() => {
+    if (initialized && !loading && !user) {
+      navigate('/auth/regional', { replace: true });
+    }
+  }, [initialized, loading, user, navigate]);
+
+  // Wait for auth + role/dcg/regional data to fully hydrate.
+  if (!initialized || loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const portals = [
     {

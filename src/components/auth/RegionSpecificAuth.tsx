@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Users, Shield, Loader2, AlertCircle } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/hooks/useAuth';
 
 
 const RegionSpecificAuth = () => {
@@ -22,42 +23,24 @@ const RegionSpecificAuth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user, initialized, loading: authLoading, userRegion, hasRole, hasRegionalPortalAccess } = useAuth();
 
   const from = (location.state as any)?.from?.pathname || '/admin/regional/dashboard';
 
+  // Redirect already-authenticated regional admins for this region once auth has hydrated.
   useEffect(() => {
-    if (region) {
-      console.log(`RegionSpecificAuth: Component mounted for region ${region.name}, checking existing session...`);
-      checkExistingSession();
-    }
-  }, [region]);
-
-  const checkExistingSession = async () => {
+    if (!initialized || authLoading || !user || !region) return;
     try {
-      console.log(`RegionSpecificAuth: Checking for existing session for region ${region?.name}...`);
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('RegionSpecificAuth: Session check error:', error);
-        return;
-      }
+      if (sessionStorage.getItem('wca:just_signed_out')) return;
+    } catch { /* ignore */ }
 
-      if (session?.user && region) {
-        console.log('RegionSpecificAuth: Found existing session for user:', session.user.id);
-        const hasRole = await checkRegionalAdminRole(session.user.id, region.id);
-        if (hasRole) {
-          console.log('RegionSpecificAuth: Valid regional admin session found, redirecting...');
-          navigate(from, { replace: true });
-        } else {
-          console.log('RegionSpecificAuth: User does not have regional admin role for this region');
-        }
-      } else {
-        console.log('RegionSpecificAuth: No existing session found');
-      }
-    } catch (error) {
-      console.error('RegionSpecificAuth: Exception during session check:', error);
+    const belongsToRegion = userRegion?.id === region.id;
+    if (!belongsToRegion) return;
+
+    if (hasRole('super_admin') || hasRole('regional_admin') || hasRegionalPortalAccess) {
+      navigate(from, { replace: true });
     }
-  };
+  }, [initialized, authLoading, user, region, userRegion, hasRole, hasRegionalPortalAccess, from, navigate]);
 
   const checkRegionalAdminRole = async (userId: string, regionId: string): Promise<boolean> => {
     try {
