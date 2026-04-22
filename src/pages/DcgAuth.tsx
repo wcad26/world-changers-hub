@@ -15,27 +15,33 @@ import wcaLogo from '@/assets/wca-logo.png';
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { user, hasRole, getAvailablePortals } = useAuth();
+  const auth = useAuth();
+  const userId = auth.user?.id;
 
   useEffect(() => {
-    // If user is already authenticated, check if they have multiple roles
-    if (user) {
-      const availablePortals = getAvailablePortals();
-      
-      if (availablePortals.length > 1) {
-        navigate('/portal-selector');
-      } else if (hasRole('dcg_admin')) {
-        navigate('/dcg/dashboard');
-      } else if (hasRole('regional_admin')) {
-        navigate('/admin/regional/dashboard');
-      } else if (hasRole('super_admin')) {
-        navigate('/admin/super/dashboard');
-      }
+    // If user is already authenticated, route them to the appropriate destination.
+    // IMPORTANT: depend only on the user id — `hasRole` and `getAvailablePortals`
+    // are recreated every render by useAuth and would otherwise cause an
+    // infinite re-run / navigate loop that visibly reloads the preview.
+    if (!userId) return;
+
+    const availablePortals = auth.getAvailablePortals();
+
+    if (availablePortals.length > 1) {
+      navigate('/portal-selector');
+    } else if (auth.hasRole('dcg_admin')) {
+      navigate('/dcg/dashboard');
+    } else if (auth.hasRole('regional_admin')) {
+      navigate('/admin/regional/dashboard');
+    } else if (auth.hasRole('super_admin')) {
+      navigate('/admin/super/dashboard');
     }
-  }, [user, hasRole, getAvailablePortals, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,14 +126,28 @@ const DcgAuth = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
               <div className="text-right mt-1">
                 <Button
                   type="button"
