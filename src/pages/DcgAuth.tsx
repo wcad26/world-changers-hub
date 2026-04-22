@@ -65,7 +65,7 @@ const DcgAuth = () => {
       }
 
       if (data.user) {
-        // Check if user has any admin roles
+        // Check if user has any admin roles before allowing in.
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
@@ -79,16 +79,7 @@ const DcgAuth = () => {
           return;
         }
 
-        // Check if user has multiple roles and redirect accordingly
-        if (roleData.length > 1) {
-          navigate('/portal-selector');
-        } else if (roleData.some(role => role.role === 'dcg_admin')) {
-          navigate('/dcg/dashboard');
-        } else if (roleData.some(role => role.role === 'regional_admin')) {
-          navigate('/admin/regional/dashboard');
-        } else if (roleData.some(role => role.role === 'super_admin')) {
-          navigate('/admin/super/dashboard');
-        }
+        // Redirect is now handled by the auth-ready effect once roles/dcg are hydrated.
       }
     } catch (err: any) {
       setError('An unexpected error occurred. Please try again.');
