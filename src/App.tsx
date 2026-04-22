@@ -31,6 +31,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
 import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
 import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
 
 // Layout Components
 import EnhancedRegionalAdminLayout from "./components/admin/EnhancedRegionalAdminLayout";
@@ -123,6 +124,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AuthProvider>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
@@ -261,6 +263,7 @@ const App = () => {
             {/* Not Found Route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>;

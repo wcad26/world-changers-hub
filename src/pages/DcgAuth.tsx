@@ -29,6 +29,15 @@ const DcgAuth = () => {
     // infinite re-run / navigate loop that visibly reloads the preview.
     if (!userId) return;
 
+    // If the user just signed out, do NOT auto-redirect them back into a portal.
+    // The flag is short-lived (5s) and prevents the local-storage rehydration race.
+    try {
+      const flag = sessionStorage.getItem('wca:just_signed_out');
+      if (flag) return;
+    } catch {
+      /* ignore */
+    }
+
     const availablePortals = auth.getAvailablePortals();
 
     if (availablePortals.length > 1) {
