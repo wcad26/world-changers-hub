@@ -1,66 +1,71 @@
 
 
-## Two issues, one approved plan
+## Why the page keeps reloading and sign-out re-signs in
 
-### A. Endless reload/preview-churn loop (blocking edits)
+The console proves it:
 
-**Cause 1 — `useEffect` thrash in `src/pages/DcgAuth.tsx`.**
-The effect that auto-redirects already-authenticated users lists `hasRole` and `getAvailablePortals` in its dependency array. Both are recreated every render by `useAuth`, so the effect re-runs forever, repeatedly calling `navigate(...)` and re-mounting the auth tree. This is the dominant source of the visible "loading and reloading" the user sees.
-
-**Cause 2 — DCG portal routes bypass the DCG-association gate.**
-In `src/App.tsx`, every `/dcg/*` route is wrapped in `MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}`, never in `DcgProtectedRoute`. Result: a `regional_admin`/`super_admin` (e.g. Timah) is admitted to `/dcg/dashboard` even with `userDcg=null`, the dashboard renders against an undefined DCG id, child queries get rejected/empty, and the layout header shows a generic "DCG Portal" — exactly the "vague DCG that does not exist" we already fixed at the auth-data layer but never wired into routing. This contradicts the policy already approved last turn.
-
-**Cause 3 — Multiple `useAuth` instances each install their own auth subscriber.**
-Console shows repeated "Setting up auth state listener..." / "Getting initial session..." pairs. Every `useAuth()` call mounts its own `onAuthStateChange` subscription and re-runs `fetchUserData`, multiplying network traffic and re-renders. Today this works but amplifies any other render churn (like Cause 1) into a visible reload storm.
-
-### B. Eye/show-password toggle missing on the DCG login page
-
-`src/pages/DcgAuth.tsx` renders a plain `<Input type="password">` with no toggle. SuperAuth and RegionSpecificAuth already use the same `Eye` / `EyeOff` pattern — we'll mirror it.
-
----
-
-## Fix (code only, no DB or schema changes)
-
-### 1. `src/pages/DcgAuth.tsx`
-- Stabilise the redirect effect: depend ONLY on `user?.id`. Read `hasRole`/`getAvailablePortals` inside the effect body without listing them in deps. This stops the re-run loop entirely.
-- Add a `showPassword` state and an `Eye` / `EyeOff` toggle button positioned absolutely inside the password field, matching the SuperAuth/RegionSpecificAuth implementation. Switch `<Input type=...>` between `'text'` and `'password'`.
-
-### 2. `src/App.tsx` — wrap DCG routes with the DCG-association guard
-Replace each `/dcg/*` route's `MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}` with a composition:
-```text
-<MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}>
-  <DcgProtectedRoute>
-    <DcgDashboard />
-  </DcgProtectedRoute>
-</MultiRoleProtectedRoute>
 ```
-The outer guard ensures the user is authenticated; the inner `DcgProtectedRoute` (which we already updated) shows the friendly "No DCG Association" screen when `userDcg` is null. Timah will see KOTTO DCG once `userDcg` resolves; pure super admins or regional admins with no DCG link will see the explicit "no DCG" screen instead of an empty dashboard.
-
-### 3. `src/hooks/useAuth.tsx` — minor hardening (optional but recommended)
-- Memoise the returned helper functions (`hasRole`, `hasAnyRole`, `canAccessPortal`, `getAvailablePortals`, `hasRegionalPermission`) with `useCallback` so any consumer that lists them as deps (current or future) doesn't thrash. Keys: `[userRoles]`, `[userRoles, userRegionalRoles, memberRecord, userDcg]` as appropriate.
-- Reduce log noise: drop the per-render `console.log` in `hasRole` (it's firing dozens of times per second in the console panel and contributes to perceived churn). Keep the auth-state-change and fetch logs.
-
-No change to the multi-instance subscription pattern in this pass — fixing #1 alone removes the visible loop. Switching `useAuth` to a single shared context can come later as a perf cleanup.
-
----
-
-## Files to edit
-
-```text
-src/pages/DcgAuth.tsx       (stabilise redirect effect deps + add Eye/EyeOff password toggle)
-src/App.tsx                 (wrap each /dcg/* route with DcgProtectedRoute inside MultiRoleProtectedRoute)
-src/hooks/useAuth.tsx       (memoise helpers with useCallback, drop hasRole console.log spam)
+useAuth: Setting up auth state listener...   ← instance A
+useAuth: Setting up auth state listener...   ← instance B
+useAuth: Fetching user data for: ec363...    ← A
+useAuth: Fetching user data for: ec363...    ← B
+useAuth: Fetching user data for: ec363...    ← C  (3 fetches per event!)
 ```
 
-No DB changes. No edits to `DcgProtectedRoute.tsx` (already correct from the last turn).
+`useAuth` is a plain hook, not a context. Every component that imports it (`PortalSelector`, `DcgAuth`, layouts, route guards, sidebars, dashboards…) **creates its own Supabase auth listener and its own user-data fetch pipeline**. That single design flaw causes both bugs:
 
----
+1. **Endless reload feel** — N listeners × every auth event = N re-fetches and N state churns. Any navigation mounts new `useAuth` instances, each one re-subscribes, each subscription fires `INITIAL_SESSION` immediately, each one re-fetches profile/roles/region/member/dcg/regional-roles. Components depending on those values re-render in a cascade. This is the "loading and reloading" the user sees.
+2. **Sign out re-signs in** — `signOut()` is invoked on instance X. `SIGNED_OUT` fans out to every instance, each clears its own local state and toasts/navigates. But because navigating to `/dcg-auth` mounts a **fresh** `useAuth`, that fresh instance's `getInitialSession()` reads the Supabase session from local storage *before* the global sign-out has fully cleared it (race), sees a user, sets `user`, the `DcgAuth` effect detects `user` and routes back into the portal. Net effect: signed back in.
+
+The previously approved "stabilise the redirect effect / memoise helpers" patch reduces a fraction of the churn but cannot fix this — the root cause is having many independent auth subscriptions.
+
+## Fix: one shared auth context, one listener, one fetch
+
+Convert `useAuth` from a hook into a React Context provider so the entire app shares **one** auth state machine.
+
+### 1. New `src/contexts/AuthContext.tsx`
+- Move all current logic from `src/hooks/useAuth.tsx` into an `AuthProvider` component:
+  - One `onAuthStateChange` subscription, lifetime = app lifetime.
+  - One `getSession()` initial probe.
+  - One `fetchUserData()` pipeline keyed by user id; if the same id is requested while a fetch is in flight, dedupe.
+  - All helpers (`hasRole`, `hasAnyRole`, `canAccessPortal`, `getAvailablePortals`, `hasRegionalPermission`, `signOut`, etc.) wrapped in `useCallback`/`useMemo` with stable deps so consumers don't re-render needlessly.
+- Export a `useAuth()` hook that just calls `useContext(AuthContext)` and throws if used outside the provider.
+
+### 2. `src/App.tsx`
+- Wrap the app inside `<BrowserRouter>` with `<AuthProvider>`. Order: `QueryClientProvider → TooltipProvider → BrowserRouter → AuthProvider → Routes`. (AuthProvider must be inside BrowserRouter because `signOut` uses `useNavigate`/`useLocation`.)
+
+### 3. `src/hooks/useAuth.tsx`
+- Reduce to a thin re-export: `export { useAuth } from '@/contexts/AuthContext'` so existing imports across the codebase continue to work without edits.
+
+### 4. Hard-stop the sign-out → re-sign-in race
+Inside the new provider's `signOut`:
+- Set a module-level `isSigningOut = true` flag immediately.
+- Call `supabase.auth.signOut({ scope: 'global' })`.
+- In `onAuthStateChange`, when an event arrives **and** `isSigningOut` is true, ignore any non-SIGNED_OUT event (no `INITIAL_SESSION` rehydration, no `TOKEN_REFRESHED`).
+- Set a `sessionStorage` key `wca:just_signed_out` with a 5-second TTL. The provider's initial `getSession()` checks this flag on mount; if set, it skips reading the session, treats user as null, and clears the flag. This blocks the local-storage rehydration race even if the user navigates immediately.
+- Clear all state, then `navigate(redirectUrl, { replace: true })` so the auth page can't be "back-buttoned" into the authed state.
+
+### 5. `src/pages/DcgAuth.tsx` (small follow-up)
+- The redirect effect already depends only on `userId`. With the shared context, `userId` is now stable across the app, so the existing logic stops thrashing automatically. Add one guard: if `sessionStorage.getItem('wca:just_signed_out')` exists, skip auto-redirect entirely on mount.
+
+### 6. Trim console noise
+- Drop the per-fetch `console.log` lines inside `fetchUserData` (keep one summary line on success, one on error). The current logs spam ~20 lines per page transition, which itself contributes to the perceived "reloading".
+
+## Files touched
+
+```text
+src/contexts/AuthContext.tsx     (NEW — single provider, single listener, single fetch)
+src/hooks/useAuth.tsx            (shrink to re-export from AuthContext)
+src/App.tsx                      (wrap Routes with <AuthProvider> inside BrowserRouter)
+src/pages/DcgAuth.tsx            (respect the just_signed_out flag)
+```
+
+No DB changes. No edits to route guards, layouts, or the dozens of components that already call `useAuth()` — their imports keep working.
 
 ## Verification
 
-1. Open `/dcg-auth`: the password field shows an eye icon; clicking it toggles visibility. Identical UX to Super and Regional auth pages.
-2. Editing files in the preview no longer triggers a reload storm. Console no longer spams "Checking role …" and "Setting up auth state listener…" repeatedly while idle.
-3. As Timah, click DCG Portal in the switcher → land on `/dcg/dashboard` showing "KOTTO DCG" header with real members/events/finances.
-4. As a pure super admin (no DCG association), navigating to `/dcg/dashboard` shows the friendly "No DCG Association" card with Back/Sign Out buttons (not a blank dashboard, not `/unauthorized`).
-5. Existing dedicated DCG leaders (with `dcg_user_sessions` row) continue to land on their DCG without regression.
+1. Open any portal page; the console shows **exactly one** `Setting up auth state listener…` and **one** `Fetching user data for: …` per real auth event. Idle navigation no longer triggers re-fetches. Editing files in the preview no longer causes visible reload churn.
+2. Sign in as Timah, land on `/portal-selector`. Click Sign Out. The user is taken to `/dcg-auth` (or appropriate auth page) and stays there. Refreshing or navigating to `/portal-selector` does **not** re-authenticate them.
+3. Sign in again normally — no regressions: portal selector, DCG dashboard (KOTTO DCG), regional dashboard, super admin dashboard all load with their data.
+4. Existing dedicated DCG leaders and regional admins continue to work unchanged.
 
