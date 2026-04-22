@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2, Loader2
+  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2, Copy, Loader2
 } from 'lucide-react';
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -29,6 +29,7 @@ const DcgEvents = () => {
   const isTablet = useIsTablet();
   const useCardView = isMobile || isTablet;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<Event | null>(null);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
   const { data: events, isLoading: loadingEvents, error: eventsError } = useDcgEvents(userDcg?.id);
@@ -39,6 +40,10 @@ const DcgEvents = () => {
     if (confirm('Are you sure you want to delete this event?')) {
       await deleteEvent.mutateAsync(eventId);
     }
+  };
+
+  const handleDuplicateEvent = (event: Event) => {
+    setDuplicateSource(event);
   };
 
   const now = new Date();
@@ -85,6 +90,15 @@ const DcgEvents = () => {
               onClick={() => setSelectedEventForAttendance(event)}
             >
               <UserCheck className="h-3 w-3 mr-1" /> Attendance
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => handleDuplicateEvent(event)}
+              title="Duplicate event"
+            >
+              <Copy className="h-3 w-3" />
             </Button>
             <Button
               variant="ghost"
@@ -225,6 +239,10 @@ const DcgEvents = () => {
                         <DropdownMenuItem onClick={() => setSelectedEventForAttendance(event)}>
                           <UserCheck className="mr-2 h-4 w-4" />
                           Record Attendance
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicateEvent(event)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Duplicate Event
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDeleteEvent(event.id)} className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -417,6 +435,11 @@ const DcgEvents = () => {
         </Tabs>
 
         <CreateEventDialog isOpen={showCreateDialog} onClose={() => setShowCreateDialog(false)} />
+        <CreateEventDialog
+          isOpen={!!duplicateSource}
+          onClose={() => setDuplicateSource(null)}
+          duplicateFrom={duplicateSource}
+        />
         {selectedEventForAttendance && (
           <EventAttendanceDialog
             isOpen={!!selectedEventForAttendance}
