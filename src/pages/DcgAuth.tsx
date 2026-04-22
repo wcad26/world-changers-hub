@@ -34,11 +34,9 @@ const DcgAuth = () => {
       /* ignore */
     }
 
-    const availablePortals = auth.getAvailablePortals();
-
-    if (availablePortals.length > 1) {
-      navigate('/portal-selector', { replace: true });
-    } else if (auth.hasRole('dcg_admin')) {
+    // DCG login always lands on the DCG dashboard if the user can access it.
+    // Fall back to other dashboards only if they have no DCG access at all.
+    if (auth.canAccessPortal('dcg')) {
       navigate('/dcg/dashboard', { replace: true });
     } else if (auth.hasRole('regional_admin')) {
       navigate('/admin/regional/dashboard', { replace: true });
