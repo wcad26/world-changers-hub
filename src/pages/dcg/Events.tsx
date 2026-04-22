@@ -231,6 +231,10 @@ const DcgEvents = () => {
                           <UserCheck className="mr-2 h-4 w-4" />
                           Record Attendance
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicateEvent(event)}>
+                          <Copy className="mr-2 h-4 w-4" />
+                          Duplicate Event
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDeleteEvent(event.id)} className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete Event
