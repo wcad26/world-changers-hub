@@ -19,19 +19,20 @@ export default function MemberAuth() {
   const [error, setError] = useState('');
   
   const navigate = useNavigate();
-  const { user, isMember, isRegionalAdmin, loading: authLoading } = useAuth();
+  const { user, isMember, isRegionalAdmin, loading: authLoading, initialized } = useAuth();
   const { toast } = useToast();
 
-  // Redirect already-authenticated members once auth state is fully hydrated.
+  // Redirect already-authenticated members ONLY once auth state is fully hydrated
+  // (initialized + not loading). Prevents racing the AuthContext during sign-in.
   useEffect(() => {
-    if (authLoading) return;
+    if (!initialized || authLoading || !user) return;
     try {
       if (sessionStorage.getItem('wca:just_signed_out')) return;
     } catch { /* ignore */ }
-    if (user && (isMember() || isRegionalAdmin())) {
+    if (isMember() || isRegionalAdmin()) {
       navigate('/member/dashboard', { replace: true });
     }
-  }, [user, authLoading, isMember, isRegionalAdmin, navigate]);
+  }, [initialized, authLoading, user, isMember, isRegionalAdmin, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +55,9 @@ export default function MemberAuth() {
           title: "Welcome back!",
           description: "You have successfully signed in to your member portal.",
         });
-        navigate('/member/dashboard');
+        // Navigation handled by the auth-ready effect once roles hydrate.
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);

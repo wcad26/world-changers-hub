@@ -19,7 +19,8 @@ export const formatCurrency = (
  */
 export const getCurrencySymbol = (currency?: Currency | null): string => {
   if (!currency || !currency.symbol) {
-    console.error('Currency or currency symbol not provided to getCurrencySymbol');
+    // Currency is loaded asynchronously via react-query — missing during the
+    // first render is normal. Return empty silently instead of spamming the console.
     return '';
   }
   return currency.symbol;
@@ -34,7 +35,7 @@ export const formatWithCurrency = (
   locale: string = 'en-US'
 ): string => {
   if (!currency || !currency.symbol) {
-    console.error('Currency not provided to formatWithCurrency');
+    // Currency still loading — render the bare number as a graceful fallback.
     return amount.toLocaleString(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -58,7 +59,6 @@ export const formatCurrencyWithSymbol = (
   locale: string = 'en-US'
 ): string => {
   if (!currency || !currency.symbol) {
-    console.error('Currency not provided to formatCurrencyWithSymbol');
     return amount.toLocaleString(locale, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,

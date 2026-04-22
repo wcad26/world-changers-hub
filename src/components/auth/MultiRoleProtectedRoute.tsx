@@ -14,7 +14,7 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   allowedRoles,
   redirectTo = '/portal-selector'
 }) => {
-  const { user, loading, initialized, hasAnyRole, hasRegionalPortalAccess } = useAuth();
+  const { user, loading, initialized, hasAnyRole, hasRegionalPortalAccess, isDcgMember } = useAuth();
   const location = useLocation();
 
   // Wait until both the loading flag is cleared AND the auth hook has
@@ -33,10 +33,16 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   }
 
   // If regional_admin is in allowedRoles, also accept users with regional role assignments.
-  // Note: super_admin no longer implicitly grants regional/dcg portal access — it must be
-  // explicitly listed in allowedRoles to be honored.
+  // If dcg_admin is in allowedRoles, also accept users with a real DCG association
+  // (so DCG leaders without an explicit dcg_admin row can still enter the DCG portal).
+  // This must match DcgProtectedRoute and AuthContext.canAccessPortal('dcg').
   const hasRegionalInAllowed = allowedRoles.includes('regional_admin');
-  if (hasAnyRole(allowedRoles) || (hasRegionalInAllowed && hasRegionalPortalAccess)) {
+  const hasDcgInAllowed = allowedRoles.includes('dcg_admin');
+  if (
+    hasAnyRole(allowedRoles) ||
+    (hasRegionalInAllowed && hasRegionalPortalAccess) ||
+    (hasDcgInAllowed && isDcgMember)
+  ) {
     return <>{children}</>;
   }
 
