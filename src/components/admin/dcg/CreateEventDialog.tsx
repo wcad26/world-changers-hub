@@ -215,9 +215,11 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <DialogTitle>Create New Event</DialogTitle>
+          <DialogTitle>{duplicateFrom ? 'Duplicate Event' : 'Create New Event'}</DialogTitle>
           <DialogDescription>
-            Create a new event for your DCG. This event will be visible to DCG members.
+            {duplicateFrom
+              ? 'Review the prefilled details and pick new dates to duplicate this event.'
+              : 'Create a new event for your DCG. This event will be visible to DCG members.'}
           </DialogDescription>
         </DialogHeader>
 
