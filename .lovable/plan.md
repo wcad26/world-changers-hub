@@ -1,71 +1,118 @@
 
+Fix the post-login failure by removing the remaining auth races and making the app wait for one fully-hydrated auth state before any redirect or role check.
 
-## Why the page keeps reloading and sign-out re-signs in
+### Root causes still present in the current code
 
-The console proves it:
+1. `src/contexts/AuthContext.tsx` still blocks real logins after a recent sign-out:
+   - the listener ignores any `session?.user` event while `wca:just_signed_out` exists
+   - that flag is meant to suppress stale session rehydration, but it currently also suppresses a legitimate new login done within the TTL window
 
-```
-useAuth: Setting up auth state listener...   ← instance A
-useAuth: Setting up auth state listener...   ← instance B
-useAuth: Fetching user data for: ec363...    ← A
-useAuth: Fetching user data for: ec363...    ← B
-useAuth: Fetching user data for: ec363...    ← C  (3 fetches per event!)
-```
+2. `src/contexts/AuthContext.tsx` does not re-enter a loading/init phase when a new user signs in:
+   - `user` is set immediately
+   - but `loading` stays false and `initialized` stays true from the previous state
+   - route guards then evaluate half-loaded auth data (`userRoles`, `userDcg`, `memberRecord`, `userRegionalRoles` still empty/null), which can bounce the user back out right after login
 
-`useAuth` is a plain hook, not a context. Every component that imports it (`PortalSelector`, `DcgAuth`, layouts, route guards, sidebars, dashboards…) **creates its own Supabase auth listener and its own user-data fetch pipeline**. That single design flaw causes both bugs:
+3. Some login pages still bypass the shared auth context and do their own `supabase.auth.getSession()` + redirect logic:
+   - `src/pages/SuperAuth.tsx`
+   - `src/components/auth/RegionSpecificAuth.tsx`
+   - `src/pages/MemberAuth.tsx` partly uses its own session flag too
+   These independent checks can fight the provider and recreate the same instability.
 
-1. **Endless reload feel** — N listeners × every auth event = N re-fetches and N state churns. Any navigation mounts new `useAuth` instances, each one re-subscribes, each subscription fires `INITIAL_SESSION` immediately, each one re-fetches profile/roles/region/member/dcg/regional-roles. Components depending on those values re-render in a cascade. This is the "loading and reloading" the user sees.
-2. **Sign out re-signs in** — `signOut()` is invoked on instance X. `SIGNED_OUT` fans out to every instance, each clears its own local state and toasts/navigates. But because navigating to `/dcg-auth` mounts a **fresh** `useAuth`, that fresh instance's `getInitialSession()` reads the Supabase session from local storage *before* the global sign-out has fully cleared it (race), sees a user, sets `user`, the `DcgAuth` effect detects `user` and routes back into the portal. Net effect: signed back in.
+4. `src/components/auth/PortalSelector.tsx` is still effectively public and does not wait for auth hydration, so users can land there before roles are loaded and see an empty/no-portal state.
 
-The previously approved "stabilise the redirect effect / memoise helpers" patch reduces a fraction of the churn but cannot fix this — the root cause is having many independent auth subscriptions.
+### Implementation plan
 
-## Fix: one shared auth context, one listener, one fetch
+1. Stabilize the auth provider in `src/contexts/AuthContext.tsx`
+   - Keep one listener, but change the event handling rules:
+     - only suppress stale restore during the initial boot path
+     - do not ignore a real `SIGNED_IN` event because of `wca:just_signed_out`
+     - clear the sign-out flag immediately when a fresh sign-in is confirmed
+   - On any new authenticated session:
+     - set `loading = true`
+     - set `initialized = false`
+     - reset derived user state (`profile`, `userRoles`, `userRegion`, `userDcg`, `memberRecord`, `userRegionalRoles`)
+     - then fetch user data
+     - only set `initialized = true` and `loading = false` after that fetch completes
+   - Keep sign-out handling centralized in the provider.
 
-Convert `useAuth` from a hook into a React Context provider so the entire app shares **one** auth state machine.
+2. Narrow the sign-out race protection so it no longer blocks valid logins
+   - Use the sign-out flag only to prevent immediate stale rehydration after logout
+   - Remove the current broad `isJustSignedOut()` early-return from the general authenticated listener path
+   - Preserve the protection in the initial restore path, not during active sign-in
 
-### 1. New `src/contexts/AuthContext.tsx`
-- Move all current logic from `src/hooks/useAuth.tsx` into an `AuthProvider` component:
-  - One `onAuthStateChange` subscription, lifetime = app lifetime.
-  - One `getSession()` initial probe.
-  - One `fetchUserData()` pipeline keyed by user id; if the same id is requested while a fetch is in flight, dedupe.
-  - All helpers (`hasRole`, `hasAnyRole`, `canAccessPortal`, `getAvailablePortals`, `hasRegionalPermission`, `signOut`, etc.) wrapped in `useCallback`/`useMemo` with stable deps so consumers don't re-render needlessly.
-- Export a `useAuth()` hook that just calls `useContext(AuthContext)` and throws if used outside the provider.
+3. Convert auth pages to follow the provider instead of probing sessions themselves
+   - `src/pages/SuperAuth.tsx`:
+     - remove mount-time `getSession()` redirect logic
+     - use `useAuth()` and redirect only when `initialized && !loading && user` and role access is confirmed
+   - `src/components/auth/RegionSpecificAuth.tsx`:
+     - remove mount-time `getSession()` redirect logic
+     - keep region-specific access validation for login, but rely on provider state for post-login redirect
+   - `src/pages/MemberAuth.tsx`:
+     - remove the separate `just_signed_out` logic
+     - use the shared auth state and shared flag behavior only
+   - `src/pages/DcgAuth.tsx`:
+     - gate redirects on `initialized && !loading`
+     - stop relying on half-loaded auth state immediately after sign-in
 
-### 2. `src/App.tsx`
-- Wrap the app inside `<BrowserRouter>` with `<AuthProvider>`. Order: `QueryClientProvider → TooltipProvider → BrowserRouter → AuthProvider → Routes`. (AuthProvider must be inside BrowserRouter because `signOut` uses `useNavigate`/`useLocation`.)
+4. Make portal selection wait for hydrated auth
+   - Update `src/components/auth/PortalSelector.tsx` to:
+     - show a loading state while auth is hydrating
+     - redirect away if there is no authenticated user
+     - only render portal cards after roles/associations are loaded
 
-### 3. `src/hooks/useAuth.tsx`
-- Reduce to a thin re-export: `export { useAuth } from '@/contexts/AuthContext'` so existing imports across the codebase continue to work without edits.
+5. Tighten route guards for consistency
+   - Update guards that still rely only on `loading` to also respect `initialized` where needed:
+     - `src/components/auth/ProtectedRoute.tsx`
+     - `src/components/auth/MemberProtectedRoute.tsx`
+   - This prevents redirecting during the short window between session creation and role/profile hydration.
 
-### 4. Hard-stop the sign-out → re-sign-in race
-Inside the new provider's `signOut`:
-- Set a module-level `isSigningOut = true` flag immediately.
-- Call `supabase.auth.signOut({ scope: 'global' })`.
-- In `onAuthStateChange`, when an event arrives **and** `isSigningOut` is true, ignore any non-SIGNED_OUT event (no `INITIAL_SESSION` rehydration, no `TOKEN_REFRESHED`).
-- Set a `sessionStorage` key `wca:just_signed_out` with a 5-second TTL. The provider's initial `getSession()` checks this flag on mount; if set, it skips reading the session, treats user as null, and clears the flag. This blocks the local-storage rehydration race even if the user navigates immediately.
-- Clear all state, then `navigate(redirectUrl, { replace: true })` so the auth page can't be "back-buttoned" into the authed state.
-
-### 5. `src/pages/DcgAuth.tsx` (small follow-up)
-- The redirect effect already depends only on `userId`. With the shared context, `userId` is now stable across the app, so the existing logic stops thrashing automatically. Add one guard: if `sessionStorage.getItem('wca:just_signed_out')` exists, skip auto-redirect entirely on mount.
-
-### 6. Trim console noise
-- Drop the per-fetch `console.log` lines inside `fetchUserData` (keep one summary line on success, one on error). The current logs spam ~20 lines per page transition, which itself contributes to the perceived "reloading".
-
-## Files touched
+### Files to update
 
 ```text
-src/contexts/AuthContext.tsx     (NEW — single provider, single listener, single fetch)
-src/hooks/useAuth.tsx            (shrink to re-export from AuthContext)
-src/App.tsx                      (wrap Routes with <AuthProvider> inside BrowserRouter)
-src/pages/DcgAuth.tsx            (respect the just_signed_out flag)
+src/contexts/AuthContext.tsx
+src/pages/DcgAuth.tsx
+src/pages/SuperAuth.tsx
+src/components/auth/RegionSpecificAuth.tsx
+src/pages/MemberAuth.tsx
+src/components/auth/PortalSelector.tsx
+src/components/auth/ProtectedRoute.tsx
+src/components/auth/MemberProtectedRoute.tsx
 ```
 
-No DB changes. No edits to route guards, layouts, or the dozens of components that already call `useAuth()` — their imports keep working.
+### Technical details
 
-## Verification
+- The key bug is in the current provider flow:
+  - sign-out sets `wca:just_signed_out`
+  - a quick new login fires `SIGNED_IN`
+  - the listener currently ignores that authenticated event
+  - app state stays effectively logged out even though Supabase login succeeded
+- A second bug happens even without that flag:
+  - `user` becomes truthy before roles/DCG/member/region data is ready
+  - route guards run too early and misclassify the user
+- The simplest stable model is:
+  - one provider
+  - one auth listener
+  - one hydrated/auth-ready state
+  - all auth pages and guards wait for that state before redirecting
 
-1. Open any portal page; the console shows **exactly one** `Setting up auth state listener…` and **one** `Fetching user data for: …` per real auth event. Idle navigation no longer triggers re-fetches. Editing files in the preview no longer causes visible reload churn.
-2. Sign in as Timah, land on `/portal-selector`. Click Sign Out. The user is taken to `/dcg-auth` (or appropriate auth page) and stays there. Refreshing or navigating to `/portal-selector` does **not** re-authenticate them.
-3. Sign in again normally — no regressions: portal selector, DCG dashboard (KOTTO DCG), regional dashboard, super admin dashboard all load with their data.
-4. Existing dedicated DCG leaders and regional admins continue to work unchanged.
+### Verification
 
+1. Log in, including immediately after a prior sign-out:
+   - user stays signed in
+   - no bounce back to the login page
+2. Log out:
+   - user stays logged out
+   - refreshing does not re-authenticate them
+3. Log back in within 5 seconds of logout:
+   - login succeeds normally
+   - no false “logged out again” behavior
+4. Multi-role users:
+   - `/portal-selector` loads once, stably, with the correct portal cards
+5. Single-role users:
+   - DCG, regional, super, and member logins land on the correct dashboard without looping
+6. Console:
+   - no repeated auth-churn redirects during idle navigation
+
+### No database work
+
+No Supabase schema or RLS changes are needed for this fix.
