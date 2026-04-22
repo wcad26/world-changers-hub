@@ -22,22 +22,14 @@ export default function MemberAuth() {
   const { user, isMember, isRegionalAdmin, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // Redirect if already authenticated as member
-  // Only redirect if user has proper roles - check loading state first
-  // Also check for recent signout to prevent race condition
+  // Redirect already-authenticated members once auth state is fully hydrated.
   useEffect(() => {
-    // Don't redirect while loading - wait for auth state to settle
     if (authLoading) return;
-    
-    // Check if user just signed out - prevent auto-redirect back to dashboard
-    const justSignedOut = sessionStorage.getItem('just_signed_out');
-    if (justSignedOut) {
-      sessionStorage.removeItem('just_signed_out');
-      return; // Don't redirect, user intentionally signed out
-    }
-    
+    try {
+      if (sessionStorage.getItem('wca:just_signed_out')) return;
+    } catch { /* ignore */ }
     if (user && (isMember() || isRegionalAdmin())) {
-      navigate('/member/dashboard');
+      navigate('/member/dashboard', { replace: true });
     }
   }, [user, authLoading, isMember, isRegionalAdmin, navigate]);
 

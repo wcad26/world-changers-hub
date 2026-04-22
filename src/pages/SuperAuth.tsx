@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Shield, Users, Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 
 const SuperAuth = () => {
@@ -21,61 +22,32 @@ const SuperAuth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  const { user, initialized, loading: authLoading, hasRole } = useAuth();
 
   const from = (location.state as any)?.from?.pathname || '/admin/super/dashboard';
 
+  // Redirect already-authenticated super admins once auth state is fully hydrated.
   useEffect(() => {
-    console.log('SuperAuth: Component mounted, checking existing session...');
-    checkExistingSession();
-  }, []);
-
-  const checkExistingSession = async () => {
+    if (!initialized || authLoading || !user) return;
     try {
-      console.log('SuperAuth: Checking for existing session...');
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('SuperAuth: Session check error:', error);
-        return;
-      }
-
-      if (session?.user) {
-        console.log('SuperAuth: Found existing session for user:', session.user.id);
-        const hasRole = await checkSuperAdminRole(session.user.id);
-        if (hasRole) {
-          console.log('SuperAuth: Valid super admin session found, redirecting...');
-          navigate(from, { replace: true });
-        } else {
-          console.log('SuperAuth: User does not have super admin role');
-        }
-      } else {
-        console.log('SuperAuth: No existing session found');
-      }
-    } catch (error) {
-      console.error('SuperAuth: Exception during session check:', error);
+      if (sessionStorage.getItem('wca:just_signed_out')) return;
+    } catch { /* ignore */ }
+    if (hasRole('super_admin')) {
+      navigate(from, { replace: true });
     }
-  };
+  }, [initialized, authLoading, user, hasRole, from, navigate]);
 
   const checkSuperAdminRole = async (userId: string): Promise<boolean> => {
     try {
-      console.log('SuperAuth: Checking super admin role for user:', userId);
-      
       const { data: userRoles, error } = await supabase
         .from('user_roles')
         .select('role, is_active')
         .eq('user_id', userId)
         .eq('role', 'super_admin')
         .eq('is_active', true);
-
-      if (error) {
-        console.error('SuperAuth: Role check error:', error);
-        return false;
-      }
-
-      console.log('SuperAuth: Role check result:', userRoles);
-      return userRoles && userRoles.length > 0;
-    } catch (error) {
-      console.error('SuperAuth: Role check exception:', error);
+      if (error) return false;
+      return !!(userRoles && userRoles.length > 0);
+    } catch {
       return false;
     }
   };

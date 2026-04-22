@@ -17,10 +17,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRoles,
   redirectTo = '/portal-selector'
 }) => {
-  const { user, loading, hasRole, hasAnyRole } = useAuth();
+  const { user, loading, initialized, hasRole, hasAnyRole } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />

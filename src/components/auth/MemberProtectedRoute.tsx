@@ -12,9 +12,9 @@ export default function MemberProtectedRoute({
   children, 
   redirectTo = '/auth/member' 
 }: MemberProtectedRouteProps) {
-  const { user, loading, isMember, isRegionalAdmin } = useAuth();
+  const { user, loading, initialized, isMember, isRegionalAdmin } = useAuth();
 
-  if (loading) {
+  if (loading || !initialized) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-md mx-auto space-y-4">
