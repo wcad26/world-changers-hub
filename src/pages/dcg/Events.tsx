@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2, Loader2
+  Plus, MapPin, Clock, MoreHorizontal, UserCheck, Trash2, Copy, Loader2
 } from 'lucide-react';
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -29,6 +29,7 @@ const DcgEvents = () => {
   const isTablet = useIsTablet();
   const useCardView = isMobile || isTablet;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [duplicateSource, setDuplicateSource] = useState<Event | null>(null);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<Event | null>(null);
 
   const { data: events, isLoading: loadingEvents, error: eventsError } = useDcgEvents(userDcg?.id);
@@ -39,6 +40,10 @@ const DcgEvents = () => {
     if (confirm('Are you sure you want to delete this event?')) {
       await deleteEvent.mutateAsync(eventId);
     }
+  };
+
+  const handleDuplicateEvent = (event: Event) => {
+    setDuplicateSource(event);
   };
 
   const now = new Date();
