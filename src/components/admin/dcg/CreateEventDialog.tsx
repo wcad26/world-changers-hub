@@ -523,7 +523,9 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 Cancel
               </Button>
               <Button type="submit" disabled={createEvent.isPending}>
-                {createEvent.isPending ? 'Creating...' : 'Create Event'}
+                {createEvent.isPending
+                  ? (duplicateFrom ? 'Duplicating...' : 'Creating...')
+                  : (duplicateFrom ? 'Duplicate Event' : 'Create Event')}
               </Button>
             </DialogFooter>
           </form>
