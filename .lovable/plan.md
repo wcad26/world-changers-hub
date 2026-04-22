@@ -1,97 +1,66 @@
 
 
-## Problem
+## Two issues, one approved plan
 
-Super admin Timah (`chimbotimah@gmail.com`) opens the DCG portal and lands on a blank "DCG Dashboard" with no DCG name in the sidebar header, 0 members / 0 events / 0 income. Two underlying bugs:
+### A. Endless reload/preview-churn loop (blocking edits)
 
-### Bug 1 — Super admins implicitly get DCG/regional portal access via role bypass
+**Cause 1 — `useEffect` thrash in `src/pages/DcgAuth.tsx`.**
+The effect that auto-redirects already-authenticated users lists `hasRole` and `getAvailablePortals` in its dependency array. Both are recreated every render by `useAuth`, so the effect re-runs forever, repeatedly calling `navigate(...)` and re-mounting the auth tree. This is the dominant source of the visible "loading and reloading" the user sees.
 
-In `src/hooks/useAuth.tsx`, `canAccessPortal` says:
+**Cause 2 — DCG portal routes bypass the DCG-association gate.**
+In `src/App.tsx`, every `/dcg/*` route is wrapped in `MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}`, never in `DcgProtectedRoute`. Result: a `regional_admin`/`super_admin` (e.g. Timah) is admitted to `/dcg/dashboard` even with `userDcg=null`, the dashboard renders against an undefined DCG id, child queries get rejected/empty, and the layout header shows a generic "DCG Portal" — exactly the "vague DCG that does not exist" we already fixed at the auth-data layer but never wired into routing. This contradicts the policy already approved last turn.
+
+**Cause 3 — Multiple `useAuth` instances each install their own auth subscriber.**
+Console shows repeated "Setting up auth state listener..." / "Getting initial session..." pairs. Every `useAuth()` call mounts its own `onAuthStateChange` subscription and re-runs `fetchUserData`, multiplying network traffic and re-renders. Today this works but amplifies any other render churn (like Cause 1) into a visible reload storm.
+
+### B. Eye/show-password toggle missing on the DCG login page
+
+`src/pages/DcgAuth.tsx` renders a plain `<Input type="password">` with no toggle. SuperAuth and RegionSpecificAuth already use the same `Eye` / `EyeOff` pattern — we'll mirror it.
+
+---
+
+## Fix (code only, no DB or schema changes)
+
+### 1. `src/pages/DcgAuth.tsx`
+- Stabilise the redirect effect: depend ONLY on `user?.id`. Read `hasRole`/`getAvailablePortals` inside the effect body without listing them in deps. This stops the re-run loop entirely.
+- Add a `showPassword` state and an `Eye` / `EyeOff` toggle button positioned absolutely inside the password field, matching the SuperAuth/RegionSpecificAuth implementation. Switch `<Input type=...>` between `'text'` and `'password'`.
+
+### 2. `src/App.tsx` — wrap DCG routes with the DCG-association guard
+Replace each `/dcg/*` route's `MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}` with a composition:
 ```text
-case 'dcg':       super_admin OR regional_admin OR dcg_admin
-case 'regional':  super_admin OR regional_admin
+<MultiRoleProtectedRoute allowedRoles={['dcg_admin','regional_admin','super_admin']}>
+  <DcgProtectedRoute>
+    <DcgDashboard />
+  </DcgProtectedRoute>
+</MultiRoleProtectedRoute>
 ```
-This is wrong by the user's stated policy: `super_admin` is only a token for the Super Admin portal. Access to Regional/DCG portals must come from explicit membership/role assignment. The same flaw exists in `DcgProtectedRoute` (`hasRole('super_admin')` allows entry) and `MultiRoleProtectedRoute` (super_admin treated as regional). The Portal Selector and Portal Switcher inherit the bug since they call `canAccessPortal`.
+The outer guard ensures the user is authenticated; the inner `DcgProtectedRoute` (which we already updated) shows the friendly "No DCG Association" screen when `userDcg` is null. Timah will see KOTTO DCG once `userDcg` resolves; pure super admins or regional admins with no DCG link will see the explicit "no DCG" screen instead of an empty dashboard.
 
-### Bug 2 — `userDcg` only resolves for `dcg_admin` role
+### 3. `src/hooks/useAuth.tsx` — minor hardening (optional but recommended)
+- Memoise the returned helper functions (`hasRole`, `hasAnyRole`, `canAccessPortal`, `getAvailablePortals`, `hasRegionalPermission`) with `useCallback` so any consumer that lists them as deps (current or future) doesn't thrash. Keys: `[userRoles]`, `[userRoles, userRegionalRoles, memberRecord, userDcg]` as appropriate.
+- Reduce log noise: drop the per-render `console.log` in `hasRole` (it's firing dozens of times per second in the console panel and contributes to perceived churn). Keep the auth-state-change and fetch logs.
 
-`fetchUserData` only fills `userDcg` when the user holds the `dcg_admin` role. Timah is a `super_admin` + `regional_admin` who happens to also be a regular member of KOTTO DCG (via `dcg_members`) — but she has no `dcg_user_sessions` row, so `get_user_dcg` returns null. The Dashboard reads `userDcg?.id`, which stays `undefined`, so all queries return empty data and the title shows "DCG Portal" placeholder. This is the "vague DCG that does not exist" the user described.
+No change to the multi-instance subscription pattern in this pass — fixing #1 alone removes the visible loop. Switching `useAuth` to a single shared context can come later as a perf cleanup.
 
-## Fix (code only, no schema changes)
-
-### 1. `src/hooks/useAuth.tsx` — tighten portal access
-
-Drop `super_admin` from the DCG/regional access checks. New rules:
-- `canAccessPortal('super')`  → `hasRole('super_admin')`
-- `canAccessPortal('regional')` → `hasRole('regional_admin') || userRegionalRoles.length > 0`
-- `canAccessPortal('dcg')` → `hasRole('dcg_admin') || isDcgMember` (see #2)
-- `canAccessPortal('member')` → `hasRole('member') || memberRecord != null`
-
-Update `hasRegionalPortalAccess` to drop the `super_admin` shortcut for the same reason.
-
-Note: `hasRegionalPermission` retains its `super_admin` bypass — that exists so super admins can read regional data via shared API hooks/RLS, not as a portal entry grant.
-
-### 2. `src/hooks/useAuth.tsx` — resolve `userDcg` for any kind of DCG association
-
-Replace the `if (hasDcgRole)` gate with a broader resolver that runs for every authenticated user:
-
-1. Try `dcg_user_sessions` (current behaviour, used for dedicated DCG leaders provisioned by a regional admin).
-2. If none, look up `dcgs` where `leader_id` IN (the user's member IDs) → user is a DCG leader.
-3. If none, look up `dcg_members` → user is a DCG member; pick the active row (one row expected per user; if multiple, prefer leader/co-leader role).
-4. Set `userDcg` to that DCG row, or leave `null`.
-
-Also expose a derived flag `isDcgMember = userDcg !== null` so route guards and the portal selector know whether the user has any DCG association.
-
-### 3. `src/components/auth/DcgProtectedRoute.tsx` — gate on association, not on super_admin
-
-Replace:
-```text
-if (!hasRole('dcg_admin') && !hasRole('regional_admin') && !hasRole('super_admin'))
-  → /unauthorized
-```
-With:
-```text
-if (!hasRole('dcg_admin') && !userDcg) → render NoDcgAssociation screen (not /unauthorized)
-```
-The `NoDcgAssociation` screen is a friendly inline message: "You don't belong to a DCG yet. Ask your regional admin to add you to one." with two buttons: "Back to my portals" (→ `/portal-selector` if multi-portal, else dashboard for top role) and "Sign Out". This is the user-requested explicit message instead of a silent bounce.
-
-Also drop `hasRole('regional_admin')` from the implicit grant — regional admins manage DCGs from within the Regional portal, they don't need DCG portal access unless they're also assigned to one.
-
-### 4. `src/components/auth/MultiRoleProtectedRoute.tsx` — drop super_admin shortcut
-
-Remove the implicit assumption that super_admins satisfy regional access. Regional routes will still work for any user with a `regional_user_roles` entry.
-
-### 5. `src/components/layout/PortalSwitcher.tsx` and `src/components/auth/PortalSelector.tsx`
-
-No code change needed — they already call `canAccessPortal`, so they automatically tighten with #1. Visual result: Timah will see Super Admin + Regional + DCG (because she's a KOTTO DCG member); a pure super_admin with no other association will see only Super Admin.
-
-### 6. `src/pages/dcg/Dashboard.tsx` and `src/components/admin/DcgAdminLayout.tsx`
-
-No structural change. Once `userDcg` is properly populated by #2, the existing `userDcg?.name` in the layout header and the existing `useDcgMembers(userDcg?.id)` etc. on the dashboard will show real KOTTO DCG data automatically.
-
-## Why this matches the user's policy statement
-
-> "super admin status means that they have access to the super admin portal, not that they have access to all portals except granted access to the regional and dcg portals."
-
-After the fix:
-- A pure `super_admin` with no DCG/regional assignments sees only the Super Admin portal in the switcher and selector. Typing `/dcg/dashboard` shows the friendly "You don't belong to a DCG" screen.
-- Timah (super_admin + regional_admin + KOTTO DCG member) sees Super Admin + Regional + DCG portals, and the DCG portal correctly shows KOTTO DCG with its members, events, and finances.
-- Existing DCG leaders provisioned via `dcg_user_sessions` continue to work unchanged.
+---
 
 ## Files to edit
 
 ```text
-src/hooks/useAuth.tsx                          (canAccessPortal, hasRegionalPortalAccess, fetchUserData DCG resolver, expose isDcgMember)
-src/components/auth/DcgProtectedRoute.tsx      (replace role-bypass with association check + NoDcgAssociation screen)
-src/components/auth/MultiRoleProtectedRoute.tsx (drop super_admin shortcut)
+src/pages/DcgAuth.tsx       (stabilise redirect effect deps + add Eye/EyeOff password toggle)
+src/App.tsx                 (wrap each /dcg/* route with DcgProtectedRoute inside MultiRoleProtectedRoute)
+src/hooks/useAuth.tsx       (memoise helpers with useCallback, drop hasRole console.log spam)
 ```
 
-No DB migrations. No changes to RLS. No changes to the DCG dashboard or layout components themselves.
+No DB changes. No edits to `DcgProtectedRoute.tsx` (already correct from the last turn).
+
+---
 
 ## Verification
 
-1. As Timah, click DCG Portal in the switcher → lands on `/dcg/dashboard` with header "KOTTO DCG", actual member list, events, finances populated.
-2. As a pure super admin (no DCG/regional links), the Portal Selector shows only "Super Admin Portal". Typing `/dcg/dashboard` shows a friendly "You don't belong to a DCG" screen with Back and Sign Out buttons (not `/unauthorized`).
-3. Existing dedicated DCG leaders (with a `dcg_user_sessions` row) continue to land on their DCG without regression.
-4. A regional admin who's not a DCG leader nor member can no longer auto-enter `/dcg/dashboard` — they see the same friendly "no DCG" screen.
+1. Open `/dcg-auth`: the password field shows an eye icon; clicking it toggles visibility. Identical UX to Super and Regional auth pages.
+2. Editing files in the preview no longer triggers a reload storm. Console no longer spams "Checking role …" and "Setting up auth state listener…" repeatedly while idle.
+3. As Timah, click DCG Portal in the switcher → land on `/dcg/dashboard` showing "KOTTO DCG" header with real members/events/finances.
+4. As a pure super admin (no DCG association), navigating to `/dcg/dashboard` shows the friendly "No DCG Association" card with Back/Sign Out buttons (not a blank dashboard, not `/unauthorized`).
+5. Existing dedicated DCG leaders (with `dcg_user_sessions` row) continue to land on their DCG without regression.
 
