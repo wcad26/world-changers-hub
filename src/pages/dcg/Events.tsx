@@ -94,6 +94,15 @@ const DcgEvents = () => {
             <Button
               variant="ghost"
               size="sm"
+              className="h-7 text-xs"
+              onClick={() => handleDuplicateEvent(event)}
+              title="Duplicate event"
+            >
+              <Copy className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-7 text-xs text-destructive"
               onClick={() => handleDeleteEvent(event.id)}
             >
