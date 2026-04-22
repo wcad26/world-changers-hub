@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Users, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import wcaLogo from '@/assets/wca-logo.png';
-
 
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
@@ -23,28 +21,29 @@ const DcgAuth = () => {
   const userId = auth.user?.id;
   const authReady = auth.initialized && !auth.loading;
 
+  // Single source of truth for redirect after login.
+  // Wait for the AuthContext to fully hydrate roles + DCG association,
+  // then route based on access. NEVER force-signOut here — that creates
+  // the login/logout loop.
   useEffect(() => {
-    // Only redirect once auth is fully hydrated (roles, dcg, regional roles loaded).
     if (!authReady || !userId) return;
 
-    // If the user just signed out, do NOT auto-redirect them back into a portal.
     try {
       if (sessionStorage.getItem('wca:just_signed_out')) return;
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
 
-    // DCG login always lands on the DCG dashboard if the user can access it.
-    // Fall back to other dashboards only if they have no DCG access at all.
     if (auth.canAccessPortal('dcg')) {
       navigate('/dcg/dashboard', { replace: true });
     } else if (auth.hasRole('regional_admin')) {
       navigate('/admin/regional/dashboard', { replace: true });
     } else if (auth.hasRole('super_admin')) {
       navigate('/admin/super/dashboard', { replace: true });
+    } else {
+      // Authenticated but no DCG/admin access — show error and let them sign out.
+      setError('Access denied. This portal is for authorized DCG users only.');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authReady, userId]);
+  }, [authReady, userId, auth.userDcg?.id, auth.userRoles.length]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +51,7 @@ const DcgAuth = () => {
     setError('');
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -61,25 +60,9 @@ const DcgAuth = () => {
         setError(authError.message);
         return;
       }
-
-      if (data.user) {
-        // Check if user has any admin roles before allowing in.
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .in('role', ['dcg_admin', 'regional_admin', 'super_admin'])
-          .eq('is_active', true);
-
-        if (!roleData || roleData.length === 0) {
-          setError('Access denied. This portal is for authorized users only.');
-          await supabase.auth.signOut();
-          return;
-        }
-
-        // Redirect is now handled by the auth-ready effect once roles/dcg are hydrated.
-      }
-    } catch (err: any) {
+      // Redirect handled entirely by the auth-ready effect once
+      // AuthContext has hydrated roles + DCG association.
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
