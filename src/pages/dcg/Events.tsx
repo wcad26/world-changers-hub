@@ -435,6 +435,11 @@ const DcgEvents = () => {
         </Tabs>
 
         <CreateEventDialog isOpen={showCreateDialog} onClose={() => setShowCreateDialog(false)} />
+        <CreateEventDialog
+          isOpen={!!duplicateSource}
+          onClose={() => setDuplicateSource(null)}
+          duplicateFrom={duplicateSource}
+        />
         {selectedEventForAttendance && (
           <EventAttendanceDialog
             isOpen={!!selectedEventForAttendance}
