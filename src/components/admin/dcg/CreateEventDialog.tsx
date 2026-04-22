@@ -39,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
+import type { Event } from '@/hooks/useDcgEvents';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -82,11 +83,13 @@ type EventFormData = z.infer<typeof eventFormSchema>;
 interface CreateEventDialogProps {
   isOpen: boolean;
   onClose: () => void;
+  duplicateFrom?: Event | null;
 }
 
 export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   isOpen,
   onClose,
+  duplicateFrom,
 }) => {
   const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
   const createEvent = useCreateDcgEvent();
@@ -107,6 +110,53 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       is_public: false,
     },
   });
+
+  // Prefill form when duplicating an event
+  React.useEffect(() => {
+    if (isOpen && duplicateFrom) {
+      const allowedCategories = [
+        'DCG Meeting','Bible Study','Worship','Outreach',
+        'Community Service','Training','Other'
+      ] as const;
+      const category = (allowedCategories as readonly string[]).includes(duplicateFrom.category as string)
+        ? (duplicateFrom.category as EventFormData['category'])
+        : 'DCG Meeting';
+
+      form.reset({
+        name: `${duplicateFrom.name} (Copy)`,
+        description: duplicateFrom.description ?? '',
+        category,
+        start_date: '',
+        start_time: '',
+        end_date: '',
+        end_time: '',
+        location_name: duplicateFrom.location_name ?? '',
+        address: duplicateFrom.address ?? '',
+        capacity: duplicateFrom.capacity ?? undefined,
+        cost: duplicateFrom.cost ?? 0,
+        cost_currency_code: duplicateFrom.cost_currency_code ?? undefined,
+        whatsapp_contact: duplicateFrom.whatsapp_contact ?? '',
+        is_public: duplicateFrom.is_public ?? false,
+        is_featured: duplicateFrom.is_featured ?? false,
+      });
+      setCardImagePreview('');
+    } else if (isOpen && !duplicateFrom) {
+      form.reset({
+        name: '',
+        description: '',
+        category: 'DCG Meeting',
+        start_date: '',
+        start_time: '',
+        end_date: '',
+        end_time: '',
+        location_name: '',
+        address: '',
+        is_public: false,
+      });
+      setCardImagePreview('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, duplicateFrom?.id]);
 
   const handleSubmit = async (data: EventFormData) => {
     try {
