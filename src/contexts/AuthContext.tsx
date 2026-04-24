@@ -101,6 +101,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initializedRef = useRef(false);
   const isSigningOutRef = useRef(false);
   const inflightFetchRef = useRef<string | null>(null);
+  const initialBootRef = useRef(false);
+  const navigateRef = useRef(navigate);
+  const toastRef = useRef(toast);
+  const fetchUserDataRef = useRef<((userId: string) => Promise<void>) | null>(null);
+
+  // Keep refs current so the one-time listener always uses the latest functions
+  // without needing them in the effect's dependency array (which would cause
+  // the listener to be torn down and reinstalled on every render — that was
+  // causing the preview-only login/logout loop).
+  useEffect(() => {
+    navigateRef.current = navigate;
+    toastRef.current = toast;
+  }, [navigate, toast]);
 
   const clearAllState = useCallback(() => {
     setUser(null);
@@ -228,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Auth: exception fetching user data', error);
-      toast({
+      toastRef.current({
         title: 'Error loading user data',
         description: 'Please refresh the page and try again.',
         variant: 'destructive',
@@ -239,7 +252,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       inflightFetchRef.current = null;
     }
-  }, [toast]);
+  }, []);
+
+  // Keep fetchUserData ref current for the one-time listener
+  useEffect(() => {
+    fetchUserDataRef.current = fetchUserData;
+  }, [fetchUserData]);
 
   useEffect(() => {
     let mounted = true;
@@ -265,8 +283,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (redirectUrl) {
           setJustSignedOut();
-          navigate(redirectUrl, { replace: true });
-          toast({
+          navigateRef.current(redirectUrl, { replace: true });
+          toastRef.current({
             title: 'Signed out successfully',
             description: 'You have been signed out of your account.',
           });
@@ -300,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
         setTimeout(() => {
-          if (mounted) fetchUserData(session.user.id);
+          if (mounted) fetchUserDataRef.current?.(session.user.id);
         }, 0);
         return;
       }
@@ -335,7 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         if (session?.user) {
           setUser(session.user);
-          await fetchUserData(session.user.id);
+          await fetchUserDataRef.current?.(session.user.id);
         } else {
           initializedRef.current = true;
           setInitialized(true);
@@ -351,13 +369,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    getInitialSession();
+    // Guard against double-boot (StrictMode / HMR in preview iframe)
+    if (!initialBootRef.current) {
+      initialBootRef.current = true;
+      getInitialSession();
+    }
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserData, navigate, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasRole = useCallback(
     (role: AppRole) => userRoles.some((ur) => ur.role === role && ur.is_active),
