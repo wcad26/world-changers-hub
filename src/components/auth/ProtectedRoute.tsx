@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,16 +10,19 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requiredRole,
   allowedRoles,
-  redirectTo = '/portal-selector'
+  redirectTo = '/portal-selector',
 }) => {
-  const { user, loading, initialized, hasRole, hasAnyRole } = useAuth();
+  const { user, loading, initialized, authReady, hasRole, hasAnyRole } = useAuth();
   const location = useLocation();
 
-  if (loading || !initialized) {
+  // Hold the route until the initial auth restore has truly finished.
+  // `authReady` only flips on once and never flips off, so it is safe
+  // against transient HMR/StrictMode remounts.
+  if (!authReady || loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -32,12 +34,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Check for specific required role
   if (requiredRole && !hasRole(requiredRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Check for any of the allowed roles
   if (allowedRoles && !hasAnyRole(allowedRoles)) {
     return <Navigate to="/unauthorized" replace />;
   }

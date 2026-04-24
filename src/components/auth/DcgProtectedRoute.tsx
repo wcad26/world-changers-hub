@@ -59,10 +59,10 @@ const DcgProtectedRoute: React.FC<DcgProtectedRouteProps> = ({
   children,
   redirectTo = '/dcg-auth'
 }) => {
-  const { user, loading, initialized, hasRole, userDcg } = useAuth();
+  const { user, loading, initialized, authReady, hasRole, userDcg } = useAuth();
   const location = useLocation();
 
-  if (loading || !initialized) {
+  if (!authReady || loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
