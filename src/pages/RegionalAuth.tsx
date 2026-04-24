@@ -69,17 +69,6 @@ const RegionalAuth = () => {
               )}
             </div>
 
-            <div className="pt-4 border-t border-gray-200">
-              <p className="text-xs text-center text-muted-foreground mb-3">
-                Other portals:
-              </p>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 h-11" onClick={() => navigate('/dcg-auth')}>
-                  <Users size={16} className="mr-2" />
-                  DCG Portal
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
 

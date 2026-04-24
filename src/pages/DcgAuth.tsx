@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
@@ -7,9 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/hooks/useAuth';
 import wcaLogo from '@/assets/wca-logo.png';
 
+/**
+ * Isolated DCG portal login page.
+ *
+ * No AuthContext subscriptions, no redirect effects, no cross-portal nav.
+ * On sign-in success, navigates to /dcg/dashboard. The DcgProtectedRoute
+ * around the dashboard handles the actual access decision (and shows the
+ * unauthorized page if the account lacks DCG access).
+ */
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,33 +24,6 @@ const DcgAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const auth = useAuth();
-  const userId = auth.user?.id;
-  const authReady = auth.initialized && !auth.loading;
-
-  // Single source of truth for redirect after login.
-  // Wait for the AuthContext to fully hydrate roles + DCG association,
-  // then route based on access. NEVER force-signOut here — that creates
-  // the login/logout loop.
-  useEffect(() => {
-    if (!authReady || !userId) return;
-
-    try {
-      if (sessionStorage.getItem('wca:just_signed_out')) return;
-    } catch { /* ignore */ }
-
-    if (auth.canAccessPortal('dcg')) {
-      navigate('/dcg/dashboard', { replace: true });
-    } else if (auth.hasRole('regional_admin')) {
-      navigate('/admin/regional/dashboard', { replace: true });
-    } else if (auth.hasRole('super_admin')) {
-      navigate('/admin/super/dashboard', { replace: true });
-    } else {
-      // Authenticated but no DCG/admin access — show error and let them sign out.
-      setError('Access denied. This portal is for authorized DCG users only.');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authReady, userId, auth.userDcg?.id, auth.userRoles.length]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +40,8 @@ const DcgAuth = () => {
         setError(authError.message);
         return;
       }
-      // Redirect handled entirely by the auth-ready effect once
-      // AuthContext has hydrated roles + DCG association.
+
+      navigate('/dcg/dashboard', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -142,15 +122,6 @@ const DcgAuth = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign In
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate('/auth/regional')}
-              disabled={loading}
-            >
-              ← Back to Regional Login
             </Button>
           </CardFooter>
         </form>
