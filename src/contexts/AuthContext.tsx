@@ -101,6 +101,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initializedRef = useRef(false);
   const isSigningOutRef = useRef(false);
   const inflightFetchRef = useRef<string | null>(null);
+  const initialBootRef = useRef(false);
+  const navigateRef = useRef(navigate);
+  const toastRef = useRef(toast);
+  const fetchUserDataRef = useRef<((userId: string) => Promise<void>) | null>(null);
+
+  // Keep refs current so the one-time listener always uses the latest functions
+  // without needing them in the effect's dependency array (which would cause
+  // the listener to be torn down and reinstalled on every render — that was
+  // causing the preview-only login/logout loop).
+  useEffect(() => {
+    navigateRef.current = navigate;
+    toastRef.current = toast;
+  }, [navigate, toast]);
 
   const clearAllState = useCallback(() => {
     setUser(null);
