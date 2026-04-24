@@ -283,8 +283,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (redirectUrl) {
           setJustSignedOut();
-          navigate(redirectUrl, { replace: true });
-          toast({
+          navigateRef.current(redirectUrl, { replace: true });
+          toastRef.current({
             title: 'Signed out successfully',
             description: 'You have been signed out of your account.',
           });
@@ -318,7 +318,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
         setTimeout(() => {
-          if (mounted) fetchUserData(session.user.id);
+          if (mounted) fetchUserDataRef.current?.(session.user.id);
         }, 0);
         return;
       }
@@ -353,7 +353,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         if (session?.user) {
           setUser(session.user);
-          await fetchUserData(session.user.id);
+          await fetchUserDataRef.current?.(session.user.id);
         } else {
           initializedRef.current = true;
           setInitialized(true);
@@ -369,13 +369,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    getInitialSession();
+    // Guard against double-boot (StrictMode / HMR in preview iframe)
+    if (!initialBootRef.current) {
+      initialBootRef.current = true;
+      getInitialSession();
+    }
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchUserData, navigate, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const hasRole = useCallback(
     (role: AppRole) => userRoles.some((ur) => ur.role === role && ur.is_active),
