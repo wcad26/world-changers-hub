@@ -241,7 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Auth: exception fetching user data', error);
-      toast({
+      toastRef.current({
         title: 'Error loading user data',
         description: 'Please refresh the page and try again.',
         variant: 'destructive',
@@ -252,7 +252,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       inflightFetchRef.current = null;
     }
-  }, [toast]);
+  }, []);
+
+  // Keep fetchUserData ref current for the one-time listener
+  useEffect(() => {
+    fetchUserDataRef.current = fetchUserData;
+  }, [fetchUserData]);
 
   useEffect(() => {
     let mounted = true;
