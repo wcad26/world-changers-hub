@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,21 +9,37 @@ const PortalSelector = () => {
   const { user, canAccessPortal, signOut, initialized, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Bounce unauthenticated visitors to the regional auth landing page.
-  useEffect(() => {
-    if (initialized && !loading && !user) {
-      navigate('/auth/regional', { replace: true });
-    }
-  }, [initialized, loading, user, navigate]);
-
-  // Wait for auth + role/dcg/regional data to fully hydrate.
-  if (!initialized || loading || !user) {
+  // Wait for auth to hydrate, but DO NOT auto-redirect unauthenticated
+  // visitors. Each portal has its own login page; routing here is purely
+  // informational. Auto-redirects from this page were one of the sources
+  // of the login/logout race in the preview environment.
+  if (!initialized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle>Sign in required</CardTitle>
+            <CardDescription>Choose a portal login page to continue.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button className="w-full" onClick={() => navigate('/auth/regional')}>Regional Portal</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/auth/super')}>Super Admin Portal</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/dcg-auth')}>DCG Portal</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/auth/member')}>Member Portal</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
 
   const portals = [
     {
