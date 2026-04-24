@@ -1,7 +1,6 @@
 import React, {
   createContext,
   useCallback,
-  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -18,7 +17,7 @@ type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
-type AppRole = 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin';
+export type AppRole = 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin';
 
 const SIGNOUT_FLAG = 'wca:just_signed_out';
 const SIGNOUT_FLAG_TTL_MS = 5000;
@@ -54,7 +53,7 @@ const clearJustSignedOut = () => {
   }
 };
 
-interface AuthContextValue {
+export interface AuthContextValue {
   user: any;
   profile: Profile | null;
   userRoles: UserRole[];
@@ -65,6 +64,13 @@ interface AuthContextValue {
   userRegionalRoles: any[];
   loading: boolean;
   initialized: boolean;
+  /**
+   * Becomes true the moment the initial getSession() restore path completes
+   * (with or without a user). Stays true for the rest of the provider's
+   * lifetime. Use this in components/guards/queries to know it is safe to
+   * rely on `user`/role state.
+   */
+  authReady: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   hasRegionalPortalAccess: boolean;
@@ -80,7 +86,12 @@ interface AuthContextValue {
   refetchUserData: () => Promise<void> | null;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// NOTE: AuthContext is exported so the `useAuth` hook (in src/hooks/useAuth.tsx)
+// can consume it. We intentionally do NOT export `useAuth` from this file —
+// mixing a component export (AuthProvider) with a hook export breaks
+// React Fast Refresh and forces preview remounts (that was a source of the
+// preview-only failed reload sessions).
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
@@ -92,6 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -101,15 +113,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initializedRef = useRef(false);
   const isSigningOutRef = useRef(false);
   const inflightFetchRef = useRef<string | null>(null);
+  const fetchedForUserRef = useRef<string | null>(null);
   const initialBootRef = useRef(false);
   const navigateRef = useRef(navigate);
   const toastRef = useRef(toast);
   const fetchUserDataRef = useRef<((userId: string) => Promise<void>) | null>(null);
 
-  // Keep refs current so the one-time listener always uses the latest functions
-  // without needing them in the effect's dependency array (which would cause
-  // the listener to be torn down and reinstalled on every render — that was
-  // causing the preview-only login/logout loop).
+  // Keep refs current so the one-time listener always uses the latest
+  // navigate/toast functions without forcing the listener to be re-installed.
   useEffect(() => {
     navigateRef.current = navigate;
     toastRef.current = toast;
@@ -123,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserDcg(null);
     setMemberRecord(null);
     setUserRegionalRoles([]);
+    fetchedForUserRef.current = null;
   }, []);
 
   const fetchUserData = useCallback(async (userId: string) => {
@@ -239,6 +251,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setUserRegionalRoles(regionalRolesData || []);
       }
+
+      fetchedForUserRef.current = userId;
     } catch (error) {
       console.error('Auth: exception fetching user data', error);
       toastRef.current({
@@ -261,7 +275,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
-    console.log('Auth: provider mounted — installing single auth listener');
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
@@ -276,6 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         initializedRef.current = true;
         setInitialized(true);
+        setAuthReady(true);
 
         const redirectUrl = signOutRedirectRef.current;
         signOutRedirectRef.current = null;
@@ -294,14 +308,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // A real authenticated session: SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION w/ user
       if (session?.user) {
-        // A new explicit sign-in invalidates any pending "just signed out" guard
         if (event === 'SIGNED_IN') {
           clearJustSignedOut();
         }
 
+        // INITIAL_SESSION is handled by the explicit getInitialSession() path
+        // below — ignore it in the listener so we don't double-fetch on boot.
+        if (event === 'INITIAL_SESSION') {
+          return;
+        }
+
+        // Token refresh: do NOT re-fetch protected data unless the identity
+        // actually changed or we never fetched for this user yet.
+        if (event === 'TOKEN_REFRESHED') {
+          if (fetchedForUserRef.current === session.user.id) {
+            return;
+          }
+        }
+
+        let isNewUserLocal = false;
         setUser((prev: any) => {
-          const isNewUser = prev?.id !== session.user.id;
-          if (isNewUser) {
+          isNewUserLocal = prev?.id !== session.user.id;
+          if (isNewUserLocal) {
             // Reset derived state so route guards don't read stale roles/dcg
             setProfile(null);
             setUserRoles([]);
@@ -312,14 +340,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setLoading(true);
             setInitialized(false);
             initializedRef.current = false;
+            fetchedForUserRef.current = null;
           }
-          return isNewUser ? session.user : prev;
+          return isNewUserLocal ? session.user : prev;
         });
 
-        // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
-        setTimeout(() => {
-          if (mounted) fetchUserDataRef.current?.(session.user.id);
-        }, 0);
+        // Only run the heavy fetch when we truly need to.
+        const needFetch =
+          isNewUserLocal ||
+          event === 'SIGNED_IN' ||
+          event === 'USER_UPDATED' ||
+          fetchedForUserRef.current !== session.user.id;
+
+        if (needFetch) {
+          // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
+          setTimeout(() => {
+            if (mounted) fetchUserDataRef.current?.(session.user.id);
+          }, 0);
+        }
         return;
       }
 
@@ -339,6 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           initializedRef.current = true;
           setInitialized(true);
           setLoading(false);
+          setAuthReady(true);
           return;
         }
 
@@ -348,6 +387,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           initializedRef.current = true;
           setInitialized(true);
           setLoading(false);
+          setAuthReady(true);
           return;
         }
         if (!mounted) return;
@@ -359,12 +399,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setInitialized(true);
           setLoading(false);
         }
+        // Mark auth as ready ONLY after the initial restore has completed
+        // (with or without a user). Components that gate on `authReady` can
+        // now safely make role/data decisions.
+        if (mounted) setAuthReady(true);
       } catch (error) {
         console.error('Auth: initial session exception', error);
         if (mounted) {
           initializedRef.current = true;
           setInitialized(true);
           setLoading(false);
+          setAuthReady(true);
         }
       }
     };
@@ -449,7 +494,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
-      console.log('Auth: signing out');
       isSigningOutRef.current = true;
       setLoading(true);
 
@@ -526,6 +570,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userRegionalRoles,
       loading,
       initialized,
+      authReady,
       hasRole,
       hasAnyRole,
       hasRegionalPortalAccess,
@@ -550,6 +595,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userRegionalRoles,
       loading,
       initialized,
+      authReady,
       hasRole,
       hasAnyRole,
       hasRegionalPortalAccess,
@@ -567,12 +613,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
-
-export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within an <AuthProvider>');
-  }
-  return ctx;
 };

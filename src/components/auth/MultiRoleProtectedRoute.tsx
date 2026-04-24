@@ -9,18 +9,17 @@ interface MultiRoleProtectedRouteProps {
   redirectTo?: string;
 }
 
-const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({ 
-  children, 
+const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
+  children,
   allowedRoles,
-  redirectTo = '/portal-selector'
+  redirectTo = '/portal-selector',
 }) => {
-  const { user, loading, initialized, hasAnyRole, hasRegionalPortalAccess, isDcgMember } = useAuth();
+  const { user, loading, initialized, authReady, hasAnyRole, hasRegionalPortalAccess, isDcgMember } = useAuth();
   const location = useLocation();
 
-  // Wait until both the loading flag is cleared AND the auth hook has
-  // completed its initial probe. Prevents redirect-on-transient-null
-  // races during INITIAL_SESSION boot or token refresh.
-  if (loading || !initialized) {
+  // Wait for the initial auth restore to fully complete before deciding
+  // anything. This avoids redirect-on-transient-null races.
+  if (!authReady || loading || !initialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -29,13 +28,9 @@ const MultiRoleProtectedRoute: React.FC<MultiRoleProtectedRouteProps> = ({
   }
 
   if (!user) {
-    return <Navigate to="/auth/regional" state={{ from: location }} replace />;
+    return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // If regional_admin is in allowedRoles, also accept users with regional role assignments.
-  // If dcg_admin is in allowedRoles, also accept users with a real DCG association
-  // (so DCG leaders without an explicit dcg_admin row can still enter the DCG portal).
-  // This must match DcgProtectedRoute and AuthContext.canAccessPortal('dcg').
   const hasRegionalInAllowed = allowedRoles.includes('regional_admin');
   const hasDcgInAllowed = allowedRoles.includes('dcg_admin');
   if (
