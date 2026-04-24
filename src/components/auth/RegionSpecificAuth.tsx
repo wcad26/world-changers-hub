@@ -1,89 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Users, Shield, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useAuth } from '@/hooks/useAuth';
 
-
+/**
+ * Isolated Regional portal login page.
+ *
+ * No AuthContext subscriptions. No effect-driven auto-redirects.
+ * On success: explicit one-shot role check, then navigate.
+ * No cross-portal navigation buttons (each portal stands alone).
+ */
 const RegionSpecificAuth = () => {
   const { regionSlug } = useParams<{ regionSlug: string }>();
   const { data: region, isLoading: regionLoading, error: regionError } = useRegionBySlug(regionSlug);
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { user, initialized, loading: authLoading, userRegion, hasRole, hasRegionalPortalAccess } = useAuth();
 
   const from = (location.state as any)?.from?.pathname || '/admin/regional/dashboard';
 
-  // Redirect already-authenticated regional admins for this region once auth has hydrated.
-  useEffect(() => {
-    if (!initialized || authLoading || !user || !region) return;
-    try {
-      if (sessionStorage.getItem('wca:just_signed_out')) return;
-    } catch { /* ignore */ }
-
-    const belongsToRegion = userRegion?.id === region.id;
-    if (!belongsToRegion) return;
-
-    if (hasRole('super_admin') || hasRole('regional_admin') || hasRegionalPortalAccess) {
-      navigate(from, { replace: true });
-    }
-  }, [initialized, authLoading, user, region, userRegion, hasRole, hasRegionalPortalAccess, from, navigate]);
-
   const checkRegionalAdminRole = async (userId: string, regionId: string): Promise<boolean> => {
     try {
-      console.log(`RegionSpecificAuth: Checking regional access for user ${userId} in region ${regionId}`);
-      
-      // Check if user's profile belongs to this region
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('region_id')
         .eq('id', userId)
         .single();
 
-      if (profileError) {
-        console.error('RegionSpecificAuth: Profile check error:', profileError);
-        return false;
-      }
+      if (profileError) return false;
+      if (profile?.region_id !== regionId) return false;
 
-      const belongsToRegion = profile?.region_id === regionId;
-      if (!belongsToRegion) {
-        console.log('RegionSpecificAuth: User does not belong to this region', { userRegion: profile?.region_id, targetRegion: regionId });
-        return false;
-      }
-
-      // Check 1: Does user have super_admin or regional_admin role?
-      const { data: userRoles, error: roleError } = await supabase
+      const { data: userRoles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .in('role', ['super_admin', 'regional_admin'])
         .eq('is_active', true);
 
-      if (roleError) {
-        console.error('RegionSpecificAuth: Role check error:', roleError);
-      }
+      if (userRoles && userRoles.length > 0) return true;
 
-      const hasBaseRole = userRoles && userRoles.length > 0;
-      if (hasBaseRole) {
-        console.log('RegionSpecificAuth: User has base admin role, granting access');
-        return true;
-      }
-
-      // Check 2: Does user have any active regional_user_roles for this region?
-      const { data: regionalRoles, error: regionalRoleError } = await supabase
+      const { data: regionalRoles } = await supabase
         .from('regional_user_roles')
         .select('id')
         .eq('user_id', userId)
@@ -91,55 +59,39 @@ const RegionSpecificAuth = () => {
         .eq('is_active', true)
         .limit(1);
 
-      if (regionalRoleError) {
-        console.error('RegionSpecificAuth: Regional role check error:', regionalRoleError);
-        return false;
-      }
-
-      const hasRegionalRole = regionalRoles && regionalRoles.length > 0;
-      console.log('RegionSpecificAuth: Role check result:', { hasBaseRole, hasRegionalRole });
-      return hasRegionalRole;
-    } catch (error) {
-      console.error('RegionSpecificAuth: Role check exception:', error);
+      return !!(regionalRoles && regionalRoles.length > 0);
+    } catch {
       return false;
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast({
-        title: "Missing Information",
-        description: "Please enter both email and password.",
-        variant: "destructive"
+        title: 'Missing Information',
+        description: 'Please enter both email and password.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (!region) {
-      toast({
-        title: "Region Error",
-        description: "Invalid region. Please try again.",
-        variant: "destructive"
-      });
+      toast({ title: 'Region Error', description: 'Invalid region. Please try again.', variant: 'destructive' });
       return;
     }
 
-    console.log(`RegionSpecificAuth: Starting sign in process for ${email} in region ${region.name}`);
     setIsLoading(true);
 
     try {
-      // Step 1: Sign in with Supabase
       const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
-        password: password
+        password,
       });
 
       if (signInError) {
-        console.error('RegionSpecificAuth: Sign in error:', signInError);
         let message = 'Sign in failed. Please try again.';
-        
         if (signInError.message.includes('Invalid login credentials')) {
           message = 'Invalid email or password. Please check your credentials.';
         } else if (signInError.message.includes('Email not confirmed')) {
@@ -147,59 +99,38 @@ const RegionSpecificAuth = () => {
         } else if (signInError.message.includes('Too many requests')) {
           message = 'Too many login attempts. Please wait a moment and try again.';
         }
-        
-        toast({
-          title: "Sign In Failed",
-          description: message,
-          variant: "destructive"
-        });
+        toast({ title: 'Sign In Failed', description: message, variant: 'destructive' });
         return;
       }
 
       if (!authData.user) {
-        console.error('RegionSpecificAuth: No user data received after sign in');
         toast({
-          title: "Sign In Failed",
-          description: "No user data received. Please try again.",
-          variant: "destructive"
+          title: 'Sign In Failed',
+          description: 'No user data received. Please try again.',
+          variant: 'destructive',
         });
         return;
       }
 
-      console.log(`RegionSpecificAuth: Sign in successful for user ${authData.user.id} in region ${region.name}`);
+      const allowed = await checkRegionalAdminRole(authData.user.id, region.id);
 
-      // Step 2: Check regional admin role for this specific region
-      const hasRole = await checkRegionalAdminRole(authData.user.id, region.id);
-      
-      if (!hasRole) {
-        console.log('RegionSpecificAuth: User lacks regional admin role for this region, signing out...');
-        await supabase.auth.signOut();
+      if (!allowed) {
+        // Soft denial. No global signOut — that re-triggers competing auth events.
         toast({
-          title: "Access Denied",
-          description: `Your account is either not approved for regional access to ${region.name} or you don't have regional admin permissions. Contact an administrator if this is incorrect.`,
-          variant: "destructive"
+          title: 'Access Denied',
+          description: `Your account is not approved for regional access to ${region.name}.`,
+          variant: 'destructive',
         });
         return;
       }
 
-      // Step 3: Success - redirect to dashboard
-      console.log(`RegionSpecificAuth: Regional admin role verified for ${region.name}, redirecting to:`, from);
-      
-      toast({
-        title: `Welcome to ${region.name}!`,
-        description: "Successfully signed in to the regional portal."
-      });
-
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 500);
-
+      toast({ title: `Welcome to ${region.name}!`, description: 'Signed in to the regional portal.' });
+      navigate(from, { replace: true });
     } catch (error: any) {
-      console.error('RegionSpecificAuth: Unexpected error during sign in:', error);
       toast({
-        title: "Sign In Error",
-        description: error.message || "An unexpected error occurred. Please try again.",
-        variant: "destructive"
+        title: 'Sign In Error',
+        description: error?.message || 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -223,16 +154,11 @@ const RegionSpecificAuth = () => {
         <div className="w-full max-w-md">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Region not found. Please check the URL and try again.
-            </AlertDescription>
+            <AlertDescription>Region not found. Please check the URL and try again.</AlertDescription>
           </Alert>
           <div className="text-center mt-4">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/auth/regional')}
-            >
-              Go to General Regional Login
+            <Button variant="outline" onClick={() => navigate('/auth/regional')}>
+              Go to Regional Selection
             </Button>
           </div>
         </div>
@@ -243,7 +169,7 @@ const RegionSpecificAuth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-wca-teal/10 via-wca-teal/5 to-wca-purple/10 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-      
+
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
@@ -251,26 +177,19 @@ const RegionSpecificAuth = () => {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-wca-teal to-wca-purple bg-clip-text text-transparent">
                 {region.name}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Regional Portal
-              </p>
+              <p className="text-sm text-muted-foreground">Regional Portal</p>
             </div>
           </div>
         </div>
 
         <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-2xl">
           <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-semibold">
-              Welcome Back
-            </CardTitle>
-            <CardDescription>
-              Sign in to {region.name} portal
-            </CardDescription>
+            <CardTitle className="text-2xl font-semibold">Welcome Back</CardTitle>
+            <CardDescription>Sign in to {region.name} portal</CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
-
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -342,36 +261,6 @@ const RegionSpecificAuth = () => {
                 )}
               </Button>
             </form>
-
-
-
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs text-center text-muted-foreground mb-2">
-                Need access to a different portal?
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 h-9"
-                  onClick={() => navigate('/dcg-auth')}
-                  disabled={isLoading}
-                >
-                  <Users size={16} className="mr-1" />
-                  DCG Portal
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 h-9"
-                  onClick={() => navigate('/auth/regional')}
-                  disabled={isLoading}
-                >
-                  <Users size={16} className="mr-1" />
-                  Regional
-                </Button>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
