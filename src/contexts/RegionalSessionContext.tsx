@@ -23,18 +23,20 @@ export const RegionalSessionContext = createContext<RegionalSessionValue | null>
 /**
  * Self-contained session provider for the Regional portal.
  *
- * It does ONE thing on mount:
+ * On mount it runs ONE pass:
  *   1. supabase.auth.getSession()
- *   2. If there is a user, SELECT profile.region_id (and the region row).
- *   3. Mark ready=true, authorized = (profile.region_id is set).
+ *   2. If there is a user, SELECT profile (and the region row).
+ *   3. Mark ready=true; authorized = (session exists AND profile.region_id is set).
  *
  * It deliberately does NOT:
  *   - read user_roles / regional_user_roles / dcgs / members
  *   - listen to onAuthStateChange (no surprise re-fetches, no HMR remounts)
- *   - know about super-admin, dcg, member portals
+ *   - sign the user out automatically on errors
  *
- * Logging out is a hard navigation to /auth/regional so absolutely no
- * stale provider state can re-enter the portal.
+ * Errors during profile/region fetches are logged but DO NOT change `authorized`
+ * unilaterally — we still consider the user authorized as long as the session
+ * + region_id check actually succeeded. A failed `regions` fetch (e.g. transient
+ * network hiccup) will not bounce a real user back to the login page.
  */
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<RegionalSessionValue['user']>(null);
@@ -47,35 +49,55 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
     (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
         if (cancelled) return;
 
+        if (sessionError) {
+          console.error('[RegionalSession] getSession error:', sessionError);
+        }
+
         if (!session?.user) {
+          console.info('[RegionalSession] no active session');
           setReady(true);
           return;
         }
 
         setUser({ id: session.user.id, email: session.user.email ?? undefined });
 
-        const { data: profileRow } = await supabase
+        const { data: profileRow, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .maybeSingle();
 
         if (cancelled) return;
+
+        if (profileError) {
+          console.error('[RegionalSession] profile fetch error:', profileError);
+        }
+
         setProfile(profileRow ?? null);
 
-        if (profileRow?.region_id) {
-          const { data: regionRow } = await supabase
+        if (!profileRow?.region_id) {
+          console.warn('[RegionalSession] user has no region_id on profile');
+        } else {
+          const { data: regionRow, error: regionError } = await supabase
             .from('regions')
             .select('*')
             .eq('id', profileRow.region_id)
             .maybeSingle();
-          if (!cancelled && regionRow) setRegion(regionRow);
+
+          if (cancelled) return;
+
+          if (regionError) {
+            console.error('[RegionalSession] region fetch error:', regionError);
+          }
+
+          if (regionRow) setRegion(regionRow);
         }
-      } catch {
-        // Swallow — the guard will redirect to /auth/regional if needed.
+      } catch (err) {
+        console.error('[RegionalSession] unexpected error during boot:', err);
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -89,8 +111,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const signOut = async () => {
     try {
       await supabase.auth.signOut({ scope: 'global' });
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.error('[RegionalSession] signOut error:', err);
     }
     // Hard redirect — guarantees no stale React state survives.
     window.location.replace('/auth/regional');
