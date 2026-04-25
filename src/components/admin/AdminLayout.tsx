@@ -15,7 +15,6 @@ import { LogOut, PanelLeftClose, PanelLeftOpen, Menu } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTablet } from "@/hooks/use-tablet";
 import { useAuth } from "@/hooks/useAuth";
-import PortalSwitcher from "../layout/PortalSwitcher";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -140,7 +139,6 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
           </div>
         </SidebarContent>
         <SidebarFooter className="p-4 mt-auto space-y-2">
-          {!isCollapsed && <PortalSwitcher />}
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${isCollapsed ? "justify-center px-2" : ""}`}
@@ -259,7 +257,6 @@ const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuIt
             </nav>
 
             <div className="p-4 border-t border-border space-y-2">
-              <PortalSwitcher />
               <Button
                 variant="outline"
                 onClick={() => { setMenuOpen(false); signOut(); }}
