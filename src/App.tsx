@@ -125,41 +125,19 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthProvider>
           <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/locations" element={<Locations />} />
-            <Route path="/locations/:slug" element={<RegionalBranchHome />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:eventId" element={<EventDetail />} />
-            <Route path="/media" element={<Media />} />
-            <Route path="/store" element={<Store />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/counseling" element={<Counseling />} />
-            <Route path="/fundraising" element={<Fundraising />} />
-            <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
-            <Route path="/attend/:eventId" element={<SelfAttendance />} />
-            
-            {/* Authentication Routes */}
+            {/* ---------------------------------------------------------------
+                REGIONAL PORTAL — fully isolated from the global AuthProvider.
+                Its login pages and its admin shell run under their own
+                RegionalSessionProvider only (installed by RegionalSessionRoute
+                for /admin/regional/*). The login pages themselves don't need
+                any provider; the regional sign-in only checks region match.
+                --------------------------------------------------------------- */}
             <Route path="/auth/regional" element={<RegionalAuth />} />
             <Route path="/auth/regions" element={<RegionSelect />} />
             <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
-            <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
-            <Route path="/member/register/:regionCode" element={<MemberRegister />} />
-            <Route path="/auth/super" element={<SuperAuth />} />
-            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/dcg-auth" element={<DcgAuth />} />
-            <Route path="/auth/member" element={<MemberAuth />} />
-            <Route path="/member/auth" element={<Navigate to="/auth/member" replace />} />
-            
-            {/* Admin Redirects */}
-            <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
+
             <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
-            <Route path="/admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
-            
-            {/* Regional Admin Portal - single simple guard: signed in + belongs to a region */}
             <Route path="/admin/regional" element={
               <RegionalSessionRoute>
                 <EnhancedRegionalAdminLayout />
@@ -181,76 +159,110 @@ const App = () => {
               <Route path="user-roles" element={<UserRoles />} />
               <Route path="settings" element={<RegionalSettings />} />
             </Route>
-            
-            {/* Super Admin Portal - single simple guard: signed in + super_admin role */}
-            <Route path="/admin/super" element={
-              <SuperAdminSessionRoute>
-                <SuperAdminLayout />
-              </SuperAdminSessionRoute>
-            }>
-              <Route path="dashboard" element={<SuperDashboard />} />
-              <Route path="members" element={<SuperMembers />} />
-              <Route path="members/:memberId" element={<SuperMemberProfile />} />
-              <Route path="events" element={<SuperEvents />} />
-              <Route path="fundraising" element={<SuperFundraising />} />
-              <Route path="locations" element={<SuperLocations />} />
-              <Route path="finances" element={<SuperFinances />} />
-              <Route path="regions" element={<SuperRegions />} />
-              <Route path="currencies" element={<SuperCurrencies />} />
-              <Route path="reports" element={<SuperReports />} />
-              <Route path="communication" element={<SuperCommunication />} />
-              <Route path="user-management" element={<SuperUserManagement />} />
-              <Route path="homepage-settings" element={<HomepageSettings />} />
-              <Route path="certificates" element={<SuperCertificates />} />
-              <Route path="about-settings" element={<AboutUsSettings />} />
-            </Route>
-            
-            {/* Member Portal - Nested Routes with shared layout */}
-            <Route path="/member" element={
-              <MemberProtectedRoute>
-                <MemberLayout />
-              </MemberProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/member/dashboard" replace />} />
-              <Route path="dashboard" element={<MemberDashboard />} />
-              <Route path="events" element={<MemberEvents />} />
-              <Route path="profile" element={<MemberProfile />} />
-              <Route path="finances" element={<MemberFinances />} />
-              <Route path="discipleship" element={<MemberDiscipleship />} />
-              <Route path="bible" element={<MemberBible />} />
-              <Route path="attendance" element={<MemberAttendance />} />
-              <Route path="fundraising" element={<MemberFundraising />} />
-              <Route path="media" element={<MemberMedia />} />
-              <Route path="counseling" element={<MemberCounseling />} />
-              <Route path="store" element={<MemberStore />} />
-            </Route>
-            
-            {/* DCG Portal Routes - single simple guard: signed in + DCG associated */}
-            <Route path="/dcg" element={<Navigate to="/dcg/dashboard" replace />} />
-            <Route path="/dcg/dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
-            <Route path="/dcg/members" element={<DcgSessionRoute><DcgMembers /></DcgSessionRoute>} />
-            <Route path="/dcg/member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
-            <Route path="/dcg/events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
-            <Route path="/dcg/finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
-            <Route path="/dcg/reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
-            <Route path="/dcg/communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
-            
-            {/* Portal Selector Route */}
-            <Route path="/portal-selector" element={<PortalSelector />} />
-            
-            {/* Unauthorized Route */}
-            <Route path="/unauthorized" element={<div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold mb-4">Unauthorized Access</h1>
-                  <p className="text-muted-foreground mb-4">You don't have permission to access this resource.</p>
-                  <Button onClick={() => window.history.back()}>Go Back</Button>
-                </div>
-              </div>} />
-            
-            {/* Not Found Route */}
-            <Route path="*" element={<NotFound />} />
+
+            {/* All other routes still use the global AuthProvider. */}
+            <Route path="/*" element={
+              <AuthProvider>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="about" element={<About />} />
+                  <Route path="locations" element={<Locations />} />
+                  <Route path="locations/:slug" element={<RegionalBranchHome />} />
+                  <Route path="events" element={<Events />} />
+                  <Route path="events/:eventId" element={<EventDetail />} />
+                  <Route path="media" element={<Media />} />
+                  <Route path="store" element={<Store />} />
+                  <Route path="blog" element={<Blog />} />
+                  <Route path="counseling" element={<Counseling />} />
+                  <Route path="fundraising" element={<Fundraising />} />
+                  <Route path="verify/:verificationCode" element={<CertificateVerify />} />
+                  <Route path="attend/:eventId" element={<SelfAttendance />} />
+
+                  {/* Other Authentication Routes */}
+                  <Route path="visitor/register/:regionCode" element={<VisitorRegister />} />
+                  <Route path="member/register/:regionCode" element={<MemberRegister />} />
+                  <Route path="auth/super" element={<SuperAuth />} />
+                  <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="dcg-auth" element={<DcgAuth />} />
+                  <Route path="auth/member" element={<MemberAuth />} />
+                  <Route path="member/auth" element={<Navigate to="/auth/member" replace />} />
+
+                  {/* Admin Redirects */}
+                  <Route path="admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
+                  <Route path="admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
+
+                  {/* Super Admin Portal */}
+                  <Route path="admin/super" element={
+                    <SuperAdminSessionRoute>
+                      <SuperAdminLayout />
+                    </SuperAdminSessionRoute>
+                  }>
+                    <Route path="dashboard" element={<SuperDashboard />} />
+                    <Route path="members" element={<SuperMembers />} />
+                    <Route path="members/:memberId" element={<SuperMemberProfile />} />
+                    <Route path="events" element={<SuperEvents />} />
+                    <Route path="fundraising" element={<SuperFundraising />} />
+                    <Route path="locations" element={<SuperLocations />} />
+                    <Route path="finances" element={<SuperFinances />} />
+                    <Route path="regions" element={<SuperRegions />} />
+                    <Route path="currencies" element={<SuperCurrencies />} />
+                    <Route path="reports" element={<SuperReports />} />
+                    <Route path="communication" element={<SuperCommunication />} />
+                    <Route path="user-management" element={<SuperUserManagement />} />
+                    <Route path="homepage-settings" element={<HomepageSettings />} />
+                    <Route path="certificates" element={<SuperCertificates />} />
+                    <Route path="about-settings" element={<AboutUsSettings />} />
+                  </Route>
+
+                  {/* Member Portal */}
+                  <Route path="member" element={
+                    <MemberProtectedRoute>
+                      <MemberLayout />
+                    </MemberProtectedRoute>
+                  }>
+                    <Route index element={<Navigate to="/member/dashboard" replace />} />
+                    <Route path="dashboard" element={<MemberDashboard />} />
+                    <Route path="events" element={<MemberEvents />} />
+                    <Route path="profile" element={<MemberProfile />} />
+                    <Route path="finances" element={<MemberFinances />} />
+                    <Route path="discipleship" element={<MemberDiscipleship />} />
+                    <Route path="bible" element={<MemberBible />} />
+                    <Route path="attendance" element={<MemberAttendance />} />
+                    <Route path="fundraising" element={<MemberFundraising />} />
+                    <Route path="media" element={<MemberMedia />} />
+                    <Route path="counseling" element={<MemberCounseling />} />
+                    <Route path="store" element={<MemberStore />} />
+                  </Route>
+
+                  {/* DCG Portal Routes */}
+                  <Route path="dcg" element={<Navigate to="/dcg/dashboard" replace />} />
+                  <Route path="dcg/dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
+                  <Route path="dcg/members" element={<DcgSessionRoute><DcgMembers /></DcgSessionRoute>} />
+                  <Route path="dcg/member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
+                  <Route path="dcg/events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
+                  <Route path="dcg/finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
+                  <Route path="dcg/reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
+                  <Route path="dcg/communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
+
+                  {/* Portal Selector */}
+                  <Route path="portal-selector" element={<PortalSelector />} />
+
+                  {/* Unauthorized */}
+                  <Route path="unauthorized" element={<div className="min-h-screen flex items-center justify-center">
+                      <div className="text-center">
+                        <h1 className="text-2xl font-bold mb-4">Unauthorized Access</h1>
+                        <p className="text-muted-foreground mb-4">You don't have permission to access this resource.</p>
+                        <Button onClick={() => window.history.back()}>Go Back</Button>
+                      </div>
+                    </div>} />
+
+                  {/* Not Found */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </AuthProvider>
+            } />
           </Routes>
-          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>;
