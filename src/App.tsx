@@ -32,6 +32,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 // Layout Components
 import EnhancedRegionalAdminLayout from "./components/admin/EnhancedRegionalAdminLayout";
 import RegionalSessionRoute from "./components/auth/RegionalSessionRoute";
+import { RegionalSessionProvider } from "./contexts/RegionalSessionContext";
 import SuperAdminLayout from "./components/admin/SuperAdminLayout";
 import SuperAdminSessionRoute from "./components/auth/SuperAdminSessionRoute";
 import MemberLayout from "./components/layout/MemberLayout";
@@ -141,30 +142,48 @@ const App = () => {
                 for /admin/regional/*). The login pages themselves don't need
                 any provider; the regional sign-in only checks region match.
                 --------------------------------------------------------------- */}
-            <Route path="/auth/regional" element={<RegionalAuth />} />
+            <Route
+              path="/auth/regional"
+              element={
+                <RegionalSessionProvider>
+                  <RegionalAuth />
+                </RegionalSessionProvider>
+              }
+            />
 
-            <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
-            <Route path="/admin/regional" element={
-              <RegionalSessionRoute>
-                <EnhancedRegionalAdminLayout />
-              </RegionalSessionRoute>
-            }>
-              <Route path="dashboard" element={<RegionalDashboard />} />
-              <Route path="members" element={<RegionalMembers />} />
-              <Route path="members/:memberId" element={<RegionalMemberProfile />} />
-              <Route path="events" element={<RegionalEvents />} />
-              <Route path="events/:eventId/report" element={<RegionalEventReport />} />
-              <Route path="finances" element={<RegionalFinances />} />
-              <Route path="dcg" element={<RegionalDCG />} />
-              <Route path="dcg/:dcgId" element={<DcgProfile />} />
-              <Route path="certificates" element={<RegionalCertificates />} />
-              <Route path="reports" element={<RegionalReports />} />
-              <Route path="communication" element={<RegionalCommunication />} />
-              <Route path="branch-settings" element={<RegionalBranchSettings />} />
-              <Route path="discipleship" element={<RegionalDiscipleship />} />
-              <Route path="user-roles" element={<UserRoles />} />
-              <Route path="settings" element={<RegionalSettings />} />
-            </Route>
+            <Route
+              path="/admin/regional/*"
+              element={
+                <RegionalSessionProvider>
+                  <Routes>
+                    <Route index element={<Navigate to="/admin/regional/dashboard" replace />} />
+                    <Route
+                      element={
+                        <RegionalSessionRoute>
+                          <EnhancedRegionalAdminLayout />
+                        </RegionalSessionRoute>
+                      }
+                    >
+                      <Route path="dashboard" element={<RegionalDashboard />} />
+                      <Route path="members" element={<RegionalMembers />} />
+                      <Route path="members/:memberId" element={<RegionalMemberProfile />} />
+                      <Route path="events" element={<RegionalEvents />} />
+                      <Route path="events/:eventId/report" element={<RegionalEventReport />} />
+                      <Route path="finances" element={<RegionalFinances />} />
+                      <Route path="dcg" element={<RegionalDCG />} />
+                      <Route path="dcg/:dcgId" element={<DcgProfile />} />
+                      <Route path="certificates" element={<RegionalCertificates />} />
+                      <Route path="reports" element={<RegionalReports />} />
+                      <Route path="communication" element={<RegionalCommunication />} />
+                      <Route path="branch-settings" element={<RegionalBranchSettings />} />
+                      <Route path="discipleship" element={<RegionalDiscipleship />} />
+                      <Route path="user-roles" element={<UserRoles />} />
+                      <Route path="settings" element={<RegionalSettings />} />
+                    </Route>
+                  </Routes>
+                </RegionalSessionProvider>
+              }
+            />
 
             {/* All other routes still use the global AuthProvider. */}
             <Route path="/*" element={

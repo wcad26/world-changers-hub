@@ -1,30 +1,30 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
-import {
-  RegionalSessionProvider,
-  useRegionalSession,
-} from '@/contexts/RegionalSessionContext';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Loader2, AlertTriangle } from 'lucide-react';
+import { useRegionalSession } from '@/contexts/RegionalSessionContext';
+import { Button } from '@/components/ui/button';
 import RegionalErrorBoundary from './RegionalErrorBoundary';
 
 /**
  * Self-contained guard for the regional portal.
  *
- * Behaviour:
- *   - While the regional session is still being checked, render a loading
- *     spinner. We intentionally do NOT use a wall-clock timeout here —
- *     a slow profile/region fetch must never log a real user out.
+ * The RegionalSessionProvider is mounted ONCE at the App level so navigating
+ * between regional pages no longer recreates the session. This guard is light:
+ * it only checks `status` and renders a loading/error/redirect state.
  *
- *   - Once `ready` is true, send unauthorized visitors to /auth/regional.
- *     Authorized visitors render the portal, wrapped in an error boundary
- *     so a single page crash cannot blank the entire portal (which would
- *     otherwise trigger the preview blank-page reload loop).
+ * Behaviour:
+ *   - status `checking` (or not ready) → spinner. We never log anyone out for slowness.
+ *   - status `unauthorized` → SPA redirect to /auth/regional.
+ *   - status `error` → recoverable panel (Retry / Sign out). No redirect, no reload.
+ *   - status `authorized` → render children inside an error boundary keyed by
+ *     pathname so a per-page crash never blanks the whole portal.
  */
-const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { ready, authorized } = useRegionalSession();
+const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { ready, status, retry, signOut } = useRegionalSession();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  if (!ready) {
+  if (!ready || status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -32,18 +32,37 @@ const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children
     );
   }
 
-  if (!authorized) {
+  if (status === 'unauthorized') {
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
-  return <RegionalErrorBoundary>{children}</RegionalErrorBoundary>;
-};
+  if (status === 'error') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md text-center space-y-4 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-8">
+          <div className="flex justify-center">
+            <AlertTriangle className="h-10 w-10 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold">We couldn't load your session</h2>
+          <p className="text-sm text-muted-foreground">
+            This is usually a temporary network issue. You can retry without losing your login.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+            <Button onClick={retry} variant="default">Retry</Button>
+            <Button onClick={() => signOut()} variant="outline">Sign out</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <RegionalSessionProvider>
-      <RegionalSessionGate>{children}</RegionalSessionGate>
-    </RegionalSessionProvider>
+    <RegionalErrorBoundary
+      resetKey={location.pathname}
+      onGoHome={() => navigate('/admin/regional/dashboard')}
+    >
+      {children}
+    </RegionalErrorBoundary>
   );
 };
 
