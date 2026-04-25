@@ -30,7 +30,7 @@ import MemberRegister from "./pages/MemberRegister";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
 import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
-import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
+import DcgSessionRoute from "./components/auth/DcgSessionRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Layout Components
@@ -225,29 +225,15 @@ const App = () => {
               <Route path="store" element={<MemberStore />} />
             </Route>
             
-            {/* DCG Portal Routes - require auth + an actual DCG association */}
+            {/* DCG Portal Routes - single simple guard: signed in + DCG associated */}
             <Route path="/dcg" element={<Navigate to="/dcg/dashboard" replace />} />
-            <Route path="/dcg/dashboard" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgDashboard /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/members" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgMembers /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/member/:memberId" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgMemberProfile /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/events" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgEvents /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/finances" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgFinances /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/reports" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgReports /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
-            <Route path="/dcg/communication" element={<MultiRoleProtectedRoute allowedRoles={['dcg_admin', 'regional_admin', 'super_admin']}>
-                  <DcgProtectedRoute><DcgCommunication /></DcgProtectedRoute>
-                </MultiRoleProtectedRoute>} />
+            <Route path="/dcg/dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
+            <Route path="/dcg/members" element={<DcgSessionRoute><DcgMembers /></DcgSessionRoute>} />
+            <Route path="/dcg/member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
+            <Route path="/dcg/events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
+            <Route path="/dcg/finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
+            <Route path="/dcg/reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
+            <Route path="/dcg/communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
             
             {/* Portal Selector Route */}
             <Route path="/portal-selector" element={<PortalSelector />} />
