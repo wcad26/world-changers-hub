@@ -93,6 +93,26 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     // Initial boot
     (async () => {
       try {
+        // If a sign-out from this portal is mid-flight or just happened,
+        // do NOT restore the previous Supabase session. Force-clear it and
+        // stay unauthorized so the user lands cleanly on the login page.
+        const loggingOut =
+          typeof sessionStorage !== 'undefined' &&
+          sessionStorage.getItem('regional_signing_out') === '1';
+
+        if (loggingOut) {
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+          } catch {
+            /* ignore */
+          }
+          sessionStorage.removeItem('regional_signing_out');
+          if (!cancelled) {
+            setStatus('unauthorized');
+          }
+          return;
+        }
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (cancelled) return;
 
@@ -169,15 +189,22 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const signOut = async () => {
-    // Mark as signing out so the auth listener doesn't try to do anything
-    // exotic. We clear local state synchronously, cancel any in-flight queries,
-    // then call Supabase. This guarantees the regional UI is fully unwound
-    // before /auth/regional mounts, which prevents the brief "blank" frame.
+    // Mark as signing out so:
+    //   1. The auth listener doesn't react to transient SIGNED_OUT noise.
+    //   2. The /auth/regional page (which no longer mounts a provider) won't
+    //      see a re-hydrated session if the user is bounced there before
+    //      Supabase finishes clearing local storage.
     signingOutRef.current = true;
     try {
-      // Stop any active queries so child pages can't try to render with stale
-      // data while the auth state is changing.
-      queryClient.cancelQueries();
+      sessionStorage.setItem('regional_signing_out', '1');
+    } catch {
+      /* ignore storage errors */
+    }
+
+    try {
+      // Stop any active queries first, then clear the cache, so child pages
+      // can't try to render with stale data while the auth state is changing.
+      await queryClient.cancelQueries();
       queryClient.clear();
     } catch (err) {
       console.warn('[RegionalSession] queryClient cleanup failed:', err);
@@ -197,6 +224,13 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
     } finally {
+      // Clear the marker only after Supabase has finished its local cleanup
+      // so any provider boot that happens during this window stays unauthorized.
+      try {
+        sessionStorage.removeItem('regional_signing_out');
+      } catch {
+        /* ignore */
+      }
       signingOutRef.current = false;
     }
   };

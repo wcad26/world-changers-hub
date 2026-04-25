@@ -142,14 +142,7 @@ const App = () => {
                 for /admin/regional/*). The login pages themselves don't need
                 any provider; the regional sign-in only checks region match.
                 --------------------------------------------------------------- */}
-            <Route
-              path="/auth/regional"
-              element={
-                <RegionalSessionProvider>
-                  <RegionalAuth />
-                </RegionalSessionProvider>
-              }
-            />
+            <Route path="/auth/regional" element={<RegionalAuth />} />
 
             <Route
               path="/admin/regional/*"

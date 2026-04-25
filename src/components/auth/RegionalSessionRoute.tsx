@@ -33,7 +33,9 @@ const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ childre
   }
 
   if (status === 'unauthorized') {
-    return <Navigate to="/auth/regional" state={{ from: location }} replace />;
+    // Intentionally do NOT pass state.from — we don't want to bounce a user
+    // who just logged out back to the protected page they came from.
+    return <Navigate to="/auth/regional" replace />;
   }
 
   if (status === 'error') {

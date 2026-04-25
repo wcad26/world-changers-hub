@@ -1,38 +1,50 @@
-I found the remaining reload behavior is very likely caused by the regional session provider being mounted inside the `/admin/regional` route element. When moving between regional pages, the route tree can remount the regional guard/provider, temporarily re-check auth/profile/region. If that check races or a page renders blank/crashes during navigation, Lovable’s blank-page detector reloads the preview, which sends the app back to the dashboard. There are also still hard navigation paths (`window.location.assign/replace`) that can cause full page reloads instead of SPA navigation.
+I found the logout bug is very likely caused by the regional login page being wrapped in a fresh `RegionalSessionProvider`. When logout redirects from `/admin/regional/certificates` to `/auth/regional`, that new provider boots, sees the still-existing local Supabase session for a moment, and can treat the user as authorized again. Because the redirect also carries `state.from = /admin/regional/certificates`, the app can end up bouncing back to the page the user just logged out from.
 
-Plan to eliminate the reloads:
+Plan to eliminate the blank page and re-login loop:
 
-1. Keep the regional session mounted globally
-   - Move `RegionalSessionProvider` out of `RegionalSessionRoute` and wrap the whole regional route group once in `App.tsx`.
-   - This makes the regional session stable while moving between Dashboard, Certificates, Members, Events, DCG, Settings, etc.
-   - Regional page navigation will no longer recreate the session provider or briefly drop auth/region state.
+1. Make `/auth/regional` a true public login page
+   - Remove `RegionalSessionProvider` from the `/auth/regional` route in `App.tsx`.
+   - The login page should not restore or authorize an existing regional session automatically.
+   - This prevents the login page from immediately rehydrating the user after logout.
 
-2. Replace hard reload/navigation with SPA navigation
-   - Remove `window.location.replace('/auth/regional')` from the regional sign-out flow and use React Router navigation instead.
-   - Replace `window.location.assign('/admin/regional/dashboard')` in the regional error boundary with SPA navigation or a safe link/button.
-   - Keep sign-out only for explicit logout clicks.
+2. Stop preserving the protected page during logout redirects
+   - Update `RegionalSessionRoute` so normal unauthorized redirects go to `/auth/regional` without carrying `state.from`.
+   - This prevents `/admin/regional/certificates` from being remembered as the return destination after sign-out.
 
-3. Make the regional guard non-destructive
-   - Update the guard to redirect to `/auth/regional` only when status is explicitly `unauthorized`.
-   - If status is `error`, show a recoverable “session could not be checked” panel with Retry and Login buttons instead of blanking or redirecting.
-   - Keep authorized users inside the portal even if a non-critical region read fails.
+3. Add an explicit regional logout-in-progress guard
+   - In `RegionalSessionContext.signOut`, set a short-lived marker in `sessionStorage` before clearing state.
+   - Clear React Query cache and local regional state immediately, then redirect/render the login page.
+   - On regional session boot, if that marker exists, force local Supabase sign-out cleanup and stay unauthorized instead of restoring the old session.
 
-4. Add page-level crash isolation for regional pages
-   - Key the error boundary by pathname so if one page fails, only that page shows an error panel.
-   - Navigation to another regional page should reset the boundary automatically.
-   - This prevents one bad page (for example Certificates) from blanking the whole portal and triggering Lovable’s preview reload.
+4. Make sign-out more deterministic
+   - Await `queryClient.cancelQueries()` before clearing query cache.
+   - Clear state synchronously before the Supabase network call.
+   - Keep Supabase auth listener handling `SIGNED_OUT`, but ignore transient auth events while sign-out is in progress.
 
-5. Harden regional data hooks against page-transition races
-   - Ensure regional hooks used by all pages only run after `regionId` exists.
-   - Add safe defaults/empty arrays and inline error states for certificates, members, events, attendance, reports, finances, communications, and DCG pages.
-   - Avoid throwing render-breaking query errors where the page can display an error message instead.
+5. Harden the regional login page
+   - Ensure successful manual login always sends users to `/admin/regional/dashboard`, not to an old `location.state.from` page.
+   - Use local sign-out for “access denied” cleanup so it does not trigger global portal races.
 
-6. Remove remaining dashboard/login redirect sources from regional navigation
-   - Remove or stop using legacy `RegionalPermissionRoute.tsx`, since it can still redirect to login/dashboard based on the global auth context.
-   - Keep `/admin/regional` redirecting to dashboard only when the user intentionally opens the base regional URL, not when navigating between child pages.
+Technical changes expected:
 
-Expected result:
-- Moving between any regional portal page will be normal client-side navigation, not a reload.
-- The regional session will not be re-created on every page change.
-- A page-specific error will show an error panel instead of a blank screen.
-- The portal will not redirect to dashboard/login unless the user explicitly logs out or truly has no session.
+```text
+App.tsx
+  /auth/regional -> <RegionalAuth /> only
+  /admin/regional/* -> keeps <RegionalSessionProvider> around protected routes
+
+RegionalSessionRoute.tsx
+  unauthorized -> <Navigate to="/auth/regional" replace />
+  no state.from for regional logout
+
+RegionalSessionContext.tsx
+  add regional logout marker
+  skip session restoration when marker is present
+  clear marker after Supabase local signOut cleanup
+  await cancelQueries before cache clear
+
+RegionalAuth.tsx
+  no auto-return to certificates or previous protected path
+  access-denied cleanup uses local signOut
+```
+
+After this, pressing Logout from Certificate Management should produce a single clean transition to the Regional Portal login page, with no blank screen and no automatic return to `/admin/regional/certificates`.
