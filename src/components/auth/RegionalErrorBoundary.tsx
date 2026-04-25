@@ -2,6 +2,17 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
+interface Props {
+  children: React.ReactNode;
+  /**
+   * Changing this key resets the boundary. The regional layout passes the
+   * current pathname, so navigating to another regional page automatically
+   * clears any stale error state from the previous page.
+   */
+  resetKey?: string;
+  onGoHome?: () => void;
+}
+
 interface State {
   hasError: boolean;
   error: Error | null;
@@ -13,10 +24,7 @@ interface State {
  * otherwise trigger Lovable's blank-page detector to reload the preview
  * in a loop).
  */
-class RegionalErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  State
-> {
+class RegionalErrorBoundary extends React.Component<Props, State> {
   state: State = { hasError: false, error: null };
 
   static getDerivedStateFromError(error: Error): State {
@@ -27,12 +35,14 @@ class RegionalErrorBoundary extends React.Component<
     console.error('[RegionalPortal] render error:', error, info);
   }
 
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false, error: null });
+    }
+  }
+
   handleReset = () => {
     this.setState({ hasError: false, error: null });
-  };
-
-  handleGoToDashboard = () => {
-    window.location.assign('/admin/regional/dashboard');
   };
 
   render() {
@@ -57,9 +67,11 @@ class RegionalErrorBoundary extends React.Component<
             <Button onClick={this.handleReset} variant="default">
               Try again
             </Button>
-            <Button onClick={this.handleGoToDashboard} variant="outline">
-              Go to dashboard
-            </Button>
+            {this.props.onGoHome && (
+              <Button onClick={this.props.onGoHome} variant="outline">
+                Go to dashboard
+              </Button>
+            )}
           </div>
         </div>
       </div>

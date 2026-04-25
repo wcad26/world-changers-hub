@@ -16,6 +16,8 @@ interface RegionalSessionValue {
   ready: boolean;
   /** True if a Supabase session exists AND profile.region_id is set. */
   authorized: boolean;
+  /** Manual retry helper for recoverable errors. */
+  retry: () => void;
   signOut: () => Promise<void>;
 }
 
@@ -24,15 +26,10 @@ export const RegionalSessionContext = createContext<RegionalSessionValue | null>
 /**
  * Self-contained session provider for the Regional portal.
  *
- * Behavior:
- *  - Boots once: getSession -> profile -> region.
- *  - Subscribes to auth state changes safely:
- *      • SIGNED_OUT: clears state and marks unauthorized.
- *      • TOKEN_REFRESHED / USER_UPDATED: updates the user reference only,
- *        does NOT re-fetch profile/region (no UI churn, no remount loops).
- *      • SIGNED_IN with a different user: re-runs the boot sequence.
- *  - Never auto-signs the user out. Transient profile/region fetch errors
- *    surface as `status === 'error'` but the session is preserved.
+ * IMPORTANT: This provider is mounted ONCE for the whole regional portal at
+ * the App level. It never remounts during navigation between regional pages,
+ * so route changes never re-run the session boot sequence. Token refreshes
+ * only update the user reference — they do NOT re-fetch profile/region.
  */
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<RegionalSessionValue['user']>(null);
@@ -40,6 +37,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [region, setRegion] = useState<Region | null>(null);
   const [status, setStatus] = useState<RegionalSessionStatus>('checking');
   const [ready, setReady] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
   const bootedForUser = useRef<string | null>(null);
 
   const loadProfileAndRegion = async (userId: string) => {
@@ -52,6 +50,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (profileError) {
         console.error('[RegionalSession] profile fetch error:', profileError);
+        // Recoverable — do NOT log the user out.
         setStatus('error');
         return;
       }
@@ -118,15 +117,18 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
-      if (event === 'SIGNED_OUT' || !session?.user) {
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
-          setRegion(null);
-          bootedForUser.current = null;
-          setStatus('unauthorized');
-          setReady(true);
-        }
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setRegion(null);
+        bootedForUser.current = null;
+        setStatus('unauthorized');
+        setReady(true);
+        return;
+      }
+
+      if (!session?.user) {
+        // Other events without a session — ignore, do not flip state.
         return;
       }
 
@@ -152,7 +154,16 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       cancelled = true;
       subscription.unsubscribe();
     };
-  }, []);
+    // retryTick intentionally re-runs the boot path when the user clicks retry
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryTick]);
+
+  const retry = () => {
+    setStatus('checking');
+    setReady(false);
+    bootedForUser.current = null;
+    setRetryTick((n) => n + 1);
+  };
 
   const signOut = async () => {
     try {
@@ -160,7 +171,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
     }
-    window.location.replace('/auth/regional');
+    // SPA navigation — the SIGNED_OUT listener will set status to unauthorized
+    // and the guard will redirect to /auth/regional automatically.
   };
 
   const value: RegionalSessionValue = {
@@ -170,6 +182,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     status,
     ready,
     authorized: status === 'authorized' || (!!user && !!profile?.region_id),
+    retry,
     signOut,
   };
 
