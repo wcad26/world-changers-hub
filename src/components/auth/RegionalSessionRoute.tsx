@@ -1,25 +1,23 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import {
+  RegionalSessionProvider,
+  useRegionalSession,
+} from '@/contexts/RegionalSessionContext';
 
 /**
- * Simple guard for the regional portal.
+ * Simple, self-contained guard for the regional portal.
  *
- * Rules (intentionally minimal):
- *   1. Wait for auth to be ready.
- *   2. If no user → redirect to /auth/regional.
- *   3. If user has no region on their profile → redirect to /auth/regional.
- *   4. Otherwise → render the dashboard.
- *
- * No granular permission checks, no role lookups, no portal cross-checks.
- * Once a user is in, the entire regional portal is open to them.
+ * Wraps its children in a dedicated RegionalSessionProvider so the regional
+ * portal does NOT depend on the global AuthContext at all. Once the user is
+ * signed in and has a region on their profile, they're in — period.
  */
-const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile, authReady, loading } = useAuth();
+const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { ready, authorized } = useRegionalSession();
   const location = useLocation();
 
-  if (!authReady || loading) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -27,11 +25,19 @@ const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   }
 
-  if (!user || !profile?.region_id) {
+  if (!authorized) {
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
   return <>{children}</>;
+};
+
+const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <RegionalSessionProvider>
+      <RegionalSessionGate>{children}</RegionalSessionGate>
+    </RegionalSessionProvider>
+  );
 };
 
 export default RegionalSessionRoute;

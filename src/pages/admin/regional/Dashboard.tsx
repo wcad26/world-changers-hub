@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useAuth } from "@/hooks/useAuth";
+import { useRegionalSession } from "@/contexts/RegionalSessionContext";
 import { useMembers } from "@/hooks/useMembers";
 import { useRegionalEvents } from "@/hooks/useEvents";
 import { useFinancialSummary, useFinancialTransactions } from "@/hooks/useFinancials";
@@ -32,7 +32,8 @@ import {
 const CHILD_AGE = 16;
 
 const RegionalDashboard: React.FC = () => {
-  const { userRegion, loading: authLoading } = useAuth();
+  const { region: userRegion, ready } = useRegionalSession();
+  const authLoading = !ready;
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
 
   // Filter state
