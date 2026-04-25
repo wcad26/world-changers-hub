@@ -45,6 +45,15 @@ const RegionalAuth = () => {
         return;
       }
 
+      // Clear any stale "signing out" marker from a previous logout so the
+      // freshly-mounted RegionalSessionProvider doesn't immediately wipe
+      // the brand-new session.
+      try {
+        sessionStorage.removeItem('regional_signing_out');
+      } catch {
+        /* ignore */
+      }
+
       // Make sure the session is fully persisted before we navigate into
       // the portal — otherwise the freshly-mounted RegionalSessionProvider
       // can race against persistence and see a null session.
@@ -57,7 +66,7 @@ const RegionalAuth = () => {
         .maybeSingle();
 
       if (!profile?.region_id) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: 'Access denied',
           description: 'This account is not associated with a region.',
@@ -66,6 +75,9 @@ const RegionalAuth = () => {
         return;
       }
 
+      // Always go to the dashboard after a successful regional login —
+      // never to a remembered protected path (which would put a freshly
+      // logged-out user back on the page they came from).
       navigate('/admin/regional/dashboard', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
