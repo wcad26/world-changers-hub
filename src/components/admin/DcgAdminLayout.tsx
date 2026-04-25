@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import PortalSwitcher from "./PortalSwitcher";
 import {
   LayoutDashboard,
   Users,
@@ -122,11 +121,8 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
               );
             })}
 
-            {/* Portal Switcher and Sign Out in nav panel */}
+            {/* Sign Out in nav panel */}
             <div className="pt-4 mt-4 border-t border-border space-y-1">
-              <div className={cn(isCollapsed ? "px-1" : "px-1")}>
-                <PortalSwitcher />
-              </div>
               <Button
                 variant="ghost"
                 onClick={handleSignOut}
@@ -214,9 +210,6 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
               })}
 
               <div className="pt-4 border-t border-border mt-4 space-y-1">
-                <div className="px-3 py-2">
-                  <PortalSwitcher />
-                </div>
                 <Button
                   variant="ghost"
                   onClick={() => {

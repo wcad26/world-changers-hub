@@ -25,9 +25,7 @@ import DcgAuth from "./pages/DcgAuth";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import MemberRegister from "./pages/MemberRegister";
-import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
-import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
 import DcgSessionRoute from "./components/auth/DcgSessionRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 
