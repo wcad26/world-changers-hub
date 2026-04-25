@@ -35,7 +35,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 // Layout Components
 import EnhancedRegionalAdminLayout from "./components/admin/EnhancedRegionalAdminLayout";
-import RegionalPermissionRoute from "./components/auth/RegionalPermissionRoute";
+import RegionalSessionRoute from "./components/auth/RegionalSessionRoute";
 import SuperAdminLayout from "./components/admin/SuperAdminLayout";
 import MemberLayout from "./components/layout/MemberLayout";
 import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
@@ -158,27 +158,27 @@ const App = () => {
             <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
             <Route path="/admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
             
-            {/* Regional Admin Portal - Nested Routes with shared layout */}
+            {/* Regional Admin Portal - single simple guard: signed in + belongs to a region */}
             <Route path="/admin/regional" element={
-              <MultiRoleProtectedRoute allowedRoles={['regional_admin', 'super_admin']} redirectTo="/auth/regions">
+              <RegionalSessionRoute>
                 <EnhancedRegionalAdminLayout />
-              </MultiRoleProtectedRoute>
+              </RegionalSessionRoute>
             }>
-              <Route path="dashboard" element={<RegionalPermissionRoute permission="dashboard_view"><RegionalDashboard /></RegionalPermissionRoute>} />
-              <Route path="members" element={<RegionalPermissionRoute permission="members_view"><RegionalMembers /></RegionalPermissionRoute>} />
-              <Route path="members/:memberId" element={<RegionalPermissionRoute permission="members_view"><RegionalMemberProfile /></RegionalPermissionRoute>} />
-              <Route path="events" element={<RegionalPermissionRoute permission="events_view"><RegionalEvents /></RegionalPermissionRoute>} />
-              <Route path="events/:eventId/report" element={<RegionalPermissionRoute permission="events_view"><RegionalEventReport /></RegionalPermissionRoute>} />
-              <Route path="finances" element={<RegionalPermissionRoute permission="finances_view"><RegionalFinances /></RegionalPermissionRoute>} />
-              <Route path="dcg" element={<RegionalPermissionRoute permission="dcg_view"><RegionalDCG /></RegionalPermissionRoute>} />
-              <Route path="dcg/:dcgId" element={<RegionalPermissionRoute permission="dcg_view"><DcgProfile /></RegionalPermissionRoute>} />
-              <Route path="certificates" element={<RegionalPermissionRoute permission="certificates_view"><RegionalCertificates /></RegionalPermissionRoute>} />
-              <Route path="reports" element={<RegionalPermissionRoute permission="reports_view"><RegionalReports /></RegionalPermissionRoute>} />
-              <Route path="communication" element={<RegionalPermissionRoute permission="communication_view"><RegionalCommunication /></RegionalPermissionRoute>} />
-              <Route path="branch-settings" element={<RegionalPermissionRoute permission="website_info_view"><RegionalBranchSettings /></RegionalPermissionRoute>} />
-              <Route path="discipleship" element={<RegionalPermissionRoute permission="discipleship_view"><RegionalDiscipleship /></RegionalPermissionRoute>} />
-              <Route path="user-roles" element={<RegionalPermissionRoute permission="access_management"><UserRoles /></RegionalPermissionRoute>} />
-              <Route path="settings" element={<RegionalPermissionRoute permission="settings_view"><RegionalSettings /></RegionalPermissionRoute>} />
+              <Route path="dashboard" element={<RegionalDashboard />} />
+              <Route path="members" element={<RegionalMembers />} />
+              <Route path="members/:memberId" element={<RegionalMemberProfile />} />
+              <Route path="events" element={<RegionalEvents />} />
+              <Route path="events/:eventId/report" element={<RegionalEventReport />} />
+              <Route path="finances" element={<RegionalFinances />} />
+              <Route path="dcg" element={<RegionalDCG />} />
+              <Route path="dcg/:dcgId" element={<DcgProfile />} />
+              <Route path="certificates" element={<RegionalCertificates />} />
+              <Route path="reports" element={<RegionalReports />} />
+              <Route path="communication" element={<RegionalCommunication />} />
+              <Route path="branch-settings" element={<RegionalBranchSettings />} />
+              <Route path="discipleship" element={<RegionalDiscipleship />} />
+              <Route path="user-roles" element={<UserRoles />} />
+              <Route path="settings" element={<RegionalSettings />} />
             </Route>
             
             {/* Super Admin Portal - Nested Routes with shared layout */}
