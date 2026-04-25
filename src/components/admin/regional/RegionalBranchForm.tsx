@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/form";
 import { MapPin, User, Phone, Mail, Calendar, FileText, Upload, Loader2, Images, X, Image } from "lucide-react";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
-import { useRegions } from "@/hooks/useRegions";
+
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
