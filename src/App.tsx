@@ -97,7 +97,19 @@ import MemberCounseling from "./pages/member/Counseling";
 import MemberStore from "./pages/member/Store";
 import MemberBible from "./pages/member/Bible";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Don't refetch protected portal data when the user briefly tabs away
+      // and returns — that was causing the "page blanks then reloads" feel
+      // after a few minutes inside the regional portal.
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 1,
+      staleTime: 60 * 1000,
+    },
+  },
+});
 const App = () => {
   useEffect(() => {
     // Smooth scrolling for anchor links

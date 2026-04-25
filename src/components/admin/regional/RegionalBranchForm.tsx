@@ -50,8 +50,8 @@ const regionalBranchSchema = z.object({
 type RegionalBranchFormData = z.infer<typeof regionalBranchSchema>;
 
 const RegionalBranchForm = () => {
-  const { user } = useAuth();
-  const { data: regions, isLoading } = useRegions();
+  const { userRegion } = useAuth();
+  const isLoading = !userRegion;
   const { updateRegion } = useRegionMutations();
   const { toast } = useToast();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -61,11 +61,6 @@ const RegionalBranchForm = () => {
   const [isUploadingSlides, setIsUploadingSlides] = useState(false);
   const [isUploadingSlidesTablet, setIsUploadingSlidesTablet] = useState(false);
   const [isUploadingSlidesMobile, setIsUploadingSlidesMobile] = useState(false);
-
-  // Get the user's region
-  const userRegion = regions?.find(region => 
-    user?.user_metadata?.region_id === region.id
-  );
 
   const form = useForm<RegionalBranchFormData>({
     resolver: zodResolver(regionalBranchSchema),

@@ -5,6 +5,7 @@ import {
   RegionalSessionProvider,
   useRegionalSession,
 } from '@/contexts/RegionalSessionContext';
+import RegionalErrorBoundary from './RegionalErrorBoundary';
 
 /**
  * Self-contained guard for the regional portal.
@@ -12,13 +13,12 @@ import {
  * Behaviour:
  *   - While the regional session is still being checked, render a loading
  *     spinner. We intentionally do NOT use a wall-clock timeout here —
- *     a slow profile/region fetch must never log a real user out. The
- *     RegionalSessionProvider always flips `ready` to true after its
- *     check completes (success or failure), so the spinner is bounded
- *     by the actual network round-trip, not an arbitrary timer.
+ *     a slow profile/region fetch must never log a real user out.
  *
  *   - Once `ready` is true, send unauthorized visitors to /auth/regional.
- *     Authorized visitors render the portal.
+ *     Authorized visitors render the portal, wrapped in an error boundary
+ *     so a single page crash cannot blank the entire portal (which would
+ *     otherwise trigger the preview blank-page reload loop).
  */
 const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { ready, authorized } = useRegionalSession();
@@ -36,7 +36,7 @@ const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children
     return <Navigate to="/auth/regional" state={{ from: location }} replace />;
   }
 
-  return <>{children}</>;
+  return <RegionalErrorBoundary>{children}</RegionalErrorBoundary>;
 };
 
 const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
