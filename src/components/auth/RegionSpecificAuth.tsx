@@ -10,11 +10,14 @@ import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { Eye, EyeOff, Loader2, AlertCircle, Users } from 'lucide-react';
 
 /**
- * Regional portal login page.
+ * Regional portal login.
  *
- * Self-contained: no AuthContext subscriptions, no auto-redirect effects,
- * no cross-portal links. Signs the user in, performs a one-shot role check
- * scoped to this region, then navigates to the regional dashboard.
+ * The only check after a successful sign-in is:
+ *   "does this user's profile.region_id match the region they're trying
+ *    to log into?"
+ *
+ * No role lookups. No DCG. No super-admin. If the user belongs to the
+ * region, they're in — and we hand them straight to the dashboard.
  */
 const RegionSpecificAuth = () => {
   const { regionSlug } = useParams<{ regionSlug: string }>();
@@ -31,39 +34,6 @@ const RegionSpecificAuth = () => {
 
   const from = (location.state as any)?.from?.pathname || '/admin/regional/dashboard';
 
-  const checkRegionalAccess = async (userId: string, regionId: string): Promise<boolean> => {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('region_id')
-        .eq('id', userId)
-        .single();
-
-      if (profile?.region_id !== regionId) return false;
-
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .in('role', ['super_admin', 'regional_admin'])
-        .eq('is_active', true);
-
-      if (roles && roles.length > 0) return true;
-
-      const { data: regionalRoles } = await supabase
-        .from('regional_user_roles')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('region_id', regionId)
-        .eq('is_active', true)
-        .limit(1);
-
-      return !!(regionalRoles && regionalRoles.length > 0);
-    } catch {
-      return false;
-    }
-  };
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -77,7 +47,11 @@ const RegionSpecificAuth = () => {
     }
 
     if (!region) {
-      toast({ title: 'Region error', description: 'Invalid region. Please try again.', variant: 'destructive' });
+      toast({
+        title: 'Region error',
+        description: 'Invalid region. Please try again.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -107,12 +81,18 @@ const RegionSpecificAuth = () => {
         return;
       }
 
-      const allowed = await checkRegionalAccess(authData.user.id, region.id);
+      // Single check: does this user belong to this region?
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('region_id')
+        .eq('id', authData.user.id)
+        .single();
 
-      if (!allowed) {
+      if (profileError || !profile || profile.region_id !== region.id) {
+        await supabase.auth.signOut();
         toast({
           title: 'Access denied',
-          description: `Your account is not approved for ${region.name}.`,
+          description: `Your account does not belong to ${region.name}.`,
           variant: 'destructive',
         });
         return;
@@ -244,7 +224,7 @@ const RegionSpecificAuth = () => {
           </CardContent>
         </Card>
 
-        <div className="text-center mt-6 space-x-2">
+        <div className="text-center mt-6">
           <Button
             variant="ghost"
             className="text-muted-foreground hover:text-foreground"
