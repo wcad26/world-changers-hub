@@ -22,8 +22,6 @@ import NotFound from "./pages/NotFound";
 import RegionalAuth from "./pages/RegionalAuth";
 import SuperAuth from "./pages/SuperAuth";
 import DcgAuth from "./pages/DcgAuth";
-import RegionSelect from "./pages/RegionSelect";
-import RegionSpecificAuth from "./components/auth/RegionSpecificAuth";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import MemberRegister from "./pages/MemberRegister";
@@ -134,8 +132,6 @@ const App = () => {
                 any provider; the regional sign-in only checks region match.
                 --------------------------------------------------------------- */}
             <Route path="/auth/regional" element={<RegionalAuth />} />
-            <Route path="/auth/regions" element={<RegionSelect />} />
-            <Route path="/auth/regions/:regionSlug" element={<RegionSpecificAuth />} />
 
             <Route path="/admin/regional" element={<Navigate to="/admin/regional/dashboard" replace />} />
             <Route path="/admin/regional" element={
