@@ -30,7 +30,7 @@ import MemberRegister from "./pages/MemberRegister";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PortalSelector from "./components/auth/PortalSelector";
 import MultiRoleProtectedRoute from "./components/auth/MultiRoleProtectedRoute";
-import DcgProtectedRoute from "./components/auth/DcgProtectedRoute";
+import DcgSessionRoute from "./components/auth/DcgSessionRoute";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 // Layout Components
