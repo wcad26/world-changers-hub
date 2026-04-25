@@ -40,6 +40,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [ready, setReady] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const bootedForUser = useRef<string | null>(null);
+  const signingOutRef = useRef(false);
+  const queryClient = useQueryClient();
 
   const loadProfileAndRegion = async (userId: string) => {
     try {
