@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -41,12 +41,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [ready, setReady] = useState(false);
-  const bootedRef = useRef(false);
 
   useEffect(() => {
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-
     let cancelled = false;
 
     (async () => {
@@ -78,9 +74,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
             .maybeSingle();
           if (!cancelled && regionRow) setRegion(regionRow);
         }
-      } catch (err) {
+      } catch {
         // Swallow — the guard will redirect to /auth/regional if needed.
-        // Intentionally no toast / no console noise that could destabilize the preview.
       } finally {
         if (!cancelled) setReady(true);
       }

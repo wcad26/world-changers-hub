@@ -45,6 +45,11 @@ const RegionalAuth = () => {
         return;
       }
 
+      // Make sure the session is fully persisted before we navigate into
+      // the portal — otherwise the freshly-mounted RegionalSessionProvider
+      // can race against persistence and see a null session.
+      await supabase.auth.getSession();
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('region_id')
