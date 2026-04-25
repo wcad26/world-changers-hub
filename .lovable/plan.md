@@ -1,64 +1,122 @@
-The problem is not the `/auth/regional` selector page anymore. The replay shows this exact sequence:
+Do I know what the issue is? Yes.
 
-```text
-1. Region login succeeds
-2. Toast says "Welcome to WCA DOUALA"
-3. App navigates to the regional dashboard
-4. RegionalSessionRoute shows its loading spinner
-5. A few seconds later the browser is back on /auth/regional
-```
+The current problem is not only the visible `/auth/regional` page. The real problem is that the regional login page was simplified, but the app runtime behind it is still not truly independent.
 
-What is still causing it:
+What is still causing the blank/reload behavior:
 
-- The rebuilt regional login page is simple, but the regional dashboard is still wrapped by the old global `AuthProvider` state.
-- `RegionalSessionRoute` still depends on `useAuth()` and waits for `authReady`, `loading`, `user`, and `profile` from the global AuthContext.
-- That AuthContext still fetches roles, regional roles, member data, DCG data, and other portal-related data during login/session restoration.
-- The regional layout still filters the sidebar through old permission logic (`hasRole`, `hasRegionalPermission`, `REGIONAL_PAGES`). If those old role/permission queries lag, fail, or return empty during boot, the portal can render as blank or be redirected even after the regional login itself succeeded.
-- The user profile is valid in the database: `chimbotimah@gmail.com` belongs to `WCA DOUALA`, so this is a frontend guard/session hydration problem, not a region mismatch.
+1. `AuthProvider` still wraps the entire app in `App.tsx`.
+   - When the regional login calls `supabase.auth.signInWithPassword`, Supabase fires a global `SIGNED_IN` event.
+   - The global `AuthContext` still responds to that event and runs its full cross-portal boot process:
+     - `profiles`
+     - `user_roles`
+     - `regions`
+     - `members`
+     - `get_user_dcg`
+     - `dcgs`
+     - `dcg_members`
+     - `regional_user_roles`
+   - That means the regional login is still indirectly triggering Super Admin, DCG, member, and role checks even though the page itself looks simple.
 
-Plan to fix it completely:
+2. The regional dashboard is only partially decoupled.
+   - `Dashboard.tsx` now reads `useRegionalSession`, but many hooks it calls still use the global `useAuth()` internally.
+   - Examples found:
+     - `useRegionalEvents()` in `useEvents.ts`
+     - `useFinancialSummary()` and `useFinancialTransactions()` in `useFinancials.ts`
+     - `useCurrentMemberTarget()` in `useMemberTargets.ts`
+     - many other regional pages/components still read `userRegion` from global `AuthContext`.
+   - So after login, the dashboard can still wait on or depend on the old global auth state.
 
-1. Rebuild `RegionalSessionRoute` to be independent of `AuthContext`
-   - Use only `supabase.auth.getSession()`.
-   - If no Supabase session exists, redirect to `/auth/regional`.
-   - If a session exists, query only `profiles.region_id` for that user.
-   - If `profile.region_id` exists, allow the portal.
-   - Do not query user roles, regional roles, DCG, member record, or super admin state.
+3. There is a policy mismatch with the new rule you want.
+   - You want regional access to mean: signed in + profile belongs to the region.
+   - But several database RLS policies still require `has_role(auth.uid(), 'regional_admin')` for regional admin data.
+   - This means even if the login accepts a user based only on `profile.region_id`, some dashboard/page queries can still return empty/denied data unless the user also has the old regional role.
 
-2. Create a small dedicated regional session context/hook
-   - Store only what the regional portal needs: `user`, `profile`, and `region`.
-   - This prevents dashboard/layout components from needing the global `AuthContext` just to show the region name/email.
+4. The login pages are still inside global app auth state.
+   - Even `/auth/regional` and `/auth/regions/:regionSlug` are rendered under `<AuthProvider>`.
+   - So a page that “has nothing to do with login/logout side effects” can still be affected by AuthProvider’s auth listener in the background.
 
-3. Update the regional admin layout to stop using old permission filtering
-   - Make `EnhancedRegionalAdminLayout` show all regional pages directly from `REGIONAL_PAGES`.
-   - Remove `hasRole` and `hasRegionalPermission` from the regional layout.
-   - Replace `AdminLayout`’s regional use of `useAuth()` with the dedicated regional session data where needed.
+Plan to resolve it properly:
 
-4. Make regional logout local and direct
-   - For the regional portal logout button, call `supabase.auth.signOut()` directly and navigate to `/auth/regional`.
-   - Do not use the global `AuthContext.signOut()` for regional logout, because that function still chooses redirects based on cross-portal roles.
+1. Move portal-specific auth providers inside portal route groups only
+   - Remove the global `<AuthProvider>` wrapper around every route.
+   - Keep public auth pages outside any auth provider.
+   - Wrap only the portals that still need global auth with their own provider, e.g. member/super/DCG where appropriate.
+   - Keep regional portal under its own `RegionalSessionProvider` only.
 
-5. Keep Super Admin, DCG, and Member portal behavior unchanged
-   - This change will only affect `/admin/regional/*` and the regional portal layout.
-   - The regional portal will be: login -> check region membership once -> dashboard, with no role/permission/DCG/super-admin checks involved.
+   Target structure:
 
-Technical detail:
+   ```text
+   BrowserRouter
+     Public routes, including:
+       /auth/regional
+       /auth/regions/:regionSlug
+       /auth/super
+       /dcg-auth
+       /auth/member
 
-The new regional flow will become:
+     /admin/regional/*
+       RegionalSessionProvider only
+       RegionalSessionRoute
+       EnhancedRegionalAdminLayout
 
-```text
-/auth/regional
-  -> choose region
-/auth/regions/:regionSlug
-  -> signInWithPassword
-  -> SELECT profiles.region_id WHERE id = signed-in user
-  -> if it matches selected region: /admin/regional/dashboard
+     /admin/super/*
+       Super/session provider only if needed
 
-/admin/regional/*
-  -> getSession()
-  -> SELECT profiles.region_id WHERE id = session user
-  -> if region_id exists: render portal
-  -> otherwise: /auth/regional
-```
+     /dcg/*
+       DCG/session provider only if needed
 
-This removes the remaining old global-auth dependency that is still causing the blank page and redirect after successful login.
+     /member/*
+       Member/global AuthProvider if still needed
+   ```
+
+2. Make `/auth/regional` and `/auth/regions/:regionSlug` completely auth-provider-free
+   - These pages should not sit under `AuthProvider`.
+   - `/auth/regional` will only list active regions.
+   - `/auth/regions/:regionSlug` will only:
+     - fetch the region
+     - sign in with email/password
+     - check `profiles.region_id === region.id`
+     - navigate to `/admin/regional/dashboard`
+   - No global session listener should react in the background.
+
+3. Replace regional dashboard hooks that still depend on `useAuth()`
+   - Add region-id-based variants or update existing hooks to accept an explicit `regionId`.
+   - Fix the dashboard first:
+     - `useRegionalEvents(regionId)` or new direct dashboard query
+     - `useFinancialSummary(regionId, filters)`
+     - `useFinancialTransactions(regionId, filters)`
+     - `useCurrentMemberTarget(regionId)`
+     - `useFundraisingCampaigns(regionId)` if needed
+   - This prevents the dashboard from reading `userRegion` from the old global auth context.
+
+4. Add a regional auth-ready guard that waits for the Supabase session restore safely
+   - Use the safer pattern: first call `supabase.auth.getSession()` outside the auth-state callback.
+   - Mark regional session `ready` only after session restoration and profile lookup complete.
+   - Do not redirect until `ready === true`.
+   - This avoids the “blank then redirect” race where `auth.uid()` or profile is temporarily unavailable.
+
+5. Align database access with the new regional rule
+   - Because the new rule is “belongs to region”, regional data access must not depend on `regional_admin` role if those users are expected to access the dashboard.
+   - Update regional RLS policies that still require `has_role(..., 'regional_admin')` to use `user_belongs_to_region(auth.uid(), region_id)` where appropriate.
+   - This likely affects regional dashboard/page tables such as events, attendance, certificates, fundraising, communications, and related regional data.
+   - Keep Super Admin and DCG policies separate.
+
+6. Add temporary diagnostic logging during the fix
+   - Add short, removable logs around regional sign-in and `RegionalSessionProvider` boot:
+     - login success
+     - profile lookup result
+     - region match result
+     - dashboard guard ready/authorized state
+   - This will confirm if the page reload is caused by auth session restoration, profile lookup, route guard redirect, or database policy denial.
+   - Remove or reduce logs after verification.
+
+7. Test the full flow
+   - Open `/auth/regional`.
+   - Select a region.
+   - Log in.
+   - Confirm no blank page reload.
+   - Confirm dashboard renders immediately after the single region-membership check.
+   - Refresh `/admin/regional/dashboard` directly and confirm it stays on the dashboard.
+   - Confirm logging out from the regional portal returns only to `/auth/regional`.
+
+The key fix is not another rewrite of the form. The key fix is removing the global `AuthProvider` and old role/DCG/member hooks from the regional login and regional runtime path, then aligning regional data access with the “belongs to region” rule.
