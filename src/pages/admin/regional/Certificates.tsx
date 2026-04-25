@@ -50,9 +50,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const Certificates = () => {
-  const { profile } = useAuth();
+  const { profile, userRegion, authReady } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const regionId = userRegion?.id ?? profile?.region_id ?? '';
   const [activeTab, setActiveTab] = useState('generate');
   
   const [templateFile, setTemplateFile] = useState<File | null>(null);
@@ -107,15 +108,15 @@ const Certificates = () => {
   const [sentCertificateSearchTerm, setSentCertificateSearchTerm] = useState('');
   
   // Queries
-  const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(profile?.region_id || undefined);
-  const { data: members, isLoading: membersLoading } = useMembers(profile?.region_id || '');
+  const { data: templates, isLoading: templatesLoading } = useCertificateTemplates(regionId || undefined);
+  const { data: members, isLoading: membersLoading } = useMembers(regionId);
   const { data: events, isLoading: eventsLoading } = useRegionalEvents();
-  const { data: issuedCertificates, isLoading: certificatesLoading } = useIssuedCertificates(profile?.region_id || '');
-  const { data: unsentCertificates, isLoading: unsentCertificatesLoading } = useUnsentCertificates(profile?.region_id || '');
-  const { data: sentCertificates, isLoading: sentCertificatesLoading } = useSentCertificates(profile?.region_id || '');
+  const { data: issuedCertificates, isLoading: certificatesLoading } = useIssuedCertificates(regionId);
+  const { data: unsentCertificates } = useUnsentCertificates(regionId);
+  const { data: sentCertificates } = useSentCertificates(regionId);
   const { data: eventAttendees, isLoading: attendeesLoading } = useEventAttendees(
     selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
-    profile?.region_id || undefined
+    regionId || undefined
   );
 
   // Filter members based on event selection, search term, and certificate status
