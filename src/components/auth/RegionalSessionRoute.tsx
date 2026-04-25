@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import {
@@ -7,27 +7,24 @@ import {
 } from '@/contexts/RegionalSessionContext';
 
 /**
- * Simple, self-contained guard for the regional portal.
+ * Self-contained guard for the regional portal.
  *
- * Wraps its children in a dedicated RegionalSessionProvider so the regional
- * portal does NOT depend on the global AuthContext at all. Once the user is
- * signed in and has a region on their profile, they're in — period.
+ * Behaviour:
+ *   - While the regional session is still being checked, render a loading
+ *     spinner. We intentionally do NOT use a wall-clock timeout here —
+ *     a slow profile/region fetch must never log a real user out. The
+ *     RegionalSessionProvider always flips `ready` to true after its
+ *     check completes (success or failure), so the spinner is bounded
+ *     by the actual network round-trip, not an arbitrary timer.
+ *
+ *   - Once `ready` is true, send unauthorized visitors to /auth/regional.
+ *     Authorized visitors render the portal.
  */
 const RegionalSessionGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { ready, authorized } = useRegionalSession();
   const location = useLocation();
 
-  // Defensive timeout: if `ready` somehow stays false for too long (e.g.
-  // a future regression in the session boot path), bail out to the login
-  // page instead of leaving the user on an indefinite spinner.
-  const [timedOut, setTimedOut] = useState(false);
-  useEffect(() => {
-    if (ready) return;
-    const t = setTimeout(() => setTimedOut(true), 7000);
-    return () => clearTimeout(t);
-  }, [ready]);
-
-  if (!ready && !timedOut) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
