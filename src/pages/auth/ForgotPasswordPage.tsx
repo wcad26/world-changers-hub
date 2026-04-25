@@ -187,10 +187,8 @@ const ForgotPasswordPage = () => {
   const handleBackToLogin = () => {
     if (portal === 'super') {
       navigate('/auth/super');
-    } else if (region) {
-      navigate(`/auth/regions/${region}`);
     } else {
-      navigate('/auth/regions');
+      navigate('/auth/regional');
     }
   };
 

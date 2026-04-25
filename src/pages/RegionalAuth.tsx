@@ -1,81 +1,151 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, ArrowRight, Loader2 } from 'lucide-react';
-import { useRegions } from '@/hooks/useRegions';
-import { generateSlug } from '@/utils/slugUtils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import wcaLogo from '@/assets/wca-logo.png';
 
 /**
- * Regional portal selector.
+ * Single regional portal login page.
  *
- * Pure navigation page. No auth subscriptions, no session checks,
- * no login/logout side effects. Just lists active regions and routes
- * the visitor to the corresponding regional login page.
+ * Mirrors the DCG portal flow:
+ *   1. Sign the user in.
+ *   2. One-shot check: does their profile have a region_id?
+ *   3. If yes → /admin/regional/dashboard. If no → sign out + toast.
+ *
+ * No region picker, no per-region URLs, no AuthProvider, no role lookups.
  */
 const RegionalAuth = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { data: regions, isLoading } = useRegions();
+  const { toast } = useToast();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (authError || !authData.user) {
+        setError(authError?.message ?? 'Invalid credentials.');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('region_id')
+        .eq('id', authData.user.id)
+        .maybeSingle();
+
+      if (!profile?.region_id) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Access denied',
+          description: 'This account is not associated with a region.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      navigate('/admin/regional/dashboard', { replace: true });
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground mb-4">
-            <Users size={28} />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Choose your region</h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            Select a region to open its login page
-          </p>
-        </div>
-
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl">Regional portals</CardTitle>
-            <CardDescription>Each region has its own dedicated login page.</CardDescription>
-          </CardHeader>
-
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : regions && regions.length > 0 ? (
-              <div className="grid gap-3">
-                {regions.map((region) => (
-                  <Button
-                    key={region.id}
-                    variant="outline"
-                    className="justify-between h-14 px-4"
-                    onClick={() => navigate(`/auth/regions/${generateSlug(region.name)}`)}
-                  >
-                    <div className="text-left">
-                      <div className="font-medium">{region.name}</div>
-                      <div className="text-xs text-muted-foreground">Open login page</div>
-                    </div>
-                    <ArrowRight size={16} />
-                  </Button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-6">
-                No regions available
-              </p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 via-background to-secondary/20 p-4">
+      <img
+        src={wcaLogo}
+        alt="World Changers Association logo"
+        className="w-full max-w-xs md:max-w-sm h-auto mb-6 object-contain"
+      />
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-4">
+          <CardTitle className="text-2xl font-bold text-center">Regional Portal</CardTitle>
+          <CardDescription className="text-center">
+            Sign in to your regional admin portal
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={loading}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
+              <div className="text-right mt-1">
+                <Button
+                  type="button"
+                  variant="link"
+                  className="text-xs text-primary hover:text-primary/80 p-0 h-auto"
+                  onClick={() => navigate('/auth/forgot-password?portal=regional')}
+                  disabled={loading}
+                >
+                  Forgot your password?
+                </Button>
+              </div>
+            </div>
           </CardContent>
-        </Card>
-
-        <div className="text-center mt-6">
-          <Button
-            variant="ghost"
-            className="text-muted-foreground hover:text-foreground"
-            onClick={() => navigate('/')}
-          >
-            ← Back to main site
-          </Button>
-        </div>
-      </div>
+          <CardFooter className="flex-col gap-3">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Sign In
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </div>
   );
 };
