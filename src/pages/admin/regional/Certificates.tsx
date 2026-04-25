@@ -50,7 +50,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const Certificates = () => {
-  const { profile, userRegion, authReady } = useAuth();
+  const { profile, userRegion } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const regionId = userRegion?.id ?? profile?.region_id ?? '';
@@ -187,7 +187,7 @@ const Certificates = () => {
         templateData: {
           template_name: templateName,
           template_type: templateType,
-          region_id: profile?.region_id || null,
+          region_id: regionId || null,
           created_by: profile?.id || null,
           name_position: namePosition,
           qr_position: qrPosition,
@@ -257,7 +257,7 @@ const Certificates = () => {
   };
 
   const handleGenerateCertificates = async () => {
-    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType || !profile?.region_id) {
+    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType || !regionId) {
       toast({
         title: 'Missing information',
         description: 'Please select a template, members, and certificate type',
@@ -327,8 +327,8 @@ const Certificates = () => {
           }
 
           recipientName = `${member.profiles.last_name} ${member.profiles.first_name}`;
-          const certificateNumber = await generateUniqueCode('certificate', profile.region_id);
-          const verificationCode = await generateUniqueCode('verification', profile.region_id);
+          const certificateNumber = await generateUniqueCode('certificate', regionId);
+          const verificationCode = await generateUniqueCode('verification', regionId);
 
           // Get template positions
           const namePos = template.name_position as any || undefined;
@@ -346,7 +346,7 @@ const Certificates = () => {
           );
 
           // Upload to storage with organized path structure
-          const filePath = `${profile.region_id}/${memberId}/${certificateNumber}.png`;
+          const filePath = `${regionId}/${memberId}/${certificateNumber}.png`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('certificates')
             .upload(filePath, blob, {
@@ -374,7 +374,7 @@ const Certificates = () => {
               event_name: eventName || null,
               event_date: eventDate || null,
               issued_date: new Date().toISOString().split('T')[0],
-              region_id: profile.region_id,
+              region_id: regionId,
               member_id: memberId,
               issued_by: profile.id,
               qr_code_data: getVerificationUrl(verificationCode, baseUrl),
