@@ -169,13 +169,36 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const signOut = async () => {
+    // Mark as signing out so the auth listener doesn't try to do anything
+    // exotic. We clear local state synchronously, cancel any in-flight queries,
+    // then call Supabase. This guarantees the regional UI is fully unwound
+    // before /auth/regional mounts, which prevents the brief "blank" frame.
+    signingOutRef.current = true;
     try {
-      await supabase.auth.signOut({ scope: 'global' });
+      // Stop any active queries so child pages can't try to render with stale
+      // data while the auth state is changing.
+      queryClient.cancelQueries();
+      queryClient.clear();
+    } catch (err) {
+      console.warn('[RegionalSession] queryClient cleanup failed:', err);
+    }
+
+    // Optimistically clear local state and flip to unauthorized so the guard
+    // renders <Navigate to="/auth/regional" /> on the very next commit.
+    setUser(null);
+    setProfile(null);
+    setRegion(null);
+    bootedForUser.current = null;
+    setStatus('unauthorized');
+    setReady(true);
+
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
+    } finally {
+      signingOutRef.current = false;
     }
-    // SPA navigation — the SIGNED_OUT listener will set status to unauthorized
-    // and the guard will redirect to /auth/regional automatically.
   };
 
   const value: RegionalSessionValue = {
