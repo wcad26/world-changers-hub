@@ -1,6 +1,5 @@
 import React from 'react';
-import AdminLayout from './AdminLayout';
-import { useAuth } from '@/hooks/useAuth';
+import RegionalAdminShell from './RegionalAdminShell';
 import {
   LayoutDashboard,
   Users,
@@ -43,24 +42,21 @@ interface EnhancedRegionalAdminLayoutProps {
 }
 
 /**
- * Permission-aware regional admin layout.
- * The sidebar only shows pages the current user has access to.
+ * Regional admin layout.
+ *
+ * No more permission filtering — once a user has logged into the regional
+ * portal (via the regional session guard) the full sidebar is shown. This is
+ * intentional: the regional portal is now standalone and does not consult
+ * user_roles / regional_user_roles to render.
  */
 const EnhancedRegionalAdminLayout: React.FC<EnhancedRegionalAdminLayoutProps> = ({ children }) => {
-  const { hasRole, hasRegionalPermission } = useAuth();
-  // Only super admins skip the per-page permission filter.
-  // Region owners keep full access via the auto-created "Regional Admin" granular role.
-  const isPrivileged = hasRole('super_admin');
+  const menuItems = REGIONAL_PAGES.map((page) => ({
+    title: page.title,
+    path: page.path,
+    icon: ICON_BY_PATH[page.path] ?? (LayoutDashboard as IconType),
+  }));
 
-  const menuItems = REGIONAL_PAGES
-    .filter((page) => isPrivileged || hasRegionalPermission(page.permission))
-    .map((page) => ({
-      title: page.title,
-      path: page.path,
-      icon: ICON_BY_PATH[page.path] ?? (LayoutDashboard as IconType),
-    }));
-
-  return <AdminLayout menuItems={menuItems}>{children}</AdminLayout>;
+  return <RegionalAdminShell menuItems={menuItems}>{children}</RegionalAdminShell>;
 };
 
 export default EnhancedRegionalAdminLayout;
