@@ -7,15 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import wcaLogo from '@/assets/wca-logo.png';
 
 /**
  * Isolated DCG portal login page.
  *
- * No AuthContext subscriptions, no redirect effects, no cross-portal nav.
- * On sign-in success, navigates to /dcg/dashboard. The DcgProtectedRoute
- * around the dashboard handles the actual access decision (and shows the
- * unauthorized page if the account lacks DCG access).
+ * No AuthContext, no cross-portal logic, no portal selectors.
+ * Flow:
+ *   1. Sign the user in.
+ *   2. One-shot check: do they have ANY DCG association
+ *      (dcg_user_sessions row OR dcg_members row via their profile)?
+ *   3. If yes → /dcg/dashboard. If no → sign out + show toast.
  */
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +27,37 @@ const DcgAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const userHasDcgAccess = async (userId: string): Promise<boolean> => {
+    const { data: dcgSession } = await supabase
+      .from('dcg_user_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (dcgSession) return true;
+
+    const { data: memberRows } = await supabase
+      .from('members')
+      .select('id')
+      .eq('profile_id', userId);
+
+    const memberIds = (memberRows ?? []).map((m) => m.id);
+    if (memberIds.length === 0) return false;
+
+    const { data: dcgMember } = await supabase
+      .from('dcg_members')
+      .select('id')
+      .in('member_id', memberIds)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    return !!dcgMember;
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +65,25 @@ const DcgAuth = () => {
     setError('');
 
     try {
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        setError(authError.message);
+      if (authError || !authData.user) {
+        setError(authError?.message ?? 'Invalid credentials.');
+        return;
+      }
+
+      const allowed = await userHasDcgAccess(authData.user.id);
+
+      if (!allowed) {
+        await supabase.auth.signOut();
+        toast({
+          title: 'Access denied',
+          description: 'This account is not associated with a DCG.',
+          variant: 'destructive',
+        });
         return;
       }
 
