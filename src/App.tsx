@@ -37,6 +37,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import EnhancedRegionalAdminLayout from "./components/admin/EnhancedRegionalAdminLayout";
 import RegionalSessionRoute from "./components/auth/RegionalSessionRoute";
 import SuperAdminLayout from "./components/admin/SuperAdminLayout";
+import SuperAdminSessionRoute from "./components/auth/SuperAdminSessionRoute";
 import MemberLayout from "./components/layout/MemberLayout";
 import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 
@@ -181,11 +182,11 @@ const App = () => {
               <Route path="settings" element={<RegionalSettings />} />
             </Route>
             
-            {/* Super Admin Portal - Nested Routes with shared layout */}
+            {/* Super Admin Portal - single simple guard: signed in + super_admin role */}
             <Route path="/admin/super" element={
-              <ProtectedRoute requiredRole="super_admin" redirectTo="/auth/super">
+              <SuperAdminSessionRoute>
                 <SuperAdminLayout />
-              </ProtectedRoute>
+              </SuperAdminSessionRoute>
             }>
               <Route path="dashboard" element={<SuperDashboard />} />
               <Route path="members" element={<SuperMembers />} />

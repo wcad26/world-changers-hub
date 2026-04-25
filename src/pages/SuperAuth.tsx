@@ -5,25 +5,20 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
 
 /**
- * Isolated Super Admin login page.
+ * Super Admin login.
  *
- * Intentionally does NOT subscribe to AuthContext. This page only:
- *   1. Submits credentials to Supabase
- *   2. Verifies super_admin role via a one-shot query
- *   3. Navigates to the dashboard on success
- *
- * No useEffect redirects, no cross-portal links, no auto-signOut.
- * This prevents the multi-controller login/logout loop that the
- * preview environment was exhibiting.
+ * Self-contained: signs the user in, runs ONE check (does this user hold
+ * the super_admin role?), and on success navigates to the dashboard.
+ * No AuthContext subscriptions, no cross-portal links, no auto-redirects.
  */
 const SuperAuth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,7 +31,7 @@ const SuperAuth = () => {
 
     if (!email || !password) {
       toast({
-        title: 'Missing Information',
+        title: 'Missing information',
         description: 'Please enter both email and password.',
         variant: 'destructive',
       });
@@ -54,51 +49,46 @@ const SuperAuth = () => {
       if (signInError) {
         let message = 'Sign in failed. Please try again.';
         if (signInError.message.includes('Invalid login credentials')) {
-          message = 'Invalid email or password. Please check your credentials.';
+          message = 'Invalid email or password.';
         } else if (signInError.message.includes('Email not confirmed')) {
-          message = 'Please check your email and confirm your account first.';
+          message = 'Please confirm your email before signing in.';
         } else if (signInError.message.includes('Too many requests')) {
-          message = 'Too many login attempts. Please wait a moment and try again.';
+          message = 'Too many attempts. Please wait a moment and try again.';
         }
-        toast({ title: 'Sign In Failed', description: message, variant: 'destructive' });
+        toast({ title: 'Sign in failed', description: message, variant: 'destructive' });
         return;
       }
 
       if (!authData.user) {
-        toast({
-          title: 'Sign In Failed',
-          description: 'No user data received. Please try again.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Sign in failed', description: 'No user data received.', variant: 'destructive' });
         return;
       }
 
-      // One-shot role check (no global auth listeners involved).
+      // Single check: does this user hold the super_admin role?
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', authData.user.id)
         .eq('role', 'super_admin')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .limit(1);
 
       if (!roles || roles.length === 0) {
-        // Soft denial — show toast, do NOT auto sign-out (that re-fires
-        // global auth events and competes with other portals).
+        await supabase.auth.signOut();
         toast({
-          title: 'Access Denied',
-          description:
-            "You don't have super admin permissions. Contact an administrator if this is incorrect.",
+          title: 'Access denied',
+          description: 'Your account does not have super admin access.',
           variant: 'destructive',
         });
         return;
       }
 
-      toast({ title: 'Welcome back!', description: 'Signed in to the super admin portal.' });
+      toast({ title: 'Welcome back' });
       navigate(from, { replace: true });
     } catch (error: any) {
       toast({
-        title: 'Sign In Error',
-        description: error?.message || 'An unexpected error occurred. Please try again.',
+        title: 'Sign in error',
+        description: error?.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
     } finally {
@@ -107,49 +97,39 @@ const SuperAuth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-wca-purple/10 via-wca-violet/5 to-wca-teal/10 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-
-      <div className="w-full max-w-md relative z-10">
+    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                WCA
-              </h1>
-              <p className="text-sm text-muted-foreground">Super Admin Portal</p>
-            </div>
+          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-gradient-to-r from-primary to-primary/80 text-primary-foreground mb-4">
+            <Shield size={28} />
           </div>
+          <h1 className="text-3xl font-bold tracking-tight">Super Admin</h1>
+          <p className="text-sm text-muted-foreground mt-1">Global administration portal</p>
         </div>
 
-        <Card className="backdrop-blur-sm bg-white/80 border-white/20 shadow-2xl">
-          <CardHeader className="text-center space-y-2">
-            <CardTitle className="text-2xl font-semibold">Welcome Back</CardTitle>
-            <CardDescription>Sign in to access the super admin portal</CardDescription>
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl">Welcome back</CardTitle>
+            <CardDescription>Sign in to access the super admin portal.</CardDescription>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
+              <div className="space-y-1">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20"
                   disabled={isLoading}
                   required
                 />
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                  Password
-                </label>
+              <div className="space-y-1">
+                <label htmlFor="password" className="text-sm font-medium">Password</label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -157,27 +137,27 @@ const SuperAuth = () => {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 bg-white/50 border-gray-200 focus:border-wca-purple focus:ring-wca-purple/20 pr-10"
                     disabled={isLoading}
                     required
                     minLength={6}
+                    className="pr-10"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 text-gray-500 hover:text-gray-700"
-                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground"
+                    onClick={() => setShowPassword((s) => !s)}
                     disabled={isLoading}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </Button>
                 </div>
-                <div className="text-right mt-1">
+                <div className="text-right">
                   <Button
                     type="button"
                     variant="link"
-                    className="text-xs text-wca-purple hover:text-wca-purple/80 p-0 h-auto"
+                    className="text-xs p-0 h-auto"
                     onClick={() => navigate('/auth/forgot-password?portal=super')}
                     disabled={isLoading}
                   >
@@ -186,18 +166,14 @@ const SuperAuth = () => {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full h-11 bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-                disabled={isLoading}
-              >
+              <Button type="submit" className="w-full h-11" disabled={isLoading}>
                 {isLoading ? (
-                  <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Signing In...</span>
-                  </div>
+                    Signing in…
+                  </span>
                 ) : (
-                  <span>Sign In</span>
+                  'Sign in'
                 )}
               </Button>
             </form>
