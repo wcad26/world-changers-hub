@@ -1,47 +1,55 @@
-I found two important things:
+I found this is not the login page itself. The regional portal is becoming unstable after navigation/refetch, then Lovable’s blank-page detector reloads the preview. That matches the console message `RESET_BLANK_CHECK` and the behavior you described: click inside regional portal -> blank -> reloads back to dashboard.
 
-1. The recent login itself is succeeding in Supabase.
-2. The user reaches the regional dashboard and dashboard data starts loading, then the app navigates back to `/auth/regional`. That means the failure is after login, inside the portal/session/dashboard path.
+Likely causes in the current code:
+- Some regional pages still use stale region lookup logic based on `user.user_metadata.region_id`, but the new regional session only provides `{ id, email }`. This affects pages like Settings and the Regional Website Information form.
+- The regional session provider does not subscribe to auth/session changes, so after token refresh or delayed session restoration, pages can run authenticated queries at the wrong time.
+- The regional dashboard runs many heavy queries and chart computations without a route-level error boundary. Any runtime/render/query edge case can blank the whole portal, causing the preview to auto-reload.
+- React Query is using default global behavior, so stale queries can refetch on focus/reconnect after minutes and destabilize the page.
 
-Plan to stabilize it:
+Plan to fix it:
 
-1. Remove all portal switchers from portal layouts
-   - Remove `PortalSwitcher` imports/usages from:
-     - `src/components/admin/AdminLayout.tsx` (Super Admin layout)
-     - `src/components/admin/DcgAdminLayout.tsx` (DCG layout)
-     - `src/components/layout/MemberLayout.tsx` (Member layout)
-   - Regional layout currently does not render a portal switcher, so it will remain clean.
-   - Keep the standalone `/portal-selector` page for now unless you want it removed later; the immediate request is to eliminate switchers inside the portals.
+1. Stabilize regional auth readiness
+   - Update `RegionalSessionContext` to expose explicit status: `checking`, `authorized`, `unauthorized`, `error`.
+   - Listen to Supabase auth changes safely, including token refresh and sign-out, but do not perform heavy database fetches directly inside the auth callback.
+   - Keep regional users authorized as long as session + `profile.region_id` are valid.
+   - Do not redirect on temporary region/profile fetch errors; show a recoverable error state instead.
 
-2. Fix the regional dashboard redirect problem at the guard level
-   - Remove the 7-second timeout redirect in `src/components/auth/RegionalSessionRoute.tsx`.
-   - That timeout can send a valid user back to `/auth/regional` if dashboard queries or session hydration are slow, making it look like a logout.
-   - Replace it with a stable loading state and only redirect when the regional session check has completed and there is truly no authorized regional profile.
+2. Fix stale regional page dependencies
+   - Replace all regional portal usage of `user.user_metadata.region_id` with the canonical regional session/profile region id.
+   - Specifically fix:
+     - `src/pages/admin/regional/Settings.tsx`
+     - `src/components/admin/regional/RegionalBranchForm.tsx`
+   - Ensure Settings and Branch/Website Information pages use `useAuth().userRegion` or `useRegionalSession().region`, not metadata.
 
-3. Make the regional session provider more reliable
-   - Update `src/contexts/RegionalSessionContext.tsx` to track explicit states: checking, authorized, unauthorized, and error.
-   - Do not swallow profile/region fetch errors silently.
-   - Do not sign the user out automatically from the regional session guard; simply redirect only if there is no session or no `profile.region_id`.
-   - Add temporary console diagnostics around session/profile/region resolution so we can see if a future redirect is caused by missing session, missing profile, missing region, or a query error.
+3. Add a regional portal error boundary
+   - Wrap the regional layout/dashboard routes in a dedicated error boundary.
+   - If a page crashes, show a clear “Regional page failed to load” panel with Retry and Go to Dashboard buttons instead of a blank screen.
+   - This prevents the entire app from going blank and stops the automatic reload loop.
 
-4. Stop dashboard queries from running before regional auth is ready
-   - In `src/pages/admin/regional/Dashboard.tsx`, derive a single `regionalReady = ready && !!userRegion?.id`.
-   - Only enable direct dashboard queries (`member_relationships`, special events, discipleship progress) after `regionalReady` and their dependencies are present.
-   - The existing hooks already mostly use `enabled: !!regionId`, but the dashboard has direct Supabase queries too; those should be gated consistently.
+4. Reduce dashboard refetch/reload pressure
+   - Add safe React Query defaults in `App.tsx`:
+     - disable refetch-on-window-focus for portal data
+     - set a reasonable `staleTime`
+     - reduce automatic retries for protected queries
+   - Add explicit `enabled` gates to regional dashboard direct queries so they only run after regional auth is fully authorized and `region.id` exists.
+   - Make dashboard query keys stable and avoid mutating arrays inside query keys.
 
-5. Remove or neutralize stale regional auth/permission paths that can interfere
-   - Remove unused imports from `src/App.tsx`: `ProtectedRoute` and `MultiRoleProtectedRoute` are no longer used there.
-   - Delete or at least detach stale `src/components/auth/RegionalPermissionRoute.tsx` if it is unused, because it still redirects to `/auth/regional` based on the old global `AuthProvider` permission model.
-   - Keep `/admin/regional/*` and `/auth/regional` intact, because the regional portal still needs them.
+5. Harden regional dashboard rendering
+   - Add error handling for the dashboard’s direct Supabase queries.
+   - Disable Recharts initial animations on the dashboard charts to reduce render spikes.
+   - If a dashboard dataset fails, show an inline error/loading state instead of allowing a render crash.
 
-6. Audit remaining forced logout paths
-   - Keep explicit sign-out only on user-clicked logout buttons and real access-denied login checks.
-   - Do not call `supabase.auth.signOut()` from passive guards or dashboard/data-loading paths.
-   - Leave DCG/Super/Member login access-denied sign-outs unchanged for now unless we see the same issue there, but remove their portal switchers as requested.
+6. Audit and remove remaining passive logout/reload paths
+   - Search all regional portal paths for `signOut`, `window.location`, `location.reload`, and redirect logic.
+   - Keep logout only on explicit user-clicked Logout.
+   - Remove or isolate stale `RegionalPermissionRoute.tsx` if it is no longer used.
 
 Expected result:
-- A regional user logs in at `/auth/regional`.
-- The app navigates to `/admin/regional/dashboard`.
-- The dashboard stays visible while data loads.
-- Slow or failing dashboard data does not log the user out or send them back to login.
-- The portal switcher is gone from Regional/DCG/Member/Super Admin portal layouts, so cross-portal state cannot interfere while we evaluate the session behavior.
+- A regional user can navigate between Dashboard, Members, Events, DCG, Finances, Reports, Settings, and Website Information without the page blanking.
+- Token refresh or delayed Supabase session restoration will not force a dashboard reload.
+- If a page has a real rendering/data error, the portal shows a controlled error panel instead of going blank.
+- The regional login remains a single shared login page for all regions.
+
+<lov-actions>
+<lov-link url="https://docs.lovable.dev/tips-tricks/troubleshooting">Troubleshooting docs</lov-link>
+</lov-actions>

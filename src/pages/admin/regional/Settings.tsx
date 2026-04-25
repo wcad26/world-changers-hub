@@ -20,22 +20,16 @@ import {
 import RegionalBranchForm from "@/components/admin/regional/RegionalBranchForm";
 import { useCurrencies } from "@/hooks/useCurrencies";
 import { useAuth } from "@/hooks/useAuth";
-import { useRegions } from "@/hooks/useRegions";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
 import { useToast } from "@/hooks/use-toast";
 import { GlassSection, GlassSectionHeader } from "@/components/ui/GlassSection";
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { userRegion } = useAuth();
   const { toast } = useToast();
   const { data: currencies, isLoading: currenciesLoading } = useCurrencies();
-  const { data: regions, isLoading: regionsLoading } = useRegions();
   const { updateRegion } = useRegionMutations();
-  
-  const userRegion = regions?.find(
-    (region) => region.id === user?.user_metadata?.region_id
-  );
-  
+
   const [selectedCurrency, setSelectedCurrency] = useState<string>("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -46,7 +40,7 @@ const Settings = () => {
   }, [userRegion]);
 
   const handleSaveSettings = async () => {
-    if (!user?.user_metadata?.region_id) {
+    if (!userRegion?.id) {
       toast({ title: "Error", description: "No region found for current user", variant: "destructive" });
       return;
     }
@@ -57,7 +51,7 @@ const Settings = () => {
     setIsSaving(true);
     try {
       await updateRegion.mutateAsync({
-        id: user.user_metadata.region_id,
+        id: userRegion.id,
         updates: { currency_code: selectedCurrency },
       });
       toast({ title: "Settings saved", description: "Currency settings have been updated successfully" });
