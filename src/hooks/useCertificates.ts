@@ -12,6 +12,8 @@ export const useCertificateTemplates = (regionId?: string) => {
   return useQuery({
     queryKey: ['certificate-templates', regionId],
     queryFn: async () => {
+      if (!regionId) return [];
+
       let query = supabase
         .from('certificate_templates')
         .select('*')
@@ -26,7 +28,8 @@ export const useCertificateTemplates = (regionId?: string) => {
 
       if (error) throw error;
       return data as CertificateTemplate[];
-    }
+    },
+    enabled: !!regionId,
   });
 };
 
@@ -180,6 +183,8 @@ export const useIssuedCertificates = (regionId: string) => {
   return useQuery({
     queryKey: ['certificates', regionId],
     queryFn: async () => {
+      if (!regionId) return [];
+
       const { data, error } = await supabase
         .from('certificates')
         .select(`
@@ -198,7 +203,8 @@ export const useIssuedCertificates = (regionId: string) => {
 
       if (error) throw error;
       return data as Certificate[];
-    }
+    },
+    enabled: !!regionId,
   });
 };
 
@@ -207,6 +213,8 @@ export const useUnsentCertificates = (regionId: string) => {
   return useQuery({
     queryKey: ['certificates', 'unsent', regionId],
     queryFn: async () => {
+      if (!regionId) return [];
+
       const { data, error } = await supabase
         .from('certificates')
         .select(`
@@ -226,7 +234,8 @@ export const useUnsentCertificates = (regionId: string) => {
 
       if (error) throw error;
       return data as Certificate[];
-    }
+    },
+    enabled: !!regionId,
   });
 };
 
@@ -235,6 +244,8 @@ export const useSentCertificates = (regionId: string) => {
   return useQuery({
     queryKey: ['certificates', 'sent', regionId],
     queryFn: async () => {
+      if (!regionId) return [];
+
       const { data, error } = await supabase
         .from('certificates')
         .select(`
@@ -254,7 +265,8 @@ export const useSentCertificates = (regionId: string) => {
 
       if (error) throw error;
       return data as Certificate[];
-    }
+    },
+    enabled: !!regionId,
   });
 };
 

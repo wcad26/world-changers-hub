@@ -329,7 +329,7 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
   return useQuery({
     queryKey: ['event_attendees', eventId, regionId],
     queryFn: async () => {
-      if (!eventId) return [];
+      if (!eventId || !regionId) return [];
 
       // Find ALL attendance events for this source event (may be multiple)
       let attendanceQuery = supabase
@@ -338,9 +338,7 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
         .eq('source_event_id', eventId);
 
       // If regionId provided, filter by region; otherwise get ALL (global)
-      if (regionId) {
-        attendanceQuery = attendanceQuery.eq('region_id', regionId);
-      }
+      attendanceQuery = attendanceQuery.eq('region_id', regionId);
 
       const { data: attendanceEvents, error: attendanceEventError } = await attendanceQuery;
 
@@ -384,7 +382,7 @@ export const useEventAttendees = (eventId?: string, regionId?: string) => {
 
       return Array.from(uniqueAttendees.values());
     },
-    enabled: !!eventId
+    enabled: !!eventId && !!regionId
   });
 };
 
