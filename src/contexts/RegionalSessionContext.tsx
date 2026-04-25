@@ -16,7 +16,9 @@ interface RegionalSessionValue {
   signOut: () => Promise<void>;
 }
 
-const RegionalSessionContext = createContext<RegionalSessionValue | null>(null);
+// Exported so `useAuth()` (in src/hooks/useAuth.tsx) can transparently fall
+// back to the regional session when no global <AuthProvider> is present.
+export const RegionalSessionContext = createContext<RegionalSessionValue | null>(null);
 
 /**
  * Self-contained session provider for the Regional portal.
