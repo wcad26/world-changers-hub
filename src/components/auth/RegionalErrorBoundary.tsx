@@ -33,6 +33,19 @@ class RegionalErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error('[RegionalPortal] render error:', error, info);
+
+    // Auto-recover from transient context-not-yet-available errors. This can
+    // happen during HMR or a quick provider remount; the next render almost
+    // always has the provider, so blanking the portal would be wrong.
+    if (
+      error?.message &&
+      /useRegionalSession must be used within/.test(error.message)
+    ) {
+      // Defer to the next tick so React can finish the current commit first.
+      setTimeout(() => {
+        this.setState({ hasError: false, error: null });
+      }, 0);
+    }
   }
 
   componentDidUpdate(prevProps: Props) {

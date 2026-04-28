@@ -256,7 +256,22 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 export const useRegionalSession = (): RegionalSessionValue => {
   const ctx = useContext(RegionalSessionContext);
   if (!ctx) {
-    throw new Error('useRegionalSession must be used within a <RegionalSessionProvider>');
+    // Defensive: should never happen now that the provider is a layout route,
+    // but a transient null (e.g. during HMR) must NEVER blank the portal or
+    // crash with "useRegionalSession must be used within a <RegionalSessionProvider>".
+    if (typeof console !== 'undefined') {
+      console.warn('[RegionalSession] consumed outside provider — returning safe stub');
+    }
+    return {
+      user: null,
+      profile: null,
+      region: null,
+      status: 'checking',
+      ready: false,
+      authorized: false,
+      retry: () => {},
+      signOut: async () => {},
+    };
   }
   return ctx;
 };

@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Locations from "./pages/Locations";
@@ -145,38 +145,38 @@ const App = () => {
             <Route path="/auth/regional" element={<RegionalAuth />} />
 
             <Route
-              path="/admin/regional/*"
+              path="/admin/regional"
               element={
                 <RegionalSessionProvider>
-                  <Routes>
-                    <Route index element={<Navigate to="/admin/regional/dashboard" replace />} />
-                    <Route
-                      element={
-                        <RegionalSessionRoute>
-                          <EnhancedRegionalAdminLayout />
-                        </RegionalSessionRoute>
-                      }
-                    >
-                      <Route path="dashboard" element={<RegionalDashboard />} />
-                      <Route path="members" element={<RegionalMembers />} />
-                      <Route path="members/:memberId" element={<RegionalMemberProfile />} />
-                      <Route path="events" element={<RegionalEvents />} />
-                      <Route path="events/:eventId/report" element={<RegionalEventReport />} />
-                      <Route path="finances" element={<RegionalFinances />} />
-                      <Route path="dcg" element={<RegionalDCG />} />
-                      <Route path="dcg/:dcgId" element={<DcgProfile />} />
-                      <Route path="certificates" element={<RegionalCertificates />} />
-                      <Route path="reports" element={<RegionalReports />} />
-                      <Route path="communication" element={<RegionalCommunication />} />
-                      <Route path="branch-settings" element={<RegionalBranchSettings />} />
-                      <Route path="discipleship" element={<RegionalDiscipleship />} />
-                      <Route path="user-roles" element={<UserRoles />} />
-                      <Route path="settings" element={<RegionalSettings />} />
-                    </Route>
-                  </Routes>
+                  <Outlet />
                 </RegionalSessionProvider>
               }
-            />
+            >
+              <Route index element={<Navigate to="/admin/regional/dashboard" replace />} />
+              <Route
+                element={
+                  <RegionalSessionRoute>
+                    <EnhancedRegionalAdminLayout />
+                  </RegionalSessionRoute>
+                }
+              >
+                <Route path="dashboard" element={<RegionalDashboard />} />
+                <Route path="members" element={<RegionalMembers />} />
+                <Route path="members/:memberId" element={<RegionalMemberProfile />} />
+                <Route path="events" element={<RegionalEvents />} />
+                <Route path="events/:eventId/report" element={<RegionalEventReport />} />
+                <Route path="finances" element={<RegionalFinances />} />
+                <Route path="dcg" element={<RegionalDCG />} />
+                <Route path="dcg/:dcgId" element={<DcgProfile />} />
+                <Route path="certificates" element={<RegionalCertificates />} />
+                <Route path="reports" element={<RegionalReports />} />
+                <Route path="communication" element={<RegionalCommunication />} />
+                <Route path="branch-settings" element={<RegionalBranchSettings />} />
+                <Route path="discipleship" element={<RegionalDiscipleship />} />
+                <Route path="user-roles" element={<UserRoles />} />
+                <Route path="settings" element={<RegionalSettings />} />
+              </Route>
+            </Route>
 
             {/* All other routes still use the global AuthProvider. */}
             <Route path="/*" element={
