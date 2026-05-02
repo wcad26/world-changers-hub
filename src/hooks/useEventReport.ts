@@ -84,6 +84,7 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
             totalAttendees: 0,
             members: 0,
             visitors: 0,
+            children: 0,
             maleCount: 0,
             femaleCount: 0,
             wantToJoin: 0,
