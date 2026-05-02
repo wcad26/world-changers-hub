@@ -85,13 +85,30 @@ export const useRegionalDcgReports = (filters?: DcgReportFilters) => {
         };
       }
 
-      // 2. Get DCG members
+      // 2. Get DCG members (with DOB so we can apply the strict child rule)
       const { data: dcgMembers, error: membersError } = await supabase
         .from('dcg_members')
-        .select('id, dcg_id, member_id, is_active, created_at')
+        .select('id, dcg_id, member_id, is_active, created_at, members:member_id(id, profiles:profile_id(date_of_birth))')
         .in('dcg_id', dcgIds);
       if (membersError) throw membersError;
 
+      // Fetch relationships for these underlying member ids so we know who is a child
+      const underlyingMemberIds = Array.from(new Set((dcgMembers || []).map((m: any) => m.member_id).filter(Boolean)));
+      let dcgRelationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (underlyingMemberIds.length > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${underlyingMemberIds.join(',')}),related_member_id.in.(${underlyingMemberIds.join(',')})`);
+        dcgRelationships = (relData as any[]) || [];
+      }
+      const dcgChildrenSet = buildChildrenSet(
+        (dcgMembers || []).map((dm: any) => ({
+          id: dm.member_id,
+          profiles: { date_of_birth: dm.members?.profiles?.date_of_birth ?? null },
+        })),
+        dcgRelationships
+      );
       // 3. Get attendance events for these DCGs
       const { data: attEvents, error: attEventsError } = await supabase
         .from('attendance_events')
