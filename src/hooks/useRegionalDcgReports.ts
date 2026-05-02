@@ -341,7 +341,7 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
 
         // Per-DCG breakdown within region
         const dcgDetails = regionDcgs.map(dcg => {
-          const members = (allDcgMembers || []).filter(m => m.dcg_id === dcg.id && m.is_active);
+          const members = (allDcgMembers || []).filter((m: any) => m.dcg_id === dcg.id && m.is_active && !globalChildrenSet.has(m.member_id));
           const events = regionEvents.filter(e => e.dcg_id === dcg.id);
           const eIds = events.map(e => e.id);
           const records = attRecords.filter(r => eIds.includes(r.event_id));
