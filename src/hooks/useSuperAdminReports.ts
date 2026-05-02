@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subMonths, format, startOfYear, subDays } from 'date-fns';
+import { buildChildrenSet } from '@/utils/childUtils';
 
 interface TimeFrameParams {
   startDate: Date;
