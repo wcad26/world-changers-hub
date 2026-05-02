@@ -133,8 +133,8 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0">
-        <DialogHeader className="p-4 md:p-6 pb-0">
+      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-4 md:p-6 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5" />
             Record Attendance
@@ -144,125 +144,123 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden px-4 md:px-6">
-          <div className="space-y-3">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div className="relative flex-1 w-full sm:max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search members..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <Toggle
-                  pressed={showChildrenOnly}
-                  onPressedChange={setShowChildrenOnly}
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                >
-                  <Baby className="h-4 w-4" />
-                  Children
-                </Toggle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSelectAll}
-                  className="flex items-center gap-2"
-                >
-                  <Users className="h-4 w-4" />
-                  {presentMembers.size === filteredMembers.length ? 'Deselect All' : 'Select All'}
-                </Button>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {presentMembers.size}/{filteredMembers.length}
-                </span>
-              </div>
+        <div className="flex-1 min-h-0 flex flex-col gap-3 px-4 md:px-6 pt-3 overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">
+            <div className="relative flex-1 w-full sm:max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search members..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-
-            <ScrollArea className="h-[calc(85vh-280px)] sm:h-[calc(85vh-220px)]">
-              {isMobile ? (
-                <div className="space-y-2 pr-2">
-                  {loadingMembers ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                    ))
-                  ) : filteredMembers.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground text-sm">
-                      {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
-                    </div>
-                  ) : (
-                    filteredMembers.map((dcgMember) => (
-                      <div
-                        key={dcgMember.id}
-                        className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleToggleMember(dcgMember.member_id)}
-                      >
-                        <Checkbox
-                          checked={presentMembers.has(dcgMember.member_id)}
-                          onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{getDisplayName(dcgMember)}</p>
-                          <p className="text-xs text-muted-foreground">{dcgMember.role}</p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">Present</TableHead>
-                        <TableHead>Member Name</TableHead>
-                        <TableHead>Role</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {loadingMembers ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                          </TableRow>
-                        ))
-                      ) : filteredMembers.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                            {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredMembers.map((dcgMember) => (
-                          <TableRow key={dcgMember.id}>
-                            <TableCell>
-                              <Checkbox
-                                checked={presentMembers.has(dcgMember.member_id)}
-                                onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">
-                              {getDisplayName(dcgMember)}
-                            </TableCell>
-                            <TableCell>{dcgMember.role}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </ScrollArea>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Toggle
+                pressed={showChildrenOnly}
+                onPressedChange={setShowChildrenOnly}
+                variant="outline"
+                size="sm"
+                className="gap-1"
+              >
+                <Baby className="h-4 w-4" />
+                Children
+              </Toggle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAll}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                {presentMembers.size === filteredMembers.length ? 'Deselect All' : 'Select All'}
+              </Button>
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {presentMembers.size}/{filteredMembers.length}
+              </span>
+            </div>
           </div>
+
+          <ScrollArea className="flex-1 min-h-0 -mx-1 px-1">
+            {isMobile ? (
+              <div className="space-y-2 pr-2 pb-2">
+                {loadingMembers ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
+                  ))
+                ) : filteredMembers.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground text-sm">
+                    {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
+                  </div>
+                ) : (
+                  filteredMembers.map((dcgMember) => (
+                    <div
+                      key={dcgMember.id}
+                      className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleToggleMember(dcgMember.member_id)}
+                    >
+                      <Checkbox
+                        checked={presentMembers.has(dcgMember.member_id)}
+                        onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{getDisplayName(dcgMember)}</p>
+                        <p className="text-xs text-muted-foreground">{dcgMember.role}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="rounded-md border mb-2">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-[50px]">Present</TableHead>
+                      <TableHead>Member Name</TableHead>
+                      <TableHead>Role</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loadingMembers ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        </TableRow>
+                      ))
+                    ) : filteredMembers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                          {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredMembers.map((dcgMember) => (
+                        <TableRow key={dcgMember.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={presentMembers.has(dcgMember.member_id)}
+                              onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {getDisplayName(dcgMember)}
+                          </TableCell>
+                          <TableCell>{dcgMember.role}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </ScrollArea>
         </div>
 
-        <DialogFooter className="p-4 md:p-6 pt-2 border-t">
+        <DialogFooter className="p-4 md:p-6 pt-3 border-t shrink-0">
           {!isMobile && (
             <Button variant="outline" onClick={onClose}>
               Cancel
