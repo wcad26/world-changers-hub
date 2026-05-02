@@ -45,7 +45,7 @@ import RoleBadge from "@/components/ui/RoleBadge";
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isChildMember } from '@/utils/childUtils';
+import { buildChildrenSet } from '@/utils/childUtils';
 import MemberKPICards from '@/components/admin/regional/MemberKPICards';
 
 const Members: React.FC = () => {
