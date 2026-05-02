@@ -267,11 +267,31 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
         .select('id, name, region_id, is_active');
       if (dcgError) throw dcgError;
 
-      // Get all DCG members
+      // Get all DCG members (with member id + DOB so we can apply the strict child rule)
       const { data: allDcgMembers, error: memError } = await supabase
         .from('dcg_members')
-        .select('dcg_id, is_active, created_at');
+        .select('dcg_id, member_id, is_active, created_at, members:member_id(id, profiles:profile_id(date_of_birth))');
       if (memError) throw memError;
+
+      // Fetch member relationships so we can identify children (age<16 with adult relationship)
+      const allUnderlyingMemberIds = Array.from(
+        new Set((allDcgMembers || []).map((m: any) => m.member_id).filter(Boolean))
+      );
+      let globalRelationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (allUnderlyingMemberIds.length > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${allUnderlyingMemberIds.join(',')}),related_member_id.in.(${allUnderlyingMemberIds.join(',')})`);
+        globalRelationships = (relData as any[]) || [];
+      }
+      const globalChildrenSet = buildChildrenSet(
+        (allDcgMembers || []).map((dm: any) => ({
+          id: dm.member_id,
+          profiles: { date_of_birth: dm.members?.profiles?.date_of_birth ?? null },
+        })),
+        globalRelationships
+      );
 
       // Get DCG attendance events in range
       const { data: attEvents, error: attError } = await supabase
