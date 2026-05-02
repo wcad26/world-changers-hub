@@ -1460,6 +1460,51 @@ export type Database = {
           },
         ]
       }
+      member_relationships: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          member_id: string
+          notes: string | null
+          related_member_id: string
+          relationship_type: Database["public"]["Enums"]["family_relationship_type"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id: string
+          notes?: string | null
+          related_member_id: string
+          relationship_type: Database["public"]["Enums"]["family_relationship_type"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          member_id?: string
+          notes?: string | null
+          related_member_id?: string
+          relationship_type?: Database["public"]["Enums"]["family_relationship_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_relationships_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_relationships_related_member_id_fkey"
+            columns: ["related_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_targets: {
         Row: {
           created_at: string
@@ -2105,6 +2150,13 @@ export type Database = {
         | "DCG Meeting"
         | "Other"
       event_status: "Upcoming" | "Completed" | "Cancelled" | "Draft"
+      family_relationship_type:
+        | "spouse"
+        | "parent"
+        | "child"
+        | "sibling"
+        | "guardian"
+        | "other"
       financial_transaction_type: "Income" | "Expense"
       member_status: "active" | "inactive" | "new" | "transferred"
       regional_permission:
@@ -2313,6 +2365,14 @@ export const Constants = {
         "Other",
       ],
       event_status: ["Upcoming", "Completed", "Cancelled", "Draft"],
+      family_relationship_type: [
+        "spouse",
+        "parent",
+        "child",
+        "sibling",
+        "guardian",
+        "other",
+      ],
       financial_transaction_type: ["Income", "Expense"],
       member_status: ["active", "inactive", "new", "transferred"],
       regional_permission: [
