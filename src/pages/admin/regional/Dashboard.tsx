@@ -9,6 +9,7 @@ import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
 import { isChildMember } from "@/utils/childUtils";
+import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -93,15 +94,7 @@ const RegionalDashboard: React.FC = () => {
   const sortedMemberIdsKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
   const { data: memberRelationships = [] } = useQuery({
     queryKey: ['dashboard-member-relationships', sortedMemberIdsKey],
-    queryFn: async () => {
-      if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
-      if (error) throw error;
-      return (data || []) as unknown as { member_id: string; related_member_id: string }[];
-    },
+    queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
     enabled: memberIds.length > 0,
   });
 

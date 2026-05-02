@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Search, UserCheck, Save, Loader2, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,18 +99,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
   const memberIds = useMemo(() => members?.map(m => m.id) || [], [members]);
   const { data: memberRelationships = [] } = useQuery({
     queryKey: ['attendance-member-relationships', memberIds.sort().join(',')],
-    queryFn: async () => {
-      if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
-      if (error) throw error;
-      return ((data || []) as any[]).map((r: any) => ({
-        member_id: r.member_id as string,
-        related_member_id: r.related_member_id as string,
-      }));
-    },
+    queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
     enabled: memberIds.length > 0,
   });
 

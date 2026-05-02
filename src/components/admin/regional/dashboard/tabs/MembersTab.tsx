@@ -13,6 +13,7 @@ import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format, subMonths, differenceInDays, differenceInYears, eachMonthOfInterval } from 'date-fns';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { isChildMember, CHILD_AGE_THRESHOLD } from '@/utils/childUtils';
@@ -44,18 +45,7 @@ const TrendBadge = ({ value }: { value: number }) => {
 const useRegionMemberRelationships = (memberIds: string[]) => {
   return useQuery({
     queryKey: ['region-member-relationships', memberIds.sort().join(',')],
-    queryFn: async () => {
-      if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
-      if (error) throw error;
-      return ((data || []) as any[]).map((r: any) => ({
-        member_id: r.member_id as string,
-        related_member_id: r.related_member_id as string,
-      }));
-    },
+    queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
     enabled: memberIds.length > 0,
   });
 };

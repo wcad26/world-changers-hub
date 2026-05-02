@@ -1,43 +1,36 @@
-I found the likely cause: relationship changes made in the member edit dialog invalidate only the per-member relationship query, but the regional dashboard and member-management KPI use separate cached relationship queries. Because those queries are not invalidated/refetched, the child can be correctly saved in `member_relationships` but still not appear in the Children KPI until the cache refreshes. I also confirmed in the database that WCA DOUALA currently has 1 strict child candidate (age under 16 with adult relationship), while the UI screenshot shows 0.
+Root cause: the Children KPI shows 0 even when valid child relationships exist because:
 
-Plan to fix this fully:
+1. The current relationship-loading paths fetch only `member_id` and `related_member_id` and ignore `relationship_type`. Combined with how the data is read in different places, the strict child detection sometimes treats a relationship as missing.
+2. Detection logic does not normalize across all relationship types in both directions. Any relationship type (spouse, parent, child, sibling, guardian, other) recorded from either side must be treated equivalently when verifying a child has at least one adult tie.
+3. Several reporting hooks duplicate this logic with subtle differences, so a fix in one place doesn't propagate.
 
-1. Centralize strict child detection and relationship fetching
-   - Add a reusable regional relationship hook/helper that fetches all relationship rows touching members in a region.
-   - Use `buildChildrenSet` everywhere instead of manually calling `isChildMember` in each page.
-   - Avoid mutating `memberIds` with `.sort()` inside query keys, since that can cause unstable memo/cache behavior.
+Plan:
 
-2. Fix query invalidation after relationship/profile updates
-   - Update `useCreateMemberRelationship` and `useDeleteMemberRelationship` to invalidate all relationship-dependent queries, including:
-     - Regional member-management relationship query
-     - Regional dashboard relationship query
-     - Attendance history with member types
-     - Regional reports
-     - Super admin reports
-     - DCG reports/data queries
-   - Update `EditMemberForm` success handling so after profile DOB/member updates it invalidates dashboard/report queries as well as member queries.
-   - This ensures editing a child DOB and then adding a parent relationship immediately recalculates all KPIs/reports.
+1. Make child detection relationship-type agnostic and bi-directional (single source of truth)
+   - In `src/utils/childUtils.ts`, keep the rule simple and explicit:
+     - A member is a child when age < 16 AND at least one row in `member_relationships` ties them to ANY other member who is an adult (age >= 16 or DOB unknown).
+     - All six relationship types (spouse, parent, child, sibling, guardian, other) count equally.
+     - Direction does not matter: a row where the candidate appears as either `member_id` or `related_member_id` is considered a tie.
+   - Strengthen `buildChildrenSet(...)` so it always builds a complete `adultDobLookup` from the member list and applies the rule uniformly.
+   - Remove every site-specific reimplementation of the rule and route them through `buildChildrenSet`.
 
-3. Fix regional member-management KPI/filter counts
-   - Replace the local manual child calculation in `src/pages/admin/regional/Members.tsx` and `MemberKPICards.tsx` with `buildChildrenSet`.
-   - Ensure Children are excluded from Members, Regular Visitors, and Special Event Visitors, and counted only in Children.
-   - Ensure the Children filter uses the same computed child set as the KPI cards.
+2. Use `buildChildrenSet` everywhere KPIs/charts/reports are computed
+   - Regional Dashboard (`src/pages/admin/regional/Dashboard.tsx`): replace inline `isChildMember` loop with `buildChildrenSet`.
+   - Members management (`Members.tsx`, `MemberKPICards.tsx`): keep `buildChildrenSet`; ensure both consume the same `memberRelationships` query.
+   - Reporting hooks: `useReports.ts`, `useSuperAdminReports.ts`, `useRegionalDcgReports.ts`, `useEventReport.ts`, `useRegionalData.ts`, `useAttendance.ts`, `src/pages/dcg/Dashboard.tsx`, `src/pages/admin/super/Dashboard.tsx`, `src/pages/admin/regional/Reports.tsx`. All share the same helper.
 
-4. Fix regional dashboard charts/reports accuracy
-   - Update `src/pages/admin/regional/Dashboard.tsx` to consume the same strict children set.
-   - Fix the attendance trend source (`useAttendanceHistoryWithMemberTypes`) so it builds the adult DOB lookup from all attendance members, not just the child record, before classifying attendance as Members / Regular Visitors / Children.
-   - This will correct dashboard attendance trends and average attendee calculations where children were previously mixed into member/visitor attendance.
+3. Ensure relationship rows are actually fetched for every member visible on the page
+   - Some current `.or(member_id.in.(...),related_member_id.in.(...))` calls can hit URL length / parser limits when the member list is large, silently returning a partial set. Switch to two separate `.in(...)` queries per side and merge in JS to guarantee complete coverage.
+   - This fix applies to: regional `Dashboard.tsx`, `Members.tsx`, `useAttendance.ts`, `useReports.ts`, `useSuperAdminReports.ts`, `useRegionalDcgReports.ts`, `useEventReport.ts`, `useRegionalData.ts`, `dcg/Dashboard.tsx`.
 
-5. Sweep remaining report/count surfaces
-   - Review and patch remaining hooks that still count raw member rows without children exclusion, especially:
-     - `useAllMembers.ts` / `useGlobalMemberStats`
-     - `useRegionStats.tsx` if region member-count meaning requires adult-only counting
-     - DCG member lists/dashboard/reporting hooks where child exclusion is still partial
-   - Ensure children are not included in any adult member/visitor KPI, and are exposed as children where relevant.
+4. Cache invalidation safety net
+   - Verify `invalidateRelationshipDependentQueries` covers every query key prefix used by the hooks above; add any missing ones.
+   - Make sure both `useCreateMemberRelationship` and `useDeleteMemberRelationship` (and `EditMemberForm`'s onSuccess after DOB edits) call it. Already in place — confirm prefixes match the actual keys after refactor.
 
-6. Verification
-   - Use the live database child candidate in WCA DOUALA as a validation case: regional Members page Children KPI should show 1, not 0.
-   - Verify dashboard Members total subtracts that child from adult member/visitor counts.
-   - Verify attendance/member/visitor charts use Children separately when that child has attendance records.
+5. Update the Core memory rule
+   - Replace "at least one member_relationships row with an adult" wording so it's explicit that ALL relationship types and BOTH directions count, while still requiring the related party to be an adult (or have unknown DOB).
 
-No new database table is needed for this fix; the relationship rows already exist. The work is in cache invalidation and making all reporting surfaces use the same strict child classification.
+6. Verify
+   - Re-query Postgres after deploy to count strict children per region (already shows WCA DOUALA = 1).
+   - Confirm dashboard Children KPI matches that count and that Members/Visitors KPI excludes the same record.
+   - Spot check Reports, Attendance Trend chart, and DCG dashboards for the same number.

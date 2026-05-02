@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UserCheck, Users, Baby } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
@@ -50,18 +51,7 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
   const memberIds = useMemo(() => dcgMembers?.map(m => m.member_id) || [], [dcgMembers]);
   const { data: memberRelationships = [] } = useQuery({
     queryKey: ['dcg-attendance-member-relationships', memberIds.sort().join(',')],
-    queryFn: async () => {
-      if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
-      if (error) throw error;
-      return ((data || []) as any[]).map((r: any) => ({
-        member_id: r.member_id as string,
-        related_member_id: r.related_member_id as string,
-      }));
-    },
+    queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
     enabled: memberIds.length > 0,
   });
 

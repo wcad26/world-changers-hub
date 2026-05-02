@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { isChildMember } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
 type AttendanceEvent = Database['public']['Tables']['attendance_events']['Row'];
 type AttendanceRecordInsert = Database['public']['Tables']['attendance_records']['Insert'];
@@ -158,11 +159,7 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       const adultDobLookup = new Map<string, string | null | undefined>(dobByMemberId);
       if (memberIds.size > 0) {
         const ids = Array.from(memberIds);
-        const { data: relData } = await supabase
-          .from('member_relationships' as any)
-          .select('member_id, related_member_id')
-          .or(`member_id.in.(${ids.join(',')}),related_member_id.in.(${ids.join(',')})`);
-        relationships = (relData as any[]) || [];
+        relationships = await fetchMemberRelationshipsForMembers(ids);
 
         // Pull DOBs for related members not in attendance — needed to verify
         // the related party is an adult.

@@ -5,6 +5,7 @@ import { useRegionCurrency } from './useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { format, subMonths } from 'date-fns';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
 export interface DcgReportData {
   dcgId: string;
@@ -96,11 +97,7 @@ export const useRegionalDcgReports = (filters?: DcgReportFilters) => {
       const underlyingMemberIds = Array.from(new Set((dcgMembers || []).map((m: any) => m.member_id).filter(Boolean)));
       let dcgRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (underlyingMemberIds.length > 0) {
-        const { data: relData } = await supabase
-          .from('member_relationships' as any)
-          .select('member_id, related_member_id')
-          .or(`member_id.in.(${underlyingMemberIds.join(',')}),related_member_id.in.(${underlyingMemberIds.join(',')})`);
-        dcgRelationships = (relData as any[]) || [];
+        dcgRelationships = await fetchMemberRelationshipsForMembers(underlyingMemberIds);
       }
       const dcgChildrenSet = buildChildrenSet(
         (dcgMembers || []).map((dm: any) => ({
@@ -279,11 +276,7 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
       );
       let globalRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (allUnderlyingMemberIds.length > 0) {
-        const { data: relData } = await supabase
-          .from('member_relationships' as any)
-          .select('member_id, related_member_id')
-          .or(`member_id.in.(${allUnderlyingMemberIds.join(',')}),related_member_id.in.(${allUnderlyingMemberIds.join(',')})`);
-        globalRelationships = (relData as any[]) || [];
+        globalRelationships = await fetchMemberRelationshipsForMembers(allUnderlyingMemberIds);
       }
       const globalChildrenSet = buildChildrenSet(
         (allDcgMembers || []).map((dm: any) => ({

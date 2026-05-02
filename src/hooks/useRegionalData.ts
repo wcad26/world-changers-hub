@@ -96,11 +96,8 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
         const underlyingIds = Array.from(new Set((memberData || []).map((m: any) => m.member_id).filter(Boolean)));
         let relationships: Array<{ member_id: string; related_member_id: string }> = [];
         if (underlyingIds.length > 0) {
-          const { data: relData } = await supabase
-            .from('member_relationships' as any)
-            .select('member_id, related_member_id')
-            .or(`member_id.in.(${underlyingIds.join(',')}),related_member_id.in.(${underlyingIds.join(',')})`);
-          relationships = (relData as any[]) || [];
+          const { fetchMemberRelationshipsForMembers } = await import('@/utils/fetchMemberRelationships');
+          relationships = await fetchMemberRelationshipsForMembers(underlyingIds);
         }
         const { buildChildrenSet } = await import('@/utils/childUtils');
         const childrenSet = buildChildrenSet(
