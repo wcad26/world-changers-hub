@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useRegionCurrency } from './useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { format, subMonths } from 'date-fns';
+import { buildChildrenSet } from '@/utils/childUtils';
 
 export interface DcgReportData {
   dcgId: string;
