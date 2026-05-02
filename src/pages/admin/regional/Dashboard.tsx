@@ -88,21 +88,8 @@ const RegionalDashboard: React.FC = () => {
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
 
-  // Fetch member relationships for child detection
-  const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
-  const { data: memberRelationships = [] } = useQuery({
-    queryKey: ['dashboard-member-relationships', memberIds.sort().join(',')],
-    queryFn: async () => {
-      if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
-      if (error) throw error;
-      return (data || []) as unknown as { member_id: string; related_member_id: string }[];
-    },
-    enabled: memberIds.length > 0,
-  });
+  // Child detection is age-based; no relationship lookup needed.
+  const memberRelationships: { member_id: string; related_member_id: string }[] = [];
 
   // Fetch special event IDs to exclude special event visitors
   const { data: specialEventIds } = useQuery({
