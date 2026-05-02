@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { subMonths, format, parseISO, differenceInYears, startOfYear, startOfMonth, subQuarters } from 'date-fns';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
 export const useRegionalReports = () => {
   const { userRegion } = useAuth();

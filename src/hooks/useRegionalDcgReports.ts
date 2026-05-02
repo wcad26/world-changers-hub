@@ -5,6 +5,7 @@ import { useRegionCurrency } from './useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { format, subMonths } from 'date-fns';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
 export interface DcgReportData {
   dcgId: string;

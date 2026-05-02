@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { format } from 'date-fns';
 import { isChildMember } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
 type AttendanceEvent = Database['public']['Tables']['attendance_events']['Row'];
 type AttendanceRecordInsert = Database['public']['Tables']['attendance_records']['Insert'];

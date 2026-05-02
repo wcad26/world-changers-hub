@@ -13,6 +13,7 @@ import TrendChart from '../TrendChart';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { format, subMonths, differenceInDays, differenceInYears, eachMonthOfInterval } from 'date-fns';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { isChildMember, CHILD_AGE_THRESHOLD } from '@/utils/childUtils';

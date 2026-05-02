@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Search, UserCheck, Save, Loader2, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
