@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
   Users, Calendar, DollarSign, TrendingUp, UserPlus, CalendarPlus, FileText, Eye,
-  Clock, ArrowUpRight, ArrowDownRight
+  Clock, ArrowUpRight, ArrowDownRight, Baby
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
@@ -19,6 +19,8 @@ import { useDcgs } from '@/hooks/useDCGs';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { buildChildrenSet } from '@/utils/childUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const DcgDashboard = () => {
   const { profile, userDcg } = useAuth();
@@ -62,14 +64,50 @@ const DcgDashboard = () => {
   });
 
   const recentAttendance = attendanceHistory.slice(0, 3);
-  const activeMembers = dcgMembers.filter(member => member.is_active);
+  const activeMembersAll = dcgMembers.filter(member => member.is_active);
+
+  // Apply strict child rule (age < 16 AND has adult relationship) to exclude children
+  const [childrenSet, setChildrenSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const ids = activeMembersAll.map(m => m.member_id).filter(Boolean) as string[];
+    if (ids.length === 0) {
+      setChildrenSet(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${ids.join(',')}),related_member_id.in.(${ids.join(',')})`);
+      const rels = (data as any[]) || [];
+      const set = buildChildrenSet(
+        activeMembersAll.map(m => ({
+          id: m.member_id,
+          profiles: { date_of_birth: m.members?.profiles?.date_of_birth ?? null },
+        })),
+        rels
+      );
+      if (!cancelled) setChildrenSet(set);
+    })();
+    return () => { cancelled = true; };
+  }, [activeMembersAll.length]);
+
+  const activeMembers = activeMembersAll.filter(m => !childrenSet.has(m.member_id));
   const totalMembers = activeMembers.length;
+  const totalChildren = childrenSet.size;
 
   const stats = [
     {
       title: "Members", value: totalMembers.toString(),
-      description: "Active DCG members", icon: Users,
+      description: "Active adult members", icon: Users,
       trend: totalMembers > 0 ? `${totalMembers} active` : "No members",
+      trendType: "neutral" as const
+    },
+    {
+      title: "Children", value: totalChildren.toString(),
+      description: "Under 16 with family", icon: Baby,
+      trend: totalChildren > 0 ? "Tracked" : "None",
       trendType: "neutral" as const
     },
     {
@@ -113,7 +151,7 @@ const DcgDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
           {stats.map((stat, index) => (
             <Card key={index} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 md:pb-2 p-3 md:p-4">

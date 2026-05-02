@@ -267,11 +267,31 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
         .select('id, name, region_id, is_active');
       if (dcgError) throw dcgError;
 
-      // Get all DCG members
+      // Get all DCG members (with member id + DOB so we can apply the strict child rule)
       const { data: allDcgMembers, error: memError } = await supabase
         .from('dcg_members')
-        .select('dcg_id, is_active, created_at');
+        .select('dcg_id, member_id, is_active, created_at, members:member_id(id, profiles:profile_id(date_of_birth))');
       if (memError) throw memError;
+
+      // Fetch member relationships so we can identify children (age<16 with adult relationship)
+      const allUnderlyingMemberIds = Array.from(
+        new Set((allDcgMembers || []).map((m: any) => m.member_id).filter(Boolean))
+      );
+      let globalRelationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (allUnderlyingMemberIds.length > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${allUnderlyingMemberIds.join(',')}),related_member_id.in.(${allUnderlyingMemberIds.join(',')})`);
+        globalRelationships = (relData as any[]) || [];
+      }
+      const globalChildrenSet = buildChildrenSet(
+        (allDcgMembers || []).map((dm: any) => ({
+          id: dm.member_id,
+          profiles: { date_of_birth: dm.members?.profiles?.date_of_birth ?? null },
+        })),
+        globalRelationships
+      );
 
       // Get DCG attendance events in range
       const { data: attEvents, error: attError } = await supabase
@@ -308,7 +328,7 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
         const regionDcgs = (allDcgs || []).filter(d => d.region_id === region.id);
         const regionDcgIds = regionDcgs.map(d => d.id);
 
-        const regionMembers = (allDcgMembers || []).filter(m => regionDcgIds.includes(m.dcg_id) && m.is_active);
+        const regionMembers = (allDcgMembers || []).filter((m: any) => regionDcgIds.includes(m.dcg_id) && m.is_active && !globalChildrenSet.has(m.member_id));
         const regionEvents = (attEvents || []).filter(e => regionDcgIds.includes(e.dcg_id!));
         const regionEventIds = regionEvents.map(e => e.id);
         const regionRecords = attRecords.filter(r => regionEventIds.includes(r.event_id));
@@ -321,7 +341,7 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
 
         // Per-DCG breakdown within region
         const dcgDetails = regionDcgs.map(dcg => {
-          const members = (allDcgMembers || []).filter(m => m.dcg_id === dcg.id && m.is_active);
+          const members = (allDcgMembers || []).filter((m: any) => m.dcg_id === dcg.id && m.is_active && !globalChildrenSet.has(m.member_id));
           const events = regionEvents.filter(e => e.dcg_id === dcg.id);
           const eIds = events.map(e => e.id);
           const records = attRecords.filter(r => eIds.includes(r.event_id));

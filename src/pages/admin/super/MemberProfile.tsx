@@ -545,6 +545,11 @@ const SuperMemberProfile: React.FC = () => {
           </Card>
         )}
 
+        {/* Family Relationships */}
+        {member && (
+          <FamilyRelationshipsSection memberId={member.id} />
+        )}
+
         {/* Edit Member Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
