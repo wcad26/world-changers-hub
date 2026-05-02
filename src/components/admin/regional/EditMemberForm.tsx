@@ -20,7 +20,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useOccupations } from '@/hooks/useOccupations';
-import { useMemberRelationships, useCreateMemberRelationship, useDeleteMemberRelationship, FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+import { useMemberRelationships, useCreateMemberRelationship, useDeleteMemberRelationship, FamilyRelationshipType, invalidateRelationshipDependentQueries } from '@/hooks/useMemberRelationships';
 import { Loader2, CalendarIcon, Search, User, BookOpen, Heart, Users, Church, Plus, X, Check, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
