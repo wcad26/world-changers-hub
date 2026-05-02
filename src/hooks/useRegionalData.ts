@@ -82,18 +82,37 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
         }, {} as { [key: string]: Profile });
       }
 
-      // Get member counts separately for each DCG
+      // Get member counts separately for each DCG (excluding children)
       const dcgIds = data?.map(dcg => dcg.id) || [];
       let memberCounts: { [key: string]: number } = {};
       
       if (dcgIds.length > 0) {
         const { data: memberData } = await supabase
           .from('dcg_members')
-          .select('dcg_id')
+          .select('dcg_id, member_id, members:member_id(id, profiles:profile_id(date_of_birth))')
           .in('dcg_id', dcgIds)
           .eq('is_active', true);
-        
-        memberCounts = (memberData || []).reduce((acc, member) => {
+
+        const underlyingIds = Array.from(new Set((memberData || []).map((m: any) => m.member_id).filter(Boolean)));
+        let relationships: Array<{ member_id: string; related_member_id: string }> = [];
+        if (underlyingIds.length > 0) {
+          const { data: relData } = await supabase
+            .from('member_relationships' as any)
+            .select('member_id, related_member_id')
+            .or(`member_id.in.(${underlyingIds.join(',')}),related_member_id.in.(${underlyingIds.join(',')})`);
+          relationships = (relData as any[]) || [];
+        }
+        const { buildChildrenSet } = await import('@/utils/childUtils');
+        const childrenSet = buildChildrenSet(
+          (memberData || []).map((dm: any) => ({
+            id: dm.member_id,
+            profiles: { date_of_birth: dm.members?.profiles?.date_of_birth ?? null },
+          })),
+          relationships
+        );
+
+        memberCounts = (memberData || []).reduce((acc: any, member: any) => {
+          if (childrenSet.has(member.member_id)) return acc;
           acc[member.dcg_id] = (acc[member.dcg_id] || 0) + 1;
           return acc;
         }, {} as { [key: string]: number });
