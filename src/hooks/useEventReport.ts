@@ -139,11 +139,7 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
       // Fetch relationships touching these attendees so we can apply the strict child rule
       let attendeeRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (uniqueMemberIds.length > 0) {
-        const { data: relData } = await supabase
-          .from('member_relationships' as any)
-          .select('member_id, related_member_id')
-          .or(`member_id.in.(${uniqueMemberIds.join(',')}),related_member_id.in.(${uniqueMemberIds.join(',')})`);
-        attendeeRelationships = (relData as any[]) || [];
+        attendeeRelationships = await fetchMemberRelationshipsForMembers(uniqueMemberIds);
       }
 
       const attendeeChildrenSet = buildChildrenSet(

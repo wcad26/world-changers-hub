@@ -25,11 +25,7 @@ export const useRegionalReports = () => {
       const memberIdList = (regionMembers || []).map(m => m.id);
       let regionRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (memberIdList.length > 0) {
-        const { data: relData } = await supabase
-          .from('member_relationships' as any)
-          .select('member_id, related_member_id')
-          .or(`member_id.in.(${memberIdList.join(',')}),related_member_id.in.(${memberIdList.join(',')})`);
-        regionRelationships = (relData as any[]) || [];
+        regionRelationships = await fetchMemberRelationshipsForMembers(memberIdList);
       }
 
       const childrenSet = buildChildrenSet(regionMembers || [], regionRelationships);

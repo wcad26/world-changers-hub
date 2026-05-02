@@ -76,11 +76,8 @@ const DcgDashboard = () => {
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('member_relationships' as any)
-        .select('member_id, related_member_id')
-        .or(`member_id.in.(${ids.join(',')}),related_member_id.in.(${ids.join(',')})`);
-      const rels = (data as any[]) || [];
+      const { fetchMemberRelationshipsForMembers } = await import('@/utils/fetchMemberRelationships');
+      const rels = await fetchMemberRelationshipsForMembers(ids);
       const set = buildChildrenSet(
         activeMembersAll.map(m => ({
           id: m.member_id,
