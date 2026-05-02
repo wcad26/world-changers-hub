@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Users, CheckCircle, Clock, Baby, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isChildMember } from '@/utils/childUtils';
+import { buildChildrenSet } from '@/utils/childUtils';
 import type { MemberWithProfile } from '@/hooks/useMembers';
 
 interface MemberKPICardsProps {
