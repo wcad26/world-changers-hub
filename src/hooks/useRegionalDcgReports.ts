@@ -328,7 +328,7 @@ export const useGlobalDcgReports = (filters?: { startDate?: Date; endDate?: Date
         const regionDcgs = (allDcgs || []).filter(d => d.region_id === region.id);
         const regionDcgIds = regionDcgs.map(d => d.id);
 
-        const regionMembers = (allDcgMembers || []).filter(m => regionDcgIds.includes(m.dcg_id) && m.is_active);
+        const regionMembers = (allDcgMembers || []).filter((m: any) => regionDcgIds.includes(m.dcg_id) && m.is_active && !globalChildrenSet.has(m.member_id));
         const regionEvents = (attEvents || []).filter(e => regionDcgIds.includes(e.dcg_id!));
         const regionEventIds = regionEvents.map(e => e.id);
         const regionRecords = attRecords.filter(r => regionEventIds.includes(r.event_id));
