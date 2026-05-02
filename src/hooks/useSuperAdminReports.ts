@@ -314,9 +314,10 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
 
       return {
         kpis: {
-          totalMembers: totalMembers ?? 0,
-          totalVisitors: totalVisitors ?? 0,
-          newMembersInPeriod: newMembersInPeriod ?? 0,
+          totalMembers,
+          totalVisitors,
+          totalChildren,
+          newMembersInPeriod,
           memberGrowthPercentage: isNaN(memberGrowthPercentage) || !isFinite(memberGrowthPercentage) ? 0 : memberGrowthPercentage,
           globalActivePercentage: isNaN(globalActivePercentage) || !isFinite(globalActivePercentage) ? 0 : globalActivePercentage,
           totalDcgs: totalDcgs ?? 0,
