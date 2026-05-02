@@ -7,6 +7,7 @@ export interface EventAttendeeWithDetails {
   member_id: string;
   is_present: boolean;
   recorded_at: string | null;
+  is_child?: boolean;
   member: {
     id: string;
     member_id: string;
@@ -19,6 +20,7 @@ export interface EventAttendeeWithDetails {
       email: string | null;
       phone: string | null;
       gender: string | null;
+      date_of_birth?: string | null;
     } | null;
   } | null;
 }
