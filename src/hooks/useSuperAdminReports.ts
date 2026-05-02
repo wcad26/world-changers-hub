@@ -19,29 +19,31 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       const startDateStr = format(startDate, 'yyyy-MM-dd');
       const endDateStr = format(endDate, 'yyyy-MM-dd');
       // --- Global KPIs ---
-
-      // Total Members (excluding visitors)
-      const { count: totalMembers, error: membersError } = await supabase
+      // Fetch ALL members + relationships once so we can apply the strict child rule globally
+      const { data: allMembersRaw, error: allMembersError } = await supabase
         .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'member');
-      if (membersError) throw membersError;
+        .select('id, region_id, created_at, member_type, profiles:profile_id(date_of_birth)');
+      if (allMembersError) throw allMembersError;
 
-      // Total Visitors (not yet members)
-      const { count: totalVisitors, error: visitorsError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'visitor');
-      if (visitorsError) throw visitorsError;
+      const { data: allRelationshipsRaw } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id');
+      const allRelationships = (allRelationshipsRaw as any[]) || [];
 
-      // New Members (within selected period)
-      const { count: newMembersInPeriod, error: newMembersError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'member')
-        .gte('created_at', startDateStr)
-        .lte('created_at', endDateStr);
-      if (newMembersError) throw newMembersError;
+      const globalChildrenSet = buildChildrenSet(allMembersRaw || [], allRelationships);
+
+      const globalAdults = (allMembersRaw || []).filter(m => !globalChildrenSet.has(m.id));
+      const totalMembers = globalAdults.filter(m => m.member_type === 'member').length;
+      const totalVisitors = globalAdults.filter(m => m.member_type === 'visitor').length;
+      const totalChildren = globalChildrenSet.size;
+
+      // New Members (within selected period, excluding children)
+      const newMembersInPeriod = globalAdults.filter(
+        m => m.member_type === 'member' &&
+          m.created_at &&
+          new Date(m.created_at) >= startDate &&
+          new Date(m.created_at) <= endDate
+      ).length;
 
       // Total DCGs
       const { count: totalDcgs, error: dcgsError } = await supabase
@@ -56,21 +58,19 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       if (regionsError) throw regionsError;
 
       // Calculate Member Growth Percentage (for selected period)
-      const previousMemberCount = (totalMembers ?? 0) - (newMembersInPeriod ?? 0);
+      const previousMemberCount = totalMembers - newMembersInPeriod;
       const memberGrowthPercentage = previousMemberCount > 0 
-        ? ((newMembersInPeriod ?? 0) / previousMemberCount) * 100 
-        : (newMembersInPeriod ?? 0) > 0 ? 100 : 0;
+        ? (newMembersInPeriod / previousMemberCount) * 100 
+        : newMembersInPeriod > 0 ? 100 : 0;
       
       // --- Regional Overview Data ---
       const { data: regions, error: regionsDataError } = await supabase
         .from('regions')
         .select('id, name');
       if (regionsDataError) throw regionsDataError;
-      
-      const { data: membersByRegion, error: membersByRegionError } = await supabase
-        .from('members')
-        .select('id, region_id, created_at, member_type');
-      if (membersByRegionError) throw membersByRegionError;
+
+      // Reuse the already-fetched member list for per-region breakdown
+      const membersByRegion = allMembersRaw || [];
       
       const { data: dcgsByRegion, error: dcgsByRegionError } = await supabase
         .from('dcgs')
