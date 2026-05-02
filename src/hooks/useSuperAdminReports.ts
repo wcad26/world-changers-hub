@@ -100,12 +100,16 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       
       const regionalData = (regions || []).map(region => {
           const allMembers = (membersByRegion || []).filter(m => m.region_id === region.id);
-          
-          // Filter by member_type
-          const members = allMembers.filter(m => m.member_type === 'member');
-          const visitors = allMembers.filter(m => m.member_type === 'visitor');
-          
-          // Calculate growth for selected period - only for members
+
+          // Apply strict child rule per region
+          const regionChildrenSet = buildChildrenSet(allMembers, allRelationships);
+
+          // Exclude children from member/visitor counts
+          const members = allMembers.filter(m => m.member_type === 'member' && !regionChildrenSet.has(m.id));
+          const visitors = allMembers.filter(m => m.member_type === 'visitor' && !regionChildrenSet.has(m.id));
+          const children = regionChildrenSet.size;
+
+          // Calculate growth for selected period - only for adult members
           const newMembersInPeriod = members.filter(m => m.created_at && new Date(m.created_at) >= startDate && new Date(m.created_at) <= endDate).length;
           const totalMembers = members.length;
           const previousMemberCount = totalMembers - newMembersInPeriod;
@@ -141,6 +145,7 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
               name: region.name,
               members: totalMembers,
               visitors: visitors.length,
+              children,
               activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
               periodGrowth: isNaN(periodGrowth) || !isFinite(periodGrowth) ? 0 : periodGrowth
           }
