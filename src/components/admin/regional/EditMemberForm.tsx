@@ -214,8 +214,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Member updated successfully." });
+      // DOB changes can flip a record into/out of the strict child rule, so we
+      // refresh every dependent dashboard / report cache, not just the members list.
+      invalidateRelationshipDependentQueries(queryClient, [member.id]);
       if (userRegion?.id) {
-        queryClient.invalidateQueries({ queryKey: ['members', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['member-dcg', member.id] });
       }
       setTimeout(() => onSuccess(), 100);
