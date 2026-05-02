@@ -40,6 +40,7 @@ export interface EventReportData {
     totalAttendees: number;
     members: number;
     visitors: number;
+    children: number;
     maleCount: number;
     femaleCount: number;
     wantToJoin: number;
