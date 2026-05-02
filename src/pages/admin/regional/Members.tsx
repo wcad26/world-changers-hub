@@ -46,6 +46,7 @@ import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import MemberKPICards from '@/components/admin/regional/MemberKPICards';
 
 const Members: React.FC = () => {

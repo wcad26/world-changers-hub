@@ -9,6 +9,7 @@ import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
 import { isChildMember } from "@/utils/childUtils";
+import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
