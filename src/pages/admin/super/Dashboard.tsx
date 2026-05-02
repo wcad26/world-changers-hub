@@ -201,8 +201,8 @@ const SuperDashboard: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
           </div>
         ) : isError ? (
           <Alert variant="destructive">
@@ -211,7 +211,7 @@ const SuperDashboard: React.FC = () => {
             <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
           </Alert>
         ) : reports ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Members</CardTitle>
