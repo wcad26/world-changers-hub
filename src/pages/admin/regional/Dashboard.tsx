@@ -296,7 +296,7 @@ const RegionalDashboard: React.FC = () => {
       filteredAttendance,
       targetMembers: memberTarget?.target_members || 0,
     };
-  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
