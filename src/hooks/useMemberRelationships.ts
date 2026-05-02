@@ -1,9 +1,48 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export type FamilyRelationshipType = 'spouse' | 'parent' | 'child' | 'sibling' | 'guardian' | 'other';
+
+/**
+ * Invalidate every cached query whose result depends on member_relationships
+ * (regional dashboard, member-management KPI, all reports, attendance trends,
+ * DCG dashboards, etc). Called after any add / delete of a relationship and
+ * after profile/member edits that may change a member's child status.
+ */
+export const invalidateRelationshipDependentQueries = (
+  queryClient: QueryClient,
+  memberIds: Array<string | undefined> = []
+) => {
+  // Per-member relationship queries (used by EditMemberForm + profile pages)
+  memberIds.filter(Boolean).forEach(id => {
+    queryClient.invalidateQueries({ queryKey: ['member-relationships', id] });
+  });
+
+  // Broad invalidation by query-key prefix — covers every reporting / KPI / attendance hook
+  const prefixes = [
+    'members',
+    'member-kpi-activity',
+    'region-member-relationships-filter',
+    'dashboard-member-relationships',
+    'attendance_history_with_types',
+    'attendance_history',
+    'regionalReports',
+    'superAdminReports',
+    'eventReport',
+    'regional-dcg-reports',
+    'regional-dcgs',
+    'dcg-dashboard',
+    'dcg-members',
+    'special-event-ids',
+  ];
+  prefixes.forEach(prefix => {
+    queryClient.invalidateQueries({
+      predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === prefix,
+    });
+  });
+};
 
 export interface MemberRelationship {
   id: string;
