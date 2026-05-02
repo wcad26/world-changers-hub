@@ -56,9 +56,13 @@ const MemberKPICards: React.FC<MemberKPICardsProps> = ({
   const kpiData = useMemo(() => {
     if (!members) return null;
 
+    // Build adult DOB lookup so isChildMember can verify the related party is an adult.
+    const adultDobLookup = new Map<string, string | null | undefined>();
+    members.forEach(m => adultDobLookup.set(m.id, m.profiles?.date_of_birth));
+
     const childrenSet = new Set<string>();
     members.forEach(m => {
-      if (isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships)) {
+      if (isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships, adultDobLookup)) {
         childrenSet.add(m.id);
       }
     });

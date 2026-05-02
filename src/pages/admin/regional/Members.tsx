@@ -112,6 +112,13 @@ const Members: React.FC = () => {
 
 
 
+  // Adult DOB lookup so isChildMember can verify the related party is an adult.
+  const adultDobLookup = React.useMemo(() => {
+    const map = new Map<string, string | null | undefined>();
+    (members || []).forEach(m => map.set(m.id, m.profiles?.date_of_birth));
+    return map;
+  }, [members]);
+
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
     return members.filter(member => {
@@ -133,7 +140,7 @@ const Members: React.FC = () => {
       if (memberTypeFilter === 'all') {
         typeMatch = true;
       } else if (memberTypeFilter === 'children') {
-        typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships);
+        typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships, adultDobLookup);
       } else if (memberTypeFilter === 'visitor_special') {
         typeMatch = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
       } else if (memberTypeFilter === 'visitor_regular') {
@@ -144,7 +151,7 @@ const Members: React.FC = () => {
       
       return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, specialEventIds]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, adultDobLookup, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

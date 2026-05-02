@@ -88,8 +88,28 @@ const RegionalDashboard: React.FC = () => {
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
 
-  // Child detection is age-based; no relationship lookup needed.
-  const memberRelationships: { member_id: string; related_member_id: string }[] = [];
+  // Fetch member relationships for strict child detection (age <16 AND adult relationship).
+  const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['dashboard-member-relationships', memberIds.sort().join(',')],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${memberIds.join(',')}),related_member_id.in.(${memberIds.join(',')})`);
+      if (error) throw error;
+      return (data || []) as unknown as { member_id: string; related_member_id: string }[];
+    },
+    enabled: memberIds.length > 0,
+  });
+
+  // Lookup of member id → date_of_birth, used to verify the related party is an adult.
+  const adultDobLookup = React.useMemo(() => {
+    const map = new Map<string, string | null | undefined>();
+    (members || []).forEach(m => map.set(m.id, m.profiles?.date_of_birth));
+    return map;
+  }, [members]);
 
   // Fetch special event IDs to exclude special event visitors
   const { data: specialEventIds } = useQuery({
@@ -135,7 +155,7 @@ const RegionalDashboard: React.FC = () => {
     // Categorize members exactly like MemberKPICards
     const childrenSet = new Set<string>();
     members.forEach(m => {
-      if (isChildMember(m.profiles?.date_of_birth, m.id, rels)) {
+      if (isChildMember(m.profiles?.date_of_birth, m.id, rels, adultDobLookup)) {
         childrenSet.add(m.id);
       }
     });
@@ -276,7 +296,7 @@ const RegionalDashboard: React.FC = () => {
       filteredAttendance,
       targetMembers: memberTarget?.target_members || 0,
     };
-  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {

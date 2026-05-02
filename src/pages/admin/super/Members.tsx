@@ -49,14 +49,21 @@ const SuperMembers: React.FC = () => {
     enabled: memberIds.length > 0,
   });
 
+  // Adult DOB lookup so isChildMember can verify the related party is an adult.
+  const adultDobLookup = useMemo(() => {
+    const map = new Map<string, string | null | undefined>();
+    (members || []).forEach(m => map.set(m.id, m.profiles?.date_of_birth));
+    return map;
+  }, [members]);
+
   const filteredMembers = useMemo(() => {
     if (!members) return [];
     if (typeFilter === 'all') return members;
     if (typeFilter === 'children') {
-      return members.filter(m => isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships));
+      return members.filter(m => isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships, adultDobLookup));
     }
     return members.filter(m => m.member_type === typeFilter);
-  }, [members, typeFilter, memberRelationships]);
+  }, [members, typeFilter, memberRelationships, adultDobLookup]);
 
   return (
     <>
