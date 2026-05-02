@@ -144,15 +144,8 @@ export const useRegionalReports = () => {
         }))
         : [];
 
-      // Membership Growth Data
-      const { data: membersGrowthData, error: growthError } = await supabase
-        .from('members')
-        .select('created_at')
-        .eq('region_id', regionId)
-        .order('created_at');
-      if (growthError) throw growthError;
-
-      const growthByMonth = (membersGrowthData || []).reduce((acc, member) => {
+      // Membership Growth Data — use in-memory members list, exclude children
+      const growthByMonth = adultMembersList.reduce((acc, member) => {
         if (!member.created_at) return acc;
         const month = format(new Date(member.created_at), 'MMM yyyy');
         acc[month] = (acc[month] || 0) + 1;
@@ -164,36 +157,30 @@ export const useRegionalReports = () => {
         newMembers
       }));
 
-      // KPI: New Members YTD
-      const { count: newMembersYTD, error: membersYTDError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('region_id', regionId)
-        .gte('created_at', format(yearStart, 'yyyy-MM-dd'));
-      if (membersYTDError) throw membersYTDError;
+      // KPI: New Members YTD (excluding children)
+      const newMembersYTD = adultMembersList.filter(
+        m => m.created_at && new Date(m.created_at) >= yearStart
+      ).length;
 
-      // Membership Demographics
-      const { data: profiles, error: profilesError } = await supabase
-        .from('members')
-        .select('profiles(date_of_birth)')
-        .eq('region_id', regionId);
-
-      if (profilesError) throw profilesError;
-
-      const ageGroups = { 'Children (0-12)': 0, 'Youth (13-17)': 0, 'Adults (18-64)': 0, 'Seniors (65+)': 0, 'Unknown': 0 };
-      (profiles || []).forEach(p => {
-        if (p.profiles?.date_of_birth) {
-          const birthDate = new Date(p.profiles.date_of_birth);
-          const age = differenceInYears(new Date(), birthDate);
-          if (age <= 12) ageGroups['Children (0-12)']++;
-          else if (age <= 17) ageGroups['Youth (13-17)']++;
+      // Membership Demographics — count children only via the strict rule;
+      // remaining under-16 records (no adult relationship) drop into 'Unknown'.
+      const ageGroups = { 'Children (0-15)': 0, 'Youth (16-17)': 0, 'Adults (18-64)': 0, 'Seniors (65+)': 0, 'Unknown': 0 };
+      (regionMembers || []).forEach(m => {
+        if (childrenSet.has(m.id)) {
+          ageGroups['Children (0-15)']++;
+          return;
+        }
+        const dob = m.profiles?.date_of_birth;
+        if (dob) {
+          const age = differenceInYears(new Date(), new Date(dob));
+          if (age <= 17) ageGroups['Youth (16-17)']++;
           else if (age <= 64) ageGroups['Adults (18-64)']++;
           else ageGroups['Seniors (65+)']++;
         } else {
           ageGroups['Unknown']++;
         }
       });
-      
+
       const membershipDemographics = Object.entries(ageGroups).map(([category, value]) => ({
         category,
         value
