@@ -64,8 +64,38 @@ const DcgDashboard = () => {
   });
 
   const recentAttendance = attendanceHistory.slice(0, 3);
-  const activeMembers = dcgMembers.filter(member => member.is_active);
+  const activeMembersAll = dcgMembers.filter(member => member.is_active);
+
+  // Apply strict child rule (age < 16 AND has adult relationship) to exclude children
+  const [childrenSet, setChildrenSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const ids = activeMembersAll.map(m => m.member_id).filter(Boolean) as string[];
+    if (ids.length === 0) {
+      setChildrenSet(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id')
+        .or(`member_id.in.(${ids.join(',')}),related_member_id.in.(${ids.join(',')})`);
+      const rels = (data as any[]) || [];
+      const set = buildChildrenSet(
+        activeMembersAll.map(m => ({
+          id: m.member_id,
+          profiles: { date_of_birth: m.members?.profiles?.date_of_birth ?? null },
+        })),
+        rels
+      );
+      if (!cancelled) setChildrenSet(set);
+    })();
+    return () => { cancelled = true; };
+  }, [activeMembersAll.length]);
+
+  const activeMembers = activeMembersAll.filter(m => !childrenSet.has(m.member_id));
   const totalMembers = activeMembers.length;
+  const totalChildren = childrenSet.size;
 
   const stats = [
     {
