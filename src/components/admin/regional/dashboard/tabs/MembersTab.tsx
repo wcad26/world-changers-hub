@@ -74,13 +74,20 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
   const memberIds = useMemo(() => members?.map(m => m.id) || [], [members]);
   const { data: relationships = [] } = useRegionMemberRelationships(memberIds);
 
-  // Separate children (under 16 + has relationship) from adult members and visitors
+  // Adult DOB lookup so isChildMember can verify the related party is an adult.
+  const adultDobLookup = useMemo(() => {
+    const map = new Map<string, string | null | undefined>();
+    (members || []).forEach(m => map.set(m.id, m.profiles?.date_of_birth));
+    return map;
+  }, [members]);
+
+  // Separate children (under 16 + has adult relationship) from adult members and visitors
   const { totalMembers, totalVisitors, activeMembers, childrenCount } = useMemo(() => {
     if (!members) return { totalMembers: 0, totalVisitors: 0, activeMembers: 0, childrenCount: 0 };
     let mem = 0, vis = 0, active = 0, children = 0;
     members.forEach(m => {
       const dob = m.profiles?.date_of_birth;
-      const child = isChildMember(dob, m.id, relationships);
+      const child = isChildMember(dob, m.id, relationships, adultDobLookup);
       if (child) {
         children++;
       } else if (m.member_type === 'member') {
@@ -91,7 +98,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
       }
     });
     return { totalMembers: mem, totalVisitors: vis, activeMembers: active, childrenCount: children };
-  }, [members, relationships]);
+  }, [members, relationships, adultDobLookup]);
 
   // Period-filtered new joiners
   const newInPeriod = useMemo(() => {
@@ -138,7 +145,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
     members.forEach(m => {
       const dob = m.profiles?.date_of_birth;
       const gender = m.profiles?.gender?.toLowerCase();
-      const child = isChildMember(dob, m.id, relationships);
+      const child = isChildMember(dob, m.id, relationships, adultDobLookup);
       
       let category: string;
       if (!gender || (gender !== 'male' && gender !== 'female')) {
@@ -156,7 +163,7 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
     return Object.entries(counts)
       .filter(([name, value]) => value > 0)
       .map(([name, value]) => ({ name, value }));
-  }, [members, relationships]);
+  }, [members, relationships, adultDobLookup]);
 
   // Monthly growth chart filtered by period
   const monthlyGrowth = useMemo(() => {
