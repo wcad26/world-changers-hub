@@ -1,167 +1,86 @@
-# Restore strict child rule + create member_relationships table
+## Goal
 
-## Strict rule (per your instruction)
+1. Make sure relationships can be **established / edited** everywhere a person is created or managed (public registration, regional/DCG admin registration, profiles in every portal).
+2. Make sure **every report and KPI** — not just the regional dashboard — applies the strict child rule and **excludes children from member and visitor counts**.
 
-A member counts as a child only when **both** are true:
-1. Age `< 16` based on `date_of_birth`.
-2. Has at least one row in `member_relationships` linking them to another member who is an adult (i.e. the related member is **not** itself under 16).
+## Current state (verified)
 
-This is enforced everywhere children are counted: regional Dashboard, MemberKPICards, MembersTab, regional & super Members pages, attendance hooks, and event-attendance dialogs — all already funnel through `isChildMember`.
+Relationship capture already exists in:
+- `MemberRegister.tsx` (public member sign-up) → persisted by `create-member-registration` edge fn.
+- `VisitorRegister.tsx` (public visitor sign-up, single referral relationship) → persisted by `create-visitor` edge fn.
+- `RegisterMemberForm.tsx` (regional admin "Register Member") → also reused by DCG `RegisterNewMemberDialog`.
+- `FamilyRelationshipsSection` → embedded in **regional** `MemberProfile` only.
 
-## Why nothing currently shows up as a child
+Strict child rule (`isChildMember`: age < 16 AND has an adult relationship) is applied in:
+- `Dashboard.tsx`, `MemberKPICards.tsx`, `MembersTab.tsx`, `Members.tsx` (regional + super), attendance trend.
 
-The codebase queries `public.member_relationships` in 8 places, but the table **does not exist** in the database (verified against `information_schema`). Every query silently returns empty, so no member can satisfy the strict rule. The frontend code is already correct — only the table is missing.
+It is **NOT** applied in these reporting surfaces, so children are still counted as members/visitors there:
+- `useReports.ts` (regional Reports page) — uses `count(*)` from `members`.
+- `useSuperAdminReports.ts` (super admin Dashboard + Reports) — `.eq('member_type','member')` etc., no child exclusion.
+- `useEventReport.ts` (per-event report) — counts attendees by `member_type` only.
+- `useRegionalDcgReports.ts`, `useRegionalData.ts`, `DcgReportsTab`, `DcgOverviewTab`, `DCGTab`, `pages/dcg/Dashboard.tsx` — all DCG member counts include children.
+- `useRegionStats.tsx` — distinct member count includes children.
 
-## Migration: create `member_relationships`
+Gaps in relationship management UI:
+- Super-admin `MemberProfile.tsx` has no `FamilyRelationshipsSection`.
+- DCG portal member detail / profile views are read-only and have no relationship section.
+- Visitor profile (regional) has no way to add additional family relationships after the initial referral.
+- DCG `RegisterNewMemberDialog` already inherits the regional form so it gets the relationship UI for free — verify it's visible inside the dialog scroll area.
 
-```sql
--- Relationship type enum (matches the FamilyRelationshipType used in the frontend)
-CREATE TYPE public.family_relationship_type AS ENUM
-  ('spouse', 'parent', 'child', 'sibling', 'guardian', 'other');
+## Plan
 
-CREATE TABLE public.member_relationships (
-  id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  member_id           uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
-  related_member_id   uuid NOT NULL REFERENCES public.members(id) ON DELETE CASCADE,
-  relationship_type   public.family_relationship_type NOT NULL,
-  notes               text,
-  created_by          uuid REFERENCES auth.users(id) ON DELETE SET NULL,
-  created_at          timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT member_relationships_no_self CHECK (member_id <> related_member_id),
-  CONSTRAINT member_relationships_unique UNIQUE (member_id, related_member_id, relationship_type)
-);
+### 1. Surface relationship UI everywhere a profile is viewed
 
-CREATE INDEX idx_member_relationships_member ON public.member_relationships(member_id);
-CREATE INDEX idx_member_relationships_related ON public.member_relationships(related_member_id);
+- Add `<FamilyRelationshipsSection memberId={member.id} />` to:
+  - `src/pages/admin/super/MemberProfile.tsx` (full edit access).
+  - DCG portal member detail screens (`src/pages/dcg/...` member view) in **read-only** mode (`readOnly` prop already supported).
+- Confirm the section also renders for visitor records (the underlying table is `members` with `member_type='visitor'`, so the same component works) — explicitly include it on the visitor profile view in regional + super portals.
+- Verify it is visible (not clipped) inside `RegisterNewMemberDialog` (the DCG registration dialog) — the dialog already has `overflow-y-auto`, no change expected, just QA.
 
-ALTER TABLE public.member_relationships ENABLE ROW LEVEL SECURITY;
+### 2. Allow visitor self-registration to capture richer relationships (optional polish)
 
--- Super admins: full access
-CREATE POLICY "Super admins manage all member relationships"
-  ON public.member_relationships FOR ALL
-  USING (has_role(auth.uid(), 'super_admin'::app_role))
-  WITH CHECK (has_role(auth.uid(), 'super_admin'::app_role));
+`VisitorRegister.tsx` currently captures one `referral_relationship_type` shared by all referral members. Keep this as-is (it already writes to `member_relationships`) but document the limitation. No code change unless you want per-member relationship types — can be added later.
 
--- Regional admins: manage relationships where BOTH members belong to their region
-CREATE POLICY "Regional admins manage relationships in their region"
-  ON public.member_relationships FOR ALL
-  USING (
-    has_role(auth.uid(), 'regional_admin'::app_role)
-    AND EXISTS (SELECT 1 FROM public.members m
-                WHERE m.id = member_relationships.member_id
-                  AND m.region_id = get_user_region(auth.uid()))
-    AND EXISTS (SELECT 1 FROM public.members m
-                WHERE m.id = member_relationships.related_member_id
-                  AND m.region_id = get_user_region(auth.uid()))
-  )
-  WITH CHECK (
-    has_role(auth.uid(), 'regional_admin'::app_role)
-    AND EXISTS (SELECT 1 FROM public.members m
-                WHERE m.id = member_relationships.member_id
-                  AND m.region_id = get_user_region(auth.uid()))
-    AND EXISTS (SELECT 1 FROM public.members m
-                WHERE m.id = member_relationships.related_member_id
-                  AND m.region_id = get_user_region(auth.uid()))
-  );
+### 3. Centralise the child-exclusion helper
 
--- Members can view relationships involving themselves
-CREATE POLICY "Members view own relationships"
-  ON public.member_relationships FOR SELECT
-  USING (
-    EXISTS (SELECT 1 FROM public.members m
-            WHERE m.id IN (member_relationships.member_id,
-                           member_relationships.related_member_id)
-              AND m.profile_id = auth.uid())
-  );
-```
-
-## Code changes
-
-### 1. `src/utils/childUtils.ts` — restore strict rule with adult check
+Add a small helper alongside `childUtils.ts`:
 
 ```ts
-export const CHILD_AGE_THRESHOLD = 16;
-
-export interface MemberRelationshipLite {
-  member_id: string;
-  related_member_id: string;
-}
-
-/**
- * A member is a child when:
- *   - DOB indicates age < 16, AND
- *   - has at least one relationship with another member who is NOT a child
- *     (the related member is either an adult or has no DOB on file → treated as adult)
- *
- * `adultDobLookup` lets the caller pass a Map<memberId, dob|null> so the helper
- * can determine whether the related party is an adult. If omitted, any
- * relationship row (regardless of the other party's age) satisfies the rule —
- * preserving compatibility with call sites that don't have full context.
- */
-export const isChildMember = (
-  dateOfBirth: string | null | undefined,
-  memberId: string,
-  relationships: MemberRelationshipLite[],
-  adultDobLookup?: Map<string, string | null | undefined>
-): boolean => {
-  if (!dateOfBirth) return false;
-  const age = differenceInYears(new Date(), new Date(dateOfBirth));
-  if (age >= CHILD_AGE_THRESHOLD) return false;
-
-  // Find the related members from any relationship row touching this member
-  const relatedIds: string[] = [];
-  for (const r of relationships) {
-    if (r.member_id === memberId) relatedIds.push(r.related_member_id);
-    else if (r.related_member_id === memberId) relatedIds.push(r.member_id);
-  }
-  if (relatedIds.length === 0) return false;
-
-  if (!adultDobLookup) return true; // best-effort fallback
-
-  // At least one related member must be an adult
-  return relatedIds.some(id => {
-    const dob = adultDobLookup.get(id);
-    if (!dob) return true; // unknown DOB → treat as adult
-    return differenceInYears(new Date(), new Date(dob)) >= CHILD_AGE_THRESHOLD;
-  });
-};
-
-export const isUnderChildAge = (dob: string | null | undefined): boolean =>
-  !!dob && differenceInYears(new Date(), new Date(dob)) < CHILD_AGE_THRESHOLD;
+// returns Set<memberId> of children given a list of members + relationships
+export const buildChildrenSet = (
+  members: { id: string; profiles?: { date_of_birth?: string | null } | null }[],
+  relationships: { member_id: string; related_member_id: string }[]
+): Set<string>
 ```
 
-### 2. `src/pages/admin/regional/Dashboard.tsx` — re-fetch relationships and pass adult DOB lookup
+This avoids the same boilerplate (build `adultDobLookup`, loop) in every report.
 
-Re-introduce the `useQuery` for `member_relationships` (it now actually returns data) and build a `Map<memberId, dob>` from the loaded `members` array. Pass that map into `isChildMember` calls.
+### 4. Apply strict child exclusion to every remaining KPI / report
 
-### 3. Other consumers (`MemberKPICards`, `MembersTab`, both `Members.tsx`, attendance hooks, dialogs)
+For each surface listed below: fetch `member_relationships` for the relevant scope, build the children set, then **subtract children from member and visitor counts** and add a separate "Children" figure where appropriate.
 
-These already pass `relationships` into `isChildMember`. Add the optional `adultDobLookup` argument where the full member list is in scope (regional dashboard tabs, Members pages). For attendance dialogs and hooks where only the current member context is available, fall back to the "best-effort" path (any relationship counts) — the strict adult check is enforced at the dashboard/reporting layer where it matters.
+| File | Change |
+|---|---|
+| `src/hooks/useReports.ts` | Fetch members (id, member_type, dob) + relationships for region. Compute `totalMembers`, `totalVisitors`, `totalChildren` excluding children from the first two. |
+| `src/hooks/useSuperAdminReports.ts` | Same approach but globally and per-region (loop builds region-scoped children sets). Update `totalMembers`, `previousMemberCount`, `activePercentage`, region rows. |
+| `src/hooks/useEventReport.ts` | Fetch `member_relationships` for the attendees, exclude children from `membersCount` / `visitorsCount`, expose `childrenCount`. |
+| `src/hooks/useRegionalDcgReports.ts`, `useRegionalData.ts` (DCG `member_count`), `useDcgMembers.ts` aggregations | Subtract children from per-DCG member counts; expose `childrenCount` separately. |
+| `src/hooks/useRegionStats.tsx` | Exclude children from the distinct-member tally. |
+| `src/pages/dcg/Dashboard.tsx` | Recompute `totalMembers` (DCG members) excluding children; show children separately. |
+| `DcgOverviewTab.tsx`, `DcgReportsTab.tsx`, `DCGTab.tsx`, `super/Dashboard.tsx`, `super/Reports.tsx`, `regional/Reports.tsx` | Consume the corrected counts; add a "Children" column / KPI tile where useful. |
 
-### 4. UI to record relationships
+### 5. Memory + docs
 
-The hooks `useMemberRelationships`, `useCreateMemberRelationship`, `useDeleteMemberRelationship` already exist and the schema in this plan matches their expected shape. If a Family Relationships section is not yet rendered on member profile pages, this plan does **not** add UI — it only fixes counting. If you need the UI added at the same time, say so and I'll extend the plan.
-
-## Memory update
-
-Refresh `mem://logic/child-member-categorization` to record:
-- Strict rule: age `< 16` AND at least one `member_relationships` row with an adult party.
-- Threshold constant `CHILD_AGE_THRESHOLD = 16`.
-- Children without a recorded relationship are NOT counted as children.
-
-(Also updates the Core memory line "Children (<18)" → "Children (<16, with adult relationship)".)
-
-## Files touched
-
-- New migration: `create_member_relationships_table` (table + enum + indexes + RLS).
-- `src/utils/childUtils.ts`
-- `src/pages/admin/regional/Dashboard.tsx`
-- `src/pages/admin/regional/Members.tsx`
-- `src/pages/admin/super/Members.tsx`
-- `src/components/admin/regional/MemberKPICards.tsx`
-- `src/components/admin/regional/dashboard/tabs/MembersTab.tsx`
-- `mem://logic/child-member-categorization` and `mem://index.md`
+Update `mem://logic/child-member-categorization` to reaffirm the rule applies to **all** KPIs (regional, super, DCG, event-level, regional reports).
 
 ## Out of scope
 
-- Building a Family Relationships management UI on member profiles. Once the table exists, admins must record relationships before children appear in counts. Confirm if you want UI added in this same change.
+- Backfilling historical relationships — only newly-registered children with a recorded adult relationship will appear in the Children KPI. Existing under-16 members without relationships will continue to be excluded from Members / Visitors **and** from Children until an admin records the relationship in their profile.
+- Per-referral-member relationship type on `VisitorRegister` (current single-type capture is preserved).
+
+## Files expected to change
+
+Hooks: `useReports.ts`, `useSuperAdminReports.ts`, `useEventReport.ts`, `useRegionalDcgReports.ts`, `useRegionalData.ts`, `useDcgMembers.ts`, `useRegionStats.tsx`.
+Pages/Components: `super/MemberProfile.tsx`, regional + super visitor profiles, DCG portal member detail, `pages/dcg/Dashboard.tsx`, `DcgOverviewTab.tsx`, `DcgReportsTab.tsx`, `DCGTab.tsx`, `super/Dashboard.tsx`, `super/Reports.tsx`, `regional/Reports.tsx`.
+Utils: `src/utils/childUtils.ts` (add `buildChildrenSet` helper).
+Memory: `mem://logic/child-member-categorization`, `mem://index.md`.
