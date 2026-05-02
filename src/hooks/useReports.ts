@@ -14,21 +14,36 @@ export const useRegionalReports = () => {
     queryFn: async () => {
       if (!regionId) return null;
 
-      // KPI: Total Members
-      const { count: totalMembers, error: membersError } = await supabase
+      // Fetch members + DOB for child rule and member_type breakdown
+      const { data: regionMembers, error: membersError } = await supabase
         .from('members')
-        .select('*', { count: 'exact', head: true })
+        .select('id, member_type, created_at, profiles:profile_id(date_of_birth)')
         .eq('region_id', regionId);
       if (membersError) throw membersError;
 
-      // KPI: New Members (last 30 days)
-      const oneMonthAgo = subMonths(new Date(), 1).toISOString();
-      const { count: newMembersLast30Days, error: newMembersError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('region_id', regionId)
-        .gte('created_at', oneMonthAgo);
-      if (newMembersError) throw newMembersError;
+      // Fetch relationships for these members so we can apply the strict child rule
+      const memberIdList = (regionMembers || []).map(m => m.id);
+      let regionRelationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (memberIdList.length > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${memberIdList.join(',')}),related_member_id.in.(${memberIdList.join(',')})`);
+        regionRelationships = (relData as any[]) || [];
+      }
+
+      const childrenSet = buildChildrenSet(regionMembers || [], regionRelationships);
+      const adultMembersList = (regionMembers || []).filter(m => !childrenSet.has(m.id) && m.member_type === 'member');
+      const adultVisitorsList = (regionMembers || []).filter(m => !childrenSet.has(m.id) && m.member_type === 'visitor');
+      const totalMembers = adultMembersList.length;
+      const totalVisitors = adultVisitorsList.length;
+      const totalChildren = childrenSet.size;
+
+      // KPI: New Members (last 30 days, excluding children)
+      const oneMonthAgo = subMonths(new Date(), 1);
+      const newMembersLast30Days = adultMembersList.filter(
+        m => m.created_at && new Date(m.created_at) >= oneMonthAgo
+      ).length;
 
       // KPI: Total DCGs
       const { count: totalDcgs, error: dcgsError } = await supabase
