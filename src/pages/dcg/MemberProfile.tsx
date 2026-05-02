@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Mail, Phone, MapPin, Calendar, User } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
 
 const DcgMemberProfile = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -154,6 +155,10 @@ const DcgMemberProfile = () => {
               )}
             </CardContent>
           </Card>
+
+          {member?.id && (
+            <FamilyRelationshipsSection memberId={member.id} readOnly />
+          )}
         </div>
       </div>
     </DcgAdminLayout>
