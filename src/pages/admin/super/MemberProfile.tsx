@@ -14,6 +14,7 @@ import { useMemberAttendanceStats } from '@/hooks/useAttendance';
 import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
 import TransferMemberDialog from '@/components/admin/super/TransferMemberDialog';
 import { useMemberTransferHistory } from '@/hooks/useMemberTransfer';
+import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
 
 const SuperMemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();

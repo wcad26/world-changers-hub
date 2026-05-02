@@ -55,3 +55,31 @@ export const isUnderChildAge = (dateOfBirth: string | null | undefined): boolean
   if (!dateOfBirth) return false;
   return differenceInYears(new Date(), new Date(dateOfBirth)) < CHILD_AGE_THRESHOLD;
 };
+
+/**
+ * Convenience helper: given a list of members and the relationship rows that
+ * touch them, return a Set of member ids that satisfy the strict child rule
+ * (age < 16 AND linked to at least one adult via member_relationships).
+ *
+ * Use this in every report/KPI surface so children are NEVER counted as
+ * members or visitors.
+ */
+export const buildChildrenSet = (
+  members: Array<{ id: string; profiles?: { date_of_birth?: string | null } | null; date_of_birth?: string | null }>,
+  relationships: MemberRelationshipLite[]
+): Set<string> => {
+  const adultDobLookup = new Map<string, string | null | undefined>();
+  members.forEach(m => {
+    const dob = m.profiles?.date_of_birth ?? m.date_of_birth ?? null;
+    adultDobLookup.set(m.id, dob);
+  });
+
+  const childrenSet = new Set<string>();
+  members.forEach(m => {
+    const dob = m.profiles?.date_of_birth ?? m.date_of_birth ?? null;
+    if (isChildMember(dob, m.id, relationships, adultDobLookup)) {
+      childrenSet.add(m.id);
+    }
+  });
+  return childrenSet;
+};

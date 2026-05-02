@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subMonths, format, startOfYear, subDays } from 'date-fns';
+import { buildChildrenSet } from '@/utils/childUtils';
 
 interface TimeFrameParams {
   startDate: Date;
@@ -18,29 +19,31 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       const startDateStr = format(startDate, 'yyyy-MM-dd');
       const endDateStr = format(endDate, 'yyyy-MM-dd');
       // --- Global KPIs ---
-
-      // Total Members (excluding visitors)
-      const { count: totalMembers, error: membersError } = await supabase
+      // Fetch ALL members + relationships once so we can apply the strict child rule globally
+      const { data: allMembersRaw, error: allMembersError } = await supabase
         .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'member');
-      if (membersError) throw membersError;
+        .select('id, region_id, created_at, member_type, profiles:profile_id(date_of_birth)');
+      if (allMembersError) throw allMembersError;
 
-      // Total Visitors (not yet members)
-      const { count: totalVisitors, error: visitorsError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'visitor');
-      if (visitorsError) throw visitorsError;
+      const { data: allRelationshipsRaw } = await supabase
+        .from('member_relationships' as any)
+        .select('member_id, related_member_id');
+      const allRelationships = (allRelationshipsRaw as any[]) || [];
 
-      // New Members (within selected period)
-      const { count: newMembersInPeriod, error: newMembersError } = await supabase
-        .from('members')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'member')
-        .gte('created_at', startDateStr)
-        .lte('created_at', endDateStr);
-      if (newMembersError) throw newMembersError;
+      const globalChildrenSet = buildChildrenSet(allMembersRaw || [], allRelationships);
+
+      const globalAdults = (allMembersRaw || []).filter(m => !globalChildrenSet.has(m.id));
+      const totalMembers = globalAdults.filter(m => m.member_type === 'member').length;
+      const totalVisitors = globalAdults.filter(m => m.member_type === 'visitor').length;
+      const totalChildren = globalChildrenSet.size;
+
+      // New Members (within selected period, excluding children)
+      const newMembersInPeriod = globalAdults.filter(
+        m => m.member_type === 'member' &&
+          m.created_at &&
+          new Date(m.created_at) >= startDate &&
+          new Date(m.created_at) <= endDate
+      ).length;
 
       // Total DCGs
       const { count: totalDcgs, error: dcgsError } = await supabase
@@ -55,21 +58,19 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       if (regionsError) throw regionsError;
 
       // Calculate Member Growth Percentage (for selected period)
-      const previousMemberCount = (totalMembers ?? 0) - (newMembersInPeriod ?? 0);
+      const previousMemberCount = totalMembers - newMembersInPeriod;
       const memberGrowthPercentage = previousMemberCount > 0 
-        ? ((newMembersInPeriod ?? 0) / previousMemberCount) * 100 
-        : (newMembersInPeriod ?? 0) > 0 ? 100 : 0;
+        ? (newMembersInPeriod / previousMemberCount) * 100 
+        : newMembersInPeriod > 0 ? 100 : 0;
       
       // --- Regional Overview Data ---
       const { data: regions, error: regionsDataError } = await supabase
         .from('regions')
         .select('id, name');
       if (regionsDataError) throw regionsDataError;
-      
-      const { data: membersByRegion, error: membersByRegionError } = await supabase
-        .from('members')
-        .select('id, region_id, created_at, member_type');
-      if (membersByRegionError) throw membersByRegionError;
+
+      // Reuse the already-fetched member list for per-region breakdown
+      const membersByRegion = allMembersRaw || [];
       
       const { data: dcgsByRegion, error: dcgsByRegionError } = await supabase
         .from('dcgs')
@@ -99,12 +100,16 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
       
       const regionalData = (regions || []).map(region => {
           const allMembers = (membersByRegion || []).filter(m => m.region_id === region.id);
-          
-          // Filter by member_type
-          const members = allMembers.filter(m => m.member_type === 'member');
-          const visitors = allMembers.filter(m => m.member_type === 'visitor');
-          
-          // Calculate growth for selected period - only for members
+
+          // Apply strict child rule per region
+          const regionChildrenSet = buildChildrenSet(allMembers, allRelationships);
+
+          // Exclude children from member/visitor counts
+          const members = allMembers.filter(m => m.member_type === 'member' && !regionChildrenSet.has(m.id));
+          const visitors = allMembers.filter(m => m.member_type === 'visitor' && !regionChildrenSet.has(m.id));
+          const children = regionChildrenSet.size;
+
+          // Calculate growth for selected period - only for adult members
           const newMembersInPeriod = members.filter(m => m.created_at && new Date(m.created_at) >= startDate && new Date(m.created_at) <= endDate).length;
           const totalMembers = members.length;
           const previousMemberCount = totalMembers - newMembersInPeriod;
@@ -140,6 +145,7 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
               name: region.name,
               members: totalMembers,
               visitors: visitors.length,
+              children,
               activePercentage: isNaN(activePercentage) || !isFinite(activePercentage) ? 0 : activePercentage,
               periodGrowth: isNaN(periodGrowth) || !isFinite(periodGrowth) ? 0 : periodGrowth
           }
@@ -308,9 +314,10 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
 
       return {
         kpis: {
-          totalMembers: totalMembers ?? 0,
-          totalVisitors: totalVisitors ?? 0,
-          newMembersInPeriod: newMembersInPeriod ?? 0,
+          totalMembers,
+          totalVisitors,
+          totalChildren,
+          newMembersInPeriod,
           memberGrowthPercentage: isNaN(memberGrowthPercentage) || !isFinite(memberGrowthPercentage) ? 0 : memberGrowthPercentage,
           globalActivePercentage: isNaN(globalActivePercentage) || !isFinite(globalActivePercentage) ? 0 : globalActivePercentage,
           totalDcgs: totalDcgs ?? 0,

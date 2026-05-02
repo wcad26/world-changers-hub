@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { buildChildrenSet } from '@/utils/childUtils';
 
 export interface EventAttendeeWithDetails {
   id: string;
   member_id: string;
   is_present: boolean;
   recorded_at: string | null;
+  is_child?: boolean;
   member: {
     id: string;
     member_id: string;
@@ -18,6 +20,7 @@ export interface EventAttendeeWithDetails {
       email: string | null;
       phone: string | null;
       gender: string | null;
+      date_of_birth?: string | null;
     } | null;
   } | null;
 }
@@ -37,6 +40,7 @@ export interface EventReportData {
     totalAttendees: number;
     members: number;
     visitors: number;
+    children: number;
     maleCount: number;
     femaleCount: number;
     wantToJoin: number;
@@ -80,6 +84,7 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
             totalAttendees: 0,
             members: 0,
             visitors: 0,
+            children: 0,
             maleCount: 0,
             femaleCount: 0,
             wantToJoin: 0,
@@ -123,12 +128,31 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
             last_name,
             email,
             phone,
-            gender
+            gender,
+            date_of_birth
           )
         `)
         .in('id', uniqueMemberIds);
 
       if (membersError) throw membersError;
+
+      // Fetch relationships touching these attendees so we can apply the strict child rule
+      let attendeeRelationships: Array<{ member_id: string; related_member_id: string }> = [];
+      if (uniqueMemberIds.length > 0) {
+        const { data: relData } = await supabase
+          .from('member_relationships' as any)
+          .select('member_id, related_member_id')
+          .or(`member_id.in.(${uniqueMemberIds.join(',')}),related_member_id.in.(${uniqueMemberIds.join(',')})`);
+        attendeeRelationships = (relData as any[]) || [];
+      }
+
+      const attendeeChildrenSet = buildChildrenSet(
+        (members || []).map(m => ({
+          id: m.id,
+          profiles: { date_of_birth: (m.profile as any)?.date_of_birth ?? null },
+        })),
+        attendeeRelationships
+      );
 
       const membersMap = new Map(members?.map(m => [m.id, m]) || []);
 
@@ -141,6 +165,7 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
           member_id: memberId,
           is_present: true,
           recorded_at: record?.recorded_at || null,
+          is_child: attendeeChildrenSet.has(memberId),
           member: member ? {
             id: member.id,
             member_id: member.member_id,
@@ -151,10 +176,11 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
         };
       });
 
-      // Calculate stats
+      // Calculate stats — exclude children from member/visitor counts
       const totalAttendees = attendees.length;
-      const membersCount = attendees.filter(a => a.member?.member_type === 'member').length;
-      const visitorsCount = attendees.filter(a => a.member?.member_type === 'visitor').length;
+      const childrenCount = attendees.filter(a => a.is_child).length;
+      const membersCount = attendees.filter(a => !a.is_child && a.member?.member_type === 'member').length;
+      const visitorsCount = attendees.filter(a => !a.is_child && a.member?.member_type === 'visitor').length;
       const maleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'male').length;
       const femaleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'female').length;
       const wantToJoin = attendees.filter(a => a.member?.join_interest === 'yes').length;
@@ -171,6 +197,7 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
           totalAttendees,
           members: membersCount,
           visitors: visitorsCount,
+          children: childrenCount,
           maleCount,
           femaleCount,
           wantToJoin,
