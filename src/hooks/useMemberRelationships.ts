@@ -24,8 +24,12 @@ export const invalidateRelationshipDependentQueries = (
   const prefixes = [
     'members',
     'member-kpi-activity',
+    'region-member-relationships',
     'region-member-relationships-filter',
+    'super-member-relationships-filter',
     'dashboard-member-relationships',
+    'attendance-member-relationships',
+    'dcg-attendance-member-relationships',
     'attendance_history_with_types',
     'attendance_history',
     'regionalReports',
