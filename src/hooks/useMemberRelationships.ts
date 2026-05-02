@@ -95,8 +95,7 @@ export const useCreateMemberRelationship = () => {
       return data;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['member-relationships', variables.memberId] });
-      queryClient.invalidateQueries({ queryKey: ['member-relationships', variables.relatedMemberId] });
+      invalidateRelationshipDependentQueries(queryClient, [variables.memberId, variables.relatedMemberId]);
       toast({ title: 'Success', description: 'Family relationship added successfully' });
     },
     onError: (error) => {
@@ -119,7 +118,7 @@ export const useDeleteMemberRelationship = () => {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['member-relationships', variables.memberId] });
+      invalidateRelationshipDependentQueries(queryClient, [variables.memberId]);
       toast({ title: 'Success', description: 'Relationship removed' });
     },
     onError: (error) => {
