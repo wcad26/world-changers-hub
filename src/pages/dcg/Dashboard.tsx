@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
   Users, Calendar, DollarSign, TrendingUp, UserPlus, CalendarPlus, FileText, Eye,
-  Clock, ArrowUpRight, ArrowDownRight
+  Clock, ArrowUpRight, ArrowDownRight, Baby
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
@@ -19,6 +19,8 @@ import { useDcgs } from '@/hooks/useDCGs';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { buildChildrenSet } from '@/utils/childUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const DcgDashboard = () => {
   const { profile, userDcg } = useAuth();
