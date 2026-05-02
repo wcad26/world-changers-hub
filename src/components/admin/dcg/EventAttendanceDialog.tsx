@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, UserCheck, Users, Baby } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
