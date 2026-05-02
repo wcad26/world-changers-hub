@@ -67,8 +67,9 @@ const Members: React.FC = () => {
 
   // Fetch member relationships for children filter
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const sortedMemberIdsKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
   const { data: memberRelationships = [] } = useQuery({
-    queryKey: ['region-member-relationships-filter', memberIds.sort().join(',')],
+    queryKey: ['region-member-relationships-filter', sortedMemberIdsKey],
     queryFn: async () => {
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase
