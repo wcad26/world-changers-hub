@@ -251,13 +251,15 @@ export const useRegionalReports = () => {
 
       return {
         kpis: {
-          totalMembers: totalMembers ?? 0,
-          newMembersLast30Days: newMembersLast30Days ?? 0,
+          totalMembers,
+          totalVisitors,
+          totalChildren,
+          newMembersLast30Days,
           averageAttendance,
           totalDcgs: totalDcgs ?? 0,
           totalIncome: thisMonthSummary.totalIncome,
           totalExpenses: thisMonthSummary.totalExpenses,
-          newMembersYTD: newMembersYTD ?? 0,
+          newMembersYTD,
         },
         financialSummary: {
           thisMonth: thisMonthSummary,
