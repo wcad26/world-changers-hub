@@ -142,7 +142,10 @@ export const useRegionalDcgReports = (filters?: DcgReportFilters) => {
 
       // 6. Build per-DCG breakdown
       const dcgBreakdown: DcgReportData[] = (dcgs || []).map(dcg => {
-        const members = (dcgMembers || []).filter(m => m.dcg_id === dcg.id && m.is_active);
+        // Exclude children from the DCG member count
+        const members = (dcgMembers || []).filter(
+          m => m.dcg_id === dcg.id && m.is_active && !dcgChildrenSet.has(m.member_id)
+        );
         const events = (attEvents || []).filter(e => e.dcg_id === dcg.id);
         const eIds = events.map(e => e.id);
         const records = attRecords.filter(r => eIds.includes(r.event_id));
@@ -158,7 +161,7 @@ export const useRegionalDcgReports = (filters?: DcgReportFilters) => {
           .reduce((s, t) => s + Number(t.amount), 0);
 
         const newMembers = (dcgMembers || []).filter(
-          m => m.dcg_id === dcg.id && m.created_at && new Date(m.created_at) >= startDate && new Date(m.created_at) <= endDate
+          m => m.dcg_id === dcg.id && !dcgChildrenSet.has(m.member_id) && m.created_at && new Date(m.created_at) >= startDate && new Date(m.created_at) <= endDate
         ).length;
 
         const leader = (dcg as any).leader?.profiles;
