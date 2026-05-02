@@ -45,7 +45,7 @@ import RoleBadge from "@/components/ui/RoleBadge";
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isChildMember } from '@/utils/childUtils';
+import { buildChildrenSet } from '@/utils/childUtils';
 import MemberKPICards from '@/components/admin/regional/MemberKPICards';
 
 const Members: React.FC = () => {
@@ -67,8 +67,9 @@ const Members: React.FC = () => {
 
   // Fetch member relationships for children filter
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const sortedMemberIdsKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
   const { data: memberRelationships = [] } = useQuery({
-    queryKey: ['region-member-relationships-filter', memberIds.sort().join(',')],
+    queryKey: ['region-member-relationships-filter', sortedMemberIdsKey],
     queryFn: async () => {
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase
@@ -112,12 +113,12 @@ const Members: React.FC = () => {
 
 
 
-  // Adult DOB lookup so isChildMember can verify the related party is an adult.
-  const adultDobLookup = React.useMemo(() => {
-    const map = new Map<string, string | null | undefined>();
-    (members || []).forEach(m => map.set(m.id, m.profiles?.date_of_birth));
-    return map;
-  }, [members]);
+  // Strict children set (age<16 AND linked to an adult). Single source of truth
+  // shared with the KPI cards so the table filter and KPI counts always agree.
+  const childrenSet = React.useMemo(
+    () => buildChildrenSet(members || [], memberRelationships),
+    [members, memberRelationships]
+  );
 
   const filteredMembers = React.useMemo(() => {
     if (!members) return [];
@@ -135,12 +136,16 @@ const Members: React.FC = () => {
       // Status filter
       const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
       
-      // Member type filter (includes children and visitor subtypes)
+      // Member type filter (children always evaluated via the strict set)
+      const isChild = childrenSet.has(member.id);
       let typeMatch = false;
       if (memberTypeFilter === 'all') {
         typeMatch = true;
       } else if (memberTypeFilter === 'children') {
-        typeMatch = isChildMember(profile.date_of_birth, member.id, memberRelationships, adultDobLookup);
+        typeMatch = isChild;
+      } else if (isChild) {
+        // Children must NEVER appear under member/visitor filters
+        typeMatch = false;
       } else if (memberTypeFilter === 'visitor_special') {
         typeMatch = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
       } else if (memberTypeFilter === 'visitor_regular') {
@@ -151,7 +156,7 @@ const Members: React.FC = () => {
       
       return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, adultDobLookup, specialEventIds]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, childrenSet, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

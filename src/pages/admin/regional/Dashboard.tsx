@@ -90,8 +90,9 @@ const RegionalDashboard: React.FC = () => {
 
   // Fetch member relationships for strict child detection (age <16 AND adult relationship).
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
+  const sortedMemberIdsKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
   const { data: memberRelationships = [] } = useQuery({
-    queryKey: ['dashboard-member-relationships', memberIds.sort().join(',')],
+    queryKey: ['dashboard-member-relationships', sortedMemberIdsKey],
     queryFn: async () => {
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase

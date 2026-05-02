@@ -139,29 +139,55 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       
       if (error) throw error;
 
-      // Collect unique member IDs from attendance records
+      // Collect unique member IDs and DOBs from attendance records
       const memberIds = new Set<string>();
+      const dobByMemberId = new Map<string, string | null | undefined>();
       data?.forEach(event => {
         (event.attendance_records || []).forEach((r: any) => {
-          if (r.members?.id) memberIds.add(r.members.id);
+          if (r.members?.id) {
+            memberIds.add(r.members.id);
+            dobByMemberId.set(r.members.id, r.members?.profiles?.date_of_birth ?? null);
+          }
         });
       });
 
-      // Fetch relationships for these members
+      // Fetch relationships AND build adult DOB lookup so the strict child rule
+      // (age<16 AND linked to at least one adult) is applied identically across
+      // dashboards, KPIs, and attendance trends.
       let relationships: Array<{ member_id: string; related_member_id: string }> = [];
+      const adultDobLookup = new Map<string, string | null | undefined>(dobByMemberId);
       if (memberIds.size > 0) {
+        const ids = Array.from(memberIds);
         const { data: relData } = await supabase
           .from('member_relationships' as any)
           .select('member_id, related_member_id')
-          .or(`member_id.in.(${Array.from(memberIds).join(',')}),related_member_id.in.(${Array.from(memberIds).join(',')})`);
+          .or(`member_id.in.(${ids.join(',')}),related_member_id.in.(${ids.join(',')})`);
         relationships = (relData as any[]) || [];
+
+        // Pull DOBs for related members not in attendance — needed to verify
+        // the related party is an adult.
+        const referenced = new Set<string>();
+        relationships.forEach(r => {
+          referenced.add(r.member_id);
+          referenced.add(r.related_member_id);
+        });
+        const missing = Array.from(referenced).filter(id => !adultDobLookup.has(id));
+        if (missing.length > 0) {
+          const { data: extraMembers } = await supabase
+            .from('members')
+            .select('id, profiles:profile_id(date_of_birth)')
+            .in('id', missing);
+          (extraMembers || []).forEach((m: any) => {
+            adultDobLookup.set(m.id, m.profiles?.date_of_birth ?? null);
+          });
+        }
       }
 
       const checkIsChild = (record: any) => {
         const dob = record.members?.profiles?.date_of_birth;
         const memberId = record.members?.id;
         if (!dob || !memberId) return false;
-        return isChildMember(dob, memberId, relationships);
+        return isChildMember(dob, memberId, relationships, adultDobLookup);
       };
       
       // Process the data to get counts by member type, separating children

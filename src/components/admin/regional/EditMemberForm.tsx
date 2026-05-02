@@ -20,7 +20,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useOccupations } from '@/hooks/useOccupations';
-import { useMemberRelationships, useCreateMemberRelationship, useDeleteMemberRelationship, FamilyRelationshipType } from '@/hooks/useMemberRelationships';
+import { useMemberRelationships, useCreateMemberRelationship, useDeleteMemberRelationship, FamilyRelationshipType, invalidateRelationshipDependentQueries } from '@/hooks/useMemberRelationships';
 import { Loader2, CalendarIcon, Search, User, BookOpen, Heart, Users, Church, Plus, X, Check, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -214,8 +214,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Member updated successfully." });
+      // DOB changes can flip a record into/out of the strict child rule, so we
+      // refresh every dependent dashboard / report cache, not just the members list.
+      invalidateRelationshipDependentQueries(queryClient, [member.id]);
       if (userRegion?.id) {
-        queryClient.invalidateQueries({ queryKey: ['members', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['member-dcg', member.id] });
       }
       setTimeout(() => onSuccess(), 100);

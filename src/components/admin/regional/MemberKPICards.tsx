@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Users, CheckCircle, Clock, Baby, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { isChildMember } from '@/utils/childUtils';
+import { buildChildrenSet } from '@/utils/childUtils';
 import type { MemberWithProfile } from '@/hooks/useMembers';
 
 interface MemberKPICardsProps {
@@ -56,16 +56,8 @@ const MemberKPICards: React.FC<MemberKPICardsProps> = ({
   const kpiData = useMemo(() => {
     if (!members) return null;
 
-    // Build adult DOB lookup so isChildMember can verify the related party is an adult.
-    const adultDobLookup = new Map<string, string | null | undefined>();
-    members.forEach(m => adultDobLookup.set(m.id, m.profiles?.date_of_birth));
-
-    const childrenSet = new Set<string>();
-    members.forEach(m => {
-      if (isChildMember(m.profiles?.date_of_birth, m.id, memberRelationships, adultDobLookup)) {
-        childrenSet.add(m.id);
-      }
-    });
+    // Single source of truth for the strict child rule.
+    const childrenSet = buildChildrenSet(members, memberRelationships);
 
     const totalIds: string[] = [];
     const memberTypeIds: string[] = [];
