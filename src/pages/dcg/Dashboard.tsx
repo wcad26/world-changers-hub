@@ -100,8 +100,14 @@ const DcgDashboard = () => {
   const stats = [
     {
       title: "Members", value: totalMembers.toString(),
-      description: "Active DCG members", icon: Users,
+      description: "Active adult members", icon: Users,
       trend: totalMembers > 0 ? `${totalMembers} active` : "No members",
+      trendType: "neutral" as const
+    },
+    {
+      title: "Children", value: totalChildren.toString(),
+      description: "Under 16 with family", icon: Baby,
+      trend: totalChildren > 0 ? "Tracked" : "None",
       trendType: "neutral" as const
     },
     {
