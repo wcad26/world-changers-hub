@@ -151,7 +151,7 @@ const Members: React.FC = () => {
       
       return searchMatch && statusMatch && typeMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, specialEventIds]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, memberRelationships, adultDobLookup, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
