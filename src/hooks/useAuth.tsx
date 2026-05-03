@@ -63,12 +63,13 @@ export const useAuth = (): AuthContextValue => {
   const value = buildEmptyValue();
 
   if (regional) {
+    const stillChecking = !regional.ready || regional.status === 'checking';
     value.user = regional.user as any;
     value.profile = regional.profile as any;
     value.userRegion = regional.region as any;
-    value.loading = !regional.ready;
-    value.initialized = regional.ready;
-    value.authReady = regional.ready;
+    value.loading = stillChecking;
+    value.initialized = !stillChecking;
+    value.authReady = !stillChecking;
     value.hasRegionalPortalAccess = !!regional.authorized;
     value.signOut = regional.signOut;
   }
