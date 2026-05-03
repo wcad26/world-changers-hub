@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import wcaLogo from '@/assets/wca-logo.png';
+import { writeRegionalBootstrap } from '@/lib/regionalBootstrap';
 
 /**
  * Single regional portal login page.
@@ -41,6 +42,35 @@ const RegionalAuth = () => {
         setError(authError?.message ?? 'Invalid credentials.');
         return;
       }
+
+      const userId = authData.user.id;
+      const emailAddress = authData.user.email ?? email.trim();
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, region_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      let regionId = profile?.region_id ?? null;
+
+      if (!regionId) {
+        const { data: member } = await supabase
+          .from('members')
+          .select('region_id')
+          .eq('profile_id', userId)
+          .not('region_id', 'is', null)
+          .limit(1)
+          .maybeSingle();
+        regionId = member?.region_id ?? null;
+      }
+
+      if (!regionId) {
+        setError('Your account is signed in, but it is not linked to a region yet. Please contact WCA support.');
+        return;
+      }
+
+      writeRegionalBootstrap({ userId, email: emailAddress, regionId });
 
       navigate('/admin/regional/dashboard', { replace: true });
     } catch {
