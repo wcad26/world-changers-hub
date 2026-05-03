@@ -364,7 +364,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
                     <Calendar
                       mode="single"
                       selected={field.value ? new Date(field.value) : undefined}
-                      onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                      onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                       disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                       initialFocus
                       captionLayout="dropdown-buttons"
@@ -450,7 +450,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])} disabled={(date) => date > new Date()} initialFocus captionLayout="dropdown-buttons" fromYear={1900} toYear={new Date().getFullYear()} />
+                      <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} disabled={(date) => date > new Date()} initialFocus captionLayout="dropdown-buttons" fromYear={1900} toYear={new Date().getFullYear()} />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -492,7 +492,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])} disabled={(date) => date > new Date()} initialFocus captionLayout="dropdown-buttons" fromYear={1900} toYear={new Date().getFullYear()} />
+                      <Calendar mode="single" selected={field.value ? new Date(field.value) : undefined} onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')} disabled={(date) => date > new Date()} initialFocus captionLayout="dropdown-buttons" fromYear={1900} toYear={new Date().getFullYear()} />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
