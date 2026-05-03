@@ -537,17 +537,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('foundationSchool')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectAnswer')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="yes">{t('yes')}</SelectItem>
-                            <SelectItem value="no">{t('no')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectAnswer')}</option>
+                            <option value="yes">{t('yes')}</option>
+                            <option value="no">{t('no')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -602,17 +602,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('haveBaptized')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectAnswer')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="yes">{t('yes')}</SelectItem>
-                            <SelectItem value="no">{t('no')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectAnswer')}</option>
+                            <option value="yes">{t('yes')}</option>
+                            <option value="no">{t('no')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
