@@ -729,16 +729,16 @@ export default function MemberRegister() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Relationship Type</label>
-                      <Select value={currentRelType} onValueChange={(v) => setCurrentRelType(v as FamilyRelationshipType)}>
-                        <SelectTrigger className="rounded-xl bg-background/60">
-                          <SelectValue placeholder="Select relationship type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RELATIONSHIP_TYPES.map(rt => (
-                            <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select
+                        className={nativeSelectClassName}
+                        value={currentRelType}
+                        onChange={(event) => setCurrentRelType(event.target.value as FamilyRelationshipType)}
+                      >
+                        <option value="" disabled>Select relationship type</option>
+                        {RELATIONSHIP_TYPES.map(rt => (
+                          <option key={rt.value} value={rt.value}>{rt.label}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="space-y-2">
@@ -836,34 +836,23 @@ export default function MemberRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('selectDcg')} *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder={t('selectDcgPlaceholder')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent
-                          className="max-h-[40vh] max-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)]"
-                          position="popper"
-                          sideOffset={4}
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          disabled={dcgsLoading || dcgs.length === 0}
                         >
-                          {dcgsLoading ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            </div>
-                          ) : dcgs.length === 0 ? (
-                            <div className="py-4 text-center text-sm text-muted-foreground">
-                              No DCGs available for this region
-                            </div>
-                          ) : (
-                            dcgs.map((dcg) => (
-                              <SelectItem key={dcg.id} value={dcg.id} className="whitespace-normal break-words">
-                                {dcg.name} {dcg.location && `- ${dcg.location}`}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                          <option value="" disabled>
+                            {dcgsLoading ? 'Loading DCGs...' : dcgs.length === 0 ? 'No DCGs available for this region' : t('selectDcgPlaceholder')}
+                          </option>
+                          {dcgs.map((dcg) => (
+                            <option key={dcg.id} value={dcg.id}>
+                              {dcg.name} {dcg.location && `- ${dcg.location}`}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
                       <FormDescription className="text-xs">{t('dcgDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
