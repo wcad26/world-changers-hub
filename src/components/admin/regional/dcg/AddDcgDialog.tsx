@@ -106,20 +106,8 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
 
       const dcg = await createDcgMutation.mutateAsync(dcgData);
 
-      // Assign DCG leader role to the existing member's user account
+      // DCG portal access is granted via dcg_user_sessions only.
       if (dcg && selectedMember.profile_id) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: selectedMember.profile_id,
-            role: 'dcg_admin',
-            region_id: userRegion?.id,
-            is_active: true
-          });
-
-        if (roleError) {
-          console.error('Failed to assign DCG leader role:', roleError);
-        }
 
         // Create DCG user session for the existing member
         const { error: sessionError } = await supabase

@@ -441,6 +441,7 @@ const RegionalDashboard: React.FC = () => {
 
       {/* ── SCROLLABLE CONTENT ── */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
+      {regionMissingNotice}
       {/* ── KPI CARDS ── */}
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
