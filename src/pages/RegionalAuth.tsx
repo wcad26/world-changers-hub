@@ -42,12 +42,33 @@ const RegionalAuth = () => {
         return;
       }
 
-      // Wait briefly for the session to be persisted to localStorage so the
-      // dashboard's session restoration sees us as logged in immediately.
-      for (let i = 0; i < 10; i++) {
+      // Explicitly persist the session returned by signIn so reading code
+      // does not race localStorage hydration.
+      if (authData.session) {
+        try {
+          await supabase.auth.setSession({
+            access_token: authData.session.access_token,
+            refresh_token: authData.session.refresh_token,
+          });
+        } catch (err) {
+          console.warn('[RegionalAuth] setSession warning (non-fatal):', err);
+        }
+      }
+
+      // Wait until getSession sees the new user so the dashboard
+      // bootstrap will succeed on first paint.
+      for (let i = 0; i < 15; i++) {
         const { data } = await supabase.auth.getSession();
         if (data.session?.user?.id === authData.user.id) break;
         await new Promise((r) => setTimeout(r, 100));
+      }
+
+      // Pre-warm the regional bootstrap RPC so the dashboard has data
+      // immediately on mount. Failures are non-fatal.
+      try {
+        await supabase.rpc('get_my_regional_context');
+      } catch (err) {
+        console.warn('[RegionalAuth] context pre-warm warning:', err);
       }
 
       navigate('/admin/regional/dashboard', { replace: true });
