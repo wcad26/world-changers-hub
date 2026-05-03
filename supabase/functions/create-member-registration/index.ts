@@ -25,8 +25,6 @@ serve(async (req) => {
       date_of_birth,
       gender,
       occupation,
-      emergency_contact_name,
-      emergency_contact_phone,
       has_completed_foundation_school,
       foundation_school_date,
       is_baptized,
@@ -144,8 +142,6 @@ serve(async (req) => {
           date_of_birth: date_of_birth || null,
           gender: gender || null,
           occupation: occupation || null,
-          emergency_contact_name: emergency_contact_name || null,
-          emergency_contact_phone: emergency_contact_phone || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', authUser.user.id)
