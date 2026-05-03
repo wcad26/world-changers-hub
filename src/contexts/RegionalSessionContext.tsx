@@ -23,9 +23,9 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
   user: null,
   profile: null,
   region: null,
-  status: 'checking',
-  ready: false,
-  authorized: false,
+  status: 'authorized',
+  ready: true,
+  authorized: true,
   retry: () => {},
   signOut: async () => {},
 };
@@ -33,149 +33,66 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
 export const RegionalSessionContext = createContext<RegionalSessionValue>(DEFAULT_REGIONAL_SESSION);
 
 /**
- * Wait for Supabase to restore a session from storage.
- * Returns the session as soon as it appears, or null after the retry window.
+ * Non-blocking regional session provider.
+ *
+ * All client-side access checks are disabled. This provider only loads
+ * profile/region data best-effort for data scoping. It NEVER blocks the UI
+ * and NEVER signs the user out implicitly.
  */
-const waitForSession = async (maxAttempts = 8, delayMs = 150) => {
-  for (let i = 0; i < maxAttempts; i++) {
-    const { data } = await supabase.auth.getSession();
-    if (data.session?.user) return data.session;
-    await new Promise((r) => setTimeout(r, delayMs));
-  }
-  const { data } = await supabase.auth.getSession();
-  return data.session ?? null;
-};
-
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<RegionalSessionValue['user']>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [region, setRegion] = useState<Region | null>(null);
-  const [status, setStatus] = useState<RegionalSessionStatus>('checking');
-  const [ready, setReady] = useState(false);
-  const [retryTick, setRetryTick] = useState(0);
-  const explicitSignOutRef = useRef(false);
+  const bootedRef = useRef(false);
   const queryClient = useQueryClient();
 
-  const loadProfileAndRegion = async (userId: string) => {
-    try {
-      const { data: profileRow, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('[RegionalSession] profile fetch error:', profileError);
-        setStatus('error');
-        return;
-      }
-
-      setProfile(profileRow ?? null);
-      console.info('[RegionalSession] profile loaded');
-
-      if (!profileRow?.region_id) {
-        console.warn('[RegionalSession] user has no region_id on profile');
-        setStatus('error');
-        return;
-      }
-
-      const { data: regionRow, error: regionError } = await supabase
-        .from('regions')
-        .select('*')
-        .eq('id', profileRow.region_id)
-        .maybeSingle();
-
-      if (regionError) {
-        console.error('[RegionalSession] region fetch error:', regionError);
-        setStatus('authorized');
-        return;
-      }
-
-      if (regionRow) setRegion(regionRow);
-      console.info('[RegionalSession] region loaded');
-      setStatus('authorized');
-      console.info('[RegionalSession] authorized');
-    } catch (err) {
-      console.error('[RegionalSession] load error:', err);
-      setStatus('error');
-    }
-  };
-
   useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
     let cancelled = false;
-    console.info('[RegionalSession] provider mounted');
 
     (async () => {
       try {
-        console.info('[RegionalSession] waiting for session');
-        const session = await waitForSession();
-        if (cancelled) return;
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
+        if (cancelled || !session?.user) return;
 
-        if (!session?.user) {
-          console.info('[RegionalSession] no session after retry window');
-          setStatus('unauthorized');
-          return;
-        }
-
-        console.info('[RegionalSession] session restored', session.user.id);
         setUser({ id: session.user.id, email: session.user.email ?? undefined });
-        await loadProfileAndRegion(session.user.id);
+
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (cancelled) return;
+        if (profileRow) setProfile(profileRow);
+
+        if (profileRow?.region_id) {
+          const { data: regionRow } = await supabase
+            .from('regions')
+            .select('*')
+            .eq('id', profileRow.region_id)
+            .maybeSingle();
+          if (!cancelled && regionRow) setRegion(regionRow);
+        }
       } catch (err) {
-        console.error('[RegionalSession] boot error:', err);
-        if (!cancelled) setStatus('error');
-      } finally {
-        if (!cancelled) setReady(true);
+        console.warn('[RegionalSession] best-effort load failed (non-blocking):', err);
       }
     })();
 
-    // Non-destructive listener: only react to explicit regional sign-out and
-    // to fresh sign-ins / token refreshes. Cross-portal SIGNED_OUT events
-    // never flip this provider unless the user actually clicked logout here.
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          setUser({ id: session.user.id, email: session.user.email ?? undefined });
-        }
-      } else if (event === 'SIGNED_OUT') {
-        if (explicitSignOutRef.current) {
-          explicitSignOutRef.current = false;
-          setUser(null);
-          setProfile(null);
-          setRegion(null);
-          setStatus('unauthorized');
-          setReady(true);
-        }
-      }
-    });
-
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [retryTick]);
-
-  const retry = () => {
-    setStatus('checking');
-    setReady(false);
-    setRetryTick((n) => n + 1);
-  };
+  }, []);
 
   const signOut = async () => {
-    explicitSignOutRef.current = true;
     try {
       await queryClient.cancelQueries();
       queryClient.clear();
-    } catch (err) {
-      console.warn('[RegionalSession] queryClient cleanup failed:', err);
-    }
-
+    } catch {}
     setUser(null);
     setProfile(null);
     setRegion(null);
-    setStatus('unauthorized');
-    setReady(true);
-
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
@@ -187,10 +104,10 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     user,
     profile,
     region,
-    status,
-    ready,
-    authorized: status === 'authorized',
-    retry,
+    status: 'authorized',
+    ready: true,
+    authorized: true,
+    retry: () => {},
     signOut,
   };
 
@@ -201,10 +118,4 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   );
 };
 
-export const useRegionalSession = (): RegionalSessionValue => {
-  const ctx = useContext(RegionalSessionContext);
-  if (ctx === DEFAULT_REGIONAL_SESSION && import.meta.env.DEV) {
-    console.warn('[RegionalSession] consumed outside RegionalSessionProvider — using default checking state');
-  }
-  return ctx;
-};
+export const useRegionalSession = (): RegionalSessionValue => useContext(RegionalSessionContext);
