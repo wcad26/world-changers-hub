@@ -443,29 +443,6 @@ const SuperMemberProfile: React.FC = () => {
               </div>
             </div>
 
-            <Separator />
-
-            {/* Emergency Contact */}
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Emergency Contact</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Contact Name</p>
-                  <p className="text-sm font-medium">
-                    {member.profiles?.emergency_contact_name || 'Not provided'}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Contact Phone</p>
-                  <p className="text-sm font-medium">
-                    {member.profiles?.emergency_contact_phone || 'Not provided'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
             {/* Membership Information */}
             <div>
               <h3 className="text-sm font-semibold mb-3 text-muted-foreground">Membership Information</h3>

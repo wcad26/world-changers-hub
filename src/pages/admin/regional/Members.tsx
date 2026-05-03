@@ -192,8 +192,6 @@ const Members: React.FC = () => {
       'Member Type': member.member_type,
       'Status': member.status || '',
       'Join Date': member.join_date ? new Date(member.join_date).toLocaleDateString() : '',
-      'Emergency Contact': member.profiles?.emergency_contact_name || '',
-      'Emergency Phone': member.profiles?.emergency_contact_phone || '',
     }));
 
     // Generate CSV
