@@ -752,7 +752,17 @@ export default function MemberRegister() {
               </GlassSection>
 
               {/* Family Relationships */}
-              <GlassSection icon={Users} title="Family Relationships (Optional)">
+              <GlassSection
+                icon={Users}
+                title={isMinor ? (<span>Family Relationships <Req /></span>) : 'Family Relationships (Optional)'}
+              >
+                {isMinor && (
+                  <Alert>
+                    <AlertDescription>
+                      This registrant is under 16. You must add at least one family relationship linking them to an adult (parent or guardian, 16+).
+                    </AlertDescription>
+                  </Alert>
+                )}
                 {relationships.length > 0 && (
                   <div className="space-y-2">
                     {relationships.map((rel, index) => (
