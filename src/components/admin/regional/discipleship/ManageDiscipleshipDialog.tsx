@@ -74,7 +74,7 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
           mentor_id: data.mentor_id,
           status: data.status,
           notes: data.notes,
-          end_date: data.end_date ? data.end_date.toISOString().split('T')[0] : null,
+          end_date: data.end_date ? format(data.end_date, 'yyyy-MM-dd') : null,
         }
       });
       toast({
