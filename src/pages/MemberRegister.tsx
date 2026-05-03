@@ -378,7 +378,7 @@ export default function MemberRegister() {
                     name="first_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('firstName')} *</FormLabel>
+                        <FormLabel>{t('firstName')} <Req /></FormLabel>
                         <FormControl>
                           <Input placeholder="John" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -391,7 +391,7 @@ export default function MemberRegister() {
                     name="last_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('lastName')} *</FormLabel>
+                        <FormLabel>{t('lastName')} <Req /></FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -407,7 +407,7 @@ export default function MemberRegister() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('email')} *</FormLabel>
+                        <FormLabel>{t('email')} <Req /></FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="john.doe@example.com" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -420,7 +420,7 @@ export default function MemberRegister() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('phone')} *</FormLabel>
+                        <FormLabel>{t('phone')} <Req /></FormLabel>
                         <FormControl>
                           <Input type="tel" placeholder="+1 (555) 123-4567" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -436,7 +436,7 @@ export default function MemberRegister() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('address')} *</FormLabel>
+                      <FormLabel>{t('address')} <Req /></FormLabel>
                       <FormControl>
                         <Textarea placeholder="123 Main St, City, State, ZIP" className="min-h-[80px] rounded-xl bg-background/60" {...field} />
                       </FormControl>
@@ -451,7 +451,7 @@ export default function MemberRegister() {
                     name="date_of_birth"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t('dateOfBirth')}</FormLabel>
+                        <FormLabel>{t('dateOfBirth')} <Req /></FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -486,7 +486,7 @@ export default function MemberRegister() {
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('gender')}</FormLabel>
+                        <FormLabel>{t('gender')} <Req /></FormLabel>
                         <FormControl>
                           <select
                             className={nativeSelectClassName}
@@ -837,7 +837,7 @@ export default function MemberRegister() {
                   name="dcg_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('selectDcg')} *</FormLabel>
+                      <FormLabel>{t('selectDcg')} <Req /></FormLabel>
                       <FormControl>
                         <select
                           className={nativeSelectClassName}
