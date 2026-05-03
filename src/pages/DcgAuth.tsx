@@ -75,18 +75,6 @@ const DcgAuth = () => {
         return;
       }
 
-      const allowed = await userHasDcgAccess(authData.user.id);
-
-      if (!allowed) {
-        await supabase.auth.signOut({ scope: 'local' });
-        toast({
-          title: 'Access denied',
-          description: 'This account is not associated with a DCG.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       navigate('/dcg/dashboard', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');

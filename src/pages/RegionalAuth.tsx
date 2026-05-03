@@ -45,33 +45,6 @@ const RegionalAuth = () => {
         return;
       }
 
-      // Wait until Supabase has actually persisted the session for THIS user
-      // before navigating — otherwise the freshly-mounted RegionalSessionProvider
-      // can race against persistence and briefly see a null session.
-      for (let i = 0; i < 10; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user?.id === authData.user.id) break;
-        await new Promise((r) => setTimeout(r, 100));
-      }
-
-      // Best-effort region check. We do NOT sign the user out if this read
-      // fails — a transient profile read should never destroy a fresh login.
-      // The RegionalSessionProvider will re-check on mount and surface an
-      // error/retry panel if the profile truly has no region_id.
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('region_id')
-          .eq('id', authData.user.id)
-          .maybeSingle();
-
-        if (!profile?.region_id) {
-          console.warn('[RegionalAuth] profile has no region_id at login; deferring to provider');
-        }
-      } catch (err) {
-        console.warn('[RegionalAuth] profile pre-check failed; deferring to provider', err);
-      }
-
       navigate('/admin/regional/dashboard', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
