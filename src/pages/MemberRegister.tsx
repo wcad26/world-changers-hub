@@ -12,6 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import type { FieldErrors } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -123,7 +125,7 @@ export default function MemberRegister() {
       is_baptized: '',
       baptism_date: '',
       ministry_interests: [],
-      dcg_id: undefined,
+      dcg_id: '',
       relationships: []
     }
   });
@@ -162,6 +164,29 @@ export default function MemberRegister() {
     setCurrentRelMemberIds(prev =>
       prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]
     );
+  };
+
+  const onInvalid = (errors: FieldErrors<MemberRegistrationFormData>) => {
+    const fieldLabels: Record<string, string> = {
+      first_name: 'First name',
+      last_name: 'Last name',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      dcg_id: 'DCG selection',
+    };
+    const messages = Object.entries(errors)
+      .map(([field, err]: any) => `${fieldLabels[field] || field}: ${err?.message || 'Required'}`)
+      .filter(Boolean);
+    form.setError('root', {
+      message: messages.length
+        ? `Please fix the following: ${messages.join(' • ')}`
+        : 'Please complete all required fields before submitting.',
+    });
+    toast.error('Please fix the highlighted errors at the top of the form.');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const onSubmit = async (data: MemberRegistrationFormData) => {
@@ -225,9 +250,12 @@ export default function MemberRegister() {
           form.reset();
         },
         onError: (error: any) => {
-          form.setError('root', {
-            message: error.message || t('registrationFailed')
-          });
+          const msg = error?.message || t('registrationFailed');
+          form.setError('root', { message: msg });
+          toast.error(msg);
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }
       }
     );
@@ -327,7 +355,7 @@ export default function MemberRegister() {
 
           {/* Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
               {form.formState.errors.root && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
@@ -435,7 +463,7 @@ export default function MemberRegister() {
                             <Calendar
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                               disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               initialFocus
                             />
@@ -545,7 +573,7 @@ export default function MemberRegister() {
                               <Calendar
                                 mode="single"
                                 selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                                 captionLayout="dropdown-buttons"
@@ -610,7 +638,7 @@ export default function MemberRegister() {
                               <Calendar
                                 mode="single"
                                 selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                                 captionLayout="dropdown-buttons"
