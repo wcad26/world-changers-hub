@@ -78,7 +78,7 @@ const DcgAuth = () => {
       const allowed = await userHasDcgAccess(authData.user.id);
 
       if (!allowed) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: 'Access denied',
           description: 'This account is not associated with a DCG.',

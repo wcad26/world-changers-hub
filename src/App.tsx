@@ -178,108 +178,130 @@ const App = () => {
               </Route>
             </Route>
 
-            {/* All other routes still use the global AuthProvider. */}
-            <Route path="/*" element={
-              <AuthProvider>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/" element={<Index />} />
-                  <Route path="about" element={<About />} />
-                  <Route path="locations" element={<Locations />} />
-                  <Route path="locations/:slug" element={<RegionalBranchHome />} />
-                  <Route path="events" element={<Events />} />
-                  <Route path="events/:eventId" element={<EventDetail />} />
-                  <Route path="media" element={<Media />} />
-                  <Route path="store" element={<Store />} />
-                  <Route path="blog" element={<Blog />} />
-                  <Route path="counseling" element={<Counseling />} />
-                  <Route path="fundraising" element={<Fundraising />} />
-                  <Route path="verify/:verificationCode" element={<CertificateVerify />} />
-                  <Route path="attend/:eventId" element={<SelfAttendance />} />
+            {/* Public routes — NO auth provider mounted. */}
+            <Route path="/" element={<Index />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/locations/:slug" element={<RegionalBranchHome />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/media" element={<Media />} />
+            <Route path="/store" element={<Store />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/counseling" element={<Counseling />} />
+            <Route path="/fundraising" element={<Fundraising />} />
+            <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
+            <Route path="/attend/:eventId" element={<SelfAttendance />} />
 
-                  {/* Other Authentication Routes */}
-                  <Route path="visitor/register/:regionCode" element={<VisitorRegister />} />
-                  <Route path="member/register/:regionCode" element={<MemberRegister />} />
-                  <Route path="auth/super" element={<SuperAuth />} />
-                  <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route path="dcg-auth" element={<DcgAuth />} />
-                  <Route path="auth/member" element={<MemberAuth />} />
-                  <Route path="member/auth" element={<Navigate to="/auth/member" replace />} />
+            {/* Auth (login) pages — NO provider. */}
+            <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
+            <Route path="/member/register/:regionCode" element={<MemberRegister />} />
+            <Route path="/auth/super" element={<SuperAuth />} />
+            <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/dcg-auth" element={<DcgAuth />} />
+            <Route path="/auth/member" element={<MemberAuth />} />
+            <Route path="/member/auth" element={<Navigate to="/auth/member" replace />} />
 
-                  {/* Admin Redirects */}
-                  <Route path="admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
-                  <Route path="admin/super" element={<Navigate to="/admin/super/dashboard" replace />} />
+            {/* Admin redirects */}
+            <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
 
-                  {/* Super Admin Portal */}
-                  <Route path="admin/super" element={
-                    <SuperAdminSessionRoute>
-                      <SuperAdminLayout />
-                    </SuperAdminSessionRoute>
-                  }>
-                    <Route path="dashboard" element={<SuperDashboard />} />
-                    <Route path="members" element={<SuperMembers />} />
-                    <Route path="members/:memberId" element={<SuperMemberProfile />} />
-                    <Route path="events" element={<SuperEvents />} />
-                    <Route path="fundraising" element={<SuperFundraising />} />
-                    <Route path="locations" element={<SuperLocations />} />
-                    <Route path="finances" element={<SuperFinances />} />
-                    <Route path="regions" element={<SuperRegions />} />
-                    <Route path="currencies" element={<SuperCurrencies />} />
-                    <Route path="reports" element={<SuperReports />} />
-                    <Route path="communication" element={<SuperCommunication />} />
-                    <Route path="user-management" element={<SuperUserManagement />} />
-                    <Route path="homepage-settings" element={<HomepageSettings />} />
-                    <Route path="certificates" element={<SuperCertificates />} />
-                    <Route path="about-settings" element={<AboutUsSettings />} />
-                  </Route>
+            {/* Super Admin Portal — own AuthProvider, isolated from others. */}
+            <Route
+              path="/admin/super"
+              element={
+                <AuthProvider>
+                  <Outlet />
+                </AuthProvider>
+              }
+            >
+              <Route index element={<Navigate to="/admin/super/dashboard" replace />} />
+              <Route element={<SuperAdminSessionRoute><SuperAdminLayout /></SuperAdminSessionRoute>}>
+                <Route path="dashboard" element={<SuperDashboard />} />
+                <Route path="members" element={<SuperMembers />} />
+                <Route path="members/:memberId" element={<SuperMemberProfile />} />
+                <Route path="events" element={<SuperEvents />} />
+                <Route path="fundraising" element={<SuperFundraising />} />
+                <Route path="locations" element={<SuperLocations />} />
+                <Route path="finances" element={<SuperFinances />} />
+                <Route path="regions" element={<SuperRegions />} />
+                <Route path="currencies" element={<SuperCurrencies />} />
+                <Route path="reports" element={<SuperReports />} />
+                <Route path="communication" element={<SuperCommunication />} />
+                <Route path="user-management" element={<SuperUserManagement />} />
+                <Route path="homepage-settings" element={<HomepageSettings />} />
+                <Route path="certificates" element={<SuperCertificates />} />
+                <Route path="about-settings" element={<AboutUsSettings />} />
+              </Route>
+            </Route>
 
-                  {/* Member Portal */}
-                  <Route path="member" element={
-                    <MemberProtectedRoute>
-                      <MemberLayout />
-                    </MemberProtectedRoute>
-                  }>
-                    <Route index element={<Navigate to="/member/dashboard" replace />} />
-                    <Route path="dashboard" element={<MemberDashboard />} />
-                    <Route path="events" element={<MemberEvents />} />
-                    <Route path="profile" element={<MemberProfile />} />
-                    <Route path="finances" element={<MemberFinances />} />
-                    <Route path="discipleship" element={<MemberDiscipleship />} />
-                    <Route path="bible" element={<MemberBible />} />
-                    <Route path="attendance" element={<MemberAttendance />} />
-                    <Route path="fundraising" element={<MemberFundraising />} />
-                    <Route path="media" element={<MemberMedia />} />
-                    <Route path="counseling" element={<MemberCounseling />} />
-                    <Route path="store" element={<MemberStore />} />
-                  </Route>
+            {/* Member Portal — own AuthProvider. */}
+            <Route
+              path="/member"
+              element={
+                <AuthProvider>
+                  <MemberProtectedRoute>
+                    <MemberLayout />
+                  </MemberProtectedRoute>
+                </AuthProvider>
+              }
+            >
+              <Route index element={<Navigate to="/member/dashboard" replace />} />
+              <Route path="dashboard" element={<MemberDashboard />} />
+              <Route path="events" element={<MemberEvents />} />
+              <Route path="profile" element={<MemberProfile />} />
+              <Route path="finances" element={<MemberFinances />} />
+              <Route path="discipleship" element={<MemberDiscipleship />} />
+              <Route path="bible" element={<MemberBible />} />
+              <Route path="attendance" element={<MemberAttendance />} />
+              <Route path="fundraising" element={<MemberFundraising />} />
+              <Route path="media" element={<MemberMedia />} />
+              <Route path="counseling" element={<MemberCounseling />} />
+              <Route path="store" element={<MemberStore />} />
+            </Route>
 
-                  {/* DCG Portal Routes */}
-                  <Route path="dcg" element={<Navigate to="/dcg/dashboard" replace />} />
-                  <Route path="dcg/dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
-                  <Route path="dcg/members" element={<DcgSessionRoute><DcgMembers /></DcgSessionRoute>} />
-                  <Route path="dcg/member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
-                  <Route path="dcg/events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
-                  <Route path="dcg/finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
-                  <Route path="dcg/reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
-                  <Route path="dcg/communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
+            {/* DCG Portal — own AuthProvider, isolated. */}
+            <Route
+              path="/dcg"
+              element={
+                <AuthProvider>
+                  <Outlet />
+                </AuthProvider>
+              }
+            >
+              <Route index element={<Navigate to="/dcg/dashboard" replace />} />
+              <Route path="dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
+              <Route path="members" element={<DcgSessionRoute><DcgMembers /></DcgSessionRoute>} />
+              <Route path="member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
+              <Route path="events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
+              <Route path="finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
+              <Route path="reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
+              <Route path="communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
+            </Route>
 
-                  {/* Portal Selector */}
-                  <Route path="portal-selector" element={<PortalSelector />} />
+            {/* Portal selector (rare, shown after multi-role login) */}
+            <Route
+              path="/portal-selector"
+              element={
+                <AuthProvider>
+                  <PortalSelector />
+                </AuthProvider>
+              }
+            />
 
-                  {/* Unauthorized */}
-                  <Route path="unauthorized" element={<div className="min-h-screen flex items-center justify-center">
-                      <div className="text-center">
-                        <h1 className="text-2xl font-bold mb-4">Unauthorized Access</h1>
-                        <p className="text-muted-foreground mb-4">You don't have permission to access this resource.</p>
-                        <Button onClick={() => window.history.back()}>Go Back</Button>
-                      </div>
-                    </div>} />
-
-                  {/* Not Found */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </AuthProvider>
-            } />
+            {/* Unauthorized + 404 */}
+            <Route
+              path="/unauthorized"
+              element={
+                <div className="min-h-screen flex items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-4">Unauthorized Access</h1>
+                    <p className="text-muted-foreground mb-4">You don't have permission to access this resource.</p>
+                    <Button onClick={() => window.history.back()}>Go Back</Button>
+                  </div>
+                </div>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
