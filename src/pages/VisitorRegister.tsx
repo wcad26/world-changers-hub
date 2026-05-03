@@ -630,7 +630,7 @@ export default function VisitorRegister() {
                     name="referral_social_media"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel><>Which social media platform? <Req /></></FormLabel>
+                        <FormLabel>Which social media platform? <Req /></FormLabel>
                         <FormControl>
                           <select
                             className={nativeSelectClassName}
