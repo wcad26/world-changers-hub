@@ -61,7 +61,7 @@ const nativeSelectClassName = "flex h-10 w-full rounded-xl border border-input b
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
 // Glassy section wrapper
-function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 md:p-6 space-y-4 shadow-sm">
       <div className="flex items-center gap-2.5 pb-3 border-b border-border/30">
