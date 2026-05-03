@@ -430,31 +430,20 @@ export default function VisitorRegister() {
                         <p className="text-xs text-muted-foreground mb-2">
                           Select the event you attended
                         </p>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-auto min-h-[2.5rem] rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectEventPlaceholder')} className="whitespace-normal text-left" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-w-[calc(100vw-2rem)] md:max-w-md">
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            <option value="" disabled>{t('selectEventPlaceholder')}</option>
                             {pastEvents.map((event) => (
-                              <SelectItem
-                                key={event.id}
-                                value={event.id}
-                                className="whitespace-normal h-auto py-3"
-                              >
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium">
-                                    {localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event'}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(event.start_datetime), 'PPP')}
-                                  </span>
-                                </div>
-                              </SelectItem>
+                              <option key={event.id} value={event.id}>
+                                {(localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event')} — {format(new Date(event.start_datetime), 'PPP')}
+                              </option>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
