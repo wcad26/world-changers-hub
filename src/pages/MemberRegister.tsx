@@ -227,12 +227,13 @@ export default function MemberRegister() {
       try {
         const { data: linkedMembers, error: linkedErr } = await supabase
           .from('members')
-          .select('id, date_of_birth')
+          .select('id, profiles:profile_id(date_of_birth)')
           .in('id', allLinkedIds);
         if (linkedErr) throw linkedErr;
-        const hasAdult = (linkedMembers || []).some(m => {
-          if (!m.date_of_birth) return true; // DOB unknown counts as adult per project rule
-          const a = computeAge(m.date_of_birth as string);
+        const hasAdult = (linkedMembers || []).some((m: any) => {
+          const dob = m?.profiles?.date_of_birth as string | null | undefined;
+          if (!dob) return true; // DOB unknown counts as adult per project rule
+          const a = computeAge(dob);
           return a !== null && a >= 16;
         });
         if (!hasAdult) {
