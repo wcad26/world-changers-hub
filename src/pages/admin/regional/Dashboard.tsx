@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { GlassKPICard } from "@/components/ui/GlassSection";
 import {
   Users, Baby, Heart, CalendarDays, UsersRound, Target,
-  TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, BarChart3, Crosshair
+  TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, BarChart3, Crosshair, AlertCircle
 } from "lucide-react";
 import { format, subMonths, subDays, differenceInYears } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -33,7 +33,7 @@ import {
 const CHILD_AGE = 16;
 
 const RegionalDashboard: React.FC = () => {
-  const { region: userRegion, profile, ready, user, retry: retryRegional } = useRegionalSession();
+  const { region: userRegion, profile, ready, user, retry: retryRegional, signOut, bootstrapAvailable } = useRegionalSession();
   // Only show the auth-loading skeleton until session restoration completes.
   // After that, render the dashboard even if region/profile are still being
   // fetched — region-dependent widgets gracefully handle missing region.
@@ -82,13 +82,13 @@ const RegionalDashboard: React.FC = () => {
   }, [dateRange]);
 
   // Data hooks
-  const { data: members, isLoading: membersLoading } = useMembers(userRegion?.id);
-  const { data: events, isLoading: eventsLoading } = useRegionalEvents();
+  const { data: members, isLoading: membersLoading, error: membersError } = useMembers(userRegion?.id);
+  const { data: events, isLoading: eventsLoading, error: eventsError } = useRegionalEvents();
   const { data: financialSummary } = useFinancialSummary(dateFilters);
   const { data: prevFinancialSummary } = useFinancialSummary(prevDateFilters);
-  const { data: financialTransactions } = useFinancialTransactions(dateFilters);
-  const { data: discipleshipRelationships } = useDiscipleshipRelationships(userRegion?.id);
-  const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: financialTransactions, error: financialError } = useFinancialTransactions(dateFilters);
+  const { data: discipleshipRelationships, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
+  const { data: attendanceData, error: attendanceError } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
 
@@ -338,17 +338,33 @@ const RegionalDashboard: React.FC = () => {
 
   // We intentionally do NOT block the dashboard if `userRegion` is still
   // resolving — the inline notice below shows once and the page renders.
+  const dataErrors = [membersError, eventsError, financialError, discipleshipError, attendanceError]
+    .filter(Boolean)
+    .map((error: any) => error?.message || 'A dashboard data request failed.');
+
   const regionMissingNotice = !userRegion ? (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-4 flex flex-wrap items-center justify-between gap-3">
       <div className="text-sm">
         <p className="font-medium">We could not resolve your region yet.</p>
-        <p className="text-muted-foreground text-xs">
-          {user
-            ? 'You can keep using the portal — region-specific data will appear once it loads.'
-            : 'Your session is still loading.'}
-        </p>
+        <div className="mt-1 space-y-0.5 text-muted-foreground text-xs">
+          <p>{user ? 'Your session exists, but the regional link is still being resolved.' : 'Your session is still loading.'}</p>
+          <p>User: {user?.email || user?.id || 'not detected'} · Bootstrap: {bootstrapAvailable ? 'available' : 'missing'}</p>
+        </div>
       </div>
-      <Button size="sm" variant="outline" onClick={retryRegional}>Retry</Button>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" onClick={retryRegional}>Retry</Button>
+        <Button size="sm" variant="ghost" onClick={signOut}>Logout</Button>
+      </div>
+    </div>
+  ) : null;
+
+  const dataErrorNotice = dataErrors.length > 0 ? (
+    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+      <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+      <div className="text-sm min-w-0">
+        <p className="font-medium text-destructive">Some dashboard data could not load.</p>
+        <p className="text-xs text-muted-foreground break-words">{dataErrors[0]}</p>
+      </div>
     </div>
   ) : null;
 
@@ -442,6 +458,7 @@ const RegionalDashboard: React.FC = () => {
       {/* ── SCROLLABLE CONTENT ── */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
       {regionMissingNotice}
+      {dataErrorNotice}
       {/* ── KPI CARDS ── */}
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
