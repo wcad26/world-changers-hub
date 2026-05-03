@@ -31,10 +31,12 @@ export const memberRegistrationSchema = z.object({
     .max(200, "Address must be less than 200 characters"),
   
   date_of_birth: z.string()
-    .optional(),
+    .trim()
+    .min(1, "Date of birth is required"),
   
   gender: z.string()
-    .optional(),
+    .trim()
+    .min(1, "Gender is required"),
   
   occupation: z.string()
     .optional(),
