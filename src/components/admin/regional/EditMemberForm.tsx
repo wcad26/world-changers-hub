@@ -64,8 +64,6 @@ const editMemberSchema = z.object({
   date_of_birth: z.string().optional(),
   gender: z.string().optional(),
   occupation: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
   member_type: z.enum(['member', 'visitor']).default('member'),
   has_completed_foundation_school: z.string().optional(),
   foundation_school_date: z.string().optional(),
@@ -145,8 +143,6 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       date_of_birth: member.profiles?.date_of_birth || '',
       gender: member.profiles?.gender || '',
       occupation: member.profiles?.occupation || '',
-      emergency_contact_name: member.profiles?.emergency_contact_name || '',
-      emergency_contact_phone: member.profiles?.emergency_contact_phone || '',
       member_type: (member.member_type as 'member' | 'visitor') || 'member',
       has_completed_foundation_school: member.foundation_school_date ? 'yes' : member.membership_class_completed ? 'yes' : '',
       foundation_school_date: member.foundation_school_date || '',
@@ -171,8 +167,6 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
           date_of_birth: data.date_of_birth || null,
           gender: data.gender ? data.gender.toLowerCase() : null,
           occupation: data.occupation || null,
-          emergency_contact_name: data.emergency_contact_name || null,
-          emergency_contact_phone: data.emergency_contact_phone || null,
         })
         .eq('id', member.profile_id);
       if (profileError) throw profileError;
@@ -502,25 +496,6 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
           </div>
         </GlassSection>
 
-        {/* Emergency Contact */}
-        <GlassSection icon={Heart} title="Emergency Contact">
-          <div className="grid md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="emergency_contact_name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Name</FormLabel>
-                <FormControl><Input placeholder="Jane Doe" className="rounded-xl bg-background/60" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="emergency_contact_phone" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Phone</FormLabel>
-                <FormControl><Input placeholder="+1 (555) 123-4567" className="rounded-xl bg-background/60" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-        </GlassSection>
 
         {/* Ministry & Service */}
         <GlassSection icon={Heart} title="Ministry & Service Interests">
