@@ -45,10 +45,14 @@ const RegionalAuth = () => {
         return;
       }
 
-      // Make sure the session is fully persisted before we navigate into
-      // the portal — otherwise the freshly-mounted RegionalSessionProvider
-      // can race against persistence and see a null session.
-      await supabase.auth.getSession();
+      // Wait until Supabase has actually persisted the session for THIS user
+      // before navigating — otherwise the freshly-mounted RegionalSessionProvider
+      // can race against persistence and briefly see a null session.
+      for (let i = 0; i < 10; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user?.id === authData.user.id) break;
+        await new Promise((r) => setTimeout(r, 100));
+      }
 
       // Best-effort region check. We do NOT sign the user out if this read
       // fails — a transient profile read should never destroy a fresh login.
