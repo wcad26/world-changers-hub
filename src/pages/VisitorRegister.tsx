@@ -487,19 +487,19 @@ export default function VisitorRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('referralSource')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder={t('selectReferralSource')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
-                          <SelectItem value="social_media">{t('socialMedia')}</SelectItem>
-                          <SelectItem value="website">{t('website')}</SelectItem>
-                          <SelectItem value="other">{t('other')}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="" disabled>{t('selectReferralSource')}</option>
+                          <option value="invited_by">{t('invitedBy')}</option>
+                          <option value="social_media">{t('socialMedia')}</option>
+                          <option value="website">{t('website')}</option>
+                          <option value="other">{t('other')}</option>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
