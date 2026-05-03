@@ -74,7 +74,7 @@ const SuperAuth = () => {
         .limit(1);
 
       if (!roles || roles.length === 0) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         toast({
           title: 'Access denied',
           description: 'Your account does not have super admin access.',
