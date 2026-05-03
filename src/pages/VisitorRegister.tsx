@@ -274,7 +274,7 @@ export default function VisitorRegister() {
                     name="first_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('firstName')} *</FormLabel>
+                        <FormLabel>{t('firstName')} <Req /></FormLabel>
                         <FormControl>
                           <Input placeholder="John" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -287,7 +287,7 @@ export default function VisitorRegister() {
                     name="last_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('lastName')} *</FormLabel>
+                        <FormLabel>{t('lastName')} <Req /></FormLabel>
                         <FormControl>
                           <Input placeholder="Doe" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -303,7 +303,7 @@ export default function VisitorRegister() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('emailAddress')} *</FormLabel>
+                        <FormLabel>{t('emailAddress')} <Req /></FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="john.doe@example.com" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -316,7 +316,7 @@ export default function VisitorRegister() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('phoneNumber')} *</FormLabel>
+                        <FormLabel>{t('phoneNumber')} <Req /></FormLabel>
                         <FormControl>
                           <Input type="tel" placeholder="+1 (555) 123-4567" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
@@ -331,7 +331,7 @@ export default function VisitorRegister() {
                   name="address"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('address')} *</FormLabel>
+                      <FormLabel>{t('address')} <Req /></FormLabel>
                       <FormControl>
                         <Textarea placeholder="123 Main St, City, State, ZIP" className="min-h-[80px] rounded-xl bg-background/60" {...field} />
                       </FormControl>
@@ -346,7 +346,7 @@ export default function VisitorRegister() {
                     name="date_of_birth"
                     render={({ field }) => (
                       <FormItem className="flex flex-col">
-                        <FormLabel>{t('dateOfBirth')}</FormLabel>
+                        <FormLabel>{t('dateOfBirth')} <Req /></FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
@@ -383,7 +383,7 @@ export default function VisitorRegister() {
                     name="gender"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('gender')}</FormLabel>
+                        <FormLabel>{t('gender')} <Req /></FormLabel>
                         <FormControl>
                           <select
                             className={nativeSelectClassName}
@@ -406,7 +406,7 @@ export default function VisitorRegister() {
                   name="occupation"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('occupation')}</FormLabel>
+                      <FormLabel>{t('occupation')} <Req /></FormLabel>
                       <FormControl>
                         <select
                           className={nativeSelectClassName}
@@ -630,7 +630,7 @@ export default function VisitorRegister() {
                     name="referral_social_media"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Which social media platform? *</FormLabel>
+                        <FormLabel><>Which social media platform? <Req /></></FormLabel>
                         <FormControl>
                           <select
                             className={nativeSelectClassName}
