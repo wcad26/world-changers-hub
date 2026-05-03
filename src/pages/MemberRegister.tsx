@@ -435,7 +435,7 @@ export default function MemberRegister() {
                             <Calendar
                               mode="single"
                               selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                               disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                               initialFocus
                             />
@@ -545,7 +545,7 @@ export default function MemberRegister() {
                               <Calendar
                                 mode="single"
                                 selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                                 captionLayout="dropdown-buttons"
@@ -610,7 +610,7 @@ export default function MemberRegister() {
                               <Calendar
                                 mode="single"
                                 selected={field.value ? new Date(field.value) : undefined}
-                                onSelect={(date) => field.onChange(date?.toISOString().split('T')[0])}
+                                onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
                                 disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                                 initialFocus
                                 captionLayout="dropdown-buttons"
