@@ -95,7 +95,7 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
       await createTransaction.mutateAsync({
         amount: parseFloat(data.amount),
         category_id: mockCategoryId,
-        transaction_date: data.date.toISOString().split('T')[0],
+        transaction_date: format(data.date, 'yyyy-MM-dd'),
         description: `${data.fund}${data.anonymous ? ' (Anonymous)' : data.donor ? ` - ${data.donor}` : ''}${data.notes ? `: ${data.notes}` : ''}`,
       });
 

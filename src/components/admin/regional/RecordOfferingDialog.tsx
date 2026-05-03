@@ -100,7 +100,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
       await createTransaction.mutateAsync({
         amount: parseFloat(data.amount),
         category_id: offeringCategory.id,
-        transaction_date: data.date.toISOString().split('T')[0],
+        transaction_date: format(data.date, 'yyyy-MM-dd'),
         description: `${data.service} - ${data.category}${data.notes ? `: ${data.notes}` : ''}`,
       });
 
