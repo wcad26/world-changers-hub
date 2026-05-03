@@ -1,7 +1,13 @@
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import {
+  clearRegionalBootstrap,
+  createRegionStub,
+  readRegionalBootstrap,
+  writeRegionalBootstrap,
+} from '@/lib/regionalBootstrap';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
@@ -15,6 +21,7 @@ interface RegionalSessionValue {
   status: RegionalSessionStatus;
   ready: boolean;
   authorized: boolean;
+  bootstrapAvailable: boolean;
   retry: () => void;
   signOut: () => Promise<void>;
 }
@@ -26,6 +33,7 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
   status: 'authorized',
   ready: true,
   authorized: true,
+  bootstrapAvailable: false,
   retry: () => {},
   signOut: async () => {},
 };
@@ -35,34 +43,36 @@ export const RegionalSessionContext = createContext<RegionalSessionValue>(DEFAUL
 /**
  * Regional portal session.
  *
- * Boot rules:
- *   - Read the supabase session ONCE and immediately expose the user.
- *   - Then, in the background, resolve profile + region with a fallback chain:
- *       1) profile.region_id
- *       2) members.region_id (any membership row)
- *       3) leave region null and let the page show a non-blocking notice
- *   - Mark `ready` true as soon as we know whether a session exists. Never
- *     wait on profile/region — those load in the background.
- *   - NEVER auto-signOut. NEVER redirect.
- *   - Ignore transient null sessions from onAuthStateChange unless the
- *     provider itself initiated the sign-out.
+ * Regional portal session boot.
+ *
+ * Critical rule: the UI should never depend on a fragile post-navigation
+ * getSession() race to know the user's region. The login page writes a small
+ * sessionStorage bootstrap (`userId`, `email`, `regionId`). This provider reads
+ * it synchronously, enables regional data queries immediately, and then hydrates
+ * richer profile/region details from Supabase in the background.
  */
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<RegionalSessionValue['user']>(null);
+  const initialBootstrap = useMemo(() => readRegionalBootstrap(), []);
+  const [user, setUser] = useState<RegionalSessionValue['user']>(
+    initialBootstrap ? { id: initialBootstrap.userId, email: initialBootstrap.email ?? undefined } : null,
+  );
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [region, setRegion] = useState<Region | null>(null);
-  const [ready, setReady] = useState(false);
+  const [region, setRegion] = useState<Region | null>(
+    initialBootstrap ? createRegionStub(initialBootstrap.regionId) : null,
+  );
+  const [ready, setReady] = useState(true);
+  const [bootstrapAvailable, setBootstrapAvailable] = useState(!!initialBootstrap);
   const queryClient = useQueryClient();
 
   const signingOutRef = useRef(false);
   const loadedForUserRef = useRef<string | null>(null);
 
-  const loadProfileAndRegion = useCallback(async (uid: string) => {
-    if (loadedForUserRef.current === uid) return;
-    loadedForUserRef.current = uid;
+  const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
+    const loadKey = `${uid}:${preferredRegionId ?? 'none'}`;
+    if (loadedForUserRef.current === loadKey) return;
+    loadedForUserRef.current = loadKey;
 
     try {
-      // 1) profile
       const { data: prof, error: profErr } = await supabase
         .from('profiles')
         .select('*')
@@ -71,10 +81,8 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       if (profErr) console.warn('[RegionalSession] profile load error:', profErr.message);
       if (prof) setProfile(prof as Profile);
 
-      // 2) region from profile.region_id
-      let regionId: string | null = (prof as any)?.region_id ?? null;
+      let regionId: string | null = preferredRegionId ?? (prof as any)?.region_id ?? null;
 
-      // 3) fallback: membership region
       if (!regionId) {
         const { data: mem } = await supabase
           .from('members')
@@ -87,6 +95,10 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       if (regionId) {
+        writeRegionalBootstrap({ userId: uid, email: user?.email ?? null, regionId });
+        setBootstrapAvailable(true);
+        setRegion((current) => current?.id === regionId ? current : createRegionStub(regionId));
+
         const { data: reg, error: regErr } = await supabase
           .from('regions')
           .select('*')
@@ -100,63 +112,54 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err) {
       console.warn('[RegionalSession] background load failed:', err);
     }
-  }, []);
+  }, [user?.email]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (cancelled) return;
-      const u = session?.user;
-
-      if (!u) {
-        if (signingOutRef.current || event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
-          setRegion(null);
-          loadedForUserRef.current = null;
-        }
-        return;
-      }
-
-      setUser({ id: u.id, email: u.email ?? undefined });
-      void loadProfileAndRegion(u.id);
-    });
-
     (async () => {
-      // One short poll to absorb localStorage hydration race.
-      let session: any = null;
-      for (let i = 0; i < 10; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          session = data.session;
-          break;
-        }
-        await new Promise((r) => setTimeout(r, 80));
+      const bootstrap = readRegionalBootstrap();
+      if (bootstrap && !cancelled) {
+        setBootstrapAvailable(true);
+        setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
+        setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+        void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
       }
+
+      const { data } = await supabase.auth.getSession();
       if (cancelled) return;
 
-      const u = session?.user;
+      const u = data.session?.user;
       if (u) {
         setUser({ id: u.id, email: u.email ?? undefined });
-        void loadProfileAndRegion(u.id);
+        void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
+      } else if (!bootstrap) {
+        console.info('[RegionalSession] no Supabase session and no regional bootstrap');
       }
-      setReady(true);
-      console.info('[RegionalSession] ready. user =', u?.id ?? 'none');
+      console.info('[RegionalSession] ready. user =', u?.id ?? bootstrap?.userId ?? 'none', 'bootstrap =', !!bootstrap);
     })();
 
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
   }, [loadProfileAndRegion]);
 
   const retry = useCallback(() => {
+    const bootstrap = readRegionalBootstrap();
+    if (bootstrap) {
+      setBootstrapAvailable(true);
+      setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
+      setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+      loadedForUserRef.current = null;
+      void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
+      return;
+    }
+
     if (user?.id) {
       loadedForUserRef.current = null;
-      void loadProfileAndRegion(user.id);
+      void loadProfileAndRegion(user.id, region?.id ?? null);
     }
-  }, [user?.id, loadProfileAndRegion]);
+  }, [user?.id, region?.id, loadProfileAndRegion]);
 
   const signOut = useCallback(async () => {
     signingOutRef.current = true;
@@ -167,7 +170,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     setUser(null);
     setProfile(null);
     setRegion(null);
+    setBootstrapAvailable(false);
     loadedForUserRef.current = null;
+    clearRegionalBootstrap();
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
@@ -186,6 +191,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     status: 'authorized',
     ready,
     authorized: true,
+    bootstrapAvailable,
     retry,
     signOut,
   };
