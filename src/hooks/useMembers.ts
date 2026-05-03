@@ -64,42 +64,10 @@ export const useMembers = (regionId?: string, memberType?: 'member' | 'visitor')
         throw error;
       }
       
-      // Batch fetch all user roles at once instead of N+1 queries
-      const memberProfileIds = (data || [])
-        .map(m => m.profiles?.id)
-        .filter((id): id is string => !!id);
-      
-      if (memberProfileIds.length === 0) {
-        return data as MemberWithProfile[];
-      }
-
-      const { data: allRoles } = await supabase
-        .from('user_roles')
-        .select('user_id, role, is_active')
-        .in('user_id', memberProfileIds)
-        .eq('is_active', true);
-      
-      // Create a map of user_id to roles for O(1) lookup
-      const rolesMap = (allRoles || []).reduce((acc, role) => {
-        if (!acc[role.user_id]) acc[role.user_id] = [];
-        acc[role.user_id].push({ role: role.role, is_active: role.is_active });
-        return acc;
-      }, {} as Record<string, Array<{ role: string; is_active: boolean | null }>>);
-      
-      // Map roles to members in memory (no additional queries)
-      const membersWithRoles = (data || []).map(member => {
-        if (!member.profiles?.id) return member;
-        
-        return {
-          ...member,
-          profiles: {
-            ...member.profiles,
-            user_roles: rolesMap[member.profiles.id] || []
-          }
-        };
-      });
-      
-      return membersWithRoles as MemberWithProfile[];
+      // Roles intentionally NOT fetched here — the regional portal no
+      // longer renders role badges on the members list, and removing this
+      // query eliminates one more user_roles read on the post-login path.
+      return (data || []) as MemberWithProfile[];
     },
     enabled: !!regionId,
     staleTime: 5 * 60 * 1000, // 5 minutes - don't refetch if data is fresh

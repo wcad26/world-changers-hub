@@ -52,7 +52,7 @@ import RegionalReports from "./pages/admin/regional/Reports";
 import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
-import UserRoles from "./pages/admin/regional/UserRoles";
+
 import RegionalDiscipleship from "./pages/admin/regional/Discipleship";
 
 import RegionalCertificates from "./pages/admin/regional/Certificates";
@@ -173,7 +173,7 @@ const App = () => {
                 <Route path="communication" element={<RegionalCommunication />} />
                 <Route path="branch-settings" element={<RegionalBranchSettings />} />
                 <Route path="discipleship" element={<RegionalDiscipleship />} />
-                <Route path="user-roles" element={<UserRoles />} />
+                
                 <Route path="settings" element={<RegionalSettings />} />
               </Route>
             </Route>
