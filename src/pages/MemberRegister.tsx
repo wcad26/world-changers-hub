@@ -250,9 +250,12 @@ export default function MemberRegister() {
           form.reset();
         },
         onError: (error: any) => {
-          form.setError('root', {
-            message: error.message || t('registrationFailed')
-          });
+          const msg = error?.message || t('registrationFailed');
+          form.setError('root', { message: msg });
+          toast.error(msg);
+          if (typeof window !== 'undefined') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
         }
       }
     );
@@ -352,7 +355,7 @@ export default function MemberRegister() {
 
           {/* Form */}
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
               {form.formState.errors.root && (
                 <Alert variant="destructive" className="rounded-xl">
                   <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
