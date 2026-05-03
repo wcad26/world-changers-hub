@@ -33,8 +33,6 @@ export default function MemberProfile() {
     last_name: profile?.last_name || '',
     phone: profile?.phone || '',
     address: profile?.address || '',
-    emergency_contact_name: profile?.emergency_contact_name || '',
-    emergency_contact_phone: profile?.emergency_contact_phone || '',
   });
 
   const handleSave = async () => {
@@ -64,8 +62,6 @@ export default function MemberProfile() {
       last_name: profile?.last_name || '',
       phone: profile?.phone || '',
       address: profile?.address || '',
-      emergency_contact_name: profile?.emergency_contact_name || '',
-      emergency_contact_phone: profile?.emergency_contact_phone || '',
     });
     setIsEditing(false);
   };
