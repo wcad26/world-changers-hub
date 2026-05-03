@@ -140,28 +140,8 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
         }
       }
 
-      // Handle leader role assignment if leader changed
+      // DCG portal access is governed by dcg_user_sessions; no role write here.
       if (values.leader_id && selectedMember?.profile_id) {
-        // Remove existing DCG admin role for this DCG
-        await supabase
-          .from('user_roles')
-          .delete()
-          .eq('role', 'dcg_admin')
-          .eq('region_id', userRegion?.id);
-
-        // Add new DCG admin role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: selectedMember.profile_id,
-            role: 'dcg_admin',
-            region_id: userRegion?.id,
-            is_active: true
-          });
-
-        if (roleError) {
-          console.error('Failed to assign DCG leader role:', roleError);
-        }
 
         // Update DCG user session
         await supabase

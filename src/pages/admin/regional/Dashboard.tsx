@@ -336,21 +336,21 @@ const RegionalDashboard: React.FC = () => {
     );
   }
 
-  if (!userRegion) {
-    return (
-      <div className="p-6 max-w-xl mx-auto text-center space-y-3">
-        <h2 className="text-xl font-semibold">Loading your region…</h2>
-        <p className="text-sm text-muted-foreground">
-          {profile?.region_id
-            ? 'We are still loading your region details. You can retry without signing out.'
-            : user
-              ? 'Your account has no region assigned. Contact a Super Admin.'
-              : 'Your session is still loading. Please wait a moment.'}
+  // We intentionally do NOT block the dashboard if `userRegion` is still
+  // resolving — the inline notice below shows once and the page renders.
+  const regionMissingNotice = !userRegion ? (
+    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="text-sm">
+        <p className="font-medium">We could not resolve your region yet.</p>
+        <p className="text-muted-foreground text-xs">
+          {user
+            ? 'You can keep using the portal — region-specific data will appear once it loads.'
+            : 'Your session is still loading.'}
         </p>
-        <Button onClick={retryRegional}>Retry</Button>
       </div>
-    );
-  }
+      <Button size="sm" variant="outline" onClick={retryRegional}>Retry</Button>
+    </div>
+  ) : null;
 
   const periodOptions = [
     { value: "1-month", label: "1M" },
@@ -441,6 +441,7 @@ const RegionalDashboard: React.FC = () => {
 
       {/* ── SCROLLABLE CONTENT ── */}
       <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
+      {regionMissingNotice}
       {/* ── KPI CARDS ── */}
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
