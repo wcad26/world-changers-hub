@@ -33,7 +33,7 @@ import {
 const CHILD_AGE = 16;
 
 const RegionalDashboard: React.FC = () => {
-  const { region: userRegion, profile, ready, user } = useRegionalSession();
+  const { region: userRegion, profile, ready, user, retry: retryRegional } = useRegionalSession();
   // Only show the auth-loading skeleton until session restoration completes.
   // After that, render the dashboard even if region/profile are still being
   // fetched — region-dependent widgets gracefully handle missing region.
@@ -321,8 +321,6 @@ const RegionalDashboard: React.FC = () => {
     }
     return data;
   }, [kpis]);
-
-  const { retry: retryRegional } = useRegionalSession();
 
   if (authLoading) {
     return (
