@@ -2052,6 +2052,7 @@ export type Database = {
         }[]
       }
       get_member_ids_for_user: { Args: { _user_id: string }; Returns: string[] }
+      get_my_regional_context: { Args: never; Returns: Json }
       get_next_dcg_meeting: {
         Args: { _dcg_id: string }
         Returns: {

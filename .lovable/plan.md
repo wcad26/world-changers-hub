@@ -1,37 +1,72 @@
-I found a new likely trigger: the regional dashboard is not fully blank in my reproduction, but it is stuck forever on dashboard skeletons. That means the portal shell renders, but `userRegion` never resolves for the dashboard data hooks. After that, the preview can look like a blank/loading screen and Lovable’s blank-page recovery or a later navigation can make it appear as an eventual logout.
+I checked the current code paths and the database state. The affected accounts do have valid active regions assigned:
 
-The most important issue is that `RegionalSessionContext` currently does only one `supabase.auth.getSession()` call on mount. If that call happens before Supabase finishes restoring the persisted login, it exits early and never listens for the later signed-in session. Since `ready` is always hardcoded to `true`, pages think auth is complete but still have no user/profile/region. The dashboard then waits on `!userRegion` forever.
+- `chimbotimah@gmail.com` → `WCA DOUALA`
+- `preciousstone309@gmail.com` → `WCA Buea`
 
-I will implement the next elimination pass as follows:
+So the real problem is no longer “the account has no region”. The remaining triggers appear to be in the frontend boot sequence after login:
 
-1. Make regional session hydration deterministic
-- Update `RegionalSessionContext` to use `supabase.auth.onAuthStateChange` again, but safely:
-  - subscribe once on mount,
-  - update only lightweight `session/user` state inside the callback,
-  - do not run nested Supabase queries inside the callback,
-  - do not sign out on missing session,
-  - do not redirect from the provider.
-- Add a separate effect that loads profile and region whenever `user.id` becomes available.
-- Keep client-side access checks disabled, but make `ready` mean “session restoration has completed”, not a hardcoded value.
+1. The regional session provider can still clear `user/profile/region` when Supabase briefly reports a null session.
+2. The dashboard still blocks the page when `userRegion` is null.
+3. The dashboard retry button uses `window.location.reload()`, which can restart the auth race and look like an eventual logout.
+4. Several dashboard widgets begin querying only after region exists, so a missed region bootstrap leaves the portal in a bad recovery state.
+5. There is no single authoritative regional-context bootstrap. The app still loads user → profile → region through separate frontend reads.
 
-2. Eliminate the permanent dashboard skeleton condition
-- Change regional pages that wait on `!userRegion` to stop showing endless skeletons after auth is ready.
-- For the dashboard specifically, show a visible “Region is still loading / retry” fallback instead of a blank-looking skeleton wall if region data is unavailable.
-- Ensure the regional dashboard can recover when the region arrives after initial render.
+I will rebuild the regional auth/session path so login uses one deterministic bootstrap and no frontend role/access checks can blank or logout the portal.
 
-3. Remove stale and misleading regional login assumptions
-- Clean up `RegionalAuth.tsx` comments that still say the login checks profile region and signs out. The code no longer does that, but the comment is misleading.
-- After `signInWithPassword`, wait briefly for the signed-in session to be persisted before navigation, without checking roles and without signing out.
+Implementation plan:
 
-4. Add targeted diagnostics that do not expose secrets
-- Add temporary-safe console diagnostics around regional session states: session restored, profile loaded, region loaded, or no region found.
-- Add a global unhandled error/rejection logger so if the remaining “blank screen” is caused by a runtime exception rather than auth, it becomes visible in the console instead of silently blanking.
+1. Add a secure regional bootstrap RPC
+   - Create a Supabase function like `get_my_regional_context()`.
+   - It will return only the currently authenticated user's own profile and assigned region.
+   - It will not check `user_roles`, `regional_user_roles`, or portal permissions.
+   - It will use `auth.uid()` and `SECURITY DEFINER` so the frontend does not depend on several separate RLS-gated reads during login.
+   - It will not expose other users' data.
 
-5. Keep role/access checks removed
-- Do not restore role checks.
-- Do not add frontend redirects for unauthorized/role states.
-- Do not call `supabase.auth.signOut()` except from explicit user logout buttons.
+2. Rebuild `RegionalSessionContext`
+   - Replace the current event-driven flow with a deterministic bootstrap state machine:
+     - first call `getSession()` and wait for a settled session;
+     - if a session exists, call `get_my_regional_context()` once;
+     - set `ready=true` only after bootstrap finishes;
+     - never sign out automatically;
+     - never redirect automatically;
+     - ignore transient null auth events unless a manual logout is in progress.
+   - Keep `onAuthStateChange` only for useful updates like `SIGNED_IN` / `TOKEN_REFRESHED`, not as a destructive source that clears the portal on a temporary null session.
 
-6. Verify the remaining triggers
-- Re-scan for any remaining frontend `signOut`, auth redirects, `return null`, and role-gated routes that could affect the regional portal.
-- Re-test `/auth/regional -> /admin/regional/dashboard` and confirm the page reaches real dashboard content instead of the skeleton wall.
+3. Rebuild `RegionalAuth` login
+   - After `signInWithPassword`, explicitly persist the returned session with `setSession` when tokens are present.
+   - Immediately call the regional bootstrap RPC before navigating, so the dashboard does not open without a resolved context.
+   - Navigate only after the session and context bootstrap have both had a chance to settle.
+   - Do not check roles.
+   - Do not check regional permissions.
+   - Do not call `signOut()` on any missing profile/region/data condition.
+
+4. Remove dashboard blocking triggers
+   - Replace the `if (!userRegion) return ...` hard block in `RegionalDashboard`.
+   - The dashboard will render a safe portal recovery state inside the shell instead of a blank/blocked page.
+   - Remove `window.location.reload()` from the retry action and use `regionalSession.retry()` instead.
+   - If region data is temporarily unavailable, widgets will show empty states/skeletons without forcing a logout-like reset.
+
+5. Add a top-level app error boundary
+   - Keep the existing regional error boundary, but also wrap the app route tree so provider/layout-level runtime errors cannot create a true blank screen.
+   - The fallback will show a visible recovery panel with retry/back-to-login options instead of letting the app render nothing.
+
+6. Audit and remove remaining automatic auth triggers
+   - Re-scan the frontend for:
+     - `supabase.auth.signOut()` calls outside manual logout buttons;
+     - redirects to `/auth/regional`;
+     - `window.location.reload()` inside regional portal pages;
+     - client-side role/permission gating around regional pages.
+   - Any remaining automatic trigger will be deleted or made non-destructive.
+
+7. Keep security boundary server-side
+   - Frontend role checks will remain removed for the regional portal.
+   - I will not remove database RLS globally because that would expose private member/finance/user data.
+   - The new bootstrap RPC will avoid the login blank-page problem without making the database public.
+
+Expected result:
+
+- Regional login should no longer land on a blank page.
+- A temporary null session/auth event should no longer clear the regional portal.
+- Missing/slow region context should show a visible recovery screen, not a blank page.
+- The app should not auto-logout unless the user clicks a logout button or the Supabase session is genuinely invalid.
+- Frontend role/access checks will not participate in regional login or rendering.
