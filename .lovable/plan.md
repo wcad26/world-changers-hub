@@ -1,41 +1,61 @@
-## Goal
+I located the remaining triggers that can still cause the regional portal to go blank and then redirect back to `/auth/regional`.
 
-Enforce the project's children rule on the member registration form: if the entered Date of Birth makes the registrant under 16 years old, the Family Relationships section must contain at least one relationship that links them to an adult (>=16). This guarantees children entries meet the global "child" criteria at registration time.
+Root cause list:
 
-## Behavior
+1. `RegionalSessionContext.tsx` still has a live `onAuthStateChange` listener.
+   - Trigger: any `SIGNED_OUT` event from the shared Supabase client immediately sets regional status to `unauthorized`.
+   - Effect: `RegionalSessionRoute` sees `unauthorized` and redirects to `/auth/regional`.
+   - This is exactly the kind of global/event-based trigger we were trying to remove.
 
-1. Compute age live from the `date_of_birth` field (watched via `form.watch`).
-2. If `age < 16`:
-   - Section title changes from "Family Relationships (Optional)" to "Family Relationships" with a red asterisk.
-   - Show an inline notice: "Required: members under 16 must be linked to at least one adult guardian/parent."
-   - Submission is blocked unless at least one relationship entry exists where at least one selected related member is an adult (DOB unknown OR age >= 16).
-3. If `age >= 16` (or DOB empty), section remains optional — current behavior preserved.
+2. `RegionalSessionContext.tsx` still has a `regional_signing_out` sessionStorage condition.
+   - Trigger: if `sessionStorage.regional_signing_out === '1'`, the provider calls `supabase.auth.signOut({ scope: 'local' })` during boot and forces `unauthorized`.
+   - Effect: a stale marker or development remount can wipe a valid login.
+   - This is an unnecessary condition and should be removed.
 
-## Validation
+3. `RegionalSessionContext.tsx` still redirects when `getSession()` temporarily returns no session.
+   - Trigger: initial boot does `supabase.auth.getSession()` once; if it returns null during a persistence/HMR/dev refresh race, status becomes `unauthorized`.
+   - Effect: the guard redirects to login even though the login just succeeded.
 
-- In `onSubmit` (and a pre-submit guard in `onInvalid` flow), after computing age from `data.date_of_birth`:
-  - If under 16 and `relationships.length === 0` → set form root error + toast "Family relationship to an adult is required for members under 16." and abort.
-  - Else, fetch DOBs of all selected related members from `allMembers` (already loaded via `search_all_members`; if a related member's DOB is missing we treat them as adult per project rule). Confirm at least one related member qualifies as adult. If none qualify → error: "At least one linked family member must be an adult (16+)."
-- Use `relationship_type` of `parent` or `guardian` as the recommended types but accept any type as long as the linked person is an adult (matches the existing project rule that ANY relationship_type counts).
+4. `RegionalAuth.tsx` signs the user out if the immediate profile check cannot see `profile.region_id`.
+   - Trigger: after login, it queries `profiles.region_id`; if that query returns no row/null due to timing/RLS/transient issue, it signs out.
+   - Effect: this can create the blank/redirect flow during login.
+   - The database confirms the affected user does have a valid `region_id`, so this check should not be allowed to destroy the session.
 
-## UI Changes (`src/pages/MemberRegister.tsx`)
+5. React `StrictMode` is enabled in `main.tsx`.
+   - Trigger: in development, StrictMode intentionally mounts/unmounts effects twice.
+   - Effect: it can amplify the boot/auth race above. It is not the root cause by itself, but it makes these auth side effects much easier to hit in the development environment.
 
-- Add helper `computeAge(dobStr)` returning number | null.
-- Watch `date_of_birth`; derive `isMinor = age !== null && age < 16`.
-- Update GlassSection title dynamically: `"Family Relationships"` + `<Req />` when `isMinor`, else `"Family Relationships (Optional)"`.
-- Add an Alert above the relationship editor when `isMinor` explaining the requirement.
-- Disable the submit button's success path via validation (no need to disable button itself — error surface handles it).
+Planned fix:
 
-## Schema
+1. Simplify `RegionalSessionContext.tsx` into a non-destructive regional session reader.
+   - Remove the `onAuthStateChange` subscription entirely from the regional portal.
+   - Remove all `regional_signing_out` sessionStorage logic.
+   - Remove automatic boot-time signOut.
+   - On boot, read `getSession()` once and load profile/region.
+   - If session is missing, show a stable recoverable state instead of immediately destroying anything.
 
-No change to `memberRegistrationSchema.ts` required (the rule is conditional and depends on external `allMembers` data, so handled in `onSubmit`). Keep `relationships` optional in schema.
+2. Change the regional route guard so only a true unauthenticated state redirects.
+   - Keep showing a spinner while auth is being restored.
+   - For profile/region read errors, show the existing retry panel instead of redirecting.
+   - Avoid instant login-page redirect from transient null session in development.
 
-## Files to Edit
+3. Make `RegionalAuth.tsx` non-destructive.
+   - After password login, do not call `signOut()` just because the profile check returns no `region_id` once.
+   - If the profile check fails, show an access/error message and do not wipe the Supabase session.
+   - Navigate only after a valid region is confirmed, or let the regional provider retry instead of destroying the login.
 
-- `src/pages/MemberRegister.tsx` — add age computation, conditional UI label/notice, and pre-submit child-linkage validation.
+4. Add targeted diagnostic logs for the regional boot path.
+   - Log when boot starts, whether a session exists, when profile/region loads, and what condition would have caused a redirect.
+   - This makes any remaining trigger visible in console without needing to guess.
 
-## Out of Scope
+5. Keep all security boundaries intact.
+   - This does not grant public access to regional pages.
+   - Regional pages still require an authenticated Supabase session plus a profile with `region_id`.
+   - The change is only to stop transient checks and global auth events from signing the user out or causing blank redirects.
 
-- No DB migration.
-- Visitor form unchanged (request scoped to member form).
-- Edit member form not touched here.
+Expected result:
+
+- Regional login should stop blanking after successful sign-in.
+- Development remounts/HMR/StrictMode should no longer turn a valid session into `unauthorized`.
+- A transient profile/region read issue should show a retry/error panel, not log the user out.
+- The remaining causes, if any, will be visible through the new regional auth debug logs.

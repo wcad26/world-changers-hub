@@ -33,8 +33,9 @@ const RegionalSessionRoute: React.FC<{ children: React.ReactNode }> = ({ childre
   }
 
   if (status === 'unauthorized') {
-    // Intentionally do NOT pass state.from — we don't want to bounce a user
-    // who just logged out back to the protected page they came from.
+    // Only redirect when we are sure there is no Supabase session at all.
+    // A transient profile read failure surfaces as `error` and is handled
+    // below with a retry panel — never a forced redirect.
     return <Navigate to="/auth/regional" replace />;
   }
 
