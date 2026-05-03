@@ -574,22 +574,19 @@ export default function VisitorRegister() {
                         {/* Relationship Type (Right) */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Relationship *</label>
-                          <Select
+                          <select
+                            className={nativeSelectClassName}
                             value={form.watch('referral_relationship_type') || ''}
-                            onValueChange={(v) => form.setValue('referral_relationship_type', v as any, { shouldValidate: true })}
+                            onChange={(e) => form.setValue('referral_relationship_type', e.target.value as any, { shouldValidate: true })}
                           >
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder="Select relationship" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="spouse">Spouse</SelectItem>
-                              <SelectItem value="parent">Parent</SelectItem>
-                              <SelectItem value="child">Child</SelectItem>
-                              <SelectItem value="sibling">Sibling</SelectItem>
-                              <SelectItem value="guardian">Guardian</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <option value="" disabled>Select relationship</option>
+                            <option value="spouse">Spouse</option>
+                            <option value="parent">Parent</option>
+                            <option value="child">Child</option>
+                            <option value="sibling">Sibling</option>
+                            <option value="guardian">Guardian</option>
+                            <option value="other">Other</option>
+                          </select>
                         </div>
                       </div>
 
