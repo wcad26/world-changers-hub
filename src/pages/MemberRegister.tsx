@@ -485,17 +485,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('gender')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectGender')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Male">{t('male')}</SelectItem>
-                            <SelectItem value="Female">{t('female')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectGender')}</option>
+                            <option value="Male">{t('male')}</option>
+                            <option value="Female">{t('female')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -508,20 +508,20 @@ export default function MemberRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('occupation')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder="Select your occupation" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[40vh]" position="popper">
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                        >
+                          <option value="" disabled>Select your occupation</option>
                           {occupations.map((occ) => (
-                            <SelectItem key={occ.id} value={occ.name}>
+                            <option key={occ.id} value={occ.name}>
                               {occ.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
