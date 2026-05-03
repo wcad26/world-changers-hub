@@ -29,8 +29,6 @@ serve(async (req) => {
       date_of_birth, 
       gender, 
       occupation,
-      emergency_contact_name,
-      emergency_contact_phone,
       region_id 
     } = record
 
@@ -78,8 +76,6 @@ serve(async (req) => {
         date_of_birth: date_of_birth || null,
         gender: gender || null,
         occupation: occupation || null,
-        emergency_contact_name: emergency_contact_name || null,
-        emergency_contact_phone: emergency_contact_phone || null,
         region_id: region_id, // This is crucial - ensure profile has region_id
         updated_at: new Date().toISOString()
       })

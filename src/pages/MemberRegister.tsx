@@ -118,8 +118,6 @@ export default function MemberRegister() {
       date_of_birth: '',
       gender: '',
       occupation: '',
-      emergency_contact_name: '',
-      emergency_contact_phone: '',
       has_completed_foundation_school: '',
       foundation_school_date: '',
       is_baptized: '',

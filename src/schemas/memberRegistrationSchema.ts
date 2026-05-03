@@ -39,16 +39,6 @@ export const memberRegistrationSchema = z.object({
   occupation: z.string()
     .optional(),
   
-  emergency_contact_name: z.string()
-    .trim()
-    .max(100, "Name must be less than 100 characters")
-    .optional(),
-  
-  emergency_contact_phone: z.string()
-    .trim()
-    .min(6, "Phone must be at least 6 characters")
-    .max(20, "Phone must be less than 20 characters")
-    .optional(),
   
   ministry_interests: z.array(z.string()).optional(),
   

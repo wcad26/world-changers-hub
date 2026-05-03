@@ -68,8 +68,6 @@ const registerSchema = z.object({
   date_of_birth: z.string().optional(),
   gender: z.string().optional(),
   occupation: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
   member_type: z.enum(['member', 'visitor']).default('member'),
   has_completed_foundation_school: z.string().optional(),
   foundation_school_date: z.string().optional(),
@@ -116,7 +114,7 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
     defaultValues: {
       first_name: '', last_name: '', email: '', phone: '', address: '',
       date_of_birth: '', gender: '', occupation: '',
-      emergency_contact_name: '', emergency_contact_phone: '',
+      
       member_type: 'member',
       has_completed_foundation_school: '', foundation_school_date: '',
       is_baptized: '', baptism_date: '',
@@ -152,8 +150,6 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
       date_of_birth: values.date_of_birth,
       gender: values.gender,
       occupation: values.occupation,
-      emergency_contact_name: values.emergency_contact_name,
-      emergency_contact_phone: values.emergency_contact_phone,
       member_type: values.member_type,
     };
 
@@ -431,25 +427,6 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
           </div>
         </GlassSection>
 
-        {/* Emergency Contact */}
-        <GlassSection icon={Heart} title="Emergency Contact">
-          <div className="grid md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="emergency_contact_name" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Name</FormLabel>
-                <FormControl><Input placeholder="Jane Doe" className="rounded-xl bg-background/60" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="emergency_contact_phone" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contact Phone</FormLabel>
-                <FormControl><Input placeholder="+1 (555) 123-4567" className="rounded-xl bg-background/60" {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-          </div>
-        </GlassSection>
 
         {/* Ministry & Service */}
         <GlassSection icon={Heart} title="Ministry & Service Interests">

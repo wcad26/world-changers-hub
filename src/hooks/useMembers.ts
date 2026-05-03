@@ -15,8 +15,6 @@ export const memberSchema = z.object({
   date_of_birth: z.string().optional(),
   gender: z.string().optional(),
   occupation: z.string().optional(),
-  emergency_contact_name: z.string().optional(),
-  emergency_contact_phone: z.string().optional(),
   member_type: z.enum(['member', 'visitor']).default('member'),
 });
 

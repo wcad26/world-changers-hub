@@ -442,24 +442,11 @@ const MemberProfile: React.FC = () => {
 
             <Separator />
 
-            {/* Emergency Contact */}
+            {/* (Emergency contact removed) */}
+            <div className="hidden" />
             <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">Emergency Contact</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Discipleship</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground">Contact Name</label>
-                  <p className="text-sm flex items-center gap-2">
-                    <Heart className="h-3 w-3" />
-                    {member.profiles?.emergency_contact_name || 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Contact Phone</label>
-                  <p className="text-sm flex items-center gap-2">
-                    <Phone className="h-3 w-3" />
-                    {member.profiles?.emergency_contact_phone || 'Not provided'}
-                  </p>
-                </div>
                 <div>
                   <label className="text-xs text-muted-foreground">Mentor</label>
                   <p className="text-sm flex items-center gap-2">
