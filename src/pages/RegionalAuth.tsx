@@ -43,6 +43,13 @@ const RegionalAuth = () => {
         return;
       }
 
+      if (authData.session?.access_token && authData.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: authData.session.access_token,
+          refresh_token: authData.session.refresh_token,
+        });
+      }
+
       const userId = authData.user.id;
       const emailAddress = authData.user.email ?? email.trim();
 
