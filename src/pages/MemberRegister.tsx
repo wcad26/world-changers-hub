@@ -138,6 +138,20 @@ export default function MemberRegister() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const watchedDob = form.watch('date_of_birth');
+  const computeAge = (dobStr?: string): number | null => {
+    if (!dobStr) return null;
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const m = now.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+    return age;
+  };
+  const registrantAge = computeAge(watchedDob);
+  const isMinor = registrantAge !== null && registrantAge < 16;
+
   const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
   const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
   const [currentRelMemberIds, setCurrentRelMemberIds] = useState<string[]>([]);
