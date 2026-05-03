@@ -17,7 +17,7 @@ import type { FieldErrors } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
@@ -127,6 +127,13 @@ export default function MemberRegister() {
       relationships: []
     }
   });
+
+  useEffect(() => {
+    const rootMessage = form.formState.errors.root?.message;
+    if (rootMessage?.includes('emergency_contact')) {
+      form.clearErrors('root');
+    }
+  }, [form, form.formState.errors.root?.message]);
 
   const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
   const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
