@@ -6,9 +6,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -18,40 +16,6 @@ type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
 export type AppRole = 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin';
-
-const SIGNOUT_FLAG = 'wca:just_signed_out';
-const SIGNOUT_FLAG_TTL_MS = 5000;
-
-const isJustSignedOut = (): boolean => {
-  try {
-    const raw = sessionStorage.getItem(SIGNOUT_FLAG);
-    if (!raw) return false;
-    const ts = parseInt(raw, 10);
-    if (isNaN(ts) || Date.now() - ts > SIGNOUT_FLAG_TTL_MS) {
-      sessionStorage.removeItem(SIGNOUT_FLAG);
-      return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const setJustSignedOut = () => {
-  try {
-    sessionStorage.setItem(SIGNOUT_FLAG, Date.now().toString());
-  } catch {
-    /* ignore */
-  }
-};
-
-const clearJustSignedOut = () => {
-  try {
-    sessionStorage.removeItem(SIGNOUT_FLAG);
-  } catch {
-    /* ignore */
-  }
-};
 
 export interface AuthContextValue {
   user: any;
@@ -64,12 +28,6 @@ export interface AuthContextValue {
   userRegionalRoles: any[];
   loading: boolean;
   initialized: boolean;
-  /**
-   * Becomes true the moment the initial getSession() restore path completes
-   * (with or without a user). Stays true for the rest of the provider's
-   * lifetime. Use this in components/guards/queries to know it is safe to
-   * rely on `user`/role state.
-   */
   authReady: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
@@ -86,13 +44,22 @@ export interface AuthContextValue {
   refetchUserData: () => Promise<void> | null;
 }
 
-// NOTE: AuthContext is exported so the `useAuth` hook (in src/hooks/useAuth.tsx)
-// can consume it. We intentionally do NOT export `useAuth` from this file —
-// mixing a component export (AuthProvider) with a hook export breaks
-// React Fast Refresh and forces preview remounts (that was a source of the
-// preview-only failed reload sessions).
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
+/**
+ * Per-portal auth provider.
+ *
+ * Mounted ONCE inside each portal's route subtree (super, dcg, member).
+ * Public pages run with NO provider — `useAuth()` returns a safe empty shape.
+ *
+ * Design rules (keep simple, keep stable):
+ *   - Run getSession() ONCE on mount and load this user's data.
+ *   - Do NOT subscribe to onAuthStateChange. No focus refetch, no token-refresh
+ *     refetch, no cross-tab cascades. The session lives on the supabase client;
+ *     this provider just snapshots derived data.
+ *   - signOut uses scope: 'local' so signing out of one portal NEVER kills a
+ *     session in another portal/tab. Caller decides where to navigate next.
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -105,73 +72,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initialized, setInitialized] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { toast } = useToast();
-
-  const signOutRedirectRef = useRef<string | null>(null);
-  const initializedRef = useRef(false);
-  const isSigningOutRef = useRef(false);
-  const inflightFetchRef = useRef<string | null>(null);
+  const bootedRef = useRef(false);
   const fetchedForUserRef = useRef<string | null>(null);
-  const initialBootRef = useRef(false);
-  const navigateRef = useRef(navigate);
-  const toastRef = useRef(toast);
-  const fetchUserDataRef = useRef<((userId: string) => Promise<void>) | null>(null);
-
-  // Keep refs current so the one-time listener always uses the latest
-  // navigate/toast functions without forcing the listener to be re-installed.
-  useEffect(() => {
-    navigateRef.current = navigate;
-    toastRef.current = toast;
-  }, [navigate, toast]);
-
-  const clearAllState = useCallback(() => {
-    setUser(null);
-    setProfile(null);
-    setUserRoles([]);
-    setUserRegion(null);
-    setUserDcg(null);
-    setMemberRecord(null);
-    setUserRegionalRoles([]);
-    fetchedForUserRef.current = null;
-  }, []);
 
   const fetchUserData = useCallback(async (userId: string) => {
-    if (inflightFetchRef.current === userId) return;
-    inflightFetchRef.current = userId;
-
     try {
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+      if (profileData) setProfile(profileData);
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Auth: profile fetch error', profileError);
-      } else if (profileData) {
-        setProfile(profileData);
-      }
-
-      const { data: rolesData, error: rolesError } = await supabase
+      const { data: rolesData } = await supabase
         .from('user_roles')
         .select('*')
         .eq('user_id', userId)
         .eq('is_active', true);
-
-      if (rolesError) {
-        console.error('Auth: roles fetch error', rolesError);
-      } else {
-        setUserRoles(rolesData || []);
-      }
+      setUserRoles(rolesData || []);
 
       if (profileData?.region_id) {
         const { data: regionData } = await supabase
           .from('regions')
           .select('*')
           .eq('id', profileData.region_id)
-          .single();
+          .maybeSingle();
         if (regionData) setUserRegion(regionData);
       }
 
@@ -184,6 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (memberData) setMemberRecord(memberData);
       }
 
+      // Resolve DCG (session row, then led DCG, then membership)
       let resolvedDcg: Dcg | null = null;
       const { data: dcgId } = await supabase.rpc('get_user_dcg', { _user_id: userId });
       if (dcgId) {
@@ -194,14 +120,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .maybeSingle();
         if (dcgData) resolvedDcg = dcgData;
       }
-
       if (!resolvedDcg) {
         const { data: memberRows } = await supabase
           .from('members')
           .select('id')
           .eq('profile_id', userId);
         const memberIds = (memberRows || []).map((m) => m.id);
-
         if (memberIds.length > 0) {
           const { data: ledDcg } = await supabase
             .from('dcgs')
@@ -210,7 +134,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('is_active', true)
             .limit(1)
             .maybeSingle();
-
           if (ledDcg) {
             resolvedDcg = ledDcg;
           } else {
@@ -219,7 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .select('dcg_id, role, dcgs:dcg_id (*)')
               .in('member_id', memberIds)
               .eq('is_active', true);
-
             if (memberships && memberships.length > 0) {
               const preferred =
                 memberships.find((m) => m.role === 'Leader') ||
@@ -230,10 +152,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       }
-
       if (resolvedDcg) setUserDcg(resolvedDcg);
 
-      if (profileData && profileData.region_id) {
+      if (profileData?.region_id) {
         const { data: regionalRolesData } = await supabase
           .from('regional_user_roles')
           .select(`
@@ -248,184 +169,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('user_id', userId)
           .eq('region_id', profileData.region_id)
           .eq('is_active', true);
-
         setUserRegionalRoles(regionalRolesData || []);
       }
 
       fetchedForUserRef.current = userId;
     } catch (error) {
-      console.error('Auth: exception fetching user data', error);
-      toastRef.current({
-        title: 'Error loading user data',
-        description: 'Please refresh the page and try again.',
-        variant: 'destructive',
-      });
+      console.error('[PortalAuth] fetch error', error);
     } finally {
-      initializedRef.current = true;
       setInitialized(true);
       setLoading(false);
-      inflightFetchRef.current = null;
+      setAuthReady(true);
     }
   }, []);
 
-  // Keep fetchUserData ref current for the one-time listener
   useEffect(() => {
-    fetchUserDataRef.current = fetchUserData;
-  }, [fetchUserData]);
+    if (bootedRef.current) return;
+    bootedRef.current = true;
 
-  useEffect(() => {
-    let mounted = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-
-      // Mid-signout: ignore noise until SIGNED_OUT lands
-      if (isSigningOutRef.current && event !== 'SIGNED_OUT') {
-        return;
-      }
-
-      if (event === 'SIGNED_OUT') {
-        clearAllState();
-        setLoading(false);
-        initializedRef.current = true;
-        setInitialized(true);
-        setAuthReady(true);
-
-        const redirectUrl = signOutRedirectRef.current;
-        signOutRedirectRef.current = null;
-        isSigningOutRef.current = false;
-
-        if (redirectUrl) {
-          setJustSignedOut();
-          navigateRef.current(redirectUrl, { replace: true });
-          toastRef.current({
-            title: 'Signed out successfully',
-            description: 'You have been signed out of your account.',
-          });
-        }
-        return;
-      }
-
-      // A real authenticated session: SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED, INITIAL_SESSION w/ user
-      if (session?.user) {
-        if (event === 'SIGNED_IN') {
-          clearJustSignedOut();
-        }
-
-        // INITIAL_SESSION is handled by the explicit getInitialSession() path
-        // below — ignore it in the listener so we don't double-fetch on boot.
-        if (event === 'INITIAL_SESSION') {
-          return;
-        }
-
-        // Token refresh: do NOT re-fetch protected data unless the identity
-        // actually changed or we never fetched for this user yet.
-        if (event === 'TOKEN_REFRESHED') {
-          if (fetchedForUserRef.current === session.user.id) {
-            return;
-          }
-        }
-
-        let isNewUserLocal = false;
-        setUser((prev: any) => {
-          isNewUserLocal = prev?.id !== session.user.id;
-          if (isNewUserLocal) {
-            // Reset derived state so route guards don't read stale roles/dcg
-            setProfile(null);
-            setUserRoles([]);
-            setUserRegion(null);
-            setUserDcg(null);
-            setMemberRecord(null);
-            setUserRegionalRoles([]);
-            setLoading(true);
-            setInitialized(false);
-            initializedRef.current = false;
-            fetchedForUserRef.current = null;
-          }
-          return isNewUserLocal ? session.user : prev;
-        });
-
-        // Only run the heavy fetch when we truly need to.
-        const needFetch =
-          isNewUserLocal ||
-          event === 'SIGNED_IN' ||
-          event === 'USER_UPDATED' ||
-          fetchedForUserRef.current !== session.user.id;
-
-        if (needFetch) {
-          // Defer to avoid awaiting inside the listener (Supabase deadlock guidance)
-          setTimeout(() => {
-            if (mounted) fetchUserDataRef.current?.(session.user.id);
-          }, 0);
-        }
-        return;
-      }
-
-      // No session
-      if (!initializedRef.current) return;
-      clearAllState();
-      setLoading(false);
-    });
-
-    const getInitialSession = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        // Only the initial restore path honors the "just signed out" guard,
-        // to prevent local-storage rehydration immediately after logout.
-        if (isJustSignedOut()) {
-          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-          clearJustSignedOut();
-          initializedRef.current = true;
-          setInitialized(true);
-          setLoading(false);
-          setAuthReady(true);
-          return;
-        }
-
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Auth: initial session error', error);
-          initializedRef.current = true;
-          setInitialized(true);
-          setLoading(false);
-          setAuthReady(true);
-          return;
-        }
-        if (!mounted) return;
+        const { data: { session } } = await supabase.auth.getSession();
+        if (cancelled) return;
         if (session?.user) {
           setUser(session.user);
-          await fetchUserDataRef.current?.(session.user.id);
+          await fetchUserData(session.user.id);
         } else {
-          initializedRef.current = true;
           setInitialized(true);
           setLoading(false);
+          setAuthReady(true);
         }
-        // Mark auth as ready ONLY after the initial restore has completed
-        // (with or without a user). Components that gate on `authReady` can
-        // now safely make role/data decisions.
-        if (mounted) setAuthReady(true);
-      } catch (error) {
-        console.error('Auth: initial session exception', error);
-        if (mounted) {
-          initializedRef.current = true;
+      } catch (err) {
+        console.error('[PortalAuth] boot error', err);
+        if (!cancelled) {
           setInitialized(true);
           setLoading(false);
           setAuthReady(true);
         }
       }
-    };
-
-    // Guard against double-boot (StrictMode / HMR in preview iframe)
-    if (!initialBootRef.current) {
-      initialBootRef.current = true;
-      getInitialSession();
-    }
+    })();
 
     return () => {
-      mounted = false;
-      subscription.unsubscribe();
+      cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchUserData]);
 
   const hasRole = useCallback(
     (role: AppRole) => userRoles.some((ur) => ur.role === role && ur.is_active),
@@ -493,65 +280,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isDcgAdmin = useCallback(() => hasRole('dcg_admin'), [hasRole]);
 
   const signOut = useCallback(async () => {
+    setLoading(true);
+    setUser(null);
+    setProfile(null);
+    setUserRoles([]);
+    setUserRegion(null);
+    setUserDcg(null);
+    setMemberRecord(null);
+    setUserRegionalRoles([]);
+    fetchedForUserRef.current = null;
     try {
-      isSigningOutRef.current = true;
-      setLoading(true);
-
-      const pathname = location.pathname;
-      let redirectUrl = '/';
-      if (pathname.startsWith('/admin/super') || pathname.startsWith('/super/')) {
-        redirectUrl = '/auth/super';
-      } else if (pathname.startsWith('/admin/regional') || pathname.startsWith('/regional/')) {
-        redirectUrl = '/auth/regional';
-      } else if (pathname.startsWith('/dcg/')) {
-        redirectUrl = '/dcg-auth';
-      } else if (pathname.startsWith('/member/')) {
-        redirectUrl = '/auth/member';
-      } else if (pathname.startsWith('/portal-selector')) {
-        if (hasRole('super_admin')) redirectUrl = '/auth/super';
-        else if (hasRole('regional_admin')) redirectUrl = '/auth/regional';
-        else if (hasRole('dcg_admin')) redirectUrl = '/dcg-auth';
-        else if (hasRole('member')) redirectUrl = '/auth/member';
-      } else {
-        if (hasRole('super_admin')) redirectUrl = '/auth/super';
-        else if (hasRole('regional_admin')) redirectUrl = '/auth/regional';
-        else if (hasRole('dcg_admin')) redirectUrl = '/dcg-auth';
-        else if (hasRole('member')) redirectUrl = '/auth/member';
-      }
-
-      signOutRedirectRef.current = redirectUrl;
-
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-
-      if (error) {
-        const isSessionError = error.message?.toLowerCase().includes('session');
-        if (isSessionError) {
-          clearAllState();
-          setLoading(false);
-          isSigningOutRef.current = false;
-          signOutRedirectRef.current = null;
-          setJustSignedOut();
-          navigate(redirectUrl, { replace: true });
-          toast({
-            title: 'Signed out successfully',
-            description: 'You have been signed out of your account.',
-          });
-        } else {
-          console.error('Auth: sign out error', error);
-          isSigningOutRef.current = false;
-          setLoading(false);
-        }
-      }
-    } catch (error) {
-      console.error('Auth: sign out exception', error);
-      isSigningOutRef.current = false;
-      signOutRedirectRef.current = null;
-      clearAllState();
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (err) {
+      console.error('[PortalAuth] signOut error', err);
+    } finally {
       setLoading(false);
-      setJustSignedOut();
-      navigate('/', { replace: true });
     }
-  }, [location.pathname, hasRole, clearAllState, navigate, toast]);
+  }, []);
 
   const refetchUserData = useCallback(
     () => (user ? fetchUserData(user.id) : null),
