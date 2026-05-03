@@ -187,9 +187,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bootedRef.current = true;
 
     let cancelled = false;
+    const waitForSession = async () => {
+      for (let i = 0; i < 8; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) return data.session;
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      const { data } = await supabase.auth.getSession();
+      return data.session ?? null;
+    };
+
     (async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const session = await waitForSession();
         if (cancelled) return;
         if (session?.user) {
           setUser(session.user);
