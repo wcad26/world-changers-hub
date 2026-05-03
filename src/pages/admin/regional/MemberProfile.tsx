@@ -442,8 +442,6 @@ const MemberProfile: React.FC = () => {
 
             <Separator />
 
-            {/* (Emergency contact removed) */}
-            <div className="hidden" />
             <div>
               <h4 className="text-sm font-medium text-muted-foreground mb-3">Discipleship</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
