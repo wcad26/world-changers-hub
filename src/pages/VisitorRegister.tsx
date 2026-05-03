@@ -13,11 +13,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, CheckCircle2, User, UserCheck, CalendarDays, Heart, Search, X, Check, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
@@ -26,6 +25,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+
+const nativeSelectClassName = "flex h-10 w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 // Glassy section wrapper - matching MemberRegister style
 function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
@@ -109,6 +110,14 @@ export default function VisitorRegister() {
       referral_other_details: ''
     }
   });
+
+  // Clear any stale root errors on mount (e.g., from removed fields after Fast Refresh)
+  useEffect(() => {
+    if (form.formState.errors.root) {
+      form.clearErrors('root');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = (data: VisitorRegistrationFormData) => {
     if (!region?.id) return;
@@ -373,17 +382,17 @@ export default function VisitorRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('gender')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectGender')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Male">{t('male')}</SelectItem>
-                            <SelectItem value="Female">{t('female')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            <option value="" disabled>{t('selectGender')}</option>
+                            <option value="Male">{t('male')}</option>
+                            <option value="Female">{t('female')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -396,20 +405,20 @@ export default function VisitorRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('occupation')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder="Select your occupation" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[40vh]" position="popper">
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="" disabled>Select your occupation</option>
                           {occupations.map((occ) => (
-                            <SelectItem key={occ.id} value={occ.name}>
+                            <option key={occ.id} value={occ.name}>
                               {occ.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -429,31 +438,20 @@ export default function VisitorRegister() {
                         <p className="text-xs text-muted-foreground mb-2">
                           Select the event you attended
                         </p>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-auto min-h-[2.5rem] rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectEventPlaceholder')} className="whitespace-normal text-left" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-w-[calc(100vw-2rem)] md:max-w-md">
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            <option value="" disabled>{t('selectEventPlaceholder')}</option>
                             {pastEvents.map((event) => (
-                              <SelectItem
-                                key={event.id}
-                                value={event.id}
-                                className="whitespace-normal h-auto py-3"
-                              >
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-medium">
-                                    {localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event'}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(event.start_datetime), 'PPP')}
-                                  </span>
-                                </div>
-                              </SelectItem>
+                              <option key={event.id} value={event.id}>
+                                {(localizedField(event.name, event.name_fr) || event.name || 'Unnamed Event')} — {format(new Date(event.start_datetime), 'PPP')}
+                              </option>
                             ))}
-                          </SelectContent>
-                        </Select>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -497,19 +495,19 @@ export default function VisitorRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('referralSource')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder={t('selectReferralSource')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="invited_by">{t('invitedBy')}</SelectItem>
-                          <SelectItem value="social_media">{t('socialMedia')}</SelectItem>
-                          <SelectItem value="website">{t('website')}</SelectItem>
-                          <SelectItem value="other">{t('other')}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="" disabled>{t('selectReferralSource')}</option>
+                          <option value="invited_by">{t('invitedBy')}</option>
+                          <option value="social_media">{t('socialMedia')}</option>
+                          <option value="website">{t('website')}</option>
+                          <option value="other">{t('other')}</option>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -584,22 +582,19 @@ export default function VisitorRegister() {
                         {/* Relationship Type (Right) */}
                         <div className="space-y-2">
                           <label className="text-sm font-medium">Relationship *</label>
-                          <Select
+                          <select
+                            className={nativeSelectClassName}
                             value={form.watch('referral_relationship_type') || ''}
-                            onValueChange={(v) => form.setValue('referral_relationship_type', v as any, { shouldValidate: true })}
+                            onChange={(e) => form.setValue('referral_relationship_type', e.target.value as any, { shouldValidate: true })}
                           >
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder="Select relationship" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="spouse">Spouse</SelectItem>
-                              <SelectItem value="parent">Parent</SelectItem>
-                              <SelectItem value="child">Child</SelectItem>
-                              <SelectItem value="sibling">Sibling</SelectItem>
-                              <SelectItem value="guardian">Guardian</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <option value="" disabled>Select relationship</option>
+                            <option value="spouse">Spouse</option>
+                            <option value="parent">Parent</option>
+                            <option value="child">Child</option>
+                            <option value="sibling">Sibling</option>
+                            <option value="guardian">Guardian</option>
+                            <option value="other">Other</option>
+                          </select>
                         </div>
                       </div>
 
@@ -634,24 +629,24 @@ export default function VisitorRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Which social media platform? *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder="Select social media platform" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="facebook">Facebook</SelectItem>
-                            <SelectItem value="instagram">Instagram</SelectItem>
-                            <SelectItem value="twitter">Twitter / X</SelectItem>
-                            <SelectItem value="tiktok">TikTok</SelectItem>
-                            <SelectItem value="youtube">YouTube</SelectItem>
-                            <SelectItem value="whatsapp">WhatsApp</SelectItem>
-                            <SelectItem value="telegram">Telegram</SelectItem>
-                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                            <SelectItem value="other_social">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            <option value="" disabled>Select social media platform</option>
+                            <option value="facebook">Facebook</option>
+                            <option value="instagram">Instagram</option>
+                            <option value="twitter">Twitter / X</option>
+                            <option value="tiktok">TikTok</option>
+                            <option value="youtube">YouTube</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="telegram">Telegram</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="other_social">Other</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

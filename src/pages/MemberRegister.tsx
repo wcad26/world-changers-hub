@@ -130,11 +130,11 @@ export default function MemberRegister() {
   });
 
   useEffect(() => {
-    const rootMessage = form.formState.errors.root?.message;
-    if (rootMessage?.includes('emergency_contact')) {
+    if (form.formState.errors.root) {
       form.clearErrors('root');
     }
-  }, [form, form.formState.errors.root?.message]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
   const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
