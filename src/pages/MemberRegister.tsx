@@ -11,13 +11,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import type { FieldErrors } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLanguage } from '@/hooks/useLanguage';
 import { format } from 'date-fns';
 import Navbar from '@/components/layout/Navbar';
@@ -56,6 +55,8 @@ const MINISTRY_OPTIONS = [
   'Prayer Ministry',
   'Outreach & Evangelism'
 ];
+
+const nativeSelectClassName = "flex h-10 w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 // Glassy section wrapper
 function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
@@ -127,6 +128,13 @@ export default function MemberRegister() {
       relationships: []
     }
   });
+
+  useEffect(() => {
+    const rootMessage = form.formState.errors.root?.message;
+    if (rootMessage?.includes('emergency_contact')) {
+      form.clearErrors('root');
+    }
+  }, [form, form.formState.errors.root?.message]);
 
   const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
   const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
@@ -477,17 +485,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('gender')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectGender')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Male">{t('male')}</SelectItem>
-                            <SelectItem value="Female">{t('female')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectGender')}</option>
+                            <option value="Male">{t('male')}</option>
+                            <option value="Female">{t('female')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -500,20 +508,20 @@ export default function MemberRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('occupation')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder="Select your occupation" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[40vh]" position="popper">
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                        >
+                          <option value="" disabled>Select your occupation</option>
                           {occupations.map((occ) => (
-                            <SelectItem key={occ.id} value={occ.name}>
+                            <option key={occ.id} value={occ.name}>
                               {occ.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -529,17 +537,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('foundationSchool')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectAnswer')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="yes">{t('yes')}</SelectItem>
-                            <SelectItem value="no">{t('no')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectAnswer')}</option>
+                            <option value="yes">{t('yes')}</option>
+                            <option value="no">{t('no')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -594,17 +602,17 @@ export default function MemberRegister() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>{t('haveBaptized')}</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="rounded-xl bg-background/60">
-                              <SelectValue placeholder={t('selectAnswer')} />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="yes">{t('yes')}</SelectItem>
-                            <SelectItem value="no">{t('no')}</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <select
+                            className={nativeSelectClassName}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                          >
+                            <option value="" disabled>{t('selectAnswer')}</option>
+                            <option value="yes">{t('yes')}</option>
+                            <option value="no">{t('no')}</option>
+                          </select>
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -721,16 +729,16 @@ export default function MemberRegister() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Relationship Type</label>
-                      <Select value={currentRelType} onValueChange={(v) => setCurrentRelType(v as FamilyRelationshipType)}>
-                        <SelectTrigger className="rounded-xl bg-background/60">
-                          <SelectValue placeholder="Select relationship type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {RELATIONSHIP_TYPES.map(rt => (
-                            <SelectItem key={rt.value} value={rt.value}>{rt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <select
+                        className={nativeSelectClassName}
+                        value={currentRelType}
+                        onChange={(event) => setCurrentRelType(event.target.value as FamilyRelationshipType)}
+                      >
+                        <option value="" disabled>Select relationship type</option>
+                        {RELATIONSHIP_TYPES.map(rt => (
+                          <option key={rt.value} value={rt.value}>{rt.label}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="space-y-2">
@@ -828,34 +836,23 @@ export default function MemberRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('selectDcg')} *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder={t('selectDcgPlaceholder')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent
-                          className="max-h-[40vh] max-w-[var(--radix-select-trigger-width)] w-[var(--radix-select-trigger-width)]"
-                          position="popper"
-                          sideOffset={4}
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          disabled={dcgsLoading || dcgs.length === 0}
                         >
-                          {dcgsLoading ? (
-                            <div className="flex items-center justify-center py-4">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            </div>
-                          ) : dcgs.length === 0 ? (
-                            <div className="py-4 text-center text-sm text-muted-foreground">
-                              No DCGs available for this region
-                            </div>
-                          ) : (
-                            dcgs.map((dcg) => (
-                              <SelectItem key={dcg.id} value={dcg.id} className="whitespace-normal break-words">
-                                {dcg.name} {dcg.location && `- ${dcg.location}`}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
+                          <option value="" disabled>
+                            {dcgsLoading ? 'Loading DCGs...' : dcgs.length === 0 ? 'No DCGs available for this region' : t('selectDcgPlaceholder')}
+                          </option>
+                          {dcgs.map((dcg) => (
+                            <option key={dcg.id} value={dcg.id}>
+                              {dcg.name} {dcg.location && `- ${dcg.location}`}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
                       <FormDescription className="text-xs">{t('dcgDescription')}</FormDescription>
                       <FormMessage />
                     </FormItem>
