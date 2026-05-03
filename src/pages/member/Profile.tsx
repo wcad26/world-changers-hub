@@ -219,47 +219,6 @@ export default function MemberProfile() {
           </CardContent>
         </Card>
 
-        {/* Emergency Contact */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Emergency Contact</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="emergency_contact_name">Contact Name</Label>
-              {isEditing ? (
-                <Input
-                  id="emergency_contact_name"
-                  value={formData.emergency_contact_name}
-                  onChange={(e) => setFormData({ ...formData, emergency_contact_name: e.target.value })}
-                  placeholder="Emergency contact name"
-                />
-              ) : (
-                <div className="flex items-center space-x-2 py-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.emergency_contact_name || 'Not provided'}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="emergency_contact_phone">Contact Phone</Label>
-              {isEditing ? (
-                <Input
-                  id="emergency_contact_phone"
-                  value={formData.emergency_contact_phone}
-                  onChange={(e) => setFormData({ ...formData, emergency_contact_phone: e.target.value })}
-                  placeholder="Emergency contact phone"
-                />
-              ) : (
-                <div className="flex items-center space-x-2 py-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.emergency_contact_phone || 'Not provided'}</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
       </div>
   );
 }
