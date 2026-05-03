@@ -61,7 +61,7 @@ const nativeSelectClassName = "flex h-10 w-full rounded-xl border border-input b
 const Req = () => <span className="text-destructive ml-0.5">*</span>;
 
 // Glassy section wrapper
-function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children: React.ReactNode }) {
+function GlassSection({ icon: Icon, title, children }: { icon: React.ElementType; title: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 md:p-6 space-y-4 shadow-sm">
       <div className="flex items-center gap-2.5 pb-3 border-b border-border/30">
@@ -138,6 +138,20 @@ export default function MemberRegister() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const watchedDob = form.watch('date_of_birth');
+  const computeAge = (dobStr?: string): number | null => {
+    if (!dobStr) return null;
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const m = now.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+    return age;
+  };
+  const registrantAge = computeAge(watchedDob);
+  const isMinor = registrantAge !== null && registrantAge < 16;
+
   const [relationships, setRelationships] = useState<RelationshipEntry[]>([]);
   const [currentRelType, setCurrentRelType] = useState<FamilyRelationshipType | ''>('');
   const [currentRelMemberIds, setCurrentRelMemberIds] = useState<string[]>([]);
@@ -199,6 +213,41 @@ export default function MemberRegister() {
 
   const onSubmit = async (data: MemberRegistrationFormData) => {
     if (!region?.id) return;
+
+    // Children rule: members under 16 must be linked to at least one adult
+    const submittedAge = computeAge(data.date_of_birth);
+    if (submittedAge !== null && submittedAge < 16) {
+      if (relationships.length === 0) {
+        form.setError('root', { message: 'Members under 16 must add at least one family relationship linking them to an adult (parent/guardian).' });
+        toast.error('Please add at least one family relationship to an adult (parent/guardian).');
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      const allLinkedIds = Array.from(new Set(relationships.flatMap(r => r.memberIds)));
+      try {
+        const { data: linkedMembers, error: linkedErr } = await supabase
+          .from('members')
+          .select('id, profiles:profile_id(date_of_birth)')
+          .in('id', allLinkedIds);
+        if (linkedErr) throw linkedErr;
+        const hasAdult = (linkedMembers || []).some((m: any) => {
+          const dob = m?.profiles?.date_of_birth as string | null | undefined;
+          if (!dob) return true; // DOB unknown counts as adult per project rule
+          const a = computeAge(dob);
+          return a !== null && a >= 16;
+        });
+        if (!hasAdult) {
+          form.setError('root', { message: 'At least one of the linked family members must be an adult (16 or older).' });
+          toast.error('At least one linked family member must be an adult (16+).');
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to validate adult linkage', err);
+        form.setError('root', { message: 'Could not verify adult linkage for the selected family members. Please try again.' });
+        return;
+      }
+    }
 
     setIsCheckingEmail(true);
     try {
@@ -703,7 +752,17 @@ export default function MemberRegister() {
               </GlassSection>
 
               {/* Family Relationships */}
-              <GlassSection icon={Users} title="Family Relationships (Optional)">
+              <GlassSection
+                icon={Users}
+                title={isMinor ? (<span>Family Relationships <Req /></span>) : 'Family Relationships (Optional)'}
+              >
+                {isMinor && (
+                  <Alert>
+                    <AlertDescription>
+                      This registrant is under 16. You must add at least one family relationship linking them to an adult (parent or guardian, 16+).
+                    </AlertDescription>
+                  </Alert>
+                )}
                 {relationships.length > 0 && (
                   <div className="space-y-2">
                     {relationships.map((rel, index) => (
