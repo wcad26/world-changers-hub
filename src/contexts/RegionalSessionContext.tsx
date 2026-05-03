@@ -13,11 +13,8 @@ interface RegionalSessionValue {
   profile: Profile | null;
   region: Region | null;
   status: RegionalSessionStatus;
-  /** True only after the very first session check has finished. */
   ready: boolean;
-  /** True if a Supabase session exists AND profile.region_id is set. */
   authorized: boolean;
-  /** Manual retry helper for recoverable errors. */
   retry: () => void;
   signOut: () => Promise<void>;
 }
@@ -25,12 +22,18 @@ interface RegionalSessionValue {
 export const RegionalSessionContext = createContext<RegionalSessionValue | null>(null);
 
 /**
- * Self-contained session provider for the Regional portal.
+ * Self-contained session reader for the Regional portal.
  *
- * IMPORTANT: This provider is mounted ONCE for the whole regional portal at
- * the App level. It never remounts during navigation between regional pages,
- * so route changes never re-run the session boot sequence. Token refreshes
- * only update the user reference — they do NOT re-fetch profile/region.
+ * NON-DESTRUCTIVE by design:
+ *  - No `onAuthStateChange` subscription (cross-portal SIGNED_OUT events
+ *    used to silently flip this provider to `unauthorized`).
+ *  - No sessionStorage-based "signing out" marker.
+ *  - No automatic boot-time signOut.
+ *  - A transient null session or profile read failure shows an error/retry
+ *    panel — it never destroys the session or redirects to login by itself.
+ *
+ *  Only an explicit `signOut()` call from the regional portal UI itself
+ *  clears the session.
  */
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<RegionalSessionValue['user']>(null);
@@ -40,7 +43,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [ready, setReady] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
   const bootedForUser = useRef<string | null>(null);
-  const signingOutRef = useRef(false);
   const queryClient = useQueryClient();
 
   const loadProfileAndRegion = async (userId: string) => {
@@ -53,7 +55,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (profileError) {
         console.error('[RegionalSession] profile fetch error:', profileError);
-        // Recoverable — do NOT log the user out.
         setStatus('error');
         return;
       }
@@ -62,7 +63,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (!profileRow?.region_id) {
         console.warn('[RegionalSession] user has no region_id on profile');
-        setStatus('unauthorized');
+        // Treat as a recoverable error (NOT unauthorized) so we don't bounce
+        // a freshly-logged-in user to the login page on a transient read.
+        setStatus('error');
         return;
       }
 
@@ -74,7 +77,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (regionError) {
         console.error('[RegionalSession] region fetch error:', regionError);
-        // Keep user authorized — a transient regions read error must not log them out.
+        // Keep the user authorized — a transient regions read error must not log them out.
         setStatus('authorized');
         return;
       }
@@ -90,41 +93,25 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   useEffect(() => {
     let cancelled = false;
 
-    // Initial boot
     (async () => {
       try {
-        // If a sign-out from this portal is mid-flight or just happened,
-        // do NOT restore the previous Supabase session. Force-clear it and
-        // stay unauthorized so the user lands cleanly on the login page.
-        const loggingOut =
-          typeof sessionStorage !== 'undefined' &&
-          sessionStorage.getItem('regional_signing_out') === '1';
-
-        if (loggingOut) {
-          try {
-            await supabase.auth.signOut({ scope: 'local' });
-          } catch {
-            /* ignore */
-          }
-          sessionStorage.removeItem('regional_signing_out');
-          if (!cancelled) {
-            setStatus('unauthorized');
-          }
-          return;
-        }
-
+        console.info('[RegionalSession] boot start');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (cancelled) return;
 
         if (sessionError) {
           console.error('[RegionalSession] getSession error:', sessionError);
+          setStatus('error');
+          return;
         }
 
         if (!session?.user) {
+          console.info('[RegionalSession] boot: no session');
           setStatus('unauthorized');
           return;
         }
 
+        console.info('[RegionalSession] boot: session present', session.user.id);
         setUser({ id: session.user.id, email: session.user.email ?? undefined });
         bootedForUser.current = session.user.id;
         await loadProfileAndRegion(session.user.id);
@@ -136,48 +123,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       }
     })();
 
-    // Auth subscription — kept minimal to avoid remount loops.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (cancelled) return;
-
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setProfile(null);
-        setRegion(null);
-        bootedForUser.current = null;
-        setStatus('unauthorized');
-        setReady(true);
-        return;
-      }
-
-      if (!session?.user) {
-        // Other events without a session — ignore, do not flip state.
-        return;
-      }
-
-      // Token refresh / user update — just refresh the user reference, do NOT
-      // re-fetch profile/region. This is what was causing periodic reloads.
-      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        setUser({ id: session.user.id, email: session.user.email ?? undefined });
-        return;
-      }
-
-      // SIGNED_IN for a new user identity — boot once for them.
-      if (event === 'SIGNED_IN' && bootedForUser.current !== session.user.id) {
-        setUser({ id: session.user.id, email: session.user.email ?? undefined });
-        bootedForUser.current = session.user.id;
-        // Defer to avoid awaiting inside the listener (Supabase guidance).
-        setTimeout(() => {
-          if (!cancelled) loadProfileAndRegion(session.user.id);
-        }, 0);
-      }
-    });
-
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
     };
-    // retryTick intentionally re-runs the boot path when the user clicks retry
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [retryTick]);
 
@@ -189,29 +137,13 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   };
 
   const signOut = async () => {
-    // Mark as signing out so:
-    //   1. The auth listener doesn't react to transient SIGNED_OUT noise.
-    //   2. The /auth/regional page (which no longer mounts a provider) won't
-    //      see a re-hydrated session if the user is bounced there before
-    //      Supabase finishes clearing local storage.
-    signingOutRef.current = true;
     try {
-      sessionStorage.setItem('regional_signing_out', '1');
-    } catch {
-      /* ignore storage errors */
-    }
-
-    try {
-      // Stop any active queries first, then clear the cache, so child pages
-      // can't try to render with stale data while the auth state is changing.
       await queryClient.cancelQueries();
       queryClient.clear();
     } catch (err) {
       console.warn('[RegionalSession] queryClient cleanup failed:', err);
     }
 
-    // Optimistically clear local state and flip to unauthorized so the guard
-    // renders <Navigate to="/auth/regional" /> on the very next commit.
     setUser(null);
     setProfile(null);
     setRegion(null);
@@ -223,15 +155,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
-    } finally {
-      // Clear the marker only after Supabase has finished its local cleanup
-      // so any provider boot that happens during this window stays unauthorized.
-      try {
-        sessionStorage.removeItem('regional_signing_out');
-      } catch {
-        /* ignore */
-      }
-      signingOutRef.current = false;
     }
   };
 
@@ -256,9 +179,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 export const useRegionalSession = (): RegionalSessionValue => {
   const ctx = useContext(RegionalSessionContext);
   if (!ctx) {
-    // Defensive: should never happen now that the provider is a layout route,
-    // but a transient null (e.g. during HMR) must NEVER blank the portal or
-    // crash with "useRegionalSession must be used within a <RegionalSessionProvider>".
     if (typeof console !== 'undefined') {
       console.warn('[RegionalSession] consumed outside provider — returning safe stub');
     }
