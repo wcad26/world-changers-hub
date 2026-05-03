@@ -20,9 +20,19 @@ const SuperAdminSessionRoute: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     let cancelled = false;
 
+    const waitForSession = async () => {
+      for (let i = 0; i < 8; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) return data.session;
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      const { data } = await supabase.auth.getSession();
+      return data.session ?? null;
+    };
+
     const check = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
+      const session = await waitForSession();
+      const userId = session?.user?.id;
 
       if (!userId) {
         if (!cancelled) setStatus('denied');
