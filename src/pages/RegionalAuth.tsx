@@ -13,12 +13,9 @@ import wcaLogo from '@/assets/wca-logo.png';
 /**
  * Single regional portal login page.
  *
- * Mirrors the DCG portal flow:
- *   1. Sign the user in.
- *   2. One-shot check: does their profile have a region_id?
- *   3. If yes → /admin/regional/dashboard. If no → sign out + toast.
- *
- * No region picker, no per-region URLs, no AuthProvider, no role lookups.
+ * Sign in, wait briefly for the session to be persisted, then navigate to the
+ * regional dashboard. No role checks, no region checks, no signOut on failure.
+ * RLS handles real access control inside the portal.
  */
 const RegionalAuth = () => {
   const [email, setEmail] = useState('');
@@ -43,6 +40,14 @@ const RegionalAuth = () => {
       if (authError || !authData.user) {
         setError(authError?.message ?? 'Invalid credentials.');
         return;
+      }
+
+      // Wait briefly for the session to be persisted to localStorage so the
+      // dashboard's session restoration sees us as logged in immediately.
+      for (let i = 0; i < 10; i++) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user?.id === authData.user.id) break;
+        await new Promise((r) => setTimeout(r, 100));
       }
 
       navigate('/admin/regional/dashboard', { replace: true });

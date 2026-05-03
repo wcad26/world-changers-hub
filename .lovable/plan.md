@@ -1,101 +1,37 @@
-I located the remaining frontend triggers that can still block rendering, redirect to login, or explicitly sign the user out. The key point is: the regional portal is already mostly free of role checks, but the app still has multiple portal guards and login-page access checks elsewhere, and the regional guard still has a session condition that can show a blocking state when Supabase temporarily returns no session.
+I found a new likely trigger: the regional dashboard is not fully blank in my reproduction, but it is stuck forever on dashboard skeletons. That means the portal shell renders, but `userRegion` never resolves for the dashboard data hooks. After that, the preview can look like a blank/loading screen and Lovable’s blank-page recovery or a later navigation can make it appear as an eventual logout.
 
-Important security note: removing portal checks means the frontend routes will render for anyone who can reach the URL. Supabase RLS/database policies may still block real data mutations/reads server-side, but the UI itself will no longer be protected by client-side checks. Since you explicitly asked to eliminate these checks to stop the blank/logout loop, I will remove only the frontend blocking/redirect/sign-out behavior and leave database RLS policies intact.
+The most important issue is that `RegionalSessionContext` currently does only one `supabase.auth.getSession()` call on mount. If that call happens before Supabase finishes restoring the persisted login, it exits early and never listens for the later signed-in session. Since `ready` is always hardcoded to `true`, pages think auth is complete but still have no user/profile/region. The dashboard then waits on `!userRegion` forever.
 
-Current remaining triggers found
+I will implement the next elimination pass as follows:
 
-1. Regional portal route/session trigger
-- `src/contexts/RegionalSessionContext.tsx`
-  - Still sets `status = 'unauthorized'` when `getSession()` returns no user after retries.
-  - Still sets `status = 'error'` if profile/region lookup fails.
-- `src/components/auth/RegionalSessionRoute.tsx`
-  - Does not auto-redirect anymore, but still blocks the portal behind `ready/status` and shows a recovery panel instead of rendering the app.
+1. Make regional session hydration deterministic
+- Update `RegionalSessionContext` to use `supabase.auth.onAuthStateChange` again, but safely:
+  - subscribe once on mount,
+  - update only lightweight `session/user` state inside the callback,
+  - do not run nested Supabase queries inside the callback,
+  - do not sign out on missing session,
+  - do not redirect from the provider.
+- Add a separate effect that loads profile and region whenever `user.id` becomes available.
+- Keep client-side access checks disabled, but make `ready` mean “session restoration has completed”, not a hardcoded value.
 
-2. Super admin role checks
-- `src/pages/SuperAuth.tsx`
-  - After password login, queries `user_roles` for `super_admin`.
-  - If missing, it calls `supabase.auth.signOut({ scope: 'local' })` and shows access denied.
-- `src/components/auth/SuperAdminSessionRoute.tsx`
-  - On every protected route mount, checks session and `user_roles.super_admin`.
-  - If denied, redirects to `/auth/super`.
+2. Eliminate the permanent dashboard skeleton condition
+- Change regional pages that wait on `!userRegion` to stop showing endless skeletons after auth is ready.
+- For the dashboard specifically, show a visible “Region is still loading / retry” fallback instead of a blank-looking skeleton wall if region data is unavailable.
+- Ensure the regional dashboard can recover when the region arrives after initial render.
 
-3. DCG association checks
-- `src/pages/DcgAuth.tsx`
-  - After password login, checks `dcg_user_sessions`, `members`, and `dcg_members`.
-  - If not associated, it signs out.
-- `src/components/auth/DcgSessionRoute.tsx`
-  - Checks session and DCG association.
-  - If denied, redirects to `/dcg-auth`.
+3. Remove stale and misleading regional login assumptions
+- Clean up `RegionalAuth.tsx` comments that still say the login checks profile region and signs out. The code no longer does that, but the comment is misleading.
+- After `signInWithPassword`, wait briefly for the signed-in session to be persisted before navigation, without checking roles and without signing out.
 
-4. Shared protected route checks
-- `src/components/auth/ProtectedRoute.tsx`
-  - Redirects when no user, missing required role, or missing allowed role.
-- `src/components/auth/MultiRoleProtectedRoute.tsx`
-  - Redirects when no user or insufficient roles/portal access.
-- `src/components/auth/MemberProtectedRoute.tsx`
-  - Redirects to member login when missing user/member/regional role.
-- `src/components/auth/DcgProtectedRoute.tsx`
-  - Redirects if no user and blocks if no DCG role/association.
+4. Add targeted diagnostics that do not expose secrets
+- Add temporary-safe console diagnostics around regional session states: session restored, profile loaded, region loaded, or no region found.
+- Add a global unhandled error/rejection logger so if the remaining “blank screen” is caused by a runtime exception rather than auth, it becomes visible in the console instead of silently blanking.
 
-5. Permission gates and role-derived portal filtering
-- `src/components/auth/PermissionGate.tsx`
-  - Uses `useHasPermission()` and role checks to hide children.
-- `src/hooks/useUserPermissions.ts`
-  - `useHasPermission()` calls `has_regional_permission` RPC.
-- `src/components/auth/PortalSelector.tsx`
-  - Filters available portal cards through `canAccessPortal()`.
-- `src/contexts/AuthContext.tsx`
-  - Fetches `user_roles` and `regional_user_roles` and exposes role-based helpers used by guards/components.
+5. Keep role/access checks removed
+- Do not restore role checks.
+- Do not add frontend redirects for unauthorized/role states.
+- Do not call `supabase.auth.signOut()` except from explicit user logout buttons.
 
-Implementation plan
-
-1. Make all route guards pass-through renderers
-- Convert these components so they always render `children` and never perform role/session redirects:
-  - `RegionalSessionRoute.tsx`
-  - `SuperAdminSessionRoute.tsx`
-  - `DcgSessionRoute.tsx`
-  - `ProtectedRoute.tsx`
-  - `MultiRoleProtectedRoute.tsx`
-  - `MemberProtectedRoute.tsx`
-  - `DcgProtectedRoute.tsx`
-- Remove `Navigate` usage from these guards.
-- Remove loader states that depend on auth/role checks.
-
-2. Make regional context non-blocking
-- Update `RegionalSessionContext.tsx` so missing session/profile/region never becomes a blocking `unauthorized`/`error` portal state.
-- Keep optional best-effort session/profile/region loading for data scoping, but default to a non-blocking `authorized/ready` state so UI can mount.
-- Keep `signOut()` only for explicit user logout clicks.
-
-3. Remove post-login access checks that sign users out
-- `RegionalAuth.tsx`: keep password authentication and navigate to `/admin/regional/dashboard`; remove profile/region pre-check as a blocking concern.
-- `SuperAuth.tsx`: remove the `user_roles.super_admin` query and the access-denied sign-out. Successful password login navigates to super dashboard.
-- `DcgAuth.tsx`: remove DCG association checks and access-denied sign-out. Successful password login navigates to DCG dashboard.
-
-4. Disable permission gates from hiding UI
-- Update `PermissionGate.tsx` to always render `children`.
-- Update `useHasPermission()` to return `true` without calling the `has_regional_permission` RPC, so permission checks cannot blank/hide sections or trigger role-query races.
-
-5. Stop portal selector from filtering by roles
-- Update `PortalSelector.tsx` so it shows all portal cards, not only `canAccessPortal()` results.
-- Avoid “No portals available” states based on role data.
-
-6. Neutralize role helper behavior in global auth context
-- Keep `AuthContext` available for user/profile/member/region data that pages rely on.
-- Remove or stop relying on `user_roles` / `regional_user_roles` fetches for portal access.
-- Make helpers non-blocking:
-  - `hasRole()` returns `true` for UI gating compatibility.
-  - `hasAnyRole()` returns `true`.
-  - `canAccessPortal()` returns `true`.
-  - `hasRegionalPermission()` returns `true`.
-  - `hasRegionalPortalAccess` returns `true`.
-- This prevents older components from continuing to enforce role gates indirectly.
-
-7. Keep database security untouched
-- I will not remove Supabase RLS policies or server/database functions like `has_role()` / `has_regional_permission()` in this pass.
-- Reason: frontend checks are the source of the blank/logout loop, while RLS is the backend safety layer. Removing backend policies would expose or mutate protected data globally and may break many assumptions.
-
-Expected result
-- No portal route should redirect to a login page because of a missing/slow session, missing role, missing region, or missing DCG association.
-- No portal login page should sign the user out after a successful password login because of role/access checks.
-- Regional portal pages should mount even if session-derived profile/region data is still unavailable; individual data hooks may show empty/loading/error states based on RLS, but the whole app should not blank and eject the user.
-- All role access checks in the frontend portal gating path will be removed or neutralized.
+6. Verify the remaining triggers
+- Re-scan for any remaining frontend `signOut`, auth redirects, `return null`, and role-gated routes that could affect the regional portal.
+- Re-test `/auth/regional -> /admin/regional/dashboard` and confirm the page reaches real dashboard content instead of the skeleton wall.

@@ -33,7 +33,10 @@ import {
 const CHILD_AGE = 16;
 
 const RegionalDashboard: React.FC = () => {
-  const { region: userRegion, ready } = useRegionalSession();
+  const { region: userRegion, profile, ready, user } = useRegionalSession();
+  // Only show the auth-loading skeleton until session restoration completes.
+  // After that, render the dashboard even if region/profile are still being
+  // fetched — region-dependent widgets gracefully handle missing region.
   const authLoading = !ready;
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
 
@@ -319,9 +322,9 @@ const RegionalDashboard: React.FC = () => {
     return data;
   }, [kpis]);
 
-  if (authLoading || !userRegion) {
+  if (authLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-6">
         <Skeleton className="h-12 w-full rounded-2xl" />
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -329,6 +332,22 @@ const RegionalDashboard: React.FC = () => {
           ))}
         </div>
         <Skeleton className="h-[400px] w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (!userRegion) {
+    return (
+      <div className="p-6 max-w-xl mx-auto text-center space-y-3">
+        <h2 className="text-xl font-semibold">Region not loaded yet</h2>
+        <p className="text-sm text-muted-foreground">
+          {user
+            ? profile?.region_id
+              ? 'We could not load your region details. Please retry.'
+              : 'Your account has no region assigned. Contact a Super Admin.'
+            : 'Your session is still loading. Please wait a moment.'}
+        </p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
     );
   }
