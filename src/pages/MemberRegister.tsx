@@ -12,6 +12,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import type { FieldErrors } from 'react-hook-form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, Briefcase } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -123,7 +125,7 @@ export default function MemberRegister() {
       is_baptized: '',
       baptism_date: '',
       ministry_interests: [],
-      dcg_id: undefined,
+      dcg_id: '',
       relationships: []
     }
   });
@@ -162,6 +164,29 @@ export default function MemberRegister() {
     setCurrentRelMemberIds(prev =>
       prev.includes(memberId) ? prev.filter(id => id !== memberId) : [...prev, memberId]
     );
+  };
+
+  const onInvalid = (errors: FieldErrors<MemberRegistrationFormData>) => {
+    const fieldLabels: Record<string, string> = {
+      first_name: 'First name',
+      last_name: 'Last name',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      dcg_id: 'DCG selection',
+    };
+    const messages = Object.entries(errors)
+      .map(([field, err]: any) => `${fieldLabels[field] || field}: ${err?.message || 'Required'}`)
+      .filter(Boolean);
+    form.setError('root', {
+      message: messages.length
+        ? `Please fix the following: ${messages.join(' • ')}`
+        : 'Please complete all required fields before submitting.',
+    });
+    toast.error('Please fix the highlighted errors at the top of the form.');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const onSubmit = async (data: MemberRegistrationFormData) => {
