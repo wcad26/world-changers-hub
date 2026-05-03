@@ -397,20 +397,20 @@ export default function VisitorRegister() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>{t('occupation')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="rounded-xl bg-background/60">
-                            <SelectValue placeholder="Select your occupation" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-[40vh]" position="popper">
+                      <FormControl>
+                        <select
+                          className={nativeSelectClassName}
+                          value={field.value || ''}
+                          onChange={(e) => field.onChange(e.target.value)}
+                        >
+                          <option value="" disabled>Select your occupation</option>
                           {occupations.map((occ) => (
-                            <SelectItem key={occ.id} value={occ.name}>
+                            <option key={occ.id} value={occ.name}>
                               {occ.name}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
