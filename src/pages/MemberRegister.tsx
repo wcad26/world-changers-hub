@@ -214,6 +214,40 @@ export default function MemberRegister() {
   const onSubmit = async (data: MemberRegistrationFormData) => {
     if (!region?.id) return;
 
+    // Children rule: members under 16 must be linked to at least one adult
+    const submittedAge = computeAge(data.date_of_birth);
+    if (submittedAge !== null && submittedAge < 16) {
+      if (relationships.length === 0) {
+        form.setError('root', { message: 'Members under 16 must add at least one family relationship linking them to an adult (parent/guardian).' });
+        toast.error('Please add at least one family relationship to an adult (parent/guardian).');
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      const allLinkedIds = Array.from(new Set(relationships.flatMap(r => r.memberIds)));
+      try {
+        const { data: linkedMembers, error: linkedErr } = await supabase
+          .from('members')
+          .select('id, date_of_birth')
+          .in('id', allLinkedIds);
+        if (linkedErr) throw linkedErr;
+        const hasAdult = (linkedMembers || []).some(m => {
+          if (!m.date_of_birth) return true; // DOB unknown counts as adult per project rule
+          const a = computeAge(m.date_of_birth as string);
+          return a !== null && a >= 16;
+        });
+        if (!hasAdult) {
+          form.setError('root', { message: 'At least one of the linked family members must be an adult (16 or older).' });
+          toast.error('At least one linked family member must be an adult (16+).');
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to validate adult linkage', err);
+        form.setError('root', { message: 'Could not verify adult linkage for the selected family members. Please try again.' });
+        return;
+      }
+    }
+
     setIsCheckingEmail(true);
     try {
       const { data: existingProfile } = await supabase
