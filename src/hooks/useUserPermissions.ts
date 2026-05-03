@@ -204,24 +204,12 @@ export const useRemoveUserRole = () => {
 };
 
 // Hook to check if current user has specific permission
-export const useHasPermission = (permission: string) => {
-  const { user, userRegion } = useAuth();
-
+// All client-side permission checks are disabled — always returns true.
+export const useHasPermission = (_permission: string) => {
   return useQuery({
-    queryKey: ['has-permission', user?.id, userRegion?.id, permission],
-    queryFn: async () => {
-      if (!user?.id || !userRegion?.id) return false;
-
-      const { data, error } = await supabase.rpc('has_regional_permission', {
-        _user_id: user.id,
-        _region_id: userRegion.id,
-        _permission: permission
-      });
-
-      if (error) return false;
-      return data as boolean;
-    },
-    enabled: !!(user?.id && userRegion?.id),
+    queryKey: ['has-permission-disabled', _permission],
+    queryFn: async () => true,
+    staleTime: Infinity,
   });
 };
 

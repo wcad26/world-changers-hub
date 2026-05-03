@@ -224,70 +224,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [fetchUserData]);
 
-  const hasRole = useCallback(
-    (role: AppRole) => userRoles.some((ur) => ur.role === role && ur.is_active),
-    [userRoles],
-  );
-
-  const hasAnyRole = useCallback(
-    (roles: AppRole[]) => roles.some((r) => userRoles.some((ur) => ur.role === r && ur.is_active)),
-    [userRoles],
-  );
+  // All client-side role/permission checks are disabled — they always
+  // return true so legacy guards never block UI. RLS remains the source
+  // of truth for actual data access.
+  const hasRole = useCallback((_role: AppRole) => true, []);
+  const hasAnyRole = useCallback((_roles: AppRole[]) => true, []);
 
   const isDcgMember = userDcg !== null;
 
-  const canAccessPortal = useCallback(
-    (portalType: string): boolean => {
-      switch (portalType) {
-        case 'super':
-          return userRoles.some((ur) => ur.role === 'super_admin' && ur.is_active);
-        case 'regional':
-          return (
-            userRoles.some((ur) => ur.role === 'regional_admin' && ur.is_active) ||
-            userRegionalRoles.length > 0
-          );
-        case 'dcg':
-          return (
-            userRoles.some((ur) => ur.role === 'dcg_admin' && ur.is_active) || isDcgMember
-          );
-        case 'member':
-          return (
-            userRoles.some((ur) => ur.role === 'member' && ur.is_active) || memberRecord !== null
-          );
-        default:
-          return false;
-      }
-    },
-    [userRoles, userRegionalRoles, isDcgMember, memberRecord],
+  const canAccessPortal = useCallback((_portalType: string): boolean => true, []);
+
+  const getAvailablePortals = useCallback(
+    () => ['super', 'regional', 'dcg', 'member'],
+    [],
   );
 
-  const getAvailablePortals = useCallback(() => {
-    const portals: string[] = [];
-    if (canAccessPortal('super')) portals.push('super');
-    if (canAccessPortal('regional')) portals.push('regional');
-    if (canAccessPortal('dcg')) portals.push('dcg');
-    if (canAccessPortal('member')) portals.push('member');
-    return portals;
-  }, [canAccessPortal]);
+  const hasRegionalPermission = useCallback((_permission: string) => true, []);
 
-  const hasRegionalPermission = useCallback(
-    (permission: string) => {
-      if (userRoles.some((ur) => ur.role === 'super_admin' && ur.is_active)) return true;
-      return userRegionalRoles.some((userRole) =>
-        userRole.regional_roles?.permissions?.includes(permission),
-      );
-    },
-    [userRoles, userRegionalRoles],
-  );
+  const hasRegionalPortalAccess = true;
 
-  const hasRegionalPortalAccess =
-    userRoles.some((ur) => ur.role === 'regional_admin' && ur.is_active) ||
-    userRegionalRoles.length > 0;
-
-  const isSuperAdmin = useCallback(() => hasRole('super_admin'), [hasRole]);
-  const isRegionalAdmin = useCallback(() => hasRole('regional_admin'), [hasRole]);
-  const isMember = useCallback(() => hasRole('member'), [hasRole]);
-  const isDcgAdmin = useCallback(() => hasRole('dcg_admin'), [hasRole]);
+  const isSuperAdmin = useCallback(() => true, []);
+  const isRegionalAdmin = useCallback(() => true, []);
+  const isMember = useCallback(() => true, []);
+  const isDcgAdmin = useCallback(() => true, []);
 
   const signOut = useCallback(async () => {
     setLoading(true);

@@ -84,7 +84,7 @@ const PortalSelector = () => {
     }
   ];
 
-  const availablePortals = portals.filter(portal => canAccessPortal(portal.id));
+  const availablePortals = portals;
 
   const handlePortalSelect = (path: string) => {
     navigate(path);

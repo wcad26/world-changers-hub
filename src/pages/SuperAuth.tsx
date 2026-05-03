@@ -64,25 +64,6 @@ const SuperAuth = () => {
         return;
       }
 
-      // Single check: does this user hold the super_admin role?
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authData.user.id)
-        .eq('role', 'super_admin')
-        .eq('is_active', true)
-        .limit(1);
-
-      if (!roles || roles.length === 0) {
-        await supabase.auth.signOut({ scope: 'local' });
-        toast({
-          title: 'Access denied',
-          description: 'Your account does not have super admin access.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
       toast({ title: 'Welcome back' });
       navigate(from, { replace: true });
     } catch (error: any) {
