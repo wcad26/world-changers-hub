@@ -111,6 +111,14 @@ export default function VisitorRegister() {
     }
   });
 
+  // Clear any stale root errors on mount (e.g., from removed fields after Fast Refresh)
+  useEffect(() => {
+    if (form.formState.errors.root) {
+      form.clearErrors('root');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onSubmit = (data: VisitorRegistrationFormData) => {
     if (!region?.id) return;
     registerVisitor(
