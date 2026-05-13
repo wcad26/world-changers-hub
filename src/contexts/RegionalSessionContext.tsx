@@ -178,9 +178,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
     } finally {
-      setTimeout(() => {
-        signingOutRef.current = false;
-      }, 500);
+      if (typeof window !== 'undefined') {
+        window.location.replace('/auth/regional');
+      }
     }
   }, [queryClient]);
 
