@@ -68,6 +68,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const loadedForUserRef = useRef<string | null>(null);
 
   const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
+    if (signingOutRef.current) return;
     const loadKey = `${uid}:${preferredRegionId ?? 'none'}`;
     if (loadedForUserRef.current === loadKey) return;
     loadedForUserRef.current = loadKey;
@@ -110,7 +111,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         console.info('[RegionalSession] no region resolved for user', uid);
       }
     } catch (err) {
-      console.warn('[RegionalSession] background load failed:', err);
+      if (!signingOutRef.current) {
+        console.warn('[RegionalSession] background load failed:', err);
+      }
     }
   }, [user?.email]);
 
@@ -178,9 +181,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
     } finally {
-      setTimeout(() => {
-        signingOutRef.current = false;
-      }, 500);
+      if (typeof window !== 'undefined') {
+        window.location.replace('/auth/regional');
+      }
     }
   }, [queryClient]);
 

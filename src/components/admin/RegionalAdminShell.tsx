@@ -54,6 +54,18 @@ const getPageTitleFromPath = (path: string, fallback?: string) => {
   return 'Regional Admin';
 };
 
+const safeLogout = async (signOut: () => Promise<void> | void) => {
+  try {
+    await signOut();
+  } catch (err) {
+    console.error('[RegionalShell] logout failed, forcing redirect:', err);
+  } finally {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/auth/regional') {
+      window.location.replace('/auth/regional');
+    }
+  }
+};
+
 const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
   const { user, region, signOut } = useRegionalSession();
@@ -126,7 +138,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${isCollapsed ? 'justify-center px-2' : ''}`}
-            onClick={signOut}
+            onClick={() => safeLogout(signOut)}
           >
             <LogOut size={16} className="shrink-0" />
             {!isCollapsed && <span>Logout</span>}
@@ -231,7 +243,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                 variant="outline"
                 onClick={() => {
                   setMenuOpen(false);
-                  signOut();
+                  void safeLogout(signOut);
                 }}
                 className="w-full justify-center gap-2"
               >
