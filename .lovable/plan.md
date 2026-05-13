@@ -1,48 +1,18 @@
-## Root cause
+I found the real blank-screen trigger in the live preview: the browser is still being served transformed DCG modules that import `/src/hooks/useAuth.tsx?t=...`, even though the current source imports `@/hooks/useAuth` and the real file is now `src/hooks/useAuth.ts`. That stale `.tsx` module request fails/returns the wrong content, so React never mounts after redirecting to `/dcg/dashboard`.
 
-In dev, Vite logs:
+Plan:
 
-```
-[vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("AuthContext" export is incompatible)
-[vite] hmr invalidate /src/hooks/useAuth.tsx     Could not Fast Refresh ("useAuth" export is incompatible)
-```
+1. Clear the stale dev-server module graph
+   - Restart the Vite dev server so extensionless imports resolve fresh to `src/hooks/useAuth.ts` instead of the deleted `src/hooks/useAuth.tsx`.
+   - Recheck the transformed DCG modules to confirm they no longer reference `/src/hooks/useAuth.tsx`.
 
-React Fast Refresh requires each module to export **only React components** or **only non-components** — never both. Today:
+2. Add a small defensive compatibility layer only if the restart does not clear it
+   - If Vite or the preview still requests the old path, add a minimal `src/hooks/useAuth.tsx` shim that re-exports from `src/hooks/useAuth.ts` so stale browser/module-cache requests cannot blank the app.
+   - Keep the real hook implementation in `.ts` to avoid the Fast Refresh invalidation that caused the original dev-only instability.
 
-- `src/contexts/AuthContext.tsx` exports both `AuthContext` (a context value) and `AuthProvider` (a component).
-- `src/hooks/useAuth.tsx` is a `.tsx` file but exports only the `useAuth` hook (lowercase identifier — Fast Refresh can't classify it as a component).
+3. Validate the DCG login path
+   - Open `/dcg/dashboard` in the preview and confirm it shows either the auth guard/loading/login redirect or dashboard content, not a blank page.
+   - Inspect browser console/network for any remaining failed `/src/hooks/useAuth.tsx` or `AuthContext.tsx` module requests.
+   - Confirm the DCG guard still waits for `authReady` before rendering protected pages.
 
-Whenever any file in the dependency tree changes during a DCG login, Vite **invalidates** these modules. The new module instance gets a fresh `AuthContext` symbol while mounted consumers still hold the old one, so `useContext(AuthContext)` returns `null`. `useAuth`'s fallback then returns `{ authReady: true, user: null }`, `DcgSessionRoute` sees no user and redirects back to `/dcg-auth`. This is invisible in production (no HMR), which is why the bug only happens in dev.
-
-## Plan
-
-1. **Split `src/contexts/AuthContext.tsx`** into two files:
-   - `src/contexts/AuthContext.ts` — exports only `AuthContext` (created by `createContext`) and the `AuthContextValue` / `AppRole` types. No JSX, no component.
-   - `src/contexts/AuthProvider.tsx` — exports only the `AuthProvider` component. Imports `AuthContext` from the file above.
-
-2. **Rename `src/hooks/useAuth.tsx` → `src/hooks/useAuth.ts`** (no JSX inside it). This lets Fast Refresh skip it instead of invalidating.
-
-3. **Update imports** across the codebase:
-   - Anywhere that imports `AuthProvider` from `@/contexts/AuthContext` → switch to `@/contexts/AuthProvider` (App.tsx is the only consumer).
-   - Anywhere that imports `AuthContext` or types stays on `@/contexts/AuthContext` (now the `.ts` file).
-   - Imports of `useAuth` already resolve via extension stripping, so renaming `.tsx` → `.ts` requires no path changes.
-
-4. **No behavior change** to the auth logic itself — the listener pattern, `fetchedForUserRef` guard, and `signOut({ scope: 'local' })` flow remain exactly as they are. This is purely a module-boundary refactor to make Fast Refresh happy and stop the dev-only stale-context bounce.
-
-## Files touched
-
-- New: `src/contexts/AuthContext.ts` (context + types)
-- New: `src/contexts/AuthProvider.tsx` (component, moved out of the old file)
-- Delete: `src/contexts/AuthContext.tsx`
-- Rename: `src/hooks/useAuth.tsx` → `src/hooks/useAuth.ts`
-- Edit: `src/App.tsx` — update `AuthProvider` import path
-
-## Out of scope
-
-- No changes to RegionalSessionContext, MemberAuth, SuperAuth, or DCG hooks.
-- No DB / RLS changes.
-- No changes to logout flow.
-
-## Verification
-
-After the change, editing any file in dev should no longer log `hmr invalidate ... AuthContext export is incompatible`. The login → `/dcg/dashboard` transition should remain stable across HMR reloads.
+No database, RLS, or Supabase login-flow changes are needed; this is a frontend dev-server/module-resolution failure after successful authentication.
