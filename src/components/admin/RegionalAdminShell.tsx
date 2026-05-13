@@ -54,6 +54,18 @@ const getPageTitleFromPath = (path: string, fallback?: string) => {
   return 'Regional Admin';
 };
 
+const safeLogout = async (signOut: () => Promise<void> | void) => {
+  try {
+    await signOut();
+  } catch (err) {
+    console.error('[RegionalShell] logout failed, forcing redirect:', err);
+  } finally {
+    if (typeof window !== 'undefined' && window.location.pathname !== '/auth/regional') {
+      window.location.replace('/auth/regional');
+    }
+  }
+};
+
 const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
   const { user, region, signOut } = useRegionalSession();
