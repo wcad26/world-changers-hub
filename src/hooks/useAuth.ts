@@ -5,25 +5,20 @@ import { RegionalSessionContext } from '@/contexts/RegionalSessionContext';
 /**
  * Single source of truth for accessing auth state.
  *
- * IMPORTANT — regional portal isolation:
- *   The regional portal intentionally runs WITHOUT the global <AuthProvider>.
- *   Many shared hooks (useEvents, useFinancials, useMemberTargets, etc.)
- *   still call useAuth() to read `userRegion`, `user` and `profile`.
+ * Note: this file is intentionally `.ts` (not `.tsx`) and exports only the
+ * `useAuth` hook so Vite Fast Refresh skips it cleanly instead of issuing
+ * "Could not Fast Refresh" invalidations that previously left consumers
+ * reading a stale AuthContext.
  *
- *   To keep those hooks working inside the regional portal without a global
- *   AuthProvider, this hook does the following:
- *     1. If a global <AuthProvider> exists, use it as before.
+ * Regional portal isolation:
+ *   The regional portal runs WITHOUT the global <AuthProvider>. Many shared
+ *   hooks still call useAuth() to read userRegion / user / profile. So:
+ *     1. If a global <AuthProvider> exists, use it.
  *     2. Otherwise, if a <RegionalSessionProvider> is present, build a
- *        minimal AuthContextValue from the regional session so consumers
- *        get a real `user`, `profile`, and `userRegion`.
- *     3. Otherwise (e.g. on the public regional login pages), return a
- *        safe no-op shape so nothing throws.
- *
- *   This keeps Super Admin, DCG, and Member portals 100% unchanged while
- *   making the regional portal independent of the global auth boot path.
+ *        minimal AuthContextValue from the regional session.
+ *     3. Otherwise, return a safe no-op shape.
  */
 
-const NOOP = () => {};
 const NOOP_ASYNC = async () => {};
 
 const buildEmptyValue = (): AuthContextValue => ({
@@ -43,7 +38,7 @@ const buildEmptyValue = (): AuthContextValue => ({
   hasRegionalPortalAccess: false,
   getAvailablePortals: () => [],
   canAccessPortal: () => false,
-  hasRegionalPermission: () => true, // regional portal no longer permission-gated
+  hasRegionalPermission: () => true,
   isSuperAdmin: () => false,
   isRegionalAdmin: () => false,
   isMember: () => false,
@@ -57,8 +52,6 @@ export const useAuth = (): AuthContextValue => {
   const globalCtx = useContext(AuthContext);
   if (globalCtx) return globalCtx;
 
-  // Regional portal fallback — derive a minimal AuthContext shape from the
-  // RegionalSessionProvider so legacy hooks keep working.
   const regional = useContext(RegionalSessionContext);
   const value = buildEmptyValue();
 

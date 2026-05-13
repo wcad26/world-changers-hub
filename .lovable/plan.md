@@ -1,64 +1,48 @@
-# Fix DCG portal login instability
+## Root cause
 
-## Symptoms
+In dev, Vite logs:
 
-1. On `/dcg-auth`, the page re-renders / "refreshes" every ~2 seconds (dev only), making typing nearly impossible.
-2. After a successful sign-in (auth log confirms `login` event at 21:39:35), the user is bounced back to the login screen instead of staying on `/dcg/dashboard`.
+```
+[vite] hmr invalidate /src/contexts/AuthContext.tsx Could not Fast Refresh ("AuthContext" export is incompatible)
+[vite] hmr invalidate /src/hooks/useAuth.tsx     Could not Fast Refresh ("useAuth" export is incompatible)
+```
 
-## Root causes (from code reading)
+React Fast Refresh requires each module to export **only React components** or **only non-components** — never both. Today:
 
-- **Shared Supabase storage key** (`wca-auth`) is used by every portal. When the DCG `AuthProvider` mounts on `/dcg/dashboard`, its custom `waitForSession` loop (`getSession` × 8 with 150ms gaps) races against any other Supabase activity. In dev with HMR re-mounting providers, this loop runs repeatedly and re-fires queries/state, which presents as the page "refreshing".
-- **`AuthProvider` does not subscribe to `onAuthStateChange`**. After login, the navigation to `/dcg/dashboard` happens before Supabase has finished writing the session to `localStorage`. The provider's polling sometimes returns `null`, so `user` stays `null`, hooks throw under RLS, and the UI looks "logged out".
-- **`DcgAuth` does no readiness check** — it calls `signInWithPassword` and immediately `navigate()`s, so the dashboard mounts with a half-hydrated session.
-- **Dev HMR amplifies the race**: every saved file remounts `AuthProvider`, restarting the 1.2s wait loop and re-running data fetches. This is why the bug only happens in dev.
+- `src/contexts/AuthContext.tsx` exports both `AuthContext` (a context value) and `AuthProvider` (a component).
+- `src/hooks/useAuth.tsx` is a `.tsx` file but exports only the `useAuth` hook (lowercase identifier — Fast Refresh can't classify it as a component).
+
+Whenever any file in the dependency tree changes during a DCG login, Vite **invalidates** these modules. The new module instance gets a fresh `AuthContext` symbol while mounted consumers still hold the old one, so `useContext(AuthContext)` returns `null`. `useAuth`'s fallback then returns `{ authReady: true, user: null }`, `DcgSessionRoute` sees no user and redirects back to `/dcg-auth`. This is invisible in production (no HMR), which is why the bug only happens in dev.
 
 ## Plan
 
-Rebuild the DCG auth path the same way the regional portal was rebuilt: a tiny bootstrap record + a deterministic, listener-based provider. No polling, no `getSession` retry loops, no shared races.
+1. **Split `src/contexts/AuthContext.tsx`** into two files:
+   - `src/contexts/AuthContext.ts` — exports only `AuthContext` (created by `createContext`) and the `AuthContextValue` / `AppRole` types. No JSX, no component.
+   - `src/contexts/AuthProvider.tsx` — exports only the `AuthProvider` component. Imports `AuthContext` from the file above.
 
-### 1. New `src/lib/dcgBootstrap.ts`
-Mirror `regionalBootstrap.ts`. Stores `{ userId }` in `sessionStorage` (key `wca-dcg-bootstrap`) the moment login succeeds. Exposes `read`, `write`, `clear`.
+2. **Rename `src/hooks/useAuth.tsx` → `src/hooks/useAuth.ts`** (no JSX inside it). This lets Fast Refresh skip it instead of invalidating.
 
-### 2. Rewrite `src/contexts/AuthContext.tsx` (DCG/Super/Member share it)
-- Remove the `waitForSession` 8-iteration polling loop.
-- On mount: call `supabase.auth.getSession()` **once**, then subscribe to `onAuthStateChange`.
-- Treat `SIGNED_IN` / `TOKEN_REFRESHED` / `INITIAL_SESSION` uniformly: set user, fetch profile data **once per userId** (guarded by `fetchedForUserRef`), never re-fetch on token refresh.
-- Treat `SIGNED_OUT` as: clear state, do not auto-navigate (caller decides).
-- Keep `signOut({ scope: 'local' })` so other portals/tabs are not affected.
-- No data fetched inside the listener callback synchronously — defer with `queueMicrotask` to avoid Supabase deadlock.
+3. **Update imports** across the codebase:
+   - Anywhere that imports `AuthProvider` from `@/contexts/AuthContext` → switch to `@/contexts/AuthProvider` (App.tsx is the only consumer).
+   - Anywhere that imports `AuthContext` or types stays on `@/contexts/AuthContext` (now the `.ts` file).
+   - Imports of `useAuth` already resolve via extension stripping, so renaming `.tsx` → `.ts` requires no path changes.
 
-### 3. Rewrite `src/pages/DcgAuth.tsx`
-- After `signInWithPassword` resolves successfully:
-  1. Write DCG bootstrap (`{ userId }`).
-  2. Use `window.location.assign('/dcg/dashboard')` (hard navigation) so the dashboard mounts with the session already persisted in `localStorage`. This eliminates the race entirely — no more polling needed.
-- Show a single inline error on failure; do not toast.
+4. **No behavior change** to the auth logic itself — the listener pattern, `fetchedForUserRef` guard, and `signOut({ scope: 'local' })` flow remain exactly as they are. This is purely a module-boundary refactor to make Fast Refresh happy and stop the dev-only stale-context bounce.
 
-### 4. New `src/components/auth/DcgSessionRoute.tsx`
-Currently a pass-through. Replace with a real guard:
-- If `authReady` is `true` and `user` is `null` → `<Navigate to="/dcg-auth" replace />`.
-- While `authReady` is `false` → render a tiny centered spinner (no full-screen flash).
-- Otherwise render `children`.
-This stops the "blank dashboard with errors" state and gives the user a clear redirect.
+## Files touched
 
-### 5. Convert all DCG data hooks to gated queries
-In `useDcgMembers`, `useDcgEvents`, `useDcgAttendance*`, `useDcgFinancials`, `useFinancialTransactions`:
-- Add `enabled: authReady && !!user && !!userDcg?.id` to every `useQuery`.
-- This prevents the dashboard from firing 6+ unauthenticated requests in the brief window before the session lands, which is what currently triggers the cascading re-renders observed in dev.
-
-### 6. Logout flow
-- `DcgAdminLayout.handleSignOut`: `await signOut()` then `window.location.assign('/dcg-auth')`. Hard-redirect so React Query and all DCG hooks tear down cleanly (same pattern just applied to regional portal).
-
-### 7. Verify the "every 2 s re-render" goes away
-After the changes, check the preview console. The 2 s cadence should disappear because the provider no longer remounts/re-polls. If a residual cadence remains it is HMR file-watch noise unrelated to auth and will not affect typing once the provider is stable.
+- New: `src/contexts/AuthContext.ts` (context + types)
+- New: `src/contexts/AuthProvider.tsx` (component, moved out of the old file)
+- Delete: `src/contexts/AuthContext.tsx`
+- Rename: `src/hooks/useAuth.tsx` → `src/hooks/useAuth.ts`
+- Edit: `src/App.tsx` — update `AuthProvider` import path
 
 ## Out of scope
 
-- No DB migrations.
-- No changes to Regional, Super, or Member portals beyond the shared `AuthContext` rewrite (which becomes simpler and strictly more correct for them too).
-- No changes to RLS or business logic.
+- No changes to RegionalSessionContext, MemberAuth, SuperAuth, or DCG hooks.
+- No DB / RLS changes.
+- No changes to logout flow.
 
-## Files
+## Verification
 
-- **New**: `src/lib/dcgBootstrap.ts`
-- **Rewrite**: `src/contexts/AuthContext.tsx`, `src/pages/DcgAuth.tsx`, `src/components/auth/DcgSessionRoute.tsx`
-- **Edit**: `src/components/admin/DcgAdminLayout.tsx`, `src/hooks/useDcgMembers.ts`, `src/hooks/useDcgEvents.ts`, `src/hooks/useDcgAttendance.ts`, `src/hooks/useDcgFinancials.ts`, `src/hooks/useFinancials.ts`
+After the change, editing any file in dev should no longer log `hmr invalidate ... AuthContext export is incompatible`. The login → `/dcg/dashboard` transition should remain stable across HMR reloads.

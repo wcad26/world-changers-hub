@@ -1,5 +1,4 @@
 import React, {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -8,6 +7,7 @@ import React, {
 } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { AuthContext, type AppRole, type AuthContextValue } from './AuthContext';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
@@ -15,47 +15,15 @@ type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
-export type AppRole = 'super_admin' | 'regional_admin' | 'member' | 'dcg_admin';
-
-export interface AuthContextValue {
-  user: any;
-  profile: Profile | null;
-  userRoles: UserRole[];
-  userRegion: Region | null;
-  userDcg: Dcg | null;
-  memberRecord: Member | null;
-  memberId: string | null;
-  userRegionalRoles: any[];
-  loading: boolean;
-  initialized: boolean;
-  authReady: boolean;
-  hasRole: (role: AppRole) => boolean;
-  hasAnyRole: (roles: AppRole[]) => boolean;
-  hasRegionalPortalAccess: boolean;
-  getAvailablePortals: () => string[];
-  canAccessPortal: (portalType: string) => boolean;
-  hasRegionalPermission: (permission: string) => boolean;
-  isSuperAdmin: () => boolean;
-  isRegionalAdmin: () => boolean;
-  isMember: () => boolean;
-  isDcgAdmin: () => boolean;
-  isDcgMember: boolean;
-  signOut: () => Promise<void>;
-  refetchUserData: () => Promise<void> | null;
-}
-
-export const AuthContext = createContext<AuthContextValue | null>(null);
-
 /**
  * Per-portal auth provider — deterministic, listener-based.
+ * See AuthContext.ts for the value shape.
  *
- *   - One getSession() call on mount, then onAuthStateChange listener.
- *   - Profile/role/DCG data is fetched ONCE per userId (guarded by ref) so
- *     TOKEN_REFRESHED and INITIAL_SESSION events never re-fire queries.
- *   - signOut uses scope: 'local' so other portals/tabs are untouched.
- *   - All data fetches are deferred via queueMicrotask to avoid the known
- *     supabase auth-listener deadlock when calling supabase APIs synchronously
- *     from inside the listener callback.
+ * NOTE: This file intentionally exports ONLY the AuthProvider component so
+ * Vite React Fast Refresh can hot-reload it cleanly. Mixing a context value
+ * + component export in the same module caused dev-only HMR invalidation
+ * which left consumers reading a stale AuthContext (null) → bouncing users
+ * back to the login page right after a successful sign-in.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
@@ -172,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('[PortalAuth] fetch error', error);
-      // Allow retry on next session change
       fetchedForUserRef.current = null;
     } finally {
       setInitialized(true);
@@ -184,7 +151,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let cancelled = false;
 
-    // 1. Subscribe FIRST so any auth event during initial getSession is captured.
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
@@ -207,7 +173,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(sessionUser);
 
       if (sessionUser) {
-        // Defer to break out of the auth callback before calling supabase.
         queueMicrotask(() => {
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
@@ -219,7 +184,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // 2. Then read whatever session is already in storage.
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
