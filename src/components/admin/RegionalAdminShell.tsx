@@ -243,7 +243,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                 variant="outline"
                 onClick={() => {
                   setMenuOpen(false);
-                  signOut();
+                  void safeLogout(signOut);
                 }}
                 className="w-full justify-center gap-2"
               >
