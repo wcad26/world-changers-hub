@@ -170,18 +170,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
 
+      // Only update auth state for events that actually carry session info.
+      // Spurious events without a session (e.g. transient TOKEN_REFRESHED
+      // failures) must NOT null out the user, otherwise the DCG portal
+      // bounces a logged-in user back to /dcg-auth a few seconds after
+      // login.
       if (sessionUser) {
+        setUser(sessionUser);
         queueMicrotask(() => {
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
-      } else {
+      } else if (event === 'INITIAL_SESSION') {
+        // Truly no session at startup — let guards redirect.
+        setUser(null);
         setInitialized(true);
         setLoading(false);
         setAuthReady(true);
       }
+      // For other events without a session, ignore — keep current state.
     });
 
     void supabase.auth.getSession().then(({ data }) => {

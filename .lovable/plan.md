@@ -1,18 +1,35 @@
-I found the real blank-screen trigger in the live preview: the browser is still being served transformed DCG modules that import `/src/hooks/useAuth.tsx?t=...`, even though the current source imports `@/hooks/useAuth` and the real file is now `src/hooks/useAuth.ts`. That stale `.tsx` module request fails/returns the wrong content, so React never mounts after redirecting to `/dcg/dashboard`.
+## Diagnosis
 
-Plan:
+The login itself is succeeding. The affected account signs in correctly, but it has no active row in `dcg_user_sessions` and is only connected to a DCG through `dcg_members`. The frontend currently tries to recover from that, but the DCG portal can still mount before the DCG context is fully usable, leaving the dashboard in a blank/loading state and then bouncing back to `/dcg-auth`.
 
-1. Clear the stale dev-server module graph
-   - Restart the Vite dev server so extensionless imports resolve fresh to `src/hooks/useAuth.ts` instead of the deleted `src/hooks/useAuth.tsx`.
-   - Recheck the transformed DCG modules to confirm they no longer reference `/src/hooks/useAuth.tsx`.
+## Plan
 
-2. Add a small defensive compatibility layer only if the restart does not clear it
-   - If Vite or the preview still requests the old path, add a minimal `src/hooks/useAuth.tsx` shim that re-exports from `src/hooks/useAuth.ts` so stale browser/module-cache requests cannot blank the app.
-   - Keep the real hook implementation in `.ts` to avoid the Fast Refresh invalidation that caused the original dev-only instability.
+1. **Make DCG auth resolution deterministic**
+   - Update the portal auth provider so it always clears stale portal state before loading a new session.
+   - Resolve the user’s DCG in one reliable order:
+     1. active `dcg_user_sessions` row,
+     2. DCG led by the user’s member record,
+     3. active `dcg_members` membership.
+   - Keep `authReady` false until this resolution finishes, so the dashboard cannot render with partial auth data.
 
-3. Validate the DCG login path
-   - Open `/dcg/dashboard` in the preview and confirm it shows either the auth guard/loading/login redirect or dashboard content, not a blank page.
-   - Inspect browser console/network for any remaining failed `/src/hooks/useAuth.tsx` or `AuthContext.tsx` module requests.
-   - Confirm the DCG guard still waits for `authReady` before rendering protected pages.
+2. **Fix the DCG route guard**
+   - Make `/dcg/*` wait for both the Supabase user and DCG-context loading to finish.
+   - If the user is signed in but has no DCG assignment, show a clear access message instead of a blank screen or silent logout.
+   - Only redirect to `/dcg-auth` when there is truly no authenticated Supabase session.
 
-No database, RLS, or Supabase login-flow changes are needed; this is a frontend dev-server/module-resolution failure after successful authentication.
+3. **Stop dashboard blank states**
+   - Guard DCG dashboard data hooks behind a resolved `userDcg`.
+   - Replace any blank/empty interim state with a visible loading or “no DCG assigned” state.
+   - Avoid using broader regional DCG queries for the current DCG when the resolved `userDcg` is already available.
+
+4. **Validate the fix**
+   - Re-check the dev-server logs for module resolution/runtime errors.
+   - Verify the affected account path: login succeeds, `/dcg/dashboard` stays mounted, and the user is not automatically redirected back to `/dcg-auth`.
+
+## Technical files likely to change
+
+- `src/contexts/AuthProvider.tsx`
+- `src/components/auth/DcgSessionRoute.tsx`
+- `src/pages/dcg/Dashboard.tsx`
+
+No database schema change is planned for this fix.
