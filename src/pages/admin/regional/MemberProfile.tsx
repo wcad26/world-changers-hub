@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw } from 'lucide-react';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
-import { useAuth } from '@/hooks/useAuth.tsx';
+import { useAuth } from '@/hooks/useAuth';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscipleshipRelationships } from '@/hooks/useDiscipleship';

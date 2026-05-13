@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PlusCircle, Download, Search, Pen, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth.tsx';
+import { useAuth } from '@/hooks/useAuth';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
   Dialog,

@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { useAuth } from './useAuth.tsx';
+import { useAuth } from './useAuth';
 import * as z from 'zod';
 
 // Enhanced schema for new members with all required fields
