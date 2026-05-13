@@ -10,7 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMembers } from '@/hooks/useMembers';
-import { useAuth } from '@/hooks/useAuth.tsx';
+import { useAuth } from '@/hooks/useAuth';
 import { useCreateDiscipleshipRelationship, discipleshipRelationshipSchema, type NewDiscipleshipRelationshipData } from '@/hooks/useDiscipleship';
 import { useToast } from '@/hooks/use-toast';
 

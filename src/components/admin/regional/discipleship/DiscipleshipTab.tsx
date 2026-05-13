@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, UserPlus, Users, TrendingUp, CheckCircle, Clock, Award } from 'lucide-react';
 import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
-import { useAuth } from '@/hooks/useAuth.tsx';
+import { useAuth } from '@/hooks/useAuth';
 import AssignDiscipleDialog from './AssignDiscipleDialog';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';

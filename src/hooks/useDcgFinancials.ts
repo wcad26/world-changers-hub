@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { useAuth } from './useAuth.tsx';
+import { useAuth } from './useAuth';
 import * as z from 'zod';
 
 export type DcgFinancialTransaction = Database['public']['Tables']['financial_transactions']['Row'] & {
