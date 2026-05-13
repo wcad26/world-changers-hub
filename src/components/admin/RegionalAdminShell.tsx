@@ -138,7 +138,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${isCollapsed ? 'justify-center px-2' : ''}`}
-            onClick={signOut}
+            onClick={() => safeLogout(signOut)}
           >
             <LogOut size={16} className="shrink-0" />
             {!isCollapsed && <span>Logout</span>}
