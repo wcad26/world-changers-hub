@@ -353,7 +353,7 @@ const RegionalDashboard: React.FC = () => {
       </div>
       <div className="flex gap-2">
         <Button size="sm" variant="outline" onClick={retryRegional}>Retry</Button>
-        <Button size="sm" variant="ghost" onClick={signOut}>Logout</Button>
+        <Button size="sm" variant="ghost" onClick={async () => { try { await signOut(); } finally { if (typeof window !== 'undefined') window.location.replace('/auth/regional'); } }}>Logout</Button>
       </div>
     </div>
   ) : null;
