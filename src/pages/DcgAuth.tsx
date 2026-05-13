@@ -7,18 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useToast } from '@/hooks/use-toast';
 import wcaLogo from '@/assets/wca-logo.png';
 
 /**
  * Isolated DCG portal login page.
  *
- * No AuthContext, no cross-portal logic, no portal selectors.
- * Flow:
- *   1. Sign the user in.
- *   2. One-shot check: do they have ANY DCG association
- *      (dcg_user_sessions row OR dcg_members row via their profile)?
- *   3. If yes → /dcg/dashboard. If no → sign out + show toast.
+ * On successful sign-in, performs a HARD navigation to /dcg/dashboard so
+ * the dashboard mounts with the Supabase session already persisted in
+ * localStorage. This eliminates the race that previously bounced users
+ * back to the login page.
  */
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
@@ -27,37 +24,6 @@ const DcgAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const userHasDcgAccess = async (userId: string): Promise<boolean> => {
-    const { data: dcgSession } = await supabase
-      .from('dcg_user_sessions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    if (dcgSession) return true;
-
-    const { data: memberRows } = await supabase
-      .from('members')
-      .select('id')
-      .eq('profile_id', userId);
-
-    const memberIds = (memberRows ?? []).map((m) => m.id);
-    if (memberIds.length === 0) return false;
-
-    const { data: dcgMember } = await supabase
-      .from('dcg_members')
-      .select('id')
-      .in('member_id', memberIds)
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    return !!dcgMember;
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,13 +38,15 @@ const DcgAuth = () => {
 
       if (authError || !authData.user) {
         setError(authError?.message ?? 'Invalid credentials.');
+        setLoading(false);
         return;
       }
 
-      navigate('/dcg/dashboard', { replace: true });
+      // Hard navigate so the AuthProvider mounts cleanly with the session
+      // already written to localStorage.
+      window.location.assign('/dcg/dashboard');
     } catch {
       setError('An unexpected error occurred. Please try again.');
-    } finally {
       setLoading(false);
     }
   };
@@ -113,6 +81,7 @@ const DcgAuth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -126,6 +95,7 @@ const DcgAuth = () => {
                   required
                   disabled={loading}
                   className="pr-10"
+                  autoComplete="current-password"
                 />
                 <Button
                   type="button"

@@ -47,18 +47,15 @@ export interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
- * Per-portal auth provider.
+ * Per-portal auth provider — deterministic, listener-based.
  *
- * Mounted ONCE inside each portal's route subtree (super, dcg, member).
- * Public pages run with NO provider — `useAuth()` returns a safe empty shape.
- *
- * Design rules (keep simple, keep stable):
- *   - Run getSession() ONCE on mount and load this user's data.
- *   - Do NOT subscribe to onAuthStateChange. No focus refetch, no token-refresh
- *     refetch, no cross-tab cascades. The session lives on the supabase client;
- *     this provider just snapshots derived data.
- *   - signOut uses scope: 'local' so signing out of one portal NEVER kills a
- *     session in another portal/tab. Caller decides where to navigate next.
+ *   - One getSession() call on mount, then onAuthStateChange listener.
+ *   - Profile/role/DCG data is fetched ONCE per userId (guarded by ref) so
+ *     TOKEN_REFRESHED and INITIAL_SESSION events never re-fire queries.
+ *   - signOut uses scope: 'local' so other portals/tabs are untouched.
+ *   - All data fetches are deferred via queueMicrotask to avoid the known
+ *     supabase auth-listener deadlock when calling supabase APIs synchronously
+ *     from inside the listener callback.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
@@ -72,10 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [initialized, setInitialized] = useState(false);
   const [authReady, setAuthReady] = useState(false);
 
-  const bootedRef = useRef(false);
   const fetchedForUserRef = useRef<string | null>(null);
 
   const fetchUserData = useCallback(async (userId: string) => {
+    if (fetchedForUserRef.current === userId) return;
+    fetchedForUserRef.current = userId;
+
     try {
       const { data: profileData } = await supabase
         .from('profiles')
@@ -171,10 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .eq('is_active', true);
         setUserRegionalRoles(regionalRolesData || []);
       }
-
-      fetchedForUserRef.current = userId;
     } catch (error) {
       console.error('[PortalAuth] fetch error', error);
+      // Allow retry on next session change
+      fetchedForUserRef.current = null;
     } finally {
       setInitialized(true);
       setLoading(false);
@@ -183,66 +182,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (bootedRef.current) return;
-    bootedRef.current = true;
-
     let cancelled = false;
-    const waitForSession = async () => {
-      for (let i = 0; i < 8; i++) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) return data.session;
-        await new Promise((r) => setTimeout(r, 150));
-      }
-      const { data } = await supabase.auth.getSession();
-      return data.session ?? null;
-    };
 
-    (async () => {
-      try {
-        const session = await waitForSession();
-        if (cancelled) return;
-        if (session?.user) {
-          setUser(session.user);
-          await fetchUserData(session.user.id);
-        } else {
-          setInitialized(true);
-          setLoading(false);
-          setAuthReady(true);
-        }
-      } catch (err) {
-        console.error('[PortalAuth] boot error', err);
-        if (!cancelled) {
-          setInitialized(true);
-          setLoading(false);
-          setAuthReady(true);
-        }
+    // 1. Subscribe FIRST so any auth event during initial getSession is captured.
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+
+      if (event === 'SIGNED_OUT') {
+        fetchedForUserRef.current = null;
+        setUser(null);
+        setProfile(null);
+        setUserRoles([]);
+        setUserRegion(null);
+        setUserDcg(null);
+        setMemberRecord(null);
+        setUserRegionalRoles([]);
+        setInitialized(true);
+        setLoading(false);
+        setAuthReady(true);
+        return;
       }
-    })();
+
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+
+      if (sessionUser) {
+        // Defer to break out of the auth callback before calling supabase.
+        queueMicrotask(() => {
+          if (cancelled) return;
+          void fetchUserData(sessionUser.id);
+        });
+      } else {
+        setInitialized(true);
+        setLoading(false);
+        setAuthReady(true);
+      }
+    });
+
+    // 2. Then read whatever session is already in storage.
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      const sessionUser = data.session?.user ?? null;
+      setUser(sessionUser);
+      if (sessionUser) {
+        void fetchUserData(sessionUser.id);
+      } else {
+        setInitialized(true);
+        setLoading(false);
+        setAuthReady(true);
+      }
+    });
 
     return () => {
       cancelled = true;
+      subscription?.subscription?.unsubscribe?.();
     };
   }, [fetchUserData]);
 
-  // All client-side role/permission checks are disabled — they always
-  // return true so legacy guards never block UI. RLS remains the source
-  // of truth for actual data access.
+  // Client-side role checks remain disabled — RLS is the source of truth.
   const hasRole = useCallback((_role: AppRole) => true, []);
   const hasAnyRole = useCallback((_roles: AppRole[]) => true, []);
 
   const isDcgMember = userDcg !== null;
 
   const canAccessPortal = useCallback((_portalType: string): boolean => true, []);
-
   const getAvailablePortals = useCallback(
     () => ['super', 'regional', 'dcg', 'member'],
     [],
   );
-
   const hasRegionalPermission = useCallback((_permission: string) => true, []);
-
   const hasRegionalPortalAccess = true;
-
   const isSuperAdmin = useCallback(() => true, []);
   const isRegionalAdmin = useCallback(() => true, []);
   const isMember = useCallback(() => true, []);
@@ -250,6 +259,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     setLoading(true);
+    fetchedForUserRef.current = null;
     setUser(null);
     setProfile(null);
     setUserRoles([]);
@@ -257,7 +267,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserDcg(null);
     setMemberRecord(null);
     setUserRegionalRoles([]);
-    fetchedForUserRef.current = null;
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
@@ -268,7 +277,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refetchUserData = useCallback(
-    () => (user ? fetchUserData(user.id) : null),
+    () => {
+      if (!user) return null;
+      fetchedForUserRef.current = null;
+      return fetchUserData(user.id);
+    },
     [user, fetchUserData],
   );
 

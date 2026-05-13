@@ -53,10 +53,14 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
   const useMobileLayout = isMobile || isTablet;
 
   const handleSignOut = async () => {
-    // signOut() in AuthContext owns the post-logout redirect.
-    // Do NOT navigate here — a second navigation can race the
-    // provider and re-trigger redirect cycles.
-    await signOut();
+    try {
+      await signOut();
+    } catch (err) {
+      console.error('[DcgAdminLayout] signOut error', err);
+    } finally {
+      // Hard redirect so React Query and all DCG hooks tear down cleanly.
+      window.location.assign('/dcg-auth');
+    }
   };
 
   // Desktop layout
