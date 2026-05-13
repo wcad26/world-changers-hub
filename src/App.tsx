@@ -27,7 +27,7 @@ import VisitorRegister from "./pages/VisitorRegister";
 import MemberRegister from "./pages/MemberRegister";
 import PortalSelector from "./components/auth/PortalSelector";
 import DcgSessionRoute from "./components/auth/DcgSessionRoute";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthProvider";
 
 // Layout Components
 import EnhancedRegionalAdminLayout from "./components/admin/EnhancedRegionalAdminLayout";
