@@ -68,6 +68,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const loadedForUserRef = useRef<string | null>(null);
 
   const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
+    if (signingOutRef.current) return;
     const loadKey = `${uid}:${preferredRegionId ?? 'none'}`;
     if (loadedForUserRef.current === loadKey) return;
     loadedForUserRef.current = loadKey;
