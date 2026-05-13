@@ -111,7 +111,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         console.info('[RegionalSession] no region resolved for user', uid);
       }
     } catch (err) {
-      console.warn('[RegionalSession] background load failed:', err);
+      if (!signingOutRef.current) {
+        console.warn('[RegionalSession] background load failed:', err);
+      }
     }
   }, [user?.email]);
 
