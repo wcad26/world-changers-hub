@@ -298,15 +298,72 @@ const RegionalDashboard: React.FC = () => {
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
     if (!kpis?.filteredAttendance) return [];
-    return [...kpis.filteredAttendance]
-      .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-      .map(a => ({
-        date: format(new Date(a.event_date), "MMM d"),
-        Members: a.members_present,
-        "Regular Visitors": a.visitors_present,
-        Children: a.children_present,
-      }));
-  }, [kpis?.filteredAttendance]);
+    const records = kpis.filteredAttendance;
+
+    // Decide aggregation mode based on selected period
+    let monthsCount = 0;
+    if (quickPeriod === "1-month") monthsCount = 0;
+    else if (quickPeriod === "3-months") monthsCount = 3;
+    else if (quickPeriod === "6-months") monthsCount = 6;
+    else if (quickPeriod === "1-year") monthsCount = 12;
+    else if (quickPeriod === "custom" && dateRange.from && dateRange.to) {
+      const days = (dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24);
+      if (days > 31) {
+        monthsCount = Math.max(
+          1,
+          (dateRange.to.getFullYear() - dateRange.from.getFullYear()) * 12 +
+            (dateRange.to.getMonth() - dateRange.from.getMonth()) + 1
+        );
+      }
+    }
+
+    // Per-event mode (1M or short custom range)
+    if (monthsCount === 0) {
+      return [...records]
+        .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+        .map(a => ({
+          date: format(new Date(a.event_date), "MMM d"),
+          Members: a.members_present,
+          "Regular Visitors": a.visitors_present,
+          Children: a.children_present,
+        }));
+    }
+
+    // Monthly mode: build target month buckets ending at dateRange.to (or now)
+    const endDate = dateRange.to || new Date();
+    const buckets: { key: string; label: string; year: number; month: number }[] = [];
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = monthsCount > 12
+        ? format(d, "MMM yyyy")
+        : format(d, "MMM");
+      buckets.push({ key, label, year: d.getFullYear(), month: d.getMonth() });
+    }
+
+    // Group records by yyyy-MM
+    const groups = new Map<string, { m: number; v: number; c: number; n: number }>();
+    records.forEach(a => {
+      const d = new Date(a.event_date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const g = groups.get(key) || { m: 0, v: 0, c: 0, n: 0 };
+      g.m += a.members_present || 0;
+      g.v += a.visitors_present || 0;
+      g.c += a.children_present || 0;
+      g.n += 1;
+      groups.set(key, g);
+    });
+
+    return buckets.map(b => {
+      const g = groups.get(b.key);
+      return {
+        date: b.label,
+        Members: g && g.n > 0 ? Math.round(g.m / g.n) : 0,
+        "Regular Visitors": g && g.n > 0 ? Math.round(g.v / g.n) : 0,
+        Children: g && g.n > 0 ? Math.round(g.c / g.n) : 0,
+      };
+    });
+  }, [kpis?.filteredAttendance, quickPeriod, dateRange]);
 
   const genderChartData = useMemo(() => {
     if (!kpis) return [];
