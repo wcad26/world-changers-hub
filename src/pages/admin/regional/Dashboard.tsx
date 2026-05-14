@@ -298,8 +298,31 @@ const RegionalDashboard: React.FC = () => {
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
-    if (!kpis?.filteredAttendance) return [];
-    const records = kpis.filteredAttendance;
+    if (!kpis?.filteredEvents) return [];
+    const eventsInPeriod = kpis.filteredEvents;
+    const attendance = kpis.filteredAttendance || [];
+
+    // Build attendance lookup keyed by source event id (one attendance_event
+    // per source event in the current schema).
+    const attendanceBySourceId = new Map<string, typeof attendance[number]>();
+    attendance.forEach(a => {
+      if (a.source_event_id) attendanceBySourceId.set(a.source_event_id, a);
+    });
+
+    // One data point per event in the selected period — including events
+    // with no recorded attendance (plotted as 0).
+    const perEventPoints = [...eventsInPeriod]
+      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+      .map(e => {
+        const a = attendanceBySourceId.get(e.id);
+        return {
+          eventId: e.id,
+          eventDate: new Date(e.start_datetime),
+          Members: a?.members_present || 0,
+          "Regular Visitors": a?.visitors_present || 0,
+          Children: a?.children_present || 0,
+        };
+      });
 
     // Decide aggregation mode based on selected period
     let monthsCount = 0;
@@ -318,39 +341,39 @@ const RegionalDashboard: React.FC = () => {
       }
     }
 
-    // Per-event mode (1M or short custom range)
+    // Per-event mode (1M or short custom range): one point per event, with a
+    // unique key so Recharts does not merge same-date points.
     if (monthsCount === 0) {
-      return [...records]
-        .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
-        .map(a => ({
-          date: format(new Date(a.event_date), "MMM d"),
-          Members: a.members_present,
-          "Regular Visitors": a.visitors_present,
-          Children: a.children_present,
-        }));
+      return perEventPoints.map((p, i) => ({
+        date: `${format(p.eventDate, "MMM d")}${
+          perEventPoints.filter(q => format(q.eventDate, "MMM d") === format(p.eventDate, "MMM d")).length > 1
+            ? ` #${perEventPoints.slice(0, i + 1).filter(q => format(q.eventDate, "MMM d") === format(p.eventDate, "MMM d")).length}`
+            : ""
+        }`,
+        Members: p.Members,
+        "Regular Visitors": p["Regular Visitors"],
+        Children: p.Children,
+      }));
     }
 
     // Monthly mode: build target month buckets ending at dateRange.to (or now)
     const endDate = dateRange.to || new Date();
-    const buckets: { key: string; label: string; year: number; month: number }[] = [];
+    const buckets: { key: string; label: string }[] = [];
     for (let i = monthsCount - 1; i >= 0; i--) {
       const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = monthsCount > 12
-        ? format(d, "MMM yyyy")
-        : format(d, "MMM");
-      buckets.push({ key, label, year: d.getFullYear(), month: d.getMonth() });
+      const label = monthsCount > 12 ? format(d, "MMM yyyy") : format(d, "MMM");
+      buckets.push({ key, label });
     }
 
-    // Group records by yyyy-MM
+    // Group per-event points by yyyy-MM and average across all events in month.
     const groups = new Map<string, { m: number; v: number; c: number; n: number }>();
-    records.forEach(a => {
-      const d = new Date(a.event_date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    perEventPoints.forEach(p => {
+      const key = `${p.eventDate.getFullYear()}-${String(p.eventDate.getMonth() + 1).padStart(2, "0")}`;
       const g = groups.get(key) || { m: 0, v: 0, c: 0, n: 0 };
-      g.m += a.members_present || 0;
-      g.v += a.visitors_present || 0;
-      g.c += a.children_present || 0;
+      g.m += p.Members;
+      g.v += p["Regular Visitors"];
+      g.c += p.Children;
       g.n += 1;
       groups.set(key, g);
     });
@@ -364,7 +387,7 @@ const RegionalDashboard: React.FC = () => {
         Children: g && g.n > 0 ? Math.round(g.c / g.n) : 0,
       };
     });
-  }, [kpis?.filteredAttendance, quickPeriod, dateRange]);
+  }, [kpis?.filteredEvents, kpis?.filteredAttendance, quickPeriod, dateRange]);
 
   const genderChartData = useMemo(() => {
     if (!kpis) return [];
