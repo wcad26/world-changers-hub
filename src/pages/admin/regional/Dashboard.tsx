@@ -43,7 +43,7 @@ const RegionalDashboard: React.FC = () => {
   // Filter state
   const [quickPeriod, setQuickPeriod] = useState("1-month");
   const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
-  const [eventType, setEventType] = useState("all");
+  const [eventType, setEventType] = useState("regional");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Compute date range
