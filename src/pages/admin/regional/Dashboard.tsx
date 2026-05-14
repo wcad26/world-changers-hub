@@ -322,11 +322,17 @@ const RegionalDashboard: React.FC = () => {
     const eventsInPeriod = kpis.filteredEvents;
     const attendance = kpis.filteredAttendance || [];
 
-    // Build attendance lookup keyed by source event id (one attendance_event
-    // per source event in the current schema).
-    const attendanceBySourceId = new Map<string, typeof attendance[number]>();
+    // Aggregate attendance by source event id — multiple DCGs may submit
+    // attendance for the same regional event; sum across submissions so the
+    // point reflects the full regional attendance.
+    const aggBySourceId = new Map<string, { m: number; v: number; c: number }>();
     attendance.forEach(a => {
-      if (a.source_event_id) attendanceBySourceId.set(a.source_event_id, a);
+      if (!a.source_event_id) return;
+      const cur = aggBySourceId.get(a.source_event_id) || { m: 0, v: 0, c: 0 };
+      cur.m += a.members_present || 0;
+      cur.v += a.visitors_present || 0;
+      cur.c += a.children_present || 0;
+      aggBySourceId.set(a.source_event_id, cur);
     });
 
     // One data point per event in the selected period — including events
@@ -334,13 +340,13 @@ const RegionalDashboard: React.FC = () => {
     const perEventPoints = [...eventsInPeriod]
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
       .map(e => {
-        const a = attendanceBySourceId.get(e.id);
+        const agg = aggBySourceId.get(e.id);
         return {
           eventId: e.id,
           eventDate: new Date(e.start_datetime),
-          Members: a?.members_present || 0,
-          "Regular Visitors": a?.visitors_present || 0,
-          Children: a?.children_present || 0,
+          Members: agg?.m || 0,
+          "Regular Visitors": agg?.v || 0,
+          Children: agg?.c || 0,
         };
       });
 
