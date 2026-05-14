@@ -43,41 +43,34 @@ const RegionalAuth = () => {
         return;
       }
 
-      if (authData.session?.access_token && authData.session?.refresh_token) {
-        await supabase.auth.setSession({
-          access_token: authData.session.access_token,
-          refresh_token: authData.session.refresh_token,
-        });
-      }
-
-      const userId = authData.user.id;
-      const emailAddress = authData.user.email ?? email.trim();
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, region_id')
-        .eq('id', userId)
-        .maybeSingle();
-
-      let regionId = profile?.region_id ?? null;
-
-      if (!regionId) {
-        const { data: member } = await supabase
-          .from('members')
-          .select('region_id')
-          .eq('profile_id', userId)
-          .not('region_id', 'is', null)
-          .limit(1)
+      // Best-effort: write a regional bootstrap so the regional shell can show
+      // the region label without a round trip. Failures here are non-fatal —
+      // we still navigate to the dashboard.
+      try {
+        const userId = authData.user.id;
+        const emailAddress = authData.user.email ?? email.trim();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, region_id')
+          .eq('id', userId)
           .maybeSingle();
-        regionId = member?.region_id ?? null;
+        let regionId = profile?.region_id ?? null;
+        if (!regionId) {
+          const { data: member } = await supabase
+            .from('members')
+            .select('region_id')
+            .eq('profile_id', userId)
+            .not('region_id', 'is', null)
+            .limit(1)
+            .maybeSingle();
+          regionId = member?.region_id ?? null;
+        }
+        if (regionId) {
+          writeRegionalBootstrap({ userId, email: emailAddress, regionId });
+        }
+      } catch {
+        // ignore — region context will hydrate later
       }
-
-      if (!regionId) {
-        setError('Your account is signed in, but it is not linked to a region yet. Please contact WCA support.');
-        return;
-      }
-
-      writeRegionalBootstrap({ userId, email: emailAddress, regionId });
 
       navigate('/admin/regional/dashboard', { replace: true });
     } catch {
