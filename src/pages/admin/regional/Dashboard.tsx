@@ -203,18 +203,38 @@ const RegionalDashboard: React.FC = () => {
     const regionalEvents = filteredEvents.filter(e => !e.dcg_id && !e.is_special);
     const dcgEvents = filteredEvents.filter(e => !!e.dcg_id);
 
-    // Filter attendance data — apply ALL filters uniformly
+    // Build lookup of all events in region (regardless of period filter) so we
+    // can classify attendance rows by their source event type. DCG admins can
+    // record attendance for regional events — those rows have dcg_id set on
+    // the attendance_event but source_event_id pointing to a regional event.
+    const allEventsById = new Map((events || []).map(e => [e.id, e] as const));
+    const isRegionalSource = (a: any) => {
+      if (!a.source_event_id) return !a.dcg_id; // legacy: classify by recorder
+      const src = allEventsById.get(a.source_event_id);
+      if (!src) return !a.dcg_id;
+      return !src.dcg_id && !src.is_special;
+    };
+    const isDcgSource = (a: any) => {
+      if (a.source_event_id) {
+        const src = allEventsById.get(a.source_event_id);
+        if (src) return !!src.dcg_id;
+      }
+      return !!a.dcg_id;
+    };
+
+    // Filter attendance data — apply ALL filters uniformly, classifying by
+    // source event (so DCG-recorded regional attendance is counted as regional).
     const filteredAttendance = (attendanceData || []).filter(a => {
       if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
       if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
       if (searchQuery && !a.event_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      if (eventType === "regional") return !a.dcg_id;
-      if (eventType === "dcg") return !!a.dcg_id;
+      if (eventType === "regional") return isRegionalSource(a);
+      if (eventType === "dcg") return isDcgSource(a);
       return true;
     });
 
-    const regionalAttendance = filteredAttendance.filter(a => !a.dcg_id);
-    const dcgAttendance = filteredAttendance.filter(a => !!a.dcg_id);
+    const regionalAttendance = filteredAttendance.filter(isRegionalSource);
+    const dcgAttendance = filteredAttendance.filter(isDcgSource);
 
     const avgRegionalAttendees = regionalAttendance.length > 0
       ? Math.round(regionalAttendance.reduce((s, a) => s + a.total_present, 0) / regionalAttendance.length) : 0;
