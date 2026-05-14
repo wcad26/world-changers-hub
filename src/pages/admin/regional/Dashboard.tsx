@@ -291,6 +291,7 @@ const RegionalDashboard: React.FC = () => {
       incomeGrowthPct,
       fundraisingTargetPct,
       filteredAttendance,
+      filteredEvents,
       targetMembers: memberTarget?.target_members || 0,
     };
   }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
