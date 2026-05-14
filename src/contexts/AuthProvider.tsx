@@ -43,6 +43,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (fetchedForUserRef.current === userId) return;
     fetchedForUserRef.current = userId;
 
+    // Mark auth ready immediately — context fetches below are best-effort
+    // and must NEVER block portal access.
+    setInitialized(true);
+    setLoading(false);
+    setAuthReady(true);
+
     try {
       const { data: profileData } = await supabase
         .from('profiles')
@@ -50,13 +56,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .maybeSingle();
       if (profileData) setProfile(profileData);
-
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true);
-      setUserRoles(rolesData || []);
 
       if (profileData?.region_id) {
         const { data: regionData } = await supabase
@@ -76,16 +75,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (memberData) setMemberRecord(memberData);
       }
 
-      // Resolve DCG (session row, then led DCG, then membership)
+      // Resolve DCG (best-effort, for label/filter context only).
       let resolvedDcg: Dcg | null = null;
-      const { data: dcgId } = await supabase.rpc('get_user_dcg', { _user_id: userId });
-      if (dcgId) {
-        const { data: dcgData } = await supabase
-          .from('dcgs')
-          .select('*')
-          .eq('id', dcgId)
-          .maybeSingle();
-        if (dcgData) resolvedDcg = dcgData;
+      try {
+        const { data: dcgId } = await supabase.rpc('get_user_dcg', { _user_id: userId });
+        if (dcgId) {
+          const { data: dcgData } = await supabase
+            .from('dcgs')
+            .select('*')
+            .eq('id', dcgId)
+            .maybeSingle();
+          if (dcgData) resolvedDcg = dcgData;
+        }
+      } catch {
+        // ignore
       }
       if (!resolvedDcg) {
         const { data: memberRows } = await supabase
@@ -120,31 +123,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       if (resolvedDcg) setUserDcg(resolvedDcg);
-
-      if (profileData?.region_id) {
-        const { data: regionalRolesData } = await supabase
-          .from('regional_user_roles')
-          .select(`
-            *,
-            regional_roles (
-              id,
-              name,
-              description,
-              permissions
-            )
-          `)
-          .eq('user_id', userId)
-          .eq('region_id', profileData.region_id)
-          .eq('is_active', true);
-        setUserRegionalRoles(regionalRolesData || []);
-      }
     } catch (error) {
-      console.error('[PortalAuth] fetch error', error);
-      fetchedForUserRef.current = null;
-    } finally {
-      setInitialized(true);
-      setLoading(false);
-      setAuthReady(true);
+      console.warn('[PortalAuth] non-fatal context load error', error);
     }
   }, []);
 
@@ -171,37 +151,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const sessionUser = session?.user ?? null;
 
-      // Only update auth state for events that actually carry session info.
-      // Spurious events without a session (e.g. transient TOKEN_REFRESHED
-      // failures) must NOT null out the user, otherwise the DCG portal
-      // bounces a logged-in user back to /dcg-auth a few seconds after
-      // login.
       if (sessionUser) {
         setUser(sessionUser);
+        setInitialized(true);
+        setLoading(false);
+        setAuthReady(true);
         queueMicrotask(() => {
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
       } else if (event === 'INITIAL_SESSION') {
-        // Truly no session at startup — let guards redirect.
         setUser(null);
         setInitialized(true);
         setLoading(false);
         setAuthReady(true);
       }
-      // For other events without a session, ignore — keep current state.
     });
 
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
       setUser(sessionUser);
+      setInitialized(true);
+      setLoading(false);
+      setAuthReady(true);
       if (sessionUser) {
         void fetchUserData(sessionUser.id);
-      } else {
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
       }
     });
 
