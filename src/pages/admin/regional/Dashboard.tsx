@@ -203,18 +203,38 @@ const RegionalDashboard: React.FC = () => {
     const regionalEvents = filteredEvents.filter(e => !e.dcg_id && !e.is_special);
     const dcgEvents = filteredEvents.filter(e => !!e.dcg_id);
 
-    // Filter attendance data — apply ALL filters uniformly
+    // Build lookup of all events in region (regardless of period filter) so we
+    // can classify attendance rows by their source event type. DCG admins can
+    // record attendance for regional events — those rows have dcg_id set on
+    // the attendance_event but source_event_id pointing to a regional event.
+    const allEventsById = new Map((events || []).map(e => [e.id, e] as const));
+    const isRegionalSource = (a: any) => {
+      if (!a.source_event_id) return !a.dcg_id; // legacy: classify by recorder
+      const src = allEventsById.get(a.source_event_id);
+      if (!src) return !a.dcg_id;
+      return !src.dcg_id && !src.is_special;
+    };
+    const isDcgSource = (a: any) => {
+      if (a.source_event_id) {
+        const src = allEventsById.get(a.source_event_id);
+        if (src) return !!src.dcg_id;
+      }
+      return !!a.dcg_id;
+    };
+
+    // Filter attendance data — apply ALL filters uniformly, classifying by
+    // source event (so DCG-recorded regional attendance is counted as regional).
     const filteredAttendance = (attendanceData || []).filter(a => {
       if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
       if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
       if (searchQuery && !a.event_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-      if (eventType === "regional") return !a.dcg_id;
-      if (eventType === "dcg") return !!a.dcg_id;
+      if (eventType === "regional") return isRegionalSource(a);
+      if (eventType === "dcg") return isDcgSource(a);
       return true;
     });
 
-    const regionalAttendance = filteredAttendance.filter(a => !a.dcg_id);
-    const dcgAttendance = filteredAttendance.filter(a => !!a.dcg_id);
+    const regionalAttendance = filteredAttendance.filter(isRegionalSource);
+    const dcgAttendance = filteredAttendance.filter(isDcgSource);
 
     const avgRegionalAttendees = regionalAttendance.length > 0
       ? Math.round(regionalAttendance.reduce((s, a) => s + a.total_present, 0) / regionalAttendance.length) : 0;
@@ -302,11 +322,17 @@ const RegionalDashboard: React.FC = () => {
     const eventsInPeriod = kpis.filteredEvents;
     const attendance = kpis.filteredAttendance || [];
 
-    // Build attendance lookup keyed by source event id (one attendance_event
-    // per source event in the current schema).
-    const attendanceBySourceId = new Map<string, typeof attendance[number]>();
+    // Aggregate attendance by source event id — multiple DCGs may submit
+    // attendance for the same regional event; sum across submissions so the
+    // point reflects the full regional attendance.
+    const aggBySourceId = new Map<string, { m: number; v: number; c: number }>();
     attendance.forEach(a => {
-      if (a.source_event_id) attendanceBySourceId.set(a.source_event_id, a);
+      if (!a.source_event_id) return;
+      const cur = aggBySourceId.get(a.source_event_id) || { m: 0, v: 0, c: 0 };
+      cur.m += a.members_present || 0;
+      cur.v += a.visitors_present || 0;
+      cur.c += a.children_present || 0;
+      aggBySourceId.set(a.source_event_id, cur);
     });
 
     // One data point per event in the selected period — including events
@@ -314,13 +340,13 @@ const RegionalDashboard: React.FC = () => {
     const perEventPoints = [...eventsInPeriod]
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
       .map(e => {
-        const a = attendanceBySourceId.get(e.id);
+        const agg = aggBySourceId.get(e.id);
         return {
           eventId: e.id,
           eventDate: new Date(e.start_datetime),
-          Members: a?.members_present || 0,
-          "Regular Visitors": a?.visitors_present || 0,
-          Children: a?.children_present || 0,
+          Members: agg?.m || 0,
+          "Regular Visitors": agg?.v || 0,
+          Children: agg?.c || 0,
         };
       });
 
