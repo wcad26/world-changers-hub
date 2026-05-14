@@ -350,70 +350,52 @@ const RegionalDashboard: React.FC = () => {
         };
       });
 
-    // Decide aggregation mode based on selected period
-    let monthsCount = 0;
-    if (quickPeriod === "1-month") monthsCount = 0;
-    else if (quickPeriod === "3-months") monthsCount = 3;
-    else if (quickPeriod === "6-months") monthsCount = 6;
-    else if (quickPeriod === "1-year") monthsCount = 12;
-    else if (quickPeriod === "custom" && dateRange.from && dateRange.to) {
-      const days = (dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24);
-      if (days > 31) {
-        monthsCount = Math.max(
-          1,
-          (dateRange.to.getFullYear() - dateRange.from.getFullYear()) * 12 +
-            (dateRange.to.getMonth() - dateRange.from.getMonth()) + 1
-        );
-      }
-    }
-
-    // Per-event mode (1M or short custom range): one point per event, with a
-    // unique key so Recharts does not merge same-date points.
-    if (monthsCount === 0) {
-      return perEventPoints.map((p, i) => ({
-        date: `${format(p.eventDate, "MMM d")}${
-          perEventPoints.filter(q => format(q.eventDate, "MMM d") === format(p.eventDate, "MMM d")).length > 1
-            ? ` #${perEventPoints.slice(0, i + 1).filter(q => format(q.eventDate, "MMM d") === format(p.eventDate, "MMM d")).length}`
-            : ""
-        }`,
-        Members: p.Members,
-        "Regular Visitors": p["Regular Visitors"],
-        Children: p.Children,
-      }));
-    }
-
-    // Monthly mode: build target month buckets ending at dateRange.to (or now)
+    // Bucket width is fixed by event type:
+    //   - DCG Events  -> weekly (7 days)
+    //   - Regional / All -> biweekly (14 days)
+    // Period selector only controls how many buckets render.
+    const bucketDays = eventType === "dcg" ? 7 : 14;
     const endDate = dateRange.to || new Date();
-    const buckets: { key: string; label: string }[] = [];
-    for (let i = monthsCount - 1; i >= 0; i--) {
-      const d = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      const label = monthsCount > 12 ? format(d, "MMM yyyy") : format(d, "MMM");
-      buckets.push({ key, label });
+    const startDate = dateRange.from || subMonths(endDate, 1);
+
+    // Build buckets walking backwards from endDate in bucketDays steps until
+    // we cover startDate. Each bucket window is [start, end).
+    const buckets: { start: Date; end: Date; label: string;
+      m: number; v: number; c: number; n: number }[] = [];
+    let cursorEnd = new Date(endDate);
+    // include the end day fully
+    cursorEnd.setHours(23, 59, 59, 999);
+    while (cursorEnd > startDate) {
+      const start = new Date(cursorEnd);
+      start.setDate(start.getDate() - bucketDays);
+      buckets.push({
+        start,
+        end: new Date(cursorEnd),
+        label: format(start, "MMM d"),
+        m: 0, v: 0, c: 0, n: 0,
+      });
+      cursorEnd = new Date(start);
     }
+    buckets.reverse(); // chronological order
 
-    // Group per-event points by yyyy-MM and average across all events in month.
-    const groups = new Map<string, { m: number; v: number; c: number; n: number }>();
+    // Bin per-event points into buckets
     perEventPoints.forEach(p => {
-      const key = `${p.eventDate.getFullYear()}-${String(p.eventDate.getMonth() + 1).padStart(2, "0")}`;
-      const g = groups.get(key) || { m: 0, v: 0, c: 0, n: 0 };
-      g.m += p.Members;
-      g.v += p["Regular Visitors"];
-      g.c += p.Children;
-      g.n += 1;
-      groups.set(key, g);
+      const t = p.eventDate.getTime();
+      const b = buckets.find(bk => t >= bk.start.getTime() && t < bk.end.getTime());
+      if (!b) return;
+      b.m += p.Members;
+      b.v += p["Regular Visitors"];
+      b.c += p.Children;
+      b.n += 1;
     });
 
-    return buckets.map(b => {
-      const g = groups.get(b.key);
-      return {
-        date: b.label,
-        Members: g && g.n > 0 ? Math.round(g.m / g.n) : 0,
-        "Regular Visitors": g && g.n > 0 ? Math.round(g.v / g.n) : 0,
-        Children: g && g.n > 0 ? Math.round(g.c / g.n) : 0,
-      };
-    });
-  }, [kpis?.filteredEvents, kpis?.filteredAttendance, quickPeriod, dateRange]);
+    return buckets.map(b => ({
+      date: b.label,
+      Members: b.n > 0 ? Math.round(b.m / b.n) : 0,
+      "Regular Visitors": b.n > 0 ? Math.round(b.v / b.n) : 0,
+      Children: b.n > 0 ? Math.round(b.c / b.n) : 0,
+    }));
+  }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
 
   const genderChartData = useMemo(() => {
     if (!kpis) return [];
