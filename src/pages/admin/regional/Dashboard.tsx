@@ -43,7 +43,7 @@ const RegionalDashboard: React.FC = () => {
   // Filter state
   const [quickPeriod, setQuickPeriod] = useState("1-month");
   const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
-  const [eventType, setEventType] = useState("all");
+  const [eventType, setEventType] = useState("regional");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Compute date range
@@ -358,25 +358,27 @@ const RegionalDashboard: React.FC = () => {
     const endDate = dateRange.to || new Date();
     const startDate = dateRange.from || subMonths(endDate, 1);
 
-    // Build buckets walking backwards from endDate in bucketDays steps until
-    // we cover startDate. Each bucket window is [start, end).
+    // Build buckets walking forward from startDate in bucketDays steps. The
+    // last bucket may be partial (clamped to endDate) so the current week/
+    // biweek of the month renders even before the full window has elapsed.
     const buckets: { start: Date; end: Date; label: string;
-      m: number; v: number; c: number; n: number }[] = [];
-    let cursorEnd = new Date(endDate);
-    // include the end day fully
-    cursorEnd.setHours(23, 59, 59, 999);
-    while (cursorEnd > startDate) {
-      const start = new Date(cursorEnd);
-      start.setDate(start.getDate() - bucketDays);
+      m: number; v: number; c: number }[] = [];
+    const periodEnd = new Date(endDate);
+    periodEnd.setHours(23, 59, 59, 999);
+    let cursor = new Date(startDate);
+    cursor.setHours(0, 0, 0, 0);
+    while (cursor <= periodEnd) {
+      const next = new Date(cursor);
+      next.setDate(next.getDate() + bucketDays);
+      const end = next > periodEnd ? new Date(periodEnd.getTime() + 1) : next;
       buckets.push({
-        start,
-        end: new Date(cursorEnd),
-        label: format(start, "MMM d"),
-        m: 0, v: 0, c: 0, n: 0,
+        start: new Date(cursor),
+        end,
+        label: format(cursor, "MMM d"),
+        m: 0, v: 0, c: 0,
       });
-      cursorEnd = new Date(start);
+      cursor = next;
     }
-    buckets.reverse(); // chronological order
 
     // Bin per-event points into buckets — take MAX per series so the trend
     // captures the highest unique attendance observed in each window.
@@ -525,7 +527,6 @@ const RegionalDashboard: React.FC = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
               <SelectItem value="regional">Regional Events</SelectItem>
               <SelectItem value="dcg">DCG Events</SelectItem>
             </SelectContent>
