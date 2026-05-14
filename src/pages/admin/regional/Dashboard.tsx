@@ -350,11 +350,18 @@ const RegionalDashboard: React.FC = () => {
         };
       });
 
-    // Bucket width is fixed by event type:
-    //   - DCG Events  -> weekly (7 days)
-    //   - Regional / All -> biweekly (14 days)
-    // Period selector only controls how many buckets render.
-    const bucketDays = eventType === "dcg" ? 7 : 14;
+    // Regional: one point per actual event (no bucketing).
+    if (eventType === "regional") {
+      return perEventPoints.map(p => ({
+        date: format(p.eventDate, "MMM d"),
+        Members: p.Members,
+        "Regular Visitors": p["Regular Visitors"],
+        Children: p.Children,
+      }));
+    }
+
+    // DCG: weekly (7-day) max buckets, forward-walk from startDate.
+    const bucketDays = 7;
     const endDate = dateRange.to || new Date();
     const startDate = dateRange.from || subMonths(endDate, 1);
 
