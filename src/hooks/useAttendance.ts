@@ -228,25 +228,10 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
         };
       }) || [];
 
-      // Aggregate by date to prevent duplicates on the chart
-      const aggregatedByDate = processedData.reduce((acc, event) => {
-        const existingEntry = acc.find(e => e.event_date === event.event_date);
-        if (existingEntry) {
-          existingEntry.members_present += event.members_present;
-          existingEntry.visitors_present += event.visitors_present;
-          existingEntry.children_present += event.children_present;
-          existingEntry.members_absent += event.members_absent;
-          existingEntry.visitors_absent += event.visitors_absent;
-          existingEntry.children_absent += event.children_absent;
-          existingEntry.total_present += event.total_present;
-          existingEntry.total_absent += event.total_absent;
-        } else {
-          acc.push({ ...event });
-        }
-        return acc;
-      }, [] as typeof processedData);
-
-      return aggregatedByDate;
+      // Return one row per attendance event (do NOT collapse same-day events
+      // — multiple meetings on the same date must remain distinct points on
+      // the trend chart).
+      return processedData;
     },
     enabled: !!regionId
   });
