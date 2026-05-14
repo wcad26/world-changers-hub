@@ -1,22 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Guards DCG portal pages.
- *
- * - Waits for the portal AuthProvider to finish initializing.
- * - If there is no Supabase user → redirect to /dcg-auth.
- * - If the user is signed in but has no resolved DCG context → show a
- *   clear "no DCG assigned" screen instead of a blank page or silent
- *   logout.
+ * DCG portal guard — Supabase-session-only.
+ * Redirects to /dcg-auth if there is no signed-in user. No role/DCG checks.
  */
 const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { authReady, loading, user, userDcg, signOut } = useAuth();
+  const [status, setStatus] = useState<'checking' | 'authed' | 'anon'>('checking');
 
-  if (!authReady || loading) {
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (cancelled) return;
+      setStatus(data.session?.user ? 'authed' : 'anon');
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cancelled) return;
+      if (session?.user) setStatus('authed');
+      else if (_event === 'SIGNED_OUT') setStatus('anon');
+    });
+    return () => {
+      cancelled = true;
+      sub?.subscription?.unsubscribe?.();
+    };
+  }, []);
+
+  if (status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -24,31 +35,8 @@ const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   }
 
-  if (!user) {
+  if (status === 'anon') {
     return <Navigate to="/dcg-auth" replace />;
-  }
-
-  if (!userDcg) {
-    const handleSignOut = async () => {
-      try {
-        await signOut();
-      } finally {
-        window.location.assign('/dcg-auth');
-      }
-    };
-
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-6">
-        <div className="max-w-md w-full text-center space-y-4">
-          <h1 className="text-2xl font-semibold text-foreground">No DCG assigned</h1>
-          <p className="text-muted-foreground">
-            Your account is signed in, but it isn't linked to a DCG yet. Ask your
-            regional admin to assign you to a DCG, then sign in again.
-          </p>
-          <Button onClick={handleSignOut}>Sign out</Button>
-        </div>
-      </div>
-    );
   }
 
   return <>{children}</>;

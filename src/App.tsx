@@ -201,6 +201,7 @@ const App = () => {
             <Route path="/dcg-auth" element={<DcgAuth />} />
             <Route path="/auth/member" element={<MemberAuth />} />
             <Route path="/member/auth" element={<Navigate to="/auth/member" replace />} />
+            <Route path="/auth/admin" element={<Navigate to="/auth/regional" replace />} />
 
             {/* Admin redirects */}
             <Route path="/admin" element={<Navigate to="/admin/regional/dashboard" replace />} />
