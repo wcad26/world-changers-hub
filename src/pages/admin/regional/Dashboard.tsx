@@ -525,7 +525,6 @@ const RegionalDashboard: React.FC = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
               <SelectItem value="regional">Regional Events</SelectItem>
               <SelectItem value="dcg">DCG Events</SelectItem>
             </SelectContent>
