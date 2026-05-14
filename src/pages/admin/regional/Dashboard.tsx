@@ -378,22 +378,22 @@ const RegionalDashboard: React.FC = () => {
     }
     buckets.reverse(); // chronological order
 
-    // Bin per-event points into buckets
+    // Bin per-event points into buckets — take MAX per series so the trend
+    // captures the highest unique attendance observed in each window.
     perEventPoints.forEach(p => {
       const t = p.eventDate.getTime();
       const b = buckets.find(bk => t >= bk.start.getTime() && t < bk.end.getTime());
       if (!b) return;
-      b.m += p.Members;
-      b.v += p["Regular Visitors"];
-      b.c += p.Children;
-      b.n += 1;
+      b.m = Math.max(b.m, p.Members);
+      b.v = Math.max(b.v, p["Regular Visitors"]);
+      b.c = Math.max(b.c, p.Children);
     });
 
     return buckets.map(b => ({
       date: b.label,
-      Members: b.n > 0 ? Math.round(b.m / b.n) : 0,
-      "Regular Visitors": b.n > 0 ? Math.round(b.v / b.n) : 0,
-      Children: b.n > 0 ? Math.round(b.c / b.n) : 0,
+      Members: b.m,
+      "Regular Visitors": b.v,
+      Children: b.c,
     }));
   }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
 
