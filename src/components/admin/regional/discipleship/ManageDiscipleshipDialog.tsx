@@ -8,7 +8,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useUpdateDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { useUpdateDiscipleshipRelationship, useDeleteDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useMembers } from '@/hooks/useMembers';
