@@ -33,6 +33,7 @@ import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
+import { useDcgEvents } from "@/hooks/useDcgEvents";
 import { formatWithCurrency } from "@/utils/currencyUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
