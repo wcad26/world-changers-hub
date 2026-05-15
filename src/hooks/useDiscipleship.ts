@@ -314,6 +314,30 @@ export const useUpdateDiscipleshipRelationship = () => {
   });
 };
 
+// Hook to delete discipleship relationship
+export const useDeleteDiscipleshipRelationship = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('discipleship_relationships')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      if (userRegion?.id) {
+        queryClient.invalidateQueries({ queryKey: ['discipleship-relationships', userRegion.id] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['member-discipleship-relationships'] });
+      queryClient.invalidateQueries({ queryKey: ['member-discipleship-stats'] });
+    },
+  });
+};
+
 // Hook to add discipleship progress
 export const useAddDiscipleshipProgress = () => {
   const queryClient = useQueryClient();
