@@ -33,6 +33,7 @@ import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
+import { useDcgEvents } from "@/hooks/useDcgEvents";
 import { formatWithCurrency } from "@/utils/currencyUtils";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,7 @@ const DcgProfile: React.FC = () => {
   const { data: transactions, isLoading: financialsLoading } = useFinancialTransactions();
   const { data: currency } = useRegionCurrency(userRegion?.id);
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: dcgEvents } = useDcgEvents(dcgId);
   const removeMember = useRemoveMemberFromDcg();
 
   const dcg = dcgs?.find(d => d.id === dcgId);
@@ -104,10 +106,14 @@ const DcgProfile: React.FC = () => {
     .reduce((s, t) => s + Number(t.amount), 0);
   const netBalance = totalIncome - totalExpenses;
 
-  // Trend chart data — DCG-scoped, one point per actual recorded event (no zero-fill)
+  // Trend chart data — only attendance for events OWNED by this DCG (events.dcg_id === dcgId).
+  // This excludes regional-event submissions, which would otherwise inflate counts beyond the DCG's own membership.
   const trendChartData = useMemo(() => {
     if (!attendanceData) return [];
-    const scoped = (attendanceData as any[]).filter(a => a.dcg_id === dcgId);
+    const ownedEventIds = new Set((dcgEvents || []).map((e: any) => e.id));
+    const scoped = (attendanceData as any[]).filter(
+      a => a.source_event_id && ownedEventIds.has(a.source_event_id)
+    );
     const filtered = scoped.filter(a => {
       const d = new Date(a.event_date);
       if (dateRange.from && d < dateRange.from) return false;
@@ -135,7 +141,7 @@ const DcgProfile: React.FC = () => {
         "Regular Visitors": g.v,
         Children: g.c,
       }));
-  }, [attendanceData, dcgId, dateRange]);
+  }, [attendanceData, dcgEvents, dateRange]);
 
   // Member table filtering — must run before any early return to keep hook order stable.
   const filteredMembers = useMemo(() => {
