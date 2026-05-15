@@ -141,7 +141,7 @@ const DcgProfile: React.FC = () => {
         "Regular Visitors": g.v,
         Children: g.c,
       }));
-  }, [attendanceData, dcgId, dateRange]);
+  }, [attendanceData, dcgEvents, dateRange]);
 
   // Member table filtering — must run before any early return to keep hook order stable.
   const filteredMembers = useMemo(() => {
