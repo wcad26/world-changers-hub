@@ -619,12 +619,12 @@ const DcgProfile: React.FC = () => {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setEditingTransaction(transaction as DcgFinancialTransaction)}>
+                                    <DropdownMenuItem onClick={() => setEditingTransaction(transaction as any)}>
                                       <Edit className="h-4 w-4 mr-2" /> Edit
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive"
-                                      onClick={() => setDeletingTransaction(transaction as DcgFinancialTransaction)}
+                                      onClick={() => setDeletingTransaction(transaction as any)}
                                     >
                                       <UserMinus className="h-4 w-4 mr-2" /> Delete
                                     </DropdownMenuItem>
