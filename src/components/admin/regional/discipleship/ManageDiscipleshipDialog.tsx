@@ -8,7 +8,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { useUpdateDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { useUpdateDiscipleshipRelationship, useDeleteDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useMembers } from '@/hooks/useMembers';
@@ -39,6 +41,7 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
   onOpenChange,
 }) => {
   const updateRelationship = useUpdateDiscipleshipRelationship();
+  const deleteRelationship = useDeleteDiscipleshipRelationship();
   const { toast } = useToast();
   const { userRegion } = useAuth();
   const { data: members = [] } = useMembers(userRegion?.id);
@@ -233,20 +236,65 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
               )}
             />
             
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={updateRelationship.isPending}
-              >
-                {updateRelationship.isPending ? 'Updating...' : 'Update Relationship'}
-              </Button>
+            <div className="flex justify-between items-center pt-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                    disabled={deleteRelationship.isPending}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {deleteRelationship.isPending ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this discipleship relationship?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove this mentor-disciple relationship. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={async () => {
+                        try {
+                          await deleteRelationship.mutateAsync(relationship.id);
+                          toast({ title: 'Deleted', description: 'Discipleship relationship deleted' });
+                          onOpenChange(false);
+                        } catch (e: any) {
+                          toast({
+                            title: 'Error',
+                            description: e?.message || 'Failed to delete relationship',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
+              <div className="flex space-x-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateRelationship.isPending}
+                >
+                  {updateRelationship.isPending ? 'Updating...' : 'Update Relationship'}
+                </Button>
+              </div>
             </div>
           </form>
         </Form>

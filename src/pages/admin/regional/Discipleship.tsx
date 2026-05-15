@@ -4,11 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, UserPlus, Users, TrendingUp, TrendingDown, CheckCircle, Clock, Search, Target } from 'lucide-react';
+import { Heart, UserPlus, Users, TrendingUp, TrendingDown, CheckCircle, Clock, Search, Target, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useDiscipleshipRelationships, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
+import { useDiscipleshipRelationships, useDeleteDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import AssignDiscipleDialog from '@/components/admin/regional/discipleship/AssignDiscipleDialog';
 import ManageDiscipleshipDialog from '@/components/admin/regional/discipleship/ManageDiscipleshipDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 import { GlassSection, GlassSectionHeader } from '@/components/ui/GlassSection';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +23,17 @@ const Discipleship: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedRelationship, setSelectedRelationship] = useState<DiscipleshipRelationshipWithMembers | null>(null);
+
+  const deleteRelationship = useDeleteDiscipleshipRelationship();
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRelationship.mutateAsync(id);
+      toast.success('Discipleship relationship deleted');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete relationship');
+    }
+  };
 
   // Fetch discipleship progress for success rate
   const relationshipIds = useMemo(() => relationships?.map(r => r.id) || [], [relationships]);
@@ -266,16 +279,56 @@ const Discipleship: React.FC = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedRelationship(relationship);
-                        }}
-                      >
-                        Manage
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRelationship(relationship);
+                          }}
+                        >
+                          Manage
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => e.stopPropagation()}
+                              disabled={deleteRelationship.isPending}
+                              aria-label="Delete relationship"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this discipleship relationship?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently remove the relationship between{' '}
+                                <span className="font-medium">
+                                  {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
+                                </span>{' '}
+                                and{' '}
+                                <span className="font-medium">
+                                  {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
+                                </span>
+                                . This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => handleDelete(relationship.id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
