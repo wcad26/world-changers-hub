@@ -24,6 +24,17 @@ const Discipleship: React.FC = () => {
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedRelationship, setSelectedRelationship] = useState<DiscipleshipRelationshipWithMembers | null>(null);
 
+  const deleteRelationship = useDeleteDiscipleshipRelationship();
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteRelationship.mutateAsync(id);
+      toast.success('Discipleship relationship deleted');
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete relationship');
+    }
+  };
+
   // Fetch discipleship progress for success rate
   const relationshipIds = useMemo(() => relationships?.map(r => r.id) || [], [relationships]);
   const { data: progressData } = useQuery({
