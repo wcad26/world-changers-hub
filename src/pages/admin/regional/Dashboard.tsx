@@ -639,6 +639,36 @@ const RegionalDashboard: React.FC = () => {
                   borderRadius: "12px",
                   fontSize: "12px",
                 }}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload || payload.length === 0) return null;
+                  const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
+                  return (
+                    <div style={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                      padding: "8px 12px",
+                      boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                    }}>
+                      <div style={{ fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>{label}</div>
+                      {payload.map((p: any) => (
+                        <div key={p.dataKey} style={{ color: p.color }}>
+                          {p.dataKey} : {p.value}
+                        </div>
+                      ))}
+                      <div style={{
+                        marginTop: 6,
+                        paddingTop: 6,
+                        borderTop: "1px solid hsl(var(--border))",
+                        fontWeight: 600,
+                        color: "hsl(var(--foreground))",
+                      }}>
+                        Total : {total}
+                      </div>
+                    </div>
+                  );
+                }}
               />
               {kpis && kpis.targetMembers > 0 && (
                 <ReferenceLine
