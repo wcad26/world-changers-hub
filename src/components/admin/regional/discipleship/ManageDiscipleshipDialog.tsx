@@ -41,6 +41,7 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
   onOpenChange,
 }) => {
   const updateRelationship = useUpdateDiscipleshipRelationship();
+  const deleteRelationship = useDeleteDiscipleshipRelationship();
   const { toast } = useToast();
   const { userRegion } = useAuth();
   const { data: members = [] } = useMembers(userRegion?.id);
