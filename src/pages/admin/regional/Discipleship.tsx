@@ -218,18 +218,18 @@ const Discipleship: React.FC = () => {
               {isLoading || !userRegion ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 6 }).map((_, j) => (
+                    {Array.from({ length: 5 }).map((_, j) => (
                       <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-destructive">Error loading relationships</TableCell>
+                  <TableCell colSpan={5} className="text-center py-8 text-destructive">Error loading relationships</TableCell>
                 </TableRow>
               ) : filteredRelationships.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     {searchTerm || statusFilter !== 'all'
                       ? 'No relationships match your filters'
                       : 'No discipleship relationships found. Create your first one!'
