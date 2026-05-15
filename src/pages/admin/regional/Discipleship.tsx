@@ -328,6 +328,43 @@ const Discipleship: React.FC = () => {
         isOpen={!!selectedRelationship}
         onOpenChange={(open) => !open && setSelectedRelationship(null)}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this discipleship relationship?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget && (
+                <>
+                  This will permanently remove the relationship between{' '}
+                  <span className="font-medium">
+                    {deleteTarget.mentor?.profiles?.last_name} {deleteTarget.mentor?.profiles?.first_name}
+                  </span>{' '}
+                  and{' '}
+                  <span className="font-medium">
+                    {deleteTarget.disciple?.profiles?.last_name} {deleteTarget.disciple?.profiles?.first_name}
+                  </span>
+                  . This action cannot be undone.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deleteTarget) {
+                  await handleDelete(deleteTarget.id);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
