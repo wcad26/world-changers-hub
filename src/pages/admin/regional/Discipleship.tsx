@@ -211,7 +211,6 @@ const Discipleship: React.FC = () => {
                 <TableHead>Disciple</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Start Date</TableHead>
-                <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
