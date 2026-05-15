@@ -192,21 +192,6 @@ const DcgProfile: React.FC = () => {
 
   const activeMembers = (members || []).filter(m => m.is_active);
 
-  // Filtered members for table
-  const filteredMembers = useMemo(() => {
-    return activeMembers.filter(m => {
-      const p = m.members?.profiles;
-      const fullName = `${p?.last_name || ""} ${p?.first_name || ""}`.toLowerCase();
-      const email = (p?.email || "").toLowerCase();
-      const phone = (p?.phone || "").toLowerCase();
-      const q = searchTerm.toLowerCase();
-      const searchMatch = !q || fullName.includes(q) || email.includes(q) || phone.includes(q);
-      const statusMatch = statusFilter === "all" || m.members?.status === statusFilter;
-      const roleMatch = roleFilter === "all" || m.role === roleFilter;
-      return searchMatch && statusMatch && roleMatch;
-    });
-  }, [activeMembers, searchTerm, statusFilter, roleFilter]);
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "bg-green-100 text-green-800 border-green-200";
