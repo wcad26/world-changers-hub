@@ -362,16 +362,14 @@ const RegionalDashboard: React.FC = () => {
     }
 
     // DCG: weekly (7-day) buckets, forward-walk from startDate.
-    // Aggregation: per DCG take MAX within the week (so multiple meetings by
-    // the same DCG don't double-count), then SUM across DCGs to get the
-    // regional total for that week.
+    // Each DCG meets exactly once per week, so straight SUM of every DCG
+    // attendance event in the week IS the regional total for that week.
     const bucketDays = 7;
     const endDate = dateRange.to || new Date();
     const startDate = dateRange.from || subMonths(endDate, 1);
 
     const buckets: { start: Date; end: Date; label: string; partial: boolean;
-      perDcg: Map<string, { m: number; v: number; c: number }>;
-      count: number }[] = [];
+      m: number; v: number; c: number; count: number }[] = [];
     const periodEnd = new Date(endDate);
     periodEnd.setHours(23, 59, 59, 999);
     let cursor = new Date(startDate);
@@ -386,24 +384,21 @@ const RegionalDashboard: React.FC = () => {
         end,
         label: format(cursor, "MMM d"),
         partial,
-        perDcg: new Map(),
+        m: 0, v: 0, c: 0,
         count: 0,
       });
       cursor = next;
     }
 
-    // Bin: per (bucket, dcg) take MAX of each series.
+    // Bin: SUM every DCG attendance event in the week (one meeting per DCG/week).
     perEventPoints.forEach(p => {
       const t = p.eventDate.getTime();
       const b = buckets.find(bk => t >= bk.start.getTime() && t < bk.end.getTime());
       if (!b) return;
       b.count += 1;
-      const key = p.dcgId || "__no_dcg__";
-      const cur = b.perDcg.get(key) || { m: 0, v: 0, c: 0 };
-      cur.m = Math.max(cur.m, p.Members);
-      cur.v = Math.max(cur.v, p["Regular Visitors"]);
-      cur.c = Math.max(cur.c, p.Children);
-      b.perDcg.set(key, cur);
+      b.m += p.Members;
+      b.v += p["Regular Visitors"];
+      b.c += p.Children;
     });
 
     // Drop trailing empty partial bucket so the line doesn't crash to 0
@@ -414,17 +409,12 @@ const RegionalDashboard: React.FC = () => {
       else break;
     }
 
-    // Sum per-DCG maxes across all DCGs for the bucket total.
-    return buckets.map(b => {
-      let m = 0, v = 0, c = 0;
-      b.perDcg.forEach(d => { m += d.m; v += d.v; c += d.c; });
-      return {
-        date: b.label,
-        Members: m,
-        "Regular Visitors": v,
-        Children: c,
-      };
-    });
+    return buckets.map(b => ({
+      date: b.label,
+      Members: b.m,
+      "Regular Visitors": b.v,
+      Children: b.c,
+    }));
   }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
 
   const genderChartData = useMemo(() => {

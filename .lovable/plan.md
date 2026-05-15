@@ -1,32 +1,43 @@
 # Fix DCG trend chart aggregation
 
-## Diagnosis
+## Problem
 
-DCGs **are** reporting (67 DCG attendance events on file). Two bugs in `trendChartData` (src/pages/admin/regional/Dashboard.tsx):
+DCGs are reporting attendance (67 records on file), but the regional Dashboard DCG trend chart is wrong on two counts:
 
-1. **Wrong aggregation across DCGs.** Weekly bucket uses `Math.max` over every per-event point, so the bucket only shows the single largest DCG meeting that week. The regional total across DCGs is hidden.
-2. **Empty trailing partial week plots as 0.** The forward-walk loop emits a clamped tail bucket; if no DCG has met yet in the current partial week it renders as 0 and crashes the line down (visible on 1M view ending May 13).
+1. **Only the largest DCG shows.** The weekly bucket uses `Math.max` across every per-event point in the week, so the chart collapses to the single biggest DCG meeting instead of the regional total across all DCGs.
+2. **Trailing partial week renders as 0.** The forward-walk loop always emits a clamped tail bucket. On a view ending mid-week with no meetings yet, that bucket renders as 0 and the line crashes down.
 
-## Fix (DCG branch only — Regional unchanged)
+## Domain rule
 
-In `trendChartData`, after `perEventPoints` is built and after the early-return for Regional:
+Each DCG meets exactly **once per week** (different DCGs may meet on different days, but no DCG meets twice in the same week). So per-DCG weekly max is unnecessary — a straight SUM across all DCG attendance events in the week IS the regional total.
 
-1. **Per-DCG max per week, then sum across DCGs.** Carry `dcg_id` on each per-event point (from `e.dcg_id`). For each bucket:
-   - Group the events that fall in the bucket by `dcg_id`.
-   - Take the MAX Members / Regular Visitors / Children **per DCG** within the bucket (one DCG can have multiple meetings in a week — count their best, not double-count).
-   - SUM those per-DCG maxes across all DCGs → bucket total.
+## Fix (DCG branch only — Regional per-event plotting unchanged)
+
+In `src/pages/admin/regional/Dashboard.tsx`, inside `trendChartData`, after `perEventPoints` is built and after the early-return for Regional:
+
+1. **Sum all DCG attendance per week.**
+   - For each weekly bucket, SUM Members / Regular Visitors / Children across every DCG attendance event that falls in that week.
+   - No `Math.max`, no per-DCG grouping. Each event contributes its full count.
    - Track event count per bucket for step 2.
-2. **Drop trailing empty partial bucket.** After binning, if the last bucket was clamped (partial: `end <= periodEnd + 1ms` and shorter than `bucketDays`) AND has zero events, pop it. Mid-period weeks with zero meetings still render as 0 (legitimate gap).
+
+2. **Drop trailing empty partial bucket.**
+   - After binning, while the last bucket is partial (clamped: shorter than 7 days at the period end) AND has zero events, pop it.
+   - Mid-period weeks with zero meetings still render as 0 (legitimate gap).
 
 ## What does NOT change
 
-- Regional per-event plotting.
+- Regional per-event plotting (one point per event).
 - Filters, KPI cards, dropdown, search.
 - Attendance classification (`isDcgSource` / `isRegionalSource`).
-- Bucket width (7 days for DCG).
+- Bucket width (still 7 days for DCG).
+
+## Files
+
+- `src/pages/admin/regional/Dashboard.tsx` (only `trendChartData` DCG branch).
 
 ## Validation
 
-- DCG 1M / 3M: weekly points reflect total regional DCG attendance (sum of per-DCG weekly maxes). Trailing partial week with no meetings is omitted instead of dropping to 0.
-- Mid-period week with zero meetings still renders 0.
+- DCG 1M / 3M: weekly point = sum of every DCG meeting's attendance that week → true regional total.
+- Trailing partial week with no meetings is omitted, not plotted as 0.
+- Mid-period empty week still renders 0.
 - Regional view unchanged.
