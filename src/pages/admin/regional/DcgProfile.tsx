@@ -559,7 +559,7 @@ const DcgProfile: React.FC = () => {
         <TabsContent value="financials" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
+              <CardTitle>Financial Transactions</CardTitle>
             </CardHeader>
             <CardContent>
               {financialsLoading ? (
@@ -567,35 +567,48 @@ const DcgProfile: React.FC = () => {
                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
                 </div>
               ) : dcgTransactions.length > 0 ? (
-                <div className="space-y-2">
-                  {[...dcgTransactions]
-                    .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
-                    .slice(0, 20)
-                    .map((transaction) => {
-                      const isIncome = transaction.category?.type?.toLowerCase() === "income";
-                      return (
-                        <div key={transaction.id} className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-card/40 hover:bg-card/60 transition-colors">
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{transaction.category?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(transaction.transaction_date).toLocaleDateString()}
-                              {transaction.description && ` • ${transaction.description}`}
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className={`font-medium ${isIncome ? "text-primary" : "text-destructive"}`}>
-                              {isIncome ? "+" : "-"}{fmt(Number(transaction.amount))}
-                            </p>
-                            <Badge variant="outline" className="text-xs">
-                              {transaction.category?.type}
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="hidden md:table-cell">Description</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...dcgTransactions]
+                        .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
+                        .map((transaction) => {
+                          const type = transaction.category?.type?.toLowerCase();
+                          const isIncome = type === "income";
+                          return (
+                            <TableRow key={transaction.id}>
+                              <TableCell className="whitespace-nowrap">
+                                {format(new Date(transaction.transaction_date), "MMM dd, yyyy")}
+                              </TableCell>
+                              <TableCell className="font-medium">{transaction.category?.name || "—"}</TableCell>
+                              <TableCell className="hidden md:table-cell text-muted-foreground">
+                                {transaction.description || "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={isIncome ? "default" : "secondary"}>
+                                  {transaction.category?.type || "—"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className={`text-right whitespace-nowrap font-medium ${isIncome ? "text-primary" : "text-destructive"}`}>
+                                {isIncome ? "+" : "-"}{fmt(Number(transaction.amount))}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
                 </div>
               ) : (
-                <p className="text-muted-foreground">No financial transactions in selected period</p>
+                <p className="text-muted-foreground py-8 text-center">No financial transactions in selected period</p>
               )}
             </CardContent>
           </Card>
