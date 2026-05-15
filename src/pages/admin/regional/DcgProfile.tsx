@@ -82,17 +82,6 @@ const DcgProfile: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/admin/regional/dcg")}
-            className="mb-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2 text-primary" />
-            Back to DCG Management
-          </Button>
-        </div>
 
         <div className="grid gap-6">
           {/* DCG Header */}
