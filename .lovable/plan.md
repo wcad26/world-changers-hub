@@ -1,31 +1,22 @@
 ## Goal
-Add an Actions column to the DCG financial transactions table on the DCG profile page so regional admins can edit (and delete) transactions.
+Fix the blank page on `/admin/regional/dcg/<id>` introduced after the recent edits adding the financial Edit/Delete actions.
 
-## Changes
+## Diagnosis so far
+- The list page `/admin/regional/dcg` itself renders fine; clicking a row navigates to the DCG profile, which is the URL you reported as the redirect target. So the DCG profile is the page that goes blank.
+- Earlier in this session the same profile was loading data (members fetched in console). The blank state appeared after the financials Edit/Delete edit. Most likely a runtime render error in `DcgProfile.tsx`.
+- I cannot read the failing browser console (the sandbox preview I can drive isn't authenticated as you), so I need the exact error text to be sure.
 
-### 1. `src/hooks/useDcgFinancials.ts`
-Add two new mutation hooks:
-- `useUpdateDcgTransaction(dcgId)` — updates `category_id`, `amount`, `description`, `transaction_date` on `financial_transactions` by id; invalidates `dcg_financial_transactions`, `dcg_financial_summary`, `recent_dcg_transactions`, and regional `financial_transactions`/`financial_summary`.
-- `useDeleteDcgTransaction(dcgId)` — deletes by id; same invalidations.
+## Action
 
-### 2. New `src/components/admin/dcg/EditDcgTransactionDialog.tsx`
-Reusable dialog (mirrors `RecordDcgIncomeDialog` / `RecordDcgExpenseDialog` styling) with fields:
-- Category (Select, filtered by transaction's current type — income or expense — using `useFinancialCategories`)
-- Amount (numeric)
-- Date (date picker)
-- Description (textarea)
+1. **You share the console error** — open the browser DevTools console on the blank page and paste the red error.
 
-Uses `dcgTransactionSchema` + `useUpdateDcgTransaction`. Shows toast on success/error.
+2. **In parallel, I will harden the suspect spots in `src/pages/admin/regional/DcgProfile.tsx` and `src/components/admin/dcg/EditDcgTransactionDialog.tsx`:**
+   - Move `useDeleteDcgTransaction(dcgId || "")` so the empty-string fallback never runs (only call when `dcgId` exists, or guard inside the hook).
+   - Cast `transaction as any` (not `DcgFinancialTransaction`) when passing to `setEditingTransaction` / `setDeletingTransaction` — the rows from `useFinancialTransactions` lack `member` field and the strict cast can mismatch.
+   - Make `EditDcgTransactionDialog` resilient when `transaction` is `null` and when `categories` is `undefined` (don't crash on `.filter` of undefined; already covered, but double-check).
+   - Confirm `AlertDialog` import path (`@/components/ui/alert-dialog`) is the actual file present.
 
-### 3. `src/pages/admin/regional/DcgProfile.tsx` (financials table only)
-- Add a new `Actions` `TableHead` (right-aligned, `w-[60px]`).
-- For each row, add a `TableCell` with a `DropdownMenu` (`MoreVertical` trigger) containing:
-  - **Edit** → opens `EditDcgTransactionDialog` with the selected transaction
-  - **Delete** → confirmation via `AlertDialog`, calls `useDeleteDcgTransaction`
-- Add local state `editingTransaction` and `deletingTransaction`.
-- Update empty-state `colSpan` to 6.
+3. **Verify** the page renders again on the same route, then confirm Edit and Delete still work.
 
 ## Out of scope
-- No schema changes (existing RLS on `financial_transactions` already allows regional admins to update/delete their region's rows).
-- No changes to the trend chart, member table, or other tabs.
-- Type cannot be changed when editing (would require switching category to one of opposite type, which the category dropdown handles naturally).
+- No other tabs, hooks, or schema changes.
