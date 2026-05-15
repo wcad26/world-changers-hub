@@ -237,7 +237,9 @@ const RegionalEvents: React.FC = () => {
   const periodFilteredEvents = useMemo(() => {
     if (!events) return [];
     return events.filter(e => {
+      if (!e?.start_datetime) return false;
       const d = new Date(e.start_datetime);
+      if (isNaN(d.getTime())) return false;
       if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
       if (periodFilters.dateRange.to) {
         const endOfDay = new Date(periodFilters.dateRange.to);
@@ -251,7 +253,8 @@ const RegionalEvents: React.FC = () => {
   const filteredEvents = useMemo(() => {
     const now = new Date();
     return periodFilteredEvents.filter(event => {
-      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const name = event?.name ?? '';
+      const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
       if (!matchesSearch) return false;
@@ -260,8 +263,11 @@ const RegionalEvents: React.FC = () => {
       if (eventTypeFilter === 'dcg' && !event.dcg_id) return false;
       if (eventTypeFilter === 'special' && !event.is_special) return false;
 
-      if (timeFilter === 'upcoming' && new Date(event.start_datetime) < now) return false;
-      if (timeFilter === 'past' && new Date(event.start_datetime) >= now) return false;
+      const start = event.start_datetime ? new Date(event.start_datetime) : null;
+      if (start && !isNaN(start.getTime())) {
+        if (timeFilter === 'upcoming' && start < now) return false;
+        if (timeFilter === 'past' && start >= now) return false;
+      }
 
       return true;
     });
@@ -1521,12 +1527,13 @@ const RegionalEvents: React.FC = () => {
     }
     return eventList.map((event) => {
       const now = new Date();
-      const isFutureEvent = new Date(event.start_datetime) >= now;
+      const start = event.start_datetime ? new Date(event.start_datetime) : null;
+      const isFutureEvent = !!(start && !isNaN(start.getTime()) && start >= now);
       const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
       const attendance = getEventAttendance(event.id);
       return (
       <TableRow key={event.id}>
-        <TableCell className="font-medium">{event.name}</TableCell>
+        <TableCell className="font-medium">{event.name ?? '—'}</TableCell>
         <TableCell>
           <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
             {eventType}
@@ -1534,7 +1541,7 @@ const RegionalEvents: React.FC = () => {
         </TableCell>
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
-        <TableCell>{event.location_name}</TableCell>
+        <TableCell>{event.location_name ?? '—'}</TableCell>
         <TableCell className="text-center">{event.capacity ?? 'N/A'}</TableCell>
         <TableCell className="text-center">{isFutureEvent ? '-' : attendance}</TableCell>
         <TableCell>
@@ -1610,6 +1617,18 @@ const RegionalEvents: React.FC = () => {
       );
     });
   };
+
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Failed to load events</AlertTitle>
+        <AlertDescription>
+          {(error as any)?.message || 'An unexpected error occurred while loading the events page. Please refresh and try again.'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <>

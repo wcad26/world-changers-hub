@@ -1,28 +1,19 @@
-## Goal
-Allow regional admins to delete discipleship relationships from the Discipleship Management page.
+I’ll make the admin events page resilient against data/render crashes that can occur after the page initially loads.
 
-## Scope
-- Frontend only. RLS already permits DELETE for regional admins / region members / super admins on `discipleship_relationships`.
-- Cascading `discipleship_progress` rows are handled by the existing FK (or remain orphaned per current schema — no schema change in this task).
+Plan:
+1. Harden the regional events rendering logic in `src/pages/admin/regional/Events.tsx`:
+   - Safely handle missing/null event fields such as `location_name`, `category`, `end_datetime`, and optional booleans.
+   - Prevent date formatting from throwing if any event has an invalid or unexpected datetime value.
+   - Show fallback text instead of letting one bad event row crash the whole page.
 
-## Changes
+2. Add graceful query error UI for the page:
+   - If event or attendance loading fails, show a clear error message inside the page instead of a blank screen.
+   - Keep existing loading skeletons and normal page layout unchanged.
 
-### 1. `src/hooks/useDiscipleship.ts`
-Add `useDeleteDiscipleshipRelationship` mutation:
-- `DELETE FROM discipleship_relationships WHERE id = :id`
-- On success: invalidate `discipleship-relationships`, `member-discipleship-relationships`, `member-discipleship-stats`, and toast "Relationship deleted".
-- On error: toast error.
+3. Reduce risky attendance dependency behavior:
+   - Treat missing/failed attendance data as an empty list for KPI and table calculations so event management still loads.
+   - Preserve existing attendance calculations when data is available.
 
-### 2. `src/pages/admin/regional/Discipleship.tsx`
-In the Actions cell of each row (next to the existing **Manage** button), add a destructive **Delete** icon button:
-- Uses an `AlertDialog` confirmation ("Delete this discipleship relationship? This cannot be undone.")
-- On confirm, calls the new delete mutation with `relationship.id`.
-- Shows a small spinner / disabled state while pending.
-
-### 3. `src/components/admin/regional/discipleship/ManageDiscipleshipDialog.tsx`
-Also surface a **Delete Relationship** button at the bottom of the manage dialog (same confirm flow), so admins reviewing details can remove without backing out. Closes the dialog on successful deletion.
-
-## Out of scope
-- No DB migration. RLS already allows delete.
-- No changes to member-portal discipleship views.
-- No bulk delete.
+4. Verify after implementation:
+   - Reopen `/admin/regional/events` in the development preview.
+   - Confirm the page no longer turns blank and either displays events or a controlled error state.
