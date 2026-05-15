@@ -24,6 +24,7 @@ const Discipleship: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedRelationship, setSelectedRelationship] = useState<DiscipleshipRelationshipWithMembers | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DiscipleshipRelationshipWithMembers | null>(null);
 
   const deleteRelationship = useDeleteDiscipleshipRelationship();
 
