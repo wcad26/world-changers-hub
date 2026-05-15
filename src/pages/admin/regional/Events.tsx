@@ -1527,12 +1527,13 @@ const RegionalEvents: React.FC = () => {
     }
     return eventList.map((event) => {
       const now = new Date();
-      const isFutureEvent = new Date(event.start_datetime) >= now;
+      const start = event.start_datetime ? new Date(event.start_datetime) : null;
+      const isFutureEvent = !!(start && !isNaN(start.getTime()) && start >= now);
       const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
       const attendance = getEventAttendance(event.id);
       return (
       <TableRow key={event.id}>
-        <TableCell className="font-medium">{event.name}</TableCell>
+        <TableCell className="font-medium">{event.name ?? '—'}</TableCell>
         <TableCell>
           <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
             {eventType}
@@ -1540,7 +1541,7 @@ const RegionalEvents: React.FC = () => {
         </TableCell>
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
         <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
-        <TableCell>{event.location_name}</TableCell>
+        <TableCell>{event.location_name ?? '—'}</TableCell>
         <TableCell className="text-center">{event.capacity ?? 'N/A'}</TableCell>
         <TableCell className="text-center">{isFutureEvent ? '-' : attendance}</TableCell>
         <TableCell>
