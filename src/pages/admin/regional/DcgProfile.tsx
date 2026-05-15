@@ -25,12 +25,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { GlassSection, GlassKPICard } from "@/components/ui/GlassSection";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
+import { EditDcgTransactionDialog } from "@/components/admin/dcg/EditDcgTransactionDialog";
 
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
+import { useDeleteDcgTransaction, type DcgFinancialTransaction } from "@/hooks/useDcgFinancials";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useDcgEvents } from "@/hooks/useDcgEvents";
@@ -51,6 +57,9 @@ const DcgProfile: React.FC = () => {
   const { dcgId } = useParams<{ dcgId: string }>();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<DcgFinancialTransaction | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState<DcgFinancialTransaction | null>(null);
+  const deleteTransaction = useDeleteDcgTransaction(dcgId || "");
   const { userRegion } = useAuth();
 
   // Period filter
@@ -576,6 +585,7 @@ const DcgProfile: React.FC = () => {
                         <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[60px] text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -601,6 +611,26 @@ const DcgProfile: React.FC = () => {
                               <TableCell className={`text-right whitespace-nowrap font-medium ${isIncome ? "text-primary" : "text-destructive"}`}>
                                 {isIncome ? "+" : "-"}{fmt(Number(transaction.amount))}
                               </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditingTransaction(transaction as DcgFinancialTransaction)}>
+                                      <Edit className="h-4 w-4 mr-2" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => setDeletingTransaction(transaction as DcgFinancialTransaction)}
+                                    >
+                                      <UserMinus className="h-4 w-4 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
                             </TableRow>
                           );
                         })}
@@ -620,6 +650,43 @@ const DcgProfile: React.FC = () => {
         setOpen={setIsEditDialogOpen}
         dcg={dcg}
       />
+
+      <EditDcgTransactionDialog
+        open={!!editingTransaction}
+        onOpenChange={(o) => { if (!o) setEditingTransaction(null); }}
+        dcgId={dcgId || ""}
+        transaction={editingTransaction}
+      />
+
+      <AlertDialog open={!!deletingTransaction} onOpenChange={(o) => { if (!o) setDeletingTransaction(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The transaction will be permanently removed from the records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingTransaction) return;
+                try {
+                  await deleteTransaction.mutateAsync(deletingTransaction.id);
+                  toast.success("Transaction deleted");
+                } catch (e: any) {
+                  toast.error("Failed to delete", { description: e?.message });
+                } finally {
+                  setDeletingTransaction(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -192,3 +192,61 @@ export const useCreateDcgTransaction = (dcgId: string) => {
     },
   });
 };
+
+// Hook to update an existing DCG financial transaction
+export const useUpdateDcgTransaction = (dcgId: string) => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: DcgTransactionData }) => {
+      const updates: Database['public']['Tables']['financial_transactions']['Update'] = {
+        category_id: data.category_id,
+        amount: data.amount,
+        description: data.description,
+        transaction_date: data.transaction_date,
+      };
+
+      const { data: row, error } = await supabase
+        .from('financial_transactions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return row;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ['financial_summary', userRegion?.id] });
+    },
+  });
+};
+
+// Hook to delete a DCG financial transaction
+export const useDeleteDcgTransaction = (dcgId: string) => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('financial_transactions')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ['financial_summary', userRegion?.id] });
+    },
+  });
+};
