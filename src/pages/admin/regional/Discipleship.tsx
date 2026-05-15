@@ -240,24 +240,14 @@ const Discipleship: React.FC = () => {
                 filteredRelationships.map((relationship) => (
                   <TableRow key={relationship.id} className="hover:bg-muted/20 transition-colors">
                     <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {relationship.mentor?.member_id}
-                        </p>
-                      </div>
+                      <p className="font-medium">
+                        {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
+                      </p>
                     </TableCell>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">
-                          {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {relationship.disciple?.member_id}
-                        </p>
-                      </div>
+                      <p className="font-medium">
+                        {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
+                      </p>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(relationship.status || 'active')}>
@@ -269,15 +259,6 @@ const Discipleship: React.FC = () => {
                         ? new Date(relationship.start_date).toLocaleDateString()
                         : 'N/A'
                       }
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      {relationship.notes ? (
-                        <p className="text-sm truncate" title={relationship.notes}>
-                          {relationship.notes}
-                        </p>
-                      ) : (
-                        <span className="text-muted-foreground">No notes</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
