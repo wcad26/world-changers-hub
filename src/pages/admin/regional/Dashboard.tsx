@@ -343,6 +343,7 @@ const RegionalDashboard: React.FC = () => {
         const agg = aggBySourceId.get(e.id);
         return {
           eventId: e.id,
+          dcgId: (e as any).dcg_id as string | null | undefined,
           eventDate: new Date(e.start_datetime),
           Members: agg?.m || 0,
           "Regular Visitors": agg?.v || 0,
@@ -360,16 +361,17 @@ const RegionalDashboard: React.FC = () => {
       }));
     }
 
-    // DCG: weekly (7-day) max buckets, forward-walk from startDate.
+    // DCG: weekly (7-day) buckets, forward-walk from startDate.
+    // Aggregation: per DCG take MAX within the week (so multiple meetings by
+    // the same DCG don't double-count), then SUM across DCGs to get the
+    // regional total for that week.
     const bucketDays = 7;
     const endDate = dateRange.to || new Date();
     const startDate = dateRange.from || subMonths(endDate, 1);
 
-    // Build buckets walking forward from startDate in bucketDays steps. The
-    // last bucket may be partial (clamped to endDate) so the current week/
-    // biweek of the month renders even before the full window has elapsed.
-    const buckets: { start: Date; end: Date; label: string;
-      m: number; v: number; c: number }[] = [];
+    const buckets: { start: Date; end: Date; label: string; partial: boolean;
+      perDcg: Map<string, { m: number; v: number; c: number }>;
+      count: number }[] = [];
     const periodEnd = new Date(endDate);
     periodEnd.setHours(23, 59, 59, 999);
     let cursor = new Date(startDate);
@@ -377,33 +379,52 @@ const RegionalDashboard: React.FC = () => {
     while (cursor <= periodEnd) {
       const next = new Date(cursor);
       next.setDate(next.getDate() + bucketDays);
-      const end = next > periodEnd ? new Date(periodEnd.getTime() + 1) : next;
+      const partial = next > periodEnd;
+      const end = partial ? new Date(periodEnd.getTime() + 1) : next;
       buckets.push({
         start: new Date(cursor),
         end,
         label: format(cursor, "MMM d"),
-        m: 0, v: 0, c: 0,
+        partial,
+        perDcg: new Map(),
+        count: 0,
       });
       cursor = next;
     }
 
-    // Bin per-event points into buckets — take MAX per series so the trend
-    // captures the highest unique attendance observed in each window.
+    // Bin: per (bucket, dcg) take MAX of each series.
     perEventPoints.forEach(p => {
       const t = p.eventDate.getTime();
       const b = buckets.find(bk => t >= bk.start.getTime() && t < bk.end.getTime());
       if (!b) return;
-      b.m = Math.max(b.m, p.Members);
-      b.v = Math.max(b.v, p["Regular Visitors"]);
-      b.c = Math.max(b.c, p.Children);
+      b.count += 1;
+      const key = p.dcgId || "__no_dcg__";
+      const cur = b.perDcg.get(key) || { m: 0, v: 0, c: 0 };
+      cur.m = Math.max(cur.m, p.Members);
+      cur.v = Math.max(cur.v, p["Regular Visitors"]);
+      cur.c = Math.max(cur.c, p.Children);
+      b.perDcg.set(key, cur);
     });
 
-    return buckets.map(b => ({
-      date: b.label,
-      Members: b.m,
-      "Regular Visitors": b.v,
-      Children: b.c,
-    }));
+    // Drop trailing empty partial bucket so the line doesn't crash to 0
+    // before the current week has matured.
+    while (buckets.length > 0) {
+      const last = buckets[buckets.length - 1];
+      if (last.partial && last.count === 0) buckets.pop();
+      else break;
+    }
+
+    // Sum per-DCG maxes across all DCGs for the bucket total.
+    return buckets.map(b => {
+      let m = 0, v = 0, c = 0;
+      b.perDcg.forEach(d => { m += d.m; v += d.v; c += d.c; });
+      return {
+        date: b.label,
+        Members: m,
+        "Regular Visitors": v,
+        Children: c,
+      };
+    });
   }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
 
   const genderChartData = useMemo(() => {
