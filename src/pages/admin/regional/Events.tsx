@@ -1618,6 +1618,18 @@ const RegionalEvents: React.FC = () => {
     });
   };
 
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Failed to load events</AlertTitle>
+        <AlertDescription>
+          {(error as any)?.message || 'An unexpected error occurred while loading the events page. Please refresh and try again.'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
