@@ -81,6 +81,7 @@ const DcgProfile: React.FC = () => {
   const { data: transactions, isLoading: financialsLoading } = useFinancialTransactions();
   const { data: currency } = useRegionCurrency(userRegion?.id);
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: dcgEvents } = useDcgEvents(dcgId);
   const removeMember = useRemoveMemberFromDcg();
 
   const dcg = dcgs?.find(d => d.id === dcgId);
