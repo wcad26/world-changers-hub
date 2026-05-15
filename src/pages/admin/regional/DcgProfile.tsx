@@ -106,10 +106,14 @@ const DcgProfile: React.FC = () => {
     .reduce((s, t) => s + Number(t.amount), 0);
   const netBalance = totalIncome - totalExpenses;
 
-  // Trend chart data — DCG-scoped, one point per actual recorded event (no zero-fill)
+  // Trend chart data — only attendance for events OWNED by this DCG (events.dcg_id === dcgId).
+  // This excludes regional-event submissions, which would otherwise inflate counts beyond the DCG's own membership.
   const trendChartData = useMemo(() => {
     if (!attendanceData) return [];
-    const scoped = (attendanceData as any[]).filter(a => a.dcg_id === dcgId);
+    const ownedEventIds = new Set((dcgEvents || []).map((e: any) => e.id));
+    const scoped = (attendanceData as any[]).filter(
+      a => a.source_event_id && ownedEventIds.has(a.source_event_id)
+    );
     const filtered = scoped.filter(a => {
       const d = new Date(a.event_date);
       if (dateRange.from && d < dateRange.from) return false;
