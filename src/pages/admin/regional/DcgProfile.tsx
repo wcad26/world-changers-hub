@@ -585,6 +585,7 @@ const DcgProfile: React.FC = () => {
                         <TableHead className="hidden md:table-cell">Description</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="w-[60px] text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -609,6 +610,26 @@ const DcgProfile: React.FC = () => {
                               </TableCell>
                               <TableCell className={`text-right whitespace-nowrap font-medium ${isIncome ? "text-primary" : "text-destructive"}`}>
                                 {isIncome ? "+" : "-"}{fmt(Number(transaction.amount))}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditingTransaction(transaction as DcgFinancialTransaction)}>
+                                      <Edit className="h-4 w-4 mr-2" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() => setDeletingTransaction(transaction as DcgFinancialTransaction)}
+                                    >
+                                      <UserMinus className="h-4 w-4 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </TableCell>
                             </TableRow>
                           );
