@@ -237,7 +237,9 @@ const RegionalEvents: React.FC = () => {
   const periodFilteredEvents = useMemo(() => {
     if (!events) return [];
     return events.filter(e => {
+      if (!e?.start_datetime) return false;
       const d = new Date(e.start_datetime);
+      if (isNaN(d.getTime())) return false;
       if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
       if (periodFilters.dateRange.to) {
         const endOfDay = new Date(periodFilters.dateRange.to);
@@ -251,7 +253,8 @@ const RegionalEvents: React.FC = () => {
   const filteredEvents = useMemo(() => {
     const now = new Date();
     return periodFilteredEvents.filter(event => {
-      const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const name = event?.name ?? '';
+      const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (event.category && event.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (event.location_name && event.location_name.toLowerCase().includes(searchTerm.toLowerCase()));
       if (!matchesSearch) return false;
@@ -260,8 +263,11 @@ const RegionalEvents: React.FC = () => {
       if (eventTypeFilter === 'dcg' && !event.dcg_id) return false;
       if (eventTypeFilter === 'special' && !event.is_special) return false;
 
-      if (timeFilter === 'upcoming' && new Date(event.start_datetime) < now) return false;
-      if (timeFilter === 'past' && new Date(event.start_datetime) >= now) return false;
+      const start = event.start_datetime ? new Date(event.start_datetime) : null;
+      if (start && !isNaN(start.getTime())) {
+        if (timeFilter === 'upcoming' && start < now) return false;
+        if (timeFilter === 'past' && start >= now) return false;
+      }
 
       return true;
     });
