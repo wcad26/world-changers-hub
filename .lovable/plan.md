@@ -1,19 +1,42 @@
-I’ll make the admin events page resilient against data/render crashes that can occur after the page initially loads.
+## Rebuild DCG Profile Page (`/admin/regional/dcg/:dcgId`)
 
-Plan:
-1. Harden the regional events rendering logic in `src/pages/admin/regional/Events.tsx`:
-   - Safely handle missing/null event fields such as `location_name`, `category`, `end_datetime`, and optional booleans.
-   - Prevent date formatting from throwing if any event has an invalid or unexpected datetime value.
-   - Show fallback text instead of letting one bad event row crash the whole page.
+Modernize the DCG report/profile page to match the look-and-feel of the rest of the admin portal (glassmorphism KPIs, cleaner header, refined sections), remove the Attendance tab, and surface the DCG-scoped attendance trend chart inline.
 
-2. Add graceful query error UI for the page:
-   - If event or attendance loading fails, show a clear error message inside the page instead of a blank screen.
-   - Keep existing loading skeletons and normal page layout unchanged.
+### Changes — `src/pages/admin/regional/DcgProfile.tsx`
 
-3. Reduce risky attendance dependency behavior:
-   - Treat missing/failed attendance data as an empty list for KPI and table calculations so event management still loads.
-   - Preserve existing attendance calculations when data is available.
+1. **Back button (top of page)**
+   - Add a "Back" button that uses `navigate(-1)` to return to the previous page.
+   - Outline/ghost style with `ArrowLeft` icon, placed above the header card.
 
-4. Verify after implementation:
-   - Reopen `/admin/regional/events` in the development preview.
-   - Confirm the page no longer turns blank and either displays events or a controlled error state.
+2. **DCG Header (modernized)**
+   - Replace the plain Card with a glass-style header section using `GlassSection`/gradient background consistent with the regional dashboard aesthetic.
+   - Larger DCG name as page title, description below, status badge + "Edit Location" action on the right.
+   - Meta row (Leader, Location, Meeting Day, Time, Contact) rendered with subtle icon chips and refined typography.
+
+3. **KPI Cards (modernized)**
+   - Replace the four plain stat Cards with `GlassKPICard` components (same component used in the regional Dashboard) for: Total Members, Total Income, Total Expenses, Net Balance.
+   - Color tokens: use semantic tokens (`text-primary`, `text-destructive`, success token) — no raw `text-green-600`/`text-red-600`.
+
+4. **Inline DCG Attendance Trend chart**
+   - Remove the `Attendance` tab entirely.
+   - Add `<DcgAttendanceTrendChart dcgId={dcgId} />` directly below the KPI cards, above the tabs.
+   - The component already accepts a `dcgId` prop and `useRegionalDcgReports({ dcgId })` already filters the trend to that DCG only — no hook changes required.
+
+5. **Tabs simplified to 2**
+   - Tabs become: `Members` | `Financials` (Attendance tab removed).
+   - Members and Financials tab content kept, restyled with consistent spacing and semantic tokens.
+   - Remove now-unused imports: `Table*` components and `useDcgAttendanceHistory` (no longer rendered here since the trend chart replaces the recent-attendance table).
+
+### Technical notes
+
+- File touched: `src/pages/admin/regional/DcgProfile.tsx` only.
+- Reused as-is:
+  - `DcgAttendanceTrendChart` (already DCG-scoped via `dcgId` prop).
+  - `GlassKPICard` from `@/components/ui/GlassSection`.
+  - `EditDcgDialog` (no change).
+- `navigate(-1)` is the standard React Router way to "go to previous page visited" — works regardless of which page the user came from (DCG list, dashboard, deep link, etc.). If there's no history, it stays put; that's acceptable for an admin tool.
+- No backend, schema, or hook changes required.
+- No business-logic changes — purely UI/presentation.
+
+### Verification
+- Open `/admin/regional/dcg/<id>` in preview, confirm: back button works, header looks modern, 4 glass KPI cards render, trend chart shows DCG-scoped data, only Members + Financials tabs remain.
