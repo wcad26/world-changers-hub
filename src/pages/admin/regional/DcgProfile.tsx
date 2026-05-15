@@ -104,54 +104,54 @@ const DcgProfile: React.FC = () => {
     .reduce((s, t) => s + Number(t.amount), 0);
   const netBalance = totalIncome - totalExpenses;
 
-  // Trend chart data — DCG-scoped, weekly buckets
+  // Trend chart data — DCG-scoped, one point per actual recorded event (no zero-fill)
   const trendChartData = useMemo(() => {
     if (!attendanceData) return [];
-    const scoped = attendanceData.filter((a: any) => a.dcg_id === dcgId);
-    const filtered = scoped.filter((a: any) => {
+    const scoped = (attendanceData as any[]).filter(a => a.dcg_id === dcgId);
+    const filtered = scoped.filter(a => {
       const d = new Date(a.event_date);
       if (dateRange.from && d < dateRange.from) return false;
       if (dateRange.to && d > dateRange.to) return false;
       return true;
     });
 
-    const bucketDays = 7;
-    const endDate = dateRange.to || new Date();
-    const startDate = dateRange.from || subMonths(endDate, 1);
-
-    const buckets: { start: Date; end: Date; label: string; m: number; v: number; c: number }[] = [];
-    const periodEnd = new Date(endDate);
-    periodEnd.setHours(23, 59, 59, 999);
-    let cursor = new Date(startDate);
-    cursor.setHours(0, 0, 0, 0);
-    while (cursor <= periodEnd) {
-      const next = new Date(cursor);
-      next.setDate(next.getDate() + bucketDays);
-      buckets.push({
-        start: new Date(cursor),
-        end: next > periodEnd ? new Date(periodEnd.getTime() + 1) : next,
-        label: format(cursor, "MMM d"),
-        m: 0, v: 0, c: 0,
-      });
-      cursor = next;
-    }
-
-    filtered.forEach((a: any) => {
-      const t = new Date(a.event_date).getTime();
-      const b = buckets.find(b => t >= b.start.getTime() && t < b.end.getTime());
-      if (!b) return;
-      b.m += a.members_present || 0;
-      b.v += a.visitors_present || 0;
-      b.c += a.children_present || 0;
+    // Group by source event (or by date when source missing) so multiple
+    // submissions for the same event collapse into one point.
+    const groups = new Map<string, { date: Date; m: number; v: number; c: number }>();
+    filtered.forEach(a => {
+      const key = a.source_event_id || a.event_date;
+      const cur = groups.get(key) || { date: new Date(a.event_date), m: 0, v: 0, c: 0 };
+      cur.m += a.members_present || 0;
+      cur.v += a.visitors_present || 0;
+      cur.c += a.children_present || 0;
+      groups.set(key, cur);
     });
 
-    return buckets.map(b => ({
-      date: b.label,
-      Members: b.m,
-      "Regular Visitors": b.v,
-      Children: b.c,
-    }));
+    return Array.from(groups.values())
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .map(g => ({
+        date: format(g.date, "MMM d"),
+        Members: g.m,
+        "Regular Visitors": g.v,
+        Children: g.c,
+      }));
   }, [attendanceData, dcgId, dateRange]);
+
+  // Member table filtering — must run before any early return to keep hook order stable.
+  const filteredMembers = useMemo(() => {
+    const active = (members || []).filter(m => m.is_active);
+    return active.filter(m => {
+      const p = m.members?.profiles;
+      const fullName = `${p?.last_name || ""} ${p?.first_name || ""}`.toLowerCase();
+      const email = (p?.email || "").toLowerCase();
+      const phone = (p?.phone || "").toLowerCase();
+      const q = searchTerm.toLowerCase();
+      const searchMatch = !q || fullName.includes(q) || email.includes(q) || phone.includes(q);
+      const statusMatch = statusFilter === "all" || m.members?.status === statusFilter;
+      const roleMatch = roleFilter === "all" || m.role === roleFilter;
+      return searchMatch && statusMatch && roleMatch;
+    });
+  }, [members, searchTerm, statusFilter, roleFilter]);
 
   if (dcgsLoading) {
     return (
