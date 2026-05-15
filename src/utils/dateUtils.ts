@@ -10,50 +10,56 @@ export interface DateRange {
 /**
  * Formats a date range for display
  */
-export function formatDateRange(startDateTime: string, endDateTime?: string | null): string {
-  const start = parseISO(startDateTime);
-  
-  if (!endDateTime) {
-    // Single day event
-    return format(start, 'MMM dd, yyyy');
+export function formatDateRange(startDateTime?: string | null, endDateTime?: string | null): string {
+  if (!startDateTime) return '—';
+  try {
+    const start = parseISO(startDateTime);
+    if (isNaN(start.getTime())) return '—';
+
+    if (!endDateTime) {
+      return format(start, 'MMM dd, yyyy');
+    }
+
+    const end = parseISO(endDateTime);
+    if (isNaN(end.getTime())) return format(start, 'MMM dd, yyyy');
+
+    if (isSameDay(start, end)) {
+      return format(start, 'MMM dd, yyyy');
+    }
+
+    const daysDiff = differenceInDays(end, start);
+    if (daysDiff <= 7) {
+      return `${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
+    }
+    return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
+  } catch {
+    return '—';
   }
-  
-  const end = parseISO(endDateTime);
-  
-  if (isSameDay(start, end)) {
-    // Same day, different times
-    return format(start, 'MMM dd, yyyy');
-  }
-  
-  const daysDiff = differenceInDays(end, start);
-  
-  if (daysDiff <= 7) {
-    // Multi-day event within a week
-    return `${format(start, 'MMM dd')} - ${format(end, 'MMM dd, yyyy')}`;
-  }
-  
-  // Long duration event
-  return `${format(start, 'MMM dd, yyyy')} - ${format(end, 'MMM dd, yyyy')}`;
 }
 
 /**
  * Formats a time range for display
  */
-export function formatTimeRange(startDateTime: string, endDateTime?: string | null): string {
-  const start = parseISO(startDateTime);
-  
-  if (!endDateTime) {
-    return format(start, 'p');
+export function formatTimeRange(startDateTime?: string | null, endDateTime?: string | null): string {
+  if (!startDateTime) return '—';
+  try {
+    const start = parseISO(startDateTime);
+    if (isNaN(start.getTime())) return '—';
+
+    if (!endDateTime) {
+      return format(start, 'p');
+    }
+
+    const end = parseISO(endDateTime);
+    if (isNaN(end.getTime())) return format(start, 'p');
+
+    if (isSameDay(start, end)) {
+      return `${format(start, 'p')} - ${format(end, 'p')}`;
+    }
+    return `${format(start, 'p')} (Day 1)`;
+  } catch {
+    return '—';
   }
-  
-  const end = parseISO(endDateTime);
-  
-  if (isSameDay(start, end)) {
-    return `${format(start, 'p')} - ${format(end, 'p')}`;
-  }
-  
-  // Multi-day event
-  return `${format(start, 'p')} (Day 1)`;
 }
 
 /**
