@@ -18,6 +18,9 @@ import { RecordTitheDialog } from "@/components/admin/regional/RecordTitheDialog
 import RecordOfferingDialog from "@/components/admin/regional/RecordOfferingDialog";
 import RecordSpecialGivingDialog from "@/components/admin/regional/RecordSpecialGivingDialog";
 import RecordExpenseDialog from "@/components/admin/regional/RecordExpenseDialog";
+import DcgTransactionRowActions from "./DcgTransactionRowActions";
+import ViewDcgTransactionDialog from "./ViewDcgTransactionDialog";
+import type { LedgerRow } from "@/hooks/useRegionalLedger";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "./PeriodSelector";
 
