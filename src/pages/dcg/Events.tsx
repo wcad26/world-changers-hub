@@ -144,7 +144,7 @@ const DcgEvents = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-6 p-4 md:p-0 pb-24 mx-[10px] my-[20px] px-0">
+      <div className="space-y-6 p-4 md:p-0 pb-24 my-[20px] px-0 mx-[5px]">
         {dcgError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
