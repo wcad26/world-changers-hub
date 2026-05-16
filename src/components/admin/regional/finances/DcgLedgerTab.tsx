@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUpRight, ArrowDownRight, Wallet, Users, Download, ExternalLink, Building2, ListOrdered, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FinanceKpiCard from "./FinanceKpiCard";
 import FinanceFiltersBar from "./FinanceFiltersBar";
 import LedgerTrendChart from "./LedgerTrendChart";
