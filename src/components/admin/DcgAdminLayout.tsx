@@ -28,7 +28,7 @@ const menuItems = [
   { title: "Members", path: "/dcg/members", icon: Users },
   { title: "Events", path: "/dcg/events", icon: Calendar },
   { title: "Finances", path: "/dcg/finances", icon: DollarSign },
-  { title: "Reports", path: "/dcg/reports", icon: BarChart2 },
+  
 ];
 
 const bottomTabs = menuItems;
@@ -38,7 +38,7 @@ const pageInfo: Record<string, { title: string; icon: LucideIcon }> = {
   "/dcg/members": { title: "DCG Members", icon: Users },
   "/dcg/events": { title: "DCG Events", icon: Calendar },
   "/dcg/finances": { title: "DCG Finances", icon: DollarSign },
-  "/dcg/reports": { title: "DCG Reports", icon: BarChart2 },
+  
 };
 
 const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {

@@ -83,7 +83,7 @@ import DcgMembers from "./pages/dcg/Members";
 import DcgMemberProfile from "./pages/dcg/MemberProfile";
 import DcgEvents from "./pages/dcg/Events";
 import DcgFinances from "./pages/dcg/Finances";
-import DcgReports from "./pages/dcg/Reports";
+
 import DcgCommunication from "./pages/dcg/Communication";
 
 // Member Portal Routes
@@ -289,7 +289,7 @@ const App = () => {
               <Route path="member/:memberId" element={<DcgSessionRoute><DcgMemberProfile /></DcgSessionRoute>} />
               <Route path="events" element={<DcgSessionRoute><DcgEvents /></DcgSessionRoute>} />
               <Route path="finances" element={<DcgSessionRoute><DcgFinances /></DcgSessionRoute>} />
-              <Route path="reports" element={<DcgSessionRoute><DcgReports /></DcgSessionRoute>} />
+              
               <Route path="communication" element={<DcgSessionRoute><DcgCommunication /></DcgSessionRoute>} />
             </Route>
 
