@@ -6,8 +6,9 @@ import {
 } from "date-fns";
 import {
   ArrowLeft, HeartHandshake, Target, TrendingUp, Users, CalendarDays,
-  Pencil, Share2, Loader2,
+  Pencil, Share2, Loader2, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -292,84 +293,94 @@ const FundraisingCampaignReport: React.FC = () => {
         )}
       </div>
 
-      {/* Top donors */}
-      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">Top donors</h3>
-        </div>
-        {topDonors.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground text-sm">No donors yet.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-border/30">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="border-border/30 hover:bg-transparent">
-                  <TableHead className="w-10">#</TableHead>
-                  <TableHead>Donor</TableHead>
-                  <TableHead className="text-right">Donations</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topDonors.map((d, i) => (
-                  <TableRow key={d.key} className="border-border/20">
-                    <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="font-medium">{d.name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{d.count}</TableCell>
-                    <TableCell className="text-right tabular-nums font-semibold text-green-600">{fc(d.total)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+      <Collapsible defaultOpen={false} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-6 group">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Top donors</h3>
+            <span className="text-xs text-muted-foreground">({topDonors.length})</span>
           </div>
-        )}
-      </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-6 pb-6">
+          {topDonors.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground text-sm">No donors yet.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border/30">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableHead className="w-10">#</TableHead>
+                    <TableHead>Donor</TableHead>
+                    <TableHead className="text-right">Donations</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topDonors.map((d, i) => (
+                    <TableRow key={d.key} className="border-border/20">
+                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{d.name}</TableCell>
+                      <TableCell className="text-right tabular-nums">{d.count}</TableCell>
+                      <TableCell className="text-right tabular-nums font-semibold text-green-600">{fc(d.total)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* All donations */}
-      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <HeartHandshake className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">Donations in period ({filteredDonations.length})</h3>
-        </div>
-        {donationsLoading ? (
-          <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading…
+      <Collapsible defaultOpen={false} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
+        <CollapsibleTrigger className="w-full flex items-center justify-between p-6 group">
+          <div className="flex items-center gap-2">
+            <HeartHandshake className="h-4 w-4 text-primary" />
+            <h3 className="text-base font-semibold">Donations in period ({filteredDonations.length})</h3>
           </div>
-        ) : filteredDonations.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground text-sm">No donations in the selected period.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-border/30">
-            <Table>
-              <TableHeader className="bg-muted/40">
-                <TableRow className="border-border/30 hover:bg-transparent">
-                  <TableHead>Date</TableHead>
-                  <TableHead>Donor</TableHead>
-                  <TableHead className="hidden md:table-cell">Message</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="w-12 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDonations.map((d: any) => {
-                  const donationWithCampaign = { ...d, campaign };
-                  return (
-                    <TableRow key={d.id} className="border-border/20 hover:bg-muted/30 cursor-pointer" onClick={() => openView(donationWithCampaign)}>
-                      <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(d.donation_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell>{d.anonymous ? <span className="italic text-muted-foreground">Anonymous</span> : (d.donor_name || "—")}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">{d.message || "—"}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums text-green-600">{fc(Number(d.amount) / 100)}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <FundraisingDonationRowActions donation={donationWithCampaign} onView={() => openView(donationWithCampaign)} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="px-6 pb-6">
+          {donationsLoading ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading…
+            </div>
+          ) : filteredDonations.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground text-sm">No donations in the selected period.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border/30">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableHead>Date</TableHead>
+                    <TableHead>Donor</TableHead>
+                    <TableHead className="hidden md:table-cell">Message</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-12 text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDonations.map((d: any) => {
+                    const donationWithCampaign = { ...d, campaign };
+                    return (
+                      <TableRow key={d.id} className="border-border/20 hover:bg-muted/30 cursor-pointer" onClick={() => openView(donationWithCampaign)}>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(d.donation_date), "MMM dd, yyyy")}</TableCell>
+                        <TableCell>{d.anonymous ? <span className="italic text-muted-foreground">Anonymous</span> : (d.donor_name || "—")}</TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">{d.message || "—"}</TableCell>
+                        <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums text-green-600">{fc(Number(d.amount) / 100)}</TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <FundraisingDonationRowActions donation={donationWithCampaign} onView={() => openView(donationWithCampaign)} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
 
       <EditFundraisingCampaignDialog open={editOpen} onOpenChange={setEditOpen} campaign={campaign} />
       <ViewDonationDialog open={viewOpen} onOpenChange={setViewOpen} donation={selected} />
