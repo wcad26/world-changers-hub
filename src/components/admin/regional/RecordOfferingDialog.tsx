@@ -191,7 +191,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                           <Command>
                             <CommandInput placeholder="Search events…" />
-                            <CommandList>
+                            <CommandList className="max-h-72 overflow-y-auto overscroll-contain">
                               <CommandEmpty>No events found.</CommandEmpty>
                               <CommandGroup>
                                 {events.map(e => {
