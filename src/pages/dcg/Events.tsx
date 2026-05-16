@@ -478,7 +478,6 @@ const DcgEvents = () => {
         <CreateEventDialog
           isOpen={showCreateDialog}
           onClose={() => setShowCreateDialog(false)}
-          dcgId={userDcg.id}
         />
         <CreateEventDialog
           isOpen={!!duplicateSource}
