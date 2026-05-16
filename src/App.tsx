@@ -169,7 +169,7 @@ const App = () => {
                 <Route path="dcg" element={<RegionalDCG />} />
                 <Route path="dcg/:dcgId" element={<DcgProfile />} />
                 <Route path="certificates" element={<RegionalCertificates />} />
-                <Route path="reports" element={<RegionalReports />} />
+                
                 <Route path="communication" element={<RegionalCommunication />} />
                 <Route path="branch-settings" element={<RegionalBranchSettings />} />
                 <Route path="discipleship" element={<RegionalDiscipleship />} />
