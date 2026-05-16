@@ -1,22 +1,24 @@
-## Goal
-Fix the blank page on `/admin/regional/dcg/<id>` introduced after the recent edits adding the financial Edit/Delete actions.
+## What's happening
 
-## Diagnosis so far
-- The list page `/admin/regional/dcg` itself renders fine; clicking a row navigates to the DCG profile, which is the URL you reported as the redirect target. So the DCG profile is the page that goes blank.
-- Earlier in this session the same profile was loading data (members fetched in console). The blank state appeared after the financials Edit/Delete edit. Most likely a runtime render error in `DcgProfile.tsx`.
-- I cannot read the failing browser console (the sandbox preview I can drive isn't authenticated as you), so I need the exact error text to be sure.
+The Member Management page itself is fine — `src/pages/admin/regional/Members.tsx` has no broken imports, and the dev-server log shows no runtime error when you navigated there. What the log does show is this sequence right before your blank screen:
 
-## Action
+```
+hmr update /src/pages/admin/regional/Reports.tsx
+page reload src/hooks/useReports.ts
+```
 
-1. **You share the console error** — open the browser DevTools console on the blank page and paste the red error.
+That is from my previous change, where I deleted `Reports.tsx` and `useReports.ts`. Vite tried to hot-reload modules that no longer exist, then forced a full page reload. After a forced reload, the SPA momentarily has no auth/session state in memory — `RegionalSessionRoute` sees "not authenticated yet", renders nothing for a frame (blank), and bounces you back to the dashboard while the session re-hydrates.
 
-2. **In parallel, I will harden the suspect spots in `src/pages/admin/regional/DcgProfile.tsx` and `src/components/admin/dcg/EditDcgTransactionDialog.tsx`:**
-   - Move `useDeleteDcgTransaction(dcgId || "")` so the empty-string fallback never runs (only call when `dcgId` exists, or guard inside the hook).
-   - Cast `transaction as any` (not `DcgFinancialTransaction`) when passing to `setEditingTransaction` / `setDeletingTransaction` — the rows from `useFinancialTransactions` lack `member` field and the strict cast can mismatch.
-   - Make `EditDcgTransactionDialog` resilient when `transaction` is `null` and when `categories` is `undefined` (don't crash on `.filter` of undefined; already covered, but double-check).
-   - Confirm `AlertDialog` import path (`@/components/ui/alert-dialog`) is the actual file present.
+You're noticing it only in the dev preview because HMR + forced reloads only happen in development. The published build doesn't go through that path.
 
-3. **Verify** the page renders again on the same route, then confirm Edit and Delete still work.
+## Fix
+
+Restart the Vite dev server inside the sandbox so the module graph is rebuilt cleanly without the deleted `Reports.tsx` / `useReports.ts` ghosts. No source code changes are needed — the app code is correct.
+
+Steps:
+1. Restart the dev server (clears stale HMR module cache referencing deleted files).
+2. Reload the preview and navigate to **Member Management** to confirm it loads normally.
 
 ## Out of scope
-- No other tabs, hooks, or schema changes.
+
+- No changes to `Members.tsx`, routing, auth guards, or the error boundary. Editing working code to "fix" a stale dev cache would mask the real cause.
