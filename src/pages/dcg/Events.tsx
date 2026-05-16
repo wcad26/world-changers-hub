@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Plus, Search, AlertCircle, MoreHorizontal, UserCheck, Copy, Trash2, Loader2,
-  Calendar, CalendarDays, MapPin, Users, Star, Target, TrendingUp, TrendingDown,
+  Calendar, CalendarDays, Clock, MapPin, Users, Star, Target, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
 import { useAuth } from '@/hooks/useAuth';
