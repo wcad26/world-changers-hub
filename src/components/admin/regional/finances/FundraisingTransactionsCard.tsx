@@ -7,6 +7,8 @@ import { useRegionDonations } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency, useCurrencies } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
+import FundraisingDonationRowActions from "./FundraisingDonationRowActions";
+import ViewDonationDialog from "./ViewDonationDialog";
 import type { PeriodRange } from "./PeriodSelector";
 
 interface Props { range: PeriodRange }
