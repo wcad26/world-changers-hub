@@ -62,3 +62,5 @@ const FinanceFiltersBar: React.FC<Props> = ({ search, onSearchChange, categoryId
     </div>
   );
 };
+
+export default FinanceFiltersBar;
