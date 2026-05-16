@@ -15,10 +15,14 @@ interface Props { range: PeriodRange }
 
 const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
   const [open, setOpen] = useState(false); // collapsed by default
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selected, setSelected] = useState<any | null>(null);
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const { data: currencies = [] } = useCurrencies();
   const { data: donations = [], isLoading } = useRegionDonations(range.from, range.to);
+
+  const openView = (d: any) => { setSelected(d); setViewOpen(true); };
 
   const fmt = (amountCents: number, code?: string | null) => {
     const cur = currencies.find(c => c.code?.toLowerCase() === (code || "").toLowerCase()) || regionCurrency;
