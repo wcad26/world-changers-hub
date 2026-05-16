@@ -1,54 +1,79 @@
 ## Goal
-Add a collapsible "Fundraising Transactions" table to the Fundraising tab on `/admin/regional/finances`, **collapsed by default**, with a "Record Donation" button to manually log donations against any campaign in the region.
+Let regional admins record donations from **non-member donors** (external supporters) and reuse them in future donations, alongside existing member-based donor selection.
 
-## Data model (already exists)
-`public.fundraising_donations` (id, campaign_id, donor_name, donor_email, amount in cents, currency, anonymous, message, donation_date). A DB trigger already auto-updates `fundraising_campaigns.raised` on INSERT/DELETE.
+## Data model
 
-Current RLS only allows **SELECT** for regional/super admins — no INSERT policy exists, so the dialog would fail without a migration.
+### New table: `public.donors`
+External donor registry — separate from `members` to keep concerns clean.
 
-## Changes
+Columns:
+- `id` (uuid, pk)
+- `region_id` (uuid, not null) — donor "belongs" to the region that registered them; search will still include all regions for super admins
+- `first_name` (text, not null)
+- `last_name` (text, not null)
+- `email` (text, nullable, lowercased)
+- `phone` (text, nullable) — same 9+ digit rule as members
+- `address` (text, nullable)
+- `notes` (text, nullable)
+- `created_by` (uuid)
+- `created_at`, `updated_at`
 
-### 1. Migration — RLS for inserting donations
-Add INSERT policies on `fundraising_donations`:
-- `regional_admin` may insert when the parent campaign's `region_id = get_user_region(auth.uid())`.
-- `super_admin` may insert any.
-(Also mirror DELETE so admins can remove a mis-entered donation; optional but small.)
+Constraints / indexes:
+- Unique partial index on `(region_id, lower(email))` where `email is not null` to prevent dupes within a region.
+- Trigram or simple index on `last_name`, `first_name` for search.
 
-### 2. `src/hooks/useFundraisingCampaigns.ts`
-- Add `useCreateDonation()` mutation — inserts into `fundraising_donations`, multiplies amount by 100 (cents), invalidates `fundraising_campaigns` and `region_donations` queries.
-- Add `useRegionDonations(range, regionId)` — fetches donations joined to campaigns in the region within `[range.from, range.to]`, returns rows with campaign name + currency.
+### `fundraising_donations` — add donor link
+Add nullable `donor_id uuid` referencing `public.donors(id)` AND keep existing `member_id` plan path. Effectively a donation can be tied to **one of**:
+- a member (resolved via members table), OR
+- an external donor (`donor_id`), OR
+- anonymous (`anonymous = true`, both null)
 
-### 3. New component `src/components/admin/regional/finances/RecordDonationDialog.tsx`
-Fields:
-- Campaign (Select, populated from `useFundraisingCampaigns` filtered to Active campaigns by default)
-- Donor name (optional, disabled when Anonymous)
-- Donor email (optional)
-- Amount (numeric, thousand-separator formatted, in region currency)
-- Anonymous (checkbox)
-- Message (textarea, optional)
-- Donation date (defaults to today)
+(We already store `donor_name` as a denormalized snapshot — keep it for historical display when a donor record is later deleted.)
 
-Uses the existing glass dialog styling pattern. Submits via `useCreateDonation`, toast on success/error.
+Note: the current dialog stores the selected member's display name into `donor_name`. We'll add an explicit `member_id` column too so member donations are queryable. If you'd rather keep it minimal, we can skip `member_id` and rely on `donor_name` for member donations — confirm in step below.
 
-### 4. New component `src/components/admin/regional/finances/FundraisingTransactionsCard.tsx`
-Glass card matching the dashboard aesthetic (`rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6`), built with shadcn `Collapsible`:
-- **Collapsed by default** (`open` state initialised `false`).
-- Header row: `HeartHandshake` icon + "Fundraising Transactions" / "All donations across your region's campaigns" + right side: gradient "Record Donation" button + chevron toggle. Clicking the button must not toggle the collapsible (stop propagation; button sits outside `CollapsibleTrigger`).
-- Body (when open): table with columns **Date | Campaign | Donor | Message | Amount**. Anonymous donations show "Anonymous". Empty state "No donations in this period." Loading state. Amounts formatted with each campaign's currency (fallback regionCurrency).
+### RLS for `donors`
+- `regional_admin`: full CRUD where `region_id = get_user_region(auth.uid())`.
+- `super_admin`: full CRUD.
+- No public select.
 
-### 5. `src/components/admin/regional/finances/FundraisingLedgerTab.tsx`
-- Render `<FundraisingTransactionsCard range={range} />` below the KPI grid, above `<FundraisingTabContent />`.
-- No changes to existing KPI / campaigns list.
+### New RPC: `search_all_donors(_search text)`
+Mirrors `search_all_members` — returns `id, first_name, last_name, email` across all regions, limit 50, security definer.
+
+## UI changes — `RecordDonationDialog.tsx`
+
+Replace the single member combobox with a **Donor Type** segmented control / radio group:
+
+```
+Donor type:  ( ) Member   ( ) External donor   ( ) Anonymous
+```
+
+- **Member** (default): existing member combobox (search_all_members).
+- **External donor**: a donor combobox using `search_all_donors`, with a `+ Register new donor` action inside the popover footer (and an empty-state CTA). Clicking it opens a small inline `RegisterDonorDialog` (name, email, phone, address, notes — zod validated, phone 9+ digit rule, email optional). On success, the new donor is auto-selected.
+- **Anonymous**: collapses donor input, sets `anonymous = true`.
+
+Remove the standalone "Mark as anonymous" checkbox — it becomes one of the three radio options.
+
+Submit payload:
+- Member: `{ member_id, donor_name: "Last First" snapshot, donor_id: null, anonymous: false }`
+- External: `{ donor_id, donor_name: snapshot, donor_email: snapshot, member_id: null, anonymous: false }`
+- Anonymous: `{ anonymous: true, donor_name: null, ... }`
+
+## New files
+- `src/components/admin/regional/finances/RegisterDonorDialog.tsx` — small nested dialog with the donor form.
+- `src/hooks/useDonors.ts` — `useSearchDonors(search)`, `useCreateDonor()`, plus optional `useDonor(id)` for the transactions card display.
+
+## Edited files
+- migration: create `donors`, RPC `search_all_donors`, add `donor_id` (+ optional `member_id`) to `fundraising_donations`, RLS, indexes.
+- `src/components/admin/regional/finances/RecordDonationDialog.tsx` — radio-driven donor selector + inline registration.
+- `src/hooks/useFundraisingCampaigns.ts` — extend `NewDonationInput` and `useCreateDonation` to pass `donor_id` / `member_id`.
+- `src/components/admin/regional/finances/FundraisingTransactionsCard.tsx` — Donor column already shows `donor_name`; no change needed unless you want a "Member"/"Donor"/"Anonymous" badge.
 
 ## Out of scope
-- Stripe / online donation flow (this is internal admin entry only).
-- Editing existing donations.
-- Donations CSV export (can be added later if needed).
-- Touching Regional / DCG tabs (already collapsible).
+- Donor profile pages / donor history view (can be a follow-up: `/admin/regional/finances/donors`).
+- Donor CSV import.
+- Merging duplicate donors.
+- Public-facing donor portal.
 
-## Files
-- new migration (RLS INSERT/DELETE on `fundraising_donations`)
-- edit `src/hooks/useFundraisingCampaigns.ts`
-- new `src/components/admin/regional/finances/RecordDonationDialog.tsx`
-- new `src/components/admin/regional/finances/FundraisingTransactionsCard.tsx`
-- edit `src/components/admin/regional/finances/FundraisingLedgerTab.tsx`
+## One question before I build
+Do you want a **separate Donors directory page** (list, edit, view donation history) now, or just the registration + selection inside the donation dialog for this round?
