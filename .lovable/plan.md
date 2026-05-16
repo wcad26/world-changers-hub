@@ -1,63 +1,44 @@
 ## Problem
 
-In the DCG Events filter view of the Regional Dashboard, KPI cards show wrong numbers:
+The regional admin lands on `/admin/regional/dashboard` and sees a red error banner: **"Some dashboard data could not load. TypeError: Failed to fetch"**, while the rest of the page stays mostly empty.
 
-- `Members: 0 · 0 adults · 0 children`
-- `Children: 0`
-- `Attendance Target: —` even when DCG events have attendance
+From the console logs the failure is transient — `useDiscipleshipRelationships` (and `RegionalSession` profile loader) intermittently throws `TypeError: Failed to fetch` on the first request and succeeds on the next retry. That single early failure is enough to populate the `error` on one of the dashboard's React Query hooks, which we surface in the banner. Some hooks (e.g. the `useFinancialTransactions` / discipleship / attendance queries) also don't retry aggressively enough on a network-level `fetch` failure, so the error state can stick until the user reloads.
 
-For the logged-in admin (WCA DOUALA), the database actually has **5 active DCGs with 58 active dcg_members**, so Members should not be 0.
+Root causes:
+1. The dashboard banner shows whenever any of 5 queries has a non-null `error`, even when the data eventually loads.
+2. Several of the underlying hooks rely on React Query defaults that don't always retry `TypeError: Failed to fetch` quickly, and have no manual recovery affordance.
+3. There is no user-facing retry — they have to refresh the whole page.
 
-## Root causes identified
+## Fix
 
-1. **`useDcgRegionMembership` swallows errors.** It does not surface RLS or fetch errors and resolves to an empty Set, which the dashboard then renders as `0`. If the supabase select on `dcgs` or `dcg_members` returns an error (or `null` data) the card silently shows 0 with no indication.
+Frontend-only, narrow change to `src/pages/admin/regional/Dashboard.tsx`:
 
-2. **Children intersection is wrong.** `dcgChildren` is computed by intersecting `dcgMemberIds` with `childrenSet`, where `childrenSet` is built from `useMembers(userRegion?.id)` — which only returns members the dashboard already filters (active region members). DCG members whose row is not present in that list (different status, RLS, paging) are not counted. The "Children" card and the `dcgAdults` subtitle become inconsistent with `dcgTotalMembers`.
+1. **Suppress the banner once data is present.** Treat a query as "errored" only if `error` is set AND its data is still missing. If the retry succeeded and `data` is now defined, hide the notice.
+2. **Add a Retry button** to the banner that calls `refetch()` on the failing queries so the user doesn't have to reload.
+3. **Make the failing queries auto-retry on network errors.** Pass an explicit `retry` option to the React Query hooks used by the dashboard (members, events, financial transactions, discipleship, attendance) so `TypeError: Failed to fetch` is retried 2–3 times with backoff before surfacing.
 
-3. **Avg DCG Attendance vs Members mismatch.** Events show `18 events · Avg 7 attendees`, but `Members` shows `0`. This confirms attendance is fetched correctly per event but membership totals are not — they should be computed from the same `dcg_members` source the events draw from.
+   - Where the hook signature already accepts query options, pass them through.
+   - Where it doesn't (e.g. `useDiscipleshipRelationships`, `useAttendanceHistoryWithMemberTypes`), add an optional `options` parameter (default `{}`) and merge it into the internal `useQuery` config. No behavior change for other callers.
+4. **Keep messaging accurate.** When the banner does show (data truly missing), keep the existing copy but include the Retry action and a short hint that this is usually a temporary network blip.
 
-4. **Attendance Target subtitle is stale.** When no active plan exists, the card shows `—` even though we could still show actual avg attendance ("Avg 7 attendees — no target set").
+No backend, schema, RLS, or business-logic changes. No change to KPI math or to the DCG/regional event-type behavior implemented earlier.
 
-## Fix plan
+## Technical details
 
-### 1. Harden `useDcgRegionMembership` (`src/hooks/useDcgRegionMembership.ts`)
+Files touched:
 
-- Throw on supabase errors instead of returning empty silently (let react-query surface them).
-- Return additional fields needed for the children calculation:
-  - `dcgMemberIds: Set<string>`
-  - `dcgChildIds: Set<string>` — computed inside the hook by joining `dcg_members → members → profiles.date_of_birth` and applying the strict child rule via `buildChildrenSet` over the DCG-scoped subset, with `member_relationships` fetched for just those ids.
-  - `totalDcgMembers`, `totalDcgChildren`, `totalDcgAdults`.
-- Filter out rows where `member_id` is null and de-duplicate (a member can belong to multiple DCGs).
+- `src/pages/admin/regional/Dashboard.tsx`
+  - Replace `dataErrors` computation so each entry is only added when `error && !data`.
+  - Collect a `refetchAll` callback that calls `refetch()` on each affected query.
+  - Update the `dataErrorNotice` JSX to render a Retry button.
+- `src/hooks/useDiscipleship.ts` — extend `useDiscipleshipRelationships` to accept `{ retry, retryDelay }` options and merge into its `useQuery` call. Default to `retry: 3` with exponential backoff for network errors.
+- `src/hooks/useAttendance.ts` — same treatment for `useAttendanceHistoryWithMemberTypes`.
+- `src/hooks/useFinancials.ts` — same for `useFinancialTransactions`.
+- `src/hooks/useMembers.ts` and `src/hooks/useEvents.ts` (`useRegionalEvents`) — same, only if they don't already retry network errors.
 
-### 2. Update Dashboard KPI memo (`src/pages/admin/regional/Dashboard.tsx`)
+Validation:
 
-- Replace the local intersection `childrenSet.has(id)` block with the values returned by the hook:
-  - `dcgTotalMembers = dcgMembership.totalDcgMembers`
-  - `dcgChildren = dcgMembership.totalDcgChildren`
-  - `dcgAdults = dcgMembership.totalDcgAdults`
-- Make the DCG Attendance Target subtitle always show actual avg when target missing:
-  - With target: `Avg {avgDcgAttendees} / {planAvgDcgAttendance} target`
-  - Without target: `Avg {avgDcgAttendees} attendees — no target set`
-
-### 3. Quick diagnostic safety net
-
-- Add a one-line `console.warn` in `useDcgRegionMembership` when the resolved `totalDcgMembers === 0` but `regionId` is set, including the supabase error if any. This makes future RLS/filter regressions obvious in the preview console without affecting users.
-
-### 4. Verify
-
-- After the fix, with the regional admin for WCA DOUALA on DCG filter, the expected values are:
-  - Members: 58 (with adult/child split from DOB rule)
-  - Children: from DOB rule
-  - DCG Events: 18 (unchanged)
-  - Attendance Target: subtitle reads `Avg 7 attendees — no target set`
-  - Discipleship Success: unchanged (region-wide)
-
-### Out of scope
-
-- Regional Events filter cards (working correctly).
-- Attendance Trend chart, bottom row cards, and the Plan Management page itself.
-
-### Files to change
-
-- `src/hooks/useDcgRegionMembership.ts` (rewrite to also resolve children + surface errors)
-- `src/pages/admin/regional/Dashboard.tsx` (use hook output directly; tweak DCG attendance target subtitle)
+- Verify the dashboard renders without the banner when the initial fetch succeeds.
+- Simulate a transient failure by throttling DevTools network once; confirm the banner either never shows or clears as soon as the retry succeeds.
+- Confirm the Retry button re-runs the failed queries.
+- No existing callers of the modified hooks need code changes (new param is optional).
