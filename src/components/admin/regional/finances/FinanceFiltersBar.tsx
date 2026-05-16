@@ -74,15 +74,6 @@ const FinanceFiltersBar: React.FC<Props> = ({
           </SelectContent>
         </Select>
       )}
-      <Select value={categoryId ?? "all"} onValueChange={(v) => onCategoryChange(v === "all" ? null : v)}>
-        <SelectTrigger className="w-48 h-9 bg-background/60 border-border/40"><SelectValue placeholder="Category" /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All categories</SelectItem>
-          {categories.map(c => (
-            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
       {extra}
     </div>
   );
