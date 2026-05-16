@@ -11,7 +11,7 @@ import {
   Settings,
   Building2,
   Award,
-  BarChart3,
+  Target,
 } from 'lucide-react';
 
 type IconType = React.ComponentType<{ className?: string; size?: number }>;
@@ -24,17 +24,17 @@ type IconType = React.ComponentType<{ className?: string; size?: number }>;
  * for what data they can actually read or write.
  */
 const REGIONAL_MENU: { title: string; path: string; icon: IconType }[] = [
-  { title: 'Dashboard',                   path: '/admin/regional/dashboard',        icon: LayoutDashboard as IconType },
-  { title: 'Member Management',           path: '/admin/regional/members',          icon: Users as IconType },
-  { title: 'Discipleship Management',     path: '/admin/regional/discipleship',     icon: Heart as IconType },
-  { title: 'Event Management',            path: '/admin/regional/events',           icon: Calendar as IconType },
-  { title: 'DCG Management',              path: '/admin/regional/dcg',              icon: Home as IconType },
-  { title: 'Certificate Management',      path: '/admin/regional/certificates',     icon: Award as IconType },
-  { title: 'Finance Management',          path: '/admin/regional/finances',         icon: PiggyBank as IconType },
-  
-  { title: 'Communication Mgmt',          path: '/admin/regional/communication',    icon: MessageSquare as IconType },
-  { title: 'Regional Website Info',       path: '/admin/regional/branch-settings',  icon: Building2 as IconType },
-  { title: 'Settings',                    path: '/admin/regional/settings',         icon: Settings as IconType },
+  { title: 'Dashboard',     path: '/admin/regional/dashboard',        icon: LayoutDashboard as IconType },
+  { title: 'Members',       path: '/admin/regional/members',          icon: Users as IconType },
+  { title: 'Discipleship',  path: '/admin/regional/discipleship',     icon: Heart as IconType },
+  { title: 'Events',        path: '/admin/regional/events',           icon: Calendar as IconType },
+  { title: 'DCG',           path: '/admin/regional/dcg',              icon: Home as IconType },
+  { title: 'Certificate',   path: '/admin/regional/certificates',     icon: Award as IconType },
+  { title: 'Finance',       path: '/admin/regional/finances',         icon: PiggyBank as IconType },
+  { title: 'Communication', path: '/admin/regional/communication',    icon: MessageSquare as IconType },
+  { title: 'Planning',      path: '/admin/regional/planning',         icon: Target as IconType },
+  { title: 'Website',       path: '/admin/regional/branch-settings',  icon: Building2 as IconType },
+  { title: 'Settings',      path: '/admin/regional/settings',         icon: Settings as IconType },
 ];
 
 interface EnhancedRegionalAdminLayoutProps {
