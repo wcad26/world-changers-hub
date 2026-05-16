@@ -222,27 +222,29 @@ const DcgEvents: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
-              <SelectValue placeholder="Event Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="regional">Regional</SelectItem>
-              <SelectItem value="dcg">DCG</SelectItem>
-              <SelectItem value="special">Special</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
-              <SelectValue placeholder="Time" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-row gap-2 w-full sm:contents">
+            <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
+              <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
+                <SelectValue placeholder="Event Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="regional">Regional</SelectItem>
+                <SelectItem value="dcg">DCG</SelectItem>
+                <SelectItem value="special">Special</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={timeFilter} onValueChange={setTimeFilter}>
+              <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
+                <SelectValue placeholder="Time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="past">Past</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="sm:ml-auto">
             <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
               <Plus className="h-4 w-4" /> Create Event
