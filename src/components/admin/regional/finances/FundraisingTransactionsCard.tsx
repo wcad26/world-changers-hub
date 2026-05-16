@@ -2,13 +2,11 @@ import React, { useState } from "react";
 import { HeartHandshake, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRegionDonations } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency, useCurrencies } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
-import RecordDonationDialog from "./RecordDonationDialog";
 import type { PeriodRange } from "./PeriodSelector";
 
 interface Props { range: PeriodRange }
