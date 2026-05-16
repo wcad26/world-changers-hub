@@ -74,20 +74,21 @@ export const useRegionalPlanActuals = (
       // --- Events ---
       const { data: events } = await supabase
         .from('attendance_events')
-        .select('id, event_date, is_special')
+        .select('id, event_date, source_event_id, source:events!attendance_events_source_event_id_fkey(is_special)')
         .eq('region_id', regionId)
         .gte('event_date', startDate)
         .lte('event_date', endDate);
 
-      const regularEvents = (events ?? []).filter(e => !e.is_special);
+      const eventList = (events ?? []) as any[];
+      const regularEvents = eventList.filter(e => !e.source?.is_special);
       actuals.regional_events_count = regularEvents.length;
-      actuals.special_events_count = (events ?? []).filter(e => e.is_special).length;
+      actuals.special_events_count = eventList.filter(e => e.source?.is_special).length;
 
-      if ((events ?? []).length > 0) {
+      if (eventList.length > 0) {
         const { data: records } = await supabase
           .from('attendance_records')
           .select('event_id, is_present')
-          .in('event_id', (events ?? []).map(e => e.id))
+          .in('event_id', eventList.map((e: any) => e.id))
           .eq('is_present', true);
         const total = (records ?? []).length;
         actuals.total_event_attendees = total;
