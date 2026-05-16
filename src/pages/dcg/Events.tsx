@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Plus, Search, AlertCircle, MoreHorizontal, UserCheck, Copy, Trash2, Loader2,
-  Calendar, CalendarDays, MapPin, Users, Star, Target, TrendingUp, TrendingDown,
+  Calendar, CalendarDays, Clock, MapPin, Users, Star, Target, TrendingUp, TrendingDown,
 } from 'lucide-react';
 import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
 import { useAuth } from '@/hooks/useAuth';
@@ -302,7 +302,113 @@ const DcgEvents: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-xl border border-border/40 overflow-hidden">
+          {/* Mobile / Tablet card view */}
+          <div className="lg:hidden space-y-3">
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-28 w-full rounded-xl" />
+              ))
+            ) : filteredEvents.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
+              </div>
+            ) : (
+              filteredEvents.map(event => {
+                const now = new Date();
+                const start = event.start_datetime ? new Date(event.start_datetime) : null;
+                const isFuture = !!(start && !isNaN(start.getTime()) && start >= now);
+                const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
+                const isOwnDcg = event.dcg_id === userDcg.id;
+                const statusLabel = (event as any).status === 'Cancelled'
+                  ? 'Cancelled'
+                  : isFuture ? 'Upcoming' : 'Completed';
+                const statusVariant: 'default' | 'secondary' | 'destructive' =
+                  (event as any).status === 'Cancelled' ? 'destructive' : isFuture ? 'default' : 'secondary';
+                return (
+                  <div
+                    key={event.id}
+                    className="rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm p-4 space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-foreground truncate">{event.name ?? '—'}</p>
+                        {event.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{event.description}</p>
+                        )}
+                      </div>
+                      <Badge variant={statusVariant} className="text-[10px] shrink-0">
+                        {statusLabel}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formatDateRange(event.start_datetime, event.end_datetime)}
+                      </span>
+                      {event.location_name && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" /> {event.location_name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <Badge variant="outline" className="text-[10px]">{eventType}</Badge>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs"
+                          onClick={() => setSelectedEventForAttendance(event)}
+                        >
+                          <UserCheck className="h-3.5 w-3.5 mr-1" /> Attendance
+                        </Button>
+                        {isOwnDcg && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setDuplicateSource(event)}
+                              title="Duplicate event"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  title="Delete event"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete the event.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(event.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop table view */}
+          <div className="hidden lg:block rounded-xl border border-border/40 overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
