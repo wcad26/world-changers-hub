@@ -144,11 +144,16 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
                     <TableHead className="hidden md:table-cell">Description</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map(r => (
-                    <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
+                    <TableRow
+                      key={r.id}
+                      className="border-border/20 hover:bg-muted/30 cursor-pointer"
+                      onClick={() => { setSelectedRow(r); setViewOpen(true); }}
+                    >
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="font-medium">{r.category?.name}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{r.description || "—"}</TableCell>
@@ -158,6 +163,9 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <DcgTransactionRowActions row={r} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -171,6 +179,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
       <RecordOfferingDialog open={offeringOpen} onOpenChange={setOfferingOpen} />
       <RecordSpecialGivingDialog open={specialOpen} onOpenChange={setSpecialOpen} />
       <RecordExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
+      <ViewDcgTransactionDialog open={viewOpen} onOpenChange={setViewOpen} transaction={selectedRow} />
     </div>
   );
 };
