@@ -74,46 +74,56 @@ const RegisterDonorDialog: React.FC<Props> = ({ open, onOpenChange, onCreated, i
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-primary" /> Register New Donor
-          </DialogTitle>
-          <DialogDescription>Add a non-member donor so their donations can be tracked over time.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+          <DialogHeader className="relative space-y-1.5">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                <UserPlus className="h-5 w-5" />
+              </span>
+              Register New Donor
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Add a non-member donor so their donations can be tracked over time.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Last Name *</Label>
-              <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+        <div className="px-6 py-5 space-y-4">
+          <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Last Name *</Label>
+                <Input className="bg-background/60 border-border/50" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">First Name *</Label>
+                <Input className="bg-background/60 border-border/50" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>First Name *</Label>
-              <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</Label>
+              <Input type="email" className="bg-background/60 border-border/50" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="optional" />
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="optional" />
-          </div>
-          <div className="space-y-2">
-            <Label>Phone</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="optional · 9+ digits" />
-          </div>
-          <div className="space-y-2">
-            <Label>Address</Label>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="optional" />
-          </div>
-          <div className="space-y-2">
-            <Label>Notes</Label>
-            <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Phone</Label>
+              <Input className="bg-background/60 border-border/50" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="optional · 9+ digits" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Address</Label>
+              <Input className="bg-background/60 border-border/50" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="optional" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Notes</Label>
+              <Textarea rows={2} className="bg-background/60 border-border/50 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="optional" />
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createDonor.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground">
+        <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="bg-background/60 border-border/50">Cancel</Button>
+          <Button onClick={handleSubmit} disabled={createDonor.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95">
             {createDonor.isPending ? "Saving…" : "Register Donor"}
           </Button>
         </DialogFooter>
