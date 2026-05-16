@@ -216,7 +216,7 @@ const FundraisingCampaignReport: React.FC = () => {
         <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Raised" value={fc(totals.raised)} sub={`of ${fc(totals.goal)}`} />
         <KpiCard icon={<Target className="h-4 w-4" />} label="Goal" value={fc(totals.goal)} />
         <KpiCard icon={<HeartHandshake className="h-4 w-4" />} label="Progress" value={`${totals.pct.toFixed(2)}%`} sub={totals.goal > 0 ? `${fc(Math.max(0, totals.goal - totals.raised))} to go` : "No goal set"} />
-        <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${donations.length} donation${donations.length === 1 ? "" : "s"}`} />
+        <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${filteredDonations.length} donation${filteredDonations.length === 1 ? "" : "s"}`} />
         <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Avg donation" value={fc(totals.avg)} />
         <KpiCard icon={<CalendarDays className="h-4 w-4" />} label={daysInfo.label} value={daysInfo.value} />
       </div>
