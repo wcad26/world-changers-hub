@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { DcgAdminLayout } from "@/components/admin/DcgAdminLayout";
+import DcgAdminLayout from "@/components/admin/DcgAdminLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useDcgEvents, useRegionalEventsForDcg, useDeleteDcgEvent } from "@/hooks/useDcgEvents";
 import { 
