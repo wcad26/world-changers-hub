@@ -32,6 +32,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [offeringOpen, setOfferingOpen] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [txOpen, setTxOpen] = useState(true);
 
   const { data: rows = [], isLoading } = useRegionalLedger({
     scope: "regional", from: range.from, to: range.to, categoryId, type,
