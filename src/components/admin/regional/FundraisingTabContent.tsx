@@ -6,10 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DollarSign, Users, Plus, Search, Loader2, Eye } from "lucide-react";
+import { TrendingUp, Target, Users, Plus, Search, Loader2, Eye } from "lucide-react";
 import { useFundraisingCampaigns, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
 import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 
 /**
  * Fundraising tab content rendered inside the Finance Management page.
@@ -17,6 +20,9 @@ import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDi
  * fundraising functionality lives here.
  */
 const FundraisingTabContent: React.FC = () => {
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -45,20 +51,20 @@ const FundraisingTabContent: React.FC = () => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Raised</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalRaised.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{fc(totalRaised)}</div>
             <p className="text-xs text-muted-foreground">across all campaigns</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Goal</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${totalGoal.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{fc(totalGoal)}</div>
             <p className="text-xs text-muted-foreground">combined campaign goals</p>
           </CardContent>
         </Card>
@@ -149,8 +155,8 @@ const FundraisingTabContent: React.FC = () => {
                           <p className="text-xs text-muted-foreground">{pct}%</p>
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">${raised.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">${goal.toLocaleString()}</TableCell>
+                      <TableCell className="text-right">{fc(raised)}</TableCell>
+                      <TableCell className="text-right">{fc(goal)}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" onClick={() => handleViewDetails(campaign)}>
                           <Eye className="h-4 w-4 mr-1" /> View

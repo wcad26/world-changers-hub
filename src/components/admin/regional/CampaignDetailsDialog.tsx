@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { CalendarDays, DollarSign, Users, Share2, Edit, Copy } from "lucide-react";
+import { CalendarDays, TrendingUp, Users, Share2, Edit, Copy } from "lucide-react";
 import { useCampaignDonations, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import { toast } from "@/hooks/use-toast";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 
 interface CampaignDetailsDialogProps {
   campaign: FundraisingCampaign | null;
@@ -23,12 +25,14 @@ const CampaignDetailsDialog: React.FC<CampaignDetailsDialogProps> = ({
   onOpenChange 
 }) => {
   const { data: donations = [], isLoading: donationsLoading } = useCampaignDonations(campaign?.id || '');
+  const { data: regionCurrency } = useRegionCurrency((campaign as any)?.region_id);
+  const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
 
   if (!campaign) return null;
 
   const raisedAmount = campaign.raised / 100;
   const goalAmount = campaign.goal / 100;
-  const progress = Math.round((raisedAmount / goalAmount) * 100);
+  const progress = goalAmount > 0 ? Math.round((raisedAmount / goalAmount) * 100) : 0;
 
   const handleShare = () => {
     const shareUrl = `${window.location.origin}/fundraising/${campaign.id}`;
@@ -75,12 +79,12 @@ const CampaignDetailsDialog: React.FC<CampaignDetailsDialogProps> = ({
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Amount Raised</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">${raisedAmount.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{fc(raisedAmount)}</div>
                 <p className="text-xs text-muted-foreground">
-                  of ${goalAmount.toLocaleString()} goal
+                  of {fc(goalAmount)} goal
                 </p>
                 <Progress value={progress} className="mt-2" />
               </CardContent>
@@ -160,7 +164,7 @@ const CampaignDetailsDialog: React.FC<CampaignDetailsDialogProps> = ({
                             <TableCell>
                               {donation.anonymous ? "Anonymous" : donation.donor_name || "Anonymous"}
                             </TableCell>
-                            <TableCell>${(donation.amount / 100).toLocaleString()}</TableCell>
+                            <TableCell>{fc(donation.amount / 100)}</TableCell>
                             <TableCell>
                               {new Date(donation.donation_date).toLocaleDateString()}
                             </TableCell>
@@ -193,7 +197,7 @@ const CampaignDetailsDialog: React.FC<CampaignDetailsDialogProps> = ({
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold">
-                        ${donations.length > 0 ? Math.round((raisedAmount / donations.length)) : 0}
+                        {fc(donations.length > 0 ? Math.round((raisedAmount / donations.length)) : 0)}
                       </div>
                       <p className="text-sm text-muted-foreground">Avg Donation</p>
                     </div>
