@@ -177,8 +177,8 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
-        <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        <div className="relative shrink-0 overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
           <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
           <DialogHeader className="relative space-y-2">
@@ -197,8 +197,8 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="px-6 py-5 space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
               <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
                 {/* Member */}
                 <FormField
@@ -440,7 +440,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
               </div>
             </div>
 
-            <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+            <DialogFooter className="shrink-0 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
               <Button
                 type="button"
                 variant="outline"
