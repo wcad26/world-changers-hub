@@ -30,7 +30,8 @@ const FundraisingLedgerTab: React.FC<Props> = ({ range }) => {
   const totalRaised = donations.reduce((a: number, d: any) => a + Number(d.amount || 0), 0) / 100;
   const totalGoal = overlapping.reduce((a, c) => a + Number(c.goal || 0), 0) / 100;
   const activeCount = overlapping.filter((c) => c.status === "Active").length;
-  const completionPct = totalGoal > 0 ? Math.min(100, Math.round((totalRaised / totalGoal) * 100)) : 0;
+  const completionPct = totalGoal > 0 ? Math.min(100, (totalRaised / totalGoal) * 100) : 0;
+  const completionPctLabel = `${completionPct.toFixed(2)}%`;
 
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
 
