@@ -190,10 +190,8 @@ const DcgEvents: React.FC = () => {
   }
 
   const kpiCards = [
-    { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
     { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-primary', bg: 'bg-primary/10' },
     { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
-    { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-secondary', bg: 'bg-secondary/10' },
   ];
 
   return (
@@ -253,7 +251,7 @@ const DcgEvents: React.FC = () => {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2">
           {kpiCards.map(({ label, data, icon: Icon, color, bg }) => (
             <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
               <div className="flex items-center gap-3 mb-3">
@@ -276,18 +274,6 @@ const DcgEvents: React.FC = () => {
               </div>
             </div>
           ))}
-          {/* Attendance Target card */}
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Target className="h-5 w-5" />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">Attendance Target</span>
-            </div>
-            <p className="font-bold text-foreground text-lg">{attendanceTarget.pct}%</p>
-            <p className="text-xs text-muted-foreground mt-1">{attendanceTarget.totalActual} total attendees</p>
-            <p className="text-xs text-muted-foreground mt-2">Of regional event capacity</p>
-          </div>
         </div>
 
         {/* Events Table */}
