@@ -238,13 +238,13 @@ const DcgMembers: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="w-[20%]">Name</TableHead>
+                    <TableHead className="min-w-[180px]">Name</TableHead>
                     <TableHead className="hidden lg:table-cell w-[20%]">Address</TableHead>
                     <TableHead className="hidden sm:table-cell">Phone</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead className="hidden lg:table-cell">Status</TableHead>
                     <TableHead className="hidden lg:table-cell">Join Date</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[1%] whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -265,7 +265,7 @@ const DcgMembers: React.FC = () => {
                         className="cursor-pointer hover:bg-muted/20 transition-colors"
                         onClick={() => navigate(`/dcg/member/${member.id}`)}
                       >
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium min-w-[180px]">
                           {member.profiles?.last_name} {member.profiles?.first_name}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell max-w-xs truncate">
@@ -289,7 +289,7 @@ const DcgMembers: React.FC = () => {
                         <TableCell className="hidden lg:table-cell">
                           {member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}
                         </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell className="w-[1%] whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
