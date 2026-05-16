@@ -73,8 +73,6 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
           )}
         </CollapsibleContent>
       </Collapsible>
-
-      <RecordDonationDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </>
   );
 };
