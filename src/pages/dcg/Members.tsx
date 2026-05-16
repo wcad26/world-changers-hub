@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -34,8 +34,6 @@ const DcgMembers: React.FC = () => {
   const removeMember = useRemoveMemberFromDcg();
 
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [statusFilter, setStatusFilter] = React.useState('all');
-  const [typeFilter, setTypeFilter] = React.useState('all');
   const [addExistingOpen, setAddExistingOpen] = React.useState(false);
   const [registerNewOpen, setRegisterNewOpen] = React.useState(false);
   const [memberToRemove, setMemberToRemove] = React.useState<{ dcgMemberId: string; name: string } | null>(null);
@@ -96,27 +94,12 @@ const DcgMembers: React.FC = () => {
       const searchLower = searchTerm.toLowerCase();
       const searchMatch = fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
 
-      const statusMatch = statusFilter === 'all' || member.status === statusFilter;
-
-      const isChild = childrenSet.has(member.id);
+      // Hide special-event visitors to match KPI scope
       const isSpecialVisitor = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
 
-      let typeMatch = false;
-      if (typeFilter === 'all') {
-        typeMatch = !isSpecialVisitor; // hide special-event visitors from default view (KPI scope)
-      } else if (typeFilter === 'children') {
-        typeMatch = isChild;
-      } else if (isChild) {
-        typeMatch = false;
-      } else if (typeFilter === 'visitor_regular') {
-        typeMatch = member.member_type === 'visitor' && !isSpecialVisitor;
-      } else if (typeFilter === 'member') {
-        typeMatch = member.member_type === 'member';
-      }
-
-      return searchMatch && statusMatch && typeMatch;
+      return searchMatch && !isSpecialVisitor;
     });
-  }, [flatMembers, searchTerm, statusFilter, typeFilter, childrenSet, specialEventIds]);
+  }, [flatMembers, searchTerm, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -208,29 +191,6 @@ const DcgMembers: React.FC = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="new">New</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="transferred">Transferred</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                <SelectValue placeholder="Filter by Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="visitor_regular">Regular Visitors</SelectItem>
-                <SelectItem value="children">Children</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
