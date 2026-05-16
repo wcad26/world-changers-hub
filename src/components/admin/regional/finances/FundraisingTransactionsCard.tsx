@@ -13,7 +13,6 @@ interface Props { range: PeriodRange }
 
 const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
   const [open, setOpen] = useState(false); // collapsed by default
-  const [dialogOpen, setDialogOpen] = useState(false);
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const { data: currencies = [] } = useCurrencies();
