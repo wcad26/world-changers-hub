@@ -13,7 +13,7 @@ export const campaignSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters'),
   goal: z.coerce.number().positive('Goal must be positive'),
   startDate: z.string().min(1, 'Please select a start date'),
-  endDate: z.string().min(1, 'Please select an end date'),
+  endDate: z.string().optional().nullable(),
   imageUrl: z.string().optional().nullable(),
   isPublic: z.boolean().default(true),
 });
@@ -65,7 +65,7 @@ export const useCreateFundraisingCampaign = () => {
         description: campaignData.description,
         goal: Math.round(campaignData.goal * 100), // Convert to cents
         start_date: campaignData.startDate,
-        end_date: campaignData.endDate,
+        end_date: campaignData.endDate || null,
         image_url: campaignData.imageUrl || null,
         is_public: campaignData.isPublic,
         status: 'Active',
