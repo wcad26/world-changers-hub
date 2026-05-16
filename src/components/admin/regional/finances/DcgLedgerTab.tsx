@@ -28,6 +28,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [dcgId, setDcgId] = useState<string | null>(null);
+  const [txOpen, setTxOpen] = useState(true);
 
   const { data: rows = [], isLoading } = useRegionalLedger({
     scope: "dcg", from: range.from, to: range.to, categoryId, type, dcgId,
