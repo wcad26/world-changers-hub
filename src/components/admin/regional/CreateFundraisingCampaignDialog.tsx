@@ -93,11 +93,15 @@ const CreateFundraisingCampaignDialog: React.FC<CreateFundraisingCampaignDialogP
                   <FormItem>
                     <FormLabel>Fundraising Goal{currencyLabel ? ` (${currencyLabel})` : ""}</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="50000" 
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="50,000"
+                        value={field.value ? Number(field.value).toLocaleString("en-US") : ""}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^\d]/g, "");
+                          field.onChange(digits ? Number(digits) : 0);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
