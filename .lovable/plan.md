@@ -1,44 +1,55 @@
-## Problem
+# Rebuild DCG Dashboard
 
-The regional admin lands on `/admin/regional/dashboard` and sees a red error banner: **"Some dashboard data could not load. TypeError: Failed to fetch"**, while the rest of the page stays mostly empty.
+Replace the current `src/pages/dcg/Dashboard.tsx` with a layout that mirrors the regional admin dashboard (DCG-filter view from the reference screenshot), scoped to the logged-in DCG only.
 
-From the console logs the failure is transient — `useDiscipleshipRelationships` (and `RegionalSession` profile loader) intermittently throws `TypeError: Failed to fetch` on the first request and succeeds on the next retry. That single early failure is enough to populate the `error` on one of the dashboard's React Query hooks, which we surface in the banner. Some hooks (e.g. the `useFinancialTransactions` / discipleship / attendance queries) also don't retry aggressively enough on a network-level `fetch` failure, so the error state can stick until the user reloads.
+## Layout
 
-Root causes:
-1. The dashboard banner shows whenever any of 5 queries has a non-null `error`, even when the data eventually loads.
-2. Several of the underlying hooks rely on React Query defaults that don't always retry `TypeError: Failed to fetch` quickly, and have no manual recovery affordance.
-3. There is no user-facing retry — they have to refresh the whole page.
+```
+┌──────────────────────────────────────────────────┐
+│ Fixed top bar: [1M 3M 6M 1Y Custom]  [Search]    │
+├──────────────────────────────────────────────────┤
+│ Scrollable area:                                 │
+│   ┌──── 4 Glass KPI Cards ────┐                  │
+│   │ Members │ Children │ Net Balance │ Discp. % ││
+│   └──────────────────────────────────────────────┘│
+│   ┌──── Attendance Trend (AreaChart) ───────────┐│
+│   │  Members · Regular Visitors · Children       ││
+│   └──────────────────────────────────────────────┘│
+└──────────────────────────────────────────────────┘
+```
 
-## Fix
+Same visual language as Regional: `bg-card/60 backdrop-blur-sm`, rounded-2xl borders, `GlassKPICard`, gradient area chart with the existing chart-1/2/4 tokens, fixed filter bar with scrollable body.
 
-Frontend-only, narrow change to `src/pages/admin/regional/Dashboard.tsx`:
+## KPI cards (scoped to current DCG)
 
-1. **Suppress the banner once data is present.** Treat a query as "errored" only if `error` is set AND its data is still missing. If the retry succeeded and `data` is now defined, hide the notice.
-2. **Add a Retry button** to the banner that calls `refetch()` on the failing queries so the user doesn't have to reload.
-3. **Make the failing queries auto-retry on network errors.** Pass an explicit `retry` option to the React Query hooks used by the dashboard (members, events, financial transactions, discipleship, attendance) so `TypeError: Failed to fetch` is retried 2–3 times with backoff before surfacing.
+1. **Members** — adult active members count, subtitle `X adults · Y children`. Uses existing `dcgMembers` + strict child rule already in the file.
+2. **Children** — strict-child count (age <16 AND adult relationship), subtitle "In DCG".
+3. **Net Balance** — `total_income - total_expenses` for the selected period, formatted with region currency, subtitle `Income / Expenses`. Color follows sign (green/red).
+4. **Discipleship Success** — % of disciples mentored by this DCG's members that reached the `became_member` milestone. Compute via `discipleship_relationships` filtered to mentor_id in DCG member ids, joined with `discipleship_progress`.
 
-   - Where the hook signature already accepts query options, pass them through.
-   - Where it doesn't (e.g. `useDiscipleshipRelationships`, `useAttendanceHistoryWithMemberTypes`), add an optional `options` parameter (default `{}`) and merge it into the internal `useQuery` config. No behavior change for other callers.
-4. **Keep messaging accurate.** When the banner does show (data truly missing), keep the existing copy but include the Retry action and a short hint that this is usually a temporary network blip.
+## Attendance Trend chart
 
-No backend, schema, RLS, or business-logic changes. No change to KPI math or to the DCG/regional event-type behavior implemented earlier.
+- Reuse the regional `AreaChart` block (3 series: Members, Regular Visitors, Children, gradients + custom tooltip).
+- Data from `useDcgAttendanceHistory(userDcg.id)` — one point per DCG attendance event in the selected period, sorted by date. Use `members_present`, `visitors_present`, `children_present` fields if available; if the hook only returns `total_present`, plot a single "Attendance" series instead (decide at implementation by inspecting the hook).
+- Empty state matches regional (centered placeholder inside the glass panel).
 
-## Technical details
+## Period filter
 
-Files touched:
+- Reuse the regional pattern: `1M / 3M / 6M / 1Y / Custom` button group + date-range popover.
+- Single piece of state `quickPeriod` + `customRange` → derived `dateRange` (memoized) drives:
+  - `useFinancialTransactions({ from, to })` (replaces current month-only fetch)
+  - Filtering of `attendanceHistory` for the trend + averages
+- Search input filters trend events by name (parity with regional).
 
-- `src/pages/admin/regional/Dashboard.tsx`
-  - Replace `dataErrors` computation so each entry is only added when `error && !data`.
-  - Collect a `refetchAll` callback that calls `refetch()` on each affected query.
-  - Update the `dataErrorNotice` JSX to render a Retry button.
-- `src/hooks/useDiscipleship.ts` — extend `useDiscipleshipRelationships` to accept `{ retry, retryDelay }` options and merge into its `useQuery` call. Default to `retry: 3` with exponential backoff for network errors.
-- `src/hooks/useAttendance.ts` — same treatment for `useAttendanceHistoryWithMemberTypes`.
-- `src/hooks/useFinancials.ts` — same for `useFinancialTransactions`.
-- `src/hooks/useMembers.ts` and `src/hooks/useEvents.ts` (`useRegionalEvents`) — same, only if they don't already retry network errors.
+## Removed from current dashboard
 
-Validation:
+- 5-card stat strip, Recent Activities card, Members & Finances summary cards, quick actions — all replaced by the new layout above (user already deleted Quick Actions).
 
-- Verify the dashboard renders without the banner when the initial fetch succeeds.
-- Simulate a transient failure by throttling DevTools network once; confirm the banner either never shows or clears as soon as the retry succeeds.
-- Confirm the Retry button re-runs the failed queries.
-- No existing callers of the modified hooks need code changes (new param is optional).
+## Technical notes
+
+- File: rewrite `src/pages/dcg/Dashboard.tsx`. Keep wrapping in `DcgAdminLayout`.
+- Components reused: `GlassKPICard` from `@/components/ui/GlassSection`, `Calendar`, `Popover`, `Input`, `Button`, recharts `AreaChart`.
+- Hooks reused: `useDcgMembers`, `useDcgAttendanceHistory`, `useFinancialTransactions` (filtered by `dcg_id === userDcg.id`), `useRegionCurrency`, `useAuth`.
+- New query for Discipleship Success: fetch `discipleship_relationships` where `mentor_id IN (dcg member ids)`, then `discipleship_progress` for those relationship ids; compute `% with became_member milestone`.
+- Keep the existing strict-child `useEffect` that builds `childrenSet`.
+- No backend/schema changes.
