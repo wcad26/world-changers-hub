@@ -103,7 +103,7 @@ const DcgMemberKPICards: React.FC<DcgMemberKPICardsProps> = ({
 
   if (isLoading || !kpiData) {
     return (
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 px-[10px] my-[20px]">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 h-[140px] animate-pulse" />
         ))}
@@ -112,7 +112,7 @@ const DcgMemberKPICards: React.FC<DcgMemberKPICardsProps> = ({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 px-[10px] my-[20px]">
       {kpiData.map(({ label, count, growth, active, icon: Icon, color, bg }) => (
         <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
           <div className="flex items-center gap-3 mb-3">
