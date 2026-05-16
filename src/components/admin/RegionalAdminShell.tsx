@@ -34,7 +34,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admin/regional/events': 'Event Management',
   '/admin/regional/communication': 'Communication Mgmt',
   '/admin/regional/dcg': 'DCG Management',
-  '/admin/regional/reports': 'Reports & Analytics',
+  
   '/admin/regional/certificates': 'Certificate Management',
   '/admin/regional/branch-settings': 'Regional Website Information',
   '/admin/regional/user-roles': 'Access Management',
@@ -269,8 +269,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                 const shortLabel = item.title
                   .replace(' Management', '')
                   .replace(' Mgmt', '')
-                  .replace('Regional Website Information', 'Website')
-                  .replace('Reports & Analytics', 'Reports');
+                  .replace('Regional Website Information', 'Website');
                 return (
                   <Link
                     key={item.path}

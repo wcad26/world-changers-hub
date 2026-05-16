@@ -48,7 +48,7 @@ import RegionalEventReport from "./pages/admin/regional/EventReport";
 import RegionalFinances from "./pages/admin/regional/Finances";
 import RegionalDCG from "./pages/admin/regional/DCG";
 import DcgProfile from "./pages/admin/regional/DcgProfile";
-import RegionalReports from "./pages/admin/regional/Reports";
+
 import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
@@ -169,7 +169,7 @@ const App = () => {
                 <Route path="dcg" element={<RegionalDCG />} />
                 <Route path="dcg/:dcgId" element={<DcgProfile />} />
                 <Route path="certificates" element={<RegionalCertificates />} />
-                <Route path="reports" element={<RegionalReports />} />
+                
                 <Route path="communication" element={<RegionalCommunication />} />
                 <Route path="branch-settings" element={<RegionalBranchSettings />} />
                 <Route path="discipleship" element={<RegionalDiscipleship />} />

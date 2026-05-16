@@ -31,7 +31,7 @@ const REGIONAL_MENU: { title: string; path: string; icon: IconType }[] = [
   { title: 'DCG Management',              path: '/admin/regional/dcg',              icon: Home as IconType },
   { title: 'Certificate Management',      path: '/admin/regional/certificates',     icon: Award as IconType },
   { title: 'Finance Management',          path: '/admin/regional/finances',         icon: PiggyBank as IconType },
-  { title: 'Reports & Analytics',         path: '/admin/regional/reports',          icon: BarChart3 as IconType },
+  
   { title: 'Communication Mgmt',          path: '/admin/regional/communication',    icon: MessageSquare as IconType },
   { title: 'Regional Website Info',       path: '/admin/regional/branch-settings',  icon: Building2 as IconType },
   { title: 'Settings',                    path: '/admin/regional/settings',         icon: Settings as IconType },
