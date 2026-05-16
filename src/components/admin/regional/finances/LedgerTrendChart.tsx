@@ -18,18 +18,37 @@ const LedgerTrendChart: React.FC<Props> = ({ rows, regionCurrency, title = "Fina
 
   const data = useMemo(() => {
     if (!rows.length) return [];
-    const months: Record<string, { income: number; expenses: number; ts: number }> = {};
+    const weeks: Record<string, { income: number; expenses: number; ts: number }> = {};
+    let minTs = Infinity;
+    let maxTs = -Infinity;
     for (const r of rows) {
       const d = new Date(r.transaction_date);
-      const key = format(d, "MMM yyyy");
-      if (!months[key]) months[key] = { income: 0, expenses: 0, ts: d.getTime() };
+      const ws = startOfWeek(d, { weekStartsOn: 1 });
+      const key = format(ws, "yyyy-MM-dd");
+      if (!weeks[key]) weeks[key] = { income: 0, expenses: 0, ts: ws.getTime() };
       const ct = r.category?.type?.toLowerCase();
       const amt = Number(r.amount) || 0;
-      if (ct === "income") months[key].income += amt;
-      else if (ct === "expense") months[key].expenses += amt;
+      if (ct === "income") weeks[key].income += amt;
+      else if (ct === "expense") weeks[key].expenses += amt;
+      if (ws.getTime() < minTs) minTs = ws.getTime();
+      if (ws.getTime() > maxTs) maxTs = ws.getTime();
     }
-    return Object.entries(months)
-      .map(([month, v]) => ({ month, Income: v.income, Expenses: v.expenses, Net: v.income - v.expenses, ts: v.ts }))
+    // Fill empty weeks across the range for a continuous line
+    if (isFinite(minTs) && isFinite(maxTs)) {
+      const all = eachWeekOfInterval({ start: new Date(minTs), end: new Date(maxTs) }, { weekStartsOn: 1 });
+      for (const w of all) {
+        const key = format(w, "yyyy-MM-dd");
+        if (!weeks[key]) weeks[key] = { income: 0, expenses: 0, ts: w.getTime() };
+      }
+    }
+    return Object.entries(weeks)
+      .map(([, v]) => ({
+        week: format(new Date(v.ts), "MMM d"),
+        Income: v.income,
+        Expenses: v.expenses,
+        Net: v.income - v.expenses,
+        ts: v.ts,
+      }))
       .sort((a, b) => a.ts - b.ts);
   }, [rows]);
 
