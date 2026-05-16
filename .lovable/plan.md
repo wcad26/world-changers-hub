@@ -1,55 +1,46 @@
-# Rebuild DCG Dashboard
+## Rebuild DCG Members Page
 
-Replace the current `src/pages/dcg/Dashboard.tsx` with a layout that mirrors the regional admin dashboard (DCG-filter view from the reference screenshot), scoped to the logged-in DCG only.
+Rewrite `src/pages/dcg/Members.tsx` to mirror the Regional Members page (`src/pages/admin/regional/Members.tsx`) but scoped to the current DCG. Keep the "Add Existing" + "Register New" buttons unique to DCG.
 
-## Layout
+### Layout
 
-```
-┌──────────────────────────────────────────────────┐
-│ Fixed top bar: [1M 3M 6M 1Y Custom]  [Search]    │
-├──────────────────────────────────────────────────┤
-│ Scrollable area:                                 │
-│   ┌──── 4 Glass KPI Cards ────┐                  │
-│   │ Members │ Children │ Net Balance │ Discp. % ││
-│   └──────────────────────────────────────────────┘│
-│   ┌──── Attendance Trend (AreaChart) ───────────┐│
-│   │  Members · Regular Visitors · Children       ││
-│   └──────────────────────────────────────────────┘│
-└──────────────────────────────────────────────────┘
-```
+1. **4 Glass KPI cards** (replaces the regional 5-card strip) — `grid gap-4 md:grid-cols-4`, same glass styling as `MemberKPICards.tsx`:
+   - **Total** — sum of members + children + regular visitors in the DCG
+   - **Members** — adult, non-visitor members
+   - **Children** — strict child rule (`buildChildrenSet`: age <16 AND linked to ≥1 adult via relationships)
+   - **Regular Visitors** — `member_type === 'visitor'` AND NOT linked to a special event
+   
+   Each card shows: count, `Active: X%` subtitle, and growth `+X% last 30 days` from `join_date`. Active % uses last 5 DCG attendance events (mirrors regional logic but reads `attendance_events` where `dcg_id = userDcg.id`).
 
-Same visual language as Regional: `bg-card/60 backdrop-blur-sm`, rounded-2xl borders, `GlassKPICard`, gradient area chart with the existing chart-1/2/4 tokens, fixed filter bar with scrollable body.
+2. **Member Directory panel** — identical glass card to regional:
+   - Header: icon + "Member Directory" / "A list of all members in this DCG"
+   - Right side: `Add Existing` (outline) + `Register New` (primary) buttons that open existing `AddExistingMemberDialog` / `RegisterNewMemberDialog`
+   - Filter row: search input + Status select + Type select (All / Member / Regular Visitors / Children) + Export CSV button
+   - Table columns: Name, Address (md+), Phone (sm+), Role (Member/Visitor badge), Status, Join Date (lg+), Actions (View / Remove from DCG dropdown)
+   - Row click → `/dcg/member/{memberId}` (existing route)
 
-## KPI cards (scoped to current DCG)
+### Data flow
 
-1. **Members** — adult active members count, subtitle `X adults · Y children`. Uses existing `dcgMembers` + strict child rule already in the file.
-2. **Children** — strict-child count (age <16 AND adult relationship), subtitle "In DCG".
-3. **Net Balance** — `total_income - total_expenses` for the selected period, formatted with region currency, subtitle `Income / Expenses`. Color follows sign (green/red).
-4. **Discipleship Success** — % of disciples mentored by this DCG's members that reached the `became_member` milestone. Compute via `discipleship_relationships` filtered to mentor_id in DCG member ids, joined with `discipleship_progress`.
+- Source: existing `useDcgMembers(userDcg.id)` → returns `dcg_members` joined with `members` + `profiles`. Map to a flat `MemberWithProfile[]`-shaped array (extract `dcgMember.members`) so the regional-style filters/table work unchanged.
+- Relationships: call `fetchMemberRelationshipsForMembers` on the flattened member ids for `buildChildrenSet`.
+- Special-event visitor exclusion: fetch `events.is_special` for the visitor `rated_event_id`s (same pattern as regional). Special-event visitors are excluded from the Regular Visitors count and from the Total (per the user's requested KPI scope).
+- DCG attendance events for Active %: `attendance_events` where `dcg_id = userDcg.id`, last 5 by date.
+- Remove action: reuse `useRemoveMemberFromDcg`.
 
-## Attendance Trend chart
+### Removed from current page
 
-- Reuse the regional `AreaChart` block (3 series: Members, Regular Visitors, Children, gradients + custom tooltip).
-- Data from `useDcgAttendanceHistory(userDcg.id)` — one point per DCG attendance event in the selected period, sorted by date. Use `members_present`, `visitors_present`, `children_present` fields if available; if the hook only returns `total_present`, plot a single "Attendance" series instead (decide at implementation by inspecting the hook).
-- Empty state matches regional (centered placeholder inside the glass panel).
+- The simple search-only card layout.
+- Inline role-change select on each row (move to a future edit dialog if needed; keep out of this rewrite to match regional table layout).
+- Mobile-only card list (regional uses responsive table with hidden columns at breakpoints — same here).
 
-## Period filter
+### Files
 
-- Reuse the regional pattern: `1M / 3M / 6M / 1Y / Custom` button group + date-range popover.
-- Single piece of state `quickPeriod` + `customRange` → derived `dateRange` (memoized) drives:
-  - `useFinancialTransactions({ from, to })` (replaces current month-only fetch)
-  - Filtering of `attendanceHistory` for the trend + averages
-- Search input filters trend events by name (parity with regional).
+- **Rewrite**: `src/pages/dcg/Members.tsx`
+- **New** (optional helper): `src/components/admin/dcg/DcgMemberKPICards.tsx` — slimmed copy of `MemberKPICards.tsx` with 4 cards and DCG-scoped attendance query. Keeps the existing regional component untouched.
+- No backend / schema changes.
 
-## Removed from current dashboard
+### Notes
 
-- 5-card stat strip, Recent Activities card, Members & Finances summary cards, quick actions — all replaced by the new layout above (user already deleted Quick Actions).
-
-## Technical notes
-
-- File: rewrite `src/pages/dcg/Dashboard.tsx`. Keep wrapping in `DcgAdminLayout`.
-- Components reused: `GlassKPICard` from `@/components/ui/GlassSection`, `Calendar`, `Popover`, `Input`, `Button`, recharts `AreaChart`.
-- Hooks reused: `useDcgMembers`, `useDcgAttendanceHistory`, `useFinancialTransactions` (filtered by `dcg_id === userDcg.id`), `useRegionCurrency`, `useAuth`.
-- New query for Discipleship Success: fetch `discipleship_relationships` where `mentor_id IN (dcg member ids)`, then `discipleship_progress` for those relationship ids; compute `% with became_member milestone`.
-- Keep the existing strict-child `useEffect` that builds `childrenSet`.
-- No backend/schema changes.
+- Reuse existing dialogs: `AddExistingMemberDialog`, `RegisterNewMemberDialog`.
+- Keep the `px-[10px]` wrapper class the user previously added.
+- Follow the "Last Name First Name" display convention (already in current file).
