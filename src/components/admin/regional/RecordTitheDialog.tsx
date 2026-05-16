@@ -440,7 +440,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
               </div>
             </div>
 
-            <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+            <DialogFooter className="shrink-0 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
               <Button
                 type="button"
                 variant="outline"
