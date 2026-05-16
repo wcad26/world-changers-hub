@@ -197,8 +197,9 @@ export const useRegionalEventsForOfferings = (regionId: string | undefined) => {
         .from('events')
         .select('id, name, start_datetime')
         .eq('region_id', regionId)
+        .is('dcg_id', null)
         .order('start_datetime', { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return (data || []) as Array<Pick<Event, 'id' | 'name' | 'start_datetime'>>;
     },
