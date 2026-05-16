@@ -9,6 +9,7 @@ import { Plus, Search, Loader2, Eye, HeartHandshake } from "lucide-react";
 import { useFundraisingCampaigns, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
 import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
+import RecordDonationDialog from "@/components/admin/regional/finances/RecordDonationDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
@@ -25,6 +26,7 @@ const FundraisingTabContent: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [donationDialogOpen, setDonationDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<FundraisingCampaign | null>(null);
 
@@ -65,12 +67,21 @@ const FundraisingTabContent: React.FC = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={() => setCreateDialogOpen(true)}
-          className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground shadow-sm"
-        >
-          <Plus className="mr-2 h-4 w-4" /> New Campaign
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setDonationDialogOpen(true)}
+            className="border-border/60 bg-card/60 backdrop-blur-sm"
+          >
+            <HeartHandshake className="mr-2 h-4 w-4" /> Record Donation
+          </Button>
+          <Button
+            onClick={() => setCreateDialogOpen(true)}
+            className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground shadow-sm"
+          >
+            <Plus className="mr-2 h-4 w-4" /> New Campaign
+          </Button>
+        </div>
       </div>
 
       {/* Campaigns panel */}
@@ -147,6 +158,10 @@ const FundraisingTabContent: React.FC = () => {
         campaign={selectedCampaign}
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
+      />
+      <RecordDonationDialog
+        open={donationDialogOpen}
+        onOpenChange={setDonationDialogOpen}
       />
     </div>
   );

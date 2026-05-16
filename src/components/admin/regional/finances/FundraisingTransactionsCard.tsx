@@ -1,21 +1,18 @@
 import React, { useState } from "react";
-import { HeartHandshake, ChevronDown, Plus } from "lucide-react";
+import { HeartHandshake, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useRegionDonations } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency, useCurrencies } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
-import RecordDonationDialog from "./RecordDonationDialog";
 import type { PeriodRange } from "./PeriodSelector";
 
 interface Props { range: PeriodRange }
 
 const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
   const [open, setOpen] = useState(false); // collapsed by default
-  const [dialogOpen, setDialogOpen] = useState(false);
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const { data: currencies = [] } = useCurrencies();
@@ -29,25 +26,16 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
   return (
     <>
       <Collapsible open={open} onOpenChange={setOpen} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex items-center justify-between gap-3">
-          <CollapsibleTrigger className="flex flex-1 items-center justify-between gap-2 group">
-            <div className="flex items-center gap-2">
-              <HeartHandshake className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <h3 className="text-base font-semibold text-foreground">Fundraising Transactions</h3>
-                <p className="text-xs text-muted-foreground">All donations across your region's campaigns</p>
-              </div>
+        <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 group">
+          <div className="flex items-center gap-2">
+            <HeartHandshake className="h-4 w-4 text-primary" />
+            <div className="text-left">
+              <h3 className="text-base font-semibold text-foreground">Fundraising Transactions</h3>
+              <p className="text-xs text-muted-foreground">All donations across your region's campaigns</p>
             </div>
-            <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-          </CollapsibleTrigger>
-          <Button
-            size="sm"
-            onClick={(e) => { e.stopPropagation(); setDialogOpen(true); }}
-            className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground shadow-sm"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Record Donation
-          </Button>
-        </div>
+          </div>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </CollapsibleTrigger>
         <CollapsibleContent className="mt-4">
           {isLoading ? (
             <p className="py-8 text-center text-muted-foreground text-sm">Loading…</p>
@@ -85,8 +73,6 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
           )}
         </CollapsibleContent>
       </Collapsible>
-
-      <RecordDonationDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </>
   );
 };
