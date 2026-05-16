@@ -81,8 +81,8 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
       await createDonation.mutateAsync({
         campaign_id: campaignId,
         amount,
-        donor_name: donorName.trim() || null,
-        donor_email: donorEmail.trim() || null,
+        donor_name: anonymous ? null : (memberLabel || null),
+        donor_email: null,
         message: message.trim() || null,
         anonymous,
         donation_date: new Date(date).toISOString(),
