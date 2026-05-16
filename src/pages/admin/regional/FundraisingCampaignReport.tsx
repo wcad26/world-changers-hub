@@ -205,7 +205,7 @@ const FundraisingCampaignReport: React.FC = () => {
             customRange={customRange}
             onCustomRangeChange={setCustomRange}
           />
-          <Button variant="outline" onClick={handleShare}><Share2 className="h-4 w-4 mr-2" /> Share</Button>
+          
           <Button onClick={() => setEditOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground">
             <Pencil className="h-4 w-4 mr-2" /> Edit
           </Button>
