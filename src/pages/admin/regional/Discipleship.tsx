@@ -147,7 +147,7 @@ const Discipleship: React.FC = () => {
               <div className="animate-pulse h-8 w-20 bg-muted rounded" />
             ) : (
               <>
-                <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+                <p className="font-bold text-foreground text-lg">{kpi.value}</p>
                 <div className="flex items-center gap-2 mt-1">
                   {kpi.growth !== undefined && (
                     <span className={`flex items-center text-xs font-medium ${kpi.growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
