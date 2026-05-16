@@ -38,7 +38,7 @@ const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: React.Rea
         {icon}
       </span>
     </div>
-    <div className="text-2xl font-semibold tabular-nums text-foreground">{value}</div>
+    <div className="font-semibold tabular-nums text-foreground text-xl">{value}</div>
     {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
   </div>
 );
