@@ -3092,8 +3092,8 @@ const RegionalEvents: React.FC = () => {
                   )}
                 />
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
+              <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+                <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
                   setCreateEventDialogOpen(false);
                   form.reset();
                   setCardImagePreview('');
@@ -3108,7 +3108,7 @@ const RegionalEvents: React.FC = () => {
                 }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createEventMutation.isPending}>
+                <Button type="submit" disabled={createEventMutation.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95">
                   {createEventMutation.isPending ? "Creating..." : "Create Event"}
                 </Button>
               </DialogFooter>
