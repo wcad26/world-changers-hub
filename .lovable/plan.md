@@ -1,64 +1,76 @@
 ## Goal
 
-Replace the current tab-based DCG Events page with a unified layout that matches the Regional Events page (`src/pages/admin/regional/Events.tsx`) — period filter, KPI cards, search + type + time filters, and a single events table — but scoped to the signed-in DCG plus the regional events of that DCG's region.
+Replace the current `src/pages/dcg/Finances.tsx` with a redesigned page that mirrors the look and feel of the Regional portal's Finance Management (`src/pages/admin/regional/Finances.tsx` + its `finances/*` components), but scoped to the logged-in DCG only. Top-grade, glass aesthetic, recharts trend, KPI cards, filters, export, itemized ledger.
 
-## Data scope
+## Scope
 
-Combine two existing hooks into one merged list:
-- `useDcgEvents(userDcg.id)` — events belonging to this DCG (`dcg_id = userDcg.id`).
-- `useRegionalEventsForDcg(userDcg.region_id)` — regional events for the parent region (`region_id = userDcg.region_id AND dcg_id IS NULL`).
+- Only the single DCG bound to the logged-in user (`userDcg.id`). No DCG picker. No regional/fundraising tabs.
+- Uses existing data hook `useDcgFinancialTransactions(dcgId, { from, to })` from `src/hooks/useDcgFinancials.ts`.
+- Keep the existing Record Income / Record Expense dialogs.
 
-All KPIs, filters, and the table operate on this combined, period-filtered set. Nothing outside this DCG's region is ever shown.
-
-## Page layout (matches reference screenshot)
+## Page structure
 
 ```text
-[Period: 1M 3M 6M 1Y Custom]  [Search]  [All Types ▾]  [All Events ▾]        [+ Create Event]
+┌─ Glass Header ──────────────────────────────────────────────┐
+│  DCG Financial Management          [PeriodSelector 1M..1Y] │
+│  Track income, expenses and giving for <DCG name>           │
+│                                          [Record Income]    │
+│                                          [Record Expense]   │
+└─────────────────────────────────────────────────────────────┘
 
-[Total Events] [Regional Events] [DCG Events] [Special Events] [Attendance Target]
+┌── KPI cards (4) ────────────────────────────────────────────┐
+│ Income | Expenses | Net | Offerings  (FinanceKpiCard)       │
+└─────────────────────────────────────────────────────────────┘
 
-Events
-View and manage all events for your DCG
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ Event Name │ Type │ Date │ Time │ Location │ Capacity │ Attendance │ Actions │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌── Filters bar ──────────────────────────────────────────────┐
+│ [search]  [Type: all/income/expense]  [Income type]         │
+│ [Expense category]                          [Export CSV]    │
+└─────────────────────────────────────────────────────────────┘
+
+┌── LedgerTrendChart (Income / Expenses / Net, weekly cum.) ──┐
+└─────────────────────────────────────────────────────────────┘
+
+┌── Category Breakdown card ──────────────────────────────────┐
+│  Category | Type | Count | Total                            │
+└─────────────────────────────────────────────────────────────┘
+
+┌── Collapsible: Transactions (itemized) ─────────────────────┐
+│ Date | Category | Description | Type | Amount | Actions     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-- Reuse `PeriodFilter` from `@/components/admin/regional/dashboard/PeriodFilter`.
-- Reuse the regional page's KPI card markup (rounded-2xl glass cards, growth indicators, attendance-target tile).
-- Type filter options: `All Types`, `Regional`, `DCG`, `Special`.
-- Time filter options: `All Events`, `Upcoming`, `Past`.
-- Type column badge: `Regional` / `DCG` / `Special` (visitor/DCG/regional badge logic from regional page).
+## Components reused (no new files unless noted)
 
-## Actions per row
+- `PeriodSelector` + `resolvePeriod` from `components/admin/regional/finances/PeriodSelector.tsx`
+- `FinanceKpiCard`
+- `FinanceFiltersBar` (already supports search + type + income-type + expense-category)
+- `LedgerTrendChart` (accepts rows shaped like `LedgerRow`; our DCG rows already include `category` and `amount`/`transaction_date`)
+- `EditDcgTransactionDialog` + `DcgTransactionRowActions` for row actions (Edit/Delete already wired through `useDcgFinancials`)
+- `exportCsv` from `utils/csvExport`
+- Existing `RecordDcgIncomeDialog` / `RecordDcgExpenseDialog`
 
-- DCG events (`dcg_id = userDcg.id`): dropdown with **Record Attendance**, **Duplicate Event**, **Delete Event** (keep current `CreateEventDialog` for duplicate and `useDeleteDcgEvent`).
-- Regional events (`dcg_id IS NULL`): dropdown limited to **Record Attendance** only — no edit/duplicate/delete (DCG admins cannot manage regional events).
-- `+ Create Event` button always creates a DCG event (current `CreateEventDialog` behavior is preserved).
+## Data
 
-## KPI cards (scoped to combined set + period)
+- `useAuth()` → `userDcg`, current DCG `region_id` via `useDcgs()`
+- `useRegionCurrency(region_id)` for currency formatting via `formatCurrencyWithSymbol`
+- `useDcgFinancialTransactions(userDcg.id, { from, to })` for rows in range
+- Client-side filtering for search / type / income type / expense category (mirrors regional behavior)
+- Derived: total income, total expenses, net, offerings total; category aggregation for breakdown table
 
-1. **Total Events** — count of all events in the merged, period-filtered set.
-2. **Regional Events** — events with `dcg_id IS NULL` and `is_special = false`.
-3. **DCG Events** — events with `dcg_id = userDcg.id`.
-4. **Special Events** — events with `is_special = true`.
-5. **Attendance Target** — `% = totalActualAttendance / totalCapacity` across regional (non-special) events in scope, mirroring the regional page formula.
+## Styling
 
-Each card shows count, average attendance, and growth vs. the previous equivalent period (same logic the regional page already uses; we'll factor it into a small `useEventAnalytics(events, period)` helper to avoid copying the math twice).
+- Glass header card: `rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5`
+- Same KPI/tab/table treatments as `DcgLedgerTab` (muted header bar, hover rows, tabular-nums)
+- All colors via semantic tokens; no raw hex
+- Mobile: KPIs collapse to 2-col grid, filters stack, table inside `overflow-x-auto`
 
-## Mobile / tablet
+## Files changed
 
-- Keep the existing `useIsMobile` / `useIsTablet` card-view fallback for the events list.
-- KPI grid: `grid-cols-2 md:grid-cols-3 lg:grid-cols-5` so the 5 cards still read well on small screens.
-- Keep `pb-24` for the bottom-tab clearance per project convention.
-
-## Files
-
-- **Rewrite** `src/pages/dcg/Events.tsx` — new layout, merged data, unified table, KPIs, filters. Keep the existing imports for `CreateEventDialog`, `EventAttendanceDialog`, `useDcgEvents`, `useRegionalEventsForDcg`, `useDeleteDcgEvent`.
-- **No changes** to hooks, DB schema, RLS, or other pages. The data scoping is already correct in the existing hooks.
+- Rewrite: `src/pages/dcg/Finances.tsx` (single file change)
+- No route, layout, or hook changes
 
 ## Out of scope
 
-- No new event categories, no schema changes, no new edge functions.
-- No changes to how regional admins manage events.
-- The Reports/EventReport pages are untouched.
+- No DB schema changes
+- No new dialogs (reuse existing)
+- Reports/analytics page (already removed)
