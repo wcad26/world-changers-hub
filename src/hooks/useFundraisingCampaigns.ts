@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
+import { useRegionCurrency } from './useCurrencies';
 import * as z from 'zod';
 
 export type FundraisingCampaign = Database['public']['Tables']['fundraising_campaigns']['Row'];
