@@ -6,8 +6,9 @@ import {
 } from "date-fns";
 import {
   ArrowLeft, HeartHandshake, Target, TrendingUp, Users, CalendarDays,
-  Pencil, Share2, Loader2,
+  Pencil, Share2, Loader2, ChevronDown,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
