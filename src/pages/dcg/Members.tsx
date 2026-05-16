@@ -264,6 +264,22 @@ const DcgMembers: React.FC = () => {
                               <DropdownMenuItem onClick={() => navigate(`/dcg/member/${member.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" /> View
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                <Pencil className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              {member.__dcgRole === 'Assistant' ? (
+                                <DropdownMenuItem
+                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Member' })}
+                                >
+                                  <ShieldOff className="h-4 w-4 mr-2" /> Remove as DCG Assistant
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Assistant' })}
+                                >
+                                  <ShieldCheck className="h-4 w-4 mr-2" /> Make DCG Assistant
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => setMemberToRemove({
                                   dcgMemberId: member.__dcgMemberId,
