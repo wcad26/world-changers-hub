@@ -130,7 +130,7 @@ const MemberKPICards: React.FC<MemberKPICardsProps> = ({
             </div>
             <span className="text-sm font-medium text-muted-foreground">{label}</span>
           </div>
-          <p className="text-2xl font-bold text-foreground">{count}</p>
+          <p className="font-bold text-foreground text-lg">{count}</p>
           <p className="text-xs text-muted-foreground mt-1">Active: {active}%</p>
           <div className="mt-2">
             {growth !== 0 ? (

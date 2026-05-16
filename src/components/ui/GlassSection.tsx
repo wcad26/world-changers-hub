@@ -65,7 +65,7 @@ export function GlassKPICard({ icon, label, value, subtitle, isLoading }: GlassK
         <Skeleton className="h-8 w-20" />
       ) : (
         <>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="font-bold text-foreground text-lg">{value}</p>
           {subtitle && (
             <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
           )}
