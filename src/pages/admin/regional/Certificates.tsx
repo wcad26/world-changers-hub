@@ -1522,6 +1522,35 @@ const Certificates = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog open={bulkDeleteOpen} onOpenChange={(open) => !isBulkDeleting && setBulkDeleteOpen(open)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Delete {selectedCertificates.length} Certificate(s)?</DialogTitle>
+              <DialogDescription>
+                This action <strong>cannot be undone</strong>. The selected certificates will be permanently removed from the database and storage.
+              </DialogDescription>
+            </DialogHeader>
+            {isBulkDeleting && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Deleting certificates...</span>
+                  <span>{bulkDeleteProgress.current} of {bulkDeleteProgress.total}</span>
+                </div>
+                <Progress value={(bulkDeleteProgress.current / Math.max(bulkDeleteProgress.total, 1)) * 100} />
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={isBulkDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+                {isBulkDeleting ? 'Deleting...' : `Delete ${selectedCertificates.length} Permanently`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Preview Certificate Dialog */}
         {templatePreviewUrl && (
           <PreviewCertificateDialog
