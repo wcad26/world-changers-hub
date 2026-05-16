@@ -12,8 +12,6 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,18 +23,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { GlassSection, GlassKPICard } from "@/components/ui/GlassSection";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
-import { EditDcgTransactionDialog } from "@/components/admin/dcg/EditDcgTransactionDialog";
 
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
-import { useDeleteDcgTransaction, type DcgFinancialTransaction } from "@/hooks/useDcgFinancials";
+
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useDcgEvents } from "@/hooks/useDcgEvents";
@@ -57,9 +50,6 @@ const DcgProfile: React.FC = () => {
   const { dcgId } = useParams<{ dcgId: string }>();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<DcgFinancialTransaction | null>(null);
-  const [deletingTransaction, setDeletingTransaction] = useState<DcgFinancialTransaction | null>(null);
-  const deleteTransaction = useDeleteDcgTransaction(dcgId || "");
   const { userRegion } = useAuth();
 
   // Period filter
@@ -413,237 +403,148 @@ const DcgProfile: React.FC = () => {
         )}
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="members" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="financials">Financials</TabsTrigger>
-        </TabsList>
-
-        {/* Members tab — table styled like Member Directory */}
-        <TabsContent value="members" className="space-y-4 mt-4">
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                  <Users className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-foreground">DCG Members</h2>
-                  <p className="text-sm text-muted-foreground">All active members in this DCG</p>
-                </div>
-              </div>
+      {/* Members section */}
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+              <Users className="h-5 w-5" />
             </div>
-
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
-              <div className="relative flex-1 sm:min-w-[250px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  className="pl-9 bg-background/60"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="transferred">Transferred</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                  <SelectValue placeholder="Filter by Role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="Leader">Leader</SelectItem>
-                  <SelectItem value="Assistant">Assistant</SelectItem>
-                  <SelectItem value="Member">Member</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
-                <Download className="mr-2 h-4 w-4" />
-                Export ({filteredMembers.length})
-              </Button>
-            </div>
-
-            <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="w-[20%]">Name</TableHead>
-                      <TableHead className="hidden md:table-cell w-[20%]">Address</TableHead>
-                      <TableHead className="hidden sm:table-cell">Phone</TableHead>
-                      <TableHead>DCG Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Joined</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {membersLoading ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          {Array.from({ length: 7 }).map((_, j) => (
-                            <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : filteredMembers.length > 0 ? (
-                      filteredMembers.map(m => {
-                        const p = m.members?.profiles;
-                        const memberId = m.members?.id;
-                        return (
-                          <TableRow
-                            key={m.id}
-                            className="cursor-pointer hover:bg-muted/20 transition-colors"
-                            onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
-                          >
-                            <TableCell className="font-medium">
-                              {p?.last_name} {p?.first_name}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell max-w-xs truncate">{p?.address || "N/A"}</TableCell>
-                            <TableCell className="hidden sm:table-cell">{p?.phone || "N/A"}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{m.role}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(m.members?.status || "new")}>
-                                {m.members?.status || "new"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              {m.joined_date ? new Date(m.joined_date).toLocaleDateString() : "N/A"}
-                            </TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
-                                  >
-                                    <Eye className="h-4 w-4 mr-2" /> View
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleRemove(m.id)}
-                                  >
-                                    <UserMinus className="h-4 w-4 mr-2" /> Remove from DCG
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                          No members found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">DCG Members</h2>
+              <p className="text-sm text-muted-foreground">All active members in this DCG</p>
             </div>
           </div>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="financials" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Financial Transactions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {financialsLoading ? (
-                <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                </div>
-              ) : dcgTransactions.length > 0 ? (
-                <div className="rounded-md border overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead className="hidden md:table-cell">Description</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="w-[60px] text-right">Actions</TableHead>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
+          <div className="relative flex-1 sm:min-w-[250px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, or phone..."
+              className="pl-9 bg-background/60"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="new">New</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+              <SelectItem value="transferred">Transferred</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
+              <SelectValue placeholder="Filter by Role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="Leader">Leader</SelectItem>
+              <SelectItem value="Assistant">Assistant</SelectItem>
+              <SelectItem value="Member">Member</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
+            <Download className="mr-2 h-4 w-4" />
+            Export ({filteredMembers.length})
+          </Button>
+        </div>
+
+        <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="w-[30%]">Name</TableHead>
+                  <TableHead className="hidden md:table-cell w-[15%]">Address</TableHead>
+                  <TableHead className="hidden sm:table-cell">Phone</TableHead>
+                  <TableHead>DCG Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="hidden lg:table-cell">Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {membersLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 7 }).map((_, j) => (
+                        <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : filteredMembers.length > 0 ? (
+                  filteredMembers.map(m => {
+                    const p = m.members?.profiles;
+                    const memberId = m.members?.id;
+                    return (
+                      <TableRow
+                        key={m.id}
+                        className="cursor-pointer hover:bg-muted/20 transition-colors"
+                        onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
+                      >
+                        <TableCell className="font-medium">
+                          {p?.last_name} {p?.first_name}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell max-w-[140px] truncate">{p?.address || "N/A"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{p?.phone || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{m.role}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(m.members?.status || "new")}>
+                            {m.members?.status || "new"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          {m.joined_date ? new Date(m.joined_date).toLocaleDateString() : "N/A"}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
+                              >
+                                <Eye className="h-4 w-4 mr-2" /> View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleRemove(m.id)}
+                              >
+                                <UserMinus className="h-4 w-4 mr-2" /> Remove from DCG
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {[...dcgTransactions]
-                        .sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
-                        .map((transaction) => {
-                          const type = transaction.category?.type?.toLowerCase();
-                          const isIncome = type === "income";
-                          return (
-                            <TableRow key={transaction.id}>
-                              <TableCell className="whitespace-nowrap">
-                                {format(new Date(transaction.transaction_date), "MMM dd, yyyy")}
-                              </TableCell>
-                              <TableCell className="font-medium">{transaction.category?.name || "—"}</TableCell>
-                              <TableCell className="hidden md:table-cell text-muted-foreground">
-                                {transaction.description || "—"}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={isIncome ? "default" : "secondary"}>
-                                  {transaction.category?.type || "—"}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className={`text-right whitespace-nowrap font-medium ${isIncome ? "text-primary" : "text-destructive"}`}>
-                                {isIncome ? "+" : "-"}{fmt(Number(transaction.amount))}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setEditingTransaction(transaction as any)}>
-                                      <Edit className="h-4 w-4 mr-2" /> Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-destructive focus:text-destructive"
-                                      onClick={() => setDeletingTransaction(transaction as any)}
-                                    >
-                                      <UserMinus className="h-4 w-4 mr-2" /> Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <p className="text-muted-foreground py-8 text-center">No financial transactions in selected period</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      No members found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
 
       <EditDcgDialog
         open={isEditDialogOpen}
@@ -651,42 +552,6 @@ const DcgProfile: React.FC = () => {
         dcg={dcg}
       />
 
-      <EditDcgTransactionDialog
-        open={!!editingTransaction}
-        onOpenChange={(o) => { if (!o) setEditingTransaction(null); }}
-        dcgId={dcgId || ""}
-        transaction={editingTransaction}
-      />
-
-      <AlertDialog open={!!deletingTransaction} onOpenChange={(o) => { if (!o) setDeletingTransaction(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. The transaction will be permanently removed from the records.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (!deletingTransaction) return;
-                try {
-                  await deleteTransaction.mutateAsync(deletingTransaction.id);
-                  toast.success("Transaction deleted");
-                } catch (e: any) {
-                  toast.error("Failed to delete", { description: e?.message });
-                } finally {
-                  setDeletingTransaction(null);
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
