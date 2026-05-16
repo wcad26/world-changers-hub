@@ -161,7 +161,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
                     value={memberSearch}
                     onValueChange={setMemberSearch}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
                     {membersLoading ? (
                       <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
