@@ -267,19 +267,18 @@ const RegionalDashboard: React.FC = () => {
 
     let dcgAttendanceTargetPct = 0;
     let dcgAttendanceTargetMissing = true;
-    let dcgAttendanceTargetSubtitle = 'No target set in Plan Management';
+    let dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} attendees — no target set`;
     if (planAvgDcgAttendance && planAvgDcgAttendance > 0) {
       dcgAttendanceTargetPct = Math.round((avgDcgAttendees / planAvgDcgAttendance) * 100);
       dcgAttendanceTargetMissing = false;
       dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} / ${planAvgDcgAttendance} target`;
     }
 
-    // DCG membership counts (region-wide, intersected with children set).
-    const dcgIds = dcgMembership?.dcgMemberIds || new Set<string>();
-    const dcgTotalMembers = dcgIds.size;
-    let dcgChildren = 0;
-    childrenSet.forEach(id => { if (dcgIds.has(id)) dcgChildren++; });
-    const dcgAdults = Math.max(0, dcgTotalMembers - dcgChildren);
+    // DCG membership counts (resolved inside useDcgRegionMembership with the
+    // strict child rule applied to the DCG-scoped subset).
+    const dcgTotalMembers = dcgMembership?.totalDcgMembers ?? 0;
+    const dcgChildren = dcgMembership?.totalDcgChildren ?? 0;
+    const dcgAdults = dcgMembership?.totalDcgAdults ?? 0;
 
     // Discipleship success rate
     const totalRelationships = discipleshipRelationships?.length || 0;
