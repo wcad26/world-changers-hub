@@ -1,46 +1,64 @@
-## Rebuild DCG Members Page
+## Goal
 
-Rewrite `src/pages/dcg/Members.tsx` to mirror the Regional Members page (`src/pages/admin/regional/Members.tsx`) but scoped to the current DCG. Keep the "Add Existing" + "Register New" buttons unique to DCG.
+Replace the current tab-based DCG Events page with a unified layout that matches the Regional Events page (`src/pages/admin/regional/Events.tsx`) — period filter, KPI cards, search + type + time filters, and a single events table — but scoped to the signed-in DCG plus the regional events of that DCG's region.
 
-### Layout
+## Data scope
 
-1. **4 Glass KPI cards** (replaces the regional 5-card strip) — `grid gap-4 md:grid-cols-4`, same glass styling as `MemberKPICards.tsx`:
-   - **Total** — sum of members + children + regular visitors in the DCG
-   - **Members** — adult, non-visitor members
-   - **Children** — strict child rule (`buildChildrenSet`: age <16 AND linked to ≥1 adult via relationships)
-   - **Regular Visitors** — `member_type === 'visitor'` AND NOT linked to a special event
-   
-   Each card shows: count, `Active: X%` subtitle, and growth `+X% last 30 days` from `join_date`. Active % uses last 5 DCG attendance events (mirrors regional logic but reads `attendance_events` where `dcg_id = userDcg.id`).
+Combine two existing hooks into one merged list:
+- `useDcgEvents(userDcg.id)` — events belonging to this DCG (`dcg_id = userDcg.id`).
+- `useRegionalEventsForDcg(userDcg.region_id)` — regional events for the parent region (`region_id = userDcg.region_id AND dcg_id IS NULL`).
 
-2. **Member Directory panel** — identical glass card to regional:
-   - Header: icon + "Member Directory" / "A list of all members in this DCG"
-   - Right side: `Add Existing` (outline) + `Register New` (primary) buttons that open existing `AddExistingMemberDialog` / `RegisterNewMemberDialog`
-   - Filter row: search input + Status select + Type select (All / Member / Regular Visitors / Children) + Export CSV button
-   - Table columns: Name, Address (md+), Phone (sm+), Role (Member/Visitor badge), Status, Join Date (lg+), Actions (View / Remove from DCG dropdown)
-   - Row click → `/dcg/member/{memberId}` (existing route)
+All KPIs, filters, and the table operate on this combined, period-filtered set. Nothing outside this DCG's region is ever shown.
 
-### Data flow
+## Page layout (matches reference screenshot)
 
-- Source: existing `useDcgMembers(userDcg.id)` → returns `dcg_members` joined with `members` + `profiles`. Map to a flat `MemberWithProfile[]`-shaped array (extract `dcgMember.members`) so the regional-style filters/table work unchanged.
-- Relationships: call `fetchMemberRelationshipsForMembers` on the flattened member ids for `buildChildrenSet`.
-- Special-event visitor exclusion: fetch `events.is_special` for the visitor `rated_event_id`s (same pattern as regional). Special-event visitors are excluded from the Regular Visitors count and from the Total (per the user's requested KPI scope).
-- DCG attendance events for Active %: `attendance_events` where `dcg_id = userDcg.id`, last 5 by date.
-- Remove action: reuse `useRemoveMemberFromDcg`.
+```text
+[Period: 1M 3M 6M 1Y Custom]  [Search]  [All Types ▾]  [All Events ▾]        [+ Create Event]
 
-### Removed from current page
+[Total Events] [Regional Events] [DCG Events] [Special Events] [Attendance Target]
 
-- The simple search-only card layout.
-- Inline role-change select on each row (move to a future edit dialog if needed; keep out of this rewrite to match regional table layout).
-- Mobile-only card list (regional uses responsive table with hidden columns at breakpoints — same here).
+Events
+View and manage all events for your DCG
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Event Name │ Type │ Date │ Time │ Location │ Capacity │ Attendance │ Actions │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
 
-### Files
+- Reuse `PeriodFilter` from `@/components/admin/regional/dashboard/PeriodFilter`.
+- Reuse the regional page's KPI card markup (rounded-2xl glass cards, growth indicators, attendance-target tile).
+- Type filter options: `All Types`, `Regional`, `DCG`, `Special`.
+- Time filter options: `All Events`, `Upcoming`, `Past`.
+- Type column badge: `Regional` / `DCG` / `Special` (visitor/DCG/regional badge logic from regional page).
 
-- **Rewrite**: `src/pages/dcg/Members.tsx`
-- **New** (optional helper): `src/components/admin/dcg/DcgMemberKPICards.tsx` — slimmed copy of `MemberKPICards.tsx` with 4 cards and DCG-scoped attendance query. Keeps the existing regional component untouched.
-- No backend / schema changes.
+## Actions per row
 
-### Notes
+- DCG events (`dcg_id = userDcg.id`): dropdown with **Record Attendance**, **Duplicate Event**, **Delete Event** (keep current `CreateEventDialog` for duplicate and `useDeleteDcgEvent`).
+- Regional events (`dcg_id IS NULL`): dropdown limited to **Record Attendance** only — no edit/duplicate/delete (DCG admins cannot manage regional events).
+- `+ Create Event` button always creates a DCG event (current `CreateEventDialog` behavior is preserved).
 
-- Reuse existing dialogs: `AddExistingMemberDialog`, `RegisterNewMemberDialog`.
-- Keep the `px-[10px]` wrapper class the user previously added.
-- Follow the "Last Name First Name" display convention (already in current file).
+## KPI cards (scoped to combined set + period)
+
+1. **Total Events** — count of all events in the merged, period-filtered set.
+2. **Regional Events** — events with `dcg_id IS NULL` and `is_special = false`.
+3. **DCG Events** — events with `dcg_id = userDcg.id`.
+4. **Special Events** — events with `is_special = true`.
+5. **Attendance Target** — `% = totalActualAttendance / totalCapacity` across regional (non-special) events in scope, mirroring the regional page formula.
+
+Each card shows count, average attendance, and growth vs. the previous equivalent period (same logic the regional page already uses; we'll factor it into a small `useEventAnalytics(events, period)` helper to avoid copying the math twice).
+
+## Mobile / tablet
+
+- Keep the existing `useIsMobile` / `useIsTablet` card-view fallback for the events list.
+- KPI grid: `grid-cols-2 md:grid-cols-3 lg:grid-cols-5` so the 5 cards still read well on small screens.
+- Keep `pb-24` for the bottom-tab clearance per project convention.
+
+## Files
+
+- **Rewrite** `src/pages/dcg/Events.tsx` — new layout, merged data, unified table, KPIs, filters. Keep the existing imports for `CreateEventDialog`, `EventAttendanceDialog`, `useDcgEvents`, `useRegionalEventsForDcg`, `useDeleteDcgEvent`.
+- **No changes** to hooks, DB schema, RLS, or other pages. The data scoping is already correct in the existing hooks.
+
+## Out of scope
+
+- No new event categories, no schema changes, no new edge functions.
+- No changes to how regional admins manage events.
+- The Reports/EventReport pages are untouched.
