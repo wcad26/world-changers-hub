@@ -223,100 +223,6 @@ const CreateFundraisingCampaignDialog: React.FC<
                 )}
               />
 
-              {/* Image upload panel */}
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={() => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Cover image
-                    </FormLabel>
-                    <FormControl>
-                      <div
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setIsDragging(true);
-                        }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          setIsDragging(false);
-                          handleFile(e.dataTransfer.files?.[0]);
-                        }}
-                        className={cn(
-                          "relative rounded-xl border border-dashed border-border/60 bg-card/50 backdrop-blur-sm transition-colors",
-                          isDragging && "border-primary/70 bg-primary/5",
-                          imagePreview ? "p-0 overflow-hidden" : "p-6"
-                        )}
-                      >
-                        {imagePreview ? (
-                          <div className="relative">
-                            <img
-                              src={imagePreview}
-                              alt="Campaign preview"
-                              className="h-48 w-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-                              <p className="text-xs text-white/90 truncate max-w-[60%]">
-                                {imageFile?.name}
-                              </p>
-                              <div className="flex gap-2">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  className="h-8 bg-background/80 backdrop-blur-md"
-                                  onClick={() => fileInputRef.current?.click()}
-                                >
-                                  Replace
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="icon"
-                                  variant="destructive"
-                                  className="h-8 w-8"
-                                  onClick={clearImage}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex w-full flex-col items-center justify-center gap-2 text-center"
-                          >
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                              <ImagePlus className="h-6 w-6" />
-                            </div>
-                            <div className="space-y-0.5">
-                              <p className="text-sm font-medium">
-                                Drop an image or click to upload
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                PNG, JPG, or WEBP up to 5MB
-                              </p>
-                            </div>
-                          </button>
-                        )}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => handleFile(e.target.files?.[0])}
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               {/* Details panel */}
               <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -521,6 +427,100 @@ const CreateFundraisingCampaignDialog: React.FC<
                   />
                 </div>
               </div>
+              {/* Image upload panel */}
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={() => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Cover image
+                    </FormLabel>
+                    <FormControl>
+                      <div
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setIsDragging(true);
+                        }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setIsDragging(false);
+                          handleFile(e.dataTransfer.files?.[0]);
+                        }}
+                        className={cn(
+                          "relative rounded-xl border border-dashed border-border/60 bg-card/50 backdrop-blur-sm transition-colors",
+                          isDragging && "border-primary/70 bg-primary/5",
+                          imagePreview ? "p-0 overflow-hidden" : "p-6"
+                        )}
+                      >
+                        {imagePreview ? (
+                          <div className="relative">
+                            <img
+                              src={imagePreview}
+                              alt="Campaign preview"
+                              className="h-48 w-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                              <p className="text-xs text-white/90 truncate max-w-[60%]">
+                                {imageFile?.name}
+                              </p>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  className="h-8 bg-background/80 backdrop-blur-md"
+                                  onClick={() => fileInputRef.current?.click()}
+                                >
+                                  Replace
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="icon"
+                                  variant="destructive"
+                                  className="h-8 w-8"
+                                  onClick={clearImage}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex w-full flex-col items-center justify-center gap-2 text-center"
+                          >
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                              <ImagePlus className="h-6 w-6" />
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-medium">
+                                Drop an image or click to upload
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                PNG, JPG, or WEBP up to 5MB
+                              </p>
+                            </div>
+                          </button>
+                        )}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => handleFile(e.target.files?.[0])}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
             </div>
 
             <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2 sm:gap-2">
