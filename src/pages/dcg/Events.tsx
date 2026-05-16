@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { DcgAdminLayout } from "@/components/layouts/DcgAdminLayout";
-import { useAuth } from "@/hooks/use-auth";
-import { useDcgEvents, useRegionalEventsForDcg, useDeleteDcgEvent } from "@/hooks/use-dcg-events";
+import { DcgAdminLayout } from "@/components/admin/DcgAdminLayout";
+import { useAuth } from "@/hooks/useAuth";
+import { useDcgEvents, useRegionalEventsForDcg, useDeleteDcgEvent } from "@/hooks/useDcgEvents";
 import { 
   Calendar, Plus, Search, MapPin, Users, CalendarDays, 
   Clock, UserCheck, Copy, Trash2, AlertCircle, TrendingUp, TrendingDown, MoreHorizontal, Star 
@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { PeriodFilter } from "@/components/admin/PeriodFilter";
-import { CreateEventDialog } from "@/components/admin/events/CreateEventDialog";
-import { EventAttendanceDialog } from "@/components/admin/events/EventAttendanceDialog";
-import { useAttendanceHistoryWithMemberTypes } from "@/hooks/use-attendance";
+import { PeriodFilter } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { CreateEventDialog } from "@/components/admin/dcg/CreateEventDialog";
+import { EventAttendanceDialog } from "@/components/admin/dcg/EventAttendanceDialog";
+import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { toast } from "sonner";
 import { 
   Table, TableHeader, TableBody, TableHead, TableRow, TableCell 
