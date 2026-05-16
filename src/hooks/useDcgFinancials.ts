@@ -51,13 +51,10 @@ export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: s
 
 // Hook to fetch financial summary for a specific DCG
 export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string; to?: string }) => {
-  const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
-
   return useQuery({
-    queryKey: ['dcg_financial_summary', dcgId, regionId, filters],
+    queryKey: ['dcg_financial_summary', dcgId, filters],
     queryFn: async (): Promise<DcgFinancialSummary> => {
-      if (!regionId || !dcgId) return {
+      if (!dcgId) return {
         total_income: 0,
         total_expenses: 0,
         net_balance: 0,
@@ -68,16 +65,15 @@ export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string
       let query = supabase
         .from('financial_transactions')
         .select('amount, transaction_date, category:financial_transaction_categories(type)')
-        .eq('region_id', regionId)
         .eq('dcg_id', dcgId);
-      
+
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
 
       const { data, error } = await query.order('transaction_date', { ascending: false });
 
       if (error) throw error;
-      
+
       const summary = data?.reduce((acc, transaction) => {
         const amount = Number(transaction.amount);
         const categoryType = transaction.category?.type || '';
@@ -101,8 +97,8 @@ export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string
         last_transaction_date: data?.[0]?.transaction_date || null,
       };
     },
-    enabled: !!regionId && !!dcgId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!dcgId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
