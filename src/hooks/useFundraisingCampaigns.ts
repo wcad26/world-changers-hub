@@ -145,3 +145,82 @@ export const useCampaignDonations = (campaignId: string) => {
     enabled: !!campaignId,
   });
 };
+
+// Mutation: create a donation (regional admin manual entry)
+export interface NewDonationInput {
+  campaign_id: string;
+  amount: number; // major units, will be converted to cents
+  donor_name?: string | null;
+  donor_email?: string | null;
+  message?: string | null;
+  anonymous?: boolean;
+  donation_date?: string; // ISO
+  currency_code?: string;
+}
+
+export const useCreateDonation = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+  return useMutation({
+    mutationFn: async (input: NewDonationInput) => {
+      const payload: Database['public']['Tables']['fundraising_donations']['Insert'] = {
+        campaign_id: input.campaign_id,
+        amount: Math.round(input.amount * 100),
+        donor_name: input.anonymous ? null : (input.donor_name || null),
+        donor_email: input.anonymous ? null : (input.donor_email || null),
+        message: input.message || null,
+        anonymous: !!input.anonymous,
+        donation_date: input.donation_date || new Date().toISOString(),
+        currency_code: input.currency_code || 'usd',
+      };
+      const { data, error } = await supabase
+        .from('fundraising_donations')
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['region_donations'] });
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] });
+      if (userRegion?.id) {
+        queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns', userRegion.id] });
+      }
+    },
+  });
+};
+
+// Hook: fetch donations across all campaigns in the user's region within a date range
+export const useRegionDonations = (from: Date, to: Date) => {
+  const { userRegion } = useAuth();
+  const regionId = userRegion?.id;
+  return useQuery({
+    queryKey: ['region_donations', regionId, from.toISOString(), to.toISOString()],
+    queryFn: async () => {
+      if (!regionId) return [];
+      const { data: campaigns, error: cErr } = await supabase
+        .from('fundraising_campaigns')
+        .select('id, name, currency_code')
+        .eq('region_id', regionId);
+      if (cErr) throw cErr;
+      const ids = (campaigns || []).map(c => c.id);
+      if (ids.length === 0) return [];
+      const { data, error } = await supabase
+        .from('fundraising_donations')
+        .select('*')
+        .in('campaign_id', ids)
+        .gte('donation_date', from.toISOString())
+        .lte('donation_date', to.toISOString())
+        .order('donation_date', { ascending: false });
+      if (error) throw error;
+      const byId = new Map(campaigns.map(c => [c.id, c]));
+      return (data || []).map(d => ({
+        ...d,
+        campaign: byId.get(d.campaign_id) || null,
+      }));
+    },
+    enabled: !!regionId,
+  });
+};
