@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { HeartHandshake } from "lucide-react";
+import { HeartHandshake, Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useFundraisingCampaigns, useCreateDonation } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { getCurrencySymbol } from "@/utils/currencyUtils";
+import { cn } from "@/lib/utils";
 
 interface Props {
   open: boolean;
@@ -28,8 +33,10 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   const createDonation = useCreateDonation();
 
   const [campaignId, setCampaignId] = useState<string>(defaultCampaignId || "");
-  const [donorName, setDonorName] = useState("");
-  const [donorEmail, setDonorEmail] = useState("");
+  const [memberId, setMemberId] = useState<string>("");
+  const [memberLabel, setMemberLabel] = useState<string>("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,14 +45,25 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   useEffect(() => {
     if (open) {
       setCampaignId(defaultCampaignId || "");
-      setDonorName("");
-      setDonorEmail("");
+      setMemberId("");
+      setMemberLabel("");
+      setMemberSearch("");
       setAmount(0);
       setAnonymous(false);
       setMessage("");
       setDate(new Date().toISOString().slice(0, 10));
     }
   }, [open, defaultCampaignId]);
+
+  const { data: memberResults = [], isFetching: membersLoading } = useQuery({
+    queryKey: ["donation-member-search", memberSearch],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_all_members", { _search: memberSearch });
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; member_id: string; first_name: string; last_name: string }>;
+    },
+    enabled: open && !anonymous,
+  });
 
   const selectedCampaign = campaigns.find(c => c.id === campaignId);
   const currencyCode = selectedCampaign?.currency_code || regionCurrency?.code?.toLowerCase() || "usd";
@@ -63,8 +81,8 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
       await createDonation.mutateAsync({
         campaign_id: campaignId,
         amount,
-        donor_name: donorName.trim() || null,
-        donor_email: donorEmail.trim() || null,
+        donor_name: anonymous ? null : (memberLabel || null),
+        donor_email: null,
         message: message.trim() || null,
         anonymous,
         donation_date: new Date(date).toISOString(),
@@ -119,15 +137,64 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Donor Name</Label>
-              <Input value={donorName} onChange={(e) => setDonorName(e.target.value)} disabled={anonymous} placeholder={anonymous ? "Anonymous" : "Last First"} />
-            </div>
-            <div className="space-y-2">
-              <Label>Donor Email</Label>
-              <Input type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} disabled={anonymous} placeholder="optional" />
-            </div>
+          <div className="space-y-2">
+            <Label>Donor</Label>
+            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  disabled={anonymous}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className={cn("truncate", !memberLabel && "text-muted-foreground")}>
+                    {anonymous ? "Anonymous" : (memberLabel || "Search and select a member…")}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search by name…"
+                    value={memberSearch}
+                    onValueChange={setMemberSearch}
+                  />
+                  <CommandList>
+                    {membersLoading ? (
+                      <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
+                      </div>
+                    ) : (
+                      <>
+                        <CommandEmpty>No members found.</CommandEmpty>
+                        <CommandGroup>
+                          {memberResults.map((m) => {
+                            const label = `${m.last_name || ""} ${m.first_name || ""}`.trim();
+                            return (
+                              <CommandItem
+                                key={m.id}
+                                value={m.id}
+                                onSelect={() => {
+                                  setMemberId(m.id);
+                                  setMemberLabel(label);
+                                  setMemberPopoverOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", memberId === m.id ? "opacity-100" : "opacity-0")} />
+                                <span className="flex-1 truncate">{label}</span>
+                                <span className="text-xs text-muted-foreground ml-2">{m.member_id}</span>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="flex items-center gap-2">
