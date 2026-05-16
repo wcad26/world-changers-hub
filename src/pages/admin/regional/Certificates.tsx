@@ -489,6 +489,39 @@ const Certificates = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedCertificates.length === 0) return;
+
+    const certs = issuedCertificates?.filter(c => selectedCertificates.includes(c.id)) || [];
+    setIsBulkDeleting(true);
+    setBulkDeleteProgress({ current: 0, total: certs.length });
+    let failed = 0;
+
+    for (let i = 0; i < certs.length; i++) {
+      try {
+        await permanentlyDeleteCertificate.mutateAsync({
+          id: certs[i].id,
+          certificate_url: certs[i].certificate_url,
+        });
+      } catch (e) {
+        console.error('Bulk delete error:', e);
+        failed++;
+      }
+      setBulkDeleteProgress({ current: i + 1, total: certs.length });
+    }
+
+    setIsBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    setSelectedCertificates([]);
+    setBulkDeleteProgress({ current: 0, total: 0 });
+
+    toast({
+      title: failed === 0 ? 'Certificates deleted' : 'Completed with errors',
+      description: `${certs.length - failed} deleted${failed > 0 ? `, ${failed} failed` : ''}.`,
+      variant: failed === 0 ? 'default' : 'destructive',
+    });
+  };
+
   const toggleMemberSelection = (memberId: string) => {
     setSelectedMembers(prev => 
       prev.includes(memberId) 
