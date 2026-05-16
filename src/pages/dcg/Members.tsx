@@ -231,9 +231,6 @@ const DcgMembers: React.FC = () => {
                 <SelectItem value="children">Children</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
-              <Download className="mr-2 h-4 w-4" /> Export ({filteredMembers.length})
-            </Button>
           </div>
 
           <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
