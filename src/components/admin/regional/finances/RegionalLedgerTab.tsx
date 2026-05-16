@@ -33,6 +33,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [incomeType, setIncomeType] = useState<"all" | "tithes" | "offerings" | "special">("all");
+  const [expenseCategoryId, setExpenseCategoryId] = useState<string | null>(null);
   const [titheOpen, setTitheOpen] = useState(false);
   const [offeringOpen, setOfferingOpen] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
@@ -68,6 +69,11 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
         return true;
       });
     }
+    if (expenseCategoryId) {
+      out = out.filter(
+        r => r.category?.type?.toLowerCase() === "expense" && r.category_id === expenseCategoryId,
+      );
+    }
     if (search) {
       const s = search.toLowerCase();
       out = out.filter(r =>
@@ -77,7 +83,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
       );
     }
     return out;
-  }, [rows, search, incomeType]);
+  }, [rows, search, incomeType, expenseCategoryId]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
@@ -111,6 +117,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           categoryId={categoryId} onCategoryChange={setCategoryId}
           type={type} onTypeChange={setType}
           incomeType={incomeType} onIncomeTypeChange={setIncomeType}
+          expenseCategoryId={expenseCategoryId} onExpenseCategoryChange={setExpenseCategoryId}
         />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-card/60 backdrop-blur-sm border-border/40">
