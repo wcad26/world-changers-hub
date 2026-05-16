@@ -69,6 +69,11 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
         return true;
       });
     }
+    if (expenseCategoryId) {
+      out = out.filter(
+        r => r.category?.type?.toLowerCase() === "expense" && r.category_id === expenseCategoryId,
+      );
+    }
     if (search) {
       const s = search.toLowerCase();
       out = out.filter(r =>
@@ -78,7 +83,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
       );
     }
     return out;
-  }, [rows, search, incomeType]);
+  }, [rows, search, incomeType, expenseCategoryId]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
