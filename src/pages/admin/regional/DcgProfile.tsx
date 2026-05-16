@@ -29,7 +29,7 @@ import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
-import { useDeleteDcgTransaction, type DcgFinancialTransaction } from "@/hooks/useDcgFinancials";
+
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useDcgEvents } from "@/hooks/useDcgEvents";
