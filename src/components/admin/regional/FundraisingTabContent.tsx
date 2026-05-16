@@ -159,6 +159,10 @@ const FundraisingTabContent: React.FC = () => {
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
       />
+      <RecordDonationDialog
+        open={donationDialogOpen}
+        onOpenChange={setDonationDialogOpen}
+      />
     </div>
   );
 };
