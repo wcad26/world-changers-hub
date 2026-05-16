@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { HeartHandshake, ChevronDown, Plus } from "lucide-react";
+import { HeartHandshake, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
