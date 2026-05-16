@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { ArrowUpRight, Target, Users, HeartHandshake } from "lucide-react";
 import FinanceKpiCard from "./FinanceKpiCard";
 import FundraisingTabContent from "@/components/admin/regional/FundraisingTabContent";
+import FundraisingTransactionsCard from "./FundraisingTransactionsCard";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
