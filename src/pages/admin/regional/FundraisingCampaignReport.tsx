@@ -197,7 +197,13 @@ const FundraisingCampaignReport: React.FC = () => {
             {campaign.end_date ? format(parseISO(campaign.end_date), "MMM dd, yyyy") : "Ongoing"}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+          />
           <Button variant="outline" onClick={handleShare}><Share2 className="h-4 w-4 mr-2" /> Share</Button>
           <Button onClick={() => setEditOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground">
             <Pencil className="h-4 w-4 mr-2" /> Edit
