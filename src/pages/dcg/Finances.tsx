@@ -60,12 +60,12 @@ const DcgFinances: React.FC = () => {
         amount: Number(r.amount),
         description: r.description ?? null,
         transaction_date: r.transaction_date,
-        dcg_id: r.dcg_id ?? userDcg?.id ?? null,
+        dcg_id: r.dcg_id ?? activeDcgId ?? null,
         category_id: r.category_id,
         category: r.category ? { name: r.category.name, type: r.category.type } : null,
         dcg: { name: currentDcg?.name ?? null },
       })),
-    [rawRows, userDcg?.id, currentDcg?.name],
+    [rawRows, activeDcgId, currentDcg?.name],
   );
 
   const filtered = useMemo(() => {
