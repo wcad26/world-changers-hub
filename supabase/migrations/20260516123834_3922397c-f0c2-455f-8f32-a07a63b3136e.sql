@@ -1,0 +1,1 @@
+ALTER TABLE public.fundraising_campaigns ALTER COLUMN end_date DROP NOT NULL;
