@@ -1870,6 +1870,150 @@ export type Database = {
           },
         ]
       }
+      regional_plan_initiatives: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          owner_user_id: string | null
+          plan_id: string
+          priority: Database["public"]["Enums"]["regional_plan_initiative_priority"]
+          status: Database["public"]["Enums"]["regional_plan_initiative_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_user_id?: string | null
+          plan_id: string
+          priority?: Database["public"]["Enums"]["regional_plan_initiative_priority"]
+          status?: Database["public"]["Enums"]["regional_plan_initiative_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          owner_user_id?: string | null
+          plan_id?: string
+          priority?: Database["public"]["Enums"]["regional_plan_initiative_priority"]
+          status?: Database["public"]["Enums"]["regional_plan_initiative_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regional_plan_initiatives_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "regional_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regional_plan_targets: {
+        Row: {
+          category: Database["public"]["Enums"]["regional_plan_target_category"]
+          created_at: string
+          id: string
+          metric_key: string
+          notes: string | null
+          plan_id: string
+          target_value: number
+          unit: Database["public"]["Enums"]["regional_plan_target_unit"]
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["regional_plan_target_category"]
+          created_at?: string
+          id?: string
+          metric_key: string
+          notes?: string | null
+          plan_id: string
+          target_value?: number
+          unit?: Database["public"]["Enums"]["regional_plan_target_unit"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["regional_plan_target_category"]
+          created_at?: string
+          id?: string
+          metric_key?: string
+          notes?: string | null
+          plan_id?: string
+          target_value?: number
+          unit?: Database["public"]["Enums"]["regional_plan_target_unit"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regional_plan_targets_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "regional_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regional_plans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          id: string
+          mission_statement: string | null
+          period_type: Database["public"]["Enums"]["regional_plan_period_type"]
+          region_id: string
+          review_notes: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["regional_plan_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          id?: string
+          mission_statement?: string | null
+          period_type?: Database["public"]["Enums"]["regional_plan_period_type"]
+          region_id: string
+          review_notes?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["regional_plan_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          mission_statement?: string | null
+          period_type?: Database["public"]["Enums"]["regional_plan_period_type"]
+          region_id?: string
+          review_notes?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["regional_plan_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regional_plans_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regional_roles: {
         Row: {
           created_at: string
@@ -2249,6 +2393,21 @@ export type Database = {
         | "fundraising_edit"
         | "settings_view"
         | "settings_edit"
+      regional_plan_initiative_priority: "low" | "medium" | "high"
+      regional_plan_initiative_status:
+        | "not_started"
+        | "in_progress"
+        | "done"
+        | "blocked"
+      regional_plan_period_type: "quarter" | "year" | "custom"
+      regional_plan_status: "draft" | "active" | "closed"
+      regional_plan_target_category:
+        | "growth"
+        | "discipleship"
+        | "events"
+        | "dcg"
+        | "finance"
+      regional_plan_target_unit: "count" | "currency" | "percent"
       user_role_status: "pending" | "active" | "rejected"
     }
     CompositeTypes: {
@@ -2466,6 +2625,23 @@ export const Constants = {
         "settings_view",
         "settings_edit",
       ],
+      regional_plan_initiative_priority: ["low", "medium", "high"],
+      regional_plan_initiative_status: [
+        "not_started",
+        "in_progress",
+        "done",
+        "blocked",
+      ],
+      regional_plan_period_type: ["quarter", "year", "custom"],
+      regional_plan_status: ["draft", "active", "closed"],
+      regional_plan_target_category: [
+        "growth",
+        "discipleship",
+        "events",
+        "dcg",
+        "finance",
+      ],
+      regional_plan_target_unit: ["count", "currency", "percent"],
       user_role_status: ["pending", "active", "rejected"],
     },
   },
