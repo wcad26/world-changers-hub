@@ -1,20 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CalendarIcon, Receipt } from 'lucide-react';
+import { Receipt } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateFinancialTransaction, useFinancialCategories } from '@/hooks/useFinancials';
 import { useAuth } from '@/hooks/useAuth';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
+import { useRegionalEventsForOfferings } from '@/hooks/useRegionalData';
 import { getCurrencySymbol } from '@/utils/currencyUtils';
 
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -33,23 +34,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
 
 const offeringSchema = z.object({
-  date: z.date({
-    required_error: 'Date is required',
-  }),
-  service: z.string().min(1, 'Service is required'),
-  amount: z.string().min(1, 'Amount is required'),
-  category: z.string().min(1, 'Category is required'),
+  event_id: z.string().uuid('Please select an event'),
+  amount: z.coerce.number().positive('Amount must be positive'),
   notes: z.string().optional(),
 });
 
@@ -69,22 +60,21 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const currencySymbol = getCurrencySymbol(regionCurrency);
   const { data: categories = [] } = useFinancialCategories();
+  const { data: events = [], isLoading: eventsLoading } = useRegionalEventsForOfferings(userRegion?.id);
   const createTransaction = useCreateFinancialTransaction();
 
   const form = useForm<OfferingFormData>({
     resolver: zodResolver(offeringSchema),
-    defaultValues: {
-      date: new Date(),
-      service: '',
-      amount: '',
-      category: '',
-      notes: '',
-    },
+    defaultValues: { event_id: '', amount: undefined as unknown as number, notes: '' },
   });
 
-  const offeringCategory = categories.find(cat => 
-    cat.type === 'Income' && cat.name === 'Offerings'
+  const offeringCategory = useMemo(
+    () => categories.find(c => c.type === 'Income' && c.name === 'Offerings'),
+    [categories],
   );
+
+  const selectedEventId = form.watch('event_id');
+  const selectedEvent = events.find(e => e.id === selectedEventId);
 
   const onSubmit = async (data: OfferingFormData) => {
     if (!offeringCategory) {
@@ -95,20 +85,19 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
       });
       return;
     }
+    const event = events.find(e => e.id === data.event_id);
+    if (!event) return;
 
     try {
+      const desc = `Offering — ${event.name}${data.notes ? `: ${data.notes}` : ''}`;
       await createTransaction.mutateAsync({
-        amount: parseFloat(data.amount),
+        amount: data.amount,
         category_id: offeringCategory.id,
-        transaction_date: format(data.date, 'yyyy-MM-dd'),
-        description: `${data.service} - ${data.category}${data.notes ? `: ${data.notes}` : ''}`,
+        transaction_date: format(new Date(event.start_datetime), 'yyyy-MM-dd'),
+        description: desc,
       });
 
-      toast({
-        title: 'Success',
-        description: 'Offering recorded successfully',
-      });
-
+      toast({ title: 'Success', description: 'Offering recorded successfully' });
       form.reset();
       onOpenChange(false);
     } catch (error) {
@@ -122,161 +111,126 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Record Offering
-          </DialogTitle>
-          <DialogDescription>
-            Record a new offering entry with service and category details.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+          <DialogHeader className="relative space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                <Receipt className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold">Record Offering</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
+                  Tied to a regional event — date is set automatically.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+        </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="px-6 py-5 space-y-4">
+              <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="event_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Event
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="bg-background/60 border-border/50">
+                            <SelectValue placeholder={eventsLoading ? 'Loading events…' : 'Select an event'} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {events.length === 0 && !eventsLoading && (
+                            <div className="px-3 py-2 text-sm text-muted-foreground">No events found</div>
+                          )}
+                          {events.map(e => (
+                            <SelectItem key={e.id} value={e.id}>
+                              {e.name} · {format(new Date(e.start_datetime), 'MMM dd, yyyy')}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {selectedEvent && (
+                        <p className="text-xs text-muted-foreground pt-1">
+                          Date: {format(new Date(selectedEvent.start_datetime), 'PPP')}
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Amount ({currencySymbol})
+                      </FormLabel>
                       <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className="bg-background/60 border-border/50"
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                       </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date('1900-01-01')
-                        }
-                        initialFocus
-                        className={cn('p-3 pointer-events-auto')}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="service"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Service</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select service" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Sunday Morning">Sunday Morning</SelectItem>
-                      <SelectItem value="Sunday Evening">Sunday Evening</SelectItem>
-                      <SelectItem value="Midweek">Midweek</SelectItem>
-                      <SelectItem value="Special">Special</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Notes (Optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Additional notes about this offering…"
+                          className="bg-background/60 border-border/50 resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
 
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount ({currencySymbol})</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="General Offering">General Offering</SelectItem>
-                      <SelectItem value="Missions">Missions</SelectItem>
-                      <SelectItem value="Building Fund">Building Fund</SelectItem>
-                      <SelectItem value="Special Collection">Special Collection</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional notes about this offering..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end space-x-2 pt-4">
+            <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                className="bg-background/60 border-border/50"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={createTransaction.isPending}
+                className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95"
               >
-                {createTransaction.isPending ? 'Recording...' : 'Record Offering'}
+                {createTransaction.isPending ? 'Recording…' : 'Record Offering'}
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
