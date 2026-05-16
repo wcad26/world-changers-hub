@@ -152,6 +152,8 @@ export interface NewDonationInput {
   amount: number; // major units, will be converted to cents
   donor_name?: string | null;
   donor_email?: string | null;
+  donor_id?: string | null;
+  member_id?: string | null;
   message?: string | null;
   anonymous?: boolean;
   donation_date?: string; // ISO
