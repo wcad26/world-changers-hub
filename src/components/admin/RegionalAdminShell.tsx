@@ -29,16 +29,16 @@ interface RegionalAdminShellProps {
 
 const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admin/regional/dashboard': 'Dashboard',
-  '/admin/regional/finances': 'Finance Management',
-  '/admin/regional/members': 'Member Management',
-  '/admin/regional/events': 'Event Management',
-  '/admin/regional/communication': 'Communication Mgmt',
-  '/admin/regional/dcg': 'DCG Management',
-  
-  '/admin/regional/certificates': 'Certificate Management',
-  '/admin/regional/branch-settings': 'Regional Website Information',
+  '/admin/regional/finances': 'Finance',
+  '/admin/regional/members': 'Members',
+  '/admin/regional/events': 'Events',
+  '/admin/regional/communication': 'Communication',
+  '/admin/regional/dcg': 'DCG',
+  '/admin/regional/certificates': 'Certificate',
+  '/admin/regional/branch-settings': 'Website',
   '/admin/regional/user-roles': 'Access Management',
-  '/admin/regional/discipleship': 'Discipleship Management',
+  '/admin/regional/discipleship': 'Discipleship',
+  '/admin/regional/planning': 'Plan Management',
   '/admin/regional/settings': 'Settings',
 };
 
