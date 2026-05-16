@@ -2,45 +2,40 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useCreateFinancialTransaction, useFinancialCategories } from "@/hooks/useFinancials";
-import { useAuth } from "@/hooks/useAuth";
+import { useFinancialCategories } from "@/hooks/useFinancials";
+import { useCreateDcgTransaction } from "@/hooks/useDcgFinancials";
 import { useToast } from "@/hooks/use-toast";
-import { useDcgs } from "@/hooks/useDCGs";
-import { useRegionCurrency } from "@/hooks/useCurrencies";
+import type { Currency } from "@/hooks/useCurrencies";
 import { getCurrencySymbol } from "@/utils/currencyUtils";
 
 const expenseSchema = z.object({
@@ -55,59 +50,47 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 interface RecordDcgExpenseDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  dcgId: string;
+  regionCurrency?: Currency | null;
 }
 
 export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
   open,
   onOpenChange,
+  dcgId,
+  regionCurrency,
 }) => {
-  const { userDcg } = useAuth();
-  const { data: dcgs } = useDcgs();
-  const currentDcg = dcgs?.find(d => d.id === userDcg?.id);
-  const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
   const currencySymbol = getCurrencySymbol(regionCurrency);
   const { toast } = useToast();
-  const createTransaction = useCreateFinancialTransaction();
+  const createTransaction = useCreateDcgTransaction(dcgId);
   const { data: categories } = useFinancialCategories();
 
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: {
-      transaction_date: new Date(),
-      description: "",
-    },
+    defaultValues: { transaction_date: new Date(), description: "" },
   });
 
-  const expenseCategories = categories?.filter(cat => cat.type === "Expense") || [];
+  const expenseCategories = categories?.filter((cat) => cat.type === "Expense") || [];
 
   const onSubmit = async (data: ExpenseFormData) => {
-    if (!userDcg) {
-      toast({
-        title: "Error",
-        description: "DCG information not found",
-        variant: "destructive",
-      });
+    if (!dcgId) {
+      toast({ title: "Error", description: "DCG information not found", variant: "destructive" });
       return;
     }
-
     try {
       await createTransaction.mutateAsync({
-        ...data,
-        dcg_id: userDcg.id,
-        transaction_date: format(data.transaction_date, 'yyyy-MM-dd'),
+        category_id: data.category_id,
+        amount: data.amount,
+        description: data.description ?? null,
+        transaction_date: format(data.transaction_date, "yyyy-MM-dd"),
       });
-
-      toast({
-        title: "Success",
-        description: "Expense recorded successfully",
-      });
-
+      toast({ title: "Success", description: "Expense recorded successfully" });
       form.reset();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to record expense",
+        description: error?.message ?? "Failed to record expense",
         variant: "destructive",
       });
     }
@@ -118,9 +101,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Record DCG Expense</DialogTitle>
-          <DialogDescription>
-            Record an expense for your DCG
-          </DialogDescription>
+          <DialogDescription>Record an expense for your DCG</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -157,12 +138,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
                 <FormItem>
                   <FormLabel>Amount ({currencySymbol})</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...field}
-                    />
+                    <Input type="number" step="0.01" placeholder="0.00" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,14 +158,10 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
                           variant={"outline"}
                           className={cn(
                             "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick a date</span>
-                          )}
+                          {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
@@ -199,9 +171,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date("1900-01-01")
-                        }
+                        disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
                         initialFocus
                         className="pointer-events-auto"
                       />
@@ -219,10 +189,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
                 <FormItem>
                   <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Additional details about this expense..."
-                      {...field}
-                    />
+                    <Textarea placeholder="Additional details about this expense..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -230,11 +197,7 @@ export const RecordDcgExpenseDialog: React.FC<RecordDcgExpenseDialogProps> = ({
             />
 
             <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={createTransaction.isPending}>
