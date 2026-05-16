@@ -1,44 +1,55 @@
-## Goal
-Rebuild `/dcg/finances` as a DCG-only finance page that does not depend on regional portal context, and make sure existing Kotto DCG transactions can display for the correct DCG leader.
+## Plan: Rebuild DCG Financial Management from scratch
 
-## Findings
-- The page is blank because the currently logged-in preview user `chimbotimah@gmail.com` / `chimbotimah21@gmail.com` has no active `dcg_user_sessions` row and no `dcg_admin` role.
-- The Kotto DCG does have 20 financial transactions, but its active DCG leader/session is currently `nkwemiclara@gmail.com`.
-- Current RLS requires both:
-  - an active `dcg_user_sessions` row matching the DCG, and
-  - an active `dcg_admin` role.
+### Goal
+Create a DCG-only finance page that reliably shows the current DCG user's available financial data, instead of depending on regional finance logic or mixed admin context.
 
-## Rebuild plan
-1. **Create one DCG-only data source**
-   - Replace the fragile finance-page DCG lookup with a single hook that resolves the current user's DCG from `dcg_user_sessions`, validates active DCG access, and returns DCG metadata needed by the page.
-   - Do not use `userRegion`, regional DCG lists, or regional finance hooks for this page.
+### What I found
+- The Kotto DCG has financial data available: 20 transactions, income 60,675 and expenses 45,350.
+- The current page renders the shell, but the selected period/filters can show zero values and no chart data.
+- The current implementation still reuses regional finance components and row types, which makes the DCG page fragile.
+- RLS policies already allow DCG admins to access transactions where `dcg_id = get_user_dcg(auth.uid())`, so the rebuild should query by the resolved DCG only.
 
-2. **Make transaction loading DCG-scoped only**
-   - Fetch finance rows only by `dcg_id = currentDcg.id`.
-   - Keep region data only for currency display, derived from the resolved DCG row.
-   - Surface query/RLS errors visibly instead of showing an empty page.
+### Rebuild steps
+1. **Create a dedicated DCG finance data layer**
+   - Keep `useCurrentDcg()` as the source of truth for the active DCG.
+   - Replace the transaction query with a DCG-only hook that fetches by `dcg_id` only.
+   - Include category data directly for every row.
+   - Return visible error states if Supabase/RLS blocks access.
 
-3. **Rebuild the page UI flow**
-   - Show a clear loading state while resolving the DCG.
-   - Show the finance dashboard when a DCG is resolved: KPI cards, filters, trend chart, transaction table, export, and record income/expense dialogs.
-   - Show an access/setup message only when the signed-in user truly has no active DCG session or role.
+2. **Rebuild `src/pages/dcg/Finances.tsx` as a standalone DCG finance page**
+   - Remove dependency on regional ledger normalization and shared regional finance components.
+   - Build local summary calculations for income, expenses, net, offerings, and transaction count.
+   - Show all available DCG data by default, with period filters still available.
+   - Add a clear “All time” or default broad period so existing historical data is not hidden.
 
-4. **Make record/edit/delete actions DCG-only**
-   - Ensure income/expense dialogs create records with the resolved `dcg_id` and derived `region_id`.
-   - Ensure row actions invalidate DCG-specific queries after changes.
+3. **Build DCG-specific UI sections**
+   - Header showing the current DCG name and quick actions.
+   - KPI cards for Income, Expenses, Net Balance, Offerings, and Transactions.
+   - Filters for search, type, category, and period.
+   - A DCG trend chart/table summary that uses only the current DCG rows.
+   - A transaction ledger table that is open and visible by default, not hidden behind a collapsible.
 
-5. **Database access fix if needed**
-   - If the intended DCG leader is `chimbotimah@gmail.com`, add/repair that user's active `dcg_user_sessions` row and `dcg_admin` role via a migration.
-   - Otherwise, the rebuilt page will correctly show Kotto's data when signed in as `nkwemiclara@gmail.com`, the currently configured Kotto DCG leader.
+4. **Ensure create/edit/delete remains DCG-only**
+   - Keep `RecordDcgIncomeDialog` and `RecordDcgExpenseDialog` tied to the resolved `currentDcg.id`.
+   - Ensure new records always include the current DCG id and derived region id.
+   - Invalidate only DCG finance query keys after mutations.
 
-## Files to update
+5. **Improve empty/error states**
+   - If no active DCG session exists, show an access/setup message.
+   - If the DCG exists but has no transactions, show a real empty state with record buttons.
+   - If filters hide data, show a filter-empty message with a reset action.
+
+6. **Validate after implementation**
+   - Confirm Kotto’s known transaction total can be represented by the new page.
+   - Check that the page no longer depends on regional finance hooks for display.
+   - Use the preview/network/debug signals to verify the page is not blank and that finance rows are requested by DCG scope only.
+
+### Files to update
 - `src/hooks/useDcgFinancials.ts`
 - `src/pages/dcg/Finances.tsx`
 - `src/components/admin/dcg/RecordDcgIncomeDialog.tsx`
 - `src/components/admin/dcg/RecordDcgExpenseDialog.tsx`
-- Possibly `src/components/admin/regional/finances/DcgTransactionRowActions.tsx` if actions still depend on regional context
+- Possibly `src/components/admin/regional/finances/DcgTransactionRowActions.tsx` only if actions still assume regional context
 
-## Verification
-- Confirm the finance page no longer shows a blank/error state for a valid DCG leader.
-- Confirm Kotto's 20 transactions are visible for the configured Kotto leader.
-- Confirm invalid/misconfigured users get a clear setup/access message instead of an empty dashboard.
+### Database changes
+No database schema change is planned initially. If implementation confirms RLS still blocks the signed-in DCG user despite the active session/role, I will add a targeted RLS/function migration separately.
