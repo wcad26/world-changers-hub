@@ -170,6 +170,8 @@ export const useCreateDonation = () => {
         amount: Math.round(input.amount * 100),
         donor_name: input.anonymous ? null : (input.donor_name || null),
         donor_email: input.anonymous ? null : (input.donor_email || null),
+        donor_id: input.anonymous ? null : (input.donor_id || null),
+        member_id: input.anonymous ? null : (input.member_id || null),
         message: input.message || null,
         anonymous: !!input.anonymous,
         donation_date: input.donation_date || new Date().toISOString(),
