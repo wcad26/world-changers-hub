@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpRight, ArrowDownRight, Wallet, Users, Download, ExternalLink } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, Wallet, Users, Download, ExternalLink, Building2, ListOrdered } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import FinanceKpiCard from "./FinanceKpiCard";
@@ -74,7 +73,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
           <Select value={dcgId ?? "all"} onValueChange={(v) => setDcgId(v === "all" ? null : v)}>
-            <SelectTrigger className="w-56"><SelectValue placeholder="DCG" /></SelectTrigger>
+            <SelectTrigger className="w-56 h-9 bg-card/60 backdrop-blur-sm border-border/40"><SelectValue placeholder="DCG" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All DCGs</SelectItem>
               {dcgs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
@@ -86,100 +85,102 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
             type={type} onTypeChange={setType}
           />
         </div>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length}>
+        <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length} className="bg-card/60 backdrop-blur-sm border-border/40">
           <Download className="mr-2 h-4 w-4" /> Export
         </Button>
       </div>
 
       <LedgerTrendChart rows={filtered} regionCurrency={regionCurrency} title="DCG Trends" description="All DCG ledgers over the selected period" />
 
-      <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle>Per-DCG Breakdown</CardTitle>
-          <CardDescription>Totals by Deeper Christian Group for the selected period</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {perDcg.length === 0 ? (
-            <p className="py-6 text-center text-muted-foreground">No DCG transactions in this period.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>DCG</TableHead>
-                    <TableHead className="text-right">Income</TableHead>
-                    <TableHead className="text-right">Expenses</TableHead>
-                    <TableHead className="text-right">Net</TableHead>
-                    <TableHead className="text-right">Tx</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="h-4 w-4 text-primary" />
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Per-DCG Breakdown</h3>
+            <p className="text-xs text-muted-foreground">Totals by Deeper Christian Group for the selected period</p>
+          </div>
+        </div>
+        {perDcg.length === 0 ? (
+          <p className="py-6 text-center text-muted-foreground text-sm">No DCG transactions in this period.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/30">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border/30 hover:bg-transparent">
+                  <TableHead>DCG</TableHead>
+                  <TableHead className="text-right">Income</TableHead>
+                  <TableHead className="text-right">Expenses</TableHead>
+                  <TableHead className="text-right">Net</TableHead>
+                  <TableHead className="text-right">Tx</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {perDcg.map(d => (
+                  <TableRow key={d.dcg_id} className="border-border/20 hover:bg-muted/30">
+                    <TableCell className="font-medium">{d.dcg_name}</TableCell>
+                    <TableCell className="text-right text-green-600 tabular-nums">{fc(d.income)}</TableCell>
+                    <TableCell className="text-right text-red-600 tabular-nums">{fc(d.expenses)}</TableCell>
+                    <TableCell className={`text-right font-semibold tabular-nums ${d.net >= 0 ? "text-green-600" : "text-red-600"}`}>{fc(d.net)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{d.count}</TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/admin/regional/dcg/${d.dcg_id}`}><ExternalLink className="h-4 w-4 mr-1" />Open</Link>
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {perDcg.map(d => (
-                    <TableRow key={d.dcg_id}>
-                      <TableCell className="font-medium">{d.dcg_name}</TableCell>
-                      <TableCell className="text-right text-green-600">{fc(d.income)}</TableCell>
-                      <TableCell className="text-right text-red-600">{fc(d.expenses)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${d.net >= 0 ? "text-green-600" : "text-red-600"}`}>{fc(d.net)}</TableCell>
-                      <TableCell className="text-right">{d.count}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/admin/regional/dcg/${d.dcg_id}`}><ExternalLink className="h-4 w-4 mr-1" />Open</Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
-      <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle>DCG Transactions</CardTitle>
-          <CardDescription>Itemized DCG-level ledger entries</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="py-8 text-center text-muted-foreground">Loading…</p>
-          ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground">No transactions for the selected filters.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>DCG</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="hidden md:table-cell">Description</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ListOrdered className="h-4 w-4 text-primary" />
+          <div>
+            <h3 className="text-base font-semibold text-foreground">DCG Transactions</h3>
+            <p className="text-xs text-muted-foreground">Itemized DCG-level ledger entries</p>
+          </div>
+        </div>
+        {isLoading ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">Loading…</p>
+        ) : filtered.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">No transactions for the selected filters.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/30">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border/30 hover:bg-transparent">
+                  <TableHead>Date</TableHead>
+                  <TableHead>DCG</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(r => (
+                  <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
+                    <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="font-medium">{r.dcg?.name || "—"}</TableCell>
+                    <TableCell>{r.category?.name}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{r.description || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.category?.type?.toLowerCase() === "income" ? "default" : "secondary"} className="capitalize">
+                        {r.category?.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell>{r.dcg?.name || "—"}</TableCell>
-                      <TableCell>{r.category?.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">{r.description || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.category?.type?.toLowerCase() === "income" ? "default" : "secondary"}>
-                          {r.category?.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{fc(Number(r.amount))}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

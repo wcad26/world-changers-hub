@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank, Receipt, TrendingUp, Plus, ChevronDown, Download, Wallet } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank, Receipt, TrendingUp, Plus, ChevronDown, Download, Wallet, ListOrdered } from "lucide-react";
 import { format } from "date-fns";
 import FinanceKpiCard from "./FinanceKpiCard";
 import FinanceFiltersBar from "./FinanceFiltersBar";
@@ -80,12 +79,12 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           type={type} onTypeChange={setType}
         />
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length}>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length} className="bg-card/60 backdrop-blur-sm border-border/40">
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+              <Button size="sm" className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground shadow-sm">
                 <Plus className="mr-2 h-4 w-4" /> Record <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -101,48 +100,49 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
 
       <LedgerTrendChart rows={filtered} regionCurrency={regionCurrency} description="Regional ledger over the selected period" />
 
-      <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle>Transactions</CardTitle>
-          <CardDescription>Regional-level income and expenses (excludes DCG ledgers)</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="py-8 text-center text-muted-foreground">Loading…</p>
-          ) : filtered.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground">No transactions for the selected filters.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="hidden md:table-cell">Description</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <ListOrdered className="h-4 w-4 text-primary" />
+          <div>
+            <h3 className="text-base font-semibold text-foreground">Transactions</h3>
+            <p className="text-xs text-muted-foreground">Regional-level income and expenses (excludes DCG ledgers)</p>
+          </div>
+        </div>
+        {isLoading ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">Loading…</p>
+        ) : filtered.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">No transactions for the selected filters.</p>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border/30">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-border/30 hover:bg-transparent">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(r => (
+                  <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
+                    <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
+                    <TableCell className="font-medium">{r.category?.name}</TableCell>
+                    <TableCell className="hidden md:table-cell text-muted-foreground">{r.description || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.category?.type?.toLowerCase() === "income" ? "default" : "secondary"} className="capitalize">
+                        {r.category?.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
-                      <TableCell>{r.category?.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">{r.description || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant={r.category?.type?.toLowerCase() === "income" ? "default" : "secondary"}>
-                          {r.category?.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{fc(Number(r.amount))}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       <RecordTitheDialog open={titheOpen} onOpenChange={setTitheOpen} />
       <RecordOfferingDialog open={offeringOpen} onOpenChange={setOfferingOpen} />
