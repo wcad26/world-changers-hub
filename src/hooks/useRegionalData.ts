@@ -187,3 +187,21 @@ export const useRegionalEvents = (regionId: string | undefined) => {
     enabled: !!regionId,
   });
 };
+
+export const useRegionalEventsForOfferings = (regionId: string | undefined) => {
+  return useQuery({
+    queryKey: ['regional-events-for-offerings', regionId],
+    queryFn: async () => {
+      if (!regionId) return [];
+      const { data, error } = await supabase
+        .from('events')
+        .select('id, title, start_datetime')
+        .eq('region_id', regionId)
+        .order('start_datetime', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as Array<Pick<Event, 'id' | 'title' | 'start_datetime'>>;
+    },
+    enabled: !!regionId,
+  });
+};
