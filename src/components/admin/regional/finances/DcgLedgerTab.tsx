@@ -113,7 +113,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                   <TableHead className="text-right">Income</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right">Net</TableHead>
-                  <TableHead className="text-right">Tx</TableHead>
+                  
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -124,7 +124,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                     <TableCell className="text-right text-green-600 tabular-nums">{fc(d.income)}</TableCell>
                     <TableCell className="text-right text-red-600 tabular-nums">{fc(d.expenses)}</TableCell>
                     <TableCell className={`text-right font-semibold tabular-nums ${d.net >= 0 ? "text-green-600" : "text-red-600"}`}>{fc(d.net)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{d.count}</TableCell>
+                    
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" asChild>
                         <Link to={`/admin/regional/dcg/${d.dcg_id}`}><ExternalLink className="h-4 w-4 mr-1" />Open</Link>
