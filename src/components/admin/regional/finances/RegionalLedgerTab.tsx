@@ -89,6 +89,9 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           type={type} onTypeChange={setType}
         />
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-card/60 backdrop-blur-sm border-border/40">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length} className="bg-card/60 backdrop-blur-sm border-border/40">
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
