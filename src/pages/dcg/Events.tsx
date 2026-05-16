@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import PeriodFilter from "@/components/admin/regional/dashboard/PeriodFilter";
+import PeriodFilter, { type PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { CreateEventDialog } from "@/components/admin/dcg/CreateEventDialog";
 import { EventAttendanceDialog } from "@/components/admin/dcg/EventAttendanceDialog";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
