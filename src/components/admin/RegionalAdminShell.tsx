@@ -269,8 +269,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                 const shortLabel = item.title
                   .replace(' Management', '')
                   .replace(' Mgmt', '')
-                  .replace('Regional Website Information', 'Website')
-                  .replace('Reports & Analytics', 'Reports');
+                  .replace('Regional Website Information', 'Website');
                 return (
                   <Link
                     key={item.path}
