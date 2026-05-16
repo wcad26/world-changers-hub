@@ -367,6 +367,27 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
                   )}
                 />
 
+                {/* Description (acts as notes) */}
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Description (Optional)
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Additional details about this expense…"
+                          className="bg-background/60 border-border/50 resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Payee */}
                 <FormField
                   control={form.control}
@@ -469,26 +490,6 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
                   </div>
                 </div>
 
-                {/* Description (acts as notes) */}
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Description (Optional)
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Additional details about this expense…"
-                          className="bg-background/60 border-border/50 resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
             </div>
 
