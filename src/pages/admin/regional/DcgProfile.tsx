@@ -562,42 +562,6 @@ const DcgProfile: React.FC = () => {
         dcg={dcg}
       />
 
-      <EditDcgTransactionDialog
-        open={!!editingTransaction}
-        onOpenChange={(o) => { if (!o) setEditingTransaction(null); }}
-        dcgId={dcgId || ""}
-        transaction={editingTransaction}
-      />
-
-      <AlertDialog open={!!deletingTransaction} onOpenChange={(o) => { if (!o) setDeletingTransaction(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this transaction?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. The transaction will be permanently removed from the records.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (!deletingTransaction) return;
-                try {
-                  await deleteTransaction.mutateAsync(deletingTransaction.id);
-                  toast.success("Transaction deleted");
-                } catch (e: any) {
-                  toast.error("Failed to delete", { description: e?.message });
-                } finally {
-                  setDeletingTransaction(null);
-                }
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
