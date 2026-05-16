@@ -241,33 +241,54 @@ const FundraisingCampaignReport: React.FC = () => {
 
       {/* Trend */}
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">Donations over time</h3>
-        </div>
-        {trendData.length === 0 ? (
-          <p className="py-10 text-center text-muted-foreground text-sm">No donations recorded yet.</p>
-        ) : (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="donationGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => fc(Number(v))} width={90} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
-                  formatter={(v: any) => [fc(Number(v)), "Raised"]}
-                />
-                <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#donationGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Donation trend
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {format(range.from, "MMM d, yyyy")} – {format(range.to, "MMM d, yyyy")} · Weekly donations and cumulative total
+            </p>
           </div>
+        </div>
+        {trendData.length === 0 || trendData.every((d) => d.Donations === 0) ? (
+          <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
+            No donations in the selected period.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradCumulative" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+              <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} minTickGap={20} />
+              <YAxis
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+              />
+              <Tooltip
+                cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                }}
+                formatter={(value, name) => [fc(Number(value)), name]}
+              />
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+              <Bar dataKey="Donations" fill="hsl(var(--chart-1))" radius={[6, 6, 0, 0]} maxBarSize={32} />
+              <Area type="monotone" dataKey="Cumulative" stroke="hsl(var(--chart-4))" fill="url(#gradCumulative)" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} activeDot={{ r: 5 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
         )}
       </div>
 
