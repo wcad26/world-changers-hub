@@ -30,7 +30,7 @@ const FinanceKpiCard: React.FC<Props> = ({ label, value, icon: Icon, tone = "neu
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className="text-2xl font-bold truncate" title={String(value)}>{value}</div>
+      <div className="font-bold truncate text-lg" title={String(value)}>{value}</div>
       <div className="flex items-center justify-between mt-1 gap-2">
         {hint ? <p className="text-xs text-muted-foreground truncate">{hint}</p> : <span />}
         {trend !== null && trend !== undefined && (
