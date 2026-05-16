@@ -160,17 +160,17 @@ const DcgEvents = () => {
             onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))}
             className="mb-0"
           />
-          <div className="relative w-full sm:w-auto">
+          <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search events..."
-              className="pl-9 bg-background/60 h-8 w-full sm:w-[200px] text-sm"
+              className="pl-9 bg-background/60 h-8 w-full text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-row gap-2 w-full sm:contents">
+          <div className="flex flex-row flex-wrap gap-2 w-full sm:basis-full items-center">
             <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
               <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
                 <SelectValue placeholder="Event Type" />
@@ -183,7 +183,7 @@ const DcgEvents = () => {
               </SelectContent>
             </Select>
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
+              <SelectTrigger className="w-[calc(50%-0.5rem)] sm:w-[130px] bg-background/60 h-8 text-sm">
                 <SelectValue placeholder="Time" />
               </SelectTrigger>
               <SelectContent>
@@ -192,11 +192,11 @@ const DcgEvents = () => {
                 <SelectItem value="past">Past</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="sm:ml-auto">
-            <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
-              <Plus className="h-4 w-4" /> Create Event
-            </Button>
+            <div className="w-full sm:w-auto sm:ml-auto">
+              <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
+                <Plus className="h-4 w-4" /> Create Event
+              </Button>
+            </div>
           </div>
         </div>
 
