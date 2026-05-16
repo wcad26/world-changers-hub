@@ -91,6 +91,85 @@ export const useCreateFundraisingCampaign = () => {
   });
 };
 
+// Hook to fetch a single fundraising campaign by id
+export const useFundraisingCampaign = (campaignId?: string) => {
+  return useQuery({
+    queryKey: ['fundraising_campaign', campaignId],
+    queryFn: async () => {
+      if (!campaignId) return null;
+      const { data, error } = await supabase
+        .from('fundraising_campaigns')
+        .select('*')
+        .eq('id', campaignId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!campaignId,
+  });
+};
+
+// Hook to update an existing campaign
+export interface UpdateCampaignInput {
+  id: string;
+  name?: string;
+  description?: string;
+  goal?: number; // major units
+  startDate?: string;
+  endDate?: string | null;
+  imageUrl?: string | null;
+  isPublic?: boolean;
+  status?: string;
+}
+
+export const useUpdateFundraisingCampaign = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateCampaignInput) => {
+      const patch: Database['public']['Tables']['fundraising_campaigns']['Update'] = {};
+      if (input.name !== undefined) patch.name = input.name;
+      if (input.description !== undefined) patch.description = input.description;
+      if (input.goal !== undefined) patch.goal = Math.round(input.goal * 100);
+      if (input.startDate !== undefined) patch.start_date = input.startDate;
+      if (input.endDate !== undefined) patch.end_date = input.endDate;
+      if (input.imageUrl !== undefined) patch.image_url = input.imageUrl;
+      if (input.isPublic !== undefined) patch.is_public = input.isPublic;
+      if (input.status !== undefined) patch.status = input.status;
+      const { data, error } = await supabase
+        .from('fundraising_campaigns')
+        .update(patch)
+        .eq('id', input.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaign', data.id] });
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] });
+    },
+  });
+};
+
+// Hook to delete a campaign (cascades donations)
+export const useDeleteFundraisingCampaign = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fundraising_campaigns').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['region_donations'] });
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['campaign_donations'] });
+    },
+  });
+};
+
 // Hook to get campaign analytics
 export const useFundraisingAnalytics = () => {
   const { userRegion } = useAuth();
