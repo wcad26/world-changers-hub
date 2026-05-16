@@ -953,13 +953,15 @@ const Certificates = () => {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline"
+                      size="sm"
                       onClick={handleBulkDownload}
                       disabled={selectedCertificates.length === 0}
                     >
                       <FileCheck className="mr-2 h-4 w-4" />
-                      Download Selected ({selectedCertificates.length})
+                      Download ({selectedCertificates.length})
                     </Button>
                     <Button 
+                      size="sm"
                       onClick={() => {
                         const activeCertificates = selectedCertificates.filter(id => 
                           unsentCertificates?.find(c => c.id === id)?.is_active
@@ -978,8 +980,19 @@ const Certificates = () => {
                     >
                       <Send className="mr-2 h-4 w-4" />
                       {isSendingEmails 
-                        ? `Sending batch ${emailProgress.current}/${emailProgress.total}...` 
-                        : `Email Selected (${selectedCertificates.length})`}
+                        ? `Sending ${emailProgress.current}/${emailProgress.total}...` 
+                        : `Email (${selectedCertificates.length})`}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setBulkDeleteOpen(true)}
+                      disabled={selectedCertificates.length === 0 || isBulkDeleting}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isBulkDeleting
+                        ? `Deleting ${bulkDeleteProgress.current}/${bulkDeleteProgress.total}...`
+                        : `Delete (${selectedCertificates.length})`}
                     </Button>
                   </div>
                 </div>
