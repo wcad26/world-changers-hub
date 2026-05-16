@@ -121,6 +121,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
 
       toast({ title: 'Success', description: 'Offering recorded successfully' });
       form.reset();
+      setAmountText('');
       onOpenChange(false);
     } catch (error) {
       toast({
