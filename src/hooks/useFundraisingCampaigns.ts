@@ -53,6 +53,7 @@ export const useFundraisingCampaigns = (filters?: { status?: string }) => {
 export const useCreateFundraisingCampaign = () => {
   const queryClient = useQueryClient();
   const { userRegion, user } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
 
   return useMutation({
     mutationFn: async (campaignData: CampaignData) => {
@@ -70,6 +71,7 @@ export const useCreateFundraisingCampaign = () => {
         image_url: campaignData.imageUrl || null,
         is_public: campaignData.isPublic,
         status: 'Active',
+        currency_code: regionCurrency?.code || 'USD',
       };
       
       const { data, error } = await supabase
