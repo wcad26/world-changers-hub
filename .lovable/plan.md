@@ -1,73 +1,52 @@
+# Fundraising — use region currency everywhere
+
+## Problem
+
+All fundraising UI hardcodes a `$` prefix (e.g. `${totalRaised.toLocaleString()}`), even though every region has its own currency stored in the DB and a working `useRegionCurrency` hook + `formatCurrencyWithSymbol` helper. A Douala admin therefore sees `$ 0` instead of `F 0` (FCFA) for raised/goal totals, donations, and analytics.
 
 ## Goal
 
-Rebuild `/admin/regional/finances` into a finance director console with **segregated accounting** across three top-level tabs, shared filters, and the same visual language as the Regional Dashboard (glass cards, gradient KPIs, period selector).
+Render every fundraising amount (admin tabs, dashboard tab, campaign details, analytics chart, public/member donation pages) using the campaign's region currency. No DB or schema changes — amounts stay in minor units (cents) as today.
 
-## Top-level structure
+## Approach
 
+Reuse the existing pattern already used in `dashboard/tabs/FundraisingTab.tsx`:
+```ts
+const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+const fc = (amount) => formatCurrencyWithSymbol(amount, regionCurrency);
 ```
-Header  ─ Title + period selector + Record Transaction dropdown
-Tabs    ─ [ Regional ] [ DCG ] [ Fundraising ]
-Body    ─ Tab-specific KPIs, filters, trend chart, transactions table
-```
 
-### Tab 1 — Regional Finances
-Scope: `financial_transactions WHERE dcg_id IS NULL` (region-level only, excludes DCG ledgers).
-- KPI strip (6): Total Income, Total Expenses, Net Balance, Tithes, Offerings, Special Giving.
-- Sub-filters: Category (multi), Type (Income/Expense/All), Search.
-- Trend chart: monthly income vs expenses (reuse `FinancialTrendChart`).
-- Transactions table: Date, Category, Description, Type, Amount.
-- Record buttons: Tithe, Offering, Special Giving, Expense (existing dialogs).
+Replace every hardcoded `$...toLocaleString()` / `$...toFixed(2)` with `fc(...)`.
 
-### Tab 2 — DCG Finances
-Scope: `financial_transactions WHERE dcg_id IS NOT NULL` across all DCGs in the region.
-- KPI strip (4): Total DCG Income, Total DCG Expenses, Net DCG Balance, Active DCG Count.
-- Sub-filters: DCG (dropdown of region's DCGs + "All DCGs"), Category, Type, Search.
-- Breakdown card: per-DCG totals table (DCG name, Income, Expenses, Net, Tx count) with click-through to `/admin/regional/dcg/{id}`.
-- Transactions table: Date, DCG, Category, Description, Type, Amount.
-- Read-only here (DCG admins record from DCG portal); regional admin may still edit via existing dialogs if needed.
+## Files to change
 
-### Tab 3 — Fundraising Finances
-Scope: `fundraising_campaigns` + `fundraising_donations` for the region.
-- KPI strip (4): Total Raised, Total Goal, Active Campaigns, Donor Count.
-- Sub-filters: Campaign Status (Active/Completed/All), Campaign (dropdown), Search.
-- Trend chart: donations over selected period (reuse `FundraisingAnalyticsChart`).
-- Campaigns grid + donations table (reuse `FundraisingTabContent` content, restyled to match).
-- "Create Campaign" button (existing dialog).
+1. **`src/components/admin/regional/finances/FundraisingLedgerTab.tsx`**
+   - Already imports `formatCurrencyWithSymbol` but isn't wired to a currency. Add `useAuth` → `useRegionCurrency(userRegion?.id)` and pass it into the three KPI cards (Total Raised, Combined Goal) plus the embedded `FundraisingTabContent`.
 
-## Shared header controls
+2. **`src/components/admin/regional/FundraisingTabContent.tsx`**
+   - Accept optional `currency` prop (or call `useRegionCurrency` directly).
+   - Replace the 4 hardcoded `$` usages: Total Raised KPI, Total Goal KPI, table Raised cell, table Goal cell.
+   - Replace `DollarSign` icon (USD-specific) with a neutral icon (`TrendingUp` / `Target`).
+   - "Fundraising Goal ($)" label in `CreateFundraisingCampaignDialog` → "Fundraising Goal ({symbol})".
 
-- **Period selector** (top-right, like dashboard): This Month / Last Month / Last 3M / Last 6M / YTD / 1Y / Custom range. Drives all three tabs' KPIs, charts, and tables.
-- **Record Transaction** dropdown stays in header, contextual to active tab (Regional → tithe/offering/expense items; DCG → "Go to DCG portal" hint; Fundraising → Create Campaign).
-- **Export CSV** button per tab (current filtered view).
+3. **`src/components/admin/regional/CreateFundraisingCampaignDialog.tsx`**
+   - Use region currency symbol in the Goal field label and placeholder.
 
-## Visual treatment (match Regional Dashboard)
+4. **`src/components/admin/regional/CampaignDetailsDialog.tsx`**
+   - Resolve currency from the campaign's `region_id` via `useRegionCurrency`.
+   - Replace 4 hardcoded `$` usages (raised, of goal, per-donation amount, average donation).
 
-- Glass KPI cards: `bg-gradient-to-br from-background to-muted/30 backdrop-blur-sm border-border/50 shadow-sm` with small colored icon tile (green/red/blue/purple/amber).
-- Section cards with subtle gradient backgrounds.
-- Use design tokens only (`text-primary`, `bg-muted`, etc.) — no hard-coded colors except the established KPI semantics (green income / red expense).
-- Responsive: 2-col KPI on mobile, 4–6 on lg.
+5. **`src/components/admin/regional/FundraisingAnalyticsChart.tsx`**
+   - Accept `currency` prop from parent and format chart tooltips/labels with `formatCurrencyWithSymbol` instead of `$`.
 
-## Data layer
-
-- Extend `useFinancialTransactions(filters)` to accept `dcgScope: 'regional' | 'dcg' | 'all'` and `categoryIds[]`, `type`. Implement as a new lightweight hook `useRegionalLedger` to avoid breaking existing consumers, OR add optional filter fields and keep behavior backward-compatible.
-- Add `useDcgAggregatedSummary(regionId, filters)` — groups regional financial_transactions by dcg_id for the per-DCG breakdown.
-- Fundraising tab reuses `useFundraisingCampaigns`, `useFundraisingAnalytics`, `useCampaignDonations`.
-- All queries respect the active period filter.
-
-## File changes
-
-- Rewrite `src/pages/admin/regional/Finances.tsx` as a thin shell mounting:
-  - `src/components/admin/regional/finances/RegionalLedgerTab.tsx` (new)
-  - `src/components/admin/regional/finances/DcgLedgerTab.tsx` (new)
-  - `src/components/admin/regional/finances/FundraisingLedgerTab.tsx` (new — wraps existing `FundraisingTabContent` with consistent KPIs/filters)
-  - `src/components/admin/regional/finances/FinanceFiltersBar.tsx` (new — period + category + type + search)
-  - `src/components/admin/regional/finances/FinanceKpiCard.tsx` (new — glass KPI primitive)
-- New hook: `src/hooks/useRegionalLedger.ts` (regional-only and per-DCG aggregations).
-- No DB schema changes. No changes to existing record-transaction dialogs.
+6. **Public + member donation pages** (`src/pages/Fundraising.tsx`, `src/pages/member/Fundraising.tsx`)
+   - Use the campaign's region currency for displayed totals, progress text, donation history, and the suggested-amount quick buttons. Quick-pick amounts ($25/$50/$100) become region-appropriate presets sourced from the currency object (or a sensible multiplier when none are defined).
 
 ## Out of scope
 
-- DCG portal finance page (separate surface, untouched).
-- Budgeting, reconciliation, or multi-currency conversion (current per-region currency only).
-- Changes to RLS or financial_transactions schema.
+- DB schema, RLS, currency conversion across regions, multi-currency campaigns, or changing how amounts are stored. Goals/donations remain integers in the campaign's region currency minor units.
+- Super Admin global fundraising (`src/pages/admin/super/Fundraising.tsx`) unless it also displays regional totals — will only adjust if a quick scan shows the same `$` issue; otherwise flagged but untouched to keep this PR focused.
+
+## Verification
+
+Open `/admin/regional/finances` → Fundraising tab on a non-USD region (e.g. Douala/XAF) and confirm KPI cards, campaign table, details dialog, analytics chart, and public donation page all render the region's symbol (e.g. `F`) with correct decimal places.
