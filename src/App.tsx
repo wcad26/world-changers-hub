@@ -108,7 +108,17 @@ const queryClient = new QueryClient({
       // after a few minutes inside the regional portal.
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      retry: 1,
+      // Retry transient network errors (TypeError: Failed to fetch) up to 3
+      // times with exponential backoff before surfacing as an error.
+      retry: (failureCount, error: any) => {
+        if (failureCount >= 3) return false;
+        const msg = (error?.message || '').toLowerCase();
+        if (msg.includes('failed to fetch') || msg.includes('networkerror') || msg.includes('load failed')) {
+          return true;
+        }
+        return failureCount < 1;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000),
       staleTime: 60 * 1000,
     },
   },
