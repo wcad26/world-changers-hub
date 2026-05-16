@@ -33,6 +33,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
   const [incomeType, setIncomeType] = useState<"all" | "tithes" | "offerings" | "special">("all");
+  const [expenseCategoryId, setExpenseCategoryId] = useState<string | null>(null);
   const [titheOpen, setTitheOpen] = useState(false);
   const [offeringOpen, setOfferingOpen] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
