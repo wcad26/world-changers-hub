@@ -146,13 +146,17 @@ const DcgOverviewTab = () => {
                   <GlassTableSkeleton columns={6} rows={4} />
                 ) : !isError && filteredDcgs.length > 0 ? (
                   filteredDcgs.map((dcg) => (
-                    <TableRow key={dcg.id} className="hover:bg-muted/20 transition-colors">
+                    <TableRow
+                      key={dcg.id}
+                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/admin/regional/dcg/${dcg.id}`)}
+                    >
                       <TableCell className="font-medium">{dcg.name}</TableCell>
                       <TableCell>{getLeaderName(dcg)}</TableCell>
                       <TableCell>{dcg.location || 'N/A'}</TableCell>
                       <TableCell>{dcg.member_count || 0}</TableCell>
                       <TableCell>{dcg.meeting_day || 'N/A'}, {formatMeetingTime(dcg.meeting_time)}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
