@@ -117,6 +117,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           categoryId={categoryId} onCategoryChange={setCategoryId}
           type={type} onTypeChange={setType}
           incomeType={incomeType} onIncomeTypeChange={setIncomeType}
+          expenseCategoryId={expenseCategoryId} onExpenseCategoryChange={setExpenseCategoryId}
         />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-card/60 backdrop-blur-sm border-border/40">
