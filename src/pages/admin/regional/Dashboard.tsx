@@ -779,7 +779,7 @@ const RegionalDashboard: React.FC = () => {
                 </div>
                 <span className="text-xs font-medium text-muted-foreground">Fundraising</span>
               </div>
-              <p className="text-2xl font-bold text-foreground">{kpis?.fundraisingTargetPct ?? 0}%</p>
+              <p className="font-bold text-foreground text-lg">{kpis?.fundraisingTargetPct ?? 0}%</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">Of all campaign goals</p>
             </div>
           </div>
