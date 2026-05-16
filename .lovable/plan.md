@@ -1,29 +1,34 @@
-# Regional Ledger: Add row actions and clickable rows
+# Fix: New financial records not appearing in Regional Finances ledger
 
-Reuse the existing DCG transaction row actions (View / Edit / Delete) in the regional Transactions table on `/admin/regional/finances` and make rows clickable.
+## Root cause
 
-## Findings
+The Regional Ledger query is cached under the key `["regional_ledger", regionId, filters]` (underscore), but:
 
-The "DCG transaction table" actions referenced live in:
-- `src/components/admin/regional/finances/DcgTransactionRowActions.tsx` — dropdown menu (View · Edit · Delete) using `useDeleteRegionalTransaction`.
-- `src/components/admin/regional/finances/EditDcgTransactionDialog.tsx` — already uses `useUpdateRegionalTransaction` and works on any `LedgerRow` (DCG name shown only when present).
-- `src/components/admin/regional/finances/ViewDcgTransactionDialog.tsx` — read-only details, also generic.
+1. `useCreateFinancialTransaction` (used by `RecordOfferingDialog`, `RecordSpecialGivingDialog`, etc.) never invalidates the `regional_ledger` key on success — so newly created transactions don't appear until a hard page reload.
+2. The Refresh button in `RegionalLedgerTab.tsx` invalidates `["regional-ledger"]` (hyphen) — a key that doesn't exist. So Refresh also fails to drop the stale cache.
 
-These three already operate on `LedgerRow` from `useRegionalLedger`, so the same components used for DCG rows in `DcgLedgerTab.tsx` will work for regional rows in `RegionalLedgerTab.tsx` with no code changes to the action/dialog components themselves.
+## Changes
 
-## Changes to `src/components/admin/regional/finances/RegionalLedgerTab.tsx`
+### 1. `src/hooks/useFinancials.ts` — `useCreateFinancialTransaction.onSuccess`
+Add invalidation for the regional ledger key (and DCG ledger keys for consistency with `useUpdateRegionalTransaction`):
 
-1. Import `DcgTransactionRowActions` and `ViewDcgTransactionDialog`.
-2. Add an "Actions" column header (right-aligned, narrow) after Amount.
-3. Render `<DcgTransactionRowActions row={r} />` in each row's last cell.
-4. Make each `TableRow` clickable:
-   - Add `onClick` that sets the selected row and opens a single shared `ViewDcgTransactionDialog`.
-   - Add `cursor-pointer` styling.
-   - The actions cell already calls `e.stopPropagation()` on the dropdown trigger so clicking the menu won't trigger the row click.
-5. Add local state `const [selectedRow, setSelectedRow] = useState<LedgerRow | null>(null)` and a `viewOpen` boolean; render `<ViewDcgTransactionDialog open={viewOpen} onOpenChange={setViewOpen} transaction={selectedRow} />` alongside the other record dialogs at the bottom.
+```ts
+queryClient.invalidateQueries({ queryKey: ['regional_ledger', userRegion.id] });
+queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions'] });
+queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary'] });
+queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
+```
+
+### 2. `src/components/admin/regional/finances/RegionalLedgerTab.tsx` — `handleRefresh`
+Fix the typo: change `["regional-ledger"]` to `["regional_ledger"]` so the Refresh button actually invalidates the cache. Also invalidate `["financial_transactions"]` and `["financial_summary"]` for completeness.
 
 ## Out of scope
 
-- No changes to the action components, hooks, or DCG ledger.
-- No changes to the recording dialogs.
-- No schema changes.
+- No schema, RLS, or dialog changes.
+- No changes to the actual record-creation flow or business logic.
+
+## Verification
+
+After the fix:
+- Recording a new offering/special giving immediately updates the ledger table without a page reload.
+- The Refresh button refetches fresh data.
