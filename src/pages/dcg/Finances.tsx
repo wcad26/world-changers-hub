@@ -135,7 +135,7 @@ const DcgFinances: React.FC = () => {
     );
   };
 
-  if (authLoading) {
+  if (authLoading || dcgLoading) {
     return (
       <DcgAdminLayout>
         <div className="flex items-center justify-center h-64">
@@ -146,12 +146,17 @@ const DcgFinances: React.FC = () => {
     );
   }
 
-  if (!userDcg) {
+  if (dcgError || !currentDcg) {
     return (
       <DcgAdminLayout>
-        <div className="p-6 text-center">
+        <div className="p-6 text-center space-y-2">
           <h1 className="text-2xl font-bold">DCG Finances</h1>
-          <p className="text-muted-foreground">DCG information not found.</p>
+          <p className="text-muted-foreground">
+            We couldn't resolve your DCG. Please ensure you are signed in as a DCG leader.
+          </p>
+          {dcgError ? (
+            <p className="text-xs text-destructive">{(dcgError as Error).message}</p>
+          ) : null}
         </div>
       </DcgAdminLayout>
     );
