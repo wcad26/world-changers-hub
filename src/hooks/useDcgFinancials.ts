@@ -20,14 +20,11 @@ export type DcgFinancialSummary = {
 
 // Hook to fetch financial transactions for a specific DCG
 export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: string; to?: string; limit?: number }) => {
-  const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
-
   return useQuery({
-    queryKey: ['dcg_financial_transactions', dcgId, regionId, filters],
+    queryKey: ['dcg_financial_transactions', dcgId, filters],
     queryFn: async (): Promise<DcgFinancialTransaction[]> => {
-      if (!regionId || !dcgId) return [];
-      
+      if (!dcgId) return [];
+
       let query = supabase
         .from('financial_transactions')
         .select(`
@@ -36,9 +33,8 @@ export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: s
           dcg:dcgs(name),
           member:members(member_id, profile:profiles(first_name, last_name))
         `)
-        .eq('region_id', regionId)
         .eq('dcg_id', dcgId);
-      
+
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
       if (filters?.limit) query = query.limit(filters.limit);
@@ -48,20 +44,17 @@ export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: s
       if (error) throw error;
       return (data || []) as unknown as DcgFinancialTransaction[];
     },
-    enabled: !!regionId && !!dcgId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!dcgId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
 // Hook to fetch financial summary for a specific DCG
 export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string; to?: string }) => {
-  const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
-
   return useQuery({
-    queryKey: ['dcg_financial_summary', dcgId, regionId, filters],
+    queryKey: ['dcg_financial_summary', dcgId, filters],
     queryFn: async (): Promise<DcgFinancialSummary> => {
-      if (!regionId || !dcgId) return {
+      if (!dcgId) return {
         total_income: 0,
         total_expenses: 0,
         net_balance: 0,
@@ -72,16 +65,15 @@ export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string
       let query = supabase
         .from('financial_transactions')
         .select('amount, transaction_date, category:financial_transaction_categories(type)')
-        .eq('region_id', regionId)
         .eq('dcg_id', dcgId);
-      
+
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
 
       const { data, error } = await query.order('transaction_date', { ascending: false });
 
       if (error) throw error;
-      
+
       const summary = data?.reduce((acc, transaction) => {
         const amount = Number(transaction.amount);
         const categoryType = transaction.category?.type || '';
@@ -105,8 +97,8 @@ export const useDcgFinancialSummary = (dcgId?: string, filters?: { from?: string
         last_transaction_date: data?.[0]?.transaction_date || null,
       };
     },
-    enabled: !!regionId && !!dcgId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!dcgId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -160,12 +152,21 @@ export const useCreateDcgTransaction = (dcgId: string) => {
 
   return useMutation({
     mutationFn: async (transactionData: DcgTransactionData) => {
-      if (!userRegion?.id) throw new Error('User region not found');
       if (!user?.id) throw new Error('User not found');
       if (!dcgId) throw new Error('DCG ID is required');
-      
+
+      // Derive region_id from the DCG row so DCG leaders without a profile region can record
+      const { data: dcgRow, error: dcgErr } = await supabase
+        .from('dcgs')
+        .select('region_id')
+        .eq('id', dcgId)
+        .single();
+      if (dcgErr) throw dcgErr;
+      const regionId = userRegion?.id ?? dcgRow?.region_id;
+      if (!regionId) throw new Error('Region not found for this DCG');
+
       const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
-        region_id: userRegion.id,
+        region_id: regionId,
         dcg_id: dcgId,
         recorded_by: user.id,
         category_id: transactionData.category_id,
@@ -173,22 +174,21 @@ export const useCreateDcgTransaction = (dcgId: string) => {
         description: transactionData.description,
         transaction_date: transactionData.transaction_date,
       };
-      
+
       const { data, error } = await supabase
         .from('financial_transactions')
         .insert(newTransaction)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      // Invalidate relevant queries for efficient cache updates
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
       queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
     },
   });
 };

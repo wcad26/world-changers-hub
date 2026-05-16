@@ -1,76 +1,48 @@
-## Goal
+## Problem
 
-Replace the current `src/pages/dcg/Finances.tsx` with a redesigned page that mirrors the look and feel of the Regional portal's Finance Management (`src/pages/admin/regional/Finances.tsx` + its `finances/*` components), but scoped to the logged-in DCG only. Top-grade, glass aesthetic, recharts trend, KPI cards, filters, export, itemized ledger.
+The DCG Finances page (`src/pages/dcg/Finances.tsx`) is blank even though Kotto DCG has 20 financial transactions in the database.
 
-## Scope
+Root cause: `useDcgFinancialTransactions` (in `src/hooks/useDcgFinancials.ts`) gates its query on `useAuth().userRegion?.id`:
 
-- Only the single DCG bound to the logged-in user (`userDcg.id`). No DCG picker. No regional/fundraising tabs.
-- Uses existing data hook `useDcgFinancialTransactions(dcgId, { from, to })` from `src/hooks/useDcgFinancials.ts`.
-- Keep the existing Record Income / Record Expense dialogs.
-
-## Page structure
-
-```text
-┌─ Glass Header ──────────────────────────────────────────────┐
-│  DCG Financial Management          [PeriodSelector 1M..1Y] │
-│  Track income, expenses and giving for <DCG name>           │
-│                                          [Record Income]    │
-│                                          [Record Expense]   │
-└─────────────────────────────────────────────────────────────┘
-
-┌── KPI cards (4) ────────────────────────────────────────────┐
-│ Income | Expenses | Net | Offerings  (FinanceKpiCard)       │
-└─────────────────────────────────────────────────────────────┘
-
-┌── Filters bar ──────────────────────────────────────────────┐
-│ [search]  [Type: all/income/expense]  [Income type]         │
-│ [Expense category]                          [Export CSV]    │
-└─────────────────────────────────────────────────────────────┘
-
-┌── LedgerTrendChart (Income / Expenses / Net, weekly cum.) ──┐
-└─────────────────────────────────────────────────────────────┘
-
-┌── Category Breakdown card ──────────────────────────────────┐
-│  Category | Type | Count | Total                            │
-└─────────────────────────────────────────────────────────────┘
-
-┌── Collapsible: Transactions (itemized) ─────────────────────┐
-│ Date | Category | Description | Type | Amount | Actions     │
-└─────────────────────────────────────────────────────────────┘
+```ts
+enabled: !!regionId && !!dcgId,
 ```
 
-## Components reused (no new files unless noted)
+In the DCG portal session, `userRegion` is populated from the user's `profiles.region_id`. For DCG leaders who don't have a region set on their profile (or where the auth context hasn't loaded it in the DCG session), `regionId` is `undefined`, so the query never runs and `rawRows` stays empty → blank KPIs, blank chart, blank table.
 
-- `PeriodSelector` + `resolvePeriod` from `components/admin/regional/finances/PeriodSelector.tsx`
-- `FinanceKpiCard`
-- `FinanceFiltersBar` (already supports search + type + income-type + expense-category)
-- `LedgerTrendChart` (accepts rows shaped like `LedgerRow`; our DCG rows already include `category` and `amount`/`transaction_date`)
-- `EditDcgTransactionDialog` + `DcgTransactionRowActions` for row actions (Edit/Delete already wired through `useDcgFinancials`)
-- `exportCsv` from `utils/csvExport`
-- Existing `RecordDcgIncomeDialog` / `RecordDcgExpenseDialog`
+The DCG already knows its own `region_id` (we resolve `currentDcg.region_id` via `useDcgs` in the page), and RLS on `financial_transactions` already scopes access. The `region_id` filter in the hook is redundant for the DCG-scoped use case.
 
-## Data
+## Fix
 
-- `useAuth()` → `userDcg`, current DCG `region_id` via `useDcgs()`
-- `useRegionCurrency(region_id)` for currency formatting via `formatCurrencyWithSymbol`
-- `useDcgFinancialTransactions(userDcg.id, { from, to })` for rows in range
-- Client-side filtering for search / type / income type / expense category (mirrors regional behavior)
-- Derived: total income, total expenses, net, offerings total; category aggregation for breakdown table
+Make the DCG finance hooks work purely from `dcg_id`, deriving `region_id` from the DCG row instead of from the logged-in user's profile.
 
-## Styling
+### Changes to `src/hooks/useDcgFinancials.ts`
 
-- Glass header card: `rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5`
-- Same KPI/tab/table treatments as `DcgLedgerTab` (muted header bar, hover rows, tabular-nums)
-- All colors via semantic tokens; no raw hex
-- Mobile: KPIs collapse to 2-col grid, filters stack, table inside `overflow-x-auto`
+1. **`useDcgFinancialTransactions(dcgId, filters)`**
+   - Remove the `useAuth().userRegion` dependency.
+   - Drop the `.eq('region_id', regionId)` filter (keep `.eq('dcg_id', dcgId)`; RLS handles authorization).
+   - `enabled: !!dcgId`.
+   - Update `queryKey` to `['dcg_financial_transactions', dcgId, filters]`.
 
-## Files changed
+2. **`useDcgFinancialSummary(dcgId, filters)`** — same treatment (remove region gating, key off `dcgId` only).
 
-- Rewrite: `src/pages/dcg/Finances.tsx` (single file change)
-- No route, layout, or hook changes
+3. **`useRecentDcgTransactions`**, **`useCreateDcgTransaction`**, **`useUpdateDcgTransaction`**, **`useDeleteDcgTransaction`**
+   - For the create hook, derive `region_id` from the DCG row (`supabase.from('dcgs').select('region_id').eq('id', dcgId).single()`) instead of `userRegion.id`, so DCG leaders without a profile region can still record transactions.
+   - For read/list/delete hooks, drop the `region_id` filter and rely on RLS + `dcg_id` scoping.
+   - Keep invalidations working (use `dcgId` in keys).
 
-## Out of scope
+### No changes needed in `src/pages/dcg/Finances.tsx`
 
-- No DB schema changes
-- No new dialogs (reuse existing)
-- Reports/analytics page (already removed)
+The page already passes `userDcg?.id` and reads `currentDcg.region_id` separately for currency — that continues to work.
+
+### Out of scope
+
+- No DB schema or RLS changes (existing RLS on `financial_transactions` already restricts access by DCG membership/role).
+- No UI/visual changes.
+- Regional admin's `DcgFinancialsTab` continues to work because it passes `dcgId` explicitly; removing the region filter does not broaden its access (RLS still enforces region scope for regional admins).
+
+## Verification
+
+1. Reload `/dcg/finances` as the Kotto DCG leader → KPIs, chart, and transactions table populate with the 20 existing rows.
+2. Recording a new income/expense still succeeds and the lists refresh.
+3. Regional admin DCG financials tab still shows the same per-DCG data.
