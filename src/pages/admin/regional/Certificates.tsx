@@ -95,6 +95,9 @@ const Certificates = () => {
   // Email sending progress state
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState({ current: 0, total: 0 });
   const [certificateToDeletePermanently, setCertificateToDeletePermanently] = useState<{
     id: string;
     certificate_url: string;
@@ -484,6 +487,39 @@ const Certificates = () => {
       setIsSendingEmails(false);
       setEmailProgress({ current: 0, total: 0 });
     }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCertificates.length === 0) return;
+
+    const certs = issuedCertificates?.filter(c => selectedCertificates.includes(c.id)) || [];
+    setIsBulkDeleting(true);
+    setBulkDeleteProgress({ current: 0, total: certs.length });
+    let failed = 0;
+
+    for (let i = 0; i < certs.length; i++) {
+      try {
+        await permanentlyDeleteCertificate.mutateAsync({
+          id: certs[i].id,
+          certificate_url: certs[i].certificate_url,
+        });
+      } catch (e) {
+        console.error('Bulk delete error:', e);
+        failed++;
+      }
+      setBulkDeleteProgress({ current: i + 1, total: certs.length });
+    }
+
+    setIsBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    setSelectedCertificates([]);
+    setBulkDeleteProgress({ current: 0, total: 0 });
+
+    toast({
+      title: failed === 0 ? 'Certificates deleted' : 'Completed with errors',
+      description: `${certs.length - failed} deleted${failed > 0 ? `, ${failed} failed` : ''}.`,
+      variant: failed === 0 ? 'default' : 'destructive',
+    });
   };
 
   const toggleMemberSelection = (memberId: string) => {
@@ -953,13 +989,15 @@ const Certificates = () => {
                   <div className="flex gap-2">
                     <Button 
                       variant="outline"
+                      size="sm"
                       onClick={handleBulkDownload}
                       disabled={selectedCertificates.length === 0}
                     >
                       <FileCheck className="mr-2 h-4 w-4" />
-                      Download Selected ({selectedCertificates.length})
+                      Download ({selectedCertificates.length})
                     </Button>
                     <Button 
+                      size="sm"
                       onClick={() => {
                         const activeCertificates = selectedCertificates.filter(id => 
                           unsentCertificates?.find(c => c.id === id)?.is_active
@@ -978,8 +1016,19 @@ const Certificates = () => {
                     >
                       <Send className="mr-2 h-4 w-4" />
                       {isSendingEmails 
-                        ? `Sending batch ${emailProgress.current}/${emailProgress.total}...` 
-                        : `Email Selected (${selectedCertificates.length})`}
+                        ? `Sending ${emailProgress.current}/${emailProgress.total}...` 
+                        : `Email (${selectedCertificates.length})`}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setBulkDeleteOpen(true)}
+                      disabled={selectedCertificates.length === 0 || isBulkDeleting}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isBulkDeleting
+                        ? `Deleting ${bulkDeleteProgress.current}/${bulkDeleteProgress.total}...`
+                        : `Delete (${selectedCertificates.length})`}
                     </Button>
                   </div>
                 </div>
@@ -1468,6 +1517,35 @@ const Certificates = () => {
                 disabled={permanentlyDeleteCertificate.isPending}
               >
                 {permanentlyDeleteCertificate.isPending ? 'Deleting...' : 'Delete Permanently'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog open={bulkDeleteOpen} onOpenChange={(open) => !isBulkDeleting && setBulkDeleteOpen(open)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Delete {selectedCertificates.length} Certificate(s)?</DialogTitle>
+              <DialogDescription>
+                This action <strong>cannot be undone</strong>. The selected certificates will be permanently removed from the database and storage.
+              </DialogDescription>
+            </DialogHeader>
+            {isBulkDeleting && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>Deleting certificates...</span>
+                  <span>{bulkDeleteProgress.current} of {bulkDeleteProgress.total}</span>
+                </div>
+                <Progress value={(bulkDeleteProgress.current / Math.max(bulkDeleteProgress.total, 1)) * 100} />
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={isBulkDeleting}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+                {isBulkDeleting ? 'Deleting...' : `Delete ${selectedCertificates.length} Permanently`}
               </Button>
             </DialogFooter>
           </DialogContent>
