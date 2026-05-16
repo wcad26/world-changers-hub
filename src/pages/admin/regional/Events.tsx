@@ -4330,8 +4330,8 @@ const RegionalEvents: React.FC = () => {
                 )}
               />
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
+              <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+                <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
                   setEditEventDialogOpen(false);
                   setEventToEdit(null);
                   form.reset();
@@ -4347,7 +4347,7 @@ const RegionalEvents: React.FC = () => {
                 }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={updateEventMutation.isPending}>
+                <Button type="submit" disabled={updateEventMutation.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95">
                   {updateEventMutation.isPending ? "Updating..." : "Update Event"}
                 </Button>
               </DialogFooter>
