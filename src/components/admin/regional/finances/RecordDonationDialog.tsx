@@ -131,189 +131,214 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <HeartHandshake className="h-5 w-5 text-primary" /> Record Donation
-          </DialogTitle>
-          <DialogDescription>Log a donation manually against a fundraising campaign.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        {/* Gradient header */}
+        <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+          <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-purple-500/20 blur-3xl pointer-events-none" />
+          <DialogHeader className="relative space-y-1.5">
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                <HeartHandshake className="h-5 w-5" />
+              </span>
+              Record Donation
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Log a donation manually against a fundraising campaign.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Campaign</Label>
-            <Select value={campaignId} onValueChange={setCampaignId}>
-              <SelectTrigger><SelectValue placeholder="Select a campaign" /></SelectTrigger>
-              <SelectContent>
-                {campaigns.length === 0 && (
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">No campaigns available</div>
-                )}
-                {campaigns.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} <span className="text-muted-foreground text-xs ml-1">· {c.status}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Amount ({symbol})</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="5,000"
-              value={amount ? Number(amount).toLocaleString("en-US") : ""}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/[^\d]/g, "");
-                setAmount(digits ? Number(digits) : 0);
-              }}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Donor Type</Label>
-            <RadioGroup
-              value={donorType}
-              onValueChange={(v) => setDonorType(v as DonorType)}
-              className="grid grid-cols-3 gap-2"
-            >
-              {(["member", "external", "anonymous"] as DonorType[]).map((t) => (
-                <Label
-                  key={t}
-                  htmlFor={`dt-${t}`}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border px-3 py-2 cursor-pointer text-sm font-normal",
-                    donorType === t ? "border-primary bg-primary/5" : "border-border"
+        <div className="px-6 py-5 space-y-5">
+          {/* Campaign + Amount glass panel */}
+          <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Campaign</Label>
+              <Select value={campaignId} onValueChange={setCampaignId}>
+                <SelectTrigger className="bg-background/60 border-border/50"><SelectValue placeholder="Select a campaign" /></SelectTrigger>
+                <SelectContent>
+                  {campaigns.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">No campaigns available</div>
                   )}
-                >
-                  <RadioGroupItem id={`dt-${t}`} value={t} />
-                  <span className="capitalize">{t === "external" ? "External donor" : t}</span>
-                </Label>
-              ))}
-            </RadioGroup>
+                  {campaigns.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} <span className="text-muted-foreground text-xs ml-1">· {c.status}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Amount</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-muted-foreground">{symbol}</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="5,000"
+                  className="pl-9 bg-background/60 border-border/50 text-base font-semibold"
+                  value={amount ? Number(amount).toLocaleString("en-US") : ""}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/[^\d]/g, "");
+                    setAmount(digits ? Number(digits) : 0);
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
-          {donorType === "member" && (
+          {/* Donor section */}
+          <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
             <div className="space-y-2">
-              <Label>Member</Label>
-              <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen} modal={true}>
-                <PopoverTrigger asChild>
-                  <Button type="button" variant="outline" role="combobox" className="w-full justify-between font-normal">
-                    <span className={cn("truncate", !memberLabel && "text-muted-foreground")}>
-                      {memberLabel || "Search and select a member…"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command shouldFilter={false}>
-                    <CommandInput placeholder="Search by name…" value={memberSearch} onValueChange={setMemberSearch} />
-                    <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
-                      {membersLoading ? (
-                        <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
-                        </div>
-                      ) : (
-                        <>
-                          <CommandEmpty>No members found.</CommandEmpty>
-                          <CommandGroup>
-                            {memberResults.map((m) => {
-                              const label = `${m.last_name || ""} ${m.first_name || ""}`.trim();
-                              return (
-                                <CommandItem key={m.id} value={m.id} onSelect={() => {
-                                  setMemberId(m.id); setMemberLabel(label); setMemberPopoverOpen(false);
-                                }}>
-                                  <Check className={cn("mr-2 h-4 w-4", memberId === m.id ? "opacity-100" : "opacity-0")} />
-                                  <span className="flex-1 truncate">{label}</span>
-                                  <span className="text-xs text-muted-foreground ml-2">{m.member_id}</span>
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        </>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Donor Type</Label>
+              <RadioGroup
+                value={donorType}
+                onValueChange={(v) => setDonorType(v as DonorType)}
+                className="grid grid-cols-3 gap-2"
+              >
+                {(["member", "external", "anonymous"] as DonorType[]).map((t) => (
+                  <Label
+                    key={t}
+                    htmlFor={`dt-${t}`}
+                    className={cn(
+                      "flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer text-sm font-medium transition-all",
+                      donorType === t
+                        ? "border-primary bg-gradient-to-br from-primary/15 to-purple-500/10 text-foreground shadow-sm"
+                        : "border-border/50 bg-background/40 text-muted-foreground hover:bg-background/70 hover:text-foreground"
+                    )}
+                  >
+                    <RadioGroupItem id={`dt-${t}`} value={t} className="sr-only" />
+                    <span className="capitalize">{t === "external" ? "External" : t}</span>
+                  </Label>
+                ))}
+              </RadioGroup>
             </div>
-          )}
 
-          {donorType === "external" && (
-            <div className="space-y-2">
-              <Label>External Donor</Label>
-              <Popover open={donorPopoverOpen} onOpenChange={setDonorPopoverOpen} modal={true}>
-                <PopoverTrigger asChild>
-                  <Button type="button" variant="outline" role="combobox" className="w-full justify-between font-normal">
-                    <span className={cn("truncate", !donorLabel && "text-muted-foreground")}>
-                      {donorLabel || "Search and select a donor…"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command shouldFilter={false}>
-                    <CommandInput placeholder="Search by name or email…" value={donorSearch} onValueChange={setDonorSearch} />
-                    <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
-                      {donorsLoading ? (
-                        <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
-                        </div>
-                      ) : (
-                        <>
-                          <CommandEmpty>
-                            <div className="py-3 text-sm text-muted-foreground">No donors found.</div>
-                          </CommandEmpty>
-                          <CommandGroup>
-                            {donorResults.map((d) => {
-                              const label = `${d.last_name} ${d.first_name}`.trim();
-                              return (
-                                <CommandItem key={d.id} value={d.id} onSelect={() => {
-                                  setDonorId(d.id); setDonorLabel(label); setDonorEmail(d.email || "");
-                                  setDonorPopoverOpen(false);
-                                }}>
-                                  <Check className={cn("mr-2 h-4 w-4", donorId === d.id ? "opacity-100" : "opacity-0")} />
-                                  <span className="flex-1 truncate">{label}</span>
-                                  {d.email && <span className="text-xs text-muted-foreground ml-2 truncate">{d.email}</span>}
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        </>
-                      )}
-                    </CommandList>
-                    <div className="border-t p-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="w-full justify-start"
-                        onClick={() => { setDonorPopoverOpen(false); setRegisterOpen(true); }}
-                      >
-                        <UserPlus className="h-4 w-4 mr-2" /> Register new donor
-                      </Button>
-                    </div>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
+            {donorType === "member" && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Member</Label>
+                <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen} modal={true}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" role="combobox" className="w-full justify-between font-normal bg-background/60 border-border/50">
+                      <span className={cn("truncate", !memberLabel && "text-muted-foreground")}>
+                        {memberLabel || "Search and select a member…"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput placeholder="Search by name…" value={memberSearch} onValueChange={setMemberSearch} />
+                      <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
+                        {membersLoading ? (
+                          <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
+                          </div>
+                        ) : (
+                          <>
+                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandGroup>
+                              {memberResults.map((m) => {
+                                const label = `${m.last_name || ""} ${m.first_name || ""}`.trim();
+                                return (
+                                  <CommandItem key={m.id} value={m.id} onSelect={() => {
+                                    setMemberId(m.id); setMemberLabel(label); setMemberPopoverOpen(false);
+                                  }}>
+                                    <Check className={cn("mr-2 h-4 w-4", memberId === m.id ? "opacity-100" : "opacity-0")} />
+                                    <span className="flex-1 truncate">{label}</span>
+                                    <span className="text-xs text-muted-foreground ml-2">{m.member_id}</span>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
 
-          <div className="space-y-2">
-            <Label>Donation Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            {donorType === "external" && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">External Donor</Label>
+                <Popover open={donorPopoverOpen} onOpenChange={setDonorPopoverOpen} modal={true}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" role="combobox" className="w-full justify-between font-normal bg-background/60 border-border/50">
+                      <span className={cn("truncate", !donorLabel && "text-muted-foreground")}>
+                        {donorLabel || "Search and select a donor…"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
+                    <Command shouldFilter={false}>
+                      <CommandInput placeholder="Search by name or email…" value={donorSearch} onValueChange={setDonorSearch} />
+                      <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
+                        {donorsLoading ? (
+                          <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
+                          </div>
+                        ) : (
+                          <>
+                            <CommandEmpty>
+                              <div className="py-3 text-sm text-muted-foreground">No donors found.</div>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {donorResults.map((d) => {
+                                const label = `${d.last_name} ${d.first_name}`.trim();
+                                return (
+                                  <CommandItem key={d.id} value={d.id} onSelect={() => {
+                                    setDonorId(d.id); setDonorLabel(label); setDonorEmail(d.email || "");
+                                    setDonorPopoverOpen(false);
+                                  }}>
+                                    <Check className={cn("mr-2 h-4 w-4", donorId === d.id ? "opacity-100" : "opacity-0")} />
+                                    <span className="flex-1 truncate">{label}</span>
+                                    {d.email && <span className="text-xs text-muted-foreground ml-2 truncate">{d.email}</span>}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </>
+                        )}
+                      </CommandList>
+                      <div className="border-t border-border/40 p-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start hover:bg-primary/10 hover:text-primary"
+                          onClick={() => { setDonorPopoverOpen(false); setRegisterOpen(true); }}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" /> Register new donor
+                        </Button>
+                      </div>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Message (optional)</Label>
-            <Textarea rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Note about this donation" />
+          {/* Meta panel */}
+          <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Donation Date</Label>
+              <Input type="date" className="bg-background/60 border-border/50" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Message <span className="normal-case text-muted-foreground/70">(optional)</span></Label>
+              <Textarea rows={2} className="bg-background/60 border-border/50 resize-none" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Note about this donation" />
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={createDonation.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground">
+        <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="bg-background/60 border-border/50">Cancel</Button>
+          <Button onClick={handleSubmit} disabled={createDonation.isPending} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95">
             {createDonation.isPending ? "Recording…" : "Record Donation"}
           </Button>
         </DialogFooter>
