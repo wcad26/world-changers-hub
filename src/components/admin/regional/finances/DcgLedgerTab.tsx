@@ -22,6 +22,7 @@ interface Props { range: PeriodRange }
 
 const DcgLedgerTab: React.FC<Props> = ({ range }) => {
   const { userRegion } = useAuth();
+  const navigate = useNavigate();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const { data: dcgs = [] } = useDcgs();
   const [search, setSearch] = useState("");
