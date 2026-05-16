@@ -20,14 +20,11 @@ export type DcgFinancialSummary = {
 
 // Hook to fetch financial transactions for a specific DCG
 export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: string; to?: string; limit?: number }) => {
-  const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
-
   return useQuery({
-    queryKey: ['dcg_financial_transactions', dcgId, regionId, filters],
+    queryKey: ['dcg_financial_transactions', dcgId, filters],
     queryFn: async (): Promise<DcgFinancialTransaction[]> => {
-      if (!regionId || !dcgId) return [];
-      
+      if (!dcgId) return [];
+
       let query = supabase
         .from('financial_transactions')
         .select(`
@@ -36,9 +33,8 @@ export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: s
           dcg:dcgs(name),
           member:members(member_id, profile:profiles(first_name, last_name))
         `)
-        .eq('region_id', regionId)
         .eq('dcg_id', dcgId);
-      
+
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
       if (filters?.limit) query = query.limit(filters.limit);
@@ -48,8 +44,8 @@ export const useDcgFinancialTransactions = (dcgId?: string, filters?: { from?: s
       if (error) throw error;
       return (data || []) as unknown as DcgFinancialTransaction[];
     },
-    enabled: !!regionId && !!dcgId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!dcgId,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
