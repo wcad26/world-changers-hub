@@ -13,8 +13,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, Download, Users, UserPlus, MoreVertical, Eye, Trash2, UserMinus } from 'lucide-react';
-import { useDcgMembers, useRemoveMemberFromDcg } from '@/hooks/useDcgMembers';
+import { Search, Download, Users, UserPlus, MoreVertical, Eye, Trash2, UserMinus, Pencil, ShieldCheck, ShieldOff } from 'lucide-react';
+import { useDcgMembers, useRemoveMemberFromDcg, useUpdateDcgMemberRole } from '@/hooks/useDcgMembers';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,18 +34,20 @@ const DcgMembers: React.FC = () => {
   const { userDcg } = useAuth();
   const { data: dcgMembers, isLoading } = useDcgMembers(userDcg?.id);
   const removeMember = useRemoveMemberFromDcg();
+  const updateRole = useUpdateDcgMemberRole();
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [addExistingOpen, setAddExistingOpen] = React.useState(false);
   const [registerNewOpen, setRegisterNewOpen] = React.useState(false);
   const [memberToRemove, setMemberToRemove] = React.useState<{ dcgMemberId: string; name: string } | null>(null);
+  const [editMember, setEditMember] = React.useState<MemberWithProfile | null>(null);
 
-  // Flatten DCG members to MemberWithProfile shape (preserve dcg_member id for remove)
+  // Flatten DCG members to MemberWithProfile shape (preserve dcg_member id + role)
   const flatMembers = React.useMemo(() => {
-    if (!dcgMembers) return [] as (MemberWithProfile & { __dcgMemberId: string })[];
+    if (!dcgMembers) return [] as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
     return dcgMembers
       .filter(dm => dm.members)
-      .map(dm => ({ ...(dm.members as any), __dcgMemberId: dm.id })) as (MemberWithProfile & { __dcgMemberId: string })[];
+      .map(dm => ({ ...(dm.members as any), __dcgMemberId: dm.id, __dcgRole: dm.role })) as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
   }, [dcgMembers]);
 
   const memberIds = React.useMemo(() => flatMembers.map(m => m.id), [flatMembers]);
@@ -260,6 +264,22 @@ const DcgMembers: React.FC = () => {
                               <DropdownMenuItem onClick={() => navigate(`/dcg/member/${member.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" /> View
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                <Pencil className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              {member.__dcgRole === 'Assistant' ? (
+                                <DropdownMenuItem
+                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Member' })}
+                                >
+                                  <ShieldOff className="h-4 w-4 mr-2" /> Remove as DCG Assistant
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Assistant' })}
+                                >
+                                  <ShieldCheck className="h-4 w-4 mr-2" /> Make DCG Assistant
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => setMemberToRemove({
                                   dcgMemberId: member.__dcgMemberId,
@@ -318,6 +338,18 @@ const DcgMembers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Edit Member</DialogTitle>
+            <DialogDescription>Update member information and details.</DialogDescription>
+          </DialogHeader>
+          {editMember && (
+            <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
     </DcgAdminLayout>
   );
 };
