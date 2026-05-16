@@ -37,6 +37,7 @@ const FundraisingLedgerTab: React.FC<Props> = ({ range }) => {
         <FinanceKpiCard label="Goal Progress" value={`${completionPct}%`} icon={HeartHandshake} tone="warning" />
         <FinanceKpiCard label="Active Campaigns" value={activeCount} icon={Users} tone="info" />
       </div>
+      <FundraisingTransactionsCard range={range} />
       <FundraisingTabContent />
     </div>
   );
