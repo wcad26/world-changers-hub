@@ -139,7 +139,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
 
           <div className="space-y-2">
             <Label>Donor</Label>
-            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
@@ -161,7 +161,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
                     value={memberSearch}
                     onValueChange={setMemberSearch}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
                     {membersLoading ? (
                       <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
