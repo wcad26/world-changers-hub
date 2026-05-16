@@ -338,6 +338,18 @@ const DcgMembers: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Edit Member</DialogTitle>
+            <DialogDescription>Update member information and details.</DialogDescription>
+          </DialogHeader>
+          {editMember && (
+            <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
     </DcgAdminLayout>
   );
 };
