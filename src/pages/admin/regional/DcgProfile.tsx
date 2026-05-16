@@ -50,9 +50,6 @@ const DcgProfile: React.FC = () => {
   const { dcgId } = useParams<{ dcgId: string }>();
   const navigate = useNavigate();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<DcgFinancialTransaction | null>(null);
-  const [deletingTransaction, setDeletingTransaction] = useState<DcgFinancialTransaction | null>(null);
-  const deleteTransaction = useDeleteDcgTransaction(dcgId || "");
   const { userRegion } = useAuth();
 
   // Period filter
