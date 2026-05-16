@@ -26,6 +26,7 @@ const FundraisingTabContent: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [donationDialogOpen, setDonationDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState<FundraisingCampaign | null>(null);
 
