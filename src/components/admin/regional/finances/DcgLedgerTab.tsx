@@ -138,7 +138,6 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
         )}
       </div>
 
-      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
       <Collapsible open={txOpen} onOpenChange={setTxOpen} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
         <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 group">
           <div className="flex items-center gap-2">
