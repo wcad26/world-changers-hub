@@ -238,13 +238,13 @@ const DcgMembers: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/30">
-                    <TableHead className="w-[20%]">Name</TableHead>
+                    <TableHead className="min-w-[180px]">Name</TableHead>
                     <TableHead className="hidden lg:table-cell w-[20%]">Address</TableHead>
                     <TableHead className="hidden sm:table-cell">Phone</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead className="hidden lg:table-cell">Status</TableHead>
                     <TableHead className="hidden lg:table-cell">Join Date</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-[1%] whitespace-nowrap text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
