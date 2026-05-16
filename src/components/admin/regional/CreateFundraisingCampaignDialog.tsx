@@ -198,6 +198,31 @@ const CreateFundraisingCampaignDialog: React.FC<
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <div className="px-6 py-5 space-y-5">
+              {/* Visibility */}
+              <FormField
+                control={form.control}
+                name="isPublic"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4">
+                    <div className="space-y-1 pr-4">
+                      <FormLabel className="text-sm font-medium">
+                        Show on public site
+                      </FormLabel>
+                      <FormDescription className="text-xs">
+                        Featured on your regional homepage and the public
+                        fundraising page.
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               {/* Image upload panel */}
               <FormField
                 control={form.control}
@@ -496,31 +521,6 @@ const CreateFundraisingCampaignDialog: React.FC<
                   />
                 </div>
               </div>
-
-              {/* Visibility */}
-              <FormField
-                control={form.control}
-                name="isPublic"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4">
-                    <div className="space-y-1 pr-4">
-                      <FormLabel className="text-sm font-medium">
-                        Show on public site
-                      </FormLabel>
-                      <FormDescription className="text-xs">
-                        Featured on your regional homepage and the public
-                        fundraising page.
-                      </FormDescription>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
             </div>
 
             <DialogFooter className="px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2 sm:gap-2">
