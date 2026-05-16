@@ -1,44 +1,50 @@
-# Rebuild Record Expense Dialog
+# Rebuild Record Special Giving Dialog
 
-Restyle `src/components/admin/regional/RecordExpenseDialog.tsx` to match the modern glass dialog standard already used by `RecordTitheDialog` and `RecordOfferingDialog`, add new fields, and persist directly to the database.
+Restyle `src/components/admin/regional/RecordSpecialGivingDialog.tsx` to match the modern glass dialog standard, mirroring the structure of `RecordDonationDialog`, and persist directly to `financial_transactions` under the existing "Special Giving" income category.
 
 ## Form fields (in order)
 
-1. **Date** — date picker, defaults to today (kept from current form).
-2. **Category** — dropdown sourced from `financial_transaction_categories` where `type = 'Expense'` (replaces the current hard-coded list, so values stay in sync with the DB).
-3. **Member in charge** — searchable combobox (Popover + Command) listing all members in the user's region via `useMembers(userRegion?.id)`. Same touch-pad-scrollable pattern as the Tithe dialog member list (`h-72 max-h-72 overflow-y-scroll overscroll-contain pr-1 touch-pan-y` + `onWheelCapture` stopPropagation). Displayed as "Last First".
-4. **Item or service** — text input (required) for what was bought.
-5. **Payee** — text input (kept, required).
-6. **Amount** — formatted decimal input with currency symbol, using the existing `formatAmountInput` / `parseAmount` helpers.
-7. **Receipt image (optional)** — keep current upload UI as-is (no storage wiring requested).
-8. **Description (Optional)** — textarea, styled like the Tithe/Offering "Notes" field. Replaces both the old Description input and the old Notes textarea.
+1. **Date** — date input, defaults to today (the date the payment came in).
+2. **Amount** — formatted decimal input with currency symbol prefix, using the existing `formatAmountInput` / `parseAmount` helpers from the Tithe dialog.
+3. **Payment Method** — Select dropdown with the same options as the Tithe dialog (Cash, Check, Bank Transfer, Mobile Payment, etc.). Required.
+4. **Giver Type** — segmented radio (Member · External · Anonymous), identical to the "Donor Type" control in `RecordDonationDialog`.
+5. **Giver selector** — conditional on type:
+   - `member`: searchable Popover + Command combobox via `supabase.rpc("search_all_members", ...)`.
+   - `external`: searchable donor combobox via `useSearchDonors` + "Register new donor" button opening `RegisterDonorDialog`.
+   - `anonymous`: no selector.
+6. **Description** — required textarea describing the purpose of the special giving (replaces the old Fund/Project dropdown).
 
-The bottom **Notes** field is removed entirely.
+The old **Fund/Project** select and the **Notes (Optional)** field are removed entirely.
 
 ## Visual design
 
-Match the existing glass dialog standard:
-- Gradient `DialogContent` (`from-card/95 to-muted/20`), sticky gradient header with blurred orbs and an icon tile (use `Receipt` lucide icon), glass panel wrapping the fields, glass inputs (`bg-background/60 border-border/50`), uppercase tracked field labels.
-- Sticky `DialogFooter` with Cancel + gradient "Record Expense" submit button (`from-primary to-purple-600`).
-- `max-h-[90vh] flex flex-col overflow-hidden` with a scrollable body so the header and footer stay fixed.
+Match the existing glass dialog standard already used by `RecordDonationDialog`:
+- Gradient `DialogContent` (`from-card/95 to-muted/20`), sticky gradient header with blurred orbs and a `PiggyBank` icon tile.
+- Glass panels (`rounded-xl border-border/40 bg-card/50 backdrop-blur-sm`) grouping (a) Date + Amount + Payment Method, (b) Giver type + giver selector, (c) Description.
+- Glass inputs (`bg-background/60 border-border/50`), uppercase tracked field labels.
+- Sticky `DialogFooter` with Cancel + gradient "Record Special Giving" submit button (`from-primary to-purple-600`).
+- `max-h-[90vh] flex flex-col overflow-hidden` with a scrollable body.
 
 ## Database persistence
 
-The `financial_transactions` table has no columns for member, payee, or item. To avoid a schema change, persist via `useCreateFinancialTransaction` with:
-- `category_id` — selected expense category id
+The "Special Giving" income category already exists (id `80baa1d0-5a31-49eb-a3fd-592da26cfb00`). Resolve it at runtime via `useFinancialCategories` by filtering for `type === 'Income'` and `name === 'Special Giving'` (avoids hard-coding the UUID).
+
+Persist via `useCreateFinancialTransaction`:
+- `category_id` — resolved Special Giving category id
 - `amount` — parsed number
 - `transaction_date` — `format(date, 'yyyy-MM-dd')`
 - `dcg_id: null`
-- `description` — composed string: `"<item> — Payee: <payee> · In charge: <Last First>" + (notes ? ": <notes>" : "")`
+- `description` — composed string:
+  `"<description> · Giver: <Last First | External donor name | Anonymous> (<method>)"`
 
-This matches the descriptive-string pattern used by the Tithe and Offering dialogs and keeps all entered information persisted and visible in the ledger.
+This matches the descriptive-string pattern used by the Tithe/Offering/Expense dialogs and keeps all entered info visible in the ledger. No schema changes.
 
 ## Wiring
 
-`RegionalLedgerTab.tsx` currently renders `<RecordExpenseDialog ... onSubmit={...}/>`. Drop the `onSubmit` prop (the dialog will handle persistence itself) — update the prop type and the call site accordingly.
+`RegionalLedgerTab.tsx` currently renders `<RecordSpecialGivingDialog open={specialOpen} onOpenChange={setSpecialOpen} />` — no prop changes needed since the dialog handles its own persistence.
 
 ## Out of scope
 
-- No DB schema changes (no new columns for member/payee/item — all encoded into `description`).
-- No receipt-image upload to Supabase Storage (UI kept as-is for now).
-- No changes to the DCG expense dialog.
+- No DB schema changes (giver info encoded into `description`).
+- No changes to the DCG income dialog.
+- No changes to `RegisterDonorDialog` itself (reused as-is).
