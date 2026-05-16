@@ -23,7 +23,20 @@ import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 const FundraisingTabContent: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] }),
+      queryClient.invalidateQueries({ queryKey: ['region_donations'] }),
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] }),
+      queryClient.invalidateQueries({ queryKey: ['campaign_donations'] }),
+    ]);
+    setTimeout(() => setRefreshing(false), 400);
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
