@@ -201,6 +201,24 @@ export const useCreateDonation = () => {
   });
 };
 
+// Mutation: delete a donation
+export const useDeleteDonation = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('fundraising_donations').delete().eq('id', id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['region_donations'] });
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['campaign_donations'] });
+    },
+  });
+};
+
 // Hook: fetch donations across all campaigns in the user's region within a date range
 export const useRegionDonations = (from: Date, to: Date) => {
   const { userRegion } = useAuth();
