@@ -422,6 +422,7 @@ const DcgEvents: React.FC = () => {
             isOpen={!!selectedEventForAttendance}
             onClose={() => setSelectedEventForAttendance(null)}
             event={selectedEventForAttendance}
+            dcgId={userDcg.id}
           />
         )}
       </div>
