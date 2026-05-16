@@ -80,10 +80,10 @@ const FundraisingCampaignReport: React.FC = () => {
   const fc = (n: number) => formatCurrencyWithSymbol(n, cur);
 
   const totals = useMemo(() => {
-    const raised = donations.reduce((s, d) => s + Number(d.amount || 0), 0) / 100;
+    const raised = filteredDonations.reduce((s, d) => s + Number(d.amount || 0), 0) / 100;
     const goal = (campaign?.goal || 0) / 100;
     const donorsSet = new Set<string>();
-    donations.forEach((d) => {
+    filteredDonations.forEach((d) => {
       if (d.anonymous) donorsSet.add(`anon:${d.id}`);
       else if (d.donor_id) donorsSet.add(`id:${d.donor_id}`);
       else if (d.donor_email) donorsSet.add(`em:${d.donor_email.toLowerCase()}`);
@@ -91,10 +91,10 @@ const FundraisingCampaignReport: React.FC = () => {
       else donorsSet.add(`anon:${d.id}`);
     });
     const donorCount = donorsSet.size;
-    const avg = donations.length > 0 ? raised / donations.length : 0;
+    const avg = filteredDonations.length > 0 ? raised / filteredDonations.length : 0;
     const pct = goal > 0 ? (raised / goal) * 100 : 0;
     return { raised, goal, donorCount, avg, pct };
-  }, [donations, campaign]);
+  }, [filteredDonations, campaign]);
 
   const daysInfo = useMemo(() => {
     if (!campaign?.start_date) return { label: "—", value: "—" };
@@ -111,23 +111,35 @@ const FundraisingCampaignReport: React.FC = () => {
   }, [campaign]);
 
   const trendData = useMemo(() => {
-    const byDay = new Map<string, number>();
-    donations.forEach((d) => {
-      const day = format(new Date(d.donation_date), "yyyy-MM-dd");
-      byDay.set(day, (byDay.get(day) || 0) + Number(d.amount || 0) / 100);
+    const weeks: Record<string, { donations: number; ts: number }> = {};
+    for (const d of filteredDonations) {
+      const dt = new Date(d.donation_date);
+      const ws = startOfWeek(dt, { weekStartsOn: 1 });
+      const key = format(ws, "yyyy-MM-dd");
+      if (!weeks[key]) weeks[key] = { donations: 0, ts: ws.getTime() };
+      weeks[key].donations += Number(d.amount || 0) / 100;
+    }
+    const startW = startOfWeek(range.from, { weekStartsOn: 1 });
+    const endW = startOfWeek(range.to, { weekStartsOn: 1 });
+    if (endW.getTime() < startW.getTime()) return [];
+    const all = eachWeekOfInterval({ start: startW, end: endW }, { weekStartsOn: 1 });
+    let cum = 0;
+    return all.map((w) => {
+      const key = format(w, "yyyy-MM-dd");
+      const bucket = weeks[key];
+      const donationsAmt = bucket ? Math.round(bucket.donations * 100) / 100 : 0;
+      cum += donationsAmt;
+      return {
+        week: format(w, "MMM d"),
+        Donations: donationsAmt,
+        Cumulative: Math.round(cum * 100) / 100,
+      };
     });
-    return Array.from(byDay.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, amount]) => ({
-        day,
-        label: format(parseISO(day), "MMM dd"),
-        amount: Math.round(amount * 100) / 100,
-      }));
-  }, [donations]);
+  }, [filteredDonations, range]);
 
   const topDonors = useMemo(() => {
     const map = new Map<string, { key: string; name: string; total: number; count: number }>();
-    donations.forEach((d) => {
+    filteredDonations.forEach((d) => {
       const name = d.anonymous ? "Anonymous" : (d.donor_name || d.donor_email || "Unknown");
       const key = d.anonymous ? `anon:${d.id}` : (d.donor_email?.toLowerCase() || d.donor_name?.toLowerCase() || `d:${d.id}`);
       const existing = map.get(key) || { key, name, total: 0, count: 0 };
@@ -136,7 +148,9 @@ const FundraisingCampaignReport: React.FC = () => {
       map.set(key, existing);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [donations]);
+  }, [filteredDonations]);
+
+  const currencySymbol = getCurrencySymbol(cur);
 
   const openView = (d: any) => { setSelected(d); setViewOpen(true); };
 
