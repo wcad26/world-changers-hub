@@ -95,6 +95,9 @@ const Certificates = () => {
   // Email sending progress state
   const [isSendingEmails, setIsSendingEmails] = useState(false);
   const [emailProgress, setEmailProgress] = useState({ current: 0, total: 0 });
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkDeleteProgress, setBulkDeleteProgress] = useState({ current: 0, total: 0 });
   const [certificateToDeletePermanently, setCertificateToDeletePermanently] = useState<{
     id: string;
     certificate_url: string;
