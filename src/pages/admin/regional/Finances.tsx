@@ -12,7 +12,8 @@ const RegionalFinances: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      {/* Glass header */}
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Financial Management</h1>
           <p className="text-sm text-muted-foreground">Segregated accounting across Regional, DCG and Fundraising ledgers</p>
@@ -26,10 +27,19 @@ const RegionalFinances: React.FC = () => {
       </div>
 
       <Tabs defaultValue="regional" className="space-y-6">
-        <TabsList className="grid grid-cols-3 w-full max-w-xl">
-          <TabsTrigger value="regional">Regional</TabsTrigger>
-          <TabsTrigger value="dcg">DCG</TabsTrigger>
-          <TabsTrigger value="fundraising">Fundraising</TabsTrigger>
+        <TabsList className="grid grid-cols-3 w-full max-w-xl bg-muted/40 backdrop-blur-sm rounded-xl p-1 h-auto">
+          <TabsTrigger
+            value="regional"
+            className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9"
+          >Regional</TabsTrigger>
+          <TabsTrigger
+            value="dcg"
+            className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9"
+          >DCG</TabsTrigger>
+          <TabsTrigger
+            value="fundraising"
+            className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9"
+          >Fundraising</TabsTrigger>
         </TabsList>
 
         <TabsContent value="regional"><RegionalLedgerTab range={range} /></TabsContent>

@@ -17,18 +17,18 @@ interface Props {
 const FinanceFiltersBar: React.FC<Props> = ({ search, onSearchChange, categoryId, onCategoryChange, type, onTypeChange, extra }) => {
   const { data: categories = [] } = useFinancialCategories();
   return (
-    <div className="flex flex-col md:flex-row md:items-center gap-2">
-      <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col md:flex-row md:items-center gap-2 rounded-xl border border-border/40 bg-card/60 backdrop-blur-sm px-2.5 py-2">
+      <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search transactions..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-8"
+          className="pl-8 h-9 bg-background/60 border-border/40"
         />
       </div>
       <Select value={type} onValueChange={(v) => onTypeChange(v as any)}>
-        <SelectTrigger className="w-36"><SelectValue placeholder="Type" /></SelectTrigger>
+        <SelectTrigger className="w-36 h-9 bg-background/60 border-border/40"><SelectValue placeholder="Type" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All types</SelectItem>
           <SelectItem value="income">Income</SelectItem>
@@ -36,7 +36,7 @@ const FinanceFiltersBar: React.FC<Props> = ({ search, onSearchChange, categoryId
         </SelectContent>
       </Select>
       <Select value={categoryId ?? "all"} onValueChange={(v) => onCategoryChange(v === "all" ? null : v)}>
-        <SelectTrigger className="w-48"><SelectValue placeholder="Category" /></SelectTrigger>
+        <SelectTrigger className="w-48 h-9 bg-background/60 border-border/40"><SelectValue placeholder="Category" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All categories</SelectItem>
           {categories.map(c => (

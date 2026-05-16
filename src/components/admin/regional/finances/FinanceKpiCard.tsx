@@ -1,6 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -9,32 +8,40 @@ interface Props {
   icon: LucideIcon;
   tone?: "income" | "expense" | "neutral" | "info" | "warning" | "primary";
   hint?: string;
+  trend?: number | null;
 }
 
-const toneMap: Record<NonNullable<Props["tone"]>, { icon: string; tile: string }> = {
-  income:  { icon: "text-green-600",  tile: "bg-green-50 dark:bg-green-900/20" },
-  expense: { icon: "text-red-600",    tile: "bg-red-50 dark:bg-red-900/20" },
-  neutral: { icon: "text-blue-600",   tile: "bg-blue-50 dark:bg-blue-900/20" },
-  info:    { icon: "text-purple-600", tile: "bg-purple-50 dark:bg-purple-900/20" },
-  warning: { icon: "text-amber-600",  tile: "bg-amber-50 dark:bg-amber-900/20" },
-  primary: { icon: "text-primary",    tile: "bg-primary/10" },
+const toneMap: Record<NonNullable<Props["tone"]>, string> = {
+  income:  "bg-green-500/10 text-green-600",
+  expense: "bg-red-500/10 text-red-600",
+  neutral: "bg-blue-500/10 text-blue-600",
+  info:    "bg-purple-500/10 text-purple-600",
+  warning: "bg-amber-500/10 text-amber-600",
+  primary: "bg-primary/10 text-primary",
 };
 
-const FinanceKpiCard: React.FC<Props> = ({ label, value, icon: Icon, tone = "neutral", hint }) => {
-  const t = toneMap[tone];
+const FinanceKpiCard: React.FC<Props> = ({ label, value, icon: Icon, tone = "neutral", hint, trend }) => {
+  const iconTone = toneMap[tone];
   return (
-    <Card className="bg-gradient-to-br from-background to-muted/30 backdrop-blur-sm border-border/50 shadow-sm">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <div className={cn("p-1.5 rounded-lg", t.tile)}>
-            <Icon className={cn("h-4 w-4", t.icon)} />
-          </div>
+    <div className="bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl shadow-sm p-5 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-medium text-muted-foreground truncate">{label}</span>
+        <div className={cn("h-8 w-8 rounded-xl flex items-center justify-center shrink-0", iconTone)}>
+          <Icon className="h-4 w-4" />
         </div>
-        <p className="text-lg font-bold truncate" title={String(value)}>{value}</p>
-        <p className="text-xs text-muted-foreground truncate">{label}</p>
-        {hint && <p className="text-[10px] text-muted-foreground/80 mt-0.5">{hint}</p>}
-      </CardContent>
-    </Card>
+      </div>
+      <div className="text-2xl font-bold truncate" title={String(value)}>{value}</div>
+      <div className="flex items-center justify-between mt-1 gap-2">
+        {hint ? <p className="text-xs text-muted-foreground truncate">{hint}</p> : <span />}
+        {trend !== null && trend !== undefined && (
+          <div className={cn("flex items-center gap-1 text-xs font-medium shrink-0",
+            trend >= 0 ? "text-green-600" : "text-red-600")}>
+            {trend >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {Math.abs(trend).toFixed(1)}%
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 

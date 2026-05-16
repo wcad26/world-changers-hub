@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { formatCurrencyWithSymbol, getCurrencySymbol } from "@/utils/currencyUtils";
@@ -16,6 +15,7 @@ interface Props {
 
 const LedgerTrendChart: React.FC<Props> = ({ rows, regionCurrency, title = "Financial Trends", description }) => {
   const currencySymbol = getCurrencySymbol(regionCurrency);
+
   const data = useMemo(() => {
     if (!rows.length) return [];
     const months: Record<string, { income: number; expenses: number; ts: number }> = {};
@@ -29,39 +29,71 @@ const LedgerTrendChart: React.FC<Props> = ({ rows, regionCurrency, title = "Fina
       else if (ct === "expense") months[key].expenses += amt;
     }
     return Object.entries(months)
-      .map(([month, v]) => ({ month, income: v.income, expenses: v.expenses, net: v.income - v.expenses, ts: v.ts }))
+      .map(([month, v]) => ({ month, Income: v.income, Expenses: v.expenses, Net: v.income - v.expenses, ts: v.ts }))
       .sort((a, b) => a.ts - b.ts);
   }, [rows]);
 
   const fc = (v: number) => formatCurrencyWithSymbol(v, regionCurrency);
 
   return (
-    <Card className="bg-gradient-to-br from-background to-muted/20 backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5" />{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>
-        {data.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-12">No data for the selected period.</p>
-        ) : (
-          <div className="h-[320px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${currencySymbol}${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
-                <Tooltip formatter={(value, name) => [fc(Number(value)), name]} />
-                <Legend />
-                <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={3} name="Income" dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={3} name="Expenses" dot={{ r: 3 }} />
-                <Line type="monotone" dataKey="net" stroke="#3b82f6" strokeWidth={3} name="Net" dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary" />
+            {title}
+          </h3>
+          {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
+        </div>
+      </div>
+      {data.length === 0 ? (
+        <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
+          No data for the selected period.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+            <XAxis dataKey="month" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+            <YAxis
+              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+            />
+            <Tooltip
+              cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "12px",
+                fontSize: "12px",
+                boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+              }}
+              formatter={(value, name) => [fc(Number(value)), name]}
+            />
+            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+            <Area type="monotone" dataKey="Income" stroke="hsl(var(--chart-1))" fill="url(#gradIncome)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="Expenses" stroke="hsl(var(--chart-2))" fill="url(#gradExpenses)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="Net" stroke="hsl(var(--chart-4))" fill="url(#gradNet)" strokeWidth={2.5} dot={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      )}
+    </div>
   );
 };
 
