@@ -48,7 +48,7 @@ import RegionalEventReport from "./pages/admin/regional/EventReport";
 import RegionalFinances from "./pages/admin/regional/Finances";
 import RegionalDCG from "./pages/admin/regional/DCG";
 import DcgProfile from "./pages/admin/regional/DcgProfile";
-import RegionalReports from "./pages/admin/regional/Reports";
+
 import RegionalCommunication from "./pages/admin/regional/Communication";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
