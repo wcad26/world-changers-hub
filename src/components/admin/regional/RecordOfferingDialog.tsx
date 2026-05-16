@@ -189,11 +189,14 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                          <Command>
+                          <Command className="max-h-80">
                             <CommandInput placeholder="Search events…" />
-                            <CommandList className="max-h-72 overflow-y-auto overscroll-contain">
+                            <CommandList
+                              className="h-72 max-h-72 overflow-y-scroll overscroll-contain pr-1 touch-pan-y"
+                              onWheelCapture={(event) => event.stopPropagation()}
+                            >
                               <CommandEmpty>No events found.</CommandEmpty>
-                              <CommandGroup>
+                              <CommandGroup className="overflow-visible">
                                 {events.map(e => {
                                   const label = `${e.name} · ${format(new Date(e.start_datetime), 'MMM dd, yyyy')}`;
                                   return (
