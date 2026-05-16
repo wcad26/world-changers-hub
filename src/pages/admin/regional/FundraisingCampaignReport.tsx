@@ -55,6 +55,19 @@ const FundraisingCampaignReport: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
+  const [period, setPeriod] = useState<PeriodKey>("1y");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
+
+  const filteredDonations = useMemo(() => {
+    const fromMs = range.from.getTime();
+    const toMs = range.to.getTime();
+    return donations.filter((d: any) => {
+      const t = new Date(d.donation_date).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+  }, [donations, range]);
+
 
   const cur = useMemo(() => {
     if (!campaign) return regionCurrency;
