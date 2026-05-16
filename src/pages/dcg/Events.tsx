@@ -42,11 +42,10 @@ import { format } from "date-fns";
 const DcgEvents = () => {
   const { userRegion, userDcg } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [periodFilters, setPeriodFilters] = useState<{
-    period: string;
-    startDate?: Date;
-    endDate?: Date;
-  }>({ period: "1M" });
+  const [periodFilters, setPeriodFilters] = useState<PeriodFilters>({
+    dateRange: { from: undefined, to: undefined },
+    quickDateRange: "1-month"
+  });
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
