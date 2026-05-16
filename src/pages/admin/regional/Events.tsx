@@ -3144,7 +3144,7 @@ const RegionalEvents: React.FC = () => {
                 description: `Please fix the following fields: ${Object.keys(errors).join(', ')}`,
                 variant: "destructive",
               });
-            })} className="px-6 py-5 space-y-6">
+            })} className="px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
               {/* Event details form fields - same structure as create dialog */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
