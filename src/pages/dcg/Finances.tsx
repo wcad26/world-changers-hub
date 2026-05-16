@@ -2,129 +2,107 @@ import React, { useMemo, useState } from "react";
 import DcgAdminLayout from "@/components/admin/DcgAdminLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "@/components/ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, Plus, Download,
-  ListOrdered, ChevronDown, Loader2,
+  Loader2, AlertCircle, Search, Inbox, ListOrdered,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, subMonths, startOfYear } from "date-fns";
 
-import PeriodSelector, { type PeriodKey, resolvePeriod } from "@/components/admin/regional/finances/PeriodSelector";
-import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
-import FinanceFiltersBar from "@/components/admin/regional/finances/FinanceFiltersBar";
-import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendChart";
-import DcgTransactionRowActions from "@/components/admin/regional/finances/DcgTransactionRowActions";
-
-import { useAuth } from "@/hooks/useAuth";
 import { useCurrentDcg, useDcgFinancialTransactions } from "@/hooks/useDcgFinancials";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 import { exportCsv } from "@/utils/csvExport";
-import type { LedgerRow } from "@/hooks/useRegionalLedger";
 
 import { RecordDcgIncomeDialog } from "@/components/admin/dcg/RecordDcgIncomeDialog";
 import { RecordDcgExpenseDialog } from "@/components/admin/dcg/RecordDcgExpenseDialog";
 
-const SPECIAL_CATEGORIES = ["Building Fund", "Mission Fund", "Youth Fund", "Benevolence Fund"];
+type PeriodKey = "all" | "1m" | "3m" | "6m" | "ytd" | "1y";
+
+const resolvePeriod = (p: PeriodKey): { from?: Date; to?: Date } => {
+  const now = new Date();
+  switch (p) {
+    case "1m": return { from: subMonths(now, 1), to: now };
+    case "3m": return { from: subMonths(now, 3), to: now };
+    case "6m": return { from: subMonths(now, 6), to: now };
+    case "ytd": return { from: startOfYear(now), to: now };
+    case "1y": return { from: subMonths(now, 12), to: now };
+    case "all":
+    default: return {};
+  }
+};
 
 const DcgFinances: React.FC = () => {
-  const { loading: authLoading } = useAuth();
   const { data: currentDcg, isLoading: dcgLoading, error: dcgError } = useCurrentDcg();
-  const activeDcgId = currentDcg?.id;
+  const dcgId = currentDcg?.id;
   const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
 
-  const [period, setPeriod] = useState<PeriodKey>("3m");
-  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
-  const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
-
+  const [period, setPeriod] = useState<PeriodKey>("all");
   const [search, setSearch] = useState("");
-  const [type, setType] = useState<"all" | "income" | "expense">("all");
-  const [incomeType, setIncomeType] = useState<"all" | "tithes" | "offerings" | "special">("all");
-  const [expenseCategoryId, setExpenseCategoryId] = useState<string | null>(null);
-  const [txOpen, setTxOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense">("all");
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
 
-  const [incomeDlgOpen, setIncomeDlgOpen] = useState(false);
-  const [expenseDlgOpen, setExpenseDlgOpen] = useState(false);
-
-  const { data: rawRows = [], isLoading } = useDcgFinancialTransactions(activeDcgId, {
-    from: format(range.from, "yyyy-MM-dd"),
-    to: format(range.to, "yyyy-MM-dd"),
-  });
-
-  // Normalize to LedgerRow shape for the shared chart + row-actions components
-  const rows: LedgerRow[] = useMemo(
-    () =>
-      rawRows.map((r: any) => ({
-        id: r.id,
-        amount: Number(r.amount),
-        description: r.description ?? null,
-        transaction_date: r.transaction_date,
-        dcg_id: r.dcg_id ?? activeDcgId ?? null,
-        category_id: r.category_id,
-        category: r.category ? { name: r.category.name, type: r.category.type } : null,
-        dcg: { name: currentDcg?.name ?? null },
-      })),
-    [rawRows, activeDcgId, currentDcg?.name],
+  const range = useMemo(() => resolvePeriod(period), [period]);
+  const filters = useMemo(
+    () => ({
+      from: range.from ? format(range.from, "yyyy-MM-dd") : undefined,
+      to: range.to ? format(range.to, "yyyy-MM-dd") : undefined,
+    }),
+    [range],
   );
+
+  const {
+    data: rows = [],
+    isLoading: txLoading,
+    error: txError,
+    refetch,
+  } = useDcgFinancialTransactions(dcgId, filters);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
     return rows.filter((r) => {
-      const ct = r.category?.type?.toLowerCase();
-      if (type !== "all" && ct !== type) return false;
-      const name = r.category?.name ?? "";
-      if ((type === "all" || type === "income") && ct === "income" && incomeType !== "all") {
-        if (incomeType === "tithes" && !/tithe/i.test(name)) return false;
-        if (incomeType === "offerings" && !/offering/i.test(name)) return false;
-        if (incomeType === "special" && !SPECIAL_CATEGORIES.includes(name)) return false;
-      }
-      if ((type === "all" || type === "expense") && ct === "expense" && expenseCategoryId) {
-        if (r.category_id !== expenseCategoryId) return false;
-      }
+      const ct = (r.category?.type || "").toLowerCase();
+      if (typeFilter !== "all" && ct !== typeFilter) return false;
       if (!s) return true;
       return (
-        name.toLowerCase().includes(s) ||
-        (r.description ?? "").toLowerCase().includes(s) ||
+        (r.category?.name || "").toLowerCase().includes(s) ||
+        (r.description || "").toLowerCase().includes(s) ||
         String(r.amount).includes(s)
       );
     });
-  }, [rows, search, type, incomeType, expenseCategoryId]);
+  }, [rows, search, typeFilter]);
 
   const summary = useMemo(() => {
     let income = 0, expenses = 0, offerings = 0;
     for (const r of filtered) {
-      const ct = r.category?.type?.toLowerCase();
+      const ct = (r.category?.type || "").toLowerCase();
       const amt = Number(r.amount) || 0;
       if (ct === "income") income += amt;
       else if (ct === "expense") expenses += amt;
-      if (/offering/i.test(r.category?.name ?? "")) offerings += amt;
+      if (/offering/i.test(r.category?.name || "")) offerings += amt;
     }
-    return { income, expenses, net: income - expenses, offerings };
-  }, [filtered]);
-
-  const perCategory = useMemo(() => {
-    const map = new Map<string, { name: string; type: string; count: number; total: number }>();
-    for (const r of filtered) {
-      const key = r.category_id || r.category?.name || "unknown";
-      const cur = map.get(key) ?? {
-        name: r.category?.name ?? "—",
-        type: r.category?.type ?? "—",
-        count: 0,
-        total: 0,
-      };
-      cur.count += 1;
-      cur.total += Number(r.amount) || 0;
-      map.set(key, cur);
-    }
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+    return {
+      income,
+      expenses,
+      net: income - expenses,
+      offerings,
+      count: filtered.length,
+    };
   }, [filtered]);
 
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
 
   const handleExport = () => {
     exportCsv(
-      `dcg-finances-${format(range.from, "yyyyMMdd")}-${format(range.to, "yyyyMMdd")}.csv`,
+      `dcg-${currentDcg?.name ?? "finances"}-${format(new Date(), "yyyyMMdd")}.csv`,
       filtered.map((r) => ({
         date: r.transaction_date,
         category: r.category?.name ?? "",
@@ -135,187 +113,275 @@ const DcgFinances: React.FC = () => {
     );
   };
 
-  if (authLoading || dcgLoading) {
+  // Loading state
+  if (dcgLoading) {
     return (
       <DcgAdminLayout>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-muted-foreground">Loading…</span>
+          <span className="ml-2 text-muted-foreground">Loading your DCG…</span>
         </div>
       </DcgAdminLayout>
     );
   }
 
+  // No DCG resolved
   if (dcgError || !currentDcg) {
     return (
       <DcgAdminLayout>
-        <div className="p-6 text-center space-y-2">
-          <h1 className="text-2xl font-bold">DCG Finances</h1>
-          <p className="text-muted-foreground">
-            We couldn't resolve your DCG. Please ensure you are signed in as a DCG leader.
-          </p>
+        <Card className="m-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" /> No DCG Access
+            </CardTitle>
+            <CardDescription>
+              We couldn't find an active DCG assigned to your account. Please contact your regional
+              administrator to be assigned as a DCG leader.
+            </CardDescription>
+          </CardHeader>
           {dcgError ? (
-            <p className="text-xs text-destructive">{(dcgError as Error).message}</p>
+            <CardContent>
+              <p className="text-xs text-destructive">{(dcgError as Error).message}</p>
+            </CardContent>
           ) : null}
-        </div>
+        </Card>
       </DcgAdminLayout>
     );
   }
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-6 px-[10px] my-[20px] pb-24">
-        {/* Glass header */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <div className="space-y-6 px-4 py-5 pb-24">
+        {/* Header */}
+        <div className="rounded-2xl border bg-card p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">DCG Financial Management</h1>
             <p className="text-sm text-muted-foreground">
-              Track income, expenses and giving for {currentDcg?.name ?? "your DCG"}
+              Track income, expenses and giving for{" "}
+              <span className="font-medium text-foreground">{currentDcg.name}</span>
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <PeriodSelector
-              period={period}
-              onPeriodChange={setPeriod}
-              customRange={customRange}
-              onCustomRangeChange={setCustomRange}
-            />
-            <Button size="sm" onClick={() => setIncomeDlgOpen(true)}>
+            <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All time</SelectItem>
+                <SelectItem value="1m">Last month</SelectItem>
+                <SelectItem value="3m">Last 3 months</SelectItem>
+                <SelectItem value="6m">Last 6 months</SelectItem>
+                <SelectItem value="ytd">Year to date</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" onClick={() => setIncomeOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" /> Record Income
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setExpenseDlgOpen(true)}>
+            <Button size="sm" variant="outline" onClick={() => setExpenseOpen(true)}>
               <Plus className="mr-1.5 h-4 w-4" /> Record Expense
             </Button>
           </div>
         </div>
 
+        {/* Errors */}
+        {txError ? (
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive text-base">
+                <AlertCircle className="h-4 w-4" /> Failed to load transactions
+              </CardTitle>
+              <CardDescription>{(txError as Error).message}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button size="sm" variant="outline" onClick={() => refetch()}>Retry</Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <FinanceKpiCard label="Income" value={fc(summary.income)} icon={ArrowUpRight} tone="income" />
-          <FinanceKpiCard label="Expenses" value={fc(summary.expenses)} icon={ArrowDownRight} tone="expense" />
-          <FinanceKpiCard
-            label="Net"
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <KpiCard label="Income" value={fc(summary.income)} icon={ArrowUpRight} tone="positive" />
+          <KpiCard label="Expenses" value={fc(summary.expenses)} icon={ArrowDownRight} tone="negative" />
+          <KpiCard
+            label="Net Balance"
             value={fc(summary.net)}
             icon={Wallet}
-            tone={summary.net >= 0 ? "income" : "expense"}
+            tone={summary.net >= 0 ? "positive" : "negative"}
           />
-          <FinanceKpiCard label="Offerings" value={fc(summary.offerings)} icon={PiggyBank} tone="primary" />
+          <KpiCard label="Offerings" value={fc(summary.offerings)} icon={PiggyBank} tone="neutral" />
+          <KpiCard label="Transactions" value={String(summary.count)} icon={ListOrdered} tone="neutral" />
         </div>
 
-        {/* Filters + Export */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div className="flex-1">
-            <FinanceFiltersBar
-              search={search}
-              onSearchChange={setSearch}
-              categoryId={null}
-              onCategoryChange={() => {}}
-              type={type}
-              onTypeChange={setType}
-              incomeType={incomeType}
-              onIncomeTypeChange={setIncomeType}
-              expenseCategoryId={expenseCategoryId}
-              onExpenseCategoryChange={setExpenseCategoryId}
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search transactions…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
             />
           </div>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+            <SelectTrigger className="md:w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="income">Income only</SelectItem>
+              <SelectItem value="expense">Expense only</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
-            size="sm"
             onClick={handleExport}
             disabled={!filtered.length}
-            className="bg-card/60 backdrop-blur-sm border-border/40"
           >
-            <Download className="mr-2 h-4 w-4" /> Export
+            <Download className="mr-2 h-4 w-4" /> Export CSV
           </Button>
         </div>
 
-        {/* Trend chart */}
-        <LedgerTrendChart
-          rows={filtered}
-          regionCurrency={regionCurrency}
-          title="DCG Trends"
-          description="Cumulative income, expenses and net for the selected period"
-        />
-
-        {/* Itemized transactions */}
-        <Collapsible
-          open={txOpen}
-          onOpenChange={setTxOpen}
-          className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6"
-        >
-          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 group">
-            <div className="flex items-center gap-2">
-              <ListOrdered className="h-4 w-4 text-primary" />
-              <div className="text-left">
-                <h3 className="text-base font-semibold text-foreground">Transactions</h3>
-                <p className="text-xs text-muted-foreground">Itemized ledger entries for this DCG</p>
+        {/* Transactions Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ListOrdered className="h-4 w-4 text-primary" /> Transactions
+            </CardTitle>
+            <CardDescription>
+              All income and expense entries for {currentDcg.name}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {txLoading ? (
+              <div className="py-12 flex items-center justify-center text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading transactions…
               </div>
-            </div>
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${txOpen ? "rotate-180" : ""}`}
-            />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-4">
-            {isLoading ? (
-              <p className="py-8 text-center text-muted-foreground text-sm">Loading…</p>
             ) : filtered.length === 0 ? (
-              <p className="py-8 text-center text-muted-foreground text-sm">
-                No transactions for the selected filters.
-              </p>
+              <div className="py-12 text-center">
+                <Inbox className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  {rows.length === 0
+                    ? "No transactions recorded yet for this DCG."
+                    : "No transactions match the current filters."}
+                </p>
+                {rows.length === 0 ? (
+                  <div className="mt-4 flex justify-center gap-2">
+                    <Button size="sm" onClick={() => setIncomeOpen(true)}>
+                      <Plus className="mr-1.5 h-4 w-4" /> Record Income
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setExpenseOpen(true)}>
+                      <Plus className="mr-1.5 h-4 w-4" /> Record Expense
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="mt-3"
+                    onClick={() => {
+                      setSearch("");
+                      setTypeFilter("all");
+                      setPeriod("all");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border/30">
+              <div className="overflow-x-auto rounded-lg border">
                 <Table>
                   <TableHeader className="bg-muted/40">
-                    <TableRow className="border-border/30 hover:bg-transparent">
+                    <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead className="hidden md:table-cell">Description</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="w-12 text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map((r) => (
-                      <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
-                        <TableCell className="whitespace-nowrap text-muted-foreground">
-                          {format(new Date(r.transaction_date), "MMM dd, yyyy")}
-                        </TableCell>
-                        <TableCell>{r.category?.name}</TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {r.description || "—"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={r.category?.type?.toLowerCase() === "income" ? "default" : "secondary"}
-                            className="capitalize"
+                    {filtered.map((r) => {
+                      const ct = (r.category?.type || "").toLowerCase();
+                      return (
+                        <TableRow key={r.id}>
+                          <TableCell className="whitespace-nowrap text-muted-foreground">
+                            {format(new Date(r.transaction_date), "MMM dd, yyyy")}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {r.category?.name ?? "—"}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground max-w-[300px] truncate">
+                            {r.description || "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={ct === "income" ? "default" : "secondary"} className="capitalize">
+                              {r.category?.type ?? "—"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right whitespace-nowrap font-semibold tabular-nums ${
+                              ct === "income" ? "text-green-600" : "text-red-600"
+                            }`}
                           >
-                            {r.category?.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell
-                          className={`text-right whitespace-nowrap font-semibold tabular-nums ${
-                            r.category?.type?.toLowerCase() === "income" ? "text-green-600" : "text-red-600"
-                          }`}
-                        >
-                          {fc(Number(r.amount))}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DcgTransactionRowActions row={r} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                            {ct === "expense" ? "-" : "+"}
+                            {fc(Number(r.amount))}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
             )}
-          </CollapsibleContent>
-        </Collapsible>
+          </CardContent>
+        </Card>
       </div>
 
-      <RecordDcgIncomeDialog open={incomeDlgOpen} onOpenChange={setIncomeDlgOpen} dcgId={currentDcg.id} regionCurrency={regionCurrency} />
-      <RecordDcgExpenseDialog open={expenseDlgOpen} onOpenChange={setExpenseDlgOpen} dcgId={currentDcg.id} regionCurrency={regionCurrency} />
+      <RecordDcgIncomeDialog
+        open={incomeOpen}
+        onOpenChange={setIncomeOpen}
+        dcgId={currentDcg.id}
+        regionCurrency={regionCurrency}
+      />
+      <RecordDcgExpenseDialog
+        open={expenseOpen}
+        onOpenChange={setExpenseOpen}
+        dcgId={currentDcg.id}
+        regionCurrency={regionCurrency}
+      />
     </DcgAdminLayout>
+  );
+};
+
+const KpiCard: React.FC<{
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  tone: "positive" | "negative" | "neutral";
+}> = ({ label, value, icon: Icon, tone }) => {
+  const toneClass =
+    tone === "positive"
+      ? "text-green-600 bg-green-500/10"
+      : tone === "negative"
+      ? "text-red-600 bg-red-500/10"
+      : "text-primary bg-primary/10";
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{label}</p>
+            <p className="text-xl font-bold mt-1 tabular-nums">{value}</p>
+          </div>
+          <div className={`p-2 rounded-lg ${toneClass}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
