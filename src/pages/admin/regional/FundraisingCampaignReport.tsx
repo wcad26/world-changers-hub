@@ -330,14 +330,14 @@ const FundraisingCampaignReport: React.FC = () => {
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <HeartHandshake className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">All donations ({donations.length})</h3>
+          <h3 className="text-base font-semibold">Donations in period ({filteredDonations.length})</h3>
         </div>
         {donationsLoading ? (
           <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
             <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading…
           </div>
-        ) : donations.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground text-sm">No donations recorded for this campaign.</p>
+        ) : filteredDonations.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">No donations in the selected period.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border/30">
             <Table>
@@ -351,7 +351,7 @@ const FundraisingCampaignReport: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {donations.map((d: any) => {
+                {filteredDonations.map((d: any) => {
                   const donationWithCampaign = { ...d, campaign };
                   return (
                     <TableRow key={d.id} className="border-border/20 hover:bg-muted/30 cursor-pointer" onClick={() => openView(donationWithCampaign)}>
