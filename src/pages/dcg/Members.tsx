@@ -34,18 +34,20 @@ const DcgMembers: React.FC = () => {
   const { userDcg } = useAuth();
   const { data: dcgMembers, isLoading } = useDcgMembers(userDcg?.id);
   const removeMember = useRemoveMemberFromDcg();
+  const updateRole = useUpdateDcgMemberRole();
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [addExistingOpen, setAddExistingOpen] = React.useState(false);
   const [registerNewOpen, setRegisterNewOpen] = React.useState(false);
   const [memberToRemove, setMemberToRemove] = React.useState<{ dcgMemberId: string; name: string } | null>(null);
+  const [editMember, setEditMember] = React.useState<MemberWithProfile | null>(null);
 
-  // Flatten DCG members to MemberWithProfile shape (preserve dcg_member id for remove)
+  // Flatten DCG members to MemberWithProfile shape (preserve dcg_member id + role)
   const flatMembers = React.useMemo(() => {
-    if (!dcgMembers) return [] as (MemberWithProfile & { __dcgMemberId: string })[];
+    if (!dcgMembers) return [] as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
     return dcgMembers
       .filter(dm => dm.members)
-      .map(dm => ({ ...(dm.members as any), __dcgMemberId: dm.id })) as (MemberWithProfile & { __dcgMemberId: string })[];
+      .map(dm => ({ ...(dm.members as any), __dcgMemberId: dm.id, __dcgRole: dm.role })) as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
   }, [dcgMembers]);
 
   const memberIds = React.useMemo(() => flatMembers.map(m => m.id), [flatMembers]);
