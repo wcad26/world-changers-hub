@@ -38,18 +38,19 @@ export const useRegionalPlanActuals = (
       // We use status change as a proxy via member_status_history if available; otherwise leave 0.
       actuals.visitor_conversions = 0;
 
-      // New children: members with DOB making them <16 created in window (simple heuristic — categorisation matches app rules).
-      const { data: children } = await supabase
+      // New children: profile DOB makes them <16 and member created in window.
+      const { data: childData } = await supabase
         .from('members')
-        .select('id, date_of_birth, created_at')
+        .select('id, created_at, profiles!members_profile_id_fkey(date_of_birth)')
         .eq('region_id', regionId)
         .gte('created_at', startDate)
         .lte('created_at', endDate + 'T23:59:59');
       const cutoff = new Date();
       cutoff.setFullYear(cutoff.getFullYear() - 16);
-      actuals.new_children = (children ?? []).filter(m => {
-        if (!m.date_of_birth) return false;
-        return new Date(m.date_of_birth) > cutoff;
+      actuals.new_children = (childData ?? []).filter((m: any) => {
+        const dob = m?.profiles?.date_of_birth;
+        if (!dob) return false;
+        return new Date(dob) > cutoff;
       }).length;
 
       // --- Discipleship ---
