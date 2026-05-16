@@ -33,26 +33,26 @@ const LedgerTrendChart: React.FC<Props> = ({ rows, regionCurrency, title = "Fina
       if (ws.getTime() < minTs) minTs = ws.getTime();
       if (ws.getTime() > maxTs) maxTs = ws.getTime();
     }
-    // Build sorted weekly buckets across the full range, carrying forward the
-    // previous week's cumulative totals when a week has no transactions so the
-    // line continues flat instead of dropping to zero.
+    // Build sorted weekly buckets as a running cumulative total across the
+    // filtered range. Empty weeks add 0, so the line stays flat between
+    // activity and the final point equals the period's totals.
     const series: { week: string; Income: number; Expenses: number; Net: number; ts: number }[] = [];
     if (isFinite(minTs) && isFinite(maxTs)) {
       const all = eachWeekOfInterval({ start: new Date(minTs), end: new Date(maxTs) }, { weekStartsOn: 1 });
-      let lastIncome = 0;
-      let lastExpenses = 0;
+      let cumIncome = 0;
+      let cumExpenses = 0;
       for (const w of all) {
         const key = format(w, "yyyy-MM-dd");
         const bucket = weeks[key];
         if (bucket) {
-          lastIncome = bucket.income;
-          lastExpenses = bucket.expenses;
+          cumIncome += bucket.income;
+          cumExpenses += bucket.expenses;
         }
         series.push({
           week: format(w, "MMM d"),
-          Income: lastIncome,
-          Expenses: lastExpenses,
-          Net: lastIncome - lastExpenses,
+          Income: cumIncome,
+          Expenses: cumExpenses,
+          Net: cumIncome - cumExpenses,
           ts: w.getTime(),
         });
       }
