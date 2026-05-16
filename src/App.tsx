@@ -51,6 +51,7 @@ import RegionalDCG from "./pages/admin/regional/DCG";
 import DcgProfile from "./pages/admin/regional/DcgProfile";
 
 import RegionalCommunication from "./pages/admin/regional/Communication";
+import RegionalPlanning from "./pages/admin/regional/Planning";
 import RegionalSettings from "./pages/admin/regional/Settings";
 import RegionalBranchSettings from "./pages/admin/regional/BranchSettings";
 
@@ -173,6 +174,7 @@ const App = () => {
                 <Route path="certificates" element={<RegionalCertificates />} />
                 
                 <Route path="communication" element={<RegionalCommunication />} />
+                <Route path="planning" element={<RegionalPlanning />} />
                 <Route path="branch-settings" element={<RegionalBranchSettings />} />
                 <Route path="discipleship" element={<RegionalDiscipleship />} />
                 
