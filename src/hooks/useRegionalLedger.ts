@@ -123,3 +123,56 @@ export function aggregateByDcg(rows: LedgerRow[]): DcgAggRow[] {
   }
   return Array.from(map.values()).sort((a, b) => b.net - a.net);
 }
+
+// ===== Regional-scope mutations for editing/deleting any transaction in the region =====
+export interface RegionalTransactionUpdate {
+  category_id?: string;
+  amount?: number;
+  description?: string | null;
+  transaction_date?: string; // yyyy-MM-dd
+}
+
+export const useUpdateRegionalTransaction = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: RegionalTransactionUpdate }) => {
+      const { data: row, error } = await supabase
+        .from("financial_transactions")
+        .update(data)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return row;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regional_ledger", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial_transactions", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial_summary", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dcg_financial_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dcg_financial_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["recent_dcg_transactions"] });
+    },
+  });
+};
+
+export const useDeleteRegionalTransaction = () => {
+  const queryClient = useQueryClient();
+  const { userRegion } = useAuth();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("financial_transactions").delete().eq("id", id);
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["regional_ledger", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial_transactions", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["financial_summary", userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ["dcg_financial_transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dcg_financial_summary"] });
+      queryClient.invalidateQueries({ queryKey: ["recent_dcg_transactions"] });
+    },
+  });
+};
