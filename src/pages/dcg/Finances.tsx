@@ -313,8 +313,8 @@ const DcgFinances: React.FC = () => {
         </Collapsible>
       </div>
 
-      <RecordDcgIncomeDialog open={incomeDlgOpen} onOpenChange={setIncomeDlgOpen} />
-      <RecordDcgExpenseDialog open={expenseDlgOpen} onOpenChange={setExpenseDlgOpen} />
+      <RecordDcgIncomeDialog open={incomeDlgOpen} onOpenChange={setIncomeDlgOpen} dcgId={currentDcg.id} regionCurrency={regionCurrency} />
+      <RecordDcgExpenseDialog open={expenseDlgOpen} onOpenChange={setExpenseDlgOpen} dcgId={currentDcg.id} regionCurrency={regionCurrency} />
     </DcgAdminLayout>
   );
 };
