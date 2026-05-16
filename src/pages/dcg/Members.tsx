@@ -13,8 +13,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, Download, Users, UserPlus, MoreVertical, Eye, Trash2, UserMinus } from 'lucide-react';
-import { useDcgMembers, useRemoveMemberFromDcg } from '@/hooks/useDcgMembers';
+import { Search, Download, Users, UserPlus, MoreVertical, Eye, Trash2, UserMinus, Pencil, ShieldCheck, ShieldOff } from 'lucide-react';
+import { useDcgMembers, useRemoveMemberFromDcg, useUpdateDcgMemberRole } from '@/hooks/useDcgMembers';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { MemberWithProfile } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
