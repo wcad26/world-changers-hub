@@ -197,8 +197,8 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="px-6 py-5 space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
               <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
                 {/* Member */}
                 <FormField
