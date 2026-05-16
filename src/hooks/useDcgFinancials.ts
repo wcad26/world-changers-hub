@@ -33,6 +33,65 @@ export const useCurrentDcg = () => {
 
 export type DcgFinancialTransaction = Database['public']['Tables']['financial_transactions']['Row'] & {
   category?: { name: string; type: string } | null;
+  dcg?: { name: string } | null;
+};
+
+export type DcgFinancialSummary = {
+  total_income: number;
+  total_expenses: number;
+  net_balance: number;
+  transaction_count: number;
+  last_transaction_date: string | null;
+};
+
+export const useDcgFinancialSummary = (
+  dcgId?: string,
+  filters?: { from?: string; to?: string },
+) => {
+  return useQuery({
+    queryKey: ['dcg_financial_summary', dcgId, filters],
+    queryFn: async (): Promise<DcgFinancialSummary> => {
+      const empty: DcgFinancialSummary = {
+        total_income: 0,
+        total_expenses: 0,
+        net_balance: 0,
+        transaction_count: 0,
+        last_transaction_date: null,
+      };
+      if (!dcgId) return empty;
+
+      let query = supabase
+        .from('financial_transactions')
+        .select('amount, transaction_date, category:financial_transaction_categories(type)')
+        .eq('dcg_id', dcgId);
+
+      if (filters?.from) query = query.gte('transaction_date', filters.from);
+      if (filters?.to) query = query.lte('transaction_date', filters.to);
+
+      const { data, error } = await query.order('transaction_date', { ascending: false });
+      if (error) throw error;
+
+      const totals = (data || []).reduce(
+        (acc, t: any) => {
+          const amt = Number(t.amount) || 0;
+          const ct = (t.category?.type || '').toString().toLowerCase();
+          if (ct === 'income') acc.total_income += amt;
+          else if (ct === 'expense') acc.total_expenses += amt;
+          return acc;
+        },
+        { total_income: 0, total_expenses: 0 },
+      );
+
+      return {
+        ...totals,
+        net_balance: totals.total_income - totals.total_expenses,
+        transaction_count: data?.length || 0,
+        last_transaction_date: data?.[0]?.transaction_date || null,
+      };
+    },
+    enabled: !!dcgId,
+    staleTime: 60 * 1000,
+  });
 };
 
 // Hook to fetch financial transactions for a specific DCG.
