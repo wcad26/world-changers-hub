@@ -761,6 +761,48 @@ export type Database = {
           },
         ]
       }
+      donors: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          region_id: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          region_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          region_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_faqs: {
         Row: {
           answer: string
@@ -1302,8 +1344,10 @@ export type Database = {
           currency_code: string
           donation_date: string
           donor_email: string | null
+          donor_id: string | null
           donor_name: string | null
           id: string
+          member_id: string | null
           message: string | null
         }
         Insert: {
@@ -1314,8 +1358,10 @@ export type Database = {
           currency_code?: string
           donation_date?: string
           donor_email?: string | null
+          donor_id?: string | null
           donor_name?: string | null
           id?: string
+          member_id?: string | null
           message?: string | null
         }
         Update: {
@@ -1326,8 +1372,10 @@ export type Database = {
           currency_code?: string
           donation_date?: string
           donor_email?: string | null
+          donor_id?: string | null
           donor_name?: string | null
           id?: string
+          member_id?: string | null
           message?: string | null
         }
         Relationships: [
@@ -1343,6 +1391,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "fundraising_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraising_donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donors"
             referencedColumns: ["id"]
           },
         ]
@@ -2076,6 +2131,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_all_donors: {
+        Args: { _search?: string }
+        Returns: {
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          region_id: string
+        }[]
       }
       search_all_members: {
         Args: { _search?: string }
