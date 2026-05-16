@@ -23,13 +23,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { GlassSection, GlassKPICard } from "@/components/ui/GlassSection";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
-import { EditDcgTransactionDialog } from "@/components/admin/dcg/EditDcgTransactionDialog";
 
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
