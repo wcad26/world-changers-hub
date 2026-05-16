@@ -239,10 +239,10 @@ const DcgMembers: React.FC = () => {
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead className="w-[20%]">Name</TableHead>
-                    <TableHead className="hidden md:table-cell w-[20%]">Address</TableHead>
+                    <TableHead className="hidden lg:table-cell w-[20%]">Address</TableHead>
                     <TableHead className="hidden sm:table-cell">Phone</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden lg:table-cell">Status</TableHead>
                     <TableHead className="hidden lg:table-cell">Join Date</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
@@ -268,7 +268,7 @@ const DcgMembers: React.FC = () => {
                         <TableCell className="font-medium">
                           {member.profiles?.last_name} {member.profiles?.first_name}
                         </TableCell>
-                        <TableCell className="hidden md:table-cell max-w-xs truncate">
+                        <TableCell className="hidden lg:table-cell max-w-xs truncate">
                           {member.profiles?.address || 'N/A'}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">{member.profiles?.phone || 'N/A'}</TableCell>
@@ -281,7 +281,7 @@ const DcgMembers: React.FC = () => {
                             {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <Badge className={getStatusColor(member.status || 'new')}>
                             {member.status || 'new'}
                           </Badge>
