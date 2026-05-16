@@ -47,8 +47,9 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
 
   const handleRefresh = () => {
     refetch();
-    queryClient.invalidateQueries({ queryKey: ["financial"] });
-    queryClient.invalidateQueries({ queryKey: ["regional-ledger"] });
+    queryClient.invalidateQueries({ queryKey: ["regional_ledger"] });
+    queryClient.invalidateQueries({ queryKey: ["financial_transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["financial_summary"] });
   };
 
   const filtered = useMemo(() => {

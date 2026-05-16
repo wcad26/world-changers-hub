@@ -185,7 +185,11 @@ export const useCreateFinancialTransaction = () => {
         queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['financial_summary', userRegion.id] });
         queryClient.invalidateQueries({ queryKey: ['regionalReports', userRegion.id] });
+        queryClient.invalidateQueries({ queryKey: ['regional_ledger', userRegion.id] });
       }
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary'] });
+      queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
     },
   });
 };
