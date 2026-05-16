@@ -70,7 +70,7 @@ const DcgMemberProfile = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="space-y-4 md:space-y-6 p-4 md:p-0 px-[10px]">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dcg/members')}>
             <ArrowLeft className="h-5 w-5" />
