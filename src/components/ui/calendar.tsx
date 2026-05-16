@@ -11,7 +11,9 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 // Custom caption component with year and month dropdowns
 function CustomCaption({ displayMonth, onMonthChange }: { displayMonth: Date; onMonthChange?: (month: Date) => void }) {
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  // Include 10 years into the future so users can schedule upcoming dates (e.g., campaigns, events).
+  // DOB-style pickers should pass a `disabled` prop to block future selection.
+  const years = Array.from({ length: 111 }, (_, i) => currentYear + 10 - i);
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
