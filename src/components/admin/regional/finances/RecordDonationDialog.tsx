@@ -33,8 +33,10 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   const createDonation = useCreateDonation();
 
   const [campaignId, setCampaignId] = useState<string>(defaultCampaignId || "");
-  const [donorName, setDonorName] = useState("");
-  const [donorEmail, setDonorEmail] = useState("");
+  const [memberId, setMemberId] = useState<string>("");
+  const [memberLabel, setMemberLabel] = useState<string>("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberPopoverOpen, setMemberPopoverOpen] = useState(false);
   const [amount, setAmount] = useState<number>(0);
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState("");
@@ -43,14 +45,25 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   useEffect(() => {
     if (open) {
       setCampaignId(defaultCampaignId || "");
-      setDonorName("");
-      setDonorEmail("");
+      setMemberId("");
+      setMemberLabel("");
+      setMemberSearch("");
       setAmount(0);
       setAnonymous(false);
       setMessage("");
       setDate(new Date().toISOString().slice(0, 10));
     }
   }, [open, defaultCampaignId]);
+
+  const { data: memberResults = [], isFetching: membersLoading } = useQuery({
+    queryKey: ["donation-member-search", memberSearch],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("search_all_members", { _search: memberSearch });
+      if (error) throw error;
+      return (data || []) as Array<{ id: string; member_id: string; first_name: string; last_name: string }>;
+    },
+    enabled: open && !anonymous,
+  });
 
   const selectedCampaign = campaigns.find(c => c.id === campaignId);
   const currencyCode = selectedCampaign?.currency_code || regionCurrency?.code?.toLowerCase() || "usd";
