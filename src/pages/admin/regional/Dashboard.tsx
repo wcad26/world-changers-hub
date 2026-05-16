@@ -245,10 +245,41 @@ const RegionalDashboard: React.FC = () => {
     const avgDcgAttendees = dcgAttendance.length > 0
       ? Math.round(dcgAttendance.reduce((s, a) => s + a.total_present, 0) / dcgAttendance.length) : 0;
 
-    // Attendance target % — use filtered attendance and events
-    const totalCapacity = regionalEvents.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
-    const totalActual = regionalAttendance.reduce((s, a) => s + a.total_present, 0);
-    const attendanceTargetPct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;
+    // Attendance Target % — driven by active plan from Plan Management.
+    const planTargets = activePlan?.targetsByKey || {};
+    const totalActualRegional = regionalAttendance.reduce((s, a) => s + a.total_present, 0);
+    const planTotalEventAttendees = planTargets['total_event_attendees'];
+    const planAvgEventAttendance = planTargets['avg_event_attendance'];
+    const planAvgDcgAttendance = planTargets['avg_dcg_attendance'];
+
+    let regionalAttendanceTargetPct = 0;
+    let regionalAttendanceTargetMissing = true;
+    let regionalAttendanceTargetSubtitle = 'No target set in Plan Management';
+    if (planTotalEventAttendees && planTotalEventAttendees > 0) {
+      regionalAttendanceTargetPct = Math.round((totalActualRegional / planTotalEventAttendees) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `${totalActualRegional} / ${planTotalEventAttendees} target`;
+    } else if (planAvgEventAttendance && planAvgEventAttendance > 0) {
+      regionalAttendanceTargetPct = Math.round((avgRegionalAttendees / planAvgEventAttendance) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `Avg ${avgRegionalAttendees} / ${planAvgEventAttendance} target`;
+    }
+
+    let dcgAttendanceTargetPct = 0;
+    let dcgAttendanceTargetMissing = true;
+    let dcgAttendanceTargetSubtitle = 'No target set in Plan Management';
+    if (planAvgDcgAttendance && planAvgDcgAttendance > 0) {
+      dcgAttendanceTargetPct = Math.round((avgDcgAttendees / planAvgDcgAttendance) * 100);
+      dcgAttendanceTargetMissing = false;
+      dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} / ${planAvgDcgAttendance} target`;
+    }
+
+    // DCG membership counts (region-wide, intersected with children set).
+    const dcgIds = dcgMembership?.dcgMemberIds || new Set<string>();
+    const dcgTotalMembers = dcgIds.size;
+    let dcgChildren = 0;
+    childrenSet.forEach(id => { if (dcgIds.has(id)) dcgChildren++; });
+    const dcgAdults = Math.max(0, dcgTotalMembers - dcgChildren);
 
     // Discipleship success rate
     const totalRelationships = discipleshipRelationships?.length || 0;
