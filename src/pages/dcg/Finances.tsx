@@ -17,8 +17,7 @@ import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendCh
 import DcgTransactionRowActions from "@/components/admin/regional/finances/DcgTransactionRowActions";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useDcgs } from "@/hooks/useDCGs";
-import { useDcgFinancialTransactions } from "@/hooks/useDcgFinancials";
+import { useCurrentDcg, useDcgFinancialTransactions } from "@/hooks/useDcgFinancials";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 import { exportCsv } from "@/utils/csvExport";
@@ -30,9 +29,9 @@ import { RecordDcgExpenseDialog } from "@/components/admin/dcg/RecordDcgExpenseD
 const SPECIAL_CATEGORIES = ["Building Fund", "Mission Fund", "Youth Fund", "Benevolence Fund"];
 
 const DcgFinances: React.FC = () => {
-  const { userDcg, loading: authLoading } = useAuth();
-  const { data: dcgs } = useDcgs();
-  const currentDcg = dcgs?.find((d) => d.id === userDcg?.id);
+  const { loading: authLoading } = useAuth();
+  const { data: currentDcg, isLoading: dcgLoading, error: dcgError } = useCurrentDcg();
+  const activeDcgId = currentDcg?.id;
   const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
 
   const [period, setPeriod] = useState<PeriodKey>("3m");
@@ -48,7 +47,7 @@ const DcgFinances: React.FC = () => {
   const [incomeDlgOpen, setIncomeDlgOpen] = useState(false);
   const [expenseDlgOpen, setExpenseDlgOpen] = useState(false);
 
-  const { data: rawRows = [], isLoading } = useDcgFinancialTransactions(userDcg?.id, {
+  const { data: rawRows = [], isLoading } = useDcgFinancialTransactions(activeDcgId, {
     from: format(range.from, "yyyy-MM-dd"),
     to: format(range.to, "yyyy-MM-dd"),
   });
