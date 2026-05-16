@@ -18,36 +18,30 @@
 ## Files to modify
 
 - `src/hooks/useFundraisingCampaigns.ts`
-  - Add `useUpdateFundraisingCampaign` (updates name, description, goal, dates, image, status, is_public).
-  - Add `useDeleteFundraisingCampaign` (deletes campaign; donations cascade or are blocked—will verify and adjust). Invalidates `fundraising_campaigns`, `region_donations`, `fundraising_analytics`, `campaign_donations`.
+  - Add `useUpdateFundraisingCampaign` (name, description, goal, dates, image, status, is_public).
+  - Add `useDeleteFundraisingCampaign` (donations cascade via existing FK ON DELETE CASCADE — verified).
   - Add `useFundraisingCampaign(id)` single fetcher for the report page.
 - `src/components/admin/regional/FundraisingTabContent.tsx`
-  - Add `useNavigate`; make `<TableRow>` `cursor-pointer` with `onClick` → navigate to report page.
-  - Replace the View button cell with `<FundraisingCampaignRowActions campaign={campaign} />`, wrapped in a cell that `stopPropagation`s clicks.
+  - Add `useNavigate`; make `<TableRow>` clickable → navigate to report page.
+  - Replace the View button cell with `<FundraisingCampaignRowActions campaign={campaign} />`, wrapped in a cell that stops click propagation.
 - `src/App.tsx`
-  - Register new protected route `finances/fundraising/:campaignId` under the existing regional admin shell, rendering `FundraisingCampaignReport`.
+  - Register protected route `finances/fundraising/:campaignId` under the regional admin shell.
 
 ## Campaign Report page structure
 
 Route: `/admin/regional/finances/fundraising/:campaignId`
 
 Sections:
-1. **Header** — back button, campaign name, status badge, share + edit actions (edit opens same dialog), period (start → end or "Ongoing").
+1. **Header** — back button, campaign name, status + visibility badges, share + edit actions, period (start → end or "Ongoing").
 2. **Hero KPIs** — Raised, Goal, Progress %, Donors count, Average donation, Days remaining/elapsed.
-3. **Progress panel** — large `Progress` bar with raised/goal labels and % to goal (2 decimals).
-4. **Trend chart** — donations over time (daily/weekly bar or line) using `recharts` (already in deps). Uses `campaign_donations` aggregated by day.
-5. **Top donors** — table of top 10 donors by total contributed (respecting anonymous flag).
-6. **Donation feed** — full paginated donations table (date, donor, amount, message, actions reusing existing `FundraisingDonationRowActions`).
-7. **Description & meta** — campaign description, created date, visibility, image.
-
-Data sources:
-- `useFundraisingCampaign(id)` for campaign row.
-- `useCampaignDonations(id)` for donation list (already exists).
-- Region currency via `useRegionCurrency`.
+3. **Progress panel** — large progress bar with raised/goal labels and % to goal (2 decimals).
+4. **About** — campaign description.
+5. **Trend chart** — donations over time aggregated by day (recharts area chart).
+6. **Top donors** — table of top 10 donors by total contributed (respecting anonymous flag).
+7. **All donations** — full donations table reusing `FundraisingDonationRowActions` and `ViewDonationDialog`.
 
 ## Technical notes
 
-- Currency formatting uses `formatCurrencyWithSymbol` consistently.
-- All new dialogs follow the glass-dialog standard already used by `CreateFundraisingCampaignDialog`.
-- Row click handler must check `event.target` isn't inside the dropdown / action cell — solved by wrapping the actions `<TableCell>` with `onClick={e => e.stopPropagation()}` (same pattern already used in `FundraisingTransactionsCard`).
-- No DB migration is required unless delete fails due to FK constraint; if so, a migration will add `ON DELETE CASCADE` for `fundraising_donations.campaign_id`. Will verify before implementing.
+- Currency formatting uses `formatCurrencyWithSymbol` with the campaign currency (falls back to region currency).
+- All new dialogs follow the glass-dialog standard.
+- No DB migration required — `fundraising_donations.campaign_id` already has ON DELETE CASCADE.
