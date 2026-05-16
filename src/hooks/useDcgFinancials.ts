@@ -152,12 +152,21 @@ export const useCreateDcgTransaction = (dcgId: string) => {
 
   return useMutation({
     mutationFn: async (transactionData: DcgTransactionData) => {
-      if (!userRegion?.id) throw new Error('User region not found');
       if (!user?.id) throw new Error('User not found');
       if (!dcgId) throw new Error('DCG ID is required');
-      
+
+      // Derive region_id from the DCG row so DCG leaders without a profile region can record
+      const { data: dcgRow, error: dcgErr } = await supabase
+        .from('dcgs')
+        .select('region_id')
+        .eq('id', dcgId)
+        .single();
+      if (dcgErr) throw dcgErr;
+      const regionId = userRegion?.id ?? dcgRow?.region_id;
+      if (!regionId) throw new Error('Region not found for this DCG');
+
       const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
-        region_id: userRegion.id,
+        region_id: regionId,
         dcg_id: dcgId,
         recorded_by: user.id,
         category_id: transactionData.category_id,
@@ -165,22 +174,21 @@ export const useCreateDcgTransaction = (dcgId: string) => {
         description: transactionData.description,
         transaction_date: transactionData.transaction_date,
       };
-      
+
       const { data, error } = await supabase
         .from('financial_transactions')
         .insert(newTransaction)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      // Invalidate relevant queries for efficient cache updates
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
       queryClient.invalidateQueries({ queryKey: ['recent_dcg_transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['financial_transactions', userRegion?.id] });
+      queryClient.invalidateQueries({ queryKey: ['financial_transactions'] });
     },
   });
 };
