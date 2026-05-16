@@ -54,14 +54,30 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   };
 
   const filtered = useMemo(() => {
-    if (!search) return rows;
-    const s = search.toLowerCase();
-    return rows.filter(r =>
-      r.category?.name?.toLowerCase().includes(s) ||
-      r.description?.toLowerCase().includes(s) ||
-      String(r.amount).includes(s)
-    );
-  }, [rows, search]);
+    let out = rows;
+    if (incomeType !== "all") {
+      const isSpecial = (n: string) =>
+        ["Building Fund", "Mission Fund", "Youth Fund", "Benevolence Fund", "Special Giving"].includes(n);
+      out = out.filter(r => {
+        const ct = r.category?.type?.toLowerCase();
+        const cn = r.category?.name || "";
+        if (ct !== "income") return false;
+        if (incomeType === "tithes") return cn === "Tithes";
+        if (incomeType === "offerings") return cn.includes("Offering");
+        if (incomeType === "special") return isSpecial(cn);
+        return true;
+      });
+    }
+    if (search) {
+      const s = search.toLowerCase();
+      out = out.filter(r =>
+        r.category?.name?.toLowerCase().includes(s) ||
+        r.description?.toLowerCase().includes(s) ||
+        String(r.amount).includes(s)
+      );
+    }
+    return out;
+  }, [rows, search, incomeType]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
