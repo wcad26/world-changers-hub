@@ -303,10 +303,6 @@ const DcgProfile: React.FC = () => {
                   </PopoverContent>
                 </Popover>
               )}
-              <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Location
-              </Button>
               <Badge variant={dcg.is_active ? "default" : "secondary"}>
                 {dcg.is_active ? "Active" : "Inactive"}
               </Badge>
