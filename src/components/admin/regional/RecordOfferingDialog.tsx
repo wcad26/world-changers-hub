@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Receipt } from 'lucide-react';
+import { Receipt, Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateFinancialTransaction, useFinancialCategories } from '@/hooks/useFinancials';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,13 +28,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,6 +48,22 @@ const offeringSchema = z.object({
 });
 
 type OfferingFormData = z.infer<typeof offeringSchema>;
+
+const formatAmountInput = (raw: string) => {
+  // Keep digits and optional single decimal point
+  const cleaned = raw.replace(/[^\d.]/g, '');
+  const parts = cleaned.split('.');
+  const intPart = parts[0].replace(/^0+(?=\d)/, '');
+  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (parts.length === 1) return withCommas;
+  return `${withCommas}.${parts.slice(1).join('').slice(0, 2)}`;
+};
+
+const parseAmount = (formatted: string) => {
+  const n = parseFloat(formatted.replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+
 
 interface RecordOfferingDialogProps {
   open: boolean;
