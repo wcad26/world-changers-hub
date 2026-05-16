@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowUpRight, ArrowDownRight, Wallet, Users, Download, ExternalLink, Building2, ListOrdered, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import FinanceKpiCard from "./FinanceKpiCard";
 import FinanceFiltersBar from "./FinanceFiltersBar";
 import LedgerTrendChart from "./LedgerTrendChart";
@@ -22,6 +22,7 @@ interface Props { range: PeriodRange }
 
 const DcgLedgerTab: React.FC<Props> = ({ range }) => {
   const { userRegion } = useAuth();
+  const navigate = useNavigate();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const { data: dcgs = [] } = useDcgs();
   const [search, setSearch] = useState("");
@@ -113,23 +114,19 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                   <TableHead className="text-right">Income</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right">Net</TableHead>
-                  
-                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {perDcg.map(d => (
-                  <TableRow key={d.dcg_id} className="border-border/20 hover:bg-muted/30">
+                  <TableRow
+                    key={d.dcg_id}
+                    onClick={() => navigate(`/admin/regional/dcg/${d.dcg_id}`)}
+                    className="border-border/20 hover:bg-muted/30 cursor-pointer transition-colors"
+                  >
                     <TableCell className="font-medium">{d.dcg_name}</TableCell>
                     <TableCell className="text-right text-green-600 tabular-nums">{fc(d.income)}</TableCell>
                     <TableCell className="text-right text-red-600 tabular-nums">{fc(d.expenses)}</TableCell>
                     <TableCell className={`text-right font-semibold tabular-nums ${d.net >= 0 ? "text-green-600" : "text-red-600"}`}>{fc(d.net)}</TableCell>
-                    
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link to={`/admin/regional/dcg/${d.dcg_id}`}><ExternalLink className="h-4 w-4 mr-1" />Open</Link>
-                      </Button>
-                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
