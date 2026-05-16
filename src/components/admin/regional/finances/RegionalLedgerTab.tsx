@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank, Receipt, TrendingUp, Plus, ChevronDown, Download, Wallet, ListOrdered } from "lucide-react";
+import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank, Receipt, TrendingUp, Plus, ChevronDown, Download, Wallet, ListOrdered, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import FinanceKpiCard from "./FinanceKpiCard";
@@ -34,9 +35,16 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
 
-  const { data: rows = [], isLoading } = useRegionalLedger({
+  const queryClient = useQueryClient();
+  const { data: rows = [], isLoading, isFetching, refetch } = useRegionalLedger({
     scope: "regional", from: range.from, to: range.to, categoryId, type,
   });
+
+  const handleRefresh = () => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ["financial"] });
+    queryClient.invalidateQueries({ queryKey: ["regional-ledger"] });
+  };
 
   const filtered = useMemo(() => {
     if (!search) return rows;
@@ -81,6 +89,9 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           type={type} onTypeChange={setType}
         />
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-card/60 backdrop-blur-sm border-border/40">
+            <RefreshCw className={`mr-2 h-4 w-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExport} disabled={!filtered.length} className="bg-card/60 backdrop-blur-sm border-border/40">
             <Download className="mr-2 h-4 w-4" /> Export
           </Button>
