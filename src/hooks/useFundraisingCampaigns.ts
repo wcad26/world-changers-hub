@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
+import { useRegionCurrency } from './useCurrencies';
 import * as z from 'zod';
 
 export type FundraisingCampaign = Database['public']['Tables']['fundraising_campaigns']['Row'];
@@ -52,6 +53,7 @@ export const useFundraisingCampaigns = (filters?: { status?: string }) => {
 export const useCreateFundraisingCampaign = () => {
   const queryClient = useQueryClient();
   const { userRegion, user } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
 
   return useMutation({
     mutationFn: async (campaignData: CampaignData) => {
@@ -69,6 +71,7 @@ export const useCreateFundraisingCampaign = () => {
         image_url: campaignData.imageUrl || null,
         is_public: campaignData.isPublic,
         status: 'Active',
+        currency_code: regionCurrency?.code || 'USD',
       };
       
       const { data, error } = await supabase
@@ -164,6 +167,7 @@ export interface NewDonationInput {
 export const useCreateDonation = () => {
   const queryClient = useQueryClient();
   const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   return useMutation({
     mutationFn: async (input: NewDonationInput) => {
       const payload: Database['public']['Tables']['fundraising_donations']['Insert'] = {
@@ -176,7 +180,7 @@ export const useCreateDonation = () => {
         message: input.message || null,
         anonymous: !!input.anonymous,
         donation_date: input.donation_date || new Date().toISOString(),
-        currency_code: input.currency_code || 'usd',
+        currency_code: input.currency_code || regionCurrency?.code || 'USD',
       };
       const { data, error } = await supabase
         .from('fundraising_donations')
