@@ -82,6 +82,9 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
   const { data: events = [], isLoading: eventsLoading } = useRegionalEventsForOfferings(userRegion?.id);
   const createTransaction = useCreateFinancialTransaction();
 
+  const [eventPopoverOpen, setEventPopoverOpen] = useState(false);
+  const [amountText, setAmountText] = useState('');
+
   const form = useForm<OfferingFormData>({
     resolver: zodResolver(offeringSchema),
     defaultValues: { event_id: '', amount: undefined as unknown as number, notes: '' },
