@@ -339,7 +339,15 @@ const RegionalDashboard: React.FC = () => {
       avgRegionalAttendees,
       dcgEventsCount: dcgEvents.length,
       avgDcgAttendees,
-      attendanceTargetPct,
+      regionalAttendanceTargetPct,
+      regionalAttendanceTargetMissing,
+      regionalAttendanceTargetSubtitle,
+      dcgAttendanceTargetPct,
+      dcgAttendanceTargetMissing,
+      dcgAttendanceTargetSubtitle,
+      dcgTotalMembers,
+      dcgAdults,
+      dcgChildren,
       genderCounts,
       uniqueTithers,
       uniqueGivers,
@@ -349,7 +357,7 @@ const RegionalDashboard: React.FC = () => {
       filteredEvents,
       targetMembers: memberTarget?.target_members || 0,
     };
-  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget, activePlan, dcgMembership]);
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
