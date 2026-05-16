@@ -489,9 +489,26 @@ const RegionalDashboard: React.FC = () => {
 
   // We intentionally do NOT block the dashboard if `userRegion` is still
   // resolving — the inline notice below shows once and the page renders.
-  const dataErrors = [membersError, eventsError, financialError, discipleshipError, attendanceError]
-    .filter(Boolean)
-    .map((error: any) => error?.message || 'A dashboard data request failed.');
+  // Only surface an error if the corresponding data is still missing — a
+  // transient "Failed to fetch" that succeeds on retry should not keep the
+  // banner visible.
+  const dataErrorEntries = [
+    { error: membersError, hasData: !!members, refetch: refetchMembers },
+    { error: eventsError, hasData: !!events, refetch: refetchEvents },
+    { error: financialError, hasData: !!financialTransactions, refetch: refetchFinancial },
+    { error: discipleshipError, hasData: !!discipleshipRelationships, refetch: refetchDiscipleship },
+    { error: attendanceError, hasData: !!attendanceData, refetch: refetchAttendance },
+  ].filter((e) => e.error && !e.hasData);
+
+  const dataErrors = dataErrorEntries.map(
+    (e: any) => e.error?.message || 'A dashboard data request failed.',
+  );
+
+  const retryFailedQueries = () => {
+    dataErrorEntries.forEach((e) => {
+      try { e.refetch?.(); } catch { /* noop */ }
+    });
+  };
 
   const regionMissingNotice = !userRegion ? (
     <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-4 flex flex-wrap items-center justify-between gap-3">
@@ -512,10 +529,12 @@ const RegionalDashboard: React.FC = () => {
   const dataErrorNotice = dataErrors.length > 0 ? (
     <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
       <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
-      <div className="text-sm min-w-0">
+      <div className="text-sm min-w-0 flex-1">
         <p className="font-medium text-destructive">Some dashboard data could not load.</p>
         <p className="text-xs text-muted-foreground break-words">{dataErrors[0]}</p>
+        <p className="text-xs text-muted-foreground mt-1">This is usually a temporary network issue.</p>
       </div>
+      <Button size="sm" variant="outline" onClick={retryFailedQueries}>Retry</Button>
     </div>
   ) : null;
 
