@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Loader2, Eye, HeartHandshake } from "lucide-react";
+import { Plus, Search, Loader2, Eye, HeartHandshake, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useFundraisingCampaigns, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
 import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
@@ -22,7 +23,20 @@ import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 const FundraisingTabContent: React.FC = () => {
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['fundraising_campaigns'] }),
+      queryClient.invalidateQueries({ queryKey: ['region_donations'] }),
+      queryClient.invalidateQueries({ queryKey: ['fundraising_analytics'] }),
+      queryClient.invalidateQueries({ queryKey: ['campaign_donations'] }),
+    ]);
+    setTimeout(() => setRefreshing(false), 400);
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -68,6 +82,14 @@ const FundraisingTabContent: React.FC = () => {
           </Select>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="bg-background/60 border-border/40"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+          </Button>
           <Button
             onClick={() => setDonationDialogOpen(true)}
             className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
