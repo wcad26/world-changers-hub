@@ -154,7 +154,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
       <RecordTitheDialog open={titheOpen} onOpenChange={setTitheOpen} />
       <RecordOfferingDialog open={offeringOpen} onOpenChange={setOfferingOpen} />
       <RecordSpecialGivingDialog open={specialOpen} onOpenChange={setSpecialOpen} />
-      <RecordExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} onSubmit={async () => setExpenseOpen(false)} />
+      <RecordExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
     </div>
   );
 };
