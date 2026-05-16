@@ -233,56 +233,6 @@ const DcgFinances: React.FC = () => {
           description="Cumulative income, expenses and net for the selected period"
         />
 
-        {/* Category breakdown */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Layers className="h-4 w-4 text-primary" />
-            <div>
-              <h3 className="text-base font-semibold text-foreground">Category Breakdown</h3>
-              <p className="text-xs text-muted-foreground">Totals by category for the selected period</p>
-            </div>
-          </div>
-          {perCategory.length === 0 ? (
-            <p className="py-6 text-center text-muted-foreground text-sm">No transactions in this period.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-border/30">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="border-border/30 hover:bg-transparent">
-                    <TableHead>Category</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Count</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {perCategory.map((c) => (
-                    <TableRow key={c.name} className="border-border/20 hover:bg-muted/30">
-                      <TableCell className="font-medium">{c.name}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={c.type?.toLowerCase() === "income" ? "default" : "secondary"}
-                          className="capitalize"
-                        >
-                          {c.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{c.count}</TableCell>
-                      <TableCell
-                        className={`text-right font-semibold tabular-nums ${
-                          c.type?.toLowerCase() === "income" ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {fc(c.total)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-
         {/* Itemized transactions */}
         <Collapsible
           open={txOpen}
