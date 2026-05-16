@@ -196,7 +196,7 @@ const DcgEvents: React.FC = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-6 p-4 md:p-0 px-[10px] pb-24">
+      <div className="space-y-6 p-4 md:p-0 pb-24 my-[10px] px-[10px]">
         {dcgError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
