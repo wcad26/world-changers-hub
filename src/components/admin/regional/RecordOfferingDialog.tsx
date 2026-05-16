@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Receipt } from 'lucide-react';
+import { Receipt, Check, ChevronsUpDown } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateFinancialTransaction, useFinancialCategories } from '@/hooks/useFinancials';
 import { useAuth } from '@/hooks/useAuth';
@@ -27,13 +28,15 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,6 +48,22 @@ const offeringSchema = z.object({
 });
 
 type OfferingFormData = z.infer<typeof offeringSchema>;
+
+const formatAmountInput = (raw: string) => {
+  // Keep digits and optional single decimal point
+  const cleaned = raw.replace(/[^\d.]/g, '');
+  const parts = cleaned.split('.');
+  const intPart = parts[0].replace(/^0+(?=\d)/, '');
+  const withCommas = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  if (parts.length === 1) return withCommas;
+  return `${withCommas}.${parts.slice(1).join('').slice(0, 2)}`;
+};
+
+const parseAmount = (formatted: string) => {
+  const n = parseFloat(formatted.replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+};
+
 
 interface RecordOfferingDialogProps {
   open: boolean;
@@ -62,6 +81,9 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
   const { data: categories = [] } = useFinancialCategories();
   const { data: events = [], isLoading: eventsLoading } = useRegionalEventsForOfferings(userRegion?.id);
   const createTransaction = useCreateFinancialTransaction();
+
+  const [eventPopoverOpen, setEventPopoverOpen] = useState(false);
+  const [amountText, setAmountText] = useState('');
 
   const form = useForm<OfferingFormData>({
     resolver: zodResolver(offeringSchema),
@@ -99,6 +121,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
 
       toast({ title: 'Success', description: 'Offering recorded successfully' });
       form.reset();
+      setAmountText('');
       onOpenChange(false);
     } catch (error) {
       toast({
@@ -142,23 +165,61 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                       <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Event
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background/60 border-border/50">
-                            <SelectValue placeholder={eventsLoading ? 'Loading events…' : 'Select an event'} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {events.length === 0 && !eventsLoading && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">No events found</div>
-                          )}
-                          {events.map(e => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.name} · {format(new Date(e.start_datetime), 'MMM dd, yyyy')}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={eventPopoverOpen} onOpenChange={setEventPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                'w-full justify-between bg-background/60 border-border/50 font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              <span className="truncate">
+                                {selectedEvent
+                                  ? `${selectedEvent.name} · ${format(new Date(selectedEvent.start_datetime), 'MMM dd, yyyy')}`
+                                  : eventsLoading
+                                    ? 'Loading events…'
+                                    : 'Select an event'}
+                              </span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search events…" />
+                            <CommandList>
+                              <CommandEmpty>No events found.</CommandEmpty>
+                              <CommandGroup>
+                                {events.map(e => {
+                                  const label = `${e.name} · ${format(new Date(e.start_datetime), 'MMM dd, yyyy')}`;
+                                  return (
+                                    <CommandItem
+                                      key={e.id}
+                                      value={label}
+                                      onSelect={() => {
+                                        field.onChange(e.id);
+                                        setEventPopoverOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          'mr-2 h-4 w-4',
+                                          field.value === e.id ? 'opacity-100' : 'opacity-0',
+                                        )}
+                                      />
+                                      <span className="truncate">{label}</span>
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {selectedEvent && (
                         <p className="text-xs text-muted-foreground pt-1">
                           Date: {format(new Date(selectedEvent.start_datetime), 'PPP')}
@@ -179,19 +240,25 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
                           className="bg-background/60 border-border/50"
-                          {...field}
-                          value={field.value ?? ''}
+                          value={amountText}
+                          onChange={(e) => {
+                            const formatted = formatAmountInput(e.target.value);
+                            setAmountText(formatted);
+                            field.onChange(parseAmount(formatted));
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="notes"
