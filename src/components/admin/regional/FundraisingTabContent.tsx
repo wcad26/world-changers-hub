@@ -9,6 +9,7 @@ import { Plus, Search, Loader2, Eye, HeartHandshake } from "lucide-react";
 import { useFundraisingCampaigns, type FundraisingCampaign } from "@/hooks/useFundraisingCampaigns";
 import CreateFundraisingCampaignDialog from "@/components/admin/regional/CreateFundraisingCampaignDialog";
 import CampaignDetailsDialog from "@/components/admin/regional/CampaignDetailsDialog";
+import RecordDonationDialog from "@/components/admin/regional/finances/RecordDonationDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
