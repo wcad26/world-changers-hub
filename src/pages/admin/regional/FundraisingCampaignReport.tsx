@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import {
+  format, differenceInCalendarDays, parseISO,
+  startOfWeek, eachWeekOfInterval,
+} from "date-fns";
 import {
   ArrowLeft, HeartHandshake, Target, TrendingUp, Users, CalendarDays,
   Pencil, Share2, Loader2,
@@ -15,13 +18,14 @@ import {
 } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency, useCurrencies } from "@/hooks/useCurrencies";
-import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
+import { formatCurrencyWithSymbol, getCurrencySymbol } from "@/utils/currencyUtils";
 import EditFundraisingCampaignDialog from "@/components/admin/regional/EditFundraisingCampaignDialog";
 import ViewDonationDialog from "@/components/admin/regional/finances/ViewDonationDialog";
 import FundraisingDonationRowActions from "@/components/admin/regional/finances/FundraisingDonationRowActions";
+import PeriodSelector, { resolvePeriod, type PeriodKey } from "@/components/admin/regional/finances/PeriodSelector";
 import { toast } from "sonner";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, ComposedChart, Bar, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 
 const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; sub?: React.ReactNode }>
