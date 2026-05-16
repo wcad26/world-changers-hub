@@ -8,6 +8,8 @@ import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
+import { useActivePlanTargets } from "@/hooks/useActivePlanTargets";
+import { useDcgRegionMembership } from "@/hooks/useDcgRegionMembership";
 import { isChildMember } from "@/utils/childUtils";
 import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
 import { Skeleton } from "@/components/ui/skeleton";
