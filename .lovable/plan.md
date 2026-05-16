@@ -1,79 +1,38 @@
 ## Goal
-Let regional admins record donations from **non-member donors** (external supporters) and reuse them in future donations, alongside existing member-based donor selection.
 
-## Data model
+Add an **Actions** column to the DCG Transactions table on `/admin/regional/finances` (DCG tab). Each row gets a dropdown menu with **View**, **Edit**, and **Delete**. Edit opens a glass-style dialog to modify the transaction; Delete asks for confirmation; View shows read-only details.
 
-### New table: `public.donors`
-External donor registry — separate from `members` to keep concerns clean.
+## UX
 
-Columns:
-- `id` (uuid, pk)
-- `region_id` (uuid, not null) — donor "belongs" to the region that registered them; search will still include all regions for super admins
-- `first_name` (text, not null)
-- `last_name` (text, not null)
-- `email` (text, nullable, lowercased)
-- `phone` (text, nullable) — same 9+ digit rule as members
-- `address` (text, nullable)
-- `notes` (text, nullable)
-- `created_by` (uuid)
-- `created_at`, `updated_at`
+- New rightmost column "Actions" with a `MoreHorizontal` icon trigger.
+- DropdownMenu items:
+  - **View details** — opens a read-only glass dialog showing all fields (date, DCG, category, type, description, amount, recorded by/at if available).
+  - **Edit** — opens the edit dialog pre-filled with the transaction.
+  - **Delete** — opens an AlertDialog ("Delete transaction? This cannot be undone."). On confirm, removes the record.
+- After edit/delete, the ledger query refetches so all KPIs, per-DCG breakdown, and the trend chart update.
 
-Constraints / indexes:
-- Unique partial index on `(region_id, lower(email))` where `email is not null` to prevent dupes within a region.
-- Trigram or simple index on `last_name`, `first_name` for search.
+## Files
 
-### `fundraising_donations` — add donor link
-Add nullable `donor_id uuid` referencing `public.donors(id)` AND keep existing `member_id` plan path. Effectively a donation can be tied to **one of**:
-- a member (resolved via members table), OR
-- an external donor (`donor_id`), OR
-- anonymous (`anonymous = true`, both null)
+**New:**
+- `src/components/admin/regional/finances/EditDcgTransactionDialog.tsx` — glass-standard edit dialog (gradient header + glow orbs, glass body, gradient CTA). Fields: DCG (read-only), Category (select, scoped to DCG financial categories), Type (derived from category), Amount, Date (popover calendar), Description (textarea). Uses zod + react-hook-form. Submits via a new region-scoped update mutation.
+- `src/components/admin/regional/finances/ViewDcgTransactionDialog.tsx` — small read-only glass dialog.
+- `src/components/admin/regional/finances/DcgTransactionRowActions.tsx` — encapsulates the dropdown + the three dialogs for one row (keeps `DcgLedgerTab.tsx` tidy).
 
-(We already store `donor_name` as a denormalized snapshot — keep it for historical display when a donor record is later deleted.)
+**Edited:**
+- `src/components/admin/regional/finances/DcgLedgerTab.tsx`
+  - Add `<TableHead className="text-right w-12">Actions</TableHead>` and `<TableCell>` rendering `<DcgTransactionRowActions row={r} />` at the end of each row.
+- `src/hooks/useRegionalLedger.ts`
+  - Add `useUpdateRegionalTransaction()` and `useDeleteRegionalTransaction()` mutations that operate on `financial_transactions` scoped to the current region (`region_id = userRegion.id`) so RLS holds. Invalidate `["regional_ledger", regionId]` and existing `dcg_financial_transactions` / `financial_summary` keys on success.
 
-Note: the current dialog stores the selected member's display name into `donor_name`. We'll add an explicit `member_id` column too so member donations are queryable. If you'd rather keep it minimal, we can skip `member_id` and rely on `donor_name` for member donations — confirm in step below.
+## Technical notes
 
-### RLS for `donors`
-- `regional_admin`: full CRUD where `region_id = get_user_region(auth.uid())`.
-- `super_admin`: full CRUD.
-- No public select.
-
-### New RPC: `search_all_donors(_search text)`
-Mirrors `search_all_members` — returns `id, first_name, last_name, email` across all regions, limit 50, security definer.
-
-## UI changes — `RecordDonationDialog.tsx`
-
-Replace the single member combobox with a **Donor Type** segmented control / radio group:
-
-```
-Donor type:  ( ) Member   ( ) External donor   ( ) Anonymous
-```
-
-- **Member** (default): existing member combobox (search_all_members).
-- **External donor**: a donor combobox using `search_all_donors`, with a `+ Register new donor` action inside the popover footer (and an empty-state CTA). Clicking it opens a small inline `RegisterDonorDialog` (name, email, phone, address, notes — zod validated, phone 9+ digit rule, email optional). On success, the new donor is auto-selected.
-- **Anonymous**: collapses donor input, sets `anonymous = true`.
-
-Remove the standalone "Mark as anonymous" checkbox — it becomes one of the three radio options.
-
-Submit payload:
-- Member: `{ member_id, donor_name: "Last First" snapshot, donor_id: null, anonymous: false }`
-- External: `{ donor_id, donor_name: snapshot, donor_email: snapshot, member_id: null, anonymous: false }`
-- Anonymous: `{ anonymous: true, donor_name: null, ... }`
-
-## New files
-- `src/components/admin/regional/finances/RegisterDonorDialog.tsx` — small nested dialog with the donor form.
-- `src/hooks/useDonors.ts` — `useSearchDonors(search)`, `useCreateDonor()`, plus optional `useDonor(id)` for the transactions card display.
-
-## Edited files
-- migration: create `donors`, RPC `search_all_donors`, add `donor_id` (+ optional `member_id`) to `fundraising_donations`, RLS, indexes.
-- `src/components/admin/regional/finances/RecordDonationDialog.tsx` — radio-driven donor selector + inline registration.
-- `src/hooks/useFundraisingCampaigns.ts` — extend `NewDonationInput` and `useCreateDonation` to pass `donor_id` / `member_id`.
-- `src/components/admin/regional/finances/FundraisingTransactionsCard.tsx` — Donor column already shows `donor_name`; no change needed unless you want a "Member"/"Donor"/"Anonymous" badge.
+- The existing `useUpdateDcgTransaction` / `useDeleteDcgTransaction` in `useDcgFinancials.ts` require a `dcgId` and invalidate DCG-portal caches. Since the regional Finance page operates on transactions across many DCGs, we add region-scoped mutations alongside them rather than refactor those.
+- All dialogs follow `mem://design/glass-dialog-standard` (gradient header, glow orbs, glass panels, gradient CTA).
+- No DB schema changes; existing RLS on `financial_transactions` (regional admin + super admin) already permits update/delete within region.
+- Category dropdown uses `useFinancialCategories()` (already used in the existing DCG edit dialog).
 
 ## Out of scope
-- Donor profile pages / donor history view (can be a follow-up: `/admin/regional/finances/donors`).
-- Donor CSV import.
-- Merging duplicate donors.
-- Public-facing donor portal.
 
-## One question before I build
-Do you want a **separate Donors directory page** (list, edit, view donation history) now, or just the registration + selection inside the donation dialog for this round?
+- Bulk actions / multi-select.
+- Audit log of edits (can be added later if needed).
+- Changing the DCG assignment of a transaction (kept read-only in edit).
