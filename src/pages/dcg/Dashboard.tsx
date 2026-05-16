@@ -175,21 +175,6 @@ const DcgDashboard = () => {
           ))}
         </div>
 
-        {/* Quick Actions - mobile 2x2 grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {quickActions.map((action, i) => (
-            <Button
-              key={i}
-              variant="outline"
-              className="h-auto py-3 md:py-4 flex flex-col items-center gap-1.5"
-              onClick={action.action}
-            >
-              <action.icon className="h-5 w-5 text-primary" />
-              <span className="text-xs font-medium">{action.title}</span>
-            </Button>
-          ))}
-        </div>
-
         {/* Recent Activities */}
         <Card>
           <CardHeader className="p-4 md:p-6">
