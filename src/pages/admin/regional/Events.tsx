@@ -1702,7 +1702,7 @@ const RegionalEvents: React.FC = () => {
                   </div>
                   <span className="text-sm font-medium text-muted-foreground">{label}</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">{isTarget ? data.count : data.count}</p>
+                <p className="font-bold text-foreground text-lg">{isTarget ? data.count : data.count}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {isTarget ? `${data.avgAttendance} total attendees` : `Avg: ${data.avgAttendance} attendees`}
                 </p>
