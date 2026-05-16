@@ -139,7 +139,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
 
           <div className="space-y-2">
             <Label>Donor</Label>
-            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen} modal={true}>
               <PopoverTrigger asChild>
                 <Button
                   type="button"
