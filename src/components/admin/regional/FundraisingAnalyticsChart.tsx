@@ -3,9 +3,15 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { useFundraisingAnalytics } from "@/hooks/useFundraisingCampaigns";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 
 const FundraisingAnalyticsChart: React.FC = () => {
   const { data: analytics, isLoading } = useFundraisingAnalytics();
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const fc = (n: number) => formatCurrencyWithSymbol(Number(n), regionCurrency);
 
   if (isLoading) {
     return (
@@ -45,7 +51,7 @@ const FundraisingAnalyticsChart: React.FC = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
-              <Tooltip formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Amount Raised']} />
+              <Tooltip formatter={(value) => [fc(Number(value)), 'Amount Raised']} />
               <Line type="monotone" dataKey="raised" stroke="#8884d8" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
@@ -64,7 +70,7 @@ const FundraisingAnalyticsChart: React.FC = () => {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip formatter={(value, name) => [
-                name === 'raised' ? `$${Number(value).toLocaleString()}` : `$${Number(value).toLocaleString()}`,
+                fc(Number(value)),
                 name === 'raised' ? 'Raised' : 'Goal'
               ]} />
               <Bar dataKey="raised" fill="#8884d8" />

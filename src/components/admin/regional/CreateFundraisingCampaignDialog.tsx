@@ -9,6 +9,8 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { useCreateFundraisingCampaign, campaignSchema, type CampaignData } from "@/hooks/useFundraisingCampaigns";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useRegionCurrency } from "@/hooks/useCurrencies";
 
 interface CreateFundraisingCampaignDialogProps {
   open: boolean;
@@ -20,6 +22,9 @@ const CreateFundraisingCampaignDialog: React.FC<CreateFundraisingCampaignDialogP
   onOpenChange 
 }) => {
   const createCampaignMutation = useCreateFundraisingCampaign();
+  const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
+  const currencyLabel = regionCurrency?.symbol || regionCurrency?.code || "";
   
   const form = useForm<CampaignData>({
     resolver: zodResolver(campaignSchema),
@@ -86,7 +91,7 @@ const CreateFundraisingCampaignDialog: React.FC<CreateFundraisingCampaignDialogP
                 name="goal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fundraising Goal ($)</FormLabel>
+                    <FormLabel>Fundraising Goal{currencyLabel ? ` (${currencyLabel})` : ""}</FormLabel>
                     <FormControl>
                       <Input 
                         type="number" 
