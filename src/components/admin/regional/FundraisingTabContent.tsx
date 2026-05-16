@@ -70,7 +70,7 @@ const FundraisingTabContent: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setDonationDialogOpen(true)}
-            className="bg-gradient-to-r from-primary to-purple-600 hover:bg-none hover:bg-card/60 hover:backdrop-blur-sm hover:border hover:border-border/60 hover:text-foreground text-primary-foreground shadow-sm"
+            className="bg-gradient-to-r from-primary to-purple-600 hover:from-emerald-500 hover:to-green-600 text-primary-foreground shadow-sm transition-colors"
           >
             <HeartHandshake className="mr-2 h-4 w-4" /> Record Donation
           </Button>
