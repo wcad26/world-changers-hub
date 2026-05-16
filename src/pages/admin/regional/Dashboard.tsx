@@ -611,8 +611,8 @@ const RegionalDashboard: React.FC = () => {
       {regionMissingNotice}
       {dataErrorNotice}
       {/* ── KPI CARDS ── */}
-      {kpis && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {kpis && eventType === "regional" && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <GlassKPICard
             icon={<Users className="h-5 w-5" />}
             label="Members"
@@ -626,16 +626,39 @@ const RegionalDashboard: React.FC = () => {
             subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"}
           />
           <GlassKPICard
+            icon={<CalendarDays className="h-5 w-5" />}
+            label="Regional Events"
+            value={kpis.regionalEventsCount}
+            subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`}
+          />
+          <GlassKPICard
+            icon={<Target className="h-5 w-5" />}
+            label="Attendance Target"
+            value={kpis.regionalAttendanceTargetMissing ? "—" : `${kpis.regionalAttendanceTargetPct}%`}
+            subtitle={kpis.regionalAttendanceTargetSubtitle}
+          />
+          <GlassKPICard
             icon={<Heart className="h-5 w-5" />}
             label="Discipleship Success"
             value={`${kpis.successRate}%`}
             subtitle="Reached membership milestone"
           />
+        </div>
+      )}
+
+      {kpis && eventType === "dcg" && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <GlassKPICard
-            icon={<CalendarDays className="h-5 w-5" />}
-            label="Regional Events"
-            value={kpis.regionalEventsCount}
-            subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`}
+            icon={<Users className="h-5 w-5" />}
+            label="Members"
+            value={kpis.dcgTotalMembers}
+            subtitle={`${kpis.dcgAdults} adults · ${kpis.dcgChildren} children`}
+          />
+          <GlassKPICard
+            icon={<Baby className="h-5 w-5" />}
+            label="Children"
+            value={kpis.dcgChildren}
+            subtitle="In DCGs"
           />
           <GlassKPICard
             icon={<UsersRound className="h-5 w-5" />}
@@ -646,8 +669,14 @@ const RegionalDashboard: React.FC = () => {
           <GlassKPICard
             icon={<Target className="h-5 w-5" />}
             label="Attendance Target"
-            value={`${kpis.attendanceTargetPct}%`}
-            subtitle="Of regional event capacity"
+            value={kpis.dcgAttendanceTargetMissing ? "—" : `${kpis.dcgAttendanceTargetPct}%`}
+            subtitle={kpis.dcgAttendanceTargetSubtitle}
+          />
+          <GlassKPICard
+            icon={<Heart className="h-5 w-5" />}
+            label="Discipleship Success"
+            value={`${kpis.successRate}%`}
+            subtitle="Reached membership milestone"
           />
         </div>
       )}
