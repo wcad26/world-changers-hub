@@ -57,11 +57,16 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
                     <TableHead>Donor</TableHead>
                     <TableHead className="hidden md:table-cell">Message</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {donations.map((d: any) => (
-                    <TableRow key={d.id} className="border-border/20 hover:bg-muted/30">
+                    <TableRow
+                      key={d.id}
+                      className="border-border/20 hover:bg-muted/30 cursor-pointer"
+                      onClick={() => openView(d)}
+                    >
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {format(new Date(d.donation_date), "MMM dd, yyyy")}
                       </TableCell>
@@ -71,6 +76,9 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
                       <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums text-green-600">
                         {fmt(Number(d.amount), d.currency_code || d.campaign?.currency_code)}
                       </TableCell>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <FundraisingDonationRowActions donation={d} onView={() => openView(d)} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -79,6 +87,7 @@ const FundraisingTransactionsCard: React.FC<Props> = ({ range }) => {
           )}
         </CollapsibleContent>
       </Collapsible>
+      <ViewDonationDialog open={viewOpen} onOpenChange={setViewOpen} donation={selected} />
     </>
   );
 };
