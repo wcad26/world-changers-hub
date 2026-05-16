@@ -137,15 +137,64 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Donor Name</Label>
-              <Input value={donorName} onChange={(e) => setDonorName(e.target.value)} disabled={anonymous} placeholder={anonymous ? "Anonymous" : "Last First"} />
-            </div>
-            <div className="space-y-2">
-              <Label>Donor Email</Label>
-              <Input type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} disabled={anonymous} placeholder="optional" />
-            </div>
+          <div className="space-y-2">
+            <Label>Donor</Label>
+            <Popover open={memberPopoverOpen} onOpenChange={setMemberPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  disabled={anonymous}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className={cn("truncate", !memberLabel && "text-muted-foreground")}>
+                    {anonymous ? "Anonymous" : (memberLabel || "Search and select a member…")}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Search by name…"
+                    value={memberSearch}
+                    onValueChange={setMemberSearch}
+                  />
+                  <CommandList>
+                    {membersLoading ? (
+                      <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Searching…
+                      </div>
+                    ) : (
+                      <>
+                        <CommandEmpty>No members found.</CommandEmpty>
+                        <CommandGroup>
+                          {memberResults.map((m) => {
+                            const label = `${m.last_name || ""} ${m.first_name || ""}`.trim();
+                            return (
+                              <CommandItem
+                                key={m.id}
+                                value={m.id}
+                                onSelect={() => {
+                                  setMemberId(m.id);
+                                  setMemberLabel(label);
+                                  setMemberPopoverOpen(false);
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", memberId === m.id ? "opacity-100" : "opacity-0")} />
+                                <span className="flex-1 truncate">{label}</span>
+                                <span className="text-xs text-muted-foreground ml-2">{m.member_id}</span>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="flex items-center gap-2">
