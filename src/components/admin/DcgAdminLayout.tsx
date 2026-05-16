@@ -11,7 +11,7 @@ import {
   Users,
   Calendar,
   DollarSign,
-  BarChart2,
+  
   LogOut,
   Menu,
   PanelLeftClose,
