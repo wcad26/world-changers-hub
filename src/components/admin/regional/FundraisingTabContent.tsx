@@ -23,6 +23,7 @@ import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
  * filters, campaign list and dialogs.
  */
 const FundraisingTabContent: React.FC = () => {
+  const navigate = useNavigate();
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const queryClient = useQueryClient();
@@ -143,7 +144,11 @@ const FundraisingTabContent: React.FC = () => {
                   const goal = (campaign.goal || 0) / 100;
                   const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
                   return (
-                    <TableRow key={campaign.id} className="border-border/20 hover:bg-muted/30">
+                    <TableRow
+                      key={campaign.id}
+                      className="border-border/20 hover:bg-muted/30 cursor-pointer"
+                      onClick={() => navigate(`/admin/regional/finances/fundraising/${campaign.id}`)}
+                    >
                       <TableCell className="font-medium">{campaign.name}</TableCell>
                       <TableCell>
                         <Badge variant={campaign.status === "Active" ? "default" : "secondary"}>
@@ -158,10 +163,8 @@ const FundraisingTabContent: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-right tabular-nums font-semibold">{fc(raised)}</TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">{fc(goal)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(campaign)}>
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <FundraisingCampaignRowActions campaign={campaign} />
                       </TableCell>
                     </TableRow>
                   );

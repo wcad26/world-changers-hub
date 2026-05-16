@@ -46,6 +46,7 @@ import RegionalEvents from "./pages/admin/regional/Events";
 import RegionalEventReport from "./pages/admin/regional/EventReport";
 
 import RegionalFinances from "./pages/admin/regional/Finances";
+import FundraisingCampaignReport from "./pages/admin/regional/FundraisingCampaignReport";
 import RegionalDCG from "./pages/admin/regional/DCG";
 import DcgProfile from "./pages/admin/regional/DcgProfile";
 
@@ -166,6 +167,7 @@ const App = () => {
                 <Route path="events" element={<RegionalEvents />} />
                 <Route path="events/:eventId/report" element={<RegionalEventReport />} />
                 <Route path="finances" element={<RegionalFinances />} />
+                <Route path="finances/fundraising/:campaignId" element={<FundraisingCampaignReport />} />
                 <Route path="dcg" element={<RegionalDCG />} />
                 <Route path="dcg/:dcgId" element={<DcgProfile />} />
                 <Route path="certificates" element={<RegionalCertificates />} />
