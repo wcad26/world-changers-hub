@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp } from "lucide-react";
-import { format } from "date-fns";
+import { format, startOfWeek, eachWeekOfInterval } from "date-fns";
 import { formatCurrencyWithSymbol, getCurrencySymbol } from "@/utils/currencyUtils";
 import type { Currency } from "@/hooks/useCurrencies";
 import type { LedgerRow } from "@/hooks/useRegionalLedger";
