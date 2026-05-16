@@ -3119,14 +3119,23 @@ const RegionalEvents: React.FC = () => {
 
       {/* Edit Event Dialog */}
       <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>
-              Update the details of this event.
-            </DialogDescription>
-          </DialogHeader>
-          
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+            <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+            <DialogHeader className="relative space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                  <Edit className="h-5 w-5" />
+                </div>
+                <DialogTitle className="text-xl font-semibold tracking-tight">Edit Event</DialogTitle>
+              </div>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Update the details of this event.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onEditSubmit, (errors) => {
               console.error('Edit Event form validation errors:', errors);
