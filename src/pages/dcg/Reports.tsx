@@ -91,7 +91,7 @@ const DcgReports = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="space-y-4 md:space-y-6 p-4 md:p-0 px-[10px]">
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold">{dcgName} Reports</h1>
           <p className="text-muted-foreground">Performance reports for your DCG</p>

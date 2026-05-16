@@ -138,7 +138,7 @@ const DcgDashboard = () => {
 
   return (
     <DcgAdminLayout>
-      <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="space-y-4 md:space-y-6 p-4 md:p-0 px-[10px]">
         {/* Hidden on mobile (header shows title) */}
         <div className="hidden lg:block">
           <h1 className="text-3xl font-bold">DCG Dashboard</h1>
