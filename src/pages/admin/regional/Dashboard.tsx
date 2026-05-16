@@ -93,6 +93,8 @@ const RegionalDashboard: React.FC = () => {
   const { data: attendanceData, error: attendanceError } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
+  const { data: activePlan } = useActivePlanTargets(userRegion?.id);
+  const { data: dcgMembership } = useDcgRegionMembership(userRegion?.id);
 
   // Fetch member relationships for strict child detection (age <16 AND adult relationship).
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
