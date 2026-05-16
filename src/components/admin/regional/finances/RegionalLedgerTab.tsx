@@ -35,9 +35,16 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
 
-  const { data: rows = [], isLoading } = useRegionalLedger({
+  const queryClient = useQueryClient();
+  const { data: rows = [], isLoading, isFetching, refetch } = useRegionalLedger({
     scope: "regional", from: range.from, to: range.to, categoryId, type,
   });
+
+  const handleRefresh = () => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ["financial"] });
+    queryClient.invalidateQueries({ queryKey: ["regional-ledger"] });
+  };
 
   const filtered = useMemo(() => {
     if (!search) return rows;
