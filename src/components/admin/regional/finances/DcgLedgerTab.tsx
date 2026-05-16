@@ -17,6 +17,7 @@ import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "./PeriodSelector";
+import DcgTransactionRowActions from "./DcgTransactionRowActions";
 
 interface Props { range: PeriodRange }
 
@@ -162,6 +163,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                     <TableHead className="hidden md:table-cell">Description</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="w-12 text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -177,6 +179,9 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                      <TableCell className="text-right">
+                        <DcgTransactionRowActions row={r} />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
