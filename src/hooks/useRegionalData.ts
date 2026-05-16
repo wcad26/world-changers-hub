@@ -195,12 +195,12 @@ export const useRegionalEventsForOfferings = (regionId: string | undefined) => {
       if (!regionId) return [];
       const { data, error } = await supabase
         .from('events')
-        .select('id, title, start_datetime')
+        .select('id, name, start_datetime')
         .eq('region_id', regionId)
         .order('start_datetime', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return (data || []) as Array<Pick<Event, 'id' | 'title' | 'start_datetime'>>;
+      return (data || []) as Array<Pick<Event, 'id' | 'name' | 'start_datetime'>>;
     },
     enabled: !!regionId,
   });
