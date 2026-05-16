@@ -83,6 +83,14 @@ const FundraisingTabContent: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="bg-background/60 border-border/40"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+          <Button
             onClick={() => setDonationDialogOpen(true)}
             className="bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
           >
