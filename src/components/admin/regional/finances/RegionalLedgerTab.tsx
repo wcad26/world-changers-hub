@@ -37,6 +37,8 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [specialOpen, setSpecialOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [txOpen, setTxOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<LedgerRow | null>(null);
 
   const queryClient = useQueryClient();
   const { data: rows = [], isLoading, isFetching, refetch } = useRegionalLedger({
