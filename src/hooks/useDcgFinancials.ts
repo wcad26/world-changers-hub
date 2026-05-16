@@ -4,6 +4,33 @@ import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import * as z from 'zod';
 
+// Resolve the current signed-in DCG leader's active DCG row directly from
+// Supabase, independent of any regional context. This is the source of
+// truth for the DCG portal.
+export const useCurrentDcg = () => {
+  return useQuery({
+    queryKey: ['current_dcg'],
+    queryFn: async (): Promise<Database['public']['Tables']['dcgs']['Row'] | null> => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
+      if (!uid) return null;
+
+      const { data: dcgId, error: rpcErr } = await supabase.rpc('get_user_dcg', { _user_id: uid });
+      if (rpcErr) throw rpcErr;
+      if (!dcgId) return null;
+
+      const { data: dcg, error } = await supabase
+        .from('dcgs')
+        .select('*')
+        .eq('id', dcgId)
+        .maybeSingle();
+      if (error) throw error;
+      return dcg ?? null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export type DcgFinancialTransaction = Database['public']['Tables']['financial_transactions']['Row'] & {
   category?: { name: string; type: string } | null;
   dcg?: { name: string } | null;
