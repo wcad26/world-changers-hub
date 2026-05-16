@@ -206,80 +206,11 @@ const DcgEvents: React.FC = () => {
         )}
 
         {/* Filter bar */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-          <PeriodFilter
-            filters={periodFilters}
-            onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))}
-            className="mb-0"
-          />
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search events..."
-              className="pl-9 bg-background/60 h-8 w-full sm:w-[200px] text-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-row gap-2 w-full sm:contents">
-            <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-              <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
-                <SelectValue placeholder="Event Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="regional">Regional</SelectItem>
-                <SelectItem value="dcg">DCG</SelectItem>
-                <SelectItem value="special">Special</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-1/2 sm:w-[130px] bg-background/60 h-8 text-sm">
-                <SelectValue placeholder="Time" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Events</SelectItem>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="past">Past</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="sm:ml-auto">
-            <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
-              <Plus className="h-4 w-4" /> Create Event
-            </Button>
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid gap-4 grid-cols-2">
-          {kpiCards.map(({ label, data, icon: Icon, color, bg }) => (
-            <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-              <div className="flex items-center gap-3 mb-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">{label}</span>
-              </div>
-              <p className="font-bold text-foreground text-lg">{data.count}</p>
-              <p className="text-xs text-muted-foreground mt-1">Avg: {data.avgAttendance} attendees</p>
-              <div className="mt-2">
-                {data.growth !== 0 ? (
-                  <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-destructive'}`}>
-                    {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">0% growth</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Events Table */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 px-[5px]">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 mx-[10px] px-0">
+...
+        <div className="grid gap-4 grid-cols-2 mx-[10px]">
+...
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 mx-[10px] px-[5px]">
           <div className="flex items-center gap-3 mb-6">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
               <Calendar className="h-5 w-5" />
