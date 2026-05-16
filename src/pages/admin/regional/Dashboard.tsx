@@ -8,6 +8,8 @@ import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useCurrentMemberTarget } from "@/hooks/useMemberTargets";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
 import { useFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
+import { useActivePlanTargets } from "@/hooks/useActivePlanTargets";
+import { useDcgRegionMembership } from "@/hooks/useDcgRegionMembership";
 import { isChildMember } from "@/utils/childUtils";
 import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -91,6 +93,8 @@ const RegionalDashboard: React.FC = () => {
   const { data: attendanceData, error: attendanceError } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
+  const { data: activePlan } = useActivePlanTargets(userRegion?.id);
+  const { data: dcgMembership } = useDcgRegionMembership(userRegion?.id);
 
   // Fetch member relationships for strict child detection (age <16 AND adult relationship).
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
@@ -241,10 +245,41 @@ const RegionalDashboard: React.FC = () => {
     const avgDcgAttendees = dcgAttendance.length > 0
       ? Math.round(dcgAttendance.reduce((s, a) => s + a.total_present, 0) / dcgAttendance.length) : 0;
 
-    // Attendance target % — use filtered attendance and events
-    const totalCapacity = regionalEvents.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
-    const totalActual = regionalAttendance.reduce((s, a) => s + a.total_present, 0);
-    const attendanceTargetPct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;
+    // Attendance Target % — driven by active plan from Plan Management.
+    const planTargets = activePlan?.targetsByKey || {};
+    const totalActualRegional = regionalAttendance.reduce((s, a) => s + a.total_present, 0);
+    const planTotalEventAttendees = planTargets['total_event_attendees'];
+    const planAvgEventAttendance = planTargets['avg_event_attendance'];
+    const planAvgDcgAttendance = planTargets['avg_dcg_attendance'];
+
+    let regionalAttendanceTargetPct = 0;
+    let regionalAttendanceTargetMissing = true;
+    let regionalAttendanceTargetSubtitle = 'No target set in Plan Management';
+    if (planTotalEventAttendees && planTotalEventAttendees > 0) {
+      regionalAttendanceTargetPct = Math.round((totalActualRegional / planTotalEventAttendees) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `${totalActualRegional} / ${planTotalEventAttendees} target`;
+    } else if (planAvgEventAttendance && planAvgEventAttendance > 0) {
+      regionalAttendanceTargetPct = Math.round((avgRegionalAttendees / planAvgEventAttendance) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `Avg ${avgRegionalAttendees} / ${planAvgEventAttendance} target`;
+    }
+
+    let dcgAttendanceTargetPct = 0;
+    let dcgAttendanceTargetMissing = true;
+    let dcgAttendanceTargetSubtitle = 'No target set in Plan Management';
+    if (planAvgDcgAttendance && planAvgDcgAttendance > 0) {
+      dcgAttendanceTargetPct = Math.round((avgDcgAttendees / planAvgDcgAttendance) * 100);
+      dcgAttendanceTargetMissing = false;
+      dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} / ${planAvgDcgAttendance} target`;
+    }
+
+    // DCG membership counts (region-wide, intersected with children set).
+    const dcgIds = dcgMembership?.dcgMemberIds || new Set<string>();
+    const dcgTotalMembers = dcgIds.size;
+    let dcgChildren = 0;
+    childrenSet.forEach(id => { if (dcgIds.has(id)) dcgChildren++; });
+    const dcgAdults = Math.max(0, dcgTotalMembers - dcgChildren);
 
     // Discipleship success rate
     const totalRelationships = discipleshipRelationships?.length || 0;
@@ -304,7 +339,15 @@ const RegionalDashboard: React.FC = () => {
       avgRegionalAttendees,
       dcgEventsCount: dcgEvents.length,
       avgDcgAttendees,
-      attendanceTargetPct,
+      regionalAttendanceTargetPct,
+      regionalAttendanceTargetMissing,
+      regionalAttendanceTargetSubtitle,
+      dcgAttendanceTargetPct,
+      dcgAttendanceTargetMissing,
+      dcgAttendanceTargetSubtitle,
+      dcgTotalMembers,
+      dcgAdults,
+      dcgChildren,
       genderCounts,
       uniqueTithers,
       uniqueGivers,
@@ -314,7 +357,7 @@ const RegionalDashboard: React.FC = () => {
       filteredEvents,
       targetMembers: memberTarget?.target_members || 0,
     };
-  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget]);
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget, activePlan, dcgMembership]);
 
   // ========== CHART DATA ==========
   const trendChartData = useMemo(() => {
@@ -568,8 +611,8 @@ const RegionalDashboard: React.FC = () => {
       {regionMissingNotice}
       {dataErrorNotice}
       {/* ── KPI CARDS ── */}
-      {kpis && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      {kpis && eventType === "regional" && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <GlassKPICard
             icon={<Users className="h-5 w-5" />}
             label="Members"
@@ -583,16 +626,39 @@ const RegionalDashboard: React.FC = () => {
             subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"}
           />
           <GlassKPICard
+            icon={<CalendarDays className="h-5 w-5" />}
+            label="Regional Events"
+            value={kpis.regionalEventsCount}
+            subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`}
+          />
+          <GlassKPICard
+            icon={<Target className="h-5 w-5" />}
+            label="Attendance Target"
+            value={kpis.regionalAttendanceTargetMissing ? "—" : `${kpis.regionalAttendanceTargetPct}%`}
+            subtitle={kpis.regionalAttendanceTargetSubtitle}
+          />
+          <GlassKPICard
             icon={<Heart className="h-5 w-5" />}
             label="Discipleship Success"
             value={`${kpis.successRate}%`}
             subtitle="Reached membership milestone"
           />
+        </div>
+      )}
+
+      {kpis && eventType === "dcg" && (
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <GlassKPICard
-            icon={<CalendarDays className="h-5 w-5" />}
-            label="Regional Events"
-            value={kpis.regionalEventsCount}
-            subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`}
+            icon={<Users className="h-5 w-5" />}
+            label="Members"
+            value={kpis.dcgTotalMembers}
+            subtitle={`${kpis.dcgAdults} adults · ${kpis.dcgChildren} children`}
+          />
+          <GlassKPICard
+            icon={<Baby className="h-5 w-5" />}
+            label="Children"
+            value={kpis.dcgChildren}
+            subtitle="In DCGs"
           />
           <GlassKPICard
             icon={<UsersRound className="h-5 w-5" />}
@@ -603,8 +669,14 @@ const RegionalDashboard: React.FC = () => {
           <GlassKPICard
             icon={<Target className="h-5 w-5" />}
             label="Attendance Target"
-            value={`${kpis.attendanceTargetPct}%`}
-            subtitle="Of regional event capacity"
+            value={kpis.dcgAttendanceTargetMissing ? "—" : `${kpis.dcgAttendanceTargetPct}%`}
+            subtitle={kpis.dcgAttendanceTargetSubtitle}
+          />
+          <GlassKPICard
+            icon={<Heart className="h-5 w-5" />}
+            label="Discipleship Success"
+            value={`${kpis.successRate}%`}
+            subtitle="Reached membership milestone"
           />
         </div>
       )}
