@@ -1,47 +1,46 @@
 ## Goal
-1. Replace the single "View" button in the Fundraising Campaigns table actions column with a 3-dot dropdown offering **View**, **Edit**, **Delete**.
-2. Make the campaign row itself clickable, navigating to a new dedicated **Campaign Report** page.
-3. Build that Campaign Report page with rich, accurate reporting per campaign.
+Modernize the `FundraisingCampaignReport` page (`/admin/regional/finances/fundraising/:campaignId`) with:
+1. A weekly-cumulative trend chart matching the regional finance page's `LedgerTrendChart` style (Income/Expenses/Net-style multi-area chart adapted for donations).
+2. A `PeriodSelector` placed just before the Share/Edit buttons that filters every section of the page.
 
-## Files to add
+## Changes
 
-- `src/components/admin/regional/finances/FundraisingCampaignRowActions.tsx`
-  - 3-dot `DropdownMenu` mirroring the donation row actions pattern.
-  - **View** → navigates to `/admin/regional/finances/fundraising/:campaignId`.
-  - **Edit** → opens an `EditFundraisingCampaignDialog` (new).
-  - **Delete** → `AlertDialog` confirmation, calls a new `useDeleteFundraisingCampaign` mutation.
-- `src/components/admin/regional/EditFundraisingCampaignDialog.tsx`
-  - Reuses the same form schema and glass-dialog styling as the create dialog; pre-populates values; calls a new `useUpdateFundraisingCampaign` mutation.
-- `src/pages/admin/regional/FundraisingCampaignReport.tsx`
-  - Detailed report page (see structure below).
+### 1. `src/pages/admin/regional/FundraisingCampaignReport.tsx`
 
-## Files to modify
+**Add period state**
+- Import `PeriodSelector`, `resolvePeriod`, `PeriodKey`, `PeriodRange`.
+- Add `useState<PeriodKey>("1y")` plus optional `customRange` state (mirrors `Finances.tsx`).
+- Compute `range: PeriodRange` via `resolvePeriod(period, customRange)`.
 
-- `src/hooks/useFundraisingCampaigns.ts`
-  - Add `useUpdateFundraisingCampaign` (name, description, goal, dates, image, status, is_public).
-  - Add `useDeleteFundraisingCampaign` (donations cascade via existing FK ON DELETE CASCADE — verified).
-  - Add `useFundraisingCampaign(id)` single fetcher for the report page.
-- `src/components/admin/regional/FundraisingTabContent.tsx`
-  - Add `useNavigate`; make `<TableRow>` clickable → navigate to report page.
-  - Replace the View button cell with `<FundraisingCampaignRowActions campaign={campaign} />`, wrapped in a cell that stops click propagation.
-- `src/App.tsx`
-  - Register protected route `finances/fundraising/:campaignId` under the regional admin shell.
+**Filter donations by range**
+- Derive `filteredDonations` from `donations` where `donation_date` falls within `[range.from, range.to]`.
+- Use `filteredDonations` for KPI totals, trend, top donors, and the "All donations" table (table heading becomes `All donations (n)` for the selected period).
+- "Goal" KPI stays based on the campaign's full goal; "Raised" + "Progress" + "Avg" + "Donors" recompute from filtered set. Add a small period hint under the section heading.
 
-## Campaign Report page structure
+**Header layout**
+- Insert `<PeriodSelector>` in the right-hand action cluster, before the Share button:
+  `[ PeriodSelector ]  [ Share ]  [ Edit ]`
+- On small screens the action row wraps below the title (existing `flex-col md:flex-row` already handles this).
 
-Route: `/admin/regional/finances/fundraising/:campaignId`
+**Rebuild trend chart (replace lines 205–235)**
+Create a new inline chart that mirrors `LedgerTrendChart`:
+- Bucket filtered donations into ISO weeks via `startOfWeek(date, { weekStartsOn: 1 })` and `eachWeekOfInterval` across the resolved `range` so empty weeks render flat.
+- Two series per week:
+  - `Donations` – sum raised that week (bar).
+  - `Cumulative` – running total across weeks (area + line with dots = "weekly point record plot").
+- Use a `ComposedChart` (recharts) with:
+  - `<Bar dataKey="Donations" fill="hsl(var(--chart-1))" radius={[6,6,0,0]} />`
+  - `<Area type="monotone" dataKey="Cumulative" stroke="hsl(var(--chart-4))" fill="url(#gradCumulative)" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />`
+  - Gradient defs, dashed grid, themed axes, currency-formatted Y axis (`{symbol}{k}` short form), themed tooltip — all matching `LedgerTrendChart`.
+- Title: "Donation trend" with `TrendingUp` icon and a subtitle showing the selected period range.
+- Empty-state message reused.
 
-Sections:
-1. **Header** — back button, campaign name, status + visibility badges, share + edit actions, period (start → end or "Ongoing").
-2. **Hero KPIs** — Raised, Goal, Progress %, Donors count, Average donation, Days remaining/elapsed.
-3. **Progress panel** — large progress bar with raised/goal labels and % to goal (2 decimals).
-4. **About** — campaign description.
-5. **Trend chart** — donations over time aggregated by day (recharts area chart).
-6. **Top donors** — table of top 10 donors by total contributed (respecting anonymous flag).
-7. **All donations** — full donations table reusing `FundraisingDonationRowActions` and `ViewDonationDialog`.
+### 2. No new files, no hook/schema changes
+- `useCampaignDonations` already returns all donations for the campaign; filtering happens client-side, consistent with how `FundraisingLedgerTab` handles its KPIs.
+- No DB migration.
 
 ## Technical notes
-
-- Currency formatting uses `formatCurrencyWithSymbol` with the campaign currency (falls back to region currency).
-- All new dialogs follow the glass-dialog standard.
-- No DB migration required — `fundraising_donations.campaign_id` already has ON DELETE CASCADE.
+- Imports to add: `Bar`, `ComposedChart`, `Legend` from `recharts`; `startOfWeek`, `eachWeekOfInterval` from `date-fns`; `PeriodSelector`, `resolvePeriod`, types from `./components/admin/regional/finances/PeriodSelector`; `getCurrencySymbol` from `@/utils/currencyUtils`.
+- Y-axis tick formatter: `(v) => ${symbol}${Math.abs(v) >= 1000 ? (v/1000).toFixed(0)+'k' : v}`.
+- All colors via `hsl(var(--chart-*))` / `hsl(var(--border))` semantic tokens — no hardcoded colors.
+- Default period: `1y` (covers most campaigns; user can switch).

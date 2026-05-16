@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { format, differenceInCalendarDays, parseISO } from "date-fns";
+import {
+  format, differenceInCalendarDays, parseISO,
+  startOfWeek, eachWeekOfInterval,
+} from "date-fns";
 import {
   ArrowLeft, HeartHandshake, Target, TrendingUp, Users, CalendarDays,
   Pencil, Share2, Loader2,
@@ -15,13 +18,14 @@ import {
 } from "@/hooks/useFundraisingCampaigns";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency, useCurrencies } from "@/hooks/useCurrencies";
-import { formatCurrencyWithSymbol } from "@/utils/currencyUtils";
+import { formatCurrencyWithSymbol, getCurrencySymbol } from "@/utils/currencyUtils";
 import EditFundraisingCampaignDialog from "@/components/admin/regional/EditFundraisingCampaignDialog";
 import ViewDonationDialog from "@/components/admin/regional/finances/ViewDonationDialog";
 import FundraisingDonationRowActions from "@/components/admin/regional/finances/FundraisingDonationRowActions";
+import PeriodSelector, { resolvePeriod, type PeriodKey } from "@/components/admin/regional/finances/PeriodSelector";
 import { toast } from "sonner";
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, ComposedChart, Bar, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 
 const KpiCard: React.FC<{ icon: React.ReactNode; label: string; value: React.ReactNode; sub?: React.ReactNode }>
@@ -51,6 +55,19 @@ const FundraisingCampaignReport: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
+  const [period, setPeriod] = useState<PeriodKey>("1y");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
+
+  const filteredDonations = useMemo(() => {
+    const fromMs = range.from.getTime();
+    const toMs = range.to.getTime();
+    return donations.filter((d: any) => {
+      const t = new Date(d.donation_date).getTime();
+      return t >= fromMs && t <= toMs;
+    });
+  }, [donations, range]);
+
 
   const cur = useMemo(() => {
     if (!campaign) return regionCurrency;
@@ -63,10 +80,10 @@ const FundraisingCampaignReport: React.FC = () => {
   const fc = (n: number) => formatCurrencyWithSymbol(n, cur);
 
   const totals = useMemo(() => {
-    const raised = donations.reduce((s, d) => s + Number(d.amount || 0), 0) / 100;
+    const raised = filteredDonations.reduce((s, d) => s + Number(d.amount || 0), 0) / 100;
     const goal = (campaign?.goal || 0) / 100;
     const donorsSet = new Set<string>();
-    donations.forEach((d) => {
+    filteredDonations.forEach((d) => {
       if (d.anonymous) donorsSet.add(`anon:${d.id}`);
       else if (d.donor_id) donorsSet.add(`id:${d.donor_id}`);
       else if (d.donor_email) donorsSet.add(`em:${d.donor_email.toLowerCase()}`);
@@ -74,10 +91,10 @@ const FundraisingCampaignReport: React.FC = () => {
       else donorsSet.add(`anon:${d.id}`);
     });
     const donorCount = donorsSet.size;
-    const avg = donations.length > 0 ? raised / donations.length : 0;
+    const avg = filteredDonations.length > 0 ? raised / filteredDonations.length : 0;
     const pct = goal > 0 ? (raised / goal) * 100 : 0;
     return { raised, goal, donorCount, avg, pct };
-  }, [donations, campaign]);
+  }, [filteredDonations, campaign]);
 
   const daysInfo = useMemo(() => {
     if (!campaign?.start_date) return { label: "—", value: "—" };
@@ -94,23 +111,35 @@ const FundraisingCampaignReport: React.FC = () => {
   }, [campaign]);
 
   const trendData = useMemo(() => {
-    const byDay = new Map<string, number>();
-    donations.forEach((d) => {
-      const day = format(new Date(d.donation_date), "yyyy-MM-dd");
-      byDay.set(day, (byDay.get(day) || 0) + Number(d.amount || 0) / 100);
+    const weeks: Record<string, { donations: number; ts: number }> = {};
+    for (const d of filteredDonations) {
+      const dt = new Date(d.donation_date);
+      const ws = startOfWeek(dt, { weekStartsOn: 1 });
+      const key = format(ws, "yyyy-MM-dd");
+      if (!weeks[key]) weeks[key] = { donations: 0, ts: ws.getTime() };
+      weeks[key].donations += Number(d.amount || 0) / 100;
+    }
+    const startW = startOfWeek(range.from, { weekStartsOn: 1 });
+    const endW = startOfWeek(range.to, { weekStartsOn: 1 });
+    if (endW.getTime() < startW.getTime()) return [];
+    const all = eachWeekOfInterval({ start: startW, end: endW }, { weekStartsOn: 1 });
+    let cum = 0;
+    return all.map((w) => {
+      const key = format(w, "yyyy-MM-dd");
+      const bucket = weeks[key];
+      const donationsAmt = bucket ? Math.round(bucket.donations * 100) / 100 : 0;
+      cum += donationsAmt;
+      return {
+        week: format(w, "MMM d"),
+        Donations: donationsAmt,
+        Cumulative: Math.round(cum * 100) / 100,
+      };
     });
-    return Array.from(byDay.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, amount]) => ({
-        day,
-        label: format(parseISO(day), "MMM dd"),
-        amount: Math.round(amount * 100) / 100,
-      }));
-  }, [donations]);
+  }, [filteredDonations, range]);
 
   const topDonors = useMemo(() => {
     const map = new Map<string, { key: string; name: string; total: number; count: number }>();
-    donations.forEach((d) => {
+    filteredDonations.forEach((d) => {
       const name = d.anonymous ? "Anonymous" : (d.donor_name || d.donor_email || "Unknown");
       const key = d.anonymous ? `anon:${d.id}` : (d.donor_email?.toLowerCase() || d.donor_name?.toLowerCase() || `d:${d.id}`);
       const existing = map.get(key) || { key, name, total: 0, count: 0 };
@@ -119,7 +148,9 @@ const FundraisingCampaignReport: React.FC = () => {
       map.set(key, existing);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 10);
-  }, [donations]);
+  }, [filteredDonations]);
+
+  const currencySymbol = getCurrencySymbol(cur);
 
   const openView = (d: any) => { setSelected(d); setViewOpen(true); };
 
@@ -166,7 +197,13 @@ const FundraisingCampaignReport: React.FC = () => {
             {campaign.end_date ? format(parseISO(campaign.end_date), "MMM dd, yyyy") : "Ongoing"}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+          />
           <Button variant="outline" onClick={handleShare}><Share2 className="h-4 w-4 mr-2" /> Share</Button>
           <Button onClick={() => setEditOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground">
             <Pencil className="h-4 w-4 mr-2" /> Edit
@@ -179,7 +216,7 @@ const FundraisingCampaignReport: React.FC = () => {
         <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Raised" value={fc(totals.raised)} sub={`of ${fc(totals.goal)}`} />
         <KpiCard icon={<Target className="h-4 w-4" />} label="Goal" value={fc(totals.goal)} />
         <KpiCard icon={<HeartHandshake className="h-4 w-4" />} label="Progress" value={`${totals.pct.toFixed(2)}%`} sub={totals.goal > 0 ? `${fc(Math.max(0, totals.goal - totals.raised))} to go` : "No goal set"} />
-        <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${donations.length} donation${donations.length === 1 ? "" : "s"}`} />
+        <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${filteredDonations.length} donation${filteredDonations.length === 1 ? "" : "s"}`} />
         <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Avg donation" value={fc(totals.avg)} />
         <KpiCard icon={<CalendarDays className="h-4 w-4" />} label={daysInfo.label} value={daysInfo.value} />
       </div>
@@ -204,33 +241,54 @@ const FundraisingCampaignReport: React.FC = () => {
 
       {/* Trend */}
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">Donations over time</h3>
-        </div>
-        {trendData.length === 0 ? (
-          <p className="py-10 text-center text-muted-foreground text-sm">No donations recorded yet.</p>
-        ) : (
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="donationGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.5} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => fc(Number(v))} width={90} />
-                <Tooltip
-                  contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12 }}
-                  formatter={(v: any) => [fc(Number(v)), "Raised"]}
-                />
-                <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#donationGrad)" />
-              </AreaChart>
-            </ResponsiveContainer>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              Donation trend
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {format(range.from, "MMM d, yyyy")} – {format(range.to, "MMM d, yyyy")} · Weekly donations and cumulative total
+            </p>
           </div>
+        </div>
+        {trendData.length === 0 || trendData.every((d) => d.Donations === 0) ? (
+          <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
+            No donations in the selected period.
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={320}>
+            <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradCumulative" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+              <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} minTickGap={20} />
+              <YAxis
+                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+              />
+              <Tooltip
+                cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "12px",
+                  fontSize: "12px",
+                  boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                }}
+                formatter={(value, name) => [fc(Number(value)), name]}
+              />
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+              <Bar dataKey="Donations" fill="hsl(var(--chart-1))" radius={[6, 6, 0, 0]} maxBarSize={32} />
+              <Area type="monotone" dataKey="Cumulative" stroke="hsl(var(--chart-4))" fill="url(#gradCumulative)" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} activeDot={{ r: 5 }} />
+            </ComposedChart>
+          </ResponsiveContainer>
         )}
       </div>
 
@@ -272,14 +330,14 @@ const FundraisingCampaignReport: React.FC = () => {
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
         <div className="flex items-center gap-2 mb-4">
           <HeartHandshake className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">All donations ({donations.length})</h3>
+          <h3 className="text-base font-semibold">Donations in period ({filteredDonations.length})</h3>
         </div>
         {donationsLoading ? (
           <div className="flex items-center justify-center py-10 text-muted-foreground text-sm">
             <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading…
           </div>
-        ) : donations.length === 0 ? (
-          <p className="py-8 text-center text-muted-foreground text-sm">No donations recorded for this campaign.</p>
+        ) : filteredDonations.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground text-sm">No donations in the selected period.</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-border/30">
             <Table>
@@ -293,7 +351,7 @@ const FundraisingCampaignReport: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {donations.map((d: any) => {
+                {filteredDonations.map((d: any) => {
                   const donationWithCampaign = { ...d, campaign };
                   return (
                     <TableRow key={d.id} className="border-border/20 hover:bg-muted/30 cursor-pointer" onClick={() => openView(donationWithCampaign)}>
