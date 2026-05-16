@@ -84,13 +84,13 @@ const RegionalDashboard: React.FC = () => {
   }, [dateRange]);
 
   // Data hooks
-  const { data: members, isLoading: membersLoading, error: membersError } = useMembers(userRegion?.id);
-  const { data: events, isLoading: eventsLoading, error: eventsError } = useRegionalEvents();
+  const { data: members, isLoading: membersLoading, error: membersError, refetch: refetchMembers } = useMembers(userRegion?.id);
+  const { data: events, isLoading: eventsLoading, error: eventsError, refetch: refetchEvents } = useRegionalEvents();
   const { data: financialSummary } = useFinancialSummary(dateFilters);
   const { data: prevFinancialSummary } = useFinancialSummary(prevDateFilters);
-  const { data: financialTransactions, error: financialError } = useFinancialTransactions(dateFilters);
-  const { data: discipleshipRelationships, error: discipleshipError } = useDiscipleshipRelationships(userRegion?.id);
-  const { data: attendanceData, error: attendanceError } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
+  const { data: financialTransactions, error: financialError, refetch: refetchFinancial } = useFinancialTransactions(dateFilters);
+  const { data: discipleshipRelationships, error: discipleshipError, refetch: refetchDiscipleship } = useDiscipleshipRelationships(userRegion?.id);
+  const { data: attendanceData, error: attendanceError, refetch: refetchAttendance } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: memberTarget } = useCurrentMemberTarget();
   const { data: fundraisingCampaigns } = useFundraisingCampaigns();
   const { data: activePlan } = useActivePlanTargets(userRegion?.id);
