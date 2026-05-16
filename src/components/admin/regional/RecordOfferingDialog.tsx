@@ -164,23 +164,61 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                       <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Event
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="bg-background/60 border-border/50">
-                            <SelectValue placeholder={eventsLoading ? 'Loading events…' : 'Select an event'} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {events.length === 0 && !eventsLoading && (
-                            <div className="px-3 py-2 text-sm text-muted-foreground">No events found</div>
-                          )}
-                          {events.map(e => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.name} · {format(new Date(e.start_datetime), 'MMM dd, yyyy')}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Popover open={eventPopoverOpen} onOpenChange={setEventPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                'w-full justify-between bg-background/60 border-border/50 font-normal',
+                                !field.value && 'text-muted-foreground',
+                              )}
+                            >
+                              <span className="truncate">
+                                {selectedEvent
+                                  ? `${selectedEvent.name} · ${format(new Date(selectedEvent.start_datetime), 'MMM dd, yyyy')}`
+                                  : eventsLoading
+                                    ? 'Loading events…'
+                                    : 'Select an event'}
+                              </span>
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search events…" />
+                            <CommandList>
+                              <CommandEmpty>No events found.</CommandEmpty>
+                              <CommandGroup>
+                                {events.map(e => {
+                                  const label = `${e.name} · ${format(new Date(e.start_datetime), 'MMM dd, yyyy')}`;
+                                  return (
+                                    <CommandItem
+                                      key={e.id}
+                                      value={label}
+                                      onSelect={() => {
+                                        field.onChange(e.id);
+                                        setEventPopoverOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          'mr-2 h-4 w-4',
+                                          field.value === e.id ? 'opacity-100' : 'opacity-0',
+                                        )}
+                                      />
+                                      <span className="truncate">{label}</span>
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       {selectedEvent && (
                         <p className="text-xs text-muted-foreground pt-1">
                           Date: {format(new Date(selectedEvent.start_datetime), 'PPP')}
@@ -201,19 +239,25 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="0"
                           className="bg-background/60 border-border/50"
-                          {...field}
-                          value={field.value ?? ''}
+                          value={amountText}
+                          onChange={(e) => {
+                            const formatted = formatAmountInput(e.target.value);
+                            setAmountText(formatted);
+                            field.onChange(parseAmount(formatted));
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="notes"
