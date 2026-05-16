@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, Plus, Download,
-  ListOrdered, ChevronDown, Layers, Loader2,
+  ListOrdered, ChevronDown, Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 
