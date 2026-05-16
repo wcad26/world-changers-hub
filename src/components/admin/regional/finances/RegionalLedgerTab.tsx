@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank, Receipt, TrendingUp, Plus, ChevronDown, Download, Wallet, ListOrdered } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import FinanceKpiCard from "./FinanceKpiCard";
 import FinanceFiltersBar from "./FinanceFiltersBar";
