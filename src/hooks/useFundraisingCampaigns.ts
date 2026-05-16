@@ -167,6 +167,7 @@ export interface NewDonationInput {
 export const useCreateDonation = () => {
   const queryClient = useQueryClient();
   const { userRegion } = useAuth();
+  const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   return useMutation({
     mutationFn: async (input: NewDonationInput) => {
       const payload: Database['public']['Tables']['fundraising_donations']['Insert'] = {
@@ -179,7 +180,7 @@ export const useCreateDonation = () => {
         message: input.message || null,
         anonymous: !!input.anonymous,
         donation_date: input.donation_date || new Date().toISOString(),
-        currency_code: input.currency_code || 'usd',
+        currency_code: input.currency_code || regionCurrency?.code || 'USD',
       };
       const { data, error } = await supabase
         .from('fundraising_donations')
