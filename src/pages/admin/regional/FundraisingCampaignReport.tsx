@@ -56,7 +56,7 @@ const FundraisingCampaignReport: React.FC = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [viewOpen, setViewOpen] = useState(false);
   const [selected, setSelected] = useState<any | null>(null);
-  const [period, setPeriod] = useState<PeriodKey>("1y");
+  const [period, setPeriod] = useState<PeriodKey>("1m");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
 
