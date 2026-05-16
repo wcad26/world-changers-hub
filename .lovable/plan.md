@@ -1,42 +1,56 @@
-# Rebuild Record Offering Dialog
+# Rebuild Record Tithe Dialog
 
-Modernize the regional "Record Offering" dialog so admins select the regional event the offering was collected at, instead of picking a date and category manually.
+Align `RecordTitheDialog` with the modern glass dialog standard used by `RecordOfferingDialog`, simplify date handling, and add an optional event link.
 
-## Behavior changes
+## Changes to `src/components/admin/regional/RecordTitheDialog.tsx`
 
-- Remove the **Date** field. The transaction date is taken from the selected event's `start_datetime`.
-- Remove the **Category** field. All entries from this dialog are automatically categorized as the region's `Offerings` income category (existing behavior, just no longer user-selectable).
-- Replace the **Service** free-pick dropdown with an **Event** dropdown listing the region's past + recent events (most recent first). Selecting an event sets the date and is used to label the transaction.
-- Keep **Amount** and **Notes** (optional).
-- Submitting writes a `financial_transactions` row with: `category_id` = Offerings, `transaction_date` = event date, `description` = `"Offering — {event title}"` plus any notes.
+### 1. Remove the date field
+- Drop the `date` form field entirely.
+- Transaction date logic:
+  - If no event selected → use **today** (`new Date()`, formatted `yyyy-MM-dd`) as the registration date.
+  - If an event is selected → use that event's `start_datetime` as the transaction date.
 
-## Form layout (new fields, in order)
+### 2. Add optional "Linked Event" selector
+- New optional field `event_id` (nullable).
+- Use the same searchable `Popover` + `Command` combobox pattern as the Offering dialog.
+- Data source: `useRegionalEventsForOfferings(userRegion?.id)` (regional events only, excludes DCG events — already implemented).
+- Include a clear option ("No event — general tithe") so users can record a non-event tithe.
+- When an event is selected, show a helper line: `Date: <event date>`.
 
-1. Event (required) — searchable Select
-2. Amount (required) — numeric, currency symbol prefix
-3. Notes (optional) — textarea
+### 3. Fix member dropdown scroll (trackpad/mouse)
+- Apply the same fix used in the Offering dialog to the member `CommandList`:
+  - `className="h-72 max-h-72 overflow-y-scroll overscroll-contain pr-1 touch-pan-y"`
+  - `onWheelCapture={(e) => e.stopPropagation()}`
+  - `CommandGroup` gets `className="overflow-visible"`.
 
-Selected event date is shown as a read-only hint under the Event field (e.g. "Date: May 12, 2026") so the admin can confirm.
+### 4. Amount input with thousand separators
+- Reuse `formatAmountInput` / `parseAmount` helpers (same as Offering dialog).
+- Manage display state via `amountText`; sync raw numeric to form via `field.onChange(parseAmount(...))`.
+- Switch schema `amount` to `z.coerce.number().positive(...)`.
 
-## Visual design — glass dialog standard
+### 5. Modern glass design
+- Match the Offering dialog shell exactly:
+  - `DialogContent` with `sm:max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl`.
+  - Gradient header band with two blurred orbs, icon tile (`HandCoins` or `Coins` from lucide), title + subtitle.
+  - Body wrapped in a glass panel: `rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4`.
+  - Inputs use `bg-background/60 border-border/50`; labels use `text-xs font-medium uppercase tracking-wider text-muted-foreground`.
+  - Footer: `border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl`, gradient submit button `from-primary to-purple-600`.
 
-Per `mem://design/glass-dialog-standard`:
-- Gradient header band with a glow orb, `Receipt` icon, title and description.
-- Glass panel wrapping the form fields with subtle border + backdrop blur.
-- Gradient primary CTA ("Record Offering"), ghost "Cancel".
-- Max height `max-h-[85vh]` with `ScrollArea` for safety on small screens.
+### 6. Description string on save
+- Build description: `Tithe — <Member Name>` + (event ? ` · ${event.name}` : '') + (notes ? `: ${notes}` : '') + ` (${method})`.
 
-## Technical notes
-
-- File: `src/components/admin/regional/RecordOfferingDialog.tsx` (rewrite).
-- New hook: `useRegionalEventsForOfferings(regionId)` in `src/hooks/useRegionalData.ts` — fetches events for the region ordered by `start_datetime desc`, limit ~50, no future-only filter (offerings are collected at events that have happened). Reuses existing `events` table.
-- Categories: continue using `useFinancialCategories()` to resolve the `Offerings` income category id; show a toast error if not found (same pattern as today).
-- Mutation: keep `useCreateFinancialTransaction()`. Payload becomes `{ amount, category_id: offeringCategory.id, transaction_date: format(event.start_datetime, 'yyyy-MM-dd'), description }`.
-- Schema (zod): `{ event_id: z.string().uuid(), amount: z.coerce.number().positive(), notes: z.string().optional() }`.
-- No database migration required — `financial_transactions` has no `event_id` column today and the user did not request linking at the schema level. The event title is preserved in `description`.
+## Schema (new)
+```ts
+const titheSchema = z.object({
+  memberId: z.string().uuid('Please select a member'),
+  event_id: z.string().uuid().optional().nullable(),
+  amount: z.coerce.number().positive('Amount must be positive'),
+  method: z.string().min(1, 'Please select a payment method'),
+  notes: z.string().optional(),
+});
+```
 
 ## Out of scope
-
-- Adding an `event_id` foreign key to `financial_transactions`.
-- Changing the DCG offering dialog.
-- Editing existing offering rows to backfill event references.
+- No DB schema changes.
+- No changes to `useFinancials` mutation signature (still passes `transaction_date`, `category_id`, `amount`, `description`).
+- No changes to other dialogs.
