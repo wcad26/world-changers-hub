@@ -32,6 +32,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
+  const [incomeType, setIncomeType] = useState<"all" | "tithes" | "offerings" | "special">("all");
   const [titheOpen, setTitheOpen] = useState(false);
   const [offeringOpen, setOfferingOpen] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
@@ -53,14 +54,30 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
   };
 
   const filtered = useMemo(() => {
-    if (!search) return rows;
-    const s = search.toLowerCase();
-    return rows.filter(r =>
-      r.category?.name?.toLowerCase().includes(s) ||
-      r.description?.toLowerCase().includes(s) ||
-      String(r.amount).includes(s)
-    );
-  }, [rows, search]);
+    let out = rows;
+    if (incomeType !== "all") {
+      const isSpecial = (n: string) =>
+        ["Building Fund", "Mission Fund", "Youth Fund", "Benevolence Fund", "Special Giving"].includes(n);
+      out = out.filter(r => {
+        const ct = r.category?.type?.toLowerCase();
+        const cn = r.category?.name || "";
+        if (ct !== "income") return false;
+        if (incomeType === "tithes") return cn === "Tithes";
+        if (incomeType === "offerings") return cn.includes("Offering");
+        if (incomeType === "special") return isSpecial(cn);
+        return true;
+      });
+    }
+    if (search) {
+      const s = search.toLowerCase();
+      out = out.filter(r =>
+        r.category?.name?.toLowerCase().includes(s) ||
+        r.description?.toLowerCase().includes(s) ||
+        String(r.amount).includes(s)
+      );
+    }
+    return out;
+  }, [rows, search, incomeType]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
@@ -93,6 +110,7 @@ const RegionalLedgerTab: React.FC<Props> = ({ range }) => {
           search={search} onSearchChange={setSearch}
           categoryId={categoryId} onCategoryChange={setCategoryId}
           type={type} onTypeChange={setType}
+          incomeType={incomeType} onIncomeTypeChange={setIncomeType}
         />
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isFetching} className="bg-card/60 backdrop-blur-sm border-border/40">
