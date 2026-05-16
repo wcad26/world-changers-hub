@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import {
   ArrowUpRight, ArrowDownRight, Wallet, PiggyBank, Plus, Download,
-  Loader2, AlertCircle, Search, Inbox, ListOrdered, TrendingUp,
+  Loader2, AlertCircle, Search, Inbox, ListOrdered,
 } from "lucide-react";
 import { format, subMonths, startOfYear } from "date-fns";
 
