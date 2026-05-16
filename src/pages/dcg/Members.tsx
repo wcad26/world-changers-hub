@@ -96,27 +96,12 @@ const DcgMembers: React.FC = () => {
       const searchLower = searchTerm.toLowerCase();
       const searchMatch = fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
 
-      const statusMatch = statusFilter === 'all' || member.status === statusFilter;
-
-      const isChild = childrenSet.has(member.id);
+      // Hide special-event visitors to match KPI scope
       const isSpecialVisitor = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
 
-      let typeMatch = false;
-      if (typeFilter === 'all') {
-        typeMatch = !isSpecialVisitor; // hide special-event visitors from default view (KPI scope)
-      } else if (typeFilter === 'children') {
-        typeMatch = isChild;
-      } else if (isChild) {
-        typeMatch = false;
-      } else if (typeFilter === 'visitor_regular') {
-        typeMatch = member.member_type === 'visitor' && !isSpecialVisitor;
-      } else if (typeFilter === 'member') {
-        typeMatch = member.member_type === 'member';
-      }
-
-      return searchMatch && statusMatch && typeMatch;
+      return searchMatch && !isSpecialVisitor;
     });
-  }, [flatMembers, searchTerm, statusFilter, typeFilter, childrenSet, specialEventIds]);
+  }, [flatMembers, searchTerm, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
