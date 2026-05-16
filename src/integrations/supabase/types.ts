@@ -1272,7 +1272,7 @@ export type Database = {
           created_by: string | null
           currency_code: string
           description: string | null
-          end_date: string
+          end_date: string | null
           goal: number
           id: string
           image_url: string | null
@@ -1289,7 +1289,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           description?: string | null
-          end_date: string
+          end_date?: string | null
           goal: number
           id?: string
           image_url?: string | null
@@ -1306,7 +1306,7 @@ export type Database = {
           created_by?: string | null
           currency_code?: string
           description?: string | null
-          end_date?: string
+          end_date?: string | null
           goal?: number
           id?: string
           image_url?: string | null

@@ -377,9 +377,20 @@ const CreateFundraisingCampaignDialog: React.FC<
                       const start = form.watch("startDate");
                       return (
                         <FormItem className="flex flex-col">
-                          <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                            End date
-                          </FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                              End date
+                            </FormLabel>
+                            {field.value && (
+                              <button
+                                type="button"
+                                onClick={() => field.onChange("")}
+                                className="text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
                           <Popover>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -393,7 +404,7 @@ const CreateFundraisingCampaignDialog: React.FC<
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {field.value
                                     ? format(new Date(field.value), "PPP")
-                                    : "Pick a date"}
+                                    : "No end date"}
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -421,6 +432,9 @@ const CreateFundraisingCampaignDialog: React.FC<
                               />
                             </PopoverContent>
                           </Popover>
+                          <FormDescription className="text-xs">
+                            Leave empty for an open-ended campaign.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       );
