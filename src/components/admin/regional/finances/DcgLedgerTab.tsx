@@ -113,7 +113,7 @@ const DcgLedgerTab: React.FC<Props> = ({ range }) => {
                   <TableHead className="text-right">Income</TableHead>
                   <TableHead className="text-right">Expenses</TableHead>
                   <TableHead className="text-right">Net</TableHead>
-                  <TableHead className="text-right">Tx</TableHead>
+                  
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
