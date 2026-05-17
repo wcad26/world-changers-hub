@@ -66,6 +66,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
   const signingOutRef = useRef(false);
   const loadedForUserRef = useRef<string | null>(null);
+  const userEmailRef = useRef(initialBootstrap?.email ?? null);
 
   const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
     if (signingOutRef.current) return;
@@ -96,7 +97,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       if (regionId) {
-        writeRegionalBootstrap({ userId: uid, email: user?.email ?? null, regionId });
+        writeRegionalBootstrap({ userId: uid, email: userEmailRef.current, regionId });
         setBootstrapAvailable(true);
         setRegion((current) => current?.id === regionId ? current : createRegionStub(regionId));
 
@@ -115,7 +116,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         console.warn('[RegionalSession] background load failed:', err);
       }
     }
-  }, [user?.email]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +126,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       const bootstrap = readRegionalBootstrap();
       if (bootstrap && !cancelled) {
         setBootstrapAvailable(true);
+        userEmailRef.current = bootstrap.email ?? null;
         setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
         setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
         setReady(true);
@@ -140,6 +142,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         }
         const authUser = session?.user;
         if (authUser) {
+          userEmailRef.current = authUser.email ?? null;
           setUser({ id: authUser.id, email: authUser.email ?? undefined });
           setReady(true);
           void loadProfileAndRegion(authUser.id, readRegionalBootstrap()?.regionId ?? null);
@@ -152,6 +155,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
       const u = data.session?.user;
       if (u) {
+        userEmailRef.current = u.email ?? null;
         setUser({ id: u.id, email: u.email ?? undefined });
         setReady(true);
         void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
@@ -172,6 +176,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     const bootstrap = readRegionalBootstrap();
     if (bootstrap) {
       setBootstrapAvailable(true);
+      userEmailRef.current = bootstrap.email ?? null;
       setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
       setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
       setReady(true);
