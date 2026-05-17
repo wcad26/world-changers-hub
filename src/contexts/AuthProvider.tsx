@@ -172,6 +172,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!explicitSignOutRef.current) return;
         explicitSignOutRef.current = false;
         fetchedForUserRef.current = null;
+        userRef.current = null;
         setUser(null);
         setProfile(null);
         setUserRoles([]);
@@ -251,6 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     explicitSignOutRef.current = true;
     setLoading(true);
     fetchedForUserRef.current = null;
+    userRef.current = null;
     setUser(null);
     setProfile(null);
     setUserRoles([]);
