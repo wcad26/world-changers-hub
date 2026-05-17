@@ -1,33 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * DCG portal guard — Supabase-session-only.
- * Redirects to /dcg-auth if there is no signed-in user. No role/DCG checks.
+ * DCG portal guard.
+ *
+ * Single source of truth: the parent <AuthProvider> mounted at /dcg.
+ * We avoid mounting our own onAuthStateChange listener (which was racing
+ * with the provider and bouncing freshly-logged-in users back to /dcg-auth).
+ *
+ * As a safety net we also poll `supabase.auth.getSession()` once on mount
+ * in case the provider hasn't published the restored session yet (hard
+ * navigation from /dcg-auth → /dcg/dashboard).
  */
 const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [status, setStatus] = useState<'checking' | 'authed' | 'anon'>('checking');
+  const { user, authReady } = useAuth();
+  const [fallbackUser, setFallbackUser] = useState<unknown>(undefined); // undefined = unchecked
+  const checkedRef = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    if (checkedRef.current) return;
+    checkedRef.current = true;
     supabase.auth.getSession().then(({ data }) => {
-      if (cancelled) return;
-      setStatus(data.session?.user ? 'authed' : 'anon');
+      setFallbackUser(data.session?.user ?? null);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (cancelled) return;
-      if (session?.user) setStatus('authed');
-      else if (_event === 'SIGNED_OUT') setStatus('anon');
-    });
-    return () => {
-      cancelled = true;
-      sub?.subscription?.unsubscribe?.();
-    };
   }, []);
 
-  if (status === 'checking') {
+  const hasUser = !!user || !!fallbackUser;
+  const stillChecking = !authReady && fallbackUser === undefined;
+
+  if (stillChecking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -35,7 +39,7 @@ const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
     );
   }
 
-  if (status === 'anon') {
+  if (!hasUser) {
     return <Navigate to="/dcg-auth" replace />;
   }
 
