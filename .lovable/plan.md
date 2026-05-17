@@ -1,32 +1,43 @@
-## Plan: permanently stop preview auth logout/blank loops
+## Goal
+Stop the Lovable development preview from blanking portal screens or navigating users back to login unless they explicitly click Logout.
 
-### Goal
-Keep portal pages rendered in the Lovable development preview even when Supabase/dev-preview emits transient `SIGNED_OUT` or null session events. Users should only leave a portal when they click Logout.
+## Findings
+- The main route guards are now pass-through, but there are still vulnerable session paths outside those guards.
+- `AuthProvider` can still move back into a restoring/loading state when Supabase reports a transient null session.
+- Successful login pages do not immediately write the sticky portal user cache, so navigation can beat the auth listener and leave portal screens without a stable user during preview races.
+- The old `usePortalSession` hook still treats any `SIGNED_OUT` as anonymous; even if mostly unused, it can reintroduce the same bug later.
+- Only the regional portal has a non-navigating error boundary. Super, DCG, and member portals can still appear blank if a portal page throws during auth/data restoration.
 
-### Changes to implement
-1. **Create one sticky portal session standard**
-   - Add a small shared session utility/hook that caches the last authenticated user in localStorage.
-   - Treat transient null sessions and unexpected `SIGNED_OUT` events as non-fatal unless an explicit logout marker exists.
-   - Rehydrate from the cached user immediately so the UI does not blank during preview auth restoration.
+## Plan
+1. **Create one shared sticky auth utility**
+   - Centralize cache keys and helpers for:
+     - last authenticated user
+     - explicit logout flag
+     - reading/writing/clearing portal auth cache
+   - Make explicit logout the only allowed reason to clear cached portal state.
 
-2. **Apply the standard to all portal guards**
-   - Update `SuperAdminSessionRoute`, `DcgSessionRoute`, and `MemberProtectedRoute` so they do not redirect or block on preview auth instability.
-   - Align them with the already-pass-through regional route pattern.
-   - Keep RLS as the source of truth for protected data access.
+2. **Harden `AuthProvider` permanently**
+   - Initialize as ready even from cached user state.
+   - Never set portal auth back to `loading: true`, `initialized: false`, or `authReady: false` because of transient null `INITIAL_SESSION`, `TOKEN_REFRESHED`, or preview `SIGNED_OUT` noise.
+   - Ignore `SIGNED_OUT` unless the current session initiated it through explicit `signOut()`.
+   - Clear stale explicit-logout flags on successful sign-in/session restoration.
 
-3. **Harden the global auth provider**
-   - Make `AuthProvider` fully sticky: it should not clear `user`, profile context, or cached user on unexpected auth noise.
-   - Only `signOut()` should clear cached portal state and navigate users to login.
+3. **Write sticky cache immediately on login**
+   - Update Super, Regional, DCG, and Member login pages so successful `signInWithPassword()` immediately writes the authenticated user cache before navigating into the portal.
+   - This prevents a blank screen when navigation happens before Supabase’s auth listener finishes restoring.
 
-4. **Fix Fast Refresh instability that can reintroduce blank screens**
-   - Ensure context files remain Fast Refresh-safe: pure context exports separated from provider components.
-   - Avoid editing patterns that mix component and non-component exports in a way that causes Vite HMR invalidation.
+4. **Neutralize stale session hook risk**
+   - Replace `usePortalSession` behavior with the same sticky explicit-logout rules, or reduce it to a safe non-redirecting session observer.
+   - This prevents future portal code from importing a hook that reintroduces anon/login redirects.
 
-5. **Persist the rule in project memory**
-   - Add a memory entry that says: portal session guards must remain sticky/pass-through in Lovable preview, no automatic redirects to login on null session/SIGNED_OUT, and logout must be explicit only.
-   - This prevents future changes from reverting the fix while working on dashboards or other portal pages.
+5. **Add non-redirecting portal error boundaries across all portals**
+   - Keep Regional’s current boundary.
+   - Wrap Super, DCG, and Member portal route layouts with an error boundary that shows a recoverable error state on the same URL instead of a blank screen or login redirect.
 
-### Validation
-- Inspect dev-server logs after implementation for HMR/auth-related errors.
-- Verify the final code has no automatic portal redirects to `/auth/super`, `/auth/regional`, `/auth/member`, or `/dcg-auth` except explicit logout buttons and public auth-page navigation.
-- Confirm the Super Admin route can render without a blank auth guard state after login/session restoration.
+6. **Update project memory rule**
+   - Strengthen the existing memory to include: login pages must write sticky cache immediately, auth providers must not enter blocking loading states from null sessions, and old session hooks must follow explicit-logout-only semantics.
+
+## Validation
+- Search the codebase to confirm no automatic portal redirects to `/auth/super`, `/auth/regional`, `/auth/member`, or `/dcg-auth` remain except explicit Logout buttons and public login-page controls.
+- Check dev-server logs for HMR/runtime errors.
+- Verify the Super Admin dashboard route remains renderable after session restoration and that portal guards remain pure pass-through.
