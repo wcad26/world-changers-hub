@@ -385,13 +385,18 @@ const RegionalDashboard: React.FC = () => {
     // Aggregate attendance by source event id — multiple DCGs may submit
     // attendance for the same regional event; sum across submissions so the
     // point reflects the full regional attendance.
-    const aggBySourceId = new Map<string, { m: number; v: number; c: number }>();
-    attendance.forEach(a => {
+    // Dedupe attendees across multiple DCG submissions for the same source
+    // event so a single trend point reflects UNIQUE present people — keeping
+    // the chart consistent with the unique-attendee KPI cards.
+    const aggBySourceId = new Map<string, { m: Set<string>; v: Set<string>; c: Set<string> }>();
+    attendance.forEach((a: any) => {
       if (!a.source_event_id) return;
-      const cur = aggBySourceId.get(a.source_event_id) || { m: 0, v: 0, c: 0 };
-      cur.m += a.members_present || 0;
-      cur.v += a.visitors_present || 0;
-      cur.c += a.children_present || 0;
+      const cur = aggBySourceId.get(a.source_event_id) || {
+        m: new Set<string>(), v: new Set<string>(), c: new Set<string>(),
+      };
+      (a.present_member_ids || []).forEach((id: string) => cur.m.add(id));
+      (a.present_visitor_ids || []).forEach((id: string) => cur.v.add(id));
+      (a.present_children_ids || []).forEach((id: string) => cur.c.add(id));
       aggBySourceId.set(a.source_event_id, cur);
     });
 
@@ -405,9 +410,9 @@ const RegionalDashboard: React.FC = () => {
           eventId: e.id,
           dcgId: (e as any).dcg_id as string | null | undefined,
           eventDate: new Date(e.start_datetime),
-          Members: agg?.m || 0,
-          "Regular Visitors": agg?.v || 0,
-          Children: agg?.c || 0,
+          Members: agg?.m.size || 0,
+          "Regular Visitors": agg?.v.size || 0,
+          Children: agg?.c.size || 0,
         };
       });
 
