@@ -1,68 +1,37 @@
-## Goal
+## Plan to stop preview logout/reload loops across all portals
 
-Change the Super Admin dashboard "Attendance Trend" chart so that — in BOTH Regional and DCG event-type modes — each X-axis point is a calendar week, and the Y values are the count of **unique members / unique regular visitors / unique children** who attended *at least one* event of that type during that week. Same person attending multiple events in the same week counts once per category for that week.
+### What I found
+- The earlier fix was partly undone structurally: `AuthProvider` is now mounted separately for Super Admin, DCG, Member, and Portal Selector routes instead of once around the app. That means every portal route mount/rebuild can restart Supabase session restoration.
+- Regional portal uses a separate `RegionalSessionProvider`, but it still depends on fragile `getSession()`/auth events after the session bootstrap.
+- The guards are mostly pass-through now, but they can still show loaders during transient auth-null states, which creates the “logged out / reload loop” feel in the Lovable preview.
 
-## What changes
+### Implementation steps
+1. **Restore one stable global auth provider**
+   - Mount one `AuthProvider` once inside `BrowserRouter` so Super Admin, DCG, Member, Portal Selector, and auth pages share the same auth state machine.
+   - Remove the separate per-portal `AuthProvider` wrappers from `App.tsx` to prevent remounting the auth listener on route changes or dashboard rebuilds.
 
-### 1. Data layer — `src/hooks/useGlobalDashboardData.ts`
+2. **Make auth state sticky during preview glitches**
+   - In `AuthProvider`, keep the last known authenticated user/session in memory.
+   - Ignore spurious `SIGNED_OUT`, `INITIAL_SESSION null`, or `getSession()` null results unless the user explicitly clicked logout.
+   - If Supabase temporarily reports no session, keep rendering the existing logged-in user instead of clearing state or re-entering a login flow.
 
-Extend `useGlobalAttendanceScoped` (or add a sibling hook) so each returned event row also carries the **list of present member IDs per category**, not just counts:
+3. **Keep explicit logout working**
+   - Preserve the explicit logout flag so clicking Logout still clears user state and navigates to the correct auth page.
+   - Make sure only this explicit path can clear the session in the UI.
 
-```ts
-{
-  event_date, source_event_id, dcg_id, region_id,
-  present_member_ids: string[],
-  present_visitor_ids: string[],
-  present_children_ids: string[],
-  // existing count fields kept for KPIs
-}
-```
+4. **Stabilize the Regional portal too**
+   - Keep the regional bootstrap behavior, but make `RegionalSessionProvider` retain the last known regional user/region during transient missing-session events.
+   - Ensure it never switches to an unauthenticated/checking loop because of preview-only auth restoration gaps.
 
-The classification per record (member vs visitor vs child) already uses `isChildMember` + `member_type` — reuse it; just collect IDs into arrays in addition to incrementing counters.
+5. **Normalize all portal guards**
+   - Update Super Admin, DCG, Member, and Regional route guards to be resilient pass-through gates: they can show a short first-load spinner, but they must not redirect or clear auth state due to transient null sessions.
 
-### 2. Chart aggregation — `src/pages/admin/super/Dashboard.tsx`
+6. **Verify no hidden redirect/logout triggers remain**
+   - Search all portals for raw `supabase.auth.signOut()`, auth-page redirects, `window.location` reloads, and route guards that navigate to login.
+   - Keep only user-clicked logout actions.
 
-Replace the current per-event mapping (Regional) and the existing weekly count-sum bucketing (DCG) with a single weekly **unique-set** aggregator used for both modes:
-
-```text
-For each attendance event in scope (after region + event-type + period filters):
-  weekKey = startOfWeek(event_date, { weekStartsOn: 1 })  // ISO week (Mon)
-  buckets[weekKey].membersSet   ∪= present_member_ids
-  buckets[weekKey].visitorsSet  ∪= present_visitor_ids
-  buckets[weekKey].childrenSet  ∪= present_children_ids
-
-chartData = sortedWeeks.map(w => ({
-  date: format(w, 'MMM d'),                    // week-starting label
-  Members:           buckets[w].membersSet.size,
-  "Regular Visitors": buckets[w].visitorsSet.size,
-  Children:          buckets[w].childrenSet.size,
-}))
-```
-
-Scope rules per event-type filter:
-- **Regional**: only events where `source_event_id` is non-null AND that source event is a regional (non-special) event in scope. Exclude special-event ids via `useGlobalSpecialEventIds`.
-- **DCG**: only events where `dcg_id` is non-null and the DCG falls within scope (region filter, if set).
-
-Region filter and date-period filter apply before bucketing (already wired through `useGlobalAttendanceScoped(regionId)` + `dateFilters`).
-
-Weeks with zero events are omitted (no more "0" gaps); chart shows only weeks that actually had at least one event of the selected type.
-
-### 3. Chart presentation
-
-- Keep the existing `AreaChart` styling, gradients, tooltip, and legend.
-- Update the section subtitle to: "Unique members, regular visitors and children attending at least one {Regional|DCG} event per week."
-- X-axis label uses `format(weekStart, 'MMM d')`; tooltip label prefixes "Week of ".
-
-### 4. Validation
-
-- Pick one week with two regional events sharing an attendee: that member should appear in `Members` exactly once for that week.
-- Toggle Region filter from "All" to a specific region → counts shrink to that region's unique attendees only.
-- Toggle Event Type Regional ↔ DCG → buckets recompute from the matching event subset, axis re-labels, no zero-attendance gaps.
-- Special-event attendance must not appear in Regional buckets.
-
-## Files touched
-
-- `src/hooks/useGlobalDashboardData.ts` — extend attendance hook to expose per-event present ID arrays for the three categories.
-- `src/pages/admin/super/Dashboard.tsx` — replace the trend-chart aggregation block (current lines ~291–360) with the unified weekly unique-set aggregator; update subtitle.
-
-No DB, RLS, or business-logic changes elsewhere. KPI cards and other sections are untouched.
+### Expected result
+- Rebuilding or hot-reloading the Super Admin dashboard will not log users out.
+- Logged-in users stay inside their portal even if the Lovable preview emits temporary null auth events.
+- The continuous reload loop stops across Regional, Super Admin, DCG, and Member portals.
+- Manual logout still works normally.

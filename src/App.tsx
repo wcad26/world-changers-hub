@@ -146,6 +146,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AuthProvider>
           <Routes>
             {/* ---------------------------------------------------------------
                 REGIONAL PORTAL — fully isolated from the global AuthProvider.
@@ -223,11 +224,7 @@ const App = () => {
             {/* Super Admin Portal — own AuthProvider, isolated from others. */}
             <Route
               path="/admin/super"
-              element={
-                <AuthProvider>
-                  <Outlet />
-                </AuthProvider>
-              }
+              element={<Outlet />}
             >
               <Route index element={<Navigate to="/admin/super/dashboard" replace />} />
               <Route element={<SuperAdminSessionRoute><SuperAdminLayout /></SuperAdminSessionRoute>}>
@@ -253,11 +250,9 @@ const App = () => {
             <Route
               path="/member"
               element={
-                <AuthProvider>
-                  <MemberProtectedRoute>
-                    <MemberLayout />
-                  </MemberProtectedRoute>
-                </AuthProvider>
+                <MemberProtectedRoute>
+                  <MemberLayout />
+                </MemberProtectedRoute>
               }
             >
               <Route index element={<Navigate to="/member/dashboard" replace />} />
@@ -277,11 +272,7 @@ const App = () => {
             {/* DCG Portal — own AuthProvider, isolated. */}
             <Route
               path="/dcg"
-              element={
-                <AuthProvider>
-                  <Outlet />
-                </AuthProvider>
-              }
+              element={<Outlet />}
             >
               <Route index element={<Navigate to="/dcg/dashboard" replace />} />
               <Route path="dashboard" element={<DcgSessionRoute><DcgDashboard /></DcgSessionRoute>} />
@@ -296,11 +287,7 @@ const App = () => {
             {/* Portal selector (rare, shown after multi-role login) */}
             <Route
               path="/portal-selector"
-              element={
-                <AuthProvider>
-                  <PortalSelector />
-                </AuthProvider>
-              }
+              element={<PortalSelector />}
             />
 
             {/* Unauthorized + 404 */}
@@ -318,6 +305,7 @@ const App = () => {
             />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>;
