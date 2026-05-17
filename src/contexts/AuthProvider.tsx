@@ -8,71 +8,20 @@ import React, {
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { AuthContext, type AppRole, type AuthContextValue } from './AuthContext';
+import {
+  EXPLICIT_SIGNOUT_KEY,
+  clearCachedUser,
+  consumeExplicitSignOutFlag,
+  markExplicitSignOut,
+  readCachedUser,
+  writeCachedUser,
+} from '@/lib/portalAuthCache';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
-
-const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
-const EXPLICIT_SIGNOUT_KEY = 'wca-explicit-signout';
-
-const readCachedUser = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(AUTH_USER_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.id) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-};
-
-const writeCachedUser = (user: any) => {
-  if (typeof window === 'undefined' || !user?.id) return;
-  try {
-    window.localStorage.setItem(
-      AUTH_USER_CACHE_KEY,
-      JSON.stringify({ id: user.id, email: user.email ?? null, cachedAt: Date.now() }),
-    );
-  } catch {
-    // ignore storage failures
-  }
-};
-
-const clearCachedUser = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
-  } catch {
-    // ignore storage failures
-  }
-};
-
-const consumeExplicitSignOutFlag = () => {
-  if (typeof window === 'undefined') return false;
-  try {
-    const raw = window.localStorage.getItem(EXPLICIT_SIGNOUT_KEY);
-    if (!raw) return false;
-    window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY);
-    const savedAt = Number(raw);
-    return Number.isFinite(savedAt) && Date.now() - savedAt < 10000;
-  } catch {
-    return false;
-  }
-};
-
-const markExplicitSignOut = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(EXPLICIT_SIGNOUT_KEY, String(Date.now()));
-  } catch {
-    // ignore storage failures
-  }
-};
 
 /**
  * Per-portal auth provider — deterministic, listener-based.
