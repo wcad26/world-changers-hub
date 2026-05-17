@@ -558,3 +558,110 @@ export const useMemberDetailedAttendance = (
     enabled: !!memberId && !!regionId
   });
 };
+
+/**
+ * Global variant of useAttendanceHistoryWithMemberTypes — returns processed
+ * attendance rows across ALL regions (no region_id filter). Used by the
+ * Super Admin Global Events page to compute KPIs aggregated globally.
+ *
+ * Returns the same row shape as useAttendanceHistoryWithMemberTypes so the
+ * Super Events page can reuse the same KPI math the Regional Events page
+ * uses.
+ */
+export const useGlobalAttendanceHistoryWithMemberTypes = () => {
+  return useQuery({
+    queryKey: ['attendance_history_with_types', 'global'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attendance_events')
+        .select(`
+          id,
+          name,
+          event_date,
+          dcg_id,
+          source_event_id,
+          attendance_records!inner (
+            is_present,
+            members!inner (
+              id,
+              member_type,
+              profiles (
+                date_of_birth
+              )
+            )
+          )
+        `)
+        .order('event_date', { ascending: false });
+
+      if (error) throw error;
+
+      const memberIds = new Set<string>();
+      const dobByMemberId = new Map<string, string | null | undefined>();
+      data?.forEach(event => {
+        (event.attendance_records || []).forEach((r: any) => {
+          if (r.members?.id) {
+            memberIds.add(r.members.id);
+            dobByMemberId.set(r.members.id, r.members?.profiles?.date_of_birth ?? null);
+          }
+        });
+      });
+
+      let relationships: Array<{ member_id: string; related_member_id: string }> = [];
+      const adultDobLookup = new Map<string, string | null | undefined>(dobByMemberId);
+      if (memberIds.size > 0) {
+        const ids = Array.from(memberIds);
+        relationships = await fetchMemberRelationshipsForMembers(ids);
+        const referenced = new Set<string>();
+        relationships.forEach(r => {
+          referenced.add(r.member_id);
+          referenced.add(r.related_member_id);
+        });
+        const missing = Array.from(referenced).filter(id => !adultDobLookup.has(id));
+        if (missing.length > 0) {
+          const { data: extraMembers } = await supabase
+            .from('members')
+            .select('id, profiles:profile_id(date_of_birth)')
+            .in('id', missing);
+          (extraMembers || []).forEach((m: any) => {
+            adultDobLookup.set(m.id, m.profiles?.date_of_birth ?? null);
+          });
+        }
+      }
+
+      const checkIsChild = (record: any) => {
+        const dob = record.members?.profiles?.date_of_birth;
+        const memberId = record.members?.id;
+        if (!dob || !memberId) return false;
+        return isChildMember(dob, memberId, relationships, adultDobLookup);
+      };
+
+      const processedData = data?.map(event => {
+        const records = event.attendance_records || [];
+        const childrenPresent = records.filter(r => r.is_present && checkIsChild(r)).length;
+        const childrenAbsent = records.filter(r => !r.is_present && checkIsChild(r)).length;
+        const membersPresent = records.filter(r => r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)).length;
+        const visitorsPresent = records.filter(r => r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)).length;
+        const membersAbsent = records.filter(r => !r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)).length;
+        const visitorsAbsent = records.filter(r => !r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)).length;
+        return {
+          event_id: event.id,
+          event_name: event.name,
+          event_date: event.event_date,
+          dcg_id: event.dcg_id || null,
+          source_event_id: event.source_event_id || null,
+          members_present: membersPresent,
+          visitors_present: visitorsPresent,
+          children_present: childrenPresent,
+          members_absent: membersAbsent,
+          visitors_absent: visitorsAbsent,
+          children_absent: childrenAbsent,
+          total_present: membersPresent + visitorsPresent + childrenPresent,
+          total_absent: membersAbsent + visitorsAbsent + childrenAbsent,
+          date: new Date(event.event_date).toLocaleDateString(),
+        };
+      }) || [];
+
+      return processedData;
+    },
+  });
+};
