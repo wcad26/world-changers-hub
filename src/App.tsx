@@ -35,6 +35,7 @@ import RegionalSessionRoute from "./components/auth/RegionalSessionRoute";
 import { RegionalSessionProvider } from "./contexts/RegionalSessionContext";
 import SuperAdminLayout from "./components/admin/SuperAdminLayout";
 import SuperAdminSessionRoute from "./components/auth/SuperAdminSessionRoute";
+import SuperAdminErrorBoundary from "./components/auth/SuperAdminErrorBoundary";
 import MemberLayout from "./components/layout/MemberLayout";
 import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 
