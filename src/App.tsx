@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Locations from "./pages/Locations";
@@ -35,6 +35,7 @@ import RegionalSessionRoute from "./components/auth/RegionalSessionRoute";
 import { RegionalSessionProvider } from "./contexts/RegionalSessionContext";
 import SuperAdminLayout from "./components/admin/SuperAdminLayout";
 import SuperAdminSessionRoute from "./components/auth/SuperAdminSessionRoute";
+import SuperAdminErrorBoundary from "./components/auth/SuperAdminErrorBoundary";
 import MemberLayout from "./components/layout/MemberLayout";
 import MemberProtectedRoute from "./components/auth/MemberProtectedRoute";
 
@@ -123,6 +124,19 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Wrap each Super Admin page in an error boundary keyed by pathname so a
+// single page error never blanks the portal and triggers the preview's
+// reload-to-previous-route loop. Auth is untouched — RLS controls access.
+const SuperAdminPage: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  return (
+    <SuperAdminErrorBoundary resetKey={location.pathname}>
+      {children}
+    </SuperAdminErrorBoundary>
+  );
+};
+
 const App = () => {
   useEffect(() => {
     // Smooth scrolling for anchor links
@@ -222,23 +236,24 @@ const App = () => {
             >
               <Route index element={<Navigate to="/admin/super/dashboard" replace />} />
               <Route element={<SuperAdminSessionRoute><SuperAdminLayout /></SuperAdminSessionRoute>}>
-                <Route path="dashboard" element={<SuperDashboard />} />
-                <Route path="members" element={<SuperMembers />} />
-                <Route path="members/:memberId" element={<SuperMemberProfile />} />
-                <Route path="events" element={<SuperEvents />} />
-                <Route path="fundraising" element={<SuperFundraising />} />
-                <Route path="locations" element={<SuperLocations />} />
-                <Route path="finances" element={<SuperFinances />} />
-                <Route path="regions" element={<SuperRegions />} />
-                <Route path="currencies" element={<SuperCurrencies />} />
-                <Route path="reports" element={<SuperReports />} />
-                <Route path="communication" element={<SuperCommunication />} />
-                <Route path="user-management" element={<SuperUserManagement />} />
-                <Route path="homepage-settings" element={<HomepageSettings />} />
-                <Route path="certificates" element={<SuperCertificates />} />
-                <Route path="about-settings" element={<AboutUsSettings />} />
+                <Route path="dashboard" element={<SuperAdminPage><SuperDashboard /></SuperAdminPage>} />
+                <Route path="members" element={<SuperAdminPage><SuperMembers /></SuperAdminPage>} />
+                <Route path="members/:memberId" element={<SuperAdminPage><SuperMemberProfile /></SuperAdminPage>} />
+                <Route path="events" element={<SuperAdminPage><SuperEvents /></SuperAdminPage>} />
+                <Route path="fundraising" element={<SuperAdminPage><SuperFundraising /></SuperAdminPage>} />
+                <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
+                <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
+                <Route path="regions" element={<SuperAdminPage><SuperRegions /></SuperAdminPage>} />
+                <Route path="currencies" element={<SuperAdminPage><SuperCurrencies /></SuperAdminPage>} />
+                <Route path="reports" element={<SuperAdminPage><SuperReports /></SuperAdminPage>} />
+                <Route path="communication" element={<SuperAdminPage><SuperCommunication /></SuperAdminPage>} />
+                <Route path="user-management" element={<SuperAdminPage><SuperUserManagement /></SuperAdminPage>} />
+                <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
+                <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
+                <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />
               </Route>
             </Route>
+
 
             {/* Member Portal */}
             <Route
