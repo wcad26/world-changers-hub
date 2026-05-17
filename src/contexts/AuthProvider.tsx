@@ -39,15 +39,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchedForUserRef = useRef<string | null>(null);
 
+  const markReady = useCallback(() => {
+    setInitialized(true);
+    setLoading(false);
+    setAuthReady(true);
+  }, []);
+
   const fetchUserData = useCallback(async (userId: string) => {
     if (fetchedForUserRef.current === userId) return;
     fetchedForUserRef.current = userId;
 
-    // Mark auth ready immediately — context fetches below are best-effort
-    // and must NEVER block portal access.
-    setInitialized(true);
-    setLoading(false);
-    setAuthReady(true);
+    // Context fetches below are best-effort and must NEVER block portal access.
+    markReady();
 
     try {
       const { data: profileData } = await supabase
