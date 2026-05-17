@@ -180,13 +180,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
-      setUser(sessionUser);
       setInitialized(true);
       setLoading(false);
       setAuthReady(true);
       if (sessionUser) {
+        setUser(sessionUser);
         void fetchUserData(sessionUser.id);
       }
+      // If no session here, do NOT clear an existing user — a later
+      // INITIAL_SESSION event may still restore it. We never auto-redirect
+      // to login, so leaving stale state briefly is harmless.
     });
 
     return () => {
