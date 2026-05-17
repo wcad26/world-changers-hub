@@ -1,21 +1,32 @@
-## Goal
-Make the Regional Dashboard's Attendance Trend agree with the Members and Children KPI cards.
+## Plan: permanently stop preview auth logout/blank loops
 
-## What's happening
-- The Members and Children KPI cards already use **unique** member/visitor/children IDs across all in-period regional attendance — this is correct and matches the user's definition.
-- The Attendance Trend chart aggregates per source event by **summing** `members_present`, `visitors_present`, and `children_present` from every attendance row that points to that source event. When multiple DCGs record attendance against the same regional event, overlapping people get counted multiple times, so a single trend point can exceed the unique KPI total — exactly what the user sees (trend ~48, KPI 45).
+### Goal
+Keep portal pages rendered in the Lovable development preview even when Supabase/dev-preview emits transient `SIGNED_OUT` or null session events. Users should only leave a portal when they click Logout.
 
-## Fix
-In `src/pages/admin/regional/Dashboard.tsx`, change `trendChartData`'s per-source-event aggregation to use deduplicated ID sets instead of count sums:
+### Changes to implement
+1. **Create one sticky portal session standard**
+   - Add a small shared session utility/hook that caches the last authenticated user in localStorage.
+   - Treat transient null sessions and unexpected `SIGNED_OUT` events as non-fatal unless an explicit logout marker exists.
+   - Rehydrate from the cached user immediately so the UI does not blank during preview auth restoration.
 
-- Replace the `aggBySourceId` Map of `{ m, v, c }` counters with a Map of `{ m: Set<string>, v: Set<string>, c: Set<string> }`.
-- Populate by unioning `present_member_ids`, `present_visitor_ids`, and `present_children_ids` from each attendance row.
-- When mapping to `perEventPoints`, read `.size` of each set as the point value.
+2. **Apply the standard to all portal guards**
+   - Update `SuperAdminSessionRoute`, `DcgSessionRoute`, and `MemberProtectedRoute` so they do not redirect or block on preview auth instability.
+   - Align them with the already-pass-through regional route pattern.
+   - Keep RLS as the source of truth for protected data access.
 
-This guarantees the trend reports unique attendees per regional event, so the maximum point on the Members line cannot exceed the period-wide unique Members KPI, and the same for Children.
+3. **Harden the global auth provider**
+   - Make `AuthProvider` fully sticky: it should not clear `user`, profile context, or cached user on unexpected auth noise.
+   - Only `signOut()` should clear cached portal state and navigate users to login.
 
-The DCG (weekly bucket) branch of the chart already sums per-DCG points and is intentionally additive (each DCG meets once per week with distinct attendees), so that logic stays unchanged.
+4. **Fix Fast Refresh instability that can reintroduce blank screens**
+   - Ensure context files remain Fast Refresh-safe: pure context exports separated from provider components.
+   - Avoid editing patterns that mix component and non-component exports in a way that causes Vite HMR invalidation.
 
-## Verification
-- Open the regional dashboard with 1M filter and Regional Events selected.
-- Confirm the highest Members point on the trend ≤ Members KPI value, and the highest Children point ≤ Children KPI value.
+5. **Persist the rule in project memory**
+   - Add a memory entry that says: portal session guards must remain sticky/pass-through in Lovable preview, no automatic redirects to login on null session/SIGNED_OUT, and logout must be explicit only.
+   - This prevents future changes from reverting the fix while working on dashboards or other portal pages.
+
+### Validation
+- Inspect dev-server logs after implementation for HMR/auth-related errors.
+- Verify the final code has no automatic portal redirects to `/auth/super`, `/auth/regional`, `/auth/member`, or `/dcg-auth` except explicit logout buttons and public auth-page navigation.
+- Confirm the Super Admin route can render without a blank auth guard state after login/session restoration.
