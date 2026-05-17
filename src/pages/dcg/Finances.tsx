@@ -200,7 +200,7 @@ const DcgFinances: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+        <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-stretch md:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -210,28 +210,31 @@ const DcgFinances: React.FC = () => {
               className="pl-9"
             />
           </div>
-          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
-            <SelectTrigger className="md:w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="income">Income only</SelectItem>
-              <SelectItem value="expense">Expense only</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={!filtered.length}
-          >
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </Button>
+          <div className="grid grid-cols-2 md:flex gap-2">
+            <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+              <SelectTrigger className="md:w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="income">Income only</SelectItem>
+                <SelectItem value="expense">Expense only</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={!filtered.length}
+              className="w-full md:w-auto"
+            >
+              <Download className="mr-2 h-4 w-4" /> Export CSV
+            </Button>
+          </div>
         </div>
 
-        {/* Transactions Table */}
+        {/* Transactions */}
         <Card>
-          <CardHeader>
+          <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <ListOrdered className="h-4 w-4 text-primary" /> Transactions
             </CardTitle>
@@ -255,10 +258,10 @@ const DcgFinances: React.FC = () => {
                 {rows.length === 0 ? (
                   <div className="mt-4 flex justify-center gap-2">
                     <Button size="sm" onClick={() => setIncomeOpen(true)}>
-                      <Plus className="mr-1.5 h-4 w-4" /> Record Income
+                      Record Income
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setExpenseOpen(true)}>
-                      <Plus className="mr-1.5 h-4 w-4" /> Record Expense
+                      Record Expense
                     </Button>
                   </div>
                 ) : (
@@ -277,50 +280,104 @@ const DcgFinances: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border">
-                <Table>
-                  <TableHeader className="bg-muted/40">
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead className="hidden md:table-cell">Description</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map((r) => {
-                      const ct = (r.category?.type || "").toLowerCase();
-                      return (
-                        <TableRow key={r.id}>
-                          <TableCell className="whitespace-nowrap text-muted-foreground">
+              <>
+                {/* Mobile / Tablet card view */}
+                <div className="lg:hidden space-y-2.5">
+                  {filtered.map((r) => {
+                    const ct = (r.category?.type || "").toLowerCase();
+                    const isIncome = ct === "income";
+                    return (
+                      <div
+                        key={r.id}
+                        className="rounded-xl border bg-card p-3 flex items-start gap-3"
+                      >
+                        <div
+                          className={`h-10 w-10 shrink-0 rounded-lg flex items-center justify-center ${
+                            isIncome
+                              ? "bg-green-500/10 text-green-600"
+                              : "bg-red-500/10 text-red-600"
+                          }`}
+                        >
+                          {isIncome ? (
+                            <ArrowUpRight className="h-5 w-5" />
+                          ) : (
+                            <ArrowDownRight className="h-5 w-5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-medium text-sm text-foreground truncate">
+                              {r.category?.name ?? "—"}
+                            </p>
+                            <span
+                              className={`text-sm font-semibold tabular-nums whitespace-nowrap ${
+                                isIncome ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {isIncome ? "+" : "-"}
+                              {fc(Number(r.amount))}
+                            </span>
+                          </div>
+                          {r.description ? (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                              {r.description}
+                            </p>
+                          ) : null}
+                          <p className="text-[11px] text-muted-foreground mt-1">
                             {format(new Date(r.transaction_date), "MMM dd, yyyy")}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {r.category?.name ?? "—"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground max-w-[300px] truncate">
-                            {r.description || "—"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={ct === "income" ? "default" : "secondary"} className="capitalize">
-                              {r.category?.type ?? "—"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell
-                            className={`text-right whitespace-nowrap font-semibold tabular-nums ${
-                              ct === "income" ? "text-green-600" : "text-red-600"
-                            }`}
-                          >
-                            {ct === "expense" ? "-" : "+"}
-                            {fc(Number(r.amount))}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden lg:block overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader className="bg-muted/40">
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((r) => {
+                        const ct = (r.category?.type || "").toLowerCase();
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell className="whitespace-nowrap text-muted-foreground">
+                              {format(new Date(r.transaction_date), "MMM dd, yyyy")}
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {r.category?.name ?? "—"}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground max-w-[300px] truncate">
+                              {r.description || "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={ct === "income" ? "default" : "secondary"} className="capitalize">
+                                {r.category?.type ?? "—"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell
+                              className={`text-right whitespace-nowrap font-semibold tabular-nums ${
+                                ct === "income" ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {ct === "expense" ? "-" : "+"}
+                              {fc(Number(r.amount))}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
