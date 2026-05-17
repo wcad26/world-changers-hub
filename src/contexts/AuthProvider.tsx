@@ -263,10 +263,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       cancelled = true;
-      clearRestoreTimer();
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [fetchUserData, markReady]);
+  }, [fetchUserData]);
 
   // Client-side role checks remain disabled — RLS is the source of truth.
   const hasRole = useCallback((_role: AppRole) => true, []);
