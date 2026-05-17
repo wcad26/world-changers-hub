@@ -198,46 +198,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let cancelled = false;
-    let restoreTimer: ReturnType<typeof setTimeout> | null = null;
 
     if (userRef.current?.id) {
-      markReady();
       void fetchUserData(userRef.current.id);
     }
-
-    const clearRestoreTimer = () => {
-      if (restoreTimer) {
-        clearTimeout(restoreTimer);
-        restoreTimer = null;
-      }
-    };
-
-    const markSessionRestoring = () => {
-      if (userRef.current) return;
-      setInitialized(false);
-      setLoading(true);
-      setAuthReady(false);
-      clearRestoreTimer();
-      restoreTimer = setTimeout(() => {
-        if (cancelled || userRef.current) return;
-        // No automatic logout or redirect: after a short restore window the
-        // portal may render its own loading/empty states while auth continues
-        // to recover in the Lovable preview environment.
-        markReady();
-      }, AUTH_RESTORE_GRACE_MS);
-    };
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
       if (event === 'SIGNED_OUT') {
         // Only act on SIGNED_OUT if the user explicitly clicked logout.
-        // The Lovable dev preview occasionally emits spurious SIGNED_OUT
-        // events while the session is still valid, which was bouncing
-        // users back to login. Ignore those.
+        // The Lovable dev preview emits spurious SIGNED_OUT events while the
+        // session is still valid — ignore those completely.
         const hasStoredExplicitSignOut = consumeExplicitSignOutFlag();
         if (!explicitSignOutRef.current && !hasStoredExplicitSignOut) {
-          if (userRef.current) markReady();
           return;
         }
         explicitSignOutRef.current = false;
@@ -251,50 +225,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserDcg(null);
         setMemberRecord(null);
         setUserRegionalRoles([]);
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
         return;
       }
 
       const sessionUser = session?.user ?? null;
 
       if (sessionUser) {
-        clearRestoreTimer();
+        // Successful session → clear any stale explicit-logout flag.
+        try { window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY); } catch {}
         userRef.current = sessionUser;
         writeCachedUser(sessionUser);
         setUser(sessionUser);
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
         queueMicrotask(() => {
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
         return;
       }
-      // For INITIAL_SESSION / TOKEN_REFRESHED with no session, keep loading
-      // briefly instead of declaring the user logged out. Preview storage can
-      // restore late, and route guards must not bounce the user during that gap.
-      markSessionRestoring();
+      // Null session on INITIAL_SESSION / TOKEN_REFRESHED → DO NOTHING.
+      // The preview environment frequently fires these spuriously while the
+      // session is still valid. We never clear cached user or block the UI.
     });
 
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
       if (sessionUser) {
-        clearRestoreTimer();
-        markReady();
+        try { window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY); } catch {}
         userRef.current = sessionUser;
         writeCachedUser(sessionUser);
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
-      } else if (!userRef.current) {
-        markSessionRestoring();
       }
-      // If no session here, do NOT clear an existing user — a later
-      // INITIAL_SESSION event may still restore it. We never auto-redirect
-      // to login, so leaving stale state briefly is harmless.
+      // If no session: do NOT clear cached user. Routes are pass-through;
+      // the page renders from cache while the listener restores the session.
     });
 
     return () => {
