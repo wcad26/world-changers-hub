@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   SidebarProvider,
@@ -54,20 +54,19 @@ const getPageTitleFromPath = (path: string, fallback?: string) => {
   return 'Regional Admin';
 };
 
-const safeLogout = async (signOut: () => Promise<void> | void) => {
+const safeLogout = async (signOut: () => Promise<void> | void, navigate: ReturnType<typeof useNavigate>) => {
   try {
     await signOut();
   } catch (err) {
-    console.error('[RegionalShell] logout failed, forcing redirect:', err);
+    console.error('[RegionalShell] logout failed:', err);
   } finally {
-    if (typeof window !== 'undefined' && window.location.pathname !== '/auth/regional') {
-      window.location.replace('/auth/regional');
-    }
+    navigate('/auth/regional', { replace: true });
   }
 };
 
 const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, region, signOut } = useRegionalSession();
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === 'collapsed';
@@ -138,7 +137,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${isCollapsed ? 'justify-center px-2' : ''}`}
-            onClick={() => safeLogout(signOut)}
+            onClick={() => safeLogout(signOut, navigate)}
           >
             <LogOut size={16} className="shrink-0" />
             {!isCollapsed && <span>Logout</span>}
@@ -176,6 +175,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
 
 const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, region, signOut } = useRegionalSession();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -243,7 +243,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                 variant="outline"
                 onClick={() => {
                   setMenuOpen(false);
-                  void safeLogout(signOut);
+                  void safeLogout(signOut, navigate);
                 }}
                 className="w-full justify-center gap-2"
               >
