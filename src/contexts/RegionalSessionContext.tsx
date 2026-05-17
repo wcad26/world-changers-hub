@@ -119,6 +119,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
 
   useEffect(() => {
     let cancelled = false;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     (async () => {
       const bootstrap = readRegionalBootstrap();
@@ -144,6 +145,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
           void loadProfileAndRegion(authUser.id, readRegionalBootstrap()?.regionId ?? null);
         }
       });
+      authSubscription = authSub.subscription;
 
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
@@ -158,12 +160,11 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         setReady(false);
       }
       console.info('[RegionalSession] ready. user =', u?.id ?? bootstrap?.userId ?? 'none', 'bootstrap =', !!bootstrap);
-
-      return () => authSub.subscription.unsubscribe();
     })();
 
     return () => {
       cancelled = true;
+      authSubscription?.unsubscribe();
     };
   }, [loadProfileAndRegion]);
 
@@ -173,6 +174,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       setBootstrapAvailable(true);
       setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
       setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+      setReady(true);
       loadedForUserRef.current = null;
       void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
       return;
