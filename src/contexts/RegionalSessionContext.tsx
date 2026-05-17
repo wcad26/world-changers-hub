@@ -19,6 +19,7 @@ interface RegionalSessionValue {
   profile: Profile | null;
   region: Region | null;
   status: RegionalSessionStatus;
+  provided: boolean;
   ready: boolean;
   authorized: boolean;
   bootstrapAvailable: boolean;
@@ -31,6 +32,7 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
   profile: null,
   region: null,
   status: 'checking',
+  provided: false,
   ready: false,
   authorized: false,
   bootstrapAvailable: false,
@@ -222,6 +224,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     profile,
     region,
     status: ready ? 'authorized' : 'checking',
+    provided: true,
     ready,
     authorized: ready,
     bootstrapAvailable,
