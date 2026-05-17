@@ -1,23 +1,6 @@
 import { useContext } from 'react';
 import { AuthContext, type AuthContextValue } from '@/contexts/AuthContext';
-import { RegionalSessionContext } from '@/contexts/RegionalSessionContext';
-
-/**
- * Single source of truth for accessing auth state.
- *
- * Note: this file is intentionally `.ts` (not `.tsx`) and exports only the
- * `useAuth` hook so Vite Fast Refresh skips it cleanly instead of issuing
- * "Could not Fast Refresh" invalidations that previously left consumers
- * reading a stale AuthContext.
- *
- * Regional portal isolation:
- *   The regional portal runs WITHOUT the global <AuthProvider>. Many shared
- *   hooks still call useAuth() to read userRegion / user / profile. So:
- *     1. If a global <AuthProvider> exists, use it.
- *     2. Otherwise, if a <RegionalSessionProvider> is present, build a
- *        minimal AuthContextValue from the regional session.
- *     3. Otherwise, return a safe no-op shape.
- */
+import { RegionalSessionContext } from '@/contexts/regionalSessionContextCore';
 
 const NOOP_ASYNC = async () => {};
 
@@ -48,24 +31,36 @@ const buildEmptyValue = (): AuthContextValue => ({
   refetchUserData: () => null,
 });
 
+/**
+ * Single source of truth for accessing auth state.
+ *
+ * Precedence:
+ *   1. Global AuthProvider is the primary source.
+ *   2. Regional session, when present, overlays the regional fields (user,
+ *      region, profile, signOut) so the regional portal continues to work
+ *      with its bootstrap-based session. We never replace a valid global
+ *      user with a null regional user — that was bouncing freshly logged-in
+ *      users back to /auth/regional during preview hot reloads.
+ */
 export const useAuth = (): AuthContextValue => {
   const globalCtx = useContext(AuthContext);
   const regional = useContext(RegionalSessionContext);
-  const hasRegionalProviderState = !!regional?.provided;
-  const value = buildEmptyValue();
+  const hasRegional = !!regional?.provided;
 
-  if (hasRegionalProviderState) {
-    const stillChecking = !regional.ready || regional.status === 'checking';
-    value.user = regional.user as any;
-    value.profile = regional.profile as any;
-    value.userRegion = regional.region as any;
-    value.loading = stillChecking;
-    value.initialized = !stillChecking;
-    value.authReady = !stillChecking;
-    value.hasRegionalPortalAccess = !!regional.authorized;
-    value.signOut = regional.signOut;
-    return value;
-  }
+  const base = globalCtx ?? buildEmptyValue();
 
-  return globalCtx ?? value;
+  if (!hasRegional) return base;
+
+  // Overlay regional data only when it has something useful.
+  return {
+    ...base,
+    user: regional.user ?? base.user,
+    profile: regional.profile ?? base.profile,
+    userRegion: regional.region ?? base.userRegion,
+    loading: false,
+    initialized: true,
+    authReady: true,
+    hasRegionalPortalAccess: regional.authorized || base.hasRegionalPortalAccess,
+    signOut: regional.signOut ?? base.signOut,
+  };
 };
