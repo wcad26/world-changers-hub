@@ -332,7 +332,7 @@ const SuperEvents: React.FC = () => {
         </div>
         <span className="text-sm font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="font-bold text-foreground text-2xl">{count}</p>
+      <p className="font-bold text-foreground text-base tabular-nums mt-1">{count}</p>
       <p className="text-xs text-muted-foreground mt-1">{sub}</p>
       {growth !== null && (
         <div className="mt-2">
