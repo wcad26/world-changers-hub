@@ -537,7 +537,7 @@ const SuperDashboard: React.FC = () => {
                         padding: "8px 12px",
                         boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
                       }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>{label}</div>
+                        <div style={{ fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>Week of {label}</div>
                         {payload.map((p: any) => (
                           <div key={p.dataKey} style={{ color: p.color }}>{p.dataKey} : {p.value}</div>
                         ))}
