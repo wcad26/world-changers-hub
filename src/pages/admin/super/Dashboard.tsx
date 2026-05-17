@@ -287,77 +287,39 @@ const SuperDashboard: React.FC = () => {
     };
   }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, activePlan, dcgMembership]);
 
-  // ───── Trend chart data ─────
+  // ───── Trend chart data: weekly unique attendees by category ─────
   const trendChartData = useMemo(() => {
-    if (!kpis?.filteredEvents) return [];
-    const eventsInPeriod = kpis.filteredEvents;
-    const attendance = kpis.filteredAttendance || [];
+    const attendance = kpis?.filteredAttendance || [];
+    if (attendance.length === 0) return [];
 
-    const aggBySourceId = new Map<string, { m: number; v: number; c: number }>();
+    type Bucket = { weekStart: Date; members: Set<string>; visitors: Set<string>; children: Set<string> };
+    const buckets = new Map<number, Bucket>();
+
     attendance.forEach((a: any) => {
-      if (!a.source_event_id) return;
-      const cur = aggBySourceId.get(a.source_event_id) || { m: 0, v: 0, c: 0 };
-      cur.m += a.members_present || 0;
-      cur.v += a.visitors_present || 0;
-      cur.c += a.children_present || 0;
-      aggBySourceId.set(a.source_event_id, cur);
+      const d = new Date(a.event_date);
+      if (isNaN(d.getTime())) return;
+      const ws = startOfWeek(d, { weekStartsOn: 1 });
+      const key = ws.getTime();
+      let b = buckets.get(key);
+      if (!b) {
+        b = { weekStart: ws, members: new Set(), visitors: new Set(), children: new Set() };
+        buckets.set(key, b);
+      }
+      (a.present_member_ids || []).forEach((id: string) => b!.members.add(id));
+      (a.present_visitor_ids || []).forEach((id: string) => b!.visitors.add(id));
+      (a.present_children_ids || []).forEach((id: string) => b!.children.add(id));
     });
 
-    const perEventPoints = [...eventsInPeriod]
-      .sort((a: any, b: any) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
-      .map((e: any) => {
-        const agg = aggBySourceId.get(e.id);
-        return {
-          eventDate: new Date(e.start_datetime),
-          Members: agg?.m || 0,
-          "Regular Visitors": agg?.v || 0,
-          Children: agg?.c || 0,
-        };
-      });
-
-    if (eventType === "regional") {
-      return perEventPoints.map((p) => ({
-        date: format(p.eventDate, "MMM d"),
-        Members: p.Members,
-        "Regular Visitors": p["Regular Visitors"],
-        Children: p.Children,
+    return Array.from(buckets.values())
+      .sort((a, b) => a.weekStart.getTime() - b.weekStart.getTime())
+      .map((b) => ({
+        date: format(b.weekStart, "MMM d"),
+        Members: b.members.size,
+        "Regular Visitors": b.visitors.size,
+        Children: b.children.size,
       }));
-    }
+  }, [kpis?.filteredAttendance]);
 
-    // DCG: weekly buckets
-    const bucketDays = 7;
-    const endDate = dateRange.to || new Date();
-    const startDate = dateRange.from || subMonths(endDate, 1);
-    const buckets: { start: Date; end: Date; label: string; partial: boolean;
-      m: number; v: number; c: number; count: number }[] = [];
-    const periodEnd = new Date(endDate);
-    periodEnd.setHours(23, 59, 59, 999);
-    let cursor = new Date(startDate);
-    cursor.setHours(0, 0, 0, 0);
-    while (cursor <= periodEnd) {
-      const next = new Date(cursor);
-      next.setDate(next.getDate() + bucketDays);
-      const partial = next > periodEnd;
-      const end = partial ? new Date(periodEnd.getTime() + 1) : next;
-      buckets.push({ start: new Date(cursor), end, label: format(cursor, "MMM d"), partial, m: 0, v: 0, c: 0, count: 0 });
-      cursor = next;
-    }
-    perEventPoints.forEach((p) => {
-      const t = p.eventDate.getTime();
-      const b = buckets.find((bk) => t >= bk.start.getTime() && t < bk.end.getTime());
-      if (!b) return;
-      b.count += 1;
-      b.m += p.Members;
-      b.v += p["Regular Visitors"];
-      b.c += p.Children;
-    });
-    while (buckets.length > 0) {
-      const last = buckets[buckets.length - 1];
-      if (last.partial && last.count === 0) buckets.pop();
-      else break;
-    }
-    return buckets.map((b) => ({ date: b.label, Members: b.m, "Regular Visitors": b.v, Children: b.c }));
-  }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
 
   const genderChartData = useMemo(() => {
     if (!kpis) return [];
