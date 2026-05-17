@@ -17,6 +17,7 @@ type Member = Database['public']['Tables']['members']['Row'];
 
 const AUTH_RESTORE_GRACE_MS = 2500;
 const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
+const EXPLICIT_SIGNOUT_KEY = 'wca-explicit-signout';
 
 const readCachedUser = () => {
   if (typeof window === 'undefined') return null;
@@ -47,6 +48,28 @@ const clearCachedUser = () => {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const consumeExplicitSignOutFlag = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = window.localStorage.getItem(EXPLICIT_SIGNOUT_KEY);
+    if (!raw) return false;
+    window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY);
+    const savedAt = Number(raw);
+    return Number.isFinite(savedAt) && Date.now() - savedAt < 10000;
+  } catch {
+    return false;
+  }
+};
+
+const markExplicitSignOut = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(EXPLICIT_SIGNOUT_KEY, String(Date.now()));
   } catch {
     // ignore storage failures
   }
