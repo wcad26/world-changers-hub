@@ -213,6 +213,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     loadedForUserRef.current = null;
     clearRegionalBootstrap();
     try {
+      window.localStorage.removeItem('wca-auth-last-user');
+    } catch {}
+    try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
