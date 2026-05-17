@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   SidebarProvider, 
@@ -73,12 +73,17 @@ const getPageTitleFromPath = (path: string, fallback?: string) => {
 
 const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, userRegion, signOut } = useAuth();
   const { state: sidebarState, toggleSidebar } = useSidebar();
   const isCollapsed = sidebarState === "collapsed";
 
   const pageTitle = getPageTitleFromPath(location.pathname, title);
   const isDashboard = location.pathname === '/admin/regional/dashboard';
+  const handleSignOut = async () => {
+    await signOut();
+    navigate(location.pathname.startsWith('/admin/super') ? '/auth/super' : '/auth/regional', { replace: true });
+  };
 
   return (
     <div className="h-svh flex w-full overflow-hidden bg-gray-50 dark:bg-gray-950">
@@ -142,7 +147,7 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${isCollapsed ? "justify-center px-2" : ""}`}
-            onClick={signOut}
+            onClick={handleSignOut}
           >
             <LogOut size={16} className="shrink-0" />
             {!isCollapsed && <span>Logout</span>}
@@ -186,11 +191,16 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
  */
 const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuItems }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, userRegion, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const pageTitle = getPageTitleFromPath(location.pathname, title);
   const isDashboard = location.pathname === '/admin/regional/dashboard';
+  const handleSignOut = async () => {
+    await signOut();
+    navigate(location.pathname.startsWith('/admin/super') ? '/auth/super' : '/auth/regional', { replace: true });
+  };
 
   // Bottom nav: prefer Dashboard / Members / Events / DCG, else first 4 visible items
   const preferredOrder = [
@@ -259,7 +269,7 @@ const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuIt
             <div className="p-4 border-t border-border space-y-2">
               <Button
                 variant="outline"
-                onClick={() => { setMenuOpen(false); signOut(); }}
+                onClick={() => { setMenuOpen(false); void handleSignOut(); }}
                 className="w-full justify-center gap-2"
               >
                 <LogOut className="h-4 w-4" />
