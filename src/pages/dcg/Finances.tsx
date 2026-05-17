@@ -176,10 +176,10 @@ const DcgFinances: React.FC = () => {
               </SelectContent>
             </Select>
             <Button size="sm" onClick={() => setIncomeOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Record Income
+              Record Income
             </Button>
             <Button size="sm" variant="outline" onClick={() => setExpenseOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Record Expense
+              Record Expense
             </Button>
           </div>
         </div>
