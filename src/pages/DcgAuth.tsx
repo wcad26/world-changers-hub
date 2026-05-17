@@ -12,10 +12,8 @@ import wcaLogo from '@/assets/wca-logo.png';
 /**
  * Isolated DCG portal login page.
  *
- * On successful sign-in, performs a HARD navigation to /dcg/dashboard so
- * the dashboard mounts with the Supabase session already persisted in
- * localStorage. This eliminates the race that previously bounced users
- * back to the login page.
+ * On successful sign-in, navigates inside the SPA so Lovable preview does not
+ * perform a full reload while Supabase is still restoring the session.
  */
 const DcgAuth = () => {
   const [email, setEmail] = useState('');
@@ -42,9 +40,7 @@ const DcgAuth = () => {
         return;
       }
 
-      // Hard navigate so the AuthProvider mounts cleanly with the session
-      // already written to localStorage.
-      window.location.assign('/dcg/dashboard');
+      navigate('/dcg/dashboard', { replace: true });
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
