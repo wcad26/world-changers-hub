@@ -223,23 +223,24 @@ const App = () => {
             >
               <Route index element={<Navigate to="/admin/super/dashboard" replace />} />
               <Route element={<SuperAdminSessionRoute><SuperAdminLayout /></SuperAdminSessionRoute>}>
-                <Route path="dashboard" element={<SuperDashboard />} />
-                <Route path="members" element={<SuperMembers />} />
-                <Route path="members/:memberId" element={<SuperMemberProfile />} />
-                <Route path="events" element={<SuperEvents />} />
-                <Route path="fundraising" element={<SuperFundraising />} />
-                <Route path="locations" element={<SuperLocations />} />
-                <Route path="finances" element={<SuperFinances />} />
-                <Route path="regions" element={<SuperRegions />} />
-                <Route path="currencies" element={<SuperCurrencies />} />
-                <Route path="reports" element={<SuperReports />} />
-                <Route path="communication" element={<SuperCommunication />} />
-                <Route path="user-management" element={<SuperUserManagement />} />
-                <Route path="homepage-settings" element={<HomepageSettings />} />
-                <Route path="certificates" element={<SuperCertificates />} />
-                <Route path="about-settings" element={<AboutUsSettings />} />
+                <Route path="dashboard" element={<SuperAdminPage><SuperDashboard /></SuperAdminPage>} />
+                <Route path="members" element={<SuperAdminPage><SuperMembers /></SuperAdminPage>} />
+                <Route path="members/:memberId" element={<SuperAdminPage><SuperMemberProfile /></SuperAdminPage>} />
+                <Route path="events" element={<SuperAdminPage><SuperEvents /></SuperAdminPage>} />
+                <Route path="fundraising" element={<SuperAdminPage><SuperFundraising /></SuperAdminPage>} />
+                <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
+                <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
+                <Route path="regions" element={<SuperAdminPage><SuperRegions /></SuperAdminPage>} />
+                <Route path="currencies" element={<SuperAdminPage><SuperCurrencies /></SuperAdminPage>} />
+                <Route path="reports" element={<SuperAdminPage><SuperReports /></SuperAdminPage>} />
+                <Route path="communication" element={<SuperAdminPage><SuperCommunication /></SuperAdminPage>} />
+                <Route path="user-management" element={<SuperAdminPage><SuperUserManagement /></SuperAdminPage>} />
+                <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
+                <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
+                <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />
               </Route>
             </Route>
+
 
             {/* Member Portal */}
             <Route
