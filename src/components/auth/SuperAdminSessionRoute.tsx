@@ -1,23 +1,15 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-
-const PortalLoading = () => (
-  <div className="min-h-svh flex items-center justify-center bg-background text-foreground">
-    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-      Loading portal…
-    </div>
-  </div>
-);
 
 /**
- * Pass-through guard. All client-side session redirect checks removed to
- * eliminate preview-only logout loops. RLS controls real data access.
+ * STICKY PASS-THROUGH GUARD — DO NOT ADD AUTH CHECKS HERE.
+ *
+ * The Lovable development preview emits spurious SIGNED_OUT and null
+ * INITIAL_SESSION/TOKEN_REFRESHED events that previously blanked the
+ * portal and bounced users back to /auth/super. RLS is the source of
+ * truth for protected data access — never redirect from this guard.
+ * See mem://constraints/portal-session-guards-must-be-sticky.
  */
 const SuperAdminSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { loading, authReady } = useAuth();
-  if (loading || !authReady) return <PortalLoading />;
   return <>{children}</>;
 };
 
