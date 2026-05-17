@@ -165,7 +165,7 @@ const DcgFinances: React.FC = () => {
             <Button size="sm" onClick={() => setIncomeOpen(true)}>
               Record Income
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setExpenseOpen(true)}>
+            <Button size="sm" onClick={() => setExpenseOpen(true)} className="bg-teal-500 hover:bg-teal-600 text-white">
               Record Expense
             </Button>
           </div>
