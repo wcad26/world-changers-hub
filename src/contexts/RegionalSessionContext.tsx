@@ -138,7 +138,18 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
         if (cancelled) return;
         if (event === 'SIGNED_OUT') {
-          if (!signingOutRef.current) {
+          const explicitLogout = (() => {
+            try {
+              const raw = window.localStorage.getItem('wca-explicit-signout');
+              if (!raw) return false;
+              window.localStorage.removeItem('wca-explicit-signout');
+              const savedAt = Number(raw);
+              return Number.isFinite(savedAt) && Date.now() - savedAt < 10000;
+            } catch {
+              return false;
+            }
+          })();
+          if (!signingOutRef.current && !explicitLogout) {
             setReady(true);
             return;
           }
@@ -213,6 +224,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     loadedForUserRef.current = null;
     clearRegionalBootstrap();
     try {
+      window.localStorage.setItem('wca-explicit-signout', String(Date.now()));
       window.localStorage.removeItem('wca-auth-last-user');
     } catch {}
     try {
