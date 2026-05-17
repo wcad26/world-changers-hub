@@ -50,12 +50,11 @@ const buildEmptyValue = (): AuthContextValue => ({
 
 export const useAuth = (): AuthContextValue => {
   const globalCtx = useContext(AuthContext);
-  if (globalCtx) return globalCtx;
-
   const regional = useContext(RegionalSessionContext);
+  const hasRegionalProviderState = !!(regional?.bootstrapAvailable || regional?.user || regional?.region);
   const value = buildEmptyValue();
 
-  if (regional) {
+  if (hasRegionalProviderState) {
     const stillChecking = !regional.ready || regional.status === 'checking';
     value.user = regional.user as any;
     value.profile = regional.profile as any;
@@ -65,7 +64,8 @@ export const useAuth = (): AuthContextValue => {
     value.authReady = !stillChecking;
     value.hasRegionalPortalAccess = !!regional.authorized;
     value.signOut = regional.signOut;
+    return value;
   }
 
-  return value;
+  return globalCtx ?? value;
 };
