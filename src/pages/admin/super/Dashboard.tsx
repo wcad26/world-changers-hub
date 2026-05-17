@@ -268,6 +268,20 @@ const SuperDashboard: React.FC = () => {
     // Target members (for trend reference line) — use plan total_event_attendees
     const targetMembers = planTotalEventAttendees && planTotalEventAttendees > 0 ? planTotalEventAttendees : 0;
 
+    // Unique attendees within the filtered period (any event in scope)
+    const uniqMembers = new Set<string>();
+    const uniqVisitors = new Set<string>();
+    const uniqChildren = new Set<string>();
+    filteredAttendance.forEach((a: any) => {
+      (a.present_member_ids || []).forEach((id: string) => uniqMembers.add(id));
+      (a.present_visitor_ids || []).forEach((id: string) => uniqVisitors.add(id));
+      (a.present_children_ids || []).forEach((id: string) => uniqChildren.add(id));
+    });
+    const uniqueAdultAttendees = uniqMembers.size + uniqVisitors.size;
+    const uniqueMemberAttendees = uniqMembers.size;
+    const uniqueVisitorAttendees = uniqVisitors.size;
+    const uniqueChildAttendees = uniqChildren.size;
+
     return {
       totalAdults: adultMembersAndVisitors.length,
       memberCount, visitorCount, adultGrowth,
@@ -284,6 +298,7 @@ const SuperDashboard: React.FC = () => {
       uniqueTithers, uniqueGivers, incomeGrowthPct, fundraisingTargetPct,
       filteredAttendance, filteredEvents,
       targetMembers,
+      uniqueAdultAttendees, uniqueMemberAttendees, uniqueVisitorAttendees, uniqueChildAttendees,
     };
   }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, activePlan, dcgMembership]);
 
@@ -467,10 +482,10 @@ const SuperDashboard: React.FC = () => {
         {/* KPI CARDS */}
         {kpis && eventType === "regional" && (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.totalAdults}
-              subtitle={`${kpis.memberCount} members · ${kpis.visitorCount} visitors`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.totalChildren}
-              subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"} />
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
+              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
+              subtitle="Unique attendees in period" />
             <GlassKPICard icon={<CalendarDays className="h-5 w-5" />} label="Regional Events" value={kpis.regionalEventsCount}
               subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`} />
             <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
@@ -483,9 +498,10 @@ const SuperDashboard: React.FC = () => {
 
         {kpis && eventType === "dcg" && (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.dcgTotalMembers}
-              subtitle={`${kpis.dcgAdults} adults · ${kpis.dcgChildren} children`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.dcgChildren} subtitle="In DCGs" />
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
+              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
+              subtitle="Unique attendees in period" />
             <GlassKPICard icon={<UsersRound className="h-5 w-5" />} label="DCG Events" value={kpis.dcgEventsCount}
               subtitle={`Avg: ${kpis.avgDcgAttendees} attendees`} />
             <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
