@@ -136,7 +136,10 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
         if (cancelled) return;
         if (event === 'SIGNED_OUT') {
-          if (!signingOutRef.current) return;
+          if (!signingOutRef.current) {
+            setReady(true);
+            return;
+          }
           setReady(true);
           return;
         }
@@ -159,9 +162,11 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         setUser({ id: u.id, email: u.email ?? undefined });
         setReady(true);
         void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
-      } else if (!bootstrap) {
+      } else if (!bootstrap && !user) {
         console.info('[RegionalSession] no Supabase session and no regional bootstrap');
         setReady(false);
+      } else {
+        setReady(true);
       }
       console.info('[RegionalSession] ready. user =', u?.id ?? bootstrap?.userId ?? 'none', 'bootstrap =', !!bootstrap);
     })();
