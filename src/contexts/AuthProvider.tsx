@@ -16,6 +16,41 @@ type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
 const AUTH_RESTORE_GRACE_MS = 2500;
+const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
+
+const readCachedUser = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_USER_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.id) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedUser = (user: any) => {
+  if (typeof window === 'undefined' || !user?.id) return;
+  try {
+    window.localStorage.setItem(
+      AUTH_USER_CACHE_KEY,
+      JSON.stringify({ id: user.id, email: user.email ?? null, cachedAt: Date.now() }),
+    );
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const clearCachedUser = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
 
 /**
  * Per-portal auth provider — deterministic, listener-based.
@@ -28,20 +63,21 @@ const AUTH_RESTORE_GRACE_MS = 2500;
  * back to the login page right after a successful sign-in.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const initialCachedUserRef = useRef<any | null>(readCachedUser());
+  const [user, setUser] = useState<any>(initialCachedUserRef.current);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
+  const [loading, setLoading] = useState(!initialCachedUserRef.current);
+  const [initialized, setInitialized] = useState(!!initialCachedUserRef.current);
+  const [authReady, setAuthReady] = useState(!!initialCachedUserRef.current);
 
   const fetchedForUserRef = useRef<string | null>(null);
   const explicitSignOutRef = useRef(false);
-  const userRef = useRef<any>(null);
+  const userRef = useRef<any>(initialCachedUserRef.current);
 
   const markReady = useCallback(() => {
     setInitialized(true);
