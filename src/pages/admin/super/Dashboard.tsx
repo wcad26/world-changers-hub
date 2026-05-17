@@ -482,10 +482,10 @@ const SuperDashboard: React.FC = () => {
         {/* KPI CARDS */}
         {kpis && eventType === "regional" && (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.totalAdults}
-              subtitle={`${kpis.memberCount} members · ${kpis.visitorCount} visitors`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.totalChildren}
-              subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"} />
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
+              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
+              subtitle="Unique attendees in period" />
             <GlassKPICard icon={<CalendarDays className="h-5 w-5" />} label="Regional Events" value={kpis.regionalEventsCount}
               subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`} />
             <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
