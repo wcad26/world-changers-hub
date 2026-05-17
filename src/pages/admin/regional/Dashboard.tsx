@@ -651,14 +651,14 @@ const RegionalDashboard: React.FC = () => {
           <GlassKPICard
             icon={<Users className="h-5 w-5" />}
             label="Members"
-            value={kpis.totalAdults}
-            subtitle={`${kpis.memberCount} members · ${kpis.visitorCount} visitors`}
+            value={kpis.uniqueAdultAttendees}
+            subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`}
           />
           <GlassKPICard
             icon={<Baby className="h-5 w-5" />}
             label="Children"
-            value={kpis.totalChildren}
-            subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"}
+            value={kpis.uniqueChildAttendees}
+            subtitle="Unique attendees in period"
           />
           <GlassKPICard
             icon={<CalendarDays className="h-5 w-5" />}
