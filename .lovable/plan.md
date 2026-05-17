@@ -1,43 +1,47 @@
-## Goal
-Stop the Lovable development preview from blanking portal screens or navigating users back to login unless they explicitly click Logout.
+# Rebuild Super Admin Global Members Page
 
-## Findings
-- The main route guards are now pass-through, but there are still vulnerable session paths outside those guards.
-- `AuthProvider` can still move back into a restoring/loading state when Supabase reports a transient null session.
-- Successful login pages do not immediately write the sticky portal user cache, so navigation can beat the auth listener and leave portal screens without a stable user during preview races.
-- The old `usePortalSession` hook still treats any `SIGNED_OUT` as anonymous; even if mostly unused, it can reintroduce the same bug later.
-- Only the regional portal has a non-navigating error boundary. Super, DCG, and member portals can still appear blank if a portal page throws during auth/data restoration.
+Mirror the Regional Members page (`src/pages/admin/regional/Members.tsx`) on the Super Admin global Members page (`src/pages/admin/super/Members.tsx`), aggregating across all regions instead of one.
 
-## Plan
-1. **Create one shared sticky auth utility**
-   - Centralize cache keys and helpers for:
-     - last authenticated user
-     - explicit logout flag
-     - reading/writing/clearing portal auth cache
-   - Make explicit logout the only allowed reason to clear cached portal state.
+## Scope
 
-2. **Harden `AuthProvider` permanently**
-   - Initialize as ready even from cached user state.
-   - Never set portal auth back to `loading: true`, `initialized: false`, or `authReady: false` because of transient null `INITIAL_SESSION`, `TOKEN_REFRESHED`, or preview `SIGNED_OUT` noise.
-   - Ignore `SIGNED_OUT` unless the current session initiated it through explicit `signOut()`.
-   - Clear stale explicit-logout flags on successful sign-in/session restoration.
+UI/presentation only. No changes to auth, route guards, `AuthProvider`, login pages, or any session/cache code — the sticky session fix (`mem://constraints/portal-session-guards-must-be-sticky`) remains untouched.
 
-3. **Write sticky cache immediately on login**
-   - Update Super, Regional, DCG, and Member login pages so successful `signInWithPassword()` immediately writes the authenticated user cache before navigating into the portal.
-   - This prevents a blank screen when navigation happens before Supabase’s auth listener finishes restoring.
+## What to build
 
-4. **Neutralize stale session hook risk**
-   - Replace `usePortalSession` behavior with the same sticky explicit-logout rules, or reduce it to a safe non-redirecting session observer.
-   - This prevents future portal code from importing a hook that reintroduces anon/login redirects.
+### 1. New global KPI component
+Create `src/components/admin/super/GlobalMemberKPICards.tsx`, modeled exactly on `src/components/admin/regional/MemberKPICards.tsx`, with one change to the data source:
 
-5. **Add non-redirecting portal error boundaries across all portals**
-   - Keep Regional’s current boundary.
-   - Wrap Super, DCG, and Member portal route layouts with an error boundary that shows a recoverable error state on the same URL instead of a blank screen or login redirect.
+- Drop the `regionId` prop.
+- Replace the recent-attendance query with a global version that fetches the last 5 `attendance_events` where `dcg_id IS NULL` and `region_id IS NOT NULL` (regional events across ALL regions), then loads their `attendance_records`. Same ≥50% activity threshold logic.
+- Same 5 cards in the same order, same styling, same growth/active math: **Total, Members, Regular Visitors, Children, Special Event Visitors**.
 
-6. **Update project memory rule**
-   - Strengthen the existing memory to include: login pages must write sticky cache immediately, auth providers must not enter blocking loading states from null sessions, and old session hooks must follow explicit-logout-only semantics.
+### 2. Rebuilt page
+Rewrite `src/pages/admin/super/Members.tsx` to mirror `regional/Members.tsx`:
 
-## Validation
-- Search the codebase to confirm no automatic portal redirects to `/auth/super`, `/auth/regional`, `/auth/member`, or `/dcg-auth` remain except explicit Logout buttons and public login-page controls.
-- Check dev-server logs for HMR/runtime errors.
-- Verify the Super Admin dashboard route remains renderable after session restoration and that portal guards remain pure pass-through.
+- Use `useAllMembers()` (already global) instead of `useMembers(regionId)`.
+- Fetch member relationships globally via `fetchMemberRelationshipsForMembers` over all returned member IDs (chunked — already handled by the util, matches the core memory rule).
+- Fetch `events.is_special` for any visitor `rated_event_id` to build `specialEventIds` (same as regional).
+- Use `buildChildrenSet` for the strict children rule.
+- Render `<GlobalMemberKPICards>` at top with the same loading skeleton.
+- Same glassy "Member Directory" panel with title "Global Member Directory" and subtitle "A list of all members across all regions".
+- Same search input, Status filter, Type filter (All / Member / Special Event Visitors / Regular Visitors / Children), Export CSV button.
+- Table columns mirror regional, **plus a "Region" column** (since this is global): Name, Address, Phone, **Region**, Role, Status, Join Date, Actions. Row click navigates to `/admin/super/members/:id`.
+- Actions dropdown: View → `/admin/super/members/:id`. **No Register / Edit / Delete** on the global page (members are managed at the regional level; super admin is read-only oversight here — matches current Super Members behavior). If you want write actions later, they can be added.
+- Same name format "Last Name First Name" (memory rule).
+- Same status color helper, same badges, same loading skeleton.
+
+### 3. CSV export
+Mirror regional `handleExportMembers` with Papa Parse, add a `Region` column to the export rows.
+
+## Files
+
+- **Create:** `src/components/admin/super/GlobalMemberKPICards.tsx`
+- **Rewrite:** `src/pages/admin/super/Members.tsx`
+
+No router, layout, auth, or hook changes. `SuperAdminLayout` menu entry already points to `/admin/super/members`.
+
+## Safety / non-regression
+
+- Do not import or touch `AuthProvider`, `SuperAdminSessionRoute`, `portalAuthCache`, `usePortalSession`, or any auth page. The page already runs inside `SuperAdminLayout` which already works; only the page body changes.
+- Keep using `useAuth` only if needed for display (not required here — `useAllMembers` doesn't depend on it).
+- Reuse existing utilities (`buildChildrenSet`, `fetchMemberRelationshipsForMembers`, `useAllMembers`) — no schema or RLS changes.
