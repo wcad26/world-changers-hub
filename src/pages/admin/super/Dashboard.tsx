@@ -458,9 +458,6 @@ const SuperDashboard: React.FC = () => {
             />
           </div>
         </div>
-        <div className="mt-2 text-[11px] text-muted-foreground">
-          Showing <span className="font-medium text-foreground">{selectedRegionName}</span>
-        </div>
       </div>
 
       {/* SCROLLABLE CONTENT */}
