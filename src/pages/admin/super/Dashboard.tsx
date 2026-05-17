@@ -268,6 +268,20 @@ const SuperDashboard: React.FC = () => {
     // Target members (for trend reference line) — use plan total_event_attendees
     const targetMembers = planTotalEventAttendees && planTotalEventAttendees > 0 ? planTotalEventAttendees : 0;
 
+    // Unique attendees within the filtered period (any event in scope)
+    const uniqMembers = new Set<string>();
+    const uniqVisitors = new Set<string>();
+    const uniqChildren = new Set<string>();
+    filteredAttendance.forEach((a: any) => {
+      (a.present_member_ids || []).forEach((id: string) => uniqMembers.add(id));
+      (a.present_visitor_ids || []).forEach((id: string) => uniqVisitors.add(id));
+      (a.present_children_ids || []).forEach((id: string) => uniqChildren.add(id));
+    });
+    const uniqueAdultAttendees = uniqMembers.size + uniqVisitors.size;
+    const uniqueMemberAttendees = uniqMembers.size;
+    const uniqueVisitorAttendees = uniqVisitors.size;
+    const uniqueChildAttendees = uniqChildren.size;
+
     return {
       totalAdults: adultMembersAndVisitors.length,
       memberCount, visitorCount, adultGrowth,
@@ -284,6 +298,7 @@ const SuperDashboard: React.FC = () => {
       uniqueTithers, uniqueGivers, incomeGrowthPct, fundraisingTargetPct,
       filteredAttendance, filteredEvents,
       targetMembers,
+      uniqueAdultAttendees, uniqueMemberAttendees, uniqueVisitorAttendees, uniqueChildAttendees,
     };
   }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, activePlan, dcgMembership]);
 
