@@ -30,9 +30,9 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
   user: null,
   profile: null,
   region: null,
-  status: 'authorized',
-  ready: true,
-  authorized: true,
+  status: 'checking',
+  ready: false,
+  authorized: false,
   bootstrapAvailable: false,
   retry: () => {},
   signOut: async () => {},
@@ -60,12 +60,13 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [region, setRegion] = useState<Region | null>(
     initialBootstrap ? createRegionStub(initialBootstrap.regionId) : null,
   );
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(!!initialBootstrap);
   const [bootstrapAvailable, setBootstrapAvailable] = useState(!!initialBootstrap);
   const queryClient = useQueryClient();
 
   const signingOutRef = useRef(false);
   const loadedForUserRef = useRef<string | null>(null);
+  const userEmailRef = useRef(initialBootstrap?.email ?? null);
 
   const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
     if (signingOutRef.current) return;
@@ -96,7 +97,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       if (regionId) {
-        writeRegionalBootstrap({ userId: uid, email: user?.email ?? null, regionId });
+        writeRegionalBootstrap({ userId: uid, email: userEmailRef.current, regionId });
         setBootstrapAvailable(true);
         setRegion((current) => current?.id === regionId ? current : createRegionStub(regionId));
 
@@ -115,35 +116,59 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         console.warn('[RegionalSession] background load failed:', err);
       }
     }
-  }, [user?.email]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     (async () => {
       const bootstrap = readRegionalBootstrap();
       if (bootstrap && !cancelled) {
         setBootstrapAvailable(true);
+        userEmailRef.current = bootstrap.email ?? null;
         setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
         setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+        setReady(true);
         void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
       }
+
+      const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (cancelled) return;
+        if (event === 'SIGNED_OUT') {
+          if (!signingOutRef.current) return;
+          setReady(true);
+          return;
+        }
+        const authUser = session?.user;
+        if (authUser) {
+          userEmailRef.current = authUser.email ?? null;
+          setUser({ id: authUser.id, email: authUser.email ?? undefined });
+          setReady(true);
+          void loadProfileAndRegion(authUser.id, readRegionalBootstrap()?.regionId ?? null);
+        }
+      });
+      authSubscription = authSub.subscription;
 
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
 
       const u = data.session?.user;
       if (u) {
+        userEmailRef.current = u.email ?? null;
         setUser({ id: u.id, email: u.email ?? undefined });
+        setReady(true);
         void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
       } else if (!bootstrap) {
         console.info('[RegionalSession] no Supabase session and no regional bootstrap');
+        setReady(false);
       }
       console.info('[RegionalSession] ready. user =', u?.id ?? bootstrap?.userId ?? 'none', 'bootstrap =', !!bootstrap);
     })();
 
     return () => {
       cancelled = true;
+      authSubscription?.unsubscribe();
     };
   }, [loadProfileAndRegion]);
 
@@ -151,8 +176,10 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     const bootstrap = readRegionalBootstrap();
     if (bootstrap) {
       setBootstrapAvailable(true);
+      userEmailRef.current = bootstrap.email ?? null;
       setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
       setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+      setReady(true);
       loadedForUserRef.current = null;
       void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
       return;
@@ -170,9 +197,11 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       await queryClient.cancelQueries();
       queryClient.clear();
     } catch {}
+    userEmailRef.current = null;
     setUser(null);
     setProfile(null);
     setRegion(null);
+    setReady(true);
     setBootstrapAvailable(false);
     loadedForUserRef.current = null;
     clearRegionalBootstrap();
@@ -180,10 +209,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
-    } finally {
-      if (typeof window !== 'undefined') {
-        window.location.replace('/auth/regional');
-      }
     }
   }, [queryClient]);
 
@@ -191,9 +216,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     user,
     profile,
     region,
-    status: 'authorized',
+    status: ready ? 'authorized' : 'checking',
     ready,
-    authorized: true,
+    authorized: ready,
     bootstrapAvailable,
     retry,
     signOut,

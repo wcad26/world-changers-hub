@@ -35,7 +35,7 @@ import {
 const CHILD_AGE = 16;
 
 const RegionalDashboard: React.FC = () => {
-  const { region: userRegion, profile, ready, user, retry: retryRegional, signOut, bootstrapAvailable } = useRegionalSession();
+  const { region: userRegion, profile, ready, user, retry: retryRegional, bootstrapAvailable } = useRegionalSession();
   // Only show the auth-loading skeleton until session restoration completes.
   // After that, render the dashboard even if region/profile are still being
   // fetched — region-dependent widgets gracefully handle missing region.
@@ -521,7 +521,6 @@ const RegionalDashboard: React.FC = () => {
       </div>
       <div className="flex gap-2">
         <Button size="sm" variant="outline" onClick={retryRegional}>Retry</Button>
-        <Button size="sm" variant="ghost" onClick={async () => { try { await signOut(); } finally { if (typeof window !== 'undefined') window.location.replace('/auth/regional'); } }}>Logout</Button>
       </div>
     </div>
   ) : null;

@@ -1,9 +1,24 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+
+const PortalLoading = () => (
+  <div className="min-h-svh flex items-center justify-center bg-background text-foreground">
+    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      Loading portal…
+    </div>
+  </div>
+);
 
 /**
  * Pass-through guard. All client-side session redirect checks removed to
  * eliminate preview-only logout loops. RLS controls real data access.
  */
-const SuperAdminSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
+const SuperAdminSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { loading, authReady } = useAuth();
+  if (loading || !authReady) return <PortalLoading />;
+  return <>{children}</>;
+};
 
 export default SuperAdminSessionRoute;

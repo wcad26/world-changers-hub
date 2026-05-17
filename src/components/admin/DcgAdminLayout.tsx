@@ -58,8 +58,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
     } catch (err) {
       console.error('[DcgAdminLayout] signOut error', err);
     } finally {
-      // Hard redirect so React Query and all DCG hooks tear down cleanly.
-      window.location.assign('/dcg-auth');
+      navigate('/dcg-auth', { replace: true });
     }
   };
 
