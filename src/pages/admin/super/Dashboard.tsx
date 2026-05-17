@@ -501,7 +501,10 @@ const SuperDashboard: React.FC = () => {
 
         {/* ATTENDANCE TREND */}
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-          <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
+          <h3 className="text-base font-semibold text-foreground">Attendance Trend</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Unique members, regular visitors and children attending at least one {eventType === "dcg" ? "DCG" : "regional"} event per week.
+          </p>
           {trendChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={380}>
               <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
