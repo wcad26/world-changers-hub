@@ -498,9 +498,10 @@ const SuperDashboard: React.FC = () => {
 
         {kpis && eventType === "dcg" && (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.dcgTotalMembers}
-              subtitle={`${kpis.dcgAdults} adults · ${kpis.dcgChildren} children`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.dcgChildren} subtitle="In DCGs" />
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
+              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
+              subtitle="Unique attendees in period" />
             <GlassKPICard icon={<UsersRound className="h-5 w-5" />} label="DCG Events" value={kpis.dcgEventsCount}
               subtitle={`Avg: ${kpis.avgDcgAttendees} attendees`} />
             <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
