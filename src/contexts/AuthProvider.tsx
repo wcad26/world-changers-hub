@@ -15,7 +15,6 @@ type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
-const AUTH_RESTORE_GRACE_MS = 2500;
 const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
 const EXPLICIT_SIGNOUT_KEY = 'wca-explicit-signout';
 
