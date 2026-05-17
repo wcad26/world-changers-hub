@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Loader2, Shield } from 'lucide-react';
+import { writeCachedUser } from '@/lib/portalAuthCache';
 
 /**
  * Super Admin login.
@@ -64,6 +65,7 @@ const SuperAuth = () => {
         return;
       }
 
+      writeCachedUser(authData.user);
       toast({ title: 'Welcome back' });
       navigate(from, { replace: true });
     } catch (error: any) {

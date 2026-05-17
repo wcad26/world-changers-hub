@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import wcaLogo from '@/assets/wca-logo.png';
 import { writeRegionalBootstrap } from '@/lib/regionalBootstrap';
+import { writeCachedUser } from '@/lib/portalAuthCache';
 
 /**
  * Single regional portal login page.
@@ -42,6 +43,8 @@ const RegionalAuth = () => {
         setError(authError?.message ?? 'Invalid credentials.');
         return;
       }
+
+      writeCachedUser(authData.user);
 
       // Best-effort: write a regional bootstrap so the regional shell can show
       // the region label without a round trip. Failures here are non-fatal —

@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { writeCachedUser } from '@/lib/portalAuthCache';
 
 /**
  * Isolated Member login page.
@@ -43,6 +44,7 @@ export default function MemberAuth() {
       }
 
       if (data.user) {
+        writeCachedUser(data.user);
         toast({
           title: 'Welcome back!',
           description: 'You have successfully signed in to your member portal.',
