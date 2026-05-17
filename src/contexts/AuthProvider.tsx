@@ -8,72 +8,20 @@ import React, {
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { AuthContext, type AppRole, type AuthContextValue } from './AuthContext';
+import {
+  EXPLICIT_SIGNOUT_KEY,
+  clearCachedUser,
+  consumeExplicitSignOutFlag,
+  markExplicitSignOut,
+  readCachedUser,
+  writeCachedUser,
+} from '@/lib/portalAuthCache';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type UserRole = Database['public']['Tables']['user_roles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
-
-const AUTH_RESTORE_GRACE_MS = 2500;
-const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
-const EXPLICIT_SIGNOUT_KEY = 'wca-explicit-signout';
-
-const readCachedUser = () => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(AUTH_USER_CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed?.id) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-};
-
-const writeCachedUser = (user: any) => {
-  if (typeof window === 'undefined' || !user?.id) return;
-  try {
-    window.localStorage.setItem(
-      AUTH_USER_CACHE_KEY,
-      JSON.stringify({ id: user.id, email: user.email ?? null, cachedAt: Date.now() }),
-    );
-  } catch {
-    // ignore storage failures
-  }
-};
-
-const clearCachedUser = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
-  } catch {
-    // ignore storage failures
-  }
-};
-
-const consumeExplicitSignOutFlag = () => {
-  if (typeof window === 'undefined') return false;
-  try {
-    const raw = window.localStorage.getItem(EXPLICIT_SIGNOUT_KEY);
-    if (!raw) return false;
-    window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY);
-    const savedAt = Number(raw);
-    return Number.isFinite(savedAt) && Date.now() - savedAt < 10000;
-  } catch {
-    return false;
-  }
-};
-
-const markExplicitSignOut = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(EXPLICIT_SIGNOUT_KEY, String(Date.now()));
-  } catch {
-    // ignore storage failures
-  }
-};
 
 /**
  * Per-portal auth provider — deterministic, listener-based.
@@ -94,9 +42,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(!initialCachedUserRef.current);
-  const [initialized, setInitialized] = useState(!!initialCachedUserRef.current);
-  const [authReady, setAuthReady] = useState(!!initialCachedUserRef.current);
+  // Sticky: auth is ALWAYS considered ready. We never enter a blocking
+  // loading state on transient null sessions in the Lovable preview.
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(true);
+  const [authReady, setAuthReady] = useState(true);
 
   const fetchedForUserRef = useRef<string | null>(null);
   const explicitSignOutRef = useRef(false);
@@ -196,46 +146,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let cancelled = false;
-    let restoreTimer: ReturnType<typeof setTimeout> | null = null;
 
     if (userRef.current?.id) {
-      markReady();
       void fetchUserData(userRef.current.id);
     }
-
-    const clearRestoreTimer = () => {
-      if (restoreTimer) {
-        clearTimeout(restoreTimer);
-        restoreTimer = null;
-      }
-    };
-
-    const markSessionRestoring = () => {
-      if (userRef.current) return;
-      setInitialized(false);
-      setLoading(true);
-      setAuthReady(false);
-      clearRestoreTimer();
-      restoreTimer = setTimeout(() => {
-        if (cancelled || userRef.current) return;
-        // No automatic logout or redirect: after a short restore window the
-        // portal may render its own loading/empty states while auth continues
-        // to recover in the Lovable preview environment.
-        markReady();
-      }, AUTH_RESTORE_GRACE_MS);
-    };
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
 
       if (event === 'SIGNED_OUT') {
         // Only act on SIGNED_OUT if the user explicitly clicked logout.
-        // The Lovable dev preview occasionally emits spurious SIGNED_OUT
-        // events while the session is still valid, which was bouncing
-        // users back to login. Ignore those.
+        // The Lovable dev preview emits spurious SIGNED_OUT events while the
+        // session is still valid — ignore those completely.
         const hasStoredExplicitSignOut = consumeExplicitSignOutFlag();
         if (!explicitSignOutRef.current && !hasStoredExplicitSignOut) {
-          if (userRef.current) markReady();
           return;
         }
         explicitSignOutRef.current = false;
@@ -249,58 +173,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUserDcg(null);
         setMemberRecord(null);
         setUserRegionalRoles([]);
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
         return;
       }
 
       const sessionUser = session?.user ?? null;
 
       if (sessionUser) {
-        clearRestoreTimer();
+        // Successful session → clear any stale explicit-logout flag.
+        try { window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY); } catch {}
         userRef.current = sessionUser;
         writeCachedUser(sessionUser);
         setUser(sessionUser);
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
         queueMicrotask(() => {
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
         return;
       }
-      // For INITIAL_SESSION / TOKEN_REFRESHED with no session, keep loading
-      // briefly instead of declaring the user logged out. Preview storage can
-      // restore late, and route guards must not bounce the user during that gap.
-      markSessionRestoring();
+      // Null session on INITIAL_SESSION / TOKEN_REFRESHED → DO NOTHING.
+      // The preview environment frequently fires these spuriously while the
+      // session is still valid. We never clear cached user or block the UI.
     });
 
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
       if (sessionUser) {
-        clearRestoreTimer();
-        markReady();
+        try { window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY); } catch {}
         userRef.current = sessionUser;
         writeCachedUser(sessionUser);
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
-      } else if (!userRef.current) {
-        markSessionRestoring();
       }
-      // If no session here, do NOT clear an existing user — a later
-      // INITIAL_SESSION event may still restore it. We never auto-redirect
-      // to login, so leaving stale state briefly is harmless.
+      // If no session: do NOT clear cached user. Routes are pass-through;
+      // the page renders from cache while the listener restores the session.
     });
 
     return () => {
       cancelled = true;
-      clearRestoreTimer();
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [fetchUserData, markReady]);
+  }, [fetchUserData]);
 
   // Client-side role checks remain disabled — RLS is the source of truth.
   const hasRole = useCallback((_role: AppRole) => true, []);
