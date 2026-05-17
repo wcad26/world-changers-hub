@@ -11,12 +11,22 @@ export type RegionalBootstrap = {
   savedAt: number;
 };
 
-const isBrowser = () => typeof window !== 'undefined' && !!window.sessionStorage;
+const isBrowser = () => typeof window !== 'undefined';
+
+const readStorage = (storage: Storage | undefined, key: string) => {
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export const readRegionalBootstrap = (): RegionalBootstrap | null => {
   if (!isBrowser()) return null;
   try {
-    const raw = window.sessionStorage.getItem(REGIONAL_BOOTSTRAP_KEY);
+    const raw =
+      readStorage(window.sessionStorage, REGIONAL_BOOTSTRAP_KEY) ||
+      readStorage(window.localStorage, REGIONAL_BOOTSTRAP_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<RegionalBootstrap>;
     if (!parsed.userId || !parsed.regionId) return null;
@@ -33,15 +43,15 @@ export const readRegionalBootstrap = (): RegionalBootstrap | null => {
 
 export const writeRegionalBootstrap = (bootstrap: Omit<RegionalBootstrap, 'savedAt'>) => {
   if (!isBrowser()) return;
-  window.sessionStorage.setItem(
-    REGIONAL_BOOTSTRAP_KEY,
-    JSON.stringify({ ...bootstrap, savedAt: Date.now() }),
-  );
+  const value = JSON.stringify({ ...bootstrap, savedAt: Date.now() });
+  try { window.sessionStorage.setItem(REGIONAL_BOOTSTRAP_KEY, value); } catch {}
+  try { window.localStorage.setItem(REGIONAL_BOOTSTRAP_KEY, value); } catch {}
 };
 
 export const clearRegionalBootstrap = () => {
   if (!isBrowser()) return;
-  window.sessionStorage.removeItem(REGIONAL_BOOTSTRAP_KEY);
+  try { window.sessionStorage.removeItem(REGIONAL_BOOTSTRAP_KEY); } catch {}
+  try { window.localStorage.removeItem(REGIONAL_BOOTSTRAP_KEY); } catch {}
 };
 
 export const createRegionStub = (regionId: string): Region => ({

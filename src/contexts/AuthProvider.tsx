@@ -16,6 +16,64 @@ type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
 const AUTH_RESTORE_GRACE_MS = 2500;
+const AUTH_USER_CACHE_KEY = 'wca-auth-last-user';
+const EXPLICIT_SIGNOUT_KEY = 'wca-explicit-signout';
+
+const readCachedUser = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_USER_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.id) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedUser = (user: any) => {
+  if (typeof window === 'undefined' || !user?.id) return;
+  try {
+    window.localStorage.setItem(
+      AUTH_USER_CACHE_KEY,
+      JSON.stringify({ id: user.id, email: user.email ?? null, cachedAt: Date.now() }),
+    );
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const clearCachedUser = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(AUTH_USER_CACHE_KEY);
+  } catch {
+    // ignore storage failures
+  }
+};
+
+const consumeExplicitSignOutFlag = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = window.localStorage.getItem(EXPLICIT_SIGNOUT_KEY);
+    if (!raw) return false;
+    window.localStorage.removeItem(EXPLICIT_SIGNOUT_KEY);
+    const savedAt = Number(raw);
+    return Number.isFinite(savedAt) && Date.now() - savedAt < 10000;
+  } catch {
+    return false;
+  }
+};
+
+const markExplicitSignOut = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(EXPLICIT_SIGNOUT_KEY, String(Date.now()));
+  } catch {
+    // ignore storage failures
+  }
+};
 
 /**
  * Per-portal auth provider — deterministic, listener-based.
@@ -28,20 +86,21 @@ const AUTH_RESTORE_GRACE_MS = 2500;
  * back to the login page right after a successful sign-in.
  */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const initialCachedUserRef = useRef<any | null>(readCachedUser());
+  const [user, setUser] = useState<any>(initialCachedUserRef.current);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [userRegion, setUserRegion] = useState<Region | null>(null);
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
-  const [authReady, setAuthReady] = useState(false);
+  const [loading, setLoading] = useState(!initialCachedUserRef.current);
+  const [initialized, setInitialized] = useState(!!initialCachedUserRef.current);
+  const [authReady, setAuthReady] = useState(!!initialCachedUserRef.current);
 
   const fetchedForUserRef = useRef<string | null>(null);
   const explicitSignOutRef = useRef(false);
-  const userRef = useRef<any>(null);
+  const userRef = useRef<any>(initialCachedUserRef.current);
 
   const markReady = useCallback(() => {
     setInitialized(true);
@@ -139,6 +198,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cancelled = false;
     let restoreTimer: ReturnType<typeof setTimeout> | null = null;
 
+    if (userRef.current?.id) {
+      markReady();
+      void fetchUserData(userRef.current.id);
+    }
+
     const clearRestoreTimer = () => {
       if (restoreTimer) {
         clearTimeout(restoreTimer);
@@ -169,10 +233,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // The Lovable dev preview occasionally emits spurious SIGNED_OUT
         // events while the session is still valid, which was bouncing
         // users back to login. Ignore those.
-        if (!explicitSignOutRef.current) return;
+        const hasStoredExplicitSignOut = consumeExplicitSignOutFlag();
+        if (!explicitSignOutRef.current && !hasStoredExplicitSignOut) {
+          if (userRef.current) markReady();
+          return;
+        }
         explicitSignOutRef.current = false;
         fetchedForUserRef.current = null;
         userRef.current = null;
+        clearCachedUser();
         setUser(null);
         setProfile(null);
         setUserRoles([]);
@@ -191,6 +260,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (sessionUser) {
         clearRestoreTimer();
         userRef.current = sessionUser;
+        writeCachedUser(sessionUser);
         setUser(sessionUser);
         setInitialized(true);
         setLoading(false);
@@ -199,6 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
+        return;
       }
       // For INITIAL_SESSION / TOKEN_REFRESHED with no session, keep loading
       // briefly instead of declaring the user logged out. Preview storage can
@@ -213,9 +284,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearRestoreTimer();
         markReady();
         userRef.current = sessionUser;
+        writeCachedUser(sessionUser);
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
-      } else {
+      } else if (!userRef.current) {
         markSessionRestoring();
       }
       // If no session here, do NOT clear an existing user — a later
@@ -250,9 +322,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     explicitSignOutRef.current = true;
+    markExplicitSignOut();
     setLoading(true);
     fetchedForUserRef.current = null;
     userRef.current = null;
+    clearCachedUser();
     setUser(null);
     setProfile(null);
     setUserRoles([]);
