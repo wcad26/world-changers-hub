@@ -1,534 +1,684 @@
 import React, { useState, useMemo } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, ChevronUp, ChevronDown, ChevronRight, Calendar as CalendarIcon, DollarSign, Globe, AlertCircle, Download } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { useSuperAdminReports } from "@/hooks/useSuperAdminReports";
-import { useGlobalDcgReports } from "@/hooks/useRegionalDcgReports";
+import {
+  useGlobalMembersScoped,
+  useGlobalEventsScoped,
+  useGlobalFinancialSummaryScoped,
+  useGlobalFinancialTransactionsScoped,
+  useGlobalDiscipleshipRelationshipsScoped,
+  useGlobalFundraisingCampaignsScoped,
+  useGlobalActivePlanTargetsScoped,
+  useGlobalDcgMembershipScoped,
+  useGlobalAttendanceScoped,
+  useGlobalSpecialEventIds,
+  useGlobalDiscipleshipProgress,
+} from "@/hooks/useGlobalDashboardData";
+import { useAllRegions } from "@/hooks/useAllRegions";
+import { isChildMember } from "@/utils/childUtils";
+import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import Papa from "papaparse";
-import { useToast } from "@/hooks/use-toast";
-import { format, subMonths, subYears, startOfYear } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { GlassKPICard } from "@/components/ui/GlassSection";
+import {
+  Users, Baby, Heart, CalendarDays, UsersRound, Target,
+  TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, Crosshair, AlertCircle, Globe,
+} from "lucide-react";
+import { format, subMonths, subDays } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import {
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ReferenceLine, BarChart, Bar, Legend, Area, AreaChart, Cell,
+} from "recharts";
 
 const SuperDashboard: React.FC = () => {
-  const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set());
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('ytd');
-  const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined
-  });
-  const { toast } = useToast();
+  // ── Filter state ──
+  const [quickPeriod, setQuickPeriod] = useState("1-month");
+  const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [regionId, setRegionId] = useState<string>("all");
+  const [eventType, setEventType] = useState("regional");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const getTimeFrameDates = (period: string): { startDate: Date; endDate: Date } => {
+  const { data: regions } = useAllRegions({ includeInactive: false });
+
+  // ── Date range ──
+  const dateRange = useMemo(() => {
     const now = new Date();
-    let startDate: Date;
-    let endDate = now;
-    
-    switch (period) {
-      case '1m':
-        startDate = subMonths(now, 1);
-        break;
-      case '3m':
-        startDate = subMonths(now, 3);
-        break;
-      case '6m':
-        startDate = subMonths(now, 6);
-        break;
-      case 'ytd':
-        startDate = startOfYear(now);
-        break;
-      case '1y':
-        startDate = subYears(now, 1);
-        break;
-      case 'custom':
-        startDate = customDateRange.from ?? startOfYear(now);
-        endDate = customDateRange.to ?? now;
-        break;
-      default:
-        startDate = startOfYear(now);
+    let from: Date;
+    switch (quickPeriod) {
+      case "1-month": from = subMonths(now, 1); break;
+      case "3-months": from = subMonths(now, 3); break;
+      case "6-months": from = subMonths(now, 6); break;
+      case "1-year": from = subMonths(now, 12); break;
+      case "custom": return { from: customRange.from, to: customRange.to || now };
+      default: from = subMonths(now, 1);
     }
-    
-    return { startDate, endDate };
-  };
+    return { from, to: now };
+  }, [quickPeriod, customRange]);
 
-  const getPeriodLabel = (): string => {
-    switch (selectedPeriod) {
-      case '1m': return '1M';
-      case '3m': return '3M';
-      case '6m': return '6M';
-      case 'ytd': return 'YTD';
-      case '1y': return '1Y';
-      case 'custom': return 'Period';
-      default: return 'YTD';
-    }
-  };
+  const dateFilters = useMemo(() => {
+    if (!dateRange.from) return undefined;
+    return {
+      from: format(dateRange.from, "yyyy-MM-dd"),
+      to: dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : undefined,
+    };
+  }, [dateRange]);
 
-  const timeFrame = useMemo(() => getTimeFrameDates(selectedPeriod), [selectedPeriod, customDateRange]);
-  const { data: reports, isLoading, isError, error } = useSuperAdminReports(timeFrame);
-  const { data: globalDcgReports } = useGlobalDcgReports({ startDate: timeFrame.startDate, endDate: timeFrame.endDate });
+  const prevDateFilters = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return undefined;
+    const duration = dateRange.to.getTime() - dateRange.from.getTime();
+    const prevTo = new Date(dateRange.from.getTime() - 1);
+    const prevFrom = new Date(prevTo.getTime() - duration);
+    return {
+      from: format(prevFrom, "yyyy-MM-dd"),
+      to: format(prevTo, "yyyy-MM-dd"),
+    };
+  }, [dateRange]);
 
-  const toggleRegionExpand = (regionId: string) => {
-    setExpandedRegions(prev => {
-      const next = new Set(prev);
-      if (next.has(regionId)) next.delete(regionId);
-      else next.add(regionId);
-      return next;
+  // ── Data hooks (scoped) ──
+  const { data: members, isLoading: membersLoading, error: membersError, refetch: refetchMembers } = useGlobalMembersScoped(regionId);
+  const { data: events, isLoading: eventsLoading, error: eventsError, refetch: refetchEvents } = useGlobalEventsScoped(regionId);
+  const { data: financialSummary } = useGlobalFinancialSummaryScoped(regionId, dateFilters);
+  const { data: prevFinancialSummary } = useGlobalFinancialSummaryScoped(regionId, prevDateFilters);
+  const { data: financialTransactions, error: financialError, refetch: refetchFinancial } = useGlobalFinancialTransactionsScoped(regionId, dateFilters);
+  const { data: discipleshipRelationships, error: discipleshipError, refetch: refetchDiscipleship } = useGlobalDiscipleshipRelationshipsScoped(regionId);
+  const { data: attendanceData, error: attendanceError, refetch: refetchAttendance } = useGlobalAttendanceScoped(regionId);
+  const { data: fundraisingCampaigns } = useGlobalFundraisingCampaignsScoped(regionId);
+  const { data: activePlan } = useGlobalActivePlanTargetsScoped(regionId);
+  const { data: dcgMembership } = useGlobalDcgMembershipScoped(regionId);
+  const { data: specialEventIds } = useGlobalSpecialEventIds(regionId);
+
+  // Member relationships for strict child detection
+  const memberIds = useMemo(() => members?.map((m: any) => m.id) || [], [members]);
+  const sortedKey = useMemo(() => [...memberIds].sort().join(","), [memberIds]);
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ["super-dashboard-member-rels", sortedKey],
+    queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
+    enabled: memberIds.length > 0,
+  });
+
+  const adultDobLookup = useMemo(() => {
+    const map = new Map<string, string | null | undefined>();
+    (members || []).forEach((m: any) => map.set(m.id, m.profiles?.date_of_birth));
+    return map;
+  }, [members]);
+
+  const relationshipIds = useMemo(
+    () => (discipleshipRelationships || []).map((r: any) => r.id),
+    [discipleshipRelationships],
+  );
+  const { data: allProgress } = useGlobalDiscipleshipProgress(relationshipIds);
+
+  // ───── KPIs (mirror regional 1:1) ─────
+  const kpis = useMemo(() => {
+    if (!members) return null;
+
+    const rels = (memberRelationships || []).map((r: any) => ({
+      member_id: r.member_id,
+      related_member_id: r.related_member_id,
+    }));
+    const specIds = specialEventIds || new Set<string>();
+
+    const childrenSet = new Set<string>();
+    members.forEach((m: any) => {
+      if (isChildMember(m.profiles?.date_of_birth, m.id, rels, adultDobLookup)) {
+        childrenSet.add(m.id);
+      }
     });
-  };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
-  };
-  
-  const formatNumber = (num: number) => new Intl.NumberFormat('en-US').format(num);
+    const adultMembersAndVisitors: any[] = [];
+    const childrenList: any[] = [];
+    members.forEach((m: any) => {
+      if (childrenSet.has(m.id)) {
+        childrenList.push(m);
+      } else if (m.member_type === "visitor" && m.rated_event_id && specIds.has(m.rated_event_id)) {
+        return;
+      } else {
+        adultMembersAndVisitors.push(m);
+      }
+    });
 
-  const handleExport = () => {
-    if (!reports || !reports.regionalData) {
-      toast({ title: "No data to export" });
-      return;
+    const memberCount = adultMembersAndVisitors.filter((m) => m.member_type === "member").length;
+    const visitorCount = adultMembersAndVisitors.filter((m) => m.member_type === "visitor").length;
+
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    const newAdults30 = adultMembersAndVisitors.filter((m) => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
+    const newAdultsPrev = adultMembersAndVisitors.filter((m) => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
+    const adultGrowth = newAdultsPrev > 0 ? Math.round(((newAdults30 - newAdultsPrev) / newAdultsPrev) * 100) : newAdults30 > 0 ? 100 : 0;
+    const newChildren30 = childrenList.filter((m) => m.created_at && new Date(m.created_at) >= thirtyDaysAgo).length;
+    const newChildrenPrev = childrenList.filter((m) => m.created_at && new Date(m.created_at) >= sixtyDaysAgo && new Date(m.created_at) < thirtyDaysAgo).length;
+    const childGrowth = newChildrenPrev > 0 ? Math.round(((newChildren30 - newChildrenPrev) / newChildrenPrev) * 100) : newChildren30 > 0 ? 100 : 0;
+
+    const periodFilteredEvents = (events || []).filter((e: any) => {
+      if (dateRange.from && new Date(e.start_datetime) < dateRange.from) return false;
+      if (dateRange.to && new Date(e.start_datetime) > dateRange.to) return false;
+      if (searchQuery && !e.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      return true;
+    });
+
+    const filteredEvents = periodFilteredEvents.filter((e: any) => {
+      if (eventType === "regional") return !e.dcg_id && !e.is_special;
+      if (eventType === "dcg") return !!e.dcg_id;
+      return true;
+    });
+
+    const regionalEvents = filteredEvents.filter((e: any) => !e.dcg_id && !e.is_special);
+    const dcgEvents = filteredEvents.filter((e: any) => !!e.dcg_id);
+
+    const allEventsById = new Map((events || []).map((e: any) => [e.id, e] as const));
+    const isRegionalSource = (a: any) => {
+      if (!a.source_event_id) return !a.dcg_id;
+      const src = allEventsById.get(a.source_event_id);
+      if (!src) return !a.dcg_id;
+      return !src.dcg_id && !src.is_special;
+    };
+    const isDcgSource = (a: any) => {
+      if (a.source_event_id) {
+        const src = allEventsById.get(a.source_event_id);
+        if (src) return !!src.dcg_id;
+      }
+      return !!a.dcg_id;
+    };
+
+    const filteredAttendance = (attendanceData || []).filter((a: any) => {
+      if (dateRange.from && new Date(a.event_date) < dateRange.from) return false;
+      if (dateRange.to && new Date(a.event_date) > dateRange.to) return false;
+      if (searchQuery && !a.event_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (eventType === "regional") return isRegionalSource(a);
+      if (eventType === "dcg") return isDcgSource(a);
+      return true;
+    });
+
+    const regionalAttendance = filteredAttendance.filter(isRegionalSource);
+    const dcgAttendance = filteredAttendance.filter(isDcgSource);
+
+    const avgRegionalAttendees = regionalAttendance.length > 0
+      ? Math.round(regionalAttendance.reduce((s: number, a: any) => s + a.total_present, 0) / regionalAttendance.length) : 0;
+    const avgDcgAttendees = dcgAttendance.length > 0
+      ? Math.round(dcgAttendance.reduce((s: number, a: any) => s + a.total_present, 0) / dcgAttendance.length) : 0;
+
+    const planTargets = activePlan?.targetsByKey || {};
+    const totalActualRegional = regionalAttendance.reduce((s: number, a: any) => s + a.total_present, 0);
+    const planTotalEventAttendees = planTargets["total_event_attendees"];
+    const planAvgEventAttendance = planTargets["avg_event_attendance"];
+    const planAvgDcgAttendance = planTargets["avg_dcg_attendance"];
+
+    let regionalAttendanceTargetPct = 0;
+    let regionalAttendanceTargetMissing = true;
+    let regionalAttendanceTargetSubtitle = "No target set in Plan Management";
+    if (planTotalEventAttendees && planTotalEventAttendees > 0) {
+      regionalAttendanceTargetPct = Math.round((totalActualRegional / planTotalEventAttendees) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `${totalActualRegional} / ${planTotalEventAttendees} target`;
+    } else if (planAvgEventAttendance && planAvgEventAttendance > 0) {
+      regionalAttendanceTargetPct = Math.round((avgRegionalAttendees / planAvgEventAttendance) * 100);
+      regionalAttendanceTargetMissing = false;
+      regionalAttendanceTargetSubtitle = `Avg ${avgRegionalAttendees} / ${planAvgEventAttendance} target`;
     }
-    const dataToExport = reports.regionalData.map(region => ({
-        'Region': region.name,
-        'Members': formatNumber(region.members),
-        'Visitors': formatNumber(region.visitors),
-        'Active': `${region.activePercentage.toFixed(1)}%`,
-        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
-    }));
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `regional-member-overview-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
-  const handleDcgExport = () => {
-    if (!reports || !reports.regionalDcgData) {
-      toast({ title: "No data to export" });
-      return;
+    let dcgAttendanceTargetPct = 0;
+    let dcgAttendanceTargetMissing = true;
+    let dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} attendees — no target set`;
+    if (planAvgDcgAttendance && planAvgDcgAttendance > 0) {
+      dcgAttendanceTargetPct = Math.round((avgDcgAttendees / planAvgDcgAttendance) * 100);
+      dcgAttendanceTargetMissing = false;
+      dcgAttendanceTargetSubtitle = `Avg ${avgDcgAttendees} / ${planAvgDcgAttendance} target`;
     }
-    const dataToExport = reports.regionalDcgData.map(region => ({
-        'Region': region.name,
-        'DCGs': formatNumber(region.dcgCount),
-        'Members': formatNumber(region.dcgMembers),
-        'Active': `${region.activePercentage.toFixed(1)}%`,
-        'Growth': `+${region.periodGrowth.toFixed(1)}%`,
-    }));
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `dcg-regional-overview-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
-  const handleEventsExport = () => {
-    if (!reports || !reports.regionalEventsData) {
-      toast({ title: "No data to export" });
-      return;
+    const dcgTotalMembers = dcgMembership?.totalDcgMembers ?? 0;
+    const dcgChildren = dcgMembership?.totalDcgChildren ?? 0;
+    const dcgAdults = dcgMembership?.totalDcgAdults ?? 0;
+
+    const totalRelationships = discipleshipRelationships?.length || 0;
+    const successSet = new Set(
+      (allProgress || []).filter((p: any) => p.milestone === "became_member").map((p: any) => p.relationship_id),
+    );
+    const successRate = totalRelationships > 0 ? Math.round((successSet.size / totalRelationships) * 100) : 0;
+
+    const included = [...adultMembersAndVisitors, ...childrenList];
+    const genderCounts = { adultFemale: 0, youngFemale: 0, adultMale: 0, youngMale: 0, unknown: 0 };
+    included.forEach((m: any) => {
+      const gender = m.profiles?.gender?.toLowerCase();
+      const isChild = childrenSet.has(m.id);
+      if (!gender || (gender !== "male" && gender !== "female")) genderCounts.unknown++;
+      else if (gender === "female") isChild ? genderCounts.youngFemale++ : genderCounts.adultFemale++;
+      else isChild ? genderCounts.youngMale++ : genderCounts.adultMale++;
+    });
+
+    const titheTx = (financialTransactions || []).filter((t: any) => t.category?.name === "Tithes");
+    const uniqueTithers = new Set(titheTx.map((t: any) => t.recorded_by)).size;
+    const incomeTx = (financialTransactions || []).filter((t: any) => t.category?.type?.toLowerCase() === "income");
+    const uniqueGivers = new Set(incomeTx.map((t: any) => t.recorded_by)).size;
+
+    const currentIncome = financialSummary?.total_income || 0;
+    const previousIncome = prevFinancialSummary?.total_income || 0;
+    const incomeGrowthPct = previousIncome > 0
+      ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100)
+      : currentIncome > 0 ? 100 : 0;
+
+    const campaigns = fundraisingCampaigns || [];
+    const totalGoal = campaigns.reduce((s: number, c: any) => s + (c.goal || 0), 0);
+    const totalRaised = campaigns.reduce((s: number, c: any) => s + (c.raised || 0), 0);
+    const fundraisingTargetPct = totalGoal > 0 ? Math.round((totalRaised / totalGoal) * 100) : 0;
+
+    // Target members (for trend reference line) — use plan total_event_attendees
+    const targetMembers = planTotalEventAttendees && planTotalEventAttendees > 0 ? planTotalEventAttendees : 0;
+
+    return {
+      totalAdults: adultMembersAndVisitors.length,
+      memberCount, visitorCount, adultGrowth,
+      totalChildren: childrenList.length, childGrowth,
+      successRate,
+      regionalEventsCount: regionalEvents.length,
+      avgRegionalAttendees,
+      dcgEventsCount: dcgEvents.length,
+      avgDcgAttendees,
+      regionalAttendanceTargetPct, regionalAttendanceTargetMissing, regionalAttendanceTargetSubtitle,
+      dcgAttendanceTargetPct, dcgAttendanceTargetMissing, dcgAttendanceTargetSubtitle,
+      dcgTotalMembers, dcgAdults, dcgChildren,
+      genderCounts,
+      uniqueTithers, uniqueGivers, incomeGrowthPct, fundraisingTargetPct,
+      filteredAttendance, filteredEvents,
+      targetMembers,
+    };
+  }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, activePlan, dcgMembership]);
+
+  // ───── Trend chart data ─────
+  const trendChartData = useMemo(() => {
+    if (!kpis?.filteredEvents) return [];
+    const eventsInPeriod = kpis.filteredEvents;
+    const attendance = kpis.filteredAttendance || [];
+
+    const aggBySourceId = new Map<string, { m: number; v: number; c: number }>();
+    attendance.forEach((a: any) => {
+      if (!a.source_event_id) return;
+      const cur = aggBySourceId.get(a.source_event_id) || { m: 0, v: 0, c: 0 };
+      cur.m += a.members_present || 0;
+      cur.v += a.visitors_present || 0;
+      cur.c += a.children_present || 0;
+      aggBySourceId.set(a.source_event_id, cur);
+    });
+
+    const perEventPoints = [...eventsInPeriod]
+      .sort((a: any, b: any) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())
+      .map((e: any) => {
+        const agg = aggBySourceId.get(e.id);
+        return {
+          eventDate: new Date(e.start_datetime),
+          Members: agg?.m || 0,
+          "Regular Visitors": agg?.v || 0,
+          Children: agg?.c || 0,
+        };
+      });
+
+    if (eventType === "regional") {
+      return perEventPoints.map((p) => ({
+        date: format(p.eventDate, "MMM d"),
+        Members: p.Members,
+        "Regular Visitors": p["Regular Visitors"],
+        Children: p.Children,
+      }));
     }
-    const dataToExport = reports.regionalEventsData.map(region => ({
-      'Region': region.name,
-      'Events': formatNumber(region.eventCount),
-      'Avg. Target': formatNumber(region.avgTarget),
-      'Avg. Attendance': formatNumber(region.avgAttendance),
-      'Performance': `${region.performance.toFixed(1)}%`,
-    }));
-    const csv = Papa.unparse(dataToExport);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `regional-events-overview-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+
+    // DCG: weekly buckets
+    const bucketDays = 7;
+    const endDate = dateRange.to || new Date();
+    const startDate = dateRange.from || subMonths(endDate, 1);
+    const buckets: { start: Date; end: Date; label: string; partial: boolean;
+      m: number; v: number; c: number; count: number }[] = [];
+    const periodEnd = new Date(endDate);
+    periodEnd.setHours(23, 59, 59, 999);
+    let cursor = new Date(startDate);
+    cursor.setHours(0, 0, 0, 0);
+    while (cursor <= periodEnd) {
+      const next = new Date(cursor);
+      next.setDate(next.getDate() + bucketDays);
+      const partial = next > periodEnd;
+      const end = partial ? new Date(periodEnd.getTime() + 1) : next;
+      buckets.push({ start: new Date(cursor), end, label: format(cursor, "MMM d"), partial, m: 0, v: 0, c: 0, count: 0 });
+      cursor = next;
+    }
+    perEventPoints.forEach((p) => {
+      const t = p.eventDate.getTime();
+      const b = buckets.find((bk) => t >= bk.start.getTime() && t < bk.end.getTime());
+      if (!b) return;
+      b.count += 1;
+      b.m += p.Members;
+      b.v += p["Regular Visitors"];
+      b.c += p.Children;
+    });
+    while (buckets.length > 0) {
+      const last = buckets[buckets.length - 1];
+      if (last.partial && last.count === 0) buckets.pop();
+      else break;
+    }
+    return buckets.map((b) => ({ date: b.label, Members: b.m, "Regular Visitors": b.v, Children: b.c }));
+  }, [kpis?.filteredEvents, kpis?.filteredAttendance, eventType, dateRange]);
+
+  const genderChartData = useMemo(() => {
+    if (!kpis) return [];
+    const data = [
+      { name: "Adult Females", count: kpis.genderCounts.adultFemale, fill: "hsl(var(--chart-1))" },
+      { name: "Young Females", count: kpis.genderCounts.youngFemale, fill: "hsl(var(--chart-4))" },
+      { name: "Adult Males", count: kpis.genderCounts.adultMale, fill: "hsl(var(--chart-3))" },
+      { name: "Young Males", count: kpis.genderCounts.youngMale, fill: "hsl(var(--chart-2))" },
+    ];
+    if (kpis.genderCounts.unknown > 0) {
+      data.push({ name: "Unknown", count: kpis.genderCounts.unknown, fill: "hsl(var(--chart-5))" });
+    }
+    return data;
+  }, [kpis]);
+
+  // Initial skeleton (only when no data at all)
+  if (membersLoading && !members) {
+    return (
+      <div className="space-y-6 p-6">
+        <Skeleton className="h-12 w-full rounded-2xl" />
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-[400px] w-full rounded-2xl" />
+      </div>
+    );
+  }
+
+  const dataErrorEntries = [
+    { error: membersError, hasData: !!members, refetch: refetchMembers },
+    { error: eventsError, hasData: !!events, refetch: refetchEvents },
+    { error: financialError, hasData: !!financialTransactions, refetch: refetchFinancial },
+    { error: discipleshipError, hasData: !!discipleshipRelationships, refetch: refetchDiscipleship },
+    { error: attendanceError, hasData: !!attendanceData, refetch: refetchAttendance },
+  ].filter((e) => e.error && !e.hasData);
+  const dataErrors = dataErrorEntries.map((e: any) => e.error?.message || "A dashboard data request failed.");
+  const retryFailedQueries = () => dataErrorEntries.forEach((e) => { try { e.refetch?.(); } catch { /* noop */ } });
+
+  const dataErrorNotice = dataErrors.length > 0 ? (
+    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+      <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
+      <div className="text-sm min-w-0 flex-1">
+        <p className="font-medium text-destructive">Some dashboard data could not load.</p>
+        <p className="text-xs text-muted-foreground break-words">{dataErrors[0]}</p>
+        <p className="text-xs text-muted-foreground mt-1">This is usually a temporary network issue.</p>
+      </div>
+      <Button size="sm" variant="outline" onClick={retryFailedQueries}>Retry</Button>
+    </div>
+  ) : null;
+
+  const periodOptions = [
+    { value: "1-month", label: "1M" },
+    { value: "3-months", label: "3M" },
+    { value: "6-months", label: "6M" },
+    { value: "1-year", label: "1Y" },
+    { value: "custom", label: "Custom" },
+  ];
+
+  const selectedRegionName = regionId === "all"
+    ? "All Regions"
+    : (regions || []).find((r) => r.id === regionId)?.name || "Region";
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <p className="text-muted-foreground">
-            Welcome to the WCA super admin dashboard. Here's an overview of global operations.
-          </p>
-          
-          {/* Time Frame Selector */}
-          <div className="flex items-center gap-2">
-            <ToggleGroup type="single" value={selectedPeriod} onValueChange={(value) => value && setSelectedPeriod(value)}>
-              <ToggleGroupItem value="1m" size="sm">1M</ToggleGroupItem>
-              <ToggleGroupItem value="3m" size="sm">3M</ToggleGroupItem>
-              <ToggleGroupItem value="6m" size="sm">6M</ToggleGroupItem>
-              <ToggleGroupItem value="ytd" size="sm">YTD</ToggleGroupItem>
-              <ToggleGroupItem value="1y" size="sm">1Y</ToggleGroupItem>
-              <ToggleGroupItem value="custom" size="sm">Custom</ToggleGroupItem>
-            </ToggleGroup>
-            
-            {/* Custom Date Range Popover */}
-            {selectedPeriod === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customDateRange.from ? (
-                      customDateRange.to ? (
-                        `${format(customDateRange.from, "MMM d")} - ${format(customDateRange.to, "MMM d, yyyy")}`
-                      ) : format(customDateRange.from, "MMM d, yyyy")
-                    ) : "Select dates"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: customDateRange.from, to: customDateRange.to }}
-                    onSelect={(range) => setCustomDateRange({ from: range?.from, to: range?.to })}
-                    numberOfMonths={2}
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* FIXED FILTER BAR */}
+      <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+          <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
+            {periodOptions.map((opt) => (
+              <Button
+                key={opt.value}
+                variant={quickPeriod === opt.value ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setQuickPeriod(opt.value)}
+                className={cn("h-8 px-3 rounded-lg text-xs",
+                  quickPeriod === opt.value && "bg-primary text-primary-foreground hover:bg-primary/90")}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+
+          {quickPeriod === "custom" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-2">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {customRange.from
+                    ? `${format(customRange.from, "MMM d")}${customRange.to ? ` - ${format(customRange.to, "MMM d, y")}` : ""}`
+                    : "Pick dates"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
+                <Calendar
+                  mode="range"
+                  selected={{ from: customRange.from, to: customRange.to }}
+                  onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
+                  numberOfMonths={2}
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Region filter */}
+          <Select value={regionId} onValueChange={setRegionId}>
+            <SelectTrigger className="w-full sm:w-[200px] h-8 text-xs rounded-lg">
+              <Globe className="h-3.5 w-3.5 mr-1.5 opacity-70" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Regions</SelectItem>
+              {(regions || []).map((r) => (
+                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={eventType} onValueChange={setEventType}>
+            <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs rounded-lg">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="regional">Regional Events</SelectItem>
+              <SelectItem value="dcg">DCG Events</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="relative flex-1 sm:min-w-[180px] sm:max-w-xs">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search events..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-8 pl-8 text-xs rounded-lg"
+            />
           </div>
         </div>
+        <div className="mt-2 text-[11px] text-muted-foreground">
+          Showing <span className="font-medium text-foreground">{selectedRegionName}</span>
+        </div>
+      </div>
 
-        {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-[126px]" />)}
-          </div>
-        ) : isError ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error loading dashboard</AlertTitle>
-            <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
-          </Alert>
-        ) : reports ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Members</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalMembers)}</div>
-                <p className="text-xs text-green-500 flex items-center">
-                  <ChevronUp className="mr-1 h-3 w-3" />
-                  +{reports.kpis.memberGrowthPercentage.toFixed(1)}% {getPeriodLabel()} growth
-                </p>
-                <p className="text-xs text-violet-500">
-                  {reports.kpis.globalActivePercentage.toFixed(1)}% active
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Visitors</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalVisitors)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Adults only — children excluded
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Children</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalChildren ?? 0)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Under 16 with adult relationship
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Regional Branches</CardTitle>
-                <Globe className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{reports.kpis.totalRegions}</div>
-                <p className="text-xs text-muted-foreground">Across the globe</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total DCGs</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatNumber(reports.kpis.totalDcgs)}</div>
-                <p className="text-xs text-muted-foreground">Discipleship Cell Groups worldwide</p>
-              </CardContent>
-            </Card>
-          </div>
-        ) : <p>No data available.</p>}
+      {/* SCROLLABLE CONTENT */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
+        {dataErrorNotice}
 
-        <Tabs defaultValue="regions">
-          <TabsList>
-            <TabsTrigger value="regions">Regional Member Overview</TabsTrigger>
-            <TabsTrigger value="dcg-overview">Regional DCG Overview</TabsTrigger>
-            <TabsTrigger value="global-finances">Global Finances</TabsTrigger>
-            <TabsTrigger value="regional-events">Regional Events Overview</TabsTrigger>
-          </TabsList>
-          <TabsContent value="regions" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Regional Member Overview</CardTitle>
-                    <CardDescription>
-                      Member performance overview of WCA regions.
-                    </CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={handleExport} disabled={isLoading || !reports}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-64" /> : isError ? <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>Could not load regional data.</AlertDescription></Alert> : reports ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Region</TableHead>
-                        <TableHead>Members</TableHead>
-                        <TableHead>Visitors</TableHead>
-                        <TableHead>Active</TableHead>
-                        <TableHead>Growth</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reports.regionalData.map(region => (
-                        <TableRow key={region.id}>
-                          <TableCell>{region.name}</TableCell>
-                          <TableCell>{formatNumber(region.members)}</TableCell>
-                          <TableCell>{formatNumber(region.visitors)}</TableCell>
-                          <TableCell className="text-green-500">{(region.activePercentage ?? 0).toFixed(1)}%</TableCell>
-                          <TableCell className="text-green-500">+{(region.periodGrowth ?? 0).toFixed(1)}%</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : null}
-              </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Showing all {reports?.kpis.totalRegions || 0} regions.
-                </p>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="dcg-overview" className="space-y-4">
-            {/* Global DCG KPIs */}
-            {globalDcgReports && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm font-medium text-muted-foreground">Total DCGs</p>
-                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.totalDcgs}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm font-medium text-muted-foreground">Total DCG Members</p>
-                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.totalMembers}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm font-medium text-muted-foreground">Avg Attendance Rate</p>
-                    <p className="text-2xl font-bold">{globalDcgReports.globalSummary.attendanceRate.toFixed(1)}%</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <p className="text-sm font-medium text-muted-foreground">Net Balance (All)</p>
-                    <p className={`text-2xl font-bold ${globalDcgReports.globalSummary.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(globalDcgReports.globalSummary.netBalance)}
-                    </p>
-                  </CardContent>
-                </Card>
+        {/* KPI CARDS */}
+        {kpis && eventType === "regional" && (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.totalAdults}
+              subtitle={`${kpis.memberCount} members · ${kpis.visitorCount} visitors`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.totalChildren}
+              subtitle={kpis.childGrowth !== 0 ? `${kpis.childGrowth > 0 ? "+" : ""}${kpis.childGrowth}% (30d)` : "No change (30d)"} />
+            <GlassKPICard icon={<CalendarDays className="h-5 w-5" />} label="Regional Events" value={kpis.regionalEventsCount}
+              subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`} />
+            <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
+              value={kpis.regionalAttendanceTargetMissing ? "—" : `${kpis.regionalAttendanceTargetPct}%`}
+              subtitle={kpis.regionalAttendanceTargetSubtitle} />
+            <GlassKPICard icon={<Heart className="h-5 w-5" />} label="Discipleship Success"
+              value={`${kpis.successRate}%`} subtitle="Reached membership milestone" />
+          </div>
+        )}
+
+        {kpis && eventType === "dcg" && (
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.dcgTotalMembers}
+              subtitle={`${kpis.dcgAdults} adults · ${kpis.dcgChildren} children`} />
+            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.dcgChildren} subtitle="In DCGs" />
+            <GlassKPICard icon={<UsersRound className="h-5 w-5" />} label="DCG Events" value={kpis.dcgEventsCount}
+              subtitle={`Avg: ${kpis.avgDcgAttendees} attendees`} />
+            <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
+              value={kpis.dcgAttendanceTargetMissing ? "—" : `${kpis.dcgAttendanceTargetPct}%`}
+              subtitle={kpis.dcgAttendanceTargetSubtitle} />
+            <GlassKPICard icon={<Heart className="h-5 w-5" />} label="Discipleship Success"
+              value={`${kpis.successRate}%`} subtitle="Reached membership milestone" />
+          </div>
+        )}
+
+        {/* ATTENDANCE TREND */}
+        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+          <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
+          {trendChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={380}>
+              <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="superGradMembers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="superGradVisitors" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="superGradChildren" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
+                    return (
+                      <div style={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "12px", fontSize: "12px",
+                        padding: "8px 12px",
+                        boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                      }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>{label}</div>
+                        {payload.map((p: any) => (
+                          <div key={p.dataKey} style={{ color: p.color }}>{p.dataKey} : {p.value}</div>
+                        ))}
+                        <div style={{
+                          marginTop: 6, paddingTop: 6,
+                          borderTop: "1px solid hsl(var(--border))",
+                          fontWeight: 600, color: "hsl(var(--foreground))",
+                        }}>Total : {total}</div>
+                      </div>
+                    );
+                  }}
+                />
+                {kpis && kpis.targetMembers > 0 && (
+                  <ReferenceLine y={kpis.targetMembers} stroke="hsl(var(--destructive))" strokeDasharray="6 4"
+                    label={{ value: `Target: ${kpis.targetMembers}`, position: "insideTopRight", fontSize: 11, fill: "hsl(var(--destructive))" }} />
+                )}
+                <Area type="monotone" dataKey="Members" stroke="hsl(var(--chart-1))" fill="url(#superGradMembers)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Regular Visitors" stroke="hsl(var(--chart-2))" fill="url(#superGradVisitors)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Children" stroke="hsl(var(--chart-4))" fill="url(#superGradChildren)" strokeWidth={2.5} dot={false} />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[380px] flex items-center justify-center text-muted-foreground text-sm">
+              No attendance data for the selected period
+            </div>
+          )}
+        </div>
+
+        {/* BOTTOM ROW */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+            <h3 className="text-base font-semibold mb-4 text-foreground">Gender & Age Distribution</h3>
+            {genderChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={genderChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px" }} />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={60}>
+                    {genderChartData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                No member data available
               </div>
             )}
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Regional DCG Overview</CardTitle>
-                    <CardDescription>Click a region to see individual DCGs.</CardDescription>
+          </div>
+
+          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden">
+            <div className="grid grid-cols-2 grid-rows-2 h-full">
+              <div className="p-5 border-r border-b border-border/30 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Banknote className="h-4 w-4" />
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleDcgExport} disabled={isLoading || !reports}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
+                  <span className="text-xs font-medium text-muted-foreground">Tithers</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {globalDcgReports ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead></TableHead>
-                        <TableHead>Region / DCG</TableHead>
-                        <TableHead className="text-right">DCGs</TableHead>
-                        <TableHead className="text-right">Members</TableHead>
-                        <TableHead className="text-right">Attendance</TableHead>
-                        <TableHead className="text-right">Income</TableHead>
-                        <TableHead className="text-right">Expenses</TableHead>
-                        <TableHead className="text-right">Net</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {globalDcgReports.regionSummaries.map(region => (
-                        <React.Fragment key={region.regionId}>
-                          <TableRow
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => toggleRegionExpand(region.regionId)}
-                          >
-                            <TableCell className="w-8">
-                              {expandedRegions.has(region.regionId) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </TableCell>
-                            <TableCell className="font-medium">{region.regionName}</TableCell>
-                            <TableCell className="text-right">{region.dcgCount}</TableCell>
-                            <TableCell className="text-right">{region.totalMembers}</TableCell>
-                            <TableCell className="text-right">
-                              <Badge variant={region.attendanceRate >= 70 ? 'default' : region.attendanceRate >= 40 ? 'secondary' : 'destructive'}>
-                                {region.attendanceRate.toFixed(1)}%
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right text-green-600">{formatCurrency(region.totalIncome)}</TableCell>
-                            <TableCell className="text-right text-red-600">{formatCurrency(region.totalExpenses)}</TableCell>
-                            <TableCell className={`text-right font-medium ${region.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(region.netBalance)}
-                            </TableCell>
-                          </TableRow>
-                          {expandedRegions.has(region.regionId) && region.dcgDetails.map(dcg => (
-                            <TableRow key={dcg.dcgId} className="bg-muted/30">
-                              <TableCell></TableCell>
-                              <TableCell className="pl-8 text-sm">{dcg.dcgName}</TableCell>
-                              <TableCell></TableCell>
-                              <TableCell className="text-right text-sm">{dcg.memberCount}</TableCell>
-                              <TableCell className="text-right text-sm">
-                                <Badge variant={dcg.attendanceRate >= 70 ? 'default' : 'secondary'} className="text-xs">
-                                  {dcg.attendanceRate.toFixed(1)}%
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right text-sm text-green-600">{formatCurrency(dcg.totalIncome)}</TableCell>
-                              <TableCell className="text-right text-sm text-red-600">{formatCurrency(dcg.totalExpenses)}</TableCell>
-                              <TableCell className={`text-right text-sm font-medium ${dcg.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(dcg.netBalance)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </React.Fragment>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : isLoading ? <Skeleton className="h-64" /> : null}
-              </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Showing DCG data for all {reports?.kpis.totalRegions || 0} regions.
-                </p>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-          <TabsContent value="global-finances" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Financial Overview</CardTitle>
-                <CardDescription>
-                  Financial performance across all regions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="py-8 text-center text-muted-foreground">Detailed financial charts coming soon.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="regional-events" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Regional Events Overview</CardTitle>
-                    <CardDescription>
-                      Event performance overview across WCA regions (past events within selected period).
-                    </CardDescription>
+                <p className="font-bold text-foreground text-lg">{kpis?.uniqueTithers ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
+              </div>
+
+              <div className="p-5 border-b border-border/30 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
+                    <HandCoins className="h-4 w-4" />
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleEventsExport} disabled={isLoading || !reports}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                  </Button>
+                  <span className="text-xs font-medium text-muted-foreground">Givers</span>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <Skeleton className="h-64" />
-                ) : isError ? (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error</AlertTitle>
-                    <AlertDescription>Could not load events data.</AlertDescription>
-                  </Alert>
-                ) : reports && reports.regionalEventsData ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Region</TableHead>
-                        <TableHead className="text-right">Events</TableHead>
-                        <TableHead className="text-right">Avg. Target</TableHead>
-                        <TableHead className="text-right">Avg. Attendance</TableHead>
-                        <TableHead className="text-right">Performance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reports.regionalEventsData.map(region => (
-                        <TableRow key={region.id}>
-                          <TableCell className="font-medium">{region.name}</TableCell>
-                          <TableCell className="text-right">{formatNumber(region.eventCount)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(region.avgTarget)}</TableCell>
-                          <TableCell className="text-right">{formatNumber(region.avgAttendance)}</TableCell>
-                          <TableCell className={`text-right font-medium ${
-                            region.performance >= 80 ? 'text-green-600' : 
-                            region.performance >= 50 ? 'text-yellow-600' : 
-                            'text-red-600'
-                          }`}>
-                            {region.performance.toFixed(1)}%
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : null}
-              </CardContent>
-              <CardFooter>
-                <p className="text-sm text-muted-foreground">
-                  Showing events data for all {reports?.kpis.totalRegions || 0} regions. Excludes DCG events and special events.
+                <p className="font-bold text-foreground text-lg">{kpis?.uniqueGivers ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
+              </div>
+
+              <div className="p-5 border-r border-border/30 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg",
+                    (kpis?.incomeGrowthPct ?? 0) >= 0 ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive")}>
+                    {(kpis?.incomeGrowthPct ?? 0) >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Income Growth</span>
+                </div>
+                <p className={cn("text-2xl font-bold",
+                  (kpis?.incomeGrowthPct ?? 0) >= 0 ? "text-green-600" : "text-destructive")}>
+                  {(kpis?.incomeGrowthPct ?? 0) > 0 ? "+" : ""}{kpis?.incomeGrowthPct ?? 0}%
                 </p>
-              </CardFooter>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <p className="text-[10px] text-muted-foreground mt-0.5">vs previous period</p>
+              </div>
+
+              <div className="p-5 flex flex-col justify-center">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
+                    <Crosshair className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">Fundraising</span>
+                </div>
+                <p className="font-bold text-foreground text-lg">{kpis?.fundraisingTargetPct ?? 0}%</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">Of all campaign goals</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
