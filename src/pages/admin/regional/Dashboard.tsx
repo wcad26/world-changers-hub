@@ -326,6 +326,20 @@ const RegionalDashboard: React.FC = () => {
     const totalRaised = campaigns.reduce((s, c) => s + (c.raised || 0), 0);
     const fundraisingTargetPct = totalGoal > 0 ? Math.round((totalRaised / totalGoal) * 100) : 0;
 
+    // Unique attendees within the filtered period (any in-scope event)
+    const uniqMembers = new Set<string>();
+    const uniqVisitors = new Set<string>();
+    const uniqChildren = new Set<string>();
+    filteredAttendance.forEach((a: any) => {
+      (a.present_member_ids || []).forEach((id: string) => uniqMembers.add(id));
+      (a.present_visitor_ids || []).forEach((id: string) => uniqVisitors.add(id));
+      (a.present_children_ids || []).forEach((id: string) => uniqChildren.add(id));
+    });
+    const uniqueMemberAttendees = uniqMembers.size;
+    const uniqueVisitorAttendees = uniqVisitors.size;
+    const uniqueAdultAttendees = uniqueMemberAttendees + uniqueVisitorAttendees;
+    const uniqueChildAttendees = uniqChildren.size;
+
     return {
       totalAdults: adultMembersAndVisitors.length,
       memberCount,
@@ -355,6 +369,10 @@ const RegionalDashboard: React.FC = () => {
       filteredAttendance,
       filteredEvents,
       targetMembers: memberTarget?.target_members || 0,
+      uniqueAdultAttendees,
+      uniqueMemberAttendees,
+      uniqueVisitorAttendees,
+      uniqueChildAttendees,
     };
   }, [members, events, attendanceData, discipleshipRelationships, allProgress, financialTransactions, financialSummary, prevFinancialSummary, fundraisingCampaigns, memberRelationships, adultDobLookup, specialEventIds, dateRange, searchQuery, eventType, memberTarget, activePlan, dcgMembership]);
 
