@@ -13,14 +13,6 @@ import {
   type RegionalSessionValue,
 } from './regionalSessionContextCore';
 
-// Re-export for backwards-compat with any existing imports of this file.
-export {
-  RegionalSessionContext,
-  useRegionalSession,
-  type RegionalSessionValue,
-  type RegionalSessionStatus,
-} from './regionalSessionContextCore';
-
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Region = Database['public']['Tables']['regions']['Row'];
 
