@@ -233,7 +233,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // The Lovable dev preview occasionally emits spurious SIGNED_OUT
         // events while the session is still valid, which was bouncing
         // users back to login. Ignore those.
-        if (!explicitSignOutRef.current) {
+        const hasStoredExplicitSignOut = consumeExplicitSignOutFlag();
+        if (!explicitSignOutRef.current && !hasStoredExplicitSignOut) {
           if (userRef.current) markReady();
           return;
         }
@@ -321,6 +322,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     explicitSignOutRef.current = true;
+    markExplicitSignOut();
     setLoading(true);
     fetchedForUserRef.current = null;
     userRef.current = null;
