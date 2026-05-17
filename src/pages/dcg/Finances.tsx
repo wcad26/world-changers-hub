@@ -200,7 +200,7 @@ const DcgFinances: React.FC = () => {
         ) : null}
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard label="Income" value={fc(summary.income)} icon={ArrowUpRight} tone="positive" />
           <KpiCard label="Expenses" value={fc(summary.expenses)} icon={ArrowDownRight} tone="negative" />
           <KpiCard
@@ -210,7 +210,6 @@ const DcgFinances: React.FC = () => {
             tone={summary.net >= 0 ? "positive" : "negative"}
           />
           <KpiCard label="Offerings" value={fc(summary.offerings)} icon={PiggyBank} tone="neutral" />
-          <KpiCard label="Transactions" value={String(summary.count)} icon={ListOrdered} tone="neutral" />
         </div>
 
         {/* Filters */}
