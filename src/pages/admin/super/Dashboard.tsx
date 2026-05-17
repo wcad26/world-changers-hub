@@ -26,7 +26,7 @@ import {
   Users, Baby, Heart, CalendarDays, UsersRound, Target,
   TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, Crosshair, AlertCircle, Globe,
 } from "lucide-react";
-import { format, subMonths, subDays } from "date-fns";
+import { format, subMonths, subDays, startOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
