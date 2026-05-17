@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -82,6 +82,7 @@ export default function MemberLayout({
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     signOut,
     profile
@@ -93,6 +94,10 @@ export default function MemberLayout({
   const useMobileLayout = isMobile || isTablet;
 
   const content = children || <Outlet />;
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth/member', { replace: true });
+  };
   
   if (!useMobileLayout) {
     // Desktop layout with sidebar
@@ -135,7 +140,7 @@ export default function MemberLayout({
           </nav>
 
           <div className="p-4 border-t border-border space-y-2">
-            <Button variant="ghost" onClick={signOut} className={cn("w-full text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center p-3" : "justify-start")}>
+            <Button variant="ghost" onClick={handleSignOut} className={cn("w-full text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center p-3" : "justify-start")}>
               <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
               {!isCollapsed && "Sign Out"}
             </Button>
@@ -210,7 +215,7 @@ export default function MemberLayout({
                 <div className="pt-4 border-t border-border space-y-1">
                   <Button variant="ghost" onClick={() => {
                 setMobileMenuOpen(false);
-                signOut();
+                void handleSignOut();
               }} className="w-full justify-start px-3 py-2 text-muted-foreground hover:text-foreground mt-2">
                     <LogOut className="h-5 w-5 mr-3" />
                     Sign Out
