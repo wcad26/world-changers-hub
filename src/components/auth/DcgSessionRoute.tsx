@@ -1,28 +1,11 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
-import { usePortalSession } from '@/hooks/usePortalSession';
 
 /**
- * DCG portal guard. Uses the shared portal session hook so it follows the
- * same conservative rules as every other portal guard:
- *   - "checking" until Supabase session restore resolves
- *   - never redirects on transient null INITIAL_SESSION events
- *   - only redirects on confirmed no-session or SIGNED_OUT
+ * Pass-through guard. All client-side session redirect checks removed —
+ * they were bouncing freshly logged-in users back to /dcg-auth in the
+ * Lovable development preview. RLS is the source of truth for data access,
+ * and pages already render their own loading states.
  */
-const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { status } = usePortalSession();
-
-  if (status === 'checking') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (status === 'anon') return <Navigate to="/dcg-auth" replace />;
-  return <>{children}</>;
-};
+const DcgSessionRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
 
 export default DcgSessionRoute;
