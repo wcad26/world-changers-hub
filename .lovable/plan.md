@@ -1,37 +1,28 @@
-## Plan to stop preview logout/reload loops across all portals
+Plan to fix the blank screen and login redirect loop efficiently:
 
-### What I found
-- The earlier fix was partly undone structurally: `AuthProvider` is now mounted separately for Super Admin, DCG, Member, and Portal Selector routes instead of once around the app. That means every portal route mount/rebuild can restart Supabase session restoration.
-- Regional portal uses a separate `RegionalSessionProvider`, but it still depends on fragile `getSession()`/auth events after the session bootstrap.
-- The guards are mostly pass-through now, but they can still show loaders during transient auth-null states, which creates the “logged out / reload loop” feel in the Lovable preview.
+1. Stabilize the Regional session module
+- Split `RegionalSessionContext.tsx` into Fast Refresh-safe pieces, so the context/hook exports do not invalidate the whole route tree during development updates.
+- Keep the provider as the only React component export in its component file, matching the pattern already used for `AuthProvider`.
+- Add a small compatibility re-export if needed so existing imports continue to work.
 
-### Implementation steps
-1. **Restore one stable global auth provider**
-   - Mount one `AuthProvider` once inside `BrowserRouter` so Super Admin, DCG, Member, Portal Selector, and auth pages share the same auth state machine.
-   - Remove the separate per-portal `AuthProvider` wrappers from `App.tsx` to prevent remounting the auth listener on route changes or dashboard rebuilds.
+2. Make regional auth state non-destructive
+- Update `RegionalSessionProvider` so it never treats a transient missing Supabase session as logout.
+- Only clear regional user/bootstrap state after explicit logout.
+- Preserve the last known regional user and region during preview reloads, HMR updates, and temporary `INITIAL_SESSION null` / `SIGNED_OUT` events.
 
-2. **Make auth state sticky during preview glitches**
-   - In `AuthProvider`, keep the last known authenticated user/session in memory.
-   - Ignore spurious `SIGNED_OUT`, `INITIAL_SESSION null`, or `getSession()` null results unless the user explicitly clicked logout.
-   - If Supabase temporarily reports no session, keep rendering the existing logged-in user instead of clearing state or re-entering a login flow.
+3. Fix auth hook precedence
+- Adjust `useAuth()` so the global `AuthProvider` remains the primary source when present, while regional session data overlays only the regional fields inside the regional portal.
+- This avoids accidentally replacing a valid global auth context with a minimal regional context that may temporarily have `user: null`.
 
-3. **Keep explicit logout working**
-   - Preserve the explicit logout flag so clicking Logout still clears user state and navigates to the correct auth page.
-   - Make sure only this explicit path can clear the session in the UI.
+4. Remove lingering loader/blank-screen traps across portals
+- Update Super Admin, DCG, and Member guards so they do not hold the app on a full-screen loader indefinitely when auth restoration gets a temporary null session.
+- Keep manual logout behavior intact: clicking Logout still clears the cache and redirects to that portal’s login page.
 
-4. **Stabilize the Regional portal too**
-   - Keep the regional bootstrap behavior, but make `RegionalSessionProvider` retain the last known regional user/region during transient missing-session events.
-   - Ensure it never switches to an unauthenticated/checking loop because of preview-only auth restoration gaps.
+5. Verify the actual failure path
+- Re-check recent Vite logs for Fast Refresh invalidation after the refactor.
+- Confirm there are no remaining automatic redirects to `/auth/regional`, `/auth/super`, `/auth/member`, or `/dcg-auth` except explicit logout/login navigation.
+- Use the preview/session signals to confirm login lands on the portal page instead of blanking and bouncing back to login.
 
-5. **Normalize all portal guards**
-   - Update Super Admin, DCG, Member, and Regional route guards to be resilient pass-through gates: they can show a short first-load spinner, but they must not redirect or clear auth state due to transient null sessions.
-
-6. **Verify no hidden redirect/logout triggers remain**
-   - Search all portals for raw `supabase.auth.signOut()`, auth-page redirects, `window.location` reloads, and route guards that navigate to login.
-   - Keep only user-clicked logout actions.
-
-### Expected result
-- Rebuilding or hot-reloading the Super Admin dashboard will not log users out.
-- Logged-in users stay inside their portal even if the Lovable preview emits temporary null auth events.
-- The continuous reload loop stops across Regional, Super Admin, DCG, and Member portals.
-- Manual logout still works normally.
+Technical focus:
+- The recent dev-server logs show `RegionalSessionContext.tsx` repeatedly triggering Vite Fast Refresh invalidation. That can remount the auth/session tree and produce the blank-screen/login-loop behavior you’re seeing.
+- The fix will be targeted: session file split + sticky auth state + guard cleanup, without changing dashboard metrics or unrelated portal features.
