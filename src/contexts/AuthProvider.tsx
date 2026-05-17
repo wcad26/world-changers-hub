@@ -41,6 +41,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchedForUserRef = useRef<string | null>(null);
   const explicitSignOutRef = useRef(false);
+  const userRef = useRef<any>(null);
 
   const markReady = useCallback(() => {
     setInitialized(true);
@@ -146,13 +147,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const markSessionRestoring = () => {
-      if (user) return;
+      if (userRef.current) return;
       setInitialized(false);
       setLoading(true);
       setAuthReady(false);
       clearRestoreTimer();
       restoreTimer = setTimeout(() => {
-        if (cancelled || user) return;
+        if (cancelled || userRef.current) return;
         // No automatic logout or redirect: after a short restore window the
         // portal may render its own loading/empty states while auth continues
         // to recover in the Lovable preview environment.
@@ -188,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (sessionUser) {
         clearRestoreTimer();
+        userRef.current = sessionUser;
         setUser(sessionUser);
         setInitialized(true);
         setLoading(false);
@@ -209,6 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (sessionUser) {
         clearRestoreTimer();
         markReady();
+        userRef.current = sessionUser;
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
       } else {
@@ -224,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clearRestoreTimer();
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [fetchUserData, markReady, user]);
+  }, [fetchUserData, markReady]);
 
   // Client-side role checks remain disabled — RLS is the source of truth.
   const hasRole = useCallback((_role: AppRole) => true, []);
