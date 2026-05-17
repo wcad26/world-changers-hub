@@ -175,6 +175,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cancelled = false;
     let restoreTimer: ReturnType<typeof setTimeout> | null = null;
 
+    if (userRef.current?.id) {
+      markReady();
+      void fetchUserData(userRef.current.id);
+    }
+
     const clearRestoreTimer = () => {
       if (restoreTimer) {
         clearTimeout(restoreTimer);
