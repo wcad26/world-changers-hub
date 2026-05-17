@@ -94,9 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userDcg, setUserDcg] = useState<Dcg | null>(null);
   const [memberRecord, setMemberRecord] = useState<Member | null>(null);
   const [userRegionalRoles, setUserRegionalRoles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(!initialCachedUserRef.current);
-  const [initialized, setInitialized] = useState(!!initialCachedUserRef.current);
-  const [authReady, setAuthReady] = useState(!!initialCachedUserRef.current);
+  // Sticky: auth is ALWAYS considered ready. We never enter a blocking
+  // loading state on transient null sessions in the Lovable preview.
+  const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(true);
+  const [authReady, setAuthReady] = useState(true);
 
   const fetchedForUserRef = useRef<string | null>(null);
   const explicitSignOutRef = useRef(false);
