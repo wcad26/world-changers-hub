@@ -164,9 +164,9 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         setUser({ id: u.id, email: u.email ?? undefined });
         setReady(true);
         void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
-      } else if (!bootstrap && !user) {
+      } else if (!bootstrap) {
         console.info('[RegionalSession] no Supabase session and no regional bootstrap');
-        setReady(false);
+        setReady(true);
       } else {
         setReady(true);
       }
