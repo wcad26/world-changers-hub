@@ -125,7 +125,7 @@ const GlobalMemberKPICards: React.FC<GlobalMemberKPICardsProps> = ({
             </div>
             <span className="text-sm font-medium text-muted-foreground">{label}</span>
           </div>
-          <p className="font-bold text-foreground text-lg">{count}</p>
+          <p className="font-bold text-foreground text-base tabular-nums mt-1">{count}</p>
           <p className="text-xs text-muted-foreground mt-1">Active: {active}%</p>
           <div className="mt-2">
             {growth !== 0 ? (
