@@ -195,6 +195,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
     setUser(null);
     setProfile(null);
     setRegion(null);
+    setReady(true);
     setBootstrapAvailable(false);
     loadedForUserRef.current = null;
     clearRegionalBootstrap();
@@ -202,10 +203,6 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       console.error('[RegionalSession] signOut error:', err);
-    } finally {
-      if (typeof window !== 'undefined') {
-        window.location.replace('/auth/regional');
-      }
     }
   }, [queryClient]);
 
