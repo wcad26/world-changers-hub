@@ -10,7 +10,6 @@ interface Props {
    * clears any stale error state from the previous page.
    */
   resetKey?: string;
-  onGoHome?: () => void;
 }
 
 interface State {
@@ -76,15 +75,10 @@ class RegionalErrorBoundary extends React.Component<Props, State> {
               {this.state.error.message}
             </p>
           )}
-          <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+          <div className="flex justify-center pt-2">
             <Button onClick={this.handleReset} variant="default">
               Try again
             </Button>
-            {this.props.onGoHome && (
-              <Button onClick={this.props.onGoHome} variant="outline">
-                Go to dashboard
-              </Button>
-            )}
           </div>
         </div>
       </div>

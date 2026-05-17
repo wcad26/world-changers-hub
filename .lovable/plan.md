@@ -1,28 +1,25 @@
-Plan to fix the blank screen and login redirect loop efficiently:
+## Goal
+Stop the regional portal from blanking and returning to `/admin/regional/dashboard` when the user opens other regional pages in the development preview.
 
-1. Stabilize the Regional session module
-- Split `RegionalSessionContext.tsx` into Fast Refresh-safe pieces, so the context/hook exports do not invalidate the whole route tree during development updates.
-- Keep the provider as the only React component export in its component file, matching the pattern already used for `AuthProvider`.
-- Add a small compatibility re-export if needed so existing imports continue to work.
+## What I found
+- Regional routes are wrapped by `RegionalErrorBoundary`.
+- That boundary currently has a `Go to dashboard` callback wired in `RegionalSessionRoute`.
+- In Lovable preview, a page-level render/query error or transient regional context issue can produce a blank-page recovery cycle; because the recovery target is the dashboard, the user gets bounced back instead of seeing the page they selected.
+- The regional session provider is already sticky and does not intentionally redirect on transient auth null states, so the fix should focus on route recovery and page-level loading/error behavior, not reworking auth again.
 
-2. Make regional auth state non-destructive
-- Update `RegionalSessionProvider` so it never treats a transient missing Supabase session as logout.
-- Only clear regional user/bootstrap state after explicit logout.
-- Preserve the last known regional user and region during preview reloads, HMR updates, and temporary `INITIAL_SESSION null` / `SIGNED_OUT` events.
+## Plan
+1. **Remove automatic dashboard recovery from regional page errors**
+   - Update `RegionalSessionRoute` so it no longer passes `onGoHome={() => navigate('/admin/regional/dashboard')}` into the error boundary.
+   - Keep the boundary reset key as the current pathname so moving between pages clears stale page errors.
 
-3. Fix auth hook precedence
-- Adjust `useAuth()` so the global `AuthProvider` remains the primary source when present, while regional session data overlays only the regional fields inside the regional portal.
-- This avoids accidentally replacing a valid global auth context with a minimal regional context that may temporarily have `user: null`.
+2. **Make the regional error boundary non-redirecting**
+   - Adjust `RegionalErrorBoundary` so recovery never navigates away from the page the user clicked.
+   - If a page fails, show the inline error card with a retry action only, so the URL and selected sidebar item remain on the intended page.
 
-4. Remove lingering loader/blank-screen traps across portals
-- Update Super Admin, DCG, and Member guards so they do not hold the app on a full-screen loader indefinitely when auth restoration gets a temporary null session.
-- Keep manual logout behavior intact: clicking Logout still clears the cache and redirects to that portal’s login page.
+3. **Harden transient regional-session recovery**
+   - Keep the existing sticky regional bootstrap/session behavior.
+   - Ensure transient provider/context errors only reset in place and never push the user to the dashboard or login.
 
-5. Verify the actual failure path
-- Re-check recent Vite logs for Fast Refresh invalidation after the refactor.
-- Confirm there are no remaining automatic redirects to `/auth/regional`, `/auth/super`, `/auth/member`, or `/dcg-auth` except explicit logout/login navigation.
-- Use the preview/session signals to confirm login lands on the portal page instead of blanking and bouncing back to login.
-
-Technical focus:
-- The recent dev-server logs show `RegionalSessionContext.tsx` repeatedly triggering Vite Fast Refresh invalidation. That can remount the auth/session tree and produce the blank-screen/login-loop behavior you’re seeing.
-- The fix will be targeted: session file split + sticky auth state + guard cleanup, without changing dashboard metrics or unrelated portal features.
+4. **Validate the routing behavior**
+   - Use the preview/browser tools to open regional pages like Members, Events, Finance, DCG, and Communication.
+   - Confirm the current URL stays on the selected page, no blank screen persists, and no automatic dashboard navigation occurs.
