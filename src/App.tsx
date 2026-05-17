@@ -124,6 +124,19 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Wrap each Super Admin page in an error boundary keyed by pathname so a
+// single page error never blanks the portal and triggers the preview's
+// reload-to-previous-route loop. Auth is untouched — RLS controls access.
+const SuperAdminPage: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  return (
+    <SuperAdminErrorBoundary resetKey={location.pathname}>
+      {children}
+    </SuperAdminErrorBoundary>
+  );
+};
+
 const App = () => {
   useEffect(() => {
     // Smooth scrolling for anchor links
