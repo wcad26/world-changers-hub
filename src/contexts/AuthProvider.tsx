@@ -160,12 +160,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
-      } else if (event === 'INITIAL_SESSION') {
-        setUser(null);
-        setInitialized(true);
-        setLoading(false);
-        setAuthReady(true);
       }
+      // For INITIAL_SESSION / TOKEN_REFRESHED with no session, defer to
+      // the getSession() resolution below instead of clearing user — that
+      // was racing with the persisted session restore and bouncing freshly
+      // logged-in DCG users back to /dcg-auth.
     });
 
     void supabase.auth.getSession().then(({ data }) => {
