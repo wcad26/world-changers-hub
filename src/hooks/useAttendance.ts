@@ -190,26 +190,38 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
       // Process the data to get counts by member type, separating children
       const processedData = data?.map(event => {
         const records = event.attendance_records || [];
-        
+
+        const presentMemberIds: string[] = [];
+        const presentVisitorIds: string[] = [];
+        const presentChildrenIds: string[] = [];
+
         const childrenPresent = records.filter(r => r.is_present && checkIsChild(r)).length;
         const childrenAbsent = records.filter(r => !r.is_present && checkIsChild(r)).length;
-        
-        const membersPresent = records.filter(r => 
+
+        const membersPresent = records.filter(r =>
           r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
-        
-        const visitorsPresent = records.filter(r => 
+
+        const visitorsPresent = records.filter(r =>
           r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
-        
-        const membersAbsent = records.filter(r => 
+
+        const membersAbsent = records.filter(r =>
           !r.is_present && r.members?.member_type === 'member' && !checkIsChild(r)
         ).length;
-        
-        const visitorsAbsent = records.filter(r => 
+
+        const visitorsAbsent = records.filter(r =>
           !r.is_present && r.members?.member_type === 'visitor' && !checkIsChild(r)
         ).length;
-        
+
+        records.forEach((r: any) => {
+          if (!r.is_present || !r.members?.id) return;
+          const id = r.members.id;
+          if (checkIsChild(r)) presentChildrenIds.push(id);
+          else if (r.members?.member_type === 'member') presentMemberIds.push(id);
+          else if (r.members?.member_type === 'visitor') presentVisitorIds.push(id);
+        });
+
         return {
           event_id: event.id,
           event_name: event.name,
@@ -222,6 +234,9 @@ export const useAttendanceHistoryWithMemberTypes = (regionId?: string) => {
           members_absent: membersAbsent,
           visitors_absent: visitorsAbsent,
           children_absent: childrenAbsent,
+          present_member_ids: presentMemberIds,
+          present_visitor_ids: presentVisitorIds,
+          present_children_ids: presentChildrenIds,
           total_present: membersPresent + visitorsPresent + childrenPresent,
           total_absent: membersAbsent + visitorsAbsent + childrenAbsent,
           date: new Date(event.event_date).toLocaleDateString()
