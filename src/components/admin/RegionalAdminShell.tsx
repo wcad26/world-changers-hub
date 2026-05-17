@@ -15,7 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useRegionalSession } from '@/contexts/RegionalSessionContext';
+import { useRegionalSession } from '@/contexts/regionalSessionContextCore';
 
 interface RegionalAdminShellProps {
   children?: React.ReactNode;

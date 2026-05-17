@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useRegionalSession } from "@/contexts/RegionalSessionContext";
+import { useRegionalSession } from "@/contexts/regionalSessionContextCore";
 import { useMembers } from "@/hooks/useMembers";
 import { useRegionalEvents } from "@/hooks/useEvents";
 import { useFinancialSummary, useFinancialTransactions } from "@/hooks/useFinancials";
