@@ -153,19 +153,19 @@ const DcgFinances: React.FC = () => {
     <DcgAdminLayout>
       <div className="space-y-6 px-4 py-5 pb-24">
         {/* Header */}
-        <div className="rounded-2xl border bg-card p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="rounded-2xl border bg-card p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">DCG Financial Management</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight">DCG Financial Management</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Track income, expenses and giving for{" "}
               <span className="font-medium text-foreground">{currentDcg.name}</span>
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={() => setIncomeOpen(true)}>
+          <div className="grid grid-cols-2 lg:flex lg:flex-wrap items-center gap-2">
+            <Button size="sm" onClick={() => setIncomeOpen(true)} className="w-full lg:w-auto">
               Record Income
             </Button>
-            <Button size="sm" onClick={() => setExpenseOpen(true)} className="bg-teal-500 hover:bg-teal-600 text-white">
+            <Button size="sm" onClick={() => setExpenseOpen(true)} className="bg-teal-500 hover:bg-teal-600 text-white w-full lg:w-auto">
               Record Expense
             </Button>
           </div>
