@@ -51,7 +51,7 @@ const buildEmptyValue = (): AuthContextValue => ({
 export const useAuth = (): AuthContextValue => {
   const globalCtx = useContext(AuthContext);
   const regional = useContext(RegionalSessionContext);
-  const hasRegionalProviderState = !!(regional?.bootstrapAvailable || regional?.user || regional?.region);
+  const hasRegionalProviderState = !!regional?.provided;
   const value = buildEmptyValue();
 
   if (hasRegionalProviderState) {
