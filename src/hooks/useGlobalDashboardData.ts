@@ -300,30 +300,41 @@ export const useGlobalAttendanceScoped = (regionId?: string) => {
 
       return (data || []).map((event: any) => {
         const records = event.attendance_records || [];
-        const childrenPresent = records.filter((r: any) => r.is_present && isChild(r)).length;
-        const childrenAbsent = records.filter((r: any) => !r.is_present && isChild(r)).length;
-        const membersPresent = records.filter((r: any) =>
-          r.is_present && r.members?.member_type === 'member' && !isChild(r)).length;
-        const visitorsPresent = records.filter((r: any) =>
-          r.is_present && r.members?.member_type === 'visitor' && !isChild(r)).length;
-        const membersAbsent = records.filter((r: any) =>
-          !r.is_present && r.members?.member_type === 'member' && !isChild(r)).length;
-        const visitorsAbsent = records.filter((r: any) =>
-          !r.is_present && r.members?.member_type === 'visitor' && !isChild(r)).length;
+        const presentMemberIds: string[] = [];
+        const presentVisitorIds: string[] = [];
+        const presentChildrenIds: string[] = [];
+        let membersAbsent = 0, visitorsAbsent = 0, childrenAbsent = 0;
+        records.forEach((r: any) => {
+          const mid = r.members?.id;
+          if (!mid) return;
+          const child = isChild(r);
+          if (r.is_present) {
+            if (child) presentChildrenIds.push(mid);
+            else if (r.members?.member_type === 'member') presentMemberIds.push(mid);
+            else if (r.members?.member_type === 'visitor') presentVisitorIds.push(mid);
+          } else {
+            if (child) childrenAbsent++;
+            else if (r.members?.member_type === 'member') membersAbsent++;
+            else if (r.members?.member_type === 'visitor') visitorsAbsent++;
+          }
+        });
         return {
           event_id: event.id,
           event_name: event.name,
           event_date: event.event_date,
           dcg_id: event.dcg_id || null,
           source_event_id: event.source_event_id || null,
-          members_present: membersPresent,
-          visitors_present: visitorsPresent,
-          children_present: childrenPresent,
+          members_present: presentMemberIds.length,
+          visitors_present: presentVisitorIds.length,
+          children_present: presentChildrenIds.length,
           members_absent: membersAbsent,
           visitors_absent: visitorsAbsent,
           children_absent: childrenAbsent,
-          total_present: membersPresent + visitorsPresent + childrenPresent,
+          total_present: presentMemberIds.length + presentVisitorIds.length + presentChildrenIds.length,
           total_absent: membersAbsent + visitorsAbsent + childrenAbsent,
+          present_member_ids: presentMemberIds,
+          present_visitor_ids: presentVisitorIds,
+          present_children_ids: presentChildrenIds,
         };
       });
     },
