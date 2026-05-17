@@ -30,9 +30,9 @@ const DEFAULT_REGIONAL_SESSION: RegionalSessionValue = {
   user: null,
   profile: null,
   region: null,
-  status: 'authorized',
-  ready: true,
-  authorized: true,
+  status: 'checking',
+  ready: false,
+  authorized: false,
   bootstrapAvailable: false,
   retry: () => {},
   signOut: async () => {},
@@ -60,7 +60,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
   const [region, setRegion] = useState<Region | null>(
     initialBootstrap ? createRegionStub(initialBootstrap.regionId) : null,
   );
-  const [ready, setReady] = useState(true);
+  const [ready, setReady] = useState(!!initialBootstrap);
   const [bootstrapAvailable, setBootstrapAvailable] = useState(!!initialBootstrap);
   const queryClient = useQueryClient();
 
@@ -126,8 +126,24 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
         setBootstrapAvailable(true);
         setUser({ id: bootstrap.userId, email: bootstrap.email ?? undefined });
         setRegion((current) => current?.id === bootstrap.regionId ? current : createRegionStub(bootstrap.regionId));
+        setReady(true);
         void loadProfileAndRegion(bootstrap.userId, bootstrap.regionId);
       }
+
+      const { data: authSub } = supabase.auth.onAuthStateChange((event, session) => {
+        if (cancelled) return;
+        if (event === 'SIGNED_OUT') {
+          if (!signingOutRef.current) return;
+          setReady(true);
+          return;
+        }
+        const authUser = session?.user;
+        if (authUser) {
+          setUser({ id: authUser.id, email: authUser.email ?? undefined });
+          setReady(true);
+          void loadProfileAndRegion(authUser.id, readRegionalBootstrap()?.regionId ?? null);
+        }
+      });
 
       const { data } = await supabase.auth.getSession();
       if (cancelled) return;
@@ -135,11 +151,15 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       const u = data.session?.user;
       if (u) {
         setUser({ id: u.id, email: u.email ?? undefined });
+        setReady(true);
         void loadProfileAndRegion(u.id, bootstrap?.regionId ?? null);
       } else if (!bootstrap) {
         console.info('[RegionalSession] no Supabase session and no regional bootstrap');
+        setReady(false);
       }
       console.info('[RegionalSession] ready. user =', u?.id ?? bootstrap?.userId ?? 'none', 'bootstrap =', !!bootstrap);
+
+      return () => authSub.subscription.unsubscribe();
     })();
 
     return () => {
