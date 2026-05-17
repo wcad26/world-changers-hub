@@ -15,6 +15,8 @@ type Region = Database['public']['Tables']['regions']['Row'];
 type Dcg = Database['public']['Tables']['dcgs']['Row'];
 type Member = Database['public']['Tables']['members']['Row'];
 
+const AUTH_RESTORE_GRACE_MS = 2500;
+
 /**
  * Per-portal auth provider — deterministic, listener-based.
  * See AuthContext.ts for the value shape.
@@ -134,6 +136,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let cancelled = false;
+    let restoreTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const clearRestoreTimer = () => {
+      if (restoreTimer) {
+        clearTimeout(restoreTimer);
+        restoreTimer = null;
+      }
+    };
+
+    const markSessionRestoring = () => {
+      if (user) return;
+      setInitialized(false);
+      setLoading(true);
+      setAuthReady(false);
+      clearRestoreTimer();
+      restoreTimer = setTimeout(() => {
+        if (cancelled || user) return;
+        // No automatic logout or redirect: after a short restore window the
+        // portal may render its own loading/empty states while auth continues
+        // to recover in the Lovable preview environment.
+        markReady();
+      }, AUTH_RESTORE_GRACE_MS);
+    };
 
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
@@ -162,6 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sessionUser = session?.user ?? null;
 
       if (sessionUser) {
+        clearRestoreTimer();
         setUser(sessionUser);
         setInitialized(true);
         setLoading(false);
@@ -171,21 +197,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           void fetchUserData(sessionUser.id);
         });
       }
-      // For INITIAL_SESSION / TOKEN_REFRESHED with no session, defer to
-      // the getSession() resolution below instead of clearing user — that
-      // was racing with the persisted session restore and bouncing freshly
-      // logged-in DCG users back to /dcg-auth.
+      // For INITIAL_SESSION / TOKEN_REFRESHED with no session, keep loading
+      // briefly instead of declaring the user logged out. Preview storage can
+      // restore late, and route guards must not bounce the user during that gap.
+      markSessionRestoring();
     });
 
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       const sessionUser = data.session?.user ?? null;
-      setInitialized(true);
-      setLoading(false);
-      setAuthReady(true);
       if (sessionUser) {
+        clearRestoreTimer();
+        markReady();
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
+      } else {
+        markSessionRestoring();
       }
       // If no session here, do NOT clear an existing user — a later
       // INITIAL_SESSION event may still restore it. We never auto-redirect
@@ -194,9 +221,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       cancelled = true;
+      clearRestoreTimer();
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [fetchUserData]);
+  }, [fetchUserData, markReady, user]);
 
   // Client-side role checks remain disabled — RLS is the source of truth.
   const hasRole = useCallback((_role: AppRole) => true, []);
