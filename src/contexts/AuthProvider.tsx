@@ -205,10 +205,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // The Lovable dev preview occasionally emits spurious SIGNED_OUT
         // events while the session is still valid, which was bouncing
         // users back to login. Ignore those.
-        if (!explicitSignOutRef.current) return;
+        if (!explicitSignOutRef.current) {
+          if (userRef.current) markReady();
+          return;
+        }
         explicitSignOutRef.current = false;
         fetchedForUserRef.current = null;
         userRef.current = null;
+        clearCachedUser();
         setUser(null);
         setProfile(null);
         setUserRoles([]);
@@ -227,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (sessionUser) {
         clearRestoreTimer();
         userRef.current = sessionUser;
+        writeCachedUser(sessionUser);
         setUser(sessionUser);
         setInitialized(true);
         setLoading(false);
@@ -235,6 +240,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (cancelled) return;
           void fetchUserData(sessionUser.id);
         });
+        return;
       }
       // For INITIAL_SESSION / TOKEN_REFRESHED with no session, keep loading
       // briefly instead of declaring the user logged out. Preview storage can
@@ -249,9 +255,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearRestoreTimer();
         markReady();
         userRef.current = sessionUser;
+        writeCachedUser(sessionUser);
         setUser(sessionUser);
         void fetchUserData(sessionUser.id);
-      } else {
+      } else if (!userRef.current) {
         markSessionRestoring();
       }
       // If no session here, do NOT clear an existing user — a later
@@ -289,6 +296,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     fetchedForUserRef.current = null;
     userRef.current = null;
+    clearCachedUser();
     setUser(null);
     setProfile(null);
     setUserRoles([]);
