@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authReady, setAuthReady] = useState(false);
 
   const fetchedForUserRef = useRef<string | null>(null);
+  const explicitSignOutRef = useRef(false);
 
   const markReady = useCallback(() => {
     setInitialized(true);
@@ -138,6 +139,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (cancelled) return;
 
       if (event === 'SIGNED_OUT') {
+        // Only act on SIGNED_OUT if the user explicitly clicked logout.
+        // The Lovable dev preview occasionally emits spurious SIGNED_OUT
+        // events while the session is still valid, which was bouncing
+        // users back to login. Ignore those.
+        if (!explicitSignOutRef.current) return;
+        explicitSignOutRef.current = false;
         fetchedForUserRef.current = null;
         setUser(null);
         setProfile(null);
@@ -207,6 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isDcgAdmin = useCallback(() => true, []);
 
   const signOut = useCallback(async () => {
+    explicitSignOutRef.current = true;
     setLoading(true);
     fetchedForUserRef.current = null;
     setUser(null);
