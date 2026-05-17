@@ -197,6 +197,7 @@ export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = 
       await queryClient.cancelQueries();
       queryClient.clear();
     } catch {}
+    userEmailRef.current = null;
     setUser(null);
     setProfile(null);
     setRegion(null);
