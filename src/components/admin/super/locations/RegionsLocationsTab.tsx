@@ -49,36 +49,9 @@ const RegionsLocationsTab: React.FC = () => {
     },
   });
 
-  const filtered = useMemo(() => {
-    let list = regions || [];
-    const q = searchTerm.toLowerCase().trim();
-    if (q) {
-      list = list.filter(r =>
-        r.name.toLowerCase().includes(q) ||
-        r.code?.toLowerCase().includes(q) ||
-        r.regional_president?.toLowerCase().includes(q)
-      );
-    }
-    if (statusFilter !== 'all') {
-      list = list.filter(r => (statusFilter === 'active' ? r.is_active : !r.is_active));
-    }
-    if (dcgFilter !== 'all') {
-      list = list.filter(r => {
-        const has = (dcgsByRegion?.[r.id] || 0) > 0;
-        return dcgFilter === 'with' ? has : !has;
-      });
-    }
-    const sorted = [...list];
-    sorted.sort((a, b) => {
-      switch (sortBy) {
-        case 'name-desc': return b.name.localeCompare(a.name);
-        case 'members-desc': return (membersByRegion?.[b.id] || 0) - (membersByRegion?.[a.id] || 0);
-        case 'dcgs-desc': return (dcgsByRegion?.[b.id] || 0) - (dcgsByRegion?.[a.id] || 0);
-        default: return a.name.localeCompare(b.name);
-      }
-    });
-    return sorted;
-  }, [regions, searchTerm, statusFilter, dcgFilter, sortBy, dcgsByRegion, membersByRegion]);
+  const sortedRegions = useMemo(() => {
+    return [...(regions || [])].sort((a, b) => a.name.localeCompare(b.name));
+  }, [regions]);
 
   const totalRegions = regions?.length || 0;
   const totalMembers = Object.values(membersByRegion || {}).reduce((a, b) => a + b, 0);
