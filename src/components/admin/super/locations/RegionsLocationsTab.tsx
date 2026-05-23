@@ -139,6 +139,8 @@ const RegionsLocationsTab: React.FC = () => {
           </div>
         </div>
       </GlassSection>
+
+      <CreateRegionGlassDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 };
