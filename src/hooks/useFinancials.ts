@@ -31,9 +31,9 @@ export type FinancialSummary = {
 };
 
 // Hook to fetch financial transactions
-export const useFinancialTransactions = (filters?: { from?: string, to?: string }) => {
+export const useFinancialTransactions = (filters?: { from?: string, to?: string }, regionIdOverride?: string) => {
   const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
+  const regionId = regionIdOverride ?? userRegion?.id;
 
   return useQuery({
     queryKey: ['financial_transactions', regionId, filters],
@@ -76,9 +76,10 @@ export const useFinancialCategories = () => {
 };
 
 // Hook to fetch financial summary
-export const useFinancialSummary = (filters?: { from?: string, to?: string }) => {
+export const useFinancialSummary = (filters?: { from?: string, to?: string }, regionIdOverride?: string) => {
   const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
+  const regionId = regionIdOverride ?? userRegion?.id;
+
 
   return useQuery({
     queryKey: ['financial_summary', regionId, filters],
