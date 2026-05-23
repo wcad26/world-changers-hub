@@ -67,6 +67,15 @@ const RegionsLocationsTab: React.FC = () => {
           icon={<Globe className="h-5 w-5" />}
           title="Regions Directory"
           description="All WCA regional centers across the organization"
+          action={
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Create Region
+            </Button>
+          }
         />
 
         <div className="mb-4">
