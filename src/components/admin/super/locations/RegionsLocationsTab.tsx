@@ -1,17 +1,48 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Globe, Users, Home, Plus, UserCheck } from 'lucide-react';
-import { useAllRegions } from '@/hooks/useAllRegions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Globe, Users, Home, Plus, UserCheck,
+  MoreHorizontal, Eye, Pencil, Trash2, RotateCcw,
+} from 'lucide-react';
+import { useAllRegions, type Region } from '@/hooks/useAllRegions';
+import { useRegionMutations } from '@/hooks/useRegionMutations';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
+import EditRegionDialog from '@/components/admin/super/regions/EditRegionDialog';
+import { cn } from '@/lib/utils';
 
 const RegionsLocationsTab: React.FC = () => {
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [selectedRegion, setSelectedRegion] = React.useState<Region | null>(null);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [confirmAction, setConfirmAction] = React.useState<'deactivate' | 'reactivate'>('deactivate');
+
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
+  const { deleteRegion, reactivateRegion } = useRegionMutations();
 
   const { data: dcgsByRegion } = useQuery({
     queryKey: ['locations', 'dcg-count-by-region'],
@@ -57,6 +88,29 @@ const RegionsLocationsTab: React.FC = () => {
   const totalMembers = Object.values(membersByRegion || {}).reduce((a, b) => a + b, 0);
   const totalDcgsAcrossRegions = Object.values(dcgsByRegion || {}).reduce((a, b) => a + b, 0);
 
+  const goToReport = (r: Region) => navigate(`/admin/super/regions/${r.id}/report`);
+
+  const openEdit = (r: Region) => {
+    setSelectedRegion(r);
+    setEditOpen(true);
+  };
+
+  const askConfirm = (r: Region, action: 'deactivate' | 'reactivate') => {
+    setSelectedRegion(r);
+    setConfirmAction(action);
+    setConfirmOpen(true);
+  };
+
+  const runConfirm = () => {
+    if (!selectedRegion) return;
+    if (confirmAction === 'deactivate') {
+      deleteRegion.mutate(selectedRegion.id);
+    } else {
+      reactivateRegion.mutate(selectedRegion.id);
+    }
+    setConfirmOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -92,7 +146,7 @@ const RegionsLocationsTab: React.FC = () => {
                   <TableHead>Regional President</TableHead>
                   <TableHead>DCGs</TableHead>
                   <TableHead>Members</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="w-[80px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -100,8 +154,23 @@ const RegionsLocationsTab: React.FC = () => {
                   <GlassTableSkeleton columns={6} rows={4} />
                 ) : sortedRegions.length > 0 ? (
                   sortedRegions.map((r) => (
-                    <TableRow key={r.id} className="hover:bg-muted/20 transition-colors">
-                      <TableCell className="font-medium">{r.name}</TableCell>
+                    <TableRow
+                      key={r.id}
+                      className="hover:bg-muted/20 transition-colors cursor-pointer"
+                      onClick={() => goToReport(r)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'h-2 w-2 rounded-full',
+                              r.is_active ? 'bg-green-500' : 'bg-muted-foreground/40',
+                            )}
+                            title={r.is_active ? 'Active' : 'Inactive'}
+                          />
+                          <span className="hover:text-primary transition-colors">{r.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell><Badge variant="outline">{r.code}</Badge></TableCell>
                       <TableCell>{r.regional_president || 'N/A'}</TableCell>
                       <TableCell>{dcgsByRegion?.[r.id] || 0}</TableCell>
@@ -111,10 +180,36 @@ const RegionsLocationsTab: React.FC = () => {
                           {membersByRegion?.[r.id] || 0}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={r.is_active ? 'default' : 'secondary'}>
-                          {r.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem onClick={() => goToReport(r)}>
+                              <Eye className="h-4 w-4 mr-2" /> View Report
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEdit(r)}>
+                              <Pencil className="h-4 w-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {r.is_active ? (
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => askConfirm(r, 'deactivate')}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Deactivate
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => askConfirm(r, 'reactivate')}>
+                                <RotateCcw className="h-4 w-4 mr-2" /> Reactivate
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
@@ -132,6 +227,31 @@ const RegionsLocationsTab: React.FC = () => {
       </GlassSection>
 
       <CreateRegionGlassDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <EditRegionDialog open={editOpen} onOpenChange={setEditOpen} region={selectedRegion} />
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === 'deactivate' ? 'Deactivate region?' : 'Reactivate region?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === 'deactivate'
+                ? `${selectedRegion?.name} will be marked inactive. You can reactivate it later.`
+                : `${selectedRegion?.name} will be marked active again.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={runConfirm}
+              className={confirmAction === 'deactivate' ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''}
+            >
+              {confirmAction === 'deactivate' ? 'Deactivate' : 'Reactivate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
