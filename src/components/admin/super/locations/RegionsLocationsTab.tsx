@@ -12,6 +12,7 @@ import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegi
 
 const RegionsLocationsTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
 
   const { data: dcgsByRegion } = useQuery({
