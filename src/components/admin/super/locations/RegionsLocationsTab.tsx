@@ -5,13 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Globe, Search, CheckCircle2, Users, Home, Plus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Globe, Search, CheckCircle2, Users, Home, Plus, UserCheck } from 'lucide-react';
 import { useAllRegions } from '@/hooks/useAllRegions';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 
 const RegionsLocationsTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [dcgFilter, setDcgFilter] = useState<'all' | 'with' | 'without'>('all');
+  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'members-desc' | 'dcgs-desc'>('name-asc');
   const [createOpen, setCreateOpen] = useState(false);
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
 
@@ -39,27 +43,60 @@ const RegionsLocationsTab: React.FC = () => {
     },
   });
 
+  const { data: totalDcgMembers, isLoading: loadingDcgMembers } = useQuery({
+    queryKey: ['locations', 'total-dcg-members'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('dcg_members')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   const filtered = useMemo(() => {
-    const list = regions || [];
+    let list = regions || [];
     const q = searchTerm.toLowerCase().trim();
-    if (!q) return list;
-    return list.filter(r =>
-      r.name.toLowerCase().includes(q) ||
-      r.code?.toLowerCase().includes(q) ||
-      r.regional_president?.toLowerCase().includes(q)
-    );
-  }, [regions, searchTerm]);
+    if (q) {
+      list = list.filter(r =>
+        r.name.toLowerCase().includes(q) ||
+        r.code?.toLowerCase().includes(q) ||
+        r.regional_president?.toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== 'all') {
+      list = list.filter(r => (statusFilter === 'active' ? r.is_active : !r.is_active));
+    }
+    if (dcgFilter !== 'all') {
+      list = list.filter(r => {
+        const has = (dcgsByRegion?.[r.id] || 0) > 0;
+        return dcgFilter === 'with' ? has : !has;
+      });
+    }
+    const sorted = [...list];
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'name-desc': return b.name.localeCompare(a.name);
+        case 'members-desc': return (membersByRegion?.[b.id] || 0) - (membersByRegion?.[a.id] || 0);
+        case 'dcgs-desc': return (dcgsByRegion?.[b.id] || 0) - (dcgsByRegion?.[a.id] || 0);
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+    return sorted;
+  }, [regions, searchTerm, statusFilter, dcgFilter, sortBy, dcgsByRegion, membersByRegion]);
 
   const totalRegions = regions?.length || 0;
-  const activeRegions = regions?.filter(r => r.is_active).length || 0;
+  const totalMembers = Object.values(membersByRegion || {}).reduce((a, b) => a + b, 0);
   const totalDcgsAcrossRegions = Object.values(dcgsByRegion || {}).reduce((a, b) => a + b, 0);
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <GlassKPICard icon={<Globe className="h-5 w-5" />} label="Total Regions" value={totalRegions} isLoading={isLoading} />
-        <GlassKPICard icon={<CheckCircle2 className="h-5 w-5" />} label="Active Regions" value={activeRegions} isLoading={isLoading} />
+        <GlassKPICard icon={<Users className="h-5 w-5" />} label="Total Members" value={totalMembers} isLoading={isLoading || !membersByRegion} />
         <GlassKPICard icon={<Home className="h-5 w-5" />} label="Total DCGs" value={totalDcgsAcrossRegions} isLoading={isLoading || !dcgsByRegion} />
+        <GlassKPICard icon={<UserCheck className="h-5 w-5" />} label="Total DCG Members" value={totalDcgMembers ?? 0} isLoading={loadingDcgMembers} />
       </div>
 
       <GlassSection>
@@ -78,8 +115,8 @@ const RegionsLocationsTab: React.FC = () => {
           }
         />
 
-        <div className="mb-4">
-          <div className="relative max-w-md">
+        <div className="mb-4 flex flex-col md:flex-row gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -89,6 +126,31 @@ const RegionsLocationsTab: React.FC = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <SelectTrigger className="w-full md:w-[160px] bg-background/60"><SelectValue placeholder="Status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={dcgFilter} onValueChange={(v: any) => setDcgFilter(v)}>
+            <SelectTrigger className="w-full md:w-[170px] bg-background/60"><SelectValue placeholder="DCGs" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Regions</SelectItem>
+              <SelectItem value="with">With DCGs</SelectItem>
+              <SelectItem value="without">Without DCGs</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+            <SelectTrigger className="w-full md:w-[200px] bg-background/60"><SelectValue placeholder="Sort by" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">Name (A–Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z–A)</SelectItem>
+              <SelectItem value="members-desc">Most Members</SelectItem>
+              <SelectItem value="dcgs-desc">Most DCGs</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="rounded-xl border border-border/40 overflow-hidden">
@@ -130,7 +192,7 @@ const RegionsLocationsTab: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                      {searchTerm ? 'No regions match your search.' : 'No regions found.'}
+                      {searchTerm || statusFilter !== 'all' || dcgFilter !== 'all' ? 'No regions match your filters.' : 'No regions found.'}
                     </TableCell>
                   </TableRow>
                 )}
