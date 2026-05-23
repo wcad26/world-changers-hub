@@ -1,33 +1,55 @@
-## Global Location Management — Simplify to Regions Only
+# Regions Directory — Actions & Per-Region Report
 
-### Scope
-Remove tabs, drop DCGs tab entirely, surface Regions content directly on the page, refresh the KPI row, and add a filter row above the directory table.
+## 1. Actions column in `RegionsLocationsTab.tsx`
 
-### Changes
+Replace the **Status** column with an **Actions** column.
 
-**1. `src/pages/admin/super/Locations.tsx`** — Rewrite to render `<RegionsLocationsTab />` directly (rename usage). Remove `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` and the DCGs import. Keep the short subtitle.
+- Region name cell becomes a button-styled link → `/admin/super/regions/{id}/report` (cursor pointer, hover underline). Whole row also clickable (except the actions cell, which stops propagation).
+- Add a small Active/Inactive dot indicator next to the name (so status info isn't lost), but no dedicated column.
+- Actions cell: shadcn `DropdownMenu` with trigger `MoreHorizontal` and items:
+  - **View Report** → navigate to report page
+  - **Edit** → opens existing `EditRegionGlassDialog` (we'll create a thin glass wrapper if only the legacy `EditRegionDialog` exists; otherwise use `EditRegionDialog` directly — confirmed it exists at `src/components/admin/super/regions/EditRegionDialog.tsx`)
+  - **Deactivate / Reactivate** (red destructive style for deactivate) → uses existing `useRegionMutations().deleteRegion` / `reactivateRegion` with an `AlertDialog` confirm (replacing `window.confirm`)
+- Track `selectedRegion`, `editOpen`, `confirmOpen`, `confirmAction` local state.
 
-**2. `src/components/admin/super/locations/DcgsLocationsTab.tsx`** — Delete file (no longer referenced).
+## 2. New route: per-region report
 
-**3. `src/components/admin/super/locations/RegionsLocationsTab.tsx`** — Update:
+- Add route in `src/App.tsx` under the existing `/admin/super` block:
+  `<Route path="regions/:regionId/report" element={<SuperAdminPage><SuperRegionReport /></SuperAdminPage>} />`
+- New page `src/pages/admin/super/RegionReport.tsx` — reads `regionId` from params, fetches the region row (`useAllRegions` or a direct `regions` select by id), then renders `<RegionalDashboardView region={region} />` with a back button + breadcrumb header showing the region name.
 
-- **KPI cards (4 instead of 3):**
-  - Total Regions — `regions.length`
-  - Total Members — sum of `membersByRegion` values (all active members across regions)
-  - Total DCGs — sum of `dcgsByRegion` values
-  - Total DCG Members — new query: count of `dcg_members` where `is_active = true`
-- Change grid to `md:grid-cols-2 lg:grid-cols-4`.
-- Add new `useQuery` for total active DCG members count.
+## 3. Refactor Regional Dashboard for reuse
 
-- **Filter row** (above the table, replaces the lone search input):
-  - Search input (existing, name/code/president)
-  - Status select: All / Active / Inactive
-  - DCG presence select: All / With DCGs / Without DCGs
-  - Sort select: Name (A–Z), Name (Z–A), Members (high→low), DCGs (high→low)
-  - Layout: `flex flex-col md:flex-row gap-3`, search grows, selects fixed width.
-- Apply filters + sort in the `filtered` `useMemo`.
+Today `src/pages/admin/regional/Dashboard.tsx` reads its region from `useRegionalSession()`. We extract the dashboard body into a presentational component so the Super Admin report can render it for any region.
 
-### Out of scope
-- No schema changes
-- No edits to the Create Region dialog
-- No changes to `useAllRegions` or `useAllDcgs` (latter becomes unused for this page but stays for any future use)
+```
+src/pages/admin/regional/Dashboard.tsx
+  └─ thin wrapper: pulls region from useRegionalSession → <RegionalDashboardView region={userRegion} />
+
+src/components/admin/regional/dashboard/RegionalDashboardView.tsx  (new)
+  └─ accepts { region: Region | null | undefined, showAuthSkeleton?: boolean }
+     all hooks (useMembers(region?.id), useRegionalEvents — see below, useFinancialSummary, …) take region.id from props
+```
+
+### `useRegionalEvents` consideration
+
+`useRegionalEvents()` currently scopes to the logged-in user's region (regional admin). For the Super Admin report, we must scope events by the **viewed** region. Two options:
+- Preferred: switch the view to use `useEvents({ regionId: region.id })` (or whichever variant accepts a region id — confirm during implementation). All other dashboard hooks already accept `regionId` so this is the only one needing the swap.
+
+If no region-scoped variant exists, add a `regionId?: string` parameter to `useRegionalEvents` that defaults to the session region when omitted, preserving current behavior.
+
+## 4. Out of scope
+
+- No DB/schema changes
+- No styling change to the Regional Dashboard itself
+- No change to KPI cards above the directory
+- No filters
+
+## Files touched
+
+- `src/components/admin/super/locations/RegionsLocationsTab.tsx` — actions column + row navigation + confirm/edit dialogs
+- `src/App.tsx` — new route + import
+- `src/pages/admin/super/RegionReport.tsx` — new
+- `src/components/admin/regional/dashboard/RegionalDashboardView.tsx` — new (extracted from Dashboard.tsx)
+- `src/pages/admin/regional/Dashboard.tsx` — slim wrapper around the new view
+- (Maybe) `src/hooks/useEvents.ts` — accept explicit `regionId` if not already supported

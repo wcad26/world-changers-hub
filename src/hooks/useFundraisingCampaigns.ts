@@ -22,9 +22,10 @@ export const campaignSchema = z.object({
 export type CampaignData = z.infer<typeof campaignSchema>;
 
 // Hook to fetch fundraising campaigns
-export const useFundraisingCampaigns = (filters?: { status?: string }) => {
+export const useFundraisingCampaigns = (filters?: { status?: string }, regionIdOverride?: string) => {
   const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
+  const regionId = regionIdOverride ?? userRegion?.id;
+
 
   return useQuery({
     queryKey: ['fundraising_campaigns', regionId, filters],

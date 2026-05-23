@@ -29,18 +29,19 @@ export const useMemberTargets = () => {
   });
 };
 
-export const useCurrentMemberTarget = () => {
+export const useCurrentMemberTarget = (regionIdOverride?: string) => {
   const { userRegion } = useAuth();
+  const effectiveRegionId = regionIdOverride ?? userRegion?.id;
   
   return useQuery({
-    queryKey: ['current-member-target', userRegion?.id],
+    queryKey: ['current-member-target', effectiveRegionId],
     queryFn: async () => {
-      if (!userRegion?.id) return null;
+      if (!effectiveRegionId) return null;
       
       const { data, error } = await supabase
         .from('member_targets')
         .select('*')
-        .eq('region_id', userRegion.id)
+        .eq('region_id', effectiveRegionId)
         .eq('is_active', true)
         .gte('target_date', new Date().toISOString().split('T')[0])
         .order('target_date', { ascending: true })
@@ -50,7 +51,7 @@ export const useCurrentMemberTarget = () => {
       if (error) throw error;
       return data as MemberTarget | null;
     },
-    enabled: !!userRegion?.id,
+    enabled: !!effectiveRegionId,
   });
 };
 

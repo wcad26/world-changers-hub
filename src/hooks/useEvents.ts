@@ -8,10 +8,10 @@ export type Event = Database['public']['Tables']['events']['Row'];
 export type NewEvent = Database['public']['Tables']['events']['Insert'];
 export type UpdateEvent = Database['public']['Tables']['events']['Update'];
 
-// Hook to get events for the current admin's region
-export const useRegionalEvents = () => {
+// Hook to get events for a region (defaults to current admin's region)
+export const useRegionalEvents = (regionIdOverride?: string) => {
   const { userRegion } = useAuth();
-  const regionId = userRegion?.id;
+  const regionId = regionIdOverride ?? userRegion?.id;
 
   return useQuery({
     queryKey: ['events', regionId],
