@@ -1,95 +1,77 @@
-# Rebuild Super Admin Global Events + Fix Blank/Reroute Loop
+# Rebuild Super Admin Global Location Management
 
-## Goals
+Replace the placeholder at `src/pages/admin/super/Locations.tsx` with a reporting-focused, tabbed view that mirrors the visual language of the regional DCG overview (KPI cards + glass directory section + searchable table).
 
-1. Rebuild `src/pages/admin/super/Events.tsx` so it looks and feels like `src/pages/admin/regional/Events.tsx`, but aggregating across **all regions**.
-2. Stop the blank-screen + reroute-to-previous-page behavior in the Super Admin portal without touching the sticky auth fix.
+## Page structure
 
-## Scope
+`Global Location Management` (title already rendered by `SuperAdminLayout` header — keep page body only).
 
-UI / presentation + one safety wrapper. **No changes** to `AuthProvider`, `SuperAdminSessionRoute`, `portalAuthCache`, `usePortalSession`, login pages, or RLS. The sticky session guard memory (`mem://constraints/portal-session-guards-must-be-sticky`) stays intact.
+- Short subtitle: "Overview of all WCA regional centers and DCG locations across the organization."
+- Top-level `Tabs` with two tabs:
+  1. **WCA Regions** (default)
+  2. **DCGs**
 
----
+Each tab follows the same pattern as `DcgOverviewTab`: KPI row → `GlassSection` directory with search + table. Read-only — no add/edit/delete (this page is for reporting).
 
-## 1. Rebuilt Super Events page
+## Tab 1 — WCA Regions
 
-Mirror the regional page structure (header → PeriodFilter → filters → KPI cards → events table) using global data.
+Data: `useAllRegions({ includeInactive: true })` (already exists).
 
-**Data sources (global, no `regionId`):**
-- `useGlobalEvents()` — already returns all events with `regions(name, code)` join.
-- New helper hook **`useGlobalAttendanceHistoryWithMemberTypes()`** in `src/hooks/useAttendance.ts` — same shape as `useAttendanceHistoryWithMemberTypes(regionId)` but with the region filter dropped (selects all `attendance_events`). Reuses the same member-type / strict-children logic so KPI numbers are computed identically.
+KPI cards (3, `GlassKPICard`):
+- Total Regions (count)
+- Active Regions (`is_active === true`)
+- Countries Represented (distinct `country`)
 
-**KPI cards (5 cards, mirroring regional):**
-- **Total Events** — count + avg attendance + growth %
-- **Regional Events** — events with `region_id IS NOT NULL` AND `!dcg_id` AND `!is_special` across all regions
-- **DCG Events** — events with `dcg_id IS NOT NULL` across all regions
-- **Special Events** — events with `is_special = true`
-- **Attendance Target** — total attendees / total capacity %
+Directory table columns:
+- Name (region.name)
+- Code
+- Country
+- Regional President (`regional_president`)
+- DCGs (count of DCGs whose `region_id` matches — from a new aggregated query, see below)
+- Members (count of members in that region — same aggregated query)
+- Status (Active / Inactive badge)
 
-Same card styling, same growth math (current month vs last month), same color-coded `+/- avg attendance` chip.
+Client-side search across name / code / country / president.
 
-**Filters bar (mirror regional):**
-- `PeriodFilter` (1M / 3M / 6M / 1Y / Custom), defaulting to 1Y
-- Search input
-- Event Type select: `All Types / Regional / DCG / Special`
-- Time select: `All Events / Upcoming / Past`
-- **+ Add Event** button (uses existing `useCreateGlobalEvent`)
+## Tab 2 — DCGs
 
-**Events table (mirror regional + Region column):**
-Columns: Event Name • Type (badge: Regional/DCG/Special/Global) • Date • Time • Location • **Region** (regions.name, or "Global" pill for `region_id IS NULL`) • Capacity • Attendance • Actions (Edit / Mark Attendance / Copy Attendance Link / Delete via existing global mutations and `GlobalAttendanceDialog`).
+Data: new hook `useAllDcgs()` (global, no region filter) returning every DCG with:
+- leader name (same join shape as `useDcgs`)
+- region name + code (join `regions(name, code)`)
+- member_count (same `dcg_members` aggregation as `useDcgs`, but unscoped)
 
-**Keep existing behaviors that already work on the super page:**
-- Create / Edit dialogs (already wired to `useCreateGlobalEvent`, `useUpdateGlobalEvent`).
-- `GlobalAttendanceDialog` for "Mark Attendance".
-- Slug generation + history insert on edit.
-- Delete confirmation via `AlertDialog`.
+KPI cards (3):
+- Total DCGs
+- Total DCG Members (sum of member_count)
+- Regions with DCGs (distinct region_id)
 
-**Page title:** "Global Event Management" (already in `AdminLayout` header map — no router change).
+Directory table columns:
+- Name
+- Region (region.name + small code chip)
+- Leader (Last First, same `getLeaderName` helper)
+- Location
+- Members
+- Meeting Schedule (`meeting_day, formatted meeting_time`)
 
-## 2. Stop the blank / reroute loop on Super Admin pages
+Client-side search across name / leader / location / region name.
 
-Root cause: the Super Admin route tree has **no error boundary** (regional has `RegionalErrorBoundary`). When a Super page throws during render (e.g. a transient null on `events`, a hook reading from a not-yet-restored session, or a query error), React unmounts the subtree → the page goes blank → the Lovable preview's blank-page detector reloads → the browser lands on whatever the previous URL was. That is the "blank then back to previous page" symptom.
+Read-only: no add/edit/delete actions, no row navigation (Super Admin doesn't currently have a per-DCG page in this route group).
 
-Fix:
+## Files
 
-- **Create `src/components/auth/SuperAdminErrorBoundary.tsx`** — copy of `RegionalErrorBoundary` (same shape, same reset-on-pathname-change behavior, same fallback UI), labeled `[SuperPortal] render error:`.
-- **Wrap the super admin route element** in `src/App.tsx`:
+- **Edit:** `src/pages/admin/super/Locations.tsx` — full rewrite with `Tabs` + two tab components.
+- **Create:** `src/components/admin/super/locations/RegionsLocationsTab.tsx` — KPI + directory for regions, uses `useAllRegions` plus a lightweight aggregation query for per-region DCG and member counts (single `dcgs` + `members` count query grouped client-side).
+- **Create:** `src/components/admin/super/locations/DcgsLocationsTab.tsx` — KPI + directory for global DCGs, uses new `useAllDcgs`.
+- **Create:** `src/hooks/useAllDcgs.ts` — global variant of `useDcgs` (no `region_id` filter, joins `regions(name, code)`).
 
-  ```tsx
-  <Route element={
-    <SuperAdminSessionRoute>
-      <SuperAdminErrorBoundary resetKey={location.pathname}>
-        <SuperAdminLayout />
-      </SuperAdminErrorBoundary>
-    </SuperAdminSessionRoute>
-  }>
-  ```
+## Visual consistency
 
-  (The boundary lives **inside** the pass-through session route, so it catches page errors but never gates auth — RLS still decides data access. No `Navigate`, no redirects.)
+- Reuse `GlassSection`, `GlassSectionHeader`, `GlassKPICard`, `GlassTableSkeleton` exactly like `DcgOverviewTab` so the look matches the uploaded screenshot.
+- Use shadcn `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` for the tab shell.
+- Name display follows the global "Last Name First Name" rule.
 
-- **Harden the new Super Events page** against transient nulls:
-  - All `useMemo`/derived arrays guard for `events == null`.
-  - All numeric KPI math handles zero-length arrays without dividing by zero.
-  - Never throw on missing `attendance` data — render skeletons instead.
+## Out of scope
 
-This matches exactly what already saved the Regional portal. **No change** to auth code, route guards, or session caching.
-
-## 3. Files
-
-- **Edit:** `src/pages/admin/super/Events.tsx` — full rebuild as above.
-- **Edit:** `src/hooks/useAttendance.ts` — add `useGlobalAttendanceHistoryWithMemberTypes()` (no signature change to existing exports).
-- **Create:** `src/components/auth/SuperAdminErrorBoundary.tsx`.
-- **Edit:** `src/App.tsx` — wrap the Super Admin route subtree with the new boundary (single-line addition inside the existing route).
-
-No router restructure, no schema change, no RLS change, no auth/login/session file touched.
-
-## 4. Memory update after build
-
-Append a new rule to `mem://constraints/portal-session-guards-must-be-sticky` (or a new sibling note): every portal layout subtree must be wrapped in a pathname-keyed error boundary so a render error never blanks the page and triggers the preview's reload-to-previous-route behavior. Regional already has it; Super Admin must keep it too. DCG and Member portals will be audited next time they exhibit the symptom.
-
-## 5. Non-regression checks
-
-- Sticky auth fix untouched (no edits to `AuthProvider.tsx`, `portalAuthCache.ts`, `usePortalSession.ts`, `SuperAdminSessionRoute.tsx`, or any `*Auth.tsx` login page).
-- Page header "Global Event Management" still rendered by `AdminLayout` (already mapped).
-- KPI math reuses existing helpers (`fetchMemberRelationshipsForMembers`, `buildChildrenSet`) — no new util needed.
-- No new dependency.
+- No CRUD on regions or DCGs (Regions already has its own management page at `/admin/super/regions`; DCGs are managed regionally).
+- No schema changes, no RLS changes, no router changes.
+- No edits to `AdminLayout` or auth code.
