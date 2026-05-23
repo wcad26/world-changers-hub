@@ -4,9 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Search, CheckCircle2, Users, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Globe, Search, CheckCircle2, Users, Home, Plus } from 'lucide-react';
 import { useAllRegions } from '@/hooks/useAllRegions';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
+import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 
 const RegionsLocationsTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
