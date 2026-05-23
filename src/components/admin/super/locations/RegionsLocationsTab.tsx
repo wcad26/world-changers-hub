@@ -1,22 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Search, CheckCircle2, Users, Home, Plus, UserCheck } from 'lucide-react';
+import { Globe, Users, Home, Plus, UserCheck } from 'lucide-react';
 import { useAllRegions } from '@/hooks/useAllRegions';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 
 const RegionsLocationsTab: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [dcgFilter, setDcgFilter] = useState<'all' | 'with' | 'without'>('all');
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'members-desc' | 'dcgs-desc'>('name-asc');
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = React.useState(false);
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
 
   const { data: dcgsByRegion } = useQuery({
@@ -55,36 +49,9 @@ const RegionsLocationsTab: React.FC = () => {
     },
   });
 
-  const filtered = useMemo(() => {
-    let list = regions || [];
-    const q = searchTerm.toLowerCase().trim();
-    if (q) {
-      list = list.filter(r =>
-        r.name.toLowerCase().includes(q) ||
-        r.code?.toLowerCase().includes(q) ||
-        r.regional_president?.toLowerCase().includes(q)
-      );
-    }
-    if (statusFilter !== 'all') {
-      list = list.filter(r => (statusFilter === 'active' ? r.is_active : !r.is_active));
-    }
-    if (dcgFilter !== 'all') {
-      list = list.filter(r => {
-        const has = (dcgsByRegion?.[r.id] || 0) > 0;
-        return dcgFilter === 'with' ? has : !has;
-      });
-    }
-    const sorted = [...list];
-    sorted.sort((a, b) => {
-      switch (sortBy) {
-        case 'name-desc': return b.name.localeCompare(a.name);
-        case 'members-desc': return (membersByRegion?.[b.id] || 0) - (membersByRegion?.[a.id] || 0);
-        case 'dcgs-desc': return (dcgsByRegion?.[b.id] || 0) - (dcgsByRegion?.[a.id] || 0);
-        default: return a.name.localeCompare(b.name);
-      }
-    });
-    return sorted;
-  }, [regions, searchTerm, statusFilter, dcgFilter, sortBy, dcgsByRegion, membersByRegion]);
+  const sortedRegions = useMemo(() => {
+    return [...(regions || [])].sort((a, b) => a.name.localeCompare(b.name));
+  }, [regions]);
 
   const totalRegions = regions?.length || 0;
   const totalMembers = Object.values(membersByRegion || {}).reduce((a, b) => a + b, 0);
@@ -115,44 +82,6 @@ const RegionsLocationsTab: React.FC = () => {
           }
         />
 
-        <div className="mb-4 flex flex-col md:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search by name, code, or president..."
-              className="pl-9 bg-background/60"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
-            <SelectTrigger className="w-full md:w-[160px] bg-background/60"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={dcgFilter} onValueChange={(v: any) => setDcgFilter(v)}>
-            <SelectTrigger className="w-full md:w-[170px] bg-background/60"><SelectValue placeholder="DCGs" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Regions</SelectItem>
-              <SelectItem value="with">With DCGs</SelectItem>
-              <SelectItem value="without">Without DCGs</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-            <SelectTrigger className="w-full md:w-[200px] bg-background/60"><SelectValue placeholder="Sort by" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">Name (A–Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z–A)</SelectItem>
-              <SelectItem value="members-desc">Most Members</SelectItem>
-              <SelectItem value="dcgs-desc">Most DCGs</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="rounded-xl border border-border/40 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -169,8 +98,8 @@ const RegionsLocationsTab: React.FC = () => {
               <TableBody>
                 {isLoading ? (
                   <GlassTableSkeleton columns={6} rows={4} />
-                ) : filtered.length > 0 ? (
-                  filtered.map((r) => (
+                ) : sortedRegions.length > 0 ? (
+                  sortedRegions.map((r) => (
                     <TableRow key={r.id} className="hover:bg-muted/20 transition-colors">
                       <TableCell className="font-medium">{r.name}</TableCell>
                       <TableCell><Badge variant="outline">{r.code}</Badge></TableCell>
@@ -192,7 +121,7 @@ const RegionsLocationsTab: React.FC = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                      {searchTerm || statusFilter !== 'all' || dcgFilter !== 'all' ? 'No regions match your filters.' : 'No regions found.'}
+                      No regions found.
                     </TableCell>
                   </TableRow>
                 )}
