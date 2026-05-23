@@ -4,12 +4,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Globe, Search, CheckCircle2, Users, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Globe, Search, CheckCircle2, Users, Home, Plus } from 'lucide-react';
 import { useAllRegions } from '@/hooks/useAllRegions';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
+import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 
 const RegionsLocationsTab: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
 
   const { data: dcgsByRegion } = useQuery({
@@ -64,6 +67,15 @@ const RegionsLocationsTab: React.FC = () => {
           icon={<Globe className="h-5 w-5" />}
           title="Regions Directory"
           description="All WCA regional centers across the organization"
+          action={
+            <Button
+              onClick={() => setCreateOpen(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:opacity-95"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Create Region
+            </Button>
+          }
         />
 
         <div className="mb-4">
@@ -127,6 +139,8 @@ const RegionsLocationsTab: React.FC = () => {
           </div>
         </div>
       </GlassSection>
+
+      <CreateRegionGlassDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 };

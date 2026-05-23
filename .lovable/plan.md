@@ -1,77 +1,54 @@
-# Rebuild Super Admin Global Location Management
+# Plan — Efficient Region Creation with Auto President Assignment
 
-Replace the placeholder at `src/pages/admin/super/Locations.tsx` with a reporting-focused, tabbed view that mirrors the visual language of the regional DCG overview (KPI cards + glass directory section + searchable table).
-
-## Page structure
-
-`Global Location Management` (title already rendered by `SuperAdminLayout` header — keep page body only).
-
-- Short subtitle: "Overview of all WCA regional centers and DCG locations across the organization."
-- Top-level `Tabs` with two tabs:
-  1. **WCA Regions** (default)
-  2. **DCGs**
-
-Each tab follows the same pattern as `DcgOverviewTab`: KPI row → `GlassSection` directory with search + table. Read-only — no add/edit/delete (this page is for reporting).
-
-## Tab 1 — WCA Regions
-
-Data: `useAllRegions({ includeInactive: true })` (already exists).
-
-KPI cards (3, `GlassKPICard`):
-- Total Regions (count)
-- Active Regions (`is_active === true`)
-- Countries Represented (distinct `country`)
-
-Directory table columns:
-- Name (region.name)
-- Code
-- Country
-- Regional President (`regional_president`)
-- DCGs (count of DCGs whose `region_id` matches — from a new aggregated query, see below)
-- Members (count of members in that region — same aggregated query)
-- Status (Active / Inactive badge)
-
-Client-side search across name / code / country / president.
-
-## Tab 2 — DCGs
-
-Data: new hook `useAllDcgs()` (global, no region filter) returning every DCG with:
-- leader name (same join shape as `useDcgs`)
-- region name + code (join `regions(name, code)`)
-- member_count (same `dcg_members` aggregation as `useDcgs`, but unscoped)
-
-KPI cards (3):
-- Total DCGs
-- Total DCG Members (sum of member_count)
-- Regions with DCGs (distinct region_id)
-
-Directory table columns:
-- Name
-- Region (region.name + small code chip)
-- Leader (Last First, same `getLeaderName` helper)
-- Location
-- Members
-- Meeting Schedule (`meeting_day, formatted meeting_time`)
-
-Client-side search across name / leader / location / region name.
-
-Read-only: no add/edit/delete actions, no row navigation (Super Admin doesn't currently have a per-DCG page in this route group).
+## Goal
+Add a "Create Region" button in the WCA Regions directory card on the Super Admin Locations page. Opens a modern glass dialog where the Super Admin:
+1. Fills in region details
+2. Picks the regional president from an existing member (any region)
+3. On submit: region is created, the selected member is transferred into the new region using the existing transfer flow, and they're granted the `regional_admin` role.
 
 ## Files
 
-- **Edit:** `src/pages/admin/super/Locations.tsx` — full rewrite with `Tabs` + two tab components.
-- **Create:** `src/components/admin/super/locations/RegionsLocationsTab.tsx` — KPI + directory for regions, uses `useAllRegions` plus a lightweight aggregation query for per-region DCG and member counts (single `dcgs` + `members` count query grouped client-side).
-- **Create:** `src/components/admin/super/locations/DcgsLocationsTab.tsx` — KPI + directory for global DCGs, uses new `useAllDcgs`.
-- **Create:** `src/hooks/useAllDcgs.ts` — global variant of `useDcgs` (no `region_id` filter, joins `regions(name, code)`).
+### 1. New: `src/components/admin/super/regions/CreateRegionGlassDialog.tsx`
+Modern glass dialog (per `mem://design/glass-dialog-standard`) replacing the old `CreateRegionDialog` styling. Fields, grouped in glass panels:
 
-## Visual consistency
+- **Region Identity panel**: Name *, Code * (auto-uppercased, max 10), Description, Established Date
+- **Contact panel**: Address, Contact Email, Contact Phone
+- **Regional President panel**: searchable member combobox (Command/Popover) — required. Source: all active members across all regions via a new lightweight query (see hook). Shows "Last Name First Name • current region • member_id". Below the picker, an info note: "This member will be transferred into the new region and granted regional_admin access."
 
-- Reuse `GlassSection`, `GlassSectionHeader`, `GlassKPICard`, `GlassTableSkeleton` exactly like `DcgOverviewTab` so the look matches the uploaded screenshot.
-- Use shadcn `Tabs`/`TabsList`/`TabsTrigger`/`TabsContent` for the tab shell.
-- Name display follows the global "Last Name First Name" rule.
+Footer: Cancel + gradient "Create Region" CTA.
+
+Submit orchestration (sequential, with rollback messaging on partial failure):
+1. `createRegion.mutateAsync(...)` (existing `useRegionMutations.createRegion`) — sets `regional_president` text to "Last First" of the selected member, `is_active: true`.
+2. `transferMember.mutateAsync({ memberId, profileId, fromRegionId, toRegionId: newRegion.id, oldMemberCode, reason: 'Appointed Regional President', notes: 'Auto-transfer during region creation' })` — uses existing `useTransferMember` (regenerates `member_id`, updates `profiles.region_id`, logs to `member_transfers`).
+3. Assign `regional_admin` role: insert into `user_roles` `{ user_id: profile_id, role: 'regional_admin', region_id: newRegion.id, is_active: true, status: 'active' }` (idempotent — check first). Existing `ensure_member_record_for_admin` trigger will see member already exists in region and skip.
+4. Invalidate queries: `regions`, `all-regions`, `members`, `all-members`, `user_roles`, `locations`.
+5. Toast success → close dialog.
+
+If member has no `profile_id` (rare visitor-only record), block submit with inline error: "Selected member must have a login profile to serve as Regional President."
+
+### 2. New: `src/hooks/useEligiblePresidentCandidates.ts`
+Lightweight query of active members with profiles for the picker:
+```
+members (id, member_id, profile_id, region_id)
+  → profiles!inner(id, first_name, last_name, email)
+  → regions(name, code)
+filter: status='active', profile_id NOT NULL
+order: last_name, first_name
+```
+Returns enriched list for the combobox.
+
+### 3. Edited: `src/components/admin/super/locations/RegionsLocationsTab.tsx`
+- Add `<Button>` in `GlassSectionHeader` action slot: "Create Region" (Plus icon, gradient style).
+- Wire to local `open` state → `<CreateRegionGlassDialog />`.
+
+No changes to: `useRegionMutations`, `useTransferMember`, RLS, router, or schema.
+
+## Reuse confirmation
+- **Region creation**: existing `useRegionMutations.createRegion` (inserts into `regions`, invalidates `regions`).
+- **Member transfer**: existing `useTransferMember` — generates new `member_id` via `generate_member_id` RPC, updates `members.region_id`, updates `profiles.region_id`, inserts `member_transfers` record. Identical behavior to manual transfer.
+- **Role assignment**: direct insert into `user_roles` (the trigger `ensure_member_record_for_admin` already handles the "create member record if missing" case — but here the member already exists post-transfer, so it's a no-op).
 
 ## Out of scope
-
-- No CRUD on regions or DCGs (Regions already has its own management page at `/admin/super/regions`; DCGs are managed regionally).
-- No schema changes, no RLS changes, no router changes.
-- No edits to `AdminLayout` or auth code.
+- No edit/deactivate buttons on the directory rows (existing Regions management page handles that).
+- No bulk import.
+- No schema changes — `regions.regional_president` remains a text label; the source of truth for the actual leader is the transferred member + `regional_admin` role.
