@@ -1,22 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Globe, Search, CheckCircle2, Users, Home, Plus, UserCheck } from 'lucide-react';
+import { Globe, CheckCircle2, Users, Home, Plus, UserCheck } from 'lucide-react';
 import { useAllRegions } from '@/hooks/useAllRegions';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 
 const RegionsLocationsTab: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [dcgFilter, setDcgFilter] = useState<'all' | 'with' | 'without'>('all');
-  const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'members-desc' | 'dcgs-desc'>('name-asc');
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = React.useState(false);
   const { data: regions, isLoading } = useAllRegions({ includeInactive: true });
 
   const { data: dcgsByRegion } = useQuery({
