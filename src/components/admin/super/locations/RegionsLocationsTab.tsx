@@ -295,7 +295,7 @@ const RegionsLocationsTab: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
                       No regions found.
                     </TableCell>
                   </TableRow>
