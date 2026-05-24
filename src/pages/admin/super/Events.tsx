@@ -81,6 +81,7 @@ const SuperEvents: React.FC = () => {
 
   const { data: events, isLoading } = useGlobalEvents();
   const { data: attendanceData } = useGlobalAttendanceHistoryWithMemberTypes();
+  const { data: regions } = useAllRegions();
   const createEvent = useCreateGlobalEvent();
   const updateEvent = useUpdateGlobalEvent();
   const deleteEvent = useDeleteGlobalEvent();
