@@ -25,12 +25,14 @@ export const useEligiblePresidentCandidates = () => {
           profile_id,
           region_id,
           status,
+          member_type,
           profiles!inner(id, first_name, last_name, email),
           regions(name, code)
         `)
-        .eq('status', 'active')
+        .eq('member_type', 'member')
+        .neq('status', 'inactive')
         .not('profile_id', 'is', null)
-        .limit(2000);
+        .limit(5000);
 
       if (error) throw error;
 
