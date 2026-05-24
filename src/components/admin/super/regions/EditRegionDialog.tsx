@@ -227,7 +227,7 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
                         {loadingMembers ? 'Loading...' : 'No members found.'}
                       </CommandEmpty>
                       <CommandGroup>
-                        {filteredMembers.slice(0, 50).map((member) => (
+                        {filteredMembers.map((member) => (
                           <CommandItem
                             key={member.id}
                             value={member.name}
