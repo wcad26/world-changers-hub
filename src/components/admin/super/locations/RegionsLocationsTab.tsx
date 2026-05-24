@@ -58,13 +58,14 @@ const RegionsLocationsTab: React.FC = () => {
     },
   });
 
-  // Members + Children per region (mirrors regional portal MemberKPICards classification)
+  // Members + Children per region.
+  // Regular visitor = visitor (non-child) with >=1 present attendance on a regional non-special event.
   const { data: memberStats, isLoading: loadingMemberStats } = useQuery({
-    queryKey: ['locations', 'member-stats-by-region'],
+    queryKey: ['locations', 'member-stats-by-region-v2'],
     queryFn: async () => {
       const { data: members, error } = await supabase
         .from('members')
-        .select('id, region_id, member_type, rated_event_id, profiles(date_of_birth)')
+        .select('id, region_id, member_type, profiles(date_of_birth)')
         .neq('status', 'inactive');
       if (error) throw error;
 
@@ -72,7 +73,6 @@ const RegionsLocationsTab: React.FC = () => {
         id: string;
         region_id: string | null;
         member_type: string | null;
-        rated_event_id: string | null;
         profiles?: { date_of_birth?: string | null } | null;
       }>;
 
@@ -82,6 +82,29 @@ const RegionsLocationsTab: React.FC = () => {
         .eq('is_special', true);
       if (specialErr) throw specialErr;
       const specialIds = new Set((specialEvents || []).map(e => e.id));
+
+      // Regional (non-DCG) attendance events whose source event is not special
+      const { data: attEvents, error: attErr } = await supabase
+        .from('attendance_events')
+        .select('id, source_event_id, dcg_id');
+      if (attErr) throw attErr;
+      const regionalNonSpecialEventIds = (attEvents || [])
+        .filter(e => !e.dcg_id && (!e.source_event_id || !specialIds.has(e.source_event_id)))
+        .map(e => e.id);
+
+      // Members present at any regional non-special event
+      const regularAttendees = new Set<string>();
+      const CHUNK = 200;
+      for (let i = 0; i < regionalNonSpecialEventIds.length; i += CHUNK) {
+        const chunk = regionalNonSpecialEventIds.slice(i, i + CHUNK);
+        const { data: records, error: recErr } = await supabase
+          .from('attendance_records')
+          .select('member_id')
+          .in('event_id', chunk)
+          .eq('is_present', true);
+        if (recErr) throw recErr;
+        (records || []).forEach(r => regularAttendees.add(r.member_id));
+      }
 
       const relationships = await fetchMemberRelationshipsForMembers(memberRows.map(m => m.id));
       const childrenSet = buildChildrenSet(memberRows, relationships);
@@ -95,10 +118,11 @@ const RegionsLocationsTab: React.FC = () => {
           childrenByRegion[m.region_id] = (childrenByRegion[m.region_id] || 0) + 1;
           return;
         }
-        // Special-event visitors excluded from Members count
-        if (m.member_type === 'visitor' && m.rated_event_id && specialIds.has(m.rated_event_id)) return;
-        // Members + Regular Visitors
-        membersByRegion[m.region_id] = (membersByRegion[m.region_id] || 0) + 1;
+        if (m.member_type === 'member') {
+          membersByRegion[m.region_id] = (membersByRegion[m.region_id] || 0) + 1;
+        } else if (m.member_type === 'visitor' && regularAttendees.has(m.id)) {
+          membersByRegion[m.region_id] = (membersByRegion[m.region_id] || 0) + 1;
+        }
       });
 
       return { membersByRegion, childrenByRegion };
