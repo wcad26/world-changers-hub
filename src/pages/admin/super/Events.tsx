@@ -130,14 +130,11 @@ const SuperEvents: React.FC = () => {
       if (eventTypeFilter === 'special' && !event.is_special) return false;
       if (eventTypeFilter === 'global' && event.region_id) return false;
 
-      const start = event.start_datetime ? new Date(event.start_datetime) : null;
-      if (start && !isNaN(start.getTime())) {
-        if (timeFilter === 'upcoming' && start < now) return false;
-        if (timeFilter === 'past' && start >= now) return false;
-      }
+      if (regionFilter !== 'all' && event.region_id !== regionFilter) return false;
+
       return true;
     });
-  }, [periodFilteredEvents, searchTerm, eventTypeFilter, timeFilter]);
+  }, [periodFilteredEvents, searchTerm, eventTypeFilter, regionFilter]);
 
   const getEventAttendance = (eventId: string): number => {
     if (!attendanceData) return 0;
