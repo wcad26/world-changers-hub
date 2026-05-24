@@ -63,7 +63,7 @@ const eventSchema = z.object({
 const SuperEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
     const now = new Date();
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
