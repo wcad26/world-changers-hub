@@ -14,6 +14,7 @@ import {
   Link2, Copy, Trash2, Globe, Star, Layers, Target, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateGlobalEvent } from "@/hooks/useGlobalEvents";
+import { useAllRegions } from "@/hooks/useAllRegions";
 import { useGlobalAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -62,7 +63,7 @@ const eventSchema = z.object({
 const SuperEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
+  const [regionFilter, setRegionFilter] = useState("all");
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
     const now = new Date();
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -80,6 +81,7 @@ const SuperEvents: React.FC = () => {
 
   const { data: events, isLoading } = useGlobalEvents();
   const { data: attendanceData } = useGlobalAttendanceHistoryWithMemberTypes();
+  const { data: regions } = useAllRegions();
   const createEvent = useCreateGlobalEvent();
   const updateEvent = useUpdateGlobalEvent();
   const deleteEvent = useDeleteGlobalEvent();
@@ -128,14 +130,11 @@ const SuperEvents: React.FC = () => {
       if (eventTypeFilter === 'special' && !event.is_special) return false;
       if (eventTypeFilter === 'global' && event.region_id) return false;
 
-      const start = event.start_datetime ? new Date(event.start_datetime) : null;
-      if (start && !isNaN(start.getTime())) {
-        if (timeFilter === 'upcoming' && start < now) return false;
-        if (timeFilter === 'past' && start >= now) return false;
-      }
+      if (regionFilter !== 'all' && event.region_id !== regionFilter) return false;
+
       return true;
     });
-  }, [periodFilteredEvents, searchTerm, eventTypeFilter, timeFilter]);
+  }, [periodFilteredEvents, searchTerm, eventTypeFilter, regionFilter]);
 
   const getEventAttendance = (eventId: string): number => {
     if (!attendanceData) return 0;
@@ -485,12 +484,13 @@ const SuperEvents: React.FC = () => {
               <SelectItem value="global">Global</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Events" /></SelectTrigger>
+          <Select value={regionFilter} onValueChange={setRegionFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Regions" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
+              <SelectItem value="all">All Regions</SelectItem>
+              {(regions || []).map((r: any) => (
+                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Event</Button>
