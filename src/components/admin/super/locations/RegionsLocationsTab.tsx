@@ -31,6 +31,8 @@ import { useRegionMutations } from '@/hooks/useRegionMutations';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 import EditRegionDialog from '@/components/admin/super/regions/EditRegionDialog';
+import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { cn } from '@/lib/utils';
 
 const RegionsLocationsTab: React.FC = () => {
