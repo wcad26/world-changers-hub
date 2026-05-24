@@ -484,12 +484,13 @@ const SuperEvents: React.FC = () => {
               <SelectItem value="global">Global</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-[140px]"><SelectValue placeholder="All Events" /></SelectTrigger>
+          <Select value={regionFilter} onValueChange={setRegionFilter}>
+            <SelectTrigger className="w-[180px]"><SelectValue placeholder="All Regions" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
+              <SelectItem value="all">All Regions</SelectItem>
+              {(regions || []).map((r: any) => (
+                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Event</Button>
