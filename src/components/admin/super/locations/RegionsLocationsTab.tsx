@@ -191,9 +191,9 @@ const RegionsLocationsTab: React.FC = () => {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <GlassKPICard icon={<Globe className="h-5 w-5" />} label="Total Regions" value={totalRegions} isLoading={isLoading} />
-        <GlassKPICard icon={<Users className="h-5 w-5" />} label="Total Members" value={totalMembers} isLoading={isLoading || !membersByRegion} />
+        <GlassKPICard icon={<Users className="h-5 w-5" />} label="Total Members" value={totalMembers} isLoading={isLoading || loadingMemberStats} />
         <GlassKPICard icon={<Home className="h-5 w-5" />} label="Total DCGs" value={totalDcgsAcrossRegions} isLoading={isLoading || !dcgsByRegion} />
-        <GlassKPICard icon={<UserCheck className="h-5 w-5" />} label="Total DCG Members" value={totalDcgMembers ?? 0} isLoading={loadingDcgMembers} />
+        <GlassKPICard icon={<UserCheck className="h-5 w-5" />} label="Total DCG Members" value={totalDcgMembers} isLoading={loadingDcgMembers} />
       </div>
 
       <GlassSection>
