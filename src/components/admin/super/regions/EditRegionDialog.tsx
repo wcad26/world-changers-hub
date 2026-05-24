@@ -69,16 +69,21 @@ const EditRegionDialog: React.FC<EditRegionDialogProps> = ({ open, onOpenChange,
         .from('members')
         .select('id, member_id, profile_id, profiles:profile_id(first_name, last_name)')
         .eq('region_id', region.id)
-        .eq('status', 'active')
-        .order('member_id');
+        .eq('member_type', 'member')
+        .neq('status', 'inactive')
+        .limit(5000);
 
       if (!error && data) {
-        setMembers(data.map((m: any) => ({
-          id: m.id,
-          member_id: m.member_id,
-          profile_id: m.profile_id,
-          name: `${m.profiles?.last_name || ''} ${m.profiles?.first_name || ''}`.trim() || m.member_id,
-        })));
+        setMembers(
+          data
+            .map((m: any) => ({
+              id: m.id,
+              member_id: m.member_id,
+              profile_id: m.profile_id,
+              name: `${m.profiles?.last_name || ''} ${m.profiles?.first_name || ''}`.trim() || m.member_id,
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+        );
       }
       setLoadingMembers(false);
     };
