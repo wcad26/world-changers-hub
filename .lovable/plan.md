@@ -1,55 +1,45 @@
-# Regions Directory — Actions & Per-Region Report
+## Scope
 
-## 1. Actions column in `RegionsLocationsTab.tsx`
+Single file: `src/components/admin/super/locations/RegionsLocationsTab.tsx`. No DB changes.
 
-Replace the **Status** column with an **Actions** column.
+## Definitions (mirrors `MemberKPICards.tsx`)
 
-- Region name cell becomes a button-styled link → `/admin/super/regions/{id}/report` (cursor pointer, hover underline). Whole row also clickable (except the actions cell, which stops propagation).
-- Add a small Active/Inactive dot indicator next to the name (so status info isn't lost), but no dedicated column.
-- Actions cell: shadcn `DropdownMenu` with trigger `MoreHorizontal` and items:
-  - **View Report** → navigate to report page
-  - **Edit** → opens existing `EditRegionGlassDialog` (we'll create a thin glass wrapper if only the legacy `EditRegionDialog` exists; otherwise use `EditRegionDialog` directly — confirmed it exists at `src/components/admin/super/regions/EditRegionDialog.tsx`)
-  - **Deactivate / Reactivate** (red destructive style for deactivate) → uses existing `useRegionMutations().deleteRegion` / `reactivateRegion` with an `AlertDialog` confirm (replacing `window.confirm`)
-- Track `selectedRegion`, `editOpen`, `confirmOpen`, `confirmAction` local state.
+Working set: all rows from `members` where `status != 'inactive'`. Apply per-row in this order:
 
-## 2. New route: per-region report
+1. **Child** → in `buildChildrenSet(members, relationships)` (age<16 AND linked to an adult via `member_relationships`). Excluded from every other bucket.
+2. **Special Event Visitor** → `member_type='visitor'` AND `rated_event_id IN specialEventIds`. Excluded from Members count.
+3. **Regular Visitor** → `member_type='visitor'` AND not special.
+4. **Member** → `member_type='member'`.
 
-- Add route in `src/App.tsx` under the existing `/admin/super` block:
-  `<Route path="regions/:regionId/report" element={<SuperAdminPage><SuperRegionReport /></SuperAdminPage>} />`
-- New page `src/pages/admin/super/RegionReport.tsx` — reads `regionId` from params, fetches the region row (`useAllRegions` or a direct `regions` select by id), then renders `<RegionalDashboardView region={region} />` with a back button + breadcrumb header showing the region name.
+**"Members" KPI + table column = Members + Regular Visitors** (i.e. every non-child row that is NOT a special-event visitor).
 
-## 3. Refactor Regional Dashboard for reuse
+## Data fetched
 
-Today `src/pages/admin/regional/Dashboard.tsx` reads its region from `useRegionalSession()`. We extract the dashboard body into a presentational component so the Super Admin report can render it for any region.
+- `members`: `id, region_id, member_type, rated_event_id, profiles(date_of_birth)` where `status != 'inactive'`.
+- `member_relationships` via `fetchMemberRelationshipsForMembers(allMemberIds)`.
+- `events`: `id, region_id` where `is_special = true` → build `specialEventIdsByRegion: Map<region, Set<eventId>>` (using global Set is fine — `rated_event_id` is unique enough; matches the regional KPI approach).
+- DCG attendants (last 4 weeks):
+  - `attendance_events`: `id, dcg_id` where `dcg_id IS NOT NULL` AND `event_date >= today-28d`. Resolve `dcg_id → region_id` via `dcgs` (already useful to fetch once: `id, region_id`).
+  - `attendance_records`: `event_id, member_id` where `event_id IN (...)` AND `is_present = true`.
+  - Per region: count of distinct `member_id`.
 
-```
-src/pages/admin/regional/Dashboard.tsx
-  └─ thin wrapper: pulls region from useRegionalSession → <RegionalDashboardView region={userRegion} />
+## Per-region aggregation
 
-src/components/admin/regional/dashboard/RegionalDashboardView.tsx  (new)
-  └─ accepts { region: Region | null | undefined, showAuthSkeleton?: boolean }
-     all hooks (useMembers(region?.id), useRegionalEvents — see below, useFinancialSummary, …) take region.id from props
-```
+For each region build counts:
+- `members` = non-child rows that are Member OR Regular Visitor.
+- `children` = child rows.
+- `dcgMembers` = unique attendant count for region (last 28d).
+- `dcgs` (existing) unchanged.
 
-### `useRegionalEvents` consideration
+KPI cards:
+- **Total Members** = sum of new per-region `members`.
+- **Total DCG Members** = sum of per-region unique attendants (replaces the old `dcg_members.is_active` count so KPI matches the column).
+- Total Regions / Total DCGs unchanged.
 
-`useRegionalEvents()` currently scopes to the logged-in user's region (regional admin). For the Super Admin report, we must scope events by the **viewed** region. Two options:
-- Preferred: switch the view to use `useEvents({ regionId: region.id })` (or whichever variant accepts a region id — confirm during implementation). All other dashboard hooks already accept `regionId` so this is the only one needing the swap.
+## Table
 
-If no region-scoped variant exists, add a `regionId?: string` parameter to `useRegionalEvents` that defaults to the session region when omitted, preserving current behavior.
+New column order: `Name | Code | President | Members | DCGs | DCG Members | Children | Actions`. Empty-state `colSpan` → 8.
 
-## 4. Out of scope
+## Out of scope
 
-- No DB/schema changes
-- No styling change to the Regional Dashboard itself
-- No change to KPI cards above the directory
-- No filters
-
-## Files touched
-
-- `src/components/admin/super/locations/RegionsLocationsTab.tsx` — actions column + row navigation + confirm/edit dialogs
-- `src/App.tsx` — new route + import
-- `src/pages/admin/super/RegionReport.tsx` — new
-- `src/components/admin/regional/dashboard/RegionalDashboardView.tsx` — new (extracted from Dashboard.tsx)
-- `src/pages/admin/regional/Dashboard.tsx` — slim wrapper around the new view
-- (Maybe) `src/hooks/useEvents.ts` — accept explicit `regionId` if not already supported
+Regional Dashboard, Region report page, sorting/filtering, schema changes.

@@ -31,6 +31,8 @@ import { useRegionMutations } from '@/hooks/useRegionMutations';
 import { GlassSection, GlassSectionHeader, GlassKPICard, GlassTableSkeleton } from '@/components/ui/GlassSection';
 import CreateRegionGlassDialog from '@/components/admin/super/regions/CreateRegionGlassDialog';
 import EditRegionDialog from '@/components/admin/super/regions/EditRegionDialog';
+import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { cn } from '@/lib/utils';
 
 const RegionsLocationsTab: React.FC = () => {
@@ -56,29 +58,102 @@ const RegionsLocationsTab: React.FC = () => {
     },
   });
 
-  const { data: membersByRegion } = useQuery({
-    queryKey: ['locations', 'member-count-by-region'],
+  // Members + Children per region (mirrors regional portal MemberKPICards classification)
+  const { data: memberStats, isLoading: loadingMemberStats } = useQuery({
+    queryKey: ['locations', 'member-stats-by-region'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('members').select('region_id').neq('status', 'inactive');
+      const { data: members, error } = await supabase
+        .from('members')
+        .select('id, region_id, member_type, rated_event_id, profiles(date_of_birth)')
+        .neq('status', 'inactive');
       if (error) throw error;
-      return (data || []).reduce((acc, m) => {
-        if (m.region_id) acc[m.region_id] = (acc[m.region_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+
+      const memberRows = (members || []) as Array<{
+        id: string;
+        region_id: string | null;
+        member_type: string | null;
+        rated_event_id: string | null;
+        profiles?: { date_of_birth?: string | null } | null;
+      }>;
+
+      const { data: specialEvents, error: specialErr } = await supabase
+        .from('events')
+        .select('id')
+        .eq('is_special', true);
+      if (specialErr) throw specialErr;
+      const specialIds = new Set((specialEvents || []).map(e => e.id));
+
+      const relationships = await fetchMemberRelationshipsForMembers(memberRows.map(m => m.id));
+      const childrenSet = buildChildrenSet(memberRows, relationships);
+
+      const membersByRegion: Record<string, number> = {};
+      const childrenByRegion: Record<string, number> = {};
+
+      memberRows.forEach(m => {
+        if (!m.region_id) return;
+        if (childrenSet.has(m.id)) {
+          childrenByRegion[m.region_id] = (childrenByRegion[m.region_id] || 0) + 1;
+          return;
+        }
+        // Special-event visitors excluded from Members count
+        if (m.member_type === 'visitor' && m.rated_event_id && specialIds.has(m.rated_event_id)) return;
+        // Members + Regular Visitors
+        membersByRegion[m.region_id] = (membersByRegion[m.region_id] || 0) + 1;
+      });
+
+      return { membersByRegion, childrenByRegion };
     },
   });
 
-  const { data: totalDcgMembers, isLoading: loadingDcgMembers } = useQuery({
-    queryKey: ['locations', 'total-dcg-members'],
+  // Active DCG attendants per region (unique members present at any DCG event in last 28 days)
+  const { data: dcgMembersByRegion, isLoading: loadingDcgMembers } = useQuery({
+    queryKey: ['locations', 'dcg-active-attendants-by-region'],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from('dcg_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
-      if (error) throw error;
-      return count || 0;
+      const since = new Date();
+      since.setDate(since.getDate() - 28);
+      const sinceStr = since.toISOString().slice(0, 10);
+
+      const { data: events, error: evErr } = await supabase
+        .from('attendance_events')
+        .select('id, region_id')
+        .not('dcg_id', 'is', null)
+        .gte('event_date', sinceStr);
+      if (evErr) throw evErr;
+
+      const eventRegion = new Map<string, string>();
+      (events || []).forEach(e => {
+        if (e.region_id) eventRegion.set(e.id, e.region_id);
+      });
+      const eventIds = Array.from(eventRegion.keys());
+      if (eventIds.length === 0) return {} as Record<string, number>;
+
+      // Chunk in() for safety
+      const CHUNK = 200;
+      const uniquePerRegion = new Map<string, Set<string>>();
+      for (let i = 0; i < eventIds.length; i += CHUNK) {
+        const chunk = eventIds.slice(i, i + CHUNK);
+        const { data: records, error: recErr } = await supabase
+          .from('attendance_records')
+          .select('event_id, member_id')
+          .in('event_id', chunk)
+          .eq('is_present', true);
+        if (recErr) throw recErr;
+        (records || []).forEach(r => {
+          const region = eventRegion.get(r.event_id);
+          if (!region) return;
+          if (!uniquePerRegion.has(region)) uniquePerRegion.set(region, new Set());
+          uniquePerRegion.get(region)!.add(r.member_id);
+        });
+      }
+
+      const out: Record<string, number> = {};
+      uniquePerRegion.forEach((set, region) => { out[region] = set.size; });
+      return out;
     },
   });
+
+  const membersByRegion = memberStats?.membersByRegion;
+  const childrenByRegion = memberStats?.childrenByRegion;
 
   const sortedRegions = useMemo(() => {
     return [...(regions || [])].sort((a, b) => a.name.localeCompare(b.name));
@@ -87,6 +162,7 @@ const RegionsLocationsTab: React.FC = () => {
   const totalRegions = regions?.length || 0;
   const totalMembers = Object.values(membersByRegion || {}).reduce((a, b) => a + b, 0);
   const totalDcgsAcrossRegions = Object.values(dcgsByRegion || {}).reduce((a, b) => a + b, 0);
+  const totalDcgMembers = Object.values(dcgMembersByRegion || {}).reduce((a, b) => a + b, 0);
 
   const goToReport = (r: Region) => navigate(`/admin/super/regions/${r.id}/report`);
 
@@ -115,9 +191,9 @@ const RegionsLocationsTab: React.FC = () => {
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <GlassKPICard icon={<Globe className="h-5 w-5" />} label="Total Regions" value={totalRegions} isLoading={isLoading} />
-        <GlassKPICard icon={<Users className="h-5 w-5" />} label="Total Members" value={totalMembers} isLoading={isLoading || !membersByRegion} />
+        <GlassKPICard icon={<Users className="h-5 w-5" />} label="Total Members" value={totalMembers} isLoading={isLoading || loadingMemberStats} />
         <GlassKPICard icon={<Home className="h-5 w-5" />} label="Total DCGs" value={totalDcgsAcrossRegions} isLoading={isLoading || !dcgsByRegion} />
-        <GlassKPICard icon={<UserCheck className="h-5 w-5" />} label="Total DCG Members" value={totalDcgMembers ?? 0} isLoading={loadingDcgMembers} />
+        <GlassKPICard icon={<UserCheck className="h-5 w-5" />} label="Total DCG Members" value={totalDcgMembers} isLoading={loadingDcgMembers} />
       </div>
 
       <GlassSection>
@@ -143,15 +219,17 @@ const RegionsLocationsTab: React.FC = () => {
                 <TableRow className="bg-muted/30">
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
-                  <TableHead>Regional President</TableHead>
-                  <TableHead>DCGs</TableHead>
+                  <TableHead>President</TableHead>
                   <TableHead>Members</TableHead>
+                  <TableHead>DCGs</TableHead>
+                  <TableHead>DCG Members</TableHead>
+                  <TableHead>Children</TableHead>
                   <TableHead className="w-[80px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <GlassTableSkeleton columns={6} rows={4} />
+                  <GlassTableSkeleton columns={8} rows={4} />
                 ) : sortedRegions.length > 0 ? (
                   sortedRegions.map((r) => (
                     <TableRow
@@ -173,13 +251,15 @@ const RegionsLocationsTab: React.FC = () => {
                       </TableCell>
                       <TableCell><Badge variant="outline">{r.code}</Badge></TableCell>
                       <TableCell>{r.regional_president || 'N/A'}</TableCell>
-                      <TableCell>{dcgsByRegion?.[r.id] || 0}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center gap-1">
                           <Users className="h-3.5 w-3.5 text-muted-foreground" />
                           {membersByRegion?.[r.id] || 0}
                         </span>
                       </TableCell>
+                      <TableCell>{dcgsByRegion?.[r.id] || 0}</TableCell>
+                      <TableCell>{dcgMembersByRegion?.[r.id] || 0}</TableCell>
+                      <TableCell>{childrenByRegion?.[r.id] || 0}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -215,7 +295,7 @@ const RegionsLocationsTab: React.FC = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
                       No regions found.
                     </TableCell>
                   </TableRow>
