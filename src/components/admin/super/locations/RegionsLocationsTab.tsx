@@ -219,15 +219,17 @@ const RegionsLocationsTab: React.FC = () => {
                 <TableRow className="bg-muted/30">
                   <TableHead>Name</TableHead>
                   <TableHead>Code</TableHead>
-                  <TableHead>Regional President</TableHead>
-                  <TableHead>DCGs</TableHead>
+                  <TableHead>President</TableHead>
                   <TableHead>Members</TableHead>
+                  <TableHead>DCGs</TableHead>
+                  <TableHead>DCG Members</TableHead>
+                  <TableHead>Children</TableHead>
                   <TableHead className="w-[80px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <GlassTableSkeleton columns={6} rows={4} />
+                  <GlassTableSkeleton columns={8} rows={4} />
                 ) : sortedRegions.length > 0 ? (
                   sortedRegions.map((r) => (
                     <TableRow
@@ -249,13 +251,15 @@ const RegionsLocationsTab: React.FC = () => {
                       </TableCell>
                       <TableCell><Badge variant="outline">{r.code}</Badge></TableCell>
                       <TableCell>{r.regional_president || 'N/A'}</TableCell>
-                      <TableCell>{dcgsByRegion?.[r.id] || 0}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center gap-1">
                           <Users className="h-3.5 w-3.5 text-muted-foreground" />
                           {membersByRegion?.[r.id] || 0}
                         </span>
                       </TableCell>
+                      <TableCell>{dcgsByRegion?.[r.id] || 0}</TableCell>
+                      <TableCell>{dcgMembersByRegion?.[r.id] || 0}</TableCell>
+                      <TableCell>{childrenByRegion?.[r.id] || 0}</TableCell>
                       <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
