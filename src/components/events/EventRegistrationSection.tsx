@@ -17,6 +17,8 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
   const { data: currencies } = useCurrencies();
   const eventCurrency = currencies?.find(c => c.code === event.cost_currency_code);
   const { t } = useLanguage();
+  const [preRegOpen, setPreRegOpen] = useState(false);
+  const showPreReg = canRegister && !!(event as any).is_special && !!(event as any).requires_pre_registration;
 
   return (
     <section className="py-20 relative overflow-hidden">
