@@ -57,6 +57,15 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
 
               {/* Right Side - White Background with Buttons */}
               <div className="bg-white p-12 flex flex-col justify-center space-y-6">
+                {showPreReg && (
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-7 text-lg font-semibold transition-all hover:scale-105"
+                    onClick={() => setPreRegOpen(true)}
+                  >
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Reserve your spot
+                  </Button>
+                )}
                 {event.registration_url && (
                   <Button 
                     className="w-full bg-[#542a8f] hover:bg-[#542a8f]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
