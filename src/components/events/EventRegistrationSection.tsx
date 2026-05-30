@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageCircle, Ticket } from "lucide-react";
+import { Calendar, MessageCircle, Ticket, UserPlus } from "lucide-react";
 import { Event } from "@/hooks/useEvents";
 import { format, isFuture } from "date-fns";
 import { useCurrencies } from "@/hooks/useCurrencies";
 import { useLanguage } from "@/hooks/useLanguage";
+import { EventPreRegistrationDialog } from "./EventPreRegistrationDialog";
 
 interface EventRegistrationSectionProps {
   event: Event;
