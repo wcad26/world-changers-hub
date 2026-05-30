@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, MessageCircle, Ticket } from "lucide-react";
+import { Calendar, MessageCircle, Ticket, UserPlus } from "lucide-react";
 import { Event } from "@/hooks/useEvents";
 import { format, isFuture } from "date-fns";
 import { useCurrencies } from "@/hooks/useCurrencies";
 import { useLanguage } from "@/hooks/useLanguage";
+import { EventPreRegistrationDialog } from "./EventPreRegistrationDialog";
 
 interface EventRegistrationSectionProps {
   event: Event;
@@ -15,6 +17,8 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
   const { data: currencies } = useCurrencies();
   const eventCurrency = currencies?.find(c => c.code === event.cost_currency_code);
   const { t } = useLanguage();
+  const [preRegOpen, setPreRegOpen] = useState(false);
+  const showPreReg = canRegister && !!(event as any).is_special && !!(event as any).requires_pre_registration;
 
   return (
     <section className="py-20 relative overflow-hidden">
@@ -53,6 +57,15 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
 
               {/* Right Side - White Background with Buttons */}
               <div className="bg-white p-12 flex flex-col justify-center space-y-6">
+                {showPreReg && (
+                  <Button
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-7 text-lg font-semibold transition-all hover:scale-105"
+                    onClick={() => setPreRegOpen(true)}
+                  >
+                    <UserPlus className="mr-2 h-5 w-5" />
+                    Reserve your spot
+                  </Button>
+                )}
                 {event.registration_url && (
                   <Button 
                     className="w-full bg-[#542a8f] hover:bg-[#542a8f]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
@@ -110,6 +123,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
           </div>
         )}
       </div>
+      <EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />
     </section>
   );
 }

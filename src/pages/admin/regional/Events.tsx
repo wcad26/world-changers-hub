@@ -129,6 +129,7 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
+  requires_pre_registration: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
 }).refine((data) => {
   if (data.end_date && data.start_date) {
@@ -497,6 +498,7 @@ const RegionalEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
+        requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
         status: 'Upcoming',
         dcg_id: null,
         registration_url: values.registration_url || null,
@@ -1193,6 +1195,7 @@ const RegionalEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
+        requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
@@ -1471,6 +1474,7 @@ const RegionalEvents: React.FC = () => {
       is_public: event.is_public,
       is_featured: event.is_featured,
       is_special: event.is_special || false,
+      requires_pre_registration: !!event.requires_pre_registration,
       attendance_target: event.attendance_target || undefined,
           testimonials: existingTestimonials?.map(t => ({
             name: t.name,
@@ -3091,6 +3095,31 @@ const RegionalEvents: React.FC = () => {
                     </FormItem>
                   )}
                 />
+
+                {form.watch('is_special') && (
+                  <FormField
+                    control={form.control}
+                    name="requires_pre_registration"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <input
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={field.onChange}
+                            className="h-4 w-4 mt-1"
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>Requires Pre-Registration</FormLabel>
+                          <FormDescription>
+                            Allow attendees to reserve their spot in advance (individuals or families)
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
               <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
@@ -4329,6 +4358,32 @@ const RegionalEvents: React.FC = () => {
                   </FormItem>
                 )}
               />
+
+              {form.watch('is_special') && (
+                <FormField
+                  control={form.control}
+                  name="requires_pre_registration"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Requires Pre-Registration</FormLabel>
+                        <FormDescription>
+                          Allow attendees to reserve their spot in advance (individuals or families)
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+
 
               <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {

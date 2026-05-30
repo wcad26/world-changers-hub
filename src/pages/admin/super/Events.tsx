@@ -55,6 +55,7 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
+  requires_pre_registration: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
@@ -91,7 +92,7 @@ const SuperEvents: React.FC = () => {
     defaultValues: {
       name: "", description: "", start_date: "", start_time: "",
       end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false, is_special: false, slug: "", registration_url: "",
+      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false, slug: "", registration_url: "",
     },
   });
   const editForm = useForm<z.infer<typeof eventSchema>>({ resolver: zodResolver(eventSchema) });
@@ -227,6 +228,7 @@ const SuperEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
+        requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
         registration_url: values.registration_url || null,
         status: 'Upcoming',
         region_id: null,
@@ -261,6 +263,7 @@ const SuperEvents: React.FC = () => {
       is_public: event.is_public,
       is_featured: event.is_featured,
       is_special: !!event.is_special,
+      requires_pre_registration: !!event.requires_pre_registration,
       attendance_target: event.attendance_target || undefined,
       slug: event.slug || "",
       registration_url: event.registration_url || "",
@@ -296,6 +299,7 @@ const SuperEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
+        requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
         registration_url: values.registration_url || null,
       });
       toast({ title: "Success", description: "Event updated successfully." });
@@ -443,6 +447,14 @@ const SuperEvents: React.FC = () => {
               <FormLabel className="font-normal">Special Event</FormLabel>
             </FormItem>
           )} />
+          {formInstance.watch('is_special') && (
+            <FormField control={formInstance.control} name="requires_pre_registration" render={({ field }) => (
+              <FormItem className="flex items-center gap-2 space-y-0">
+                <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
+                <FormLabel className="font-normal">Requires Pre-Registration</FormLabel>
+              </FormItem>
+            )} />
+          )}
         </div>
         <DialogFooter>
           <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>

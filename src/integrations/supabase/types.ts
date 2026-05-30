@@ -888,6 +888,54 @@ export type Database = {
           },
         ]
       }
+      event_pre_registrations: {
+        Row: {
+          created_at: string
+          email: string
+          event_id: string
+          group_id: string | null
+          id: string
+          is_primary: boolean
+          member_id: string
+          registration_type: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          event_id: string
+          group_id?: string | null
+          id?: string
+          is_primary?: boolean
+          member_id: string
+          registration_type: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          event_id?: string
+          group_id?: string | null
+          id?: string
+          is_primary?: boolean
+          member_id?: string
+          registration_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_pre_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_pre_registrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_slug_history: {
         Row: {
           changed_at: string | null
@@ -1067,6 +1115,7 @@ export type Database = {
           registration_url: string | null
           requirements: string | null
           requirements_fr: string | null
+          requires_pre_registration: boolean
           slug: string | null
           start_datetime: string
           status: Database["public"]["Enums"]["event_status"]
@@ -1104,6 +1153,7 @@ export type Database = {
           registration_url?: string | null
           requirements?: string | null
           requirements_fr?: string | null
+          requires_pre_registration?: boolean
           slug?: string | null
           start_datetime: string
           status?: Database["public"]["Enums"]["event_status"]
@@ -1141,6 +1191,7 @@ export type Database = {
           registration_url?: string | null
           requirements?: string | null
           requirements_fr?: string | null
+          requires_pre_registration?: boolean
           slug?: string | null
           start_datetime?: string
           status?: Database["public"]["Enums"]["event_status"]
