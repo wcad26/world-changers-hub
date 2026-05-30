@@ -4359,6 +4359,32 @@ const RegionalEvents: React.FC = () => {
                 )}
               />
 
+              {form.watch('is_special') && (
+                <FormField
+                  control={form.control}
+                  name="requires_pre_registration"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 mt-1"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Requires Pre-Registration</FormLabel>
+                        <FormDescription>
+                          Allow attendees to reserve their spot in advance (individuals or families)
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+
+
               <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
                   setEditEventDialogOpen(false);
