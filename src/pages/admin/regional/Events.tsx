@@ -129,6 +129,7 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
+  requires_pre_registration: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
 }).refine((data) => {
   if (data.end_date && data.start_date) {
