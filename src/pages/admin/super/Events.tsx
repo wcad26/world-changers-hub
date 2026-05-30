@@ -447,6 +447,14 @@ const SuperEvents: React.FC = () => {
               <FormLabel className="font-normal">Special Event</FormLabel>
             </FormItem>
           )} />
+          {formInstance.watch('is_special') && (
+            <FormField control={formInstance.control} name="requires_pre_registration" render={({ field }) => (
+              <FormItem className="flex items-center gap-2 space-y-0">
+                <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
+                <FormLabel className="font-normal">Requires Pre-Registration</FormLabel>
+              </FormItem>
+            )} />
+          )}
         </div>
         <DialogFooter>
           <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
