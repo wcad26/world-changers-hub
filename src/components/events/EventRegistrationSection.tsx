@@ -123,6 +123,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
           </div>
         )}
       </div>
+      <EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />
     </section>
   );
 }
