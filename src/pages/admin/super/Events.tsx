@@ -92,7 +92,7 @@ const SuperEvents: React.FC = () => {
     defaultValues: {
       name: "", description: "", start_date: "", start_time: "",
       end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false, is_special: false, slug: "", registration_url: "",
+      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false, slug: "", registration_url: "",
     },
   });
   const editForm = useForm<z.infer<typeof eventSchema>>({ resolver: zodResolver(eventSchema) });
