@@ -1474,6 +1474,7 @@ const RegionalEvents: React.FC = () => {
       is_public: event.is_public,
       is_featured: event.is_featured,
       is_special: event.is_special || false,
+      requires_pre_registration: !!event.requires_pre_registration,
       attendance_target: event.attendance_target || undefined,
           testimonials: existingTestimonials?.map(t => ({
             name: t.name,
