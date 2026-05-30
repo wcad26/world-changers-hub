@@ -271,12 +271,12 @@ export default function VisitorRegister() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="first_name"
+                    name="last_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('firstName')} <Req /></FormLabel>
+                        <FormLabel>Family Name <Req /></FormLabel>
                         <FormControl>
-                          <Input placeholder="John" className="rounded-xl bg-background/60" {...field} />
+                          <Input placeholder="Doe" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -284,12 +284,12 @@ export default function VisitorRegister() {
                   />
                   <FormField
                     control={form.control}
-                    name="last_name"
+                    name="first_name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('lastName')} <Req /></FormLabel>
+                        <FormLabel>Other Names <Req /></FormLabel>
                         <FormControl>
-                          <Input placeholder="Doe" className="rounded-xl bg-background/60" {...field} />
+                          <Input placeholder="John" className="rounded-xl bg-background/60" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
