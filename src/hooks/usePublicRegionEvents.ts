@@ -30,15 +30,17 @@ export const usePublicRegionEvents = (regionId: string | undefined) => {
     queryFn: async () => {
       if (!regionId) return [];
       
-      const now = new Date();
-      
+      // Include events up to end of today so today's events appear even if not yet started
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .eq('region_id', regionId)
         .eq('is_public', true)
         .is('dcg_id', null)
-        .lte('start_datetime', now.toISOString())
+        .lte('start_datetime', endOfToday.toISOString())
         .order('start_datetime', { ascending: false })
         .limit(3);
       
