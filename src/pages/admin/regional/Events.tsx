@@ -1195,6 +1195,7 @@ const RegionalEvents: React.FC = () => {
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
+        requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
