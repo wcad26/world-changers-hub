@@ -55,6 +55,7 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
+  requires_pre_registration: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
