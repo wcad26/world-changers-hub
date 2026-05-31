@@ -1,28 +1,25 @@
-## Plan
+I found two likely crisis sources:
 
-1. **Fix certificate database permissions**
-   - Replace the restrictive certificate table RLS rules that depend on `regional_admin`, `super_admin`, and matching regions.
-   - Allow every signed-in user to view, create, update, soft-delete, reinstate, and permanently delete certificate records and certificate templates.
-   - Keep public certificate verification working for active certificates.
+1. The last certificate migration re-created public read storage policies but did not drop/recreate all certificate storage write policies in one final consolidated migration, leaving room for duplicate/stale policy behavior.
+2. The regional portal still depends on session/bootstrap hydration for `userRegion`; when that fails or lags, dashboard/certificate queries can start with missing context and render a blank/error state even though route guards are pass-through.
 
-2. **Fix certificate storage permissions**
-   - Recreate storage rules for both buckets:
-     - `certificate-templates`
-     - `certificates`
-   - Allow every signed-in user to upload, replace, and delete files in those buckets.
-   - Keep public read access so templates/certificate images can still display and download.
+Plan:
 
-3. **Prevent blank-screen crashes on certificate pages**
-   - Add safe error handling around the certificate queries in the regional/super certificate pages so an RLS/storage error shows a normal page state instead of crashing the portal.
-   - Do not add any route/login restrictions; portal guards remain pass-through as required.
+1. Consolidate certificate access rules
+   - Add one final migration that drops every certificate-related table and storage policy by name.
+   - Recreate certificate table policies so any signed-in user has full control over `certificates` and `certificate_templates`.
+   - Recreate storage policies so any signed-in user can upload, replace, and delete files in both `certificates` and `certificate-templates`; public can read both buckets.
+   - Keep the needed Data API grants for `authenticated`, `anon` reads, and `service_role`.
 
-4. **Validate the fix**
-   - Re-check the active RLS policies after the migration.
-   - Confirm certificate table and storage access no longer depends on regional role checks.
+2. Make regional session fully non-blocking
+   - Update the regional session provider so it never returns `checking` after mount and never clears portal state unless the user explicitly clicks logout.
+   - If no region is available yet, keep rendering the portal shell instead of depending on a region bootstrap.
+   - Preserve the existing pass-through route guards.
 
-## Technical details
+3. Prevent certificate/dashboard query failures from blanking the portal
+   - Harden certificate hooks so RLS or missing-region errors return safe empty arrays with console warnings instead of throwing into React Query/error boundaries.
+   - For regional certificate pages, allow queries to render even while region context is still hydrating.
 
-- Migration will update only existing RLS/storage policies; no new tables are needed.
-- Target tables: `public.certificates`, `public.certificate_templates`.
-- Target storage policies: `storage.objects` policies for `certificate-templates` and `certificates` buckets.
-- Frontend changes will be limited to certificate-page error resilience if needed after the policy change.
+4. Validate
+   - Re-check active policies for certificate tables and storage after migration.
+   - Check console/network/dev-server logs for blank-screen or auth errors after the changes.
