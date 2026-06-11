@@ -35,7 +35,12 @@ export default function CreatePairDialog() {
 
   const onSubmit = async (v: FormData) => {
     try {
-      await create.mutateAsync(v);
+      await create.mutateAsync({
+        base_code: v.base_code,
+        quote_code: v.quote_code,
+        bid: v.bid,
+        ask: v.ask,
+      });
       toast.success("Exchange rate created");
       form.reset();
       setOpen(false);
