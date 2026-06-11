@@ -91,6 +91,9 @@ const SuperEvents: React.FC = () => {
   const updateEvent = useUpdateGlobalEvent();
   const deleteEvent = useDeleteGlobalEvent();
 
+  // Fundraising campaigns for linking special events
+  const { data: campaigns = [] } = useQueryCampaigns();
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
