@@ -1278,7 +1278,10 @@ const SuperEvents: React.FC = () => {
                 <FormControl>
                   <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={field.value || ""} onChange={field.onChange}>
                     <option value="">— None —</option>
-                    {(campaigns || []).map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.currency_code} {c.goal?.toLocaleString?.() || c.goal})</option>)}
+                    {(campaigns || []).map((c: any) => {
+                      const goalMajor = (Number(c.goal) || 0) / 100;
+                      return <option key={c.id} value={c.id}>{c.name} ({c.currency_code} {goalMajor.toLocaleString()})</option>;
+                    })}
                   </select>
                 </FormControl>
                 <FormMessage />
