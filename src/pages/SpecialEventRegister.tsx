@@ -712,53 +712,33 @@ export default function SpecialEventRegister() {
                   )}
 
                   {lookupStatus === "missing" && (
-                    <>
-                      <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
-                        <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
-                        <div className="grid md:grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs">Family Name *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Other Names *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Email *</Label>
-                            <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Phone *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
-                          </div>
-                          <div className="md:col-span-2">
-                            <Label className="text-xs">Address</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Date of birth</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Gender</Label>
-                            <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
-                              <option value="">Select</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      {primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone && (
-                        <>
-                          {renderModeSelector(primaryDraft.first_name)}
-                          <div className="pt-2">{renderActions()}</div>
-                        </>
-                      )}
-                    </>
+                    <Alert className="border-amber-500/30 bg-amber-500/5">
+                      <UserCheck className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-justify">
+                        We don't have you in the system yet. Click <strong>Continue</strong> to onboard and complete your registration.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {lookupStatus === "missing" && (
+                    <div className="pt-2">{renderActions()}</div>
                   )}
                 </GlassSection>
+              )}
+
+              {step === "onboard" && (
+                <div className="space-y-5">
+                  <SpecialEventOnboardForm
+                    value={primaryOnboard}
+                    onChange={setPrimaryOnboard}
+                  />
+                  {isOnboardValid(primaryOnboard) && (
+                    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 space-y-3 shadow-sm">
+                      {renderModeSelector(primaryOnboard.first_name || "there")}
+                    </div>
+                  )}
+                  <div className="pt-2">{renderActions()}</div>
+                </div>
               )}
 
               {step === "details" && (
