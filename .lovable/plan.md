@@ -1,99 +1,65 @@
-## Super Admin Settings + Currency-Aware Finances
+# Global Financial Management — Display Currency Switcher
 
-### 1. Database (single migration)
+Make every tab fully FX-aware, add a global display-currency switcher (defaults to the base currency), reorder tabs so **Global Books** and **Global Campaigns** come first, and default the page to **Global Books**.
 
-**New table `public.exchange_rates`** — admin-managed pairs:
-- `id uuid pk`, `base_code text` (FK currencies.code), `quote_code text` (FK currencies.code)
-- `bid numeric(18,8) not null` (buy / market buys quote with base)
-- `ask numeric(18,8) not null` (sell)
-- `mid numeric(18,8) generated always as ((bid+ask)/2) stored`
-- `is_active bool default true`, `effective_at timestamptz default now()`
-- `created_by uuid`, timestamps, `unique(base_code, quote_code)`
-- RLS: super_admin full access; authenticated SELECT (rates are non-sensitive reference data). GRANTs for anon SELECT, authenticated SELECT, service_role ALL.
+## 1. Tab order & default
 
-**New table `public.system_settings`** — singleton key/value for super-admin-wide prefs:
-- `key text pk`, `value jsonb`, `updated_by uuid`, `updated_at timestamptz`
-- Seeded row: `('base_currency', '"USD"')`
-- RLS: SELECT for authenticated; INSERT/UPDATE/DELETE super_admin only.
+In `src/pages/admin/super/Finances.tsx`:
+- Reorder `TabsList` to: `Global Books → Global Campaigns → Regional → DCG → Fundraising`.
+- Change `<Tabs defaultValue="regional">` → `defaultValue="global-books"`.
 
-No changes to `currencies` table.
+## 2. Display currency switcher (new)
 
-### 2. Settings page — `src/pages/admin/super/Settings.tsx`
+New component `src/components/admin/super/finances/DisplayCurrencySelect.tsx`:
+- Dropdown listing all active currencies from `useCurrencies()`.
+- Shows the base currency with a "Base" badge and pre-selects it.
+- Renders next to `RegionFilterSelect` and `PeriodSelector` in the page header.
 
-Cloned from regional Settings, **branch tab removed**. Tabs:
-1. **General** — base currency selector (writes `system_settings.base_currency`), org-wide defaults.
-2. **Currency** *(new — replaces standalone Currencies page)*
-3. **Notifications** — same shape as regional.
-4. **Communication** — email signature / templates.
-5. **Security** — 2FA toggle, session timeout, audit logging.
-6. **System** — status / maintenance read-outs.
+State `displayCurrency` (string code) lives in `Finances.tsx` and is passed to every tab as a prop. When unset, falls back to base.
 
-Save button persists via `useSystemSettings` hook (upsert into `system_settings`).
+## 3. FX hook upgrade
 
-### 3. Currency tab UI
+Extend `src/hooks/useDisplayCurrency.ts`:
+- Add a second hook `useFxConverterFor(targetCode?: string)` that converts **from any source currency → the chosen target** (not just base). Internally calls `convert(amount, fromCode, targetCode, baseCode, rates)` from `src/utils/fx.ts` (already supports arbitrary target via base routing).
+- Returns `{ targetCode, targetCurrency, convert, baseCode }`.
+- Keep existing `useFxConverter` as a thin wrapper for back-compat (target = base).
 
-Two stacked sections inside the tab:
+`src/utils/fx.ts` already supports arbitrary `toCode`; no change needed there.
 
-**a) Currencies (existing CurrenciesTable extracted from `Currencies.tsx`)**  
-The existing table, search, create/edit dialogs, and active toggle render here unchanged. A "Base currency" badge marks the row matching `system_settings.base_currency`; a "Set as base" action sets it.
+## 4. Wire every tab to the display currency
 
-**b) Exchange rates matrix**
-- Table columns: Base → Quote · Bid · Ask · Mid (auto) · Spread · Updated · Actions.
-- `CreatePairDialog` — two currency selects + bid + ask numeric inputs (validation: ask ≥ bid, both > 0).
-- `EditPairDialog` — update bid/ask, toggle active.
-- Inline-derived cross rates: when a pair to base currency exists, derive non-base pairs via base; show derived rows in muted style with no edit action (only directly-defined pairs are editable). This satisfies "all other currencies determined based on their exchange rate with the base currency".
-- Sort by base then quote; filter input; empty state.
+Each tab accepts a new `displayCurrency` prop and uses `useFxConverterFor(displayCurrency)` instead of `useFxConverter()`. The "Reporting in" chip shows the selected currency.
 
-### 4. FX conversion utility — `src/utils/fx.ts`
+- **GlobalBooksTab**: convert each transaction `amount` (source = `currency_code`) → displayCurrency. KPIs, trend chart series, transactions table all render in displayCurrency. Sub-line still shows source currency + original amount when different from display.
+- **GlobalLedgerTab (Regional)**: same conversion; per-region breakdown and aggregations roll up in displayCurrency.
+- **GlobalDcgLedgerTab (DCG)**: same — per-DCG and per-region aggregations in displayCurrency.
+- **GlobalFundraisingTab**: KPIs (Total Raised, Combined Goal, Progress) computed in displayCurrency by converting each donation (using `d.currency_code || d.campaign.currency_code`) and each campaign goal (using `c.currency_code`). 
+  - **Campaign rows keep their native currency by default** (Goal, Raised columns use `c.currency_code`). Add a small "Show in {displayCurrency}" toggle above the Campaigns table; when on, each row's Goal/Raised is converted, with the original native amount shown beneath in small muted text. Donation rows behave the same way (native by default, converted when toggle is on).
+- **GlobalCampaignsTab**: KPIs (Total Raised, Combined Goal, Progress) computed in displayCurrency (currently hard-coded USD). Campaign rows native by default + same "Show in {displayCurrency}" toggle as Fundraising tab. Donations linked to global campaigns also follow toggle.
 
-```text
-convert(amount, fromCode, toCode, baseCode, rates, side='mid'):
-  if from == to → amount
-  if direct pair from→to → amount * rate(side)
-  if direct pair to→from → amount / rate(opposite side)
-  else → via base: convert(amount, from, base) then convert(result, base, to)
-  if no path → return null + flag (UI shows "—" with tooltip "no FX path")
-```
+Unconverted-row counter (when no FX path exists between source and display) stays — used across all four converted tabs.
 
-`useFxRates()` hook fetches `exchange_rates` + `system_settings.base_currency` via react-query (cached, invalidated on mutation).
+## 5. Trend charts
 
-### 5. Super Admin Finance integration
+`LedgerTrendChart` currently receives raw rows. We'll keep passing the **already-converted** rows (where `amount` has been overwritten to the displayCurrency value) so the chart aggregates in the chosen currency. The chart's axis label/tooltip uses `displayCurrency` symbol via `formatWithCurrency`.
 
-`Finances.tsx` and global hooks (`useGlobalLedger`, `useGlobalFundraising`):
-- Each transaction/donation row carries its region's `currency_code` (already joined) or `currencies.code` for global-scope.
-- A new `useDisplayCurrency()` returns base currency object.
-- Aggregation step converts every amount → base currency via `convert(...)` using mid rate before summing. Rows that fail conversion are excluded and surfaced in a small "Unconverted (N)" footnote per tab.
-- All KPI cards, region breakdowns, and charts render with `formatWithCurrency(amount, baseCurrency)`.
-- Per-row tables keep showing the original currency next to the converted amount: `KES 10,000 ≈ USD 77.50`.
-- A header chip `Reporting in: USD (base)` linking to Settings → Currency.
+## 6. Edge cases
+- If selected display currency has no FX path from a row's source, that row is excluded from KPIs (counted as "unconverted") and the table cell shows `—` with the original amount underneath. Identical to current base-only behavior.
+- Switching display currency does **not** change stored data; conversions are display-only.
+- If exchange rates aren't loaded yet, `convert` returns the amount as-is when source equals target, otherwise null — KPIs render as 0 until rates load.
 
-Regional finance pages are not touched.
-
-### 6. Routing & navigation
-
-- `src/App.tsx`: add `/admin/super/settings` → `Settings`; remove `/admin/super/currencies` route (redirect to `/admin/super/settings?tab=currency`).
-- `SuperAdminLayout.tsx`: remove **Currency Management** entry; add **Settings** (icon `Settings`) directly below **About Us**.
-- Delete `src/pages/admin/super/Currencies.tsx` (its table/dialogs are extracted into `src/components/admin/super/settings/currency/`).
-
-### 7. Files
+## Files
 
 **New**
-- `src/pages/admin/super/Settings.tsx`
-- `src/components/admin/super/settings/{GeneralTab,CurrencyTab,NotificationsTab,CommunicationTab,SecurityTab,SystemTab}.tsx`
-- `src/components/admin/super/settings/currency/{CurrenciesPanel,ExchangeRatesPanel,CreatePairDialog,EditPairDialog,BaseCurrencyBadge}.tsx`
-- `src/hooks/useExchangeRates.ts`, `src/hooks/useSystemSettings.ts`, `src/hooks/useDisplayCurrency.ts`
-- `src/utils/fx.ts`
-- `supabase/migrations/<ts>_exchange_rates_system_settings.sql`
+- `src/components/admin/super/finances/DisplayCurrencySelect.tsx`
 
 **Edited**
-- `src/pages/admin/super/Finances.tsx` + global ledger/fundraising hooks → currency-aware aggregation
-- `src/components/admin/SuperAdminLayout.tsx` (menu)
-- `src/App.tsx` (routes)
+- `src/pages/admin/super/Finances.tsx` — reorder tabs, default `global-books`, mount `DisplayCurrencySelect`, thread `displayCurrency` prop.
+- `src/hooks/useDisplayCurrency.ts` — add `useFxConverterFor(target)`.
+- `src/components/admin/super/finances/GlobalBooksTab.tsx`
+- `src/components/admin/super/finances/GlobalLedgerTab.tsx`
+- `src/components/admin/super/finances/GlobalDcgLedgerTab.tsx`
+- `src/components/admin/super/finances/GlobalFundraisingTab.tsx`
+- `src/components/admin/super/finances/GlobalCampaignsTab.tsx`
 
-**Deleted**
-- `src/pages/admin/super/Currencies.tsx`
-
-### Validation
-- Settings save round-trips base currency; Finance dashboard re-aggregates immediately on base-currency change (react-query invalidation).
-- Creating a pair USD→KES with bid=128 ask=130 converts a KES 13,000 regional expense to ≈ USD 100 (using mid 129) in Finance KPIs.
-- Removing the standalone Currency Management link leaves no broken nav.
+No database/migration changes — exchange_rates + system_settings already in place.
