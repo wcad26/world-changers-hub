@@ -79,6 +79,7 @@ import HomepageSettings from "./pages/admin/super/HomepageSettings";
 import SuperUserManagement from "./pages/admin/super/UserManagement";
 import SuperCertificates from "./pages/admin/super/Certificates";
 import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
+import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
 
 // DCG Portal Routes
@@ -248,6 +249,7 @@ const App = () => {
                 <Route path="fundraising" element={<Navigate to="/admin/super/finances" replace />} />
                 <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
                 <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
+                <Route path="finances/fundraising/:campaignId" element={<SuperAdminPage><SuperFundraisingCampaignReport /></SuperAdminPage>} />
                 <Route path="regions" element={<SuperAdminPage><SuperRegions /></SuperAdminPage>} />
                 <Route path="regions/:regionId/report" element={<SuperAdminPage><SuperRegionReport /></SuperAdminPage>} />
                 <Route path="currencies" element={<Navigate to="/admin/super/settings?tab=currency" replace />} />
