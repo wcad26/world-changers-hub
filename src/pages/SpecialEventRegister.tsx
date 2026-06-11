@@ -474,6 +474,7 @@ export default function SpecialEventRegister() {
     };
     const nextDisabled =
       (step === "identify" && !canProceedFromIdentify) ||
+      (step === "onboard" && !canProceedFromOnboard) ||
       (isLast && (!canSubmit || submitting));
 
     return (
@@ -897,34 +898,36 @@ export default function SpecialEventRegister() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        {row.status === "missing" && (
-                          <div className="grid md:grid-cols-2 gap-2 pt-2 border-t border-border/30">
-                            <Input className="rounded-xl bg-background/60" placeholder="Family Name *" value={row.last_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, last_name: e.target.value } : r)))} />
-                            <Input className="rounded-xl bg-background/60" placeholder="Other Names *" value={row.first_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, first_name: e.target.value } : r)))} />
-                            <Input
-                              type="date"
-                              className="rounded-xl bg-background/60"
-                              placeholder="Date of birth"
-                              value={row.date_of_birth || ""}
-                              onChange={(e) => {
-                                const dob = e.target.value;
-                                const age = calcAge(dob);
-                                setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, date_of_birth: dob, is_child: age !== null && age < 16 } : r)));
-                              }}
+                        {row.status === "missing" && row.onboard && (
+                          <div className="pt-3 border-t border-border/30">
+                            <p className="text-sm font-medium mb-3">
+                              We don't have this person yet — onboard them here.
+                            </p>
+                            <SpecialEventOnboardForm
+                              value={row.onboard}
+                              onChange={(next) =>
+                                setFamily((p) =>
+                                  p.map((r, idx) =>
+                                    idx === i
+                                      ? {
+                                          ...r,
+                                          onboard: next,
+                                          first_name: next.first_name,
+                                          last_name: next.last_name,
+                                          email: next.email,
+                                          phone: next.phone,
+                                          date_of_birth: next.date_of_birth,
+                                          gender: next.gender,
+                                          address: next.address,
+                                          is_child:
+                                            calcAge(next.date_of_birth) !== null &&
+                                            (calcAge(next.date_of_birth) as number) < 16,
+                                        }
+                                      : r
+                                  )
+                                )
+                              }
                             />
-                            <select
-                              className={nativeSelectClassName}
-                              value={row.gender || ""}
-                              onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, gender: e.target.value } : r)))}
-                            >
-                              <option value="">Gender</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                            </select>
-                            <label className="flex items-center gap-2 text-sm md:col-span-2">
-                              <Checkbox checked={!!row.is_child} onCheckedChange={(v) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, is_child: !!v } : r)))} />
-                              This is a child (under 16)
-                            </label>
                           </div>
                         )}
                       </div>
