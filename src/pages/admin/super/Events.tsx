@@ -487,6 +487,35 @@ const SuperEvents: React.FC = () => {
             )} />
           )}
         </div>
+
+        {formInstance.watch('is_special') && (
+          <div className="border border-amber-500/30 rounded-xl p-4 bg-amber-500/5 space-y-3">
+            <h4 className="text-sm font-semibold text-amber-700">Special Event Settings</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <FormField control={formInstance.control} name="collect_lodging" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect lodging</FormLabel></FormItem>
+              )} />
+              <FormField control={formInstance.control} name="collect_meal_preferences" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect meal preferences</FormLabel></FormItem>
+              )} />
+              <FormField control={formInstance.control} name="collect_pledges" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect pledges</FormLabel></FormItem>
+              )} />
+            </div>
+            <FormField control={formInstance.control} name="linked_fundraising_campaign_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Linked Fundraising Campaign</FormLabel>
+                <FormControl>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={field.value || ""} onChange={field.onChange}>
+                    <option value="">— None —</option>
+                    {(campaigns || []).map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.currency_code} {c.goal?.toLocaleString?.() || c.goal})</option>)}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+        )}
         <DialogFooter>
           <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
             {(createEvent.isPending || updateEvent.isPending) ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
