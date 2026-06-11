@@ -296,12 +296,12 @@ const About = () => {
                   {pageContent.cta.description}
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
-                  <a href="/locations" className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors">
+                  <Link to="/locations" className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors">
                     Find a Location
-                  </a>
-                  <a href="/contact" className="bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium px-6 py-3 rounded-md hover:bg-white/20 transition-colors">
+                  </Link>
+                  <Link to="/contact" className="bg-white/10 backdrop-blur-sm border border-white/20 text-white font-medium px-6 py-3 rounded-md hover:bg-white/20 transition-colors">
                     Contact Us
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
