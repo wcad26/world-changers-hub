@@ -191,7 +191,7 @@ export default function EventDetail() {
                       onClick={() => setPreRegOpen(true)}
                     >
                       <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
-                      {t('preRegister') || 'Pre-Register'}
+                      {t('preRegisterCta' as any) || 'Pre-Register'}
                     </Button>
                   )}
                 </div>
