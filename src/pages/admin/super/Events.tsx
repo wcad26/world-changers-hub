@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -56,6 +58,10 @@ const eventSchema = z.object({
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
   requires_pre_registration: z.boolean().default(false),
+  collect_lodging: z.boolean().default(false),
+  collect_meal_preferences: z.boolean().default(false),
+  collect_pledges: z.boolean().default(false),
+  linked_fundraising_campaign_id: z.string().uuid().optional().or(z.literal("")),
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
@@ -87,12 +93,25 @@ const SuperEvents: React.FC = () => {
   const updateEvent = useUpdateGlobalEvent();
   const deleteEvent = useDeleteGlobalEvent();
 
+  // Fundraising campaigns for linking special events
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["fundraising-campaigns-for-events"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fundraising_campaigns").select("id, name, goal, currency_code, region_id").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const navigate = useNavigate();
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
       name: "", description: "", start_date: "", start_time: "",
       end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false, slug: "", registration_url: "",
+      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false,
+      collect_lodging: false, collect_meal_preferences: false, collect_pledges: false, linked_fundraising_campaign_id: "",
+      slug: "", registration_url: "",
     },
   });
   const editForm = useForm<z.infer<typeof eventSchema>>({ resolver: zodResolver(eventSchema) });
@@ -229,6 +248,10 @@ const SuperEvents: React.FC = () => {
         is_featured: values.is_featured,
         is_special: values.is_special,
         requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
+        collect_lodging: values.is_special ? !!values.collect_lodging : false,
+        collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
+        collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
         status: 'Upcoming',
         region_id: null,
@@ -264,6 +287,10 @@ const SuperEvents: React.FC = () => {
       is_featured: event.is_featured,
       is_special: !!event.is_special,
       requires_pre_registration: !!event.requires_pre_registration,
+      collect_lodging: !!event.collect_lodging,
+      collect_meal_preferences: !!event.collect_meal_preferences,
+      collect_pledges: !!event.collect_pledges,
+      linked_fundraising_campaign_id: event.linked_fundraising_campaign_id || "",
       attendance_target: event.attendance_target || undefined,
       slug: event.slug || "",
       registration_url: event.registration_url || "",
@@ -300,6 +327,10 @@ const SuperEvents: React.FC = () => {
         is_featured: values.is_featured,
         is_special: values.is_special,
         requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
+        collect_lodging: values.is_special ? !!values.collect_lodging : false,
+        collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
+        collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
       });
       toast({ title: "Success", description: "Event updated successfully." });
@@ -456,6 +487,35 @@ const SuperEvents: React.FC = () => {
             )} />
           )}
         </div>
+
+        {formInstance.watch('is_special') && (
+          <div className="border border-amber-500/30 rounded-xl p-4 bg-amber-500/5 space-y-3">
+            <h4 className="text-sm font-semibold text-amber-700">Special Event Settings</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <FormField control={formInstance.control} name="collect_lodging" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect lodging</FormLabel></FormItem>
+              )} />
+              <FormField control={formInstance.control} name="collect_meal_preferences" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect meal preferences</FormLabel></FormItem>
+              )} />
+              <FormField control={formInstance.control} name="collect_pledges" render={({ field }) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect pledges</FormLabel></FormItem>
+              )} />
+            </div>
+            <FormField control={formInstance.control} name="linked_fundraising_campaign_id" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Linked Fundraising Campaign</FormLabel>
+                <FormControl>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={field.value || ""} onChange={field.onChange}>
+                    <option value="">— None —</option>
+                    {(campaigns || []).map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.currency_code} {c.goal?.toLocaleString?.() || c.goal})</option>)}
+                  </select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+          </div>
+        )}
         <DialogFooter>
           <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
             {(createEvent.isPending || updateEvent.isPending) ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
@@ -575,6 +635,18 @@ const SuperEvents: React.FC = () => {
                           <DropdownMenuItem onClick={() => openEditDialog(event)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyAttendanceLink(event)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
+                          {event.is_special && (
+                            <>
+                              <DropdownMenuItem onClick={() => {
+                                const id = event.slug || event.id;
+                                navigator.clipboard.writeText(`${window.location.origin}/events/${id}/register`);
+                                toast({ title: "Link copied", description: "Special event registration link copied." });
+                              }}><Link2 className="mr-2 h-4 w-4" />Copy Registration Link</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/admin/super/events/${event.id}/special-report`)}>
+                                <Star className="mr-2 h-4 w-4" />Special Event Report
+                              </DropdownMenuItem>
+                            </>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => setEventToDelete(event.id)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                         </DropdownMenuContent>

@@ -18,11 +18,13 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string | null
+          day_index: number | null
           dcg_id: string | null
           description: string | null
           event_date: string
           id: string
           name: string
+          parent_event_id: string | null
           region_id: string | null
           source_event_id: string | null
           updated_at: string | null
@@ -30,11 +32,13 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by?: string | null
+          day_index?: number | null
           dcg_id?: string | null
           description?: string | null
           event_date: string
           id?: string
           name: string
+          parent_event_id?: string | null
           region_id?: string | null
           source_event_id?: string | null
           updated_at?: string | null
@@ -42,11 +46,13 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string | null
+          day_index?: number | null
           dcg_id?: string | null
           description?: string | null
           event_date?: string
           id?: string
           name?: string
+          parent_event_id?: string | null
           region_id?: string | null
           source_event_id?: string | null
           updated_at?: string | null
@@ -57,6 +63,13 @@ export type Database = {
             columns: ["dcg_id"]
             isOneToOne: false
             referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
           {
@@ -890,33 +903,69 @@ export type Database = {
       }
       event_pre_registrations: {
         Row: {
+          arrival_date: string | null
+          attending_with_family: boolean
           created_at: string
+          departure_date: string | null
+          dietary_notes: string | null
           email: string
           event_id: string
           group_id: string | null
+          has_children: boolean
           id: string
           is_primary: boolean
+          lodging_party_size: number | null
+          meal_preferences: string[] | null
           member_id: string
+          needs_lodging: boolean
+          phone: string | null
+          pledge_amount: number | null
+          pledge_currency_code: string | null
+          pledge_status: string | null
           registration_type: string
         }
         Insert: {
+          arrival_date?: string | null
+          attending_with_family?: boolean
           created_at?: string
+          departure_date?: string | null
+          dietary_notes?: string | null
           email: string
           event_id: string
           group_id?: string | null
+          has_children?: boolean
           id?: string
           is_primary?: boolean
+          lodging_party_size?: number | null
+          meal_preferences?: string[] | null
           member_id: string
+          needs_lodging?: boolean
+          phone?: string | null
+          pledge_amount?: number | null
+          pledge_currency_code?: string | null
+          pledge_status?: string | null
           registration_type: string
         }
         Update: {
+          arrival_date?: string | null
+          attending_with_family?: boolean
           created_at?: string
+          departure_date?: string | null
+          dietary_notes?: string | null
           email?: string
           event_id?: string
           group_id?: string | null
+          has_children?: boolean
           id?: string
           is_primary?: boolean
+          lodging_party_size?: number | null
+          meal_preferences?: string[] | null
           member_id?: string
+          needs_lodging?: boolean
+          phone?: string | null
+          pledge_amount?: number | null
+          pledge_currency_code?: string | null
+          pledge_status?: string | null
           registration_type?: string
         }
         Relationships: [
@@ -1090,6 +1139,9 @@ export type Database = {
           attendance_target: number | null
           capacity: number | null
           category: Database["public"]["Enums"]["event_category"] | null
+          collect_lodging: boolean
+          collect_meal_preferences: boolean
+          collect_pledges: boolean
           cost: number | null
           cost_currency_code: string | null
           created_at: string
@@ -1104,6 +1156,7 @@ export type Database = {
           is_featured: boolean
           is_public: boolean
           is_special: boolean | null
+          linked_fundraising_campaign_id: string | null
           location_name: string | null
           location_name_fr: string | null
           name: string
@@ -1128,6 +1181,9 @@ export type Database = {
           attendance_target?: number | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
+          collect_lodging?: boolean
+          collect_meal_preferences?: boolean
+          collect_pledges?: boolean
           cost?: number | null
           cost_currency_code?: string | null
           created_at?: string
@@ -1142,6 +1198,7 @@ export type Database = {
           is_featured?: boolean
           is_public?: boolean
           is_special?: boolean | null
+          linked_fundraising_campaign_id?: string | null
           location_name?: string | null
           location_name_fr?: string | null
           name: string
@@ -1166,6 +1223,9 @@ export type Database = {
           attendance_target?: number | null
           capacity?: number | null
           category?: Database["public"]["Enums"]["event_category"] | null
+          collect_lodging?: boolean
+          collect_meal_preferences?: boolean
+          collect_pledges?: boolean
           cost?: number | null
           cost_currency_code?: string | null
           created_at?: string
@@ -1180,6 +1240,7 @@ export type Database = {
           is_featured?: boolean
           is_public?: boolean
           is_special?: boolean | null
+          linked_fundraising_campaign_id?: string | null
           location_name?: string | null
           location_name_fr?: string | null
           name?: string
@@ -1211,6 +1272,13 @@ export type Database = {
             columns: ["dcg_id"]
             isOneToOne: false
             referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_linked_fundraising_campaign_id_fkey"
+            columns: ["linked_fundraising_campaign_id"]
+            isOneToOne: false
+            referencedRelation: "fundraising_campaigns"
             referencedColumns: ["id"]
           },
           {
@@ -1397,6 +1465,7 @@ export type Database = {
           donor_email: string | null
           donor_id: string | null
           donor_name: string | null
+          event_pre_registration_id: string | null
           id: string
           member_id: string | null
           message: string | null
@@ -1411,6 +1480,7 @@ export type Database = {
           donor_email?: string | null
           donor_id?: string | null
           donor_name?: string | null
+          event_pre_registration_id?: string | null
           id?: string
           member_id?: string | null
           message?: string | null
@@ -1425,6 +1495,7 @@ export type Database = {
           donor_email?: string | null
           donor_id?: string | null
           donor_name?: string | null
+          event_pre_registration_id?: string | null
           id?: string
           member_id?: string | null
           message?: string | null
@@ -1449,6 +1520,13 @@ export type Database = {
             columns: ["donor_id"]
             isOneToOne: false
             referencedRelation: "donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraising_donations_event_pre_registration_id_fkey"
+            columns: ["event_pre_registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_pre_registrations"
             referencedColumns: ["id"]
           },
         ]

@@ -18,7 +18,14 @@ const categories = [
   "Community Service", "Bible Study", "Retreat", "Seminar", "DCG Meeting", "Other"
 ];
 
-const mockFeaturedEvents: Event[] = [
+const specialEventDefaults = {
+  linked_fundraising_campaign_id: null,
+  collect_lodging: false,
+  collect_meal_preferences: false,
+  collect_pledges: false,
+} as const;
+
+const mockFeaturedEvents: Event[] = ([
   {
     id: "mock-1",
     slug: null,
@@ -133,7 +140,7 @@ const mockFeaturedEvents: Event[] = [
     dcg_id: null,
     created_by: null
   }
-];
+].map(e => ({ ...e, ...specialEventDefaults }))) as Event[];
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
