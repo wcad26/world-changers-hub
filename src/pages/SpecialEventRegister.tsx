@@ -872,9 +872,9 @@ export default function SpecialEventRegister() {
                       </div>
                     </GlassSection>
                   )}
+                  <div className="pt-2">{renderActions()}</div>
                 </div>
               )}
-            </>
           )}
         </div>
       </div>
