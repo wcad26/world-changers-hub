@@ -19,6 +19,11 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
+import SpecialEventOnboardForm, {
+  type OnboardFormValue,
+  emptyOnboardValue,
+  isOnboardValid,
+} from "@/components/events/SpecialEventOnboardForm";
 
 type RelationEntry = {
   member_id: string;
@@ -64,6 +69,8 @@ type FamilyRow = {
   // Prefilled rows from existing relationships use this:
   prefilled?: boolean;
   attending?: boolean;
+  // When status === "missing", a full onboarding form is collected here.
+  onboard?: OnboardFormValue;
 };
 
 const REL_OPTIONS = [
@@ -120,7 +127,7 @@ const calcAge = (dob?: string | null): number | null => {
   return a;
 };
 
-type StepKey = "identify" | "details" | "extras" | "done";
+type StepKey = "identify" | "onboard" | "details" | "extras" | "done";
 
 function StepIndicator({ step, steps }: { step: StepKey; steps: { key: StepKey; label: string }[] }) {
   const activeIdx = steps.findIndex((s) => s.key === step);
@@ -194,17 +201,8 @@ export default function SpecialEventRegister() {
   const [primaryMember, setPrimaryMember] = useState<Lookup["member"] | null>(null);
   const [registrationMode, setRegistrationMode] = useState<"individual" | "family" | null>(null);
 
-  const [primaryDraft, setPrimaryDraft] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    address: "",
-    date_of_birth: "",
-    gender: "",
-    occupation: "",
-    type: "visitor" as "member" | "visitor",
-  });
+  // Full onboarding form for new (not-yet-onboarded) primary registrants.
+  const [primaryOnboard, setPrimaryOnboard] = useState<OnboardFormValue>(emptyOnboardValue());
 
   const [family, setFamily] = useState<FamilyRow[]>([]);
 
@@ -233,12 +231,15 @@ export default function SpecialEventRegister() {
     }
   }, [ev?.start_datetime, ev?.end_datetime]);
 
+  const needsOnboarding = lookupStatus === "missing" && !primaryMember;
+
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
     const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
+    if (needsOnboarding) base.push({ key: "onboard", label: "Onboard" });
     if (registrationMode === "family") base.push({ key: "details", label: "Family" });
     if (hasExtras) base.push({ key: "extras", label: "Extras" });
     return base;
-  }, [hasExtras, registrationMode]);
+  }, [hasExtras, registrationMode, needsOnboarding]);
 
   const handleLookup = async () => {
     if (!lookupValue.trim()) return;
@@ -254,8 +255,6 @@ export default function SpecialEventRegister() {
     if ((data as Lookup)?.found) {
       const lk = data as Lookup;
       setPrimaryMember(lk.member!);
-      const m = lk.member!;
-      setPrimaryDraft((d) => ({ ...d, first_name: m.first_name, last_name: m.last_name, email: m.email, phone: m.phone || "" }));
       // Seed family from existing relationships — user just ticks who is attending.
       const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
         relationship_type: r.relationship_type || "other",
@@ -276,7 +275,12 @@ export default function SpecialEventRegister() {
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
-      setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
+      // Initialise the onboard form with whatever the user just typed.
+      setPrimaryOnboard({
+        ...emptyOnboardValue(),
+        attendee_type: "visitor",
+        [lookupMode]: value,
+      } as OnboardFormValue);
       setFamily([]);
       setLookupStatus("missing");
     }
@@ -306,7 +310,15 @@ export default function SpecialEventRegister() {
             attending: true,
           };
         }
-        return { ...r, status: "missing", [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
+        // Initialise an onboard form for the missing family member; inherit
+        // region from the primary registrant when available.
+        const onboard: OnboardFormValue = {
+          ...emptyOnboardValue(),
+          attendee_type: "visitor",
+          region_id: primaryOnboard.region_id || "",
+          [r.lookupMode]: r.lookupValue.trim(),
+        } as OnboardFormValue;
+        return { ...r, status: "missing", onboard, [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
       })
     );
   };
@@ -318,68 +330,80 @@ export default function SpecialEventRegister() {
     ]);
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
+  // Step 1 (identify): "found" needs a mode; "missing" can always proceed to onboard.
   const canProceedFromIdentify =
-    registrationMode !== null &&
-    (lookupStatus === "found" ||
-      (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone));
+    (lookupStatus === "found" && registrationMode !== null) ||
+    lookupStatus === "missing";
+
+  // Step 2 (onboard): primary onboard form must validate AND a mode must be chosen.
+  const canProceedFromOnboard =
+    isOnboardValid(primaryOnboard) && registrationMode !== null;
+
+  // Build a NewRegistrant payload from an OnboardFormValue.
+  const buildNewRegistrant = (o: OnboardFormValue) => ({
+    type: o.attendee_type,
+    attendee_type: o.attendee_type,
+    region_id: o.region_id,
+    first_name: o.first_name.trim(),
+    last_name: o.last_name.trim(),
+    email: o.email.trim(),
+    phone: o.phone.trim(),
+    address: o.address.trim() || null,
+    date_of_birth: o.date_of_birth || null,
+    gender: o.gender || null,
+    occupation: o.occupation || null,
+    // Member-specific
+    has_completed_foundation_school: o.has_completed_foundation_school || null,
+    foundation_school_date: o.foundation_school_date || null,
+    is_baptized: o.is_baptized || null,
+    baptism_date: o.baptism_date || null,
+    ministry_interests: o.ministry_interests,
+    dcg_id: o.dcg_id || null,
+    relationships: o.relationships,
+    // Visitor-specific
+    referral_source: o.referral_source || null,
+    referral_social_media: o.referral_social_media || null,
+    referral_member_ids: o.referral_member_ids,
+    referral_relationship_type: o.referral_relationship_type || null,
+    referral_other_details: o.referral_other_details || null,
+    join_interest: o.join_interest || null,
+  });
 
   const canSubmit = useMemo(() => {
     if (!event) return false;
-    if (!primaryMember && (!primaryDraft.first_name || !primaryDraft.last_name || !primaryDraft.email || !primaryDraft.phone)) return false;
+    if (!primaryMember && !isOnboardValid(primaryOnboard)) return false;
     for (const f of family) {
       if (f.prefilled) continue; // prefilled rows are opt-in via `attending`
       if (!f.relationship_type) return false;
-      if (!f.existing_member_id && (!f.first_name || !f.last_name)) return false;
+      if (f.existing_member_id) continue;
+      // Manual / missing row — must have a valid onboard form.
+      if (!f.onboard || !isOnboardValid(f.onboard)) return false;
     }
     return true;
-  }, [event, primaryMember, primaryDraft, family]);
+  }, [event, primaryMember, primaryOnboard, family]);
 
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
-    // Only send: prefilled rows the user ticked, or manually added rows that resolved/were filled.
+    // Only send: prefilled rows the user ticked, or manually added rows that resolved/are valid.
     const familyToSend =
       registrationMode === "family"
         ? family.filter((f) => {
             if (f.prefilled) return !!f.attending;
-            // Manual rows: require either an existing member or first/last name captured.
-            return !!f.existing_member_id || (!!f.first_name && !!f.last_name);
+            return !!f.existing_member_id || (f.onboard && isOnboardValid(f.onboard));
           })
         : [];
     try {
       const body: any = {
         event_id: (event as any).id,
         primary_member_id: primaryMember?.id ?? null,
-        primary_new: primaryMember
-          ? null
-          : {
-              type: primaryDraft.type,
-              first_name: primaryDraft.first_name,
-              last_name: primaryDraft.last_name,
-              email: primaryDraft.email,
-              phone: primaryDraft.phone,
-              address: primaryDraft.address,
-              date_of_birth: primaryDraft.date_of_birth,
-              gender: primaryDraft.gender,
-              occupation: primaryDraft.occupation,
-            },
-        primary_phone: primaryMember?.phone || primaryDraft.phone,
+        primary_new: primaryMember ? null : buildNewRegistrant(primaryOnboard),
+        primary_phone: primaryMember?.phone || primaryOnboard.phone,
         family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
           is_child: !!f.is_child,
-          new_registrant: f.existing_member_id
-            ? null
-            : {
-                type: "visitor",
-                first_name: f.first_name!,
-                last_name: f.last_name!,
-                email: f.email || "",
-                phone: f.phone || "",
-                date_of_birth: f.date_of_birth,
-                gender: f.gender,
-                address: f.address,
-              },
+          new_registrant: f.existing_member_id ? null : buildNewRegistrant(f.onboard!),
         })),
         needs_lodging: needsLodging,
         lodging_party_size: null,
@@ -450,6 +474,7 @@ export default function SpecialEventRegister() {
     };
     const nextDisabled =
       (step === "identify" && !canProceedFromIdentify) ||
+      (step === "onboard" && !canProceedFromOnboard) ||
       (isLast && (!canSubmit || submitting));
 
     return (
@@ -688,53 +713,33 @@ export default function SpecialEventRegister() {
                   )}
 
                   {lookupStatus === "missing" && (
-                    <>
-                      <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
-                        <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
-                        <div className="grid md:grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs">Family Name *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Other Names *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Email *</Label>
-                            <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Phone *</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
-                          </div>
-                          <div className="md:col-span-2">
-                            <Label className="text-xs">Address</Label>
-                            <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Date of birth</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Gender</Label>
-                            <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
-                              <option value="">Select</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      {primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone && (
-                        <>
-                          {renderModeSelector(primaryDraft.first_name)}
-                          <div className="pt-2">{renderActions()}</div>
-                        </>
-                      )}
-                    </>
+                    <Alert className="border-amber-500/30 bg-amber-500/5">
+                      <UserCheck className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-justify">
+                        We don't have you in the system yet. Click <strong>Continue</strong> to onboard and complete your registration.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {lookupStatus === "missing" && (
+                    <div className="pt-2">{renderActions()}</div>
                   )}
                 </GlassSection>
+              )}
+
+              {step === "onboard" && (
+                <div className="space-y-5">
+                  <SpecialEventOnboardForm
+                    value={primaryOnboard}
+                    onChange={setPrimaryOnboard}
+                  />
+                  {isOnboardValid(primaryOnboard) && (
+                    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 space-y-3 shadow-sm">
+                      {renderModeSelector(primaryOnboard.first_name || "there")}
+                    </div>
+                  )}
+                  <div className="pt-2">{renderActions()}</div>
+                </div>
               )}
 
               {step === "details" && (
@@ -893,34 +898,36 @@ export default function SpecialEventRegister() {
                             </AlertDescription>
                           </Alert>
                         )}
-                        {row.status === "missing" && (
-                          <div className="grid md:grid-cols-2 gap-2 pt-2 border-t border-border/30">
-                            <Input className="rounded-xl bg-background/60" placeholder="Family Name *" value={row.last_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, last_name: e.target.value } : r)))} />
-                            <Input className="rounded-xl bg-background/60" placeholder="Other Names *" value={row.first_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, first_name: e.target.value } : r)))} />
-                            <Input
-                              type="date"
-                              className="rounded-xl bg-background/60"
-                              placeholder="Date of birth"
-                              value={row.date_of_birth || ""}
-                              onChange={(e) => {
-                                const dob = e.target.value;
-                                const age = calcAge(dob);
-                                setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, date_of_birth: dob, is_child: age !== null && age < 16 } : r)));
-                              }}
+                        {row.status === "missing" && row.onboard && (
+                          <div className="pt-3 border-t border-border/30">
+                            <p className="text-sm font-medium mb-3">
+                              We don't have this person yet — onboard them here.
+                            </p>
+                            <SpecialEventOnboardForm
+                              value={row.onboard}
+                              onChange={(next) =>
+                                setFamily((p) =>
+                                  p.map((r, idx) =>
+                                    idx === i
+                                      ? {
+                                          ...r,
+                                          onboard: next,
+                                          first_name: next.first_name,
+                                          last_name: next.last_name,
+                                          email: next.email,
+                                          phone: next.phone,
+                                          date_of_birth: next.date_of_birth,
+                                          gender: next.gender,
+                                          address: next.address,
+                                          is_child:
+                                            calcAge(next.date_of_birth) !== null &&
+                                            (calcAge(next.date_of_birth) as number) < 16,
+                                        }
+                                      : r
+                                  )
+                                )
+                              }
                             />
-                            <select
-                              className={nativeSelectClassName}
-                              value={row.gender || ""}
-                              onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, gender: e.target.value } : r)))}
-                            >
-                              <option value="">Gender</option>
-                              <option value="Male">Male</option>
-                              <option value="Female">Female</option>
-                            </select>
-                            <label className="flex items-center gap-2 text-sm md:col-span-2">
-                              <Checkbox checked={!!row.is_child} onCheckedChange={(v) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, is_child: !!v } : r)))} />
-                              This is a child (under 16)
-                            </label>
                           </div>
                         )}
                       </div>
