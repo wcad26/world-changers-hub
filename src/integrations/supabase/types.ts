@@ -1324,7 +1324,8 @@ export type Database = {
           description: string | null
           id: string
           recorded_by: string | null
-          region_id: string
+          region_id: string | null
+          scope: string
           transaction_date: string
           updated_at: string
         }
@@ -1337,7 +1338,8 @@ export type Database = {
           description?: string | null
           id?: string
           recorded_by?: string | null
-          region_id: string
+          region_id?: string | null
+          scope?: string
           transaction_date?: string
           updated_at?: string
         }
@@ -1350,7 +1352,8 @@ export type Database = {
           description?: string | null
           id?: string
           recorded_by?: string | null
-          region_id?: string
+          region_id?: string | null
+          scope?: string
           transaction_date?: string
           updated_at?: string
         }
@@ -1398,7 +1401,8 @@ export type Database = {
           is_public: boolean
           name: string
           raised: number
-          region_id: string
+          region_id: string | null
+          scope: string
           start_date: string
           status: string
           updated_at: string
@@ -1415,7 +1419,8 @@ export type Database = {
           is_public?: boolean
           name: string
           raised?: number
-          region_id: string
+          region_id?: string | null
+          scope?: string
           start_date: string
           status?: string
           updated_at?: string
@@ -1432,7 +1437,8 @@ export type Database = {
           is_public?: boolean
           name?: string
           raised?: number
-          region_id?: string
+          region_id?: string | null
+          scope?: string
           start_date?: string
           status?: string
           updated_at?: string

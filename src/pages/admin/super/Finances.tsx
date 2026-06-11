@@ -1,97 +1,53 @@
-
-import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PeriodSelector, { type PeriodKey, resolvePeriod } from "@/components/admin/regional/finances/PeriodSelector";
+import RegionFilterSelect from "@/components/admin/super/finances/RegionFilterSelect";
+import GlobalLedgerTab from "@/components/admin/super/finances/GlobalLedgerTab";
+import GlobalDcgLedgerTab from "@/components/admin/super/finances/GlobalDcgLedgerTab";
+import GlobalFundraisingTab from "@/components/admin/super/finances/GlobalFundraisingTab";
+import GlobalBooksTab from "@/components/admin/super/finances/GlobalBooksTab";
+import GlobalCampaignsTab from "@/components/admin/super/finances/GlobalCampaignsTab";
 
 const SuperFinances: React.FC = () => {
+  const [period, setPeriod] = useState<PeriodKey>("3m");
+  const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
+  const [regionFilter, setRegionFilter] = useState<string>("all");
+  const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
+
   return (
-    <>
-      <div className="space-y-6">
-        <p className="text-muted-foreground">
-          Oversee finances across all WCA regions worldwide.
-        </p>
-        
-        <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="regional-finances">Regional Finances</TabsTrigger>
-            <TabsTrigger value="global-collections">Global Collections</TabsTrigger>
-            <TabsTrigger value="budget-planning">Budget Planning</TabsTrigger>
-            <TabsTrigger value="financial-reports">Financial Reports</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="overview">
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Financial Overview</CardTitle>
-                <CardDescription>
-                  Summary of WCA's global financial standing.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8">Global financial overview dashboard will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="regional-finances">
-            <Card>
-              <CardHeader>
-                <CardTitle>Regional Financial Performance</CardTitle>
-                <CardDescription>
-                  Compare and analyze financial performance across regions.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8">Regional financial comparison tools will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="global-collections">
-            <Card>
-              <CardHeader>
-                <CardTitle>Global Collections</CardTitle>
-                <CardDescription>
-                  Track tithes, offerings, and other collections globally.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8">Global collections tracking functionality will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="budget-planning">
-            <Card>
-              <CardHeader>
-                <CardTitle>Budget Planning</CardTitle>
-                <CardDescription>
-                  Create and manage global and regional budgets.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8">Budget planning tools will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="financial-reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Reports</CardTitle>
-                <CardDescription>
-                  Generate and view detailed global financial reports.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center py-8">Global financial reporting functionality will be implemented here.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Global Financial Management</h1>
+          <p className="text-sm text-muted-foreground">Aggregate finances across all regions, plus Super Admin books and fundraising</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <RegionFilterSelect value={regionFilter} onChange={setRegionFilter} />
+          <PeriodSelector
+            period={period}
+            onPeriodChange={setPeriod}
+            customRange={customRange}
+            onCustomRangeChange={setCustomRange}
+          />
+        </div>
       </div>
-    </>
+
+      <Tabs defaultValue="regional" className="space-y-6">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full max-w-4xl bg-muted/40 backdrop-blur-sm rounded-xl p-1 h-auto">
+          <TabsTrigger value="regional" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9">Regional</TabsTrigger>
+          <TabsTrigger value="dcg" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9">DCG</TabsTrigger>
+          <TabsTrigger value="fundraising" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9">Fundraising</TabsTrigger>
+          <TabsTrigger value="global-books" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9">Global Books</TabsTrigger>
+          <TabsTrigger value="global-campaigns" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground h-9">Global Campaigns</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="regional"><GlobalLedgerTab range={range} regionFilter={regionFilter} /></TabsContent>
+        <TabsContent value="dcg"><GlobalDcgLedgerTab range={range} regionFilter={regionFilter} /></TabsContent>
+        <TabsContent value="fundraising"><GlobalFundraisingTab range={range} regionFilter={regionFilter} /></TabsContent>
+        <TabsContent value="global-books"><GlobalBooksTab range={range} /></TabsContent>
+        <TabsContent value="global-campaigns"><GlobalCampaignsTab /></TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
