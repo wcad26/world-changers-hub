@@ -161,12 +161,20 @@ export const useCreateFinancialTransaction = () => {
     mutationFn: async (transactionData: TransactionData) => {
       if (!userRegion?.id) throw new Error('User region not found');
       if (!user?.id) throw new Error('User not found');
-      
+
+      const { data: regionRow } = await supabase
+        .from('regions')
+        .select('currency_code')
+        .eq('id', userRegion.id)
+        .maybeSingle();
+      const currencyCode = regionRow?.currency_code || 'USD';
+
       const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
         region_id: userRegion.id,
         recorded_by: user.id,
         category_id: transactionData.category_id,
         amount: transactionData.amount,
+        currency_code: currencyCode,
         description: transactionData.description,
         transaction_date: transactionData.transaction_date,
         dcg_id: transactionData.dcg_id,
