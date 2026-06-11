@@ -121,7 +121,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
               className="btn-soft text-lg px-8 py-6"
               asChild
             >
-              <a href="/events">{t('viewAllEvents')}</a>
+              <Link to="/events">{t('viewAllEvents')}</Link>
             </Button>
           </div>
         )}
