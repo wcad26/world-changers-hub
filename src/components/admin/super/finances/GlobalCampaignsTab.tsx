@@ -1,29 +1,30 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Target, Users, HeartHandshake, ArrowUpRight, Trash2 } from "lucide-react";
+import { Plus, Target, Users, HeartHandshake, ArrowUpRight } from "lucide-react";
 import { format } from "date-fns";
 import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
 import CreateGlobalCampaignDialog from "./CreateGlobalCampaignDialog";
-import { useGlobalFundraisingCampaigns, useDeleteGlobalCampaign } from "@/hooks/useGlobalFundraising";
+import GlobalCampaignRowActions from "./GlobalCampaignRowActions";
+import { useGlobalFundraisingCampaigns, useCampaignPledges } from "@/hooks/useGlobalFundraising";
 import { formatCurrency, formatWithCurrency } from "@/utils/currencyUtils";
 import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
-import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   displayCurrency: string;
 }
 
 const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
-  const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [showConverted, setShowConverted] = useState(false);
   const { data: campaigns = [], isLoading } = useGlobalFundraisingCampaigns("global");
-  const del = useDeleteGlobalCampaign();
   const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
+
+  const campaignIds = useMemo(() => campaigns.map((c) => c.id), [campaigns]);
+  const { data: pledgesMap = {} } = useCampaignPledges(campaignIds);
 
   // Aggregate KPIs in display currency.
   let unconvertedKpi = 0;
@@ -54,14 +55,41 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
     );
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this global campaign? All linked donations will also be removed.")) return;
-    try {
-      await del.mutateAsync(id);
-      toast({ title: "Campaign deleted" });
-    } catch (e: any) {
-      toast({ title: "Failed", description: e?.message, variant: "destructive" });
+  // Pledges already in major units, possibly in multiple currencies.
+  const renderPledges = (campaignId: string, fallbackSrc: string) => {
+    const bucket = pledgesMap[campaignId];
+    if (!bucket) return <span className="text-muted-foreground">—</span>;
+    const entries = Object.entries(bucket.byCurrency);
+    if (entries.length === 0) return <span className="text-muted-foreground">—</span>;
+
+    if (!showConverted) {
+      // Show native sums, one per currency.
+      return (
+        <div className="flex flex-col items-end">
+          {entries.map(([code, amt]) => (
+            <span key={code} className="tabular-nums">{formatCurrency(amt, code)}</span>
+          ))}
+        </div>
+      );
     }
+
+    let convertedTotal = 0;
+    let anyMissing = false;
+    for (const [code, amt] of entries) {
+      const v = convert(amt, code);
+      if (v == null) { anyMissing = true; continue; }
+      convertedTotal += v;
+    }
+    return (
+      <div className="flex flex-col items-end">
+        <span>{anyMissing && convertedTotal === 0 ? <span className="text-amber-600">—</span> : fc(convertedTotal)}</span>
+        {entries.length > 0 && fallbackSrc && (
+          <span className="text-[10px] text-muted-foreground font-normal">
+            {entries.map(([code, amt]) => formatCurrency(amt, code)).join(" + ")}
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -106,6 +134,7 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
                   <TableHead>Name</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Goal</TableHead>
+                  <TableHead className="text-right">Pledges</TableHead>
                   <TableHead className="text-right">Raised</TableHead>
                   <TableHead className="text-right">Progress</TableHead>
                   <TableHead>Dates</TableHead>
@@ -120,16 +149,15 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell><Badge variant={c.status === "Active" ? "default" : "secondary"}>{c.status}</Badge></TableCell>
                       <TableCell className="text-right tabular-nums">{renderAmount(Number(c.goal), c.currency_code || "USD")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{renderPledges(c.id, c.currency_code || "USD")}</TableCell>
                       <TableCell className="text-right tabular-nums">{renderAmount(Number(c.raised), c.currency_code || "USD")}</TableCell>
                       <TableCell className="text-right tabular-nums">{p.toFixed(1)}%</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {c.start_date ? format(new Date(c.start_date), "MMM d, yyyy") : "—"}
                         {c.end_date ? ` – ${format(new Date(c.end_date), "MMM d, yyyy")}` : ""}
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)} className="h-8 w-8 text-destructive hover:text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <TableCell className="text-right">
+                        <GlobalCampaignRowActions campaign={c} />
                       </TableCell>
                     </TableRow>
                   );
