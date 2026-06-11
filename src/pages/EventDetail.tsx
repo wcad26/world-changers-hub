@@ -160,9 +160,19 @@ export default function EventDetail() {
               
               {/* Action Buttons - Only show if registration is available */}
               {canRegister && (
-                <div className="flex flex-row gap-2 lg:gap-3 lg:flex-shrink-0">
+                <div className="flex flex-col gap-2 lg:gap-3 w-full max-w-sm">
+                  {(event as any).is_special && (event as any).requires_pre_registration && (
+                    <Button
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg w-full"
+                      onClick={() => setPreRegOpen(true)}
+                    >
+                      <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
+                      Pre-Register
+                    </Button>
+                  )}
+
                   <Button 
-                    className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
+                    className="bg-[#35adaf] hover:bg-[#35adaf]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base w-full"
                     onClick={() => {
                       if (event.whatsapp_contact) {
                         const phoneNumber = event.whatsapp_contact.replace(/[^0-9]/g, '');
@@ -177,21 +187,11 @@ export default function EventDetail() {
                   
                   {event.registration_url && (
                     <Button 
-                      className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base"
+                      className="bg-[#542a8f] hover:bg-[#542a8f]/90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base w-full"
                       onClick={() => window.open(event.registration_url, '_blank')}
                     >
                       <Calendar className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
                       {t('registerForEvent')}
-                    </Button>
-                  )}
-
-                  {(event as any).is_special && (event as any).requires_pre_registration && (
-                    <Button
-                      className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg"
-                      onClick={() => setPreRegOpen(true)}
-                    >
-                      <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
-                      Pre-Register
                     </Button>
                   )}
                 </div>

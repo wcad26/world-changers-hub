@@ -1,28 +1,14 @@
 ## Goal
-Show a "Pre-Register" call-to-action on the public event landing page (`/events/:eventId`) for events that have pre-registration enabled, so visitors can open the existing `EventPreRegistrationDialog` and submit themselves (and family members).
+Restyle the Pre-Register and Contact Us buttons on the event detail hero.
+
+## Changes
+1. **Pre-Register button color**: Change from gradient `from-primary to-accent` to solid `bg-primary` with `text-primary-foreground`.
+2. **Button layout**: Change the action-buttons container from `flex flex-row` (horizontal) to `flex flex-col` (vertical stack). Each button gets `w-full` so they each occupy the full width of the container (`max-w-sm`).
+3. **Button order**: Move Pre-Register to the top of the stack (first), followed by Contact Us, then Register for Event (if present).
 
 ## Where
-`src/pages/EventDetail.tsx` — in the hero/quick-info section (around line 154, alongside the existing **Contact Us** and **Register for Event** buttons).
+`src/pages/EventDetail.tsx`, lines 161-198 (the action buttons block inside the hero section).
 
-## Behavior
-- Show a new **Pre-Register** button only when:
-  - `event.is_special === true`
-  - `event.requires_pre_registration === true`
-  - Event is still upcoming and not Cancelled/Completed (same `canRegister` guard used today)
-- Clicking it opens `EventPreRegistrationDialog` (already implemented at `src/components/events/EventPreRegistrationDialog.tsx`), wired with local `useState` for `open`.
-- Button styling: matches the existing gradient/glass CTA pair, using a distinct accent (e.g. gradient primary→accent) so it stands out from Contact Us / Register for Event. Icon: `UserPlus` from lucide-react.
-- Label localized via `t('preRegister')` with English fallback "Pre-Register" and French "Pré-inscription" added to the language dictionary.
-
-## Also
-- Mirror the same button on `EventRegistrationSection` (the lower CTA block) so users scrolling past the hero still see it. Same visibility rules.
-- No backend/schema changes — the edge function `event-pre-register` and dialog already exist.
-
-## Technical notes
-- Import `EventPreRegistrationDialog` and `UserPlus` in `EventDetail.tsx`.
-- Add `const [preRegOpen, setPreRegOpen] = useState(false);`
-- Render `<EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />` once near the end of the JSX.
-- Add `preRegister` key to `src/contexts/LanguageContext.tsx` (or wherever translations live) for EN/FR.
-
-## Follow-up: Button styling refinement
-- Change Pre-Register button to use the project's `primary` color (`bg-primary text-primary-foreground`).
-- Stack all CTA buttons vertically (`flex-col`) with each button at `w-full` so they occupy the full width of the container (max-w-sm), rather than sitting side-by-side in a row.
+## No other changes
+- No schema, API, or translation changes.
+- The `EventPreRegistrationDialog` and its logic remain untouched.
