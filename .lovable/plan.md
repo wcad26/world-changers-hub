@@ -22,3 +22,7 @@ Show a "Pre-Register" call-to-action on the public event landing page (`/events/
 - Add `const [preRegOpen, setPreRegOpen] = useState(false);`
 - Render `<EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />` once near the end of the JSX.
 - Add `preRegister` key to `src/contexts/LanguageContext.tsx` (or wherever translations live) for EN/FR.
+
+## Follow-up: Button styling refinement
+- Change Pre-Register button to use the project's `primary` color (`bg-primary text-primary-foreground`).
+- Stack all CTA buttons vertically (`flex-col`) with each button at `w-full` so they occupy the full width of the container (max-w-sm), rather than sitting side-by-side in a row.
