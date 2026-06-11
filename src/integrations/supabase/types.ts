@@ -1390,7 +1390,7 @@ export type Database = {
           amount: number
           category_id: string
           created_at?: string
-          currency_code?: string
+          currency_code: string
           dcg_id?: string | null
           description?: string | null
           id?: string
