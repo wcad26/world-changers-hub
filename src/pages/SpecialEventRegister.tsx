@@ -1010,14 +1010,8 @@ export default function SpecialEventRegister() {
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">{campaign.name}</span>
                           <span>
-                            {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
+                            {campaign.currency_code} {((campaign.goal || 0) / 100).toLocaleString()}
                           </span>
-                        </div>
-                        <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${Math.min(100, ((campaign.raised || 0) / Math.max(1, campaign.goal || 1)) * 100)}%` }}
-                          />
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
