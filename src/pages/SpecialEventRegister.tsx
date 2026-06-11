@@ -807,18 +807,11 @@ export default function SpecialEventRegister() {
             </>
           )}
 
-          {/* Inline actions (desktop) */}
+          {/* Inline actions */}
           {step !== "done" && (
-            <div className="hidden md:block pt-2">{renderActions()}</div>
+            <div className="pt-2">{renderActions()}</div>
           )}
         </div>
-
-        {/* Sticky action bar (mobile) */}
-        {step !== "done" && (
-          <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/40 bg-background/90 backdrop-blur-md p-3 shadow-lg">
-            <div className="max-w-3xl mx-auto">{renderActions()}</div>
-          </div>
-        )}
       </div>
       <Footer />
     </>
