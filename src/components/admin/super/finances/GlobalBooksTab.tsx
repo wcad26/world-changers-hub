@@ -10,7 +10,8 @@ import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendCh
 import RecordGlobalTransactionDialog from "./RecordGlobalTransactionDialog";
 import { useGlobalLedger } from "@/hooks/useGlobalLedger";
 import { summarizeLedger } from "@/hooks/useRegionalLedger";
-import { formatCurrency } from "@/utils/currencyUtils";
+import { formatWithCurrency } from "@/utils/currencyUtils";
+import { useFxConverter } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
@@ -29,8 +30,14 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
     regionFilter: "global",
   });
 
-  const summary = useMemo(() => summarizeLedger(rows), [rows]);
-  const fc = (n: number) => formatCurrency(n, "USD");
+  const { baseCode, baseCurrency, convert } = useFxConverter();
+  const convertedRows = useMemo(() => rows.map((r) => {
+    const src = r.currency_code || baseCode;
+    const v = convert(Number(r.amount) || 0, src);
+    return { ...r, _originalAmount: Number(r.amount) || 0, _sourceCurrency: src, amount: v ?? 0, _unconverted: v == null };
+  }), [rows, convert, baseCode]);
+  const summary = useMemo(() => summarizeLedger(convertedRows), [convertedRows]);
+  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
 
   const handleExport = () => {
     exportCsv(
