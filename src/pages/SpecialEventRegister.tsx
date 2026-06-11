@@ -174,7 +174,9 @@ export default function SpecialEventRegister() {
   const [lookupMode, setLookupMode] = useState<"email" | "phone">("email");
   const [lookupValue, setLookupValue] = useState("");
   const [lookupStatus, setLookupStatus] = useState<"idle" | "checking" | "found" | "missing">("idle");
+  const [lastCheckedValue, setLastCheckedValue] = useState("");
   const [primaryMember, setPrimaryMember] = useState<Lookup["member"] | null>(null);
+  const [registrationMode, setRegistrationMode] = useState<"individual" | "family" | null>(null);
 
   const [primaryDraft, setPrimaryDraft] = useState({
     first_name: "",
