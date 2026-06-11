@@ -609,65 +609,71 @@ export default function SpecialEventRegister() {
                           setLookupValue(e.target.value);
                           setLookupStatus("idle");
                           setPrimaryMember(null);
+                          setRegistrationMode(null);
                         }}
                       />
-                      <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
-                        {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                        <span className="ml-1">Check</span>
-                      </Button>
+                      {!(lookupStatus === "found" && lookupValue.trim() === lastCheckedValue) && (
+                        <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
+                          {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                          <span className="ml-1">Check</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   {lookupStatus === "found" && primaryMember && (
                     <>
-                      <Alert className="border-green-500/30 bg-green-500/5">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-justify">
-                          Hello <strong className="text-primary">{primaryMember.first_name}</strong>, you are already registered on the WCA system. Click Continue to pre-register for <strong className="text-primary">{ev.name}</strong>.
-                        </AlertDescription>
-                      </Alert>
+                      {renderModeSelector(primaryMember.first_name)}
                       <div className="pt-2">{renderActions()}</div>
                     </>
                   )}
 
                   {lookupStatus === "missing" && (
-                    <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
-                      <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs">Family Name *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Other Names *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Email *</Label>
-                          <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Phone *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label className="text-xs">Address</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Date of birth</Label>
-                          <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Gender</Label>
-                          <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
-                            <option value="">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                          </select>
+                    <>
+                      <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
+                        <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Family Name *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Other Names *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Email *</Label>
+                            <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Phone *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label className="text-xs">Address</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Date of birth</Label>
+                            <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Gender</Label>
+                            <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
+                              <option value="">Select</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      {primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone && (
+                        <>
+                          {renderModeSelector(primaryDraft.first_name)}
+                          <div className="pt-2">{renderActions()}</div>
+                        </>
+                      )}
+                    </>
                   )}
                 </GlassSection>
               )}
