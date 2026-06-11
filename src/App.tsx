@@ -66,7 +66,7 @@ import SuperDashboard from "./pages/admin/super/Dashboard";
 import SuperMembers from "./pages/admin/super/Members";
 import SuperMemberProfile from "./pages/admin/super/MemberProfile";
 import SuperEvents from "./pages/admin/super/Events";
-import SuperFundraising from "./pages/admin/super/Fundraising";
+
 import SuperLocations from "./pages/admin/super/Locations";
 import SuperFinances from "./pages/admin/super/Finances";
 import SuperRegions from "./pages/admin/super/Regions";
@@ -245,7 +245,7 @@ const App = () => {
                 <Route path="members/:memberId" element={<SuperAdminPage><SuperMemberProfile /></SuperAdminPage>} />
                 <Route path="events" element={<SuperAdminPage><SuperEvents /></SuperAdminPage>} />
                 <Route path="events/:eventId/special-report" element={<SuperAdminPage><SuperSpecialEventReport /></SuperAdminPage>} />
-                <Route path="fundraising" element={<SuperAdminPage><SuperFundraising /></SuperAdminPage>} />
+                <Route path="fundraising" element={<Navigate to="/admin/super/finances" replace />} />
                 <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
                 <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
                 <Route path="regions" element={<SuperAdminPage><SuperRegions /></SuperAdminPage>} />

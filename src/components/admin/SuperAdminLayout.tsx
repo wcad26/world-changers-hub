@@ -28,7 +28,6 @@ const menuItems = [
   { title: "Members", path: "/admin/super/members", icon: Users as React.ComponentType<{ className?: string; size?: number }> },
   { title: "User Management", path: "/admin/super/user-management", icon: UserPlus as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Events", path: "/admin/super/events", icon: Calendar as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Fundraising", path: "/admin/super/fundraising", icon: DollarSign as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Locations", path: "/admin/super/locations", icon: MapPin as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Finances", path: "/admin/super/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Currency Management", path: "/admin/super/currencies", icon: Coins as React.ComponentType<{ className?: string; size?: number }> },
