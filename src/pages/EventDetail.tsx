@@ -184,6 +184,16 @@ export default function EventDetail() {
                       {t('registerForEvent')}
                     </Button>
                   )}
+
+                  {(event as any).is_special && (event as any).requires_pre_registration && (
+                    <Button
+                      className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg"
+                      onClick={() => setPreRegOpen(true)}
+                    >
+                      <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
+                      {t('preRegister') || 'Pre-Register'}
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
