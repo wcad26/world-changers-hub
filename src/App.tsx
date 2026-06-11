@@ -24,6 +24,7 @@ import SuperAuth from "./pages/SuperAuth";
 import DcgAuth from "./pages/DcgAuth";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
+import SpecialEventRegister from "./pages/SpecialEventRegister";
 import MemberRegister from "./pages/MemberRegister";
 import PortalSelector from "./components/auth/PortalSelector";
 import DcgSessionRoute from "./components/auth/DcgSessionRoute";
@@ -77,6 +78,7 @@ import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
 import HomepageSettings from "./pages/admin/super/HomepageSettings";
 import SuperUserManagement from "./pages/admin/super/UserManagement";
 import SuperCertificates from "./pages/admin/super/Certificates";
+import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
 import SelfAttendance from "./pages/SelfAttendance";
 
 // DCG Portal Routes
@@ -209,6 +211,7 @@ const App = () => {
             <Route path="/locations/:slug" element={<RegionalBranchHome />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
+            <Route path="/events/:slug/register" element={<SpecialEventRegister />} />
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />
@@ -241,6 +244,7 @@ const App = () => {
                 <Route path="members" element={<SuperAdminPage><SuperMembers /></SuperAdminPage>} />
                 <Route path="members/:memberId" element={<SuperAdminPage><SuperMemberProfile /></SuperAdminPage>} />
                 <Route path="events" element={<SuperAdminPage><SuperEvents /></SuperAdminPage>} />
+                <Route path="events/:eventId/special-report" element={<SuperAdminPage><SuperSpecialEventReport /></SuperAdminPage>} />
                 <Route path="fundraising" element={<SuperAdminPage><SuperFundraising /></SuperAdminPage>} />
                 <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
                 <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
