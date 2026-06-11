@@ -46,6 +46,7 @@ export default function EventDetail() {
   const error = isEventIdUUID ? errorById : errorBySlug;
   
   const { localizedField, t } = useLanguage();
+  const [preRegOpen, setPreRegOpen] = useState(false);
 
   const getStatusBadge = () => {
     if (!event) return null;
