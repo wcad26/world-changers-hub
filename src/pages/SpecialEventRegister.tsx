@@ -20,6 +20,18 @@ import Footer from "@/components/layout/Footer";
 import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
+type RelationEntry = {
+  member_id: string;
+  profile_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string | null;
+  is_child: boolean;
+  relationship_type: string;
+};
+
 type Lookup = {
   found: boolean;
   member?: {
@@ -32,6 +44,7 @@ type Lookup = {
     phone: string;
     date_of_birth: string | null;
   } | null;
+  relations?: RelationEntry[];
 };
 
 type FamilyRow = {
@@ -48,6 +61,9 @@ type FamilyRow = {
   gender?: string;
   address?: string;
   is_child?: boolean;
+  // Prefilled rows from existing relationships use this:
+  prefilled?: boolean;
+  attending?: boolean;
 };
 
 const REL_OPTIONS = [
@@ -236,13 +252,32 @@ export default function SpecialEventRegister() {
       return;
     }
     if ((data as Lookup)?.found) {
-      setPrimaryMember((data as Lookup).member!);
-      const m = (data as Lookup).member!;
+      const lk = data as Lookup;
+      setPrimaryMember(lk.member!);
+      const m = lk.member!;
       setPrimaryDraft((d) => ({ ...d, first_name: m.first_name, last_name: m.last_name, email: m.email, phone: m.phone || "" }));
+      // Seed family from existing relationships — user just ticks who is attending.
+      const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
+        relationship_type: r.relationship_type || "other",
+        lookupValue: r.email || r.phone || "",
+        lookupMode: "email",
+        status: "found",
+        existing_member_id: r.member_id,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        email: r.email,
+        phone: r.phone,
+        date_of_birth: r.date_of_birth || undefined,
+        is_child: r.is_child,
+        prefilled: true,
+        attending: false,
+      }));
+      setFamily(prefilled);
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
       setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
+      setFamily([]);
       setLookupStatus("missing");
     }
   };
@@ -268,6 +303,7 @@ export default function SpecialEventRegister() {
             email: m.email,
             phone: m.phone,
             is_child: age !== null && age < 16,
+            attending: true,
           };
         }
         return { ...r, status: "missing", [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
@@ -278,7 +314,7 @@ export default function SpecialEventRegister() {
   const addFamily = () =>
     setFamily((prev) => [
       ...prev,
-      { relationship_type: "spouse", lookupValue: "", lookupMode: "email", status: "idle" },
+      { relationship_type: "spouse", lookupValue: "", lookupMode: "email", status: "idle", attending: true },
     ]);
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
@@ -291,6 +327,7 @@ export default function SpecialEventRegister() {
     if (!event) return false;
     if (!primaryMember && (!primaryDraft.first_name || !primaryDraft.last_name || !primaryDraft.email || !primaryDraft.phone)) return false;
     for (const f of family) {
+      if (f.prefilled) continue; // prefilled rows are opt-in via `attending`
       if (!f.relationship_type) return false;
       if (!f.existing_member_id && (!f.first_name || !f.last_name)) return false;
     }
@@ -300,7 +337,15 @@ export default function SpecialEventRegister() {
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
-    const familyToSend = registrationMode === "family" ? family : [];
+    // Only send: prefilled rows the user ticked, or manually added rows that resolved/were filled.
+    const familyToSend =
+      registrationMode === "family"
+        ? family.filter((f) => {
+            if (f.prefilled) return !!f.attending;
+            // Manual rows: require either an existing member or first/last name captured.
+            return !!f.existing_member_id || (!!f.first_name && !!f.last_name);
+          })
+        : [];
     try {
       const body: any = {
         event_id: (event as any).id,
@@ -408,7 +453,7 @@ export default function SpecialEventRegister() {
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-center md:sm:justify-end gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
         {!isFirst && (
           <Button
             type="button"
@@ -423,7 +468,10 @@ export default function SpecialEventRegister() {
         <Button
           onClick={onNext}
           disabled={nextDisabled}
-          className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
+          className={cn(
+            "w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow",
+            isFirst && "col-span-2"
+          )}
         >
           {isLast ? (
             submitting ? (
@@ -693,8 +741,56 @@ export default function SpecialEventRegister() {
                 <GlassSection
                   icon={Users}
                   title="Family & Children"
-                  description="Add family members attending with you. Children under 16 are automatically flagged."
+                  description="Tick the family members joining you. You can also add someone new."
                 >
+                  {family.some((f) => f.prefilled) && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Your family
+                      </p>
+                      {family.map((row, i) =>
+                        row.prefilled ? (
+                          <label
+                            key={i}
+                            className={cn(
+                              "flex items-center gap-3 rounded-xl border px-3 py-3 cursor-pointer transition-colors",
+                              row.attending
+                                ? "bg-primary/10 border-primary/40"
+                                : "bg-background/40 border-border/40 hover:bg-background/60"
+                            )}
+                          >
+                            <Checkbox
+                              checked={!!row.attending}
+                              onCheckedChange={(v) =>
+                                setFamily((p) =>
+                                  p.map((r, idx) => (idx === i ? { ...r, attending: !!v } : r))
+                                )
+                              }
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm">
+                                  {row.last_name} {row.first_name}
+                                </span>
+                                <Badge variant="secondary" className="text-[10px] capitalize">
+                                  {row.relationship_type}
+                                </Badge>
+                                {row.is_child && (
+                                  <Badge variant="outline" className="text-[10px]">child</Badge>
+                                )}
+                              </div>
+                              {(row.email || row.phone) && (
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {row.email || row.phone}
+                                </p>
+                              )}
+                            </div>
+                          </label>
+                        ) : null
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex justify-end">
                     <Button onClick={addFamily} variant="outline" size="sm" className="rounded-xl">
                       <Plus className="h-4 w-4 mr-1" />
@@ -708,87 +804,89 @@ export default function SpecialEventRegister() {
                     </p>
                   )}
 
-                  {family.map((row, i) => (
-                    <div key={i} className="rounded-xl border border-border/40 bg-background/40 p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <select
-                          className={cn(nativeSelectClassName, "w-auto")}
-                          value={row.relationship_type}
-                          onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, relationship_type: e.target.value } : r)))}
-                        >
-                          {REL_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                        <Button variant="ghost" size="icon" onClick={() => removeFamily(i)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <select
-                          className={cn(nativeSelectClassName, "sm:w-32")}
-                          value={row.lookupMode}
-                          onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, lookupMode: e.target.value as any } : r)))}
-                        >
-                          <option value="email">Email</option>
-                          <option value="phone">Phone</option>
-                        </select>
-                        <Input
-                          className="rounded-xl bg-background/60"
-                          placeholder={row.lookupMode === "email" ? "email" : "phone"}
-                          value={row.lookupValue}
-                          onChange={(e) =>
-                            setFamily((p) =>
-                              p.map((r, idx) =>
-                                idx === i ? { ...r, lookupValue: e.target.value, status: "idle", existing_member_id: undefined } : r
-                              )
-                            )
-                          }
-                        />
-                        <Button size="sm" variant="outline" onClick={() => lookupFamily(i)} disabled={row.status === "checking"} className="rounded-xl">
-                          {row.status === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
-                        </Button>
-                      </div>
-                      {row.status === "found" && (
-                        <Alert className="border-green-500/30 bg-green-500/5">
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          <AlertDescription>
-                            Linked: {row.last_name} {row.first_name}{row.is_child ? " (child)" : ""}
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      {row.status === "missing" && (
-                        <div className="grid md:grid-cols-2 gap-2 pt-2 border-t border-border/30">
-                          <Input className="rounded-xl bg-background/60" placeholder="Family Name *" value={row.last_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, last_name: e.target.value } : r)))} />
-                          <Input className="rounded-xl bg-background/60" placeholder="Other Names *" value={row.first_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, first_name: e.target.value } : r)))} />
-                          <Input
-                            type="date"
-                            className="rounded-xl bg-background/60"
-                            placeholder="Date of birth"
-                            value={row.date_of_birth || ""}
-                            onChange={(e) => {
-                              const dob = e.target.value;
-                              const age = calcAge(dob);
-                              setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, date_of_birth: dob, is_child: age !== null && age < 16 } : r)));
-                            }}
-                          />
+                  {family.map((row, i) =>
+                    row.prefilled ? null : (
+                      <div key={i} className="rounded-xl border border-border/40 bg-background/40 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
                           <select
-                            className={nativeSelectClassName}
-                            value={row.gender || ""}
-                            onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, gender: e.target.value } : r)))}
+                            className={cn(nativeSelectClassName, "w-auto")}
+                            value={row.relationship_type}
+                            onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, relationship_type: e.target.value } : r)))}
                           >
-                            <option value="">Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            {REL_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
                           </select>
-                          <label className="flex items-center gap-2 text-sm md:col-span-2">
-                            <Checkbox checked={!!row.is_child} onCheckedChange={(v) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, is_child: !!v } : r)))} />
-                            This is a child (under 16)
-                          </label>
+                          <Button variant="ghost" size="icon" onClick={() => removeFamily(i)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <select
+                            className={cn(nativeSelectClassName, "sm:w-32")}
+                            value={row.lookupMode}
+                            onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, lookupMode: e.target.value as any } : r)))}
+                          >
+                            <option value="email">Email</option>
+                            <option value="phone">Phone</option>
+                          </select>
+                          <Input
+                            className="rounded-xl bg-background/60"
+                            placeholder={row.lookupMode === "email" ? "email" : "phone"}
+                            value={row.lookupValue}
+                            onChange={(e) =>
+                              setFamily((p) =>
+                                p.map((r, idx) =>
+                                  idx === i ? { ...r, lookupValue: e.target.value, status: "idle", existing_member_id: undefined } : r
+                                )
+                              )
+                            }
+                          />
+                          <Button size="sm" variant="outline" onClick={() => lookupFamily(i)} disabled={row.status === "checking"} className="rounded-xl">
+                            {row.status === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                          </Button>
+                        </div>
+                        {row.status === "found" && (
+                          <Alert className="border-green-500/30 bg-green-500/5">
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <AlertDescription>
+                              Linked: {row.last_name} {row.first_name}{row.is_child ? " (child)" : ""}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        {row.status === "missing" && (
+                          <div className="grid md:grid-cols-2 gap-2 pt-2 border-t border-border/30">
+                            <Input className="rounded-xl bg-background/60" placeholder="Family Name *" value={row.last_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, last_name: e.target.value } : r)))} />
+                            <Input className="rounded-xl bg-background/60" placeholder="Other Names *" value={row.first_name || ""} onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, first_name: e.target.value } : r)))} />
+                            <Input
+                              type="date"
+                              className="rounded-xl bg-background/60"
+                              placeholder="Date of birth"
+                              value={row.date_of_birth || ""}
+                              onChange={(e) => {
+                                const dob = e.target.value;
+                                const age = calcAge(dob);
+                                setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, date_of_birth: dob, is_child: age !== null && age < 16 } : r)));
+                              }}
+                            />
+                            <select
+                              className={nativeSelectClassName}
+                              value={row.gender || ""}
+                              onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, gender: e.target.value } : r)))}
+                            >
+                              <option value="">Gender</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                            </select>
+                            <label className="flex items-center gap-2 text-sm md:col-span-2">
+                              <Checkbox checked={!!row.is_child} onCheckedChange={(v) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, is_child: !!v } : r)))} />
+                              This is a child (under 16)
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
                   <div className="pt-2">{renderActions()}</div>
                 </GlassSection>
               )}

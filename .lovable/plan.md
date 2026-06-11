@@ -1,31 +1,65 @@
-All work stays in `src/pages/SpecialEventRegister.tsx` — no schema or edge function changes. The `event_pre_registrations` row already carries `arrival_date` and `departure_date`; we'll derive them from the first/last ticked day so the existing payload still works.
+## Goal
 
-## 1. Lodging — per-day attendance picker
-Replace the Party size / Arrival date / Departure date inputs (lines 793–814) with a list of checkboxes — one per calendar day between `ev.start_datetime` and `ev.end_datetime` (fallback: single day = start).
+Make the "Family & Children" step (step 2) smart: when the primary registrant is an existing member, auto-load all family members they already have relationships with so they only need to **tick** who is attending. Keep "Add person" for ad-hoc additions, persist any new relationship both ways (logically), and place Back / Continue side-by-side on mobile.
 
-- Compute `eventDays: string[]` (ISO yyyy-mm-dd) with a `useMemo` over `ev.start_datetime` / `ev.end_datetime`. Cap at ~30 days for safety.
-- New state `attendingDays: string[]` (replaces `arrivalDate` / `departureDate`).
-- Render each day as a tile matching the meal-preferences styling (same `cn(...)` block, `Checkbox` + label, `bg-primary/10 border-primary/40` when selected). Label format: `EEE, MMM d` (e.g. "Fri, May 1").
-- Keep the "I need lodging" checkbox and the Party size input — only the date inputs change.
-- On submit, set `arrival_date = attendingDays[0] || null`, `departure_date = attendingDays[attendingDays.length - 1] || null` so the edge function payload contract is preserved.
-- Remove `arrivalDate` / `departureDate` state and their setters.
+## Changes
 
-## 2. Pledge input — thousands separators
-The pledge input is a `type="number"` (line 864–871) which can't show commas. Change to `type="text"` with `inputMode="numeric"`:
+### 1. Extend the lookup edge function — `supabase/functions/event-pre-register-lookup/index.ts`
 
-- Display value: `pledgeAmount === "" ? "" : pledgeAmount.toLocaleString("en-US")`.
-- On change: strip everything except digits, parse with `Number(...)`, store as number (or `""`). Reject NaN.
-- The submit payload (`pledge_amount: Number(pledgeAmount)`) stays the same.
+When a primary is found, also return their existing family. Query `member_relationships` for rows where the primary is on **either side** (chunked `.in()` on both `member_id` and `related_member_id`, mirroring `fetchMemberRelationshipsForMembers`). For each related member, resolve profile + member info and compute the relationship label **from the primary's perspective** using an inverse map:
 
-## 3. Fix campaign goal/raised in the pledge box
-Line 852 currently prints `campaign.raised / campaign.goal` raw, but `fundraising_campaigns.goal` and `.raised` are stored as minor units (×100), which is why the user sees `XAF 0 / 1,000,000,000` instead of `XAF 0 / 10,000,000`. The header at line 516–517 already divides by 100 — apply the same convention here:
-
-```tsx
-{campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
+```text
+spouse ↔ spouse
+parent ⇄ child
+guardian → (other side sees) ward / "other"
+sibling ↔ sibling
+other ↔ other
 ```
 
-Progress bar width calc on line 858 also needs the divide for consistency (functionally identical since it's a ratio, but keep it tidy).
+Return the related members as:
+```
+relations: [{ member_id, profile_id, first_name, last_name, email, phone,
+              date_of_birth, is_child, relationship_type }]
+```
 
-## Out of scope
-- No DB/edge function changes — `arrival_date` / `departure_date` semantics are unchanged.
-- No changes elsewhere in the file (Identify / Family / Meal steps untouched).
+`is_child` = age < 16 when DOB is known.
+
+### 2. `src/pages/SpecialEventRegister.tsx` — prefill family from `relations`
+
+- Extend `Lookup` type with `relations`.
+- Add a new `FamilyRow` flavour for *prefilled* members carrying `existing_member_id`, profile fields, and a new `attending: boolean` (default **false** — user must tick).
+- After `handleLookup` returns `found`, seed `family` from `data.relations` (one row each, `status: "found"`, `attending: false`).
+- In the Family step UI:
+  - Render prefilled rows as compact tiles with: checkbox (attending), name, relationship badge, "child" pill if applicable. No "Check" button, no email/phone inputs for these rows.
+  - Keep the existing manual flow (Add person → email/phone lookup → if missing, capture details) for ad-hoc additions.
+  - "Remove" on a prefilled row just unticks/hides it from this registration but does not delete the relationship in DB.
+- On submit, only include family rows where `attending === true` (prefilled) OR rows the user added manually.
+
+### 3. Bidirectional relationships
+
+The DB already stores one row per pair, and `fetchMemberRelationshipsForMembers` reads both directions, so reads are already bidirectional. We will:
+
+- **Not** duplicate rows (no symmetric insert).
+- In `event-special-register/index.ts`, when inserting a brand-new relationship for an ad-hoc family addition, first check (both directions) whether a row already exists — if not, insert one row using the relationship as given. Reads via the lookup function (step 1) and existing utilities will surface it for either party.
+- Fix the existing duplicate-detection query in `event-special-register` (currently uses a fragile `.or(and(...),and(...))` string) by switching to two `.in()` queries — same pattern as `fetchMemberRelationshipsForMembers` — to avoid silent partial results.
+
+### 4. Mobile Back / Continue layout — `renderActions()`
+
+Change the wrapper to a 2-column grid on mobile so Back (left) and Continue (right) sit on the same row:
+
+```text
+grid grid-cols-2 gap-3 sm:flex sm:justify-end
+```
+
+When there's no Back (first step), Continue spans both columns via `col-span-2` so the layout doesn't shift.
+
+### 5. Out of scope
+
+- No schema changes (member_relationships already supports this).
+- Self-registration of a spouse who is already pre-registered by their partner is naturally handled: the `event_pre_registrations` upsert is keyed on `(event_id, member_id)`, so re-submitting is a no-op. No extra UI for that case in this pass.
+
+## Files touched
+
+- `supabase/functions/event-pre-register-lookup/index.ts` — return `relations[]`
+- `supabase/functions/event-special-register/index.ts` — robust relationship dedupe
+- `src/pages/SpecialEventRegister.tsx` — auto-populate family, tick-to-attend UI, mobile button row
