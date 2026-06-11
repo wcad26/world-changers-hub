@@ -19,6 +19,24 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Convert ISO yyyy-mm-dd -> dd/mm/yyyy for display
+const isoToDisplay = (iso: string): string => {
+  if (!iso) return "";
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+  return iso;
+};
+
+// Auto-format user input and convert dd/mm/yyyy -> ISO yyyy-mm-dd when complete
+const displayToIso = (input: string): string => {
+  const digits = input.replace(/\D/g, "").slice(0, 8);
+  if (digits.length < 8) return digits; // store partial digits; isoToDisplay handles formatting below
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export type OnboardAttendeeType = "member" | "visitor";
 
 export type OnboardFormValue = {
