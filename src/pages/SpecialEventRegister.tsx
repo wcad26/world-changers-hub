@@ -337,7 +337,7 @@ export default function SpecialEventRegister() {
               },
         })),
         needs_lodging: needsLodging,
-        lodging_party_size: needsLodging ? Number(lodgingPartySize || 0) || null : null,
+        lodging_party_size: null,
         arrival_date: needsLodging && attendingDays.length ? attendingDays[0] : null,
         departure_date: needsLodging && attendingDays.length ? attendingDays[attendingDays.length - 1] : null,
         meal_preferences: mealPrefs,
@@ -803,16 +803,7 @@ export default function SpecialEventRegister() {
                       </label>
                       {needsLodging && (
                         <div className="space-y-3 pt-2">
-                          <div>
-                            <Label className="text-xs">Party size</Label>
-                            <Input
-                              type="number"
-                              min={1}
-                              className="rounded-xl bg-background/60 max-w-[180px]"
-                              value={lodgingPartySize}
-                              onChange={(e) => setLodgingPartySize(e.target.value === "" ? "" : Number(e.target.value))}
-                            />
-                          </div>
+
                           {eventDays.length > 0 && (
                             <div>
                               <Label className="text-xs">Days you will attend</Label>
