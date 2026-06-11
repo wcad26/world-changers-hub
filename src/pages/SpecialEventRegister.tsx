@@ -308,7 +308,7 @@ export default function SpecialEventRegister() {
               occupation: primaryDraft.occupation,
             },
         primary_phone: primaryMember?.phone || primaryDraft.phone,
-        family: family.map((f) => ({
+        family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
           is_child: !!f.is_child,
