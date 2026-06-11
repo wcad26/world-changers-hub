@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -92,7 +94,15 @@ const SuperEvents: React.FC = () => {
   const deleteEvent = useDeleteGlobalEvent();
 
   // Fundraising campaigns for linking special events
-  const { data: campaigns = [] } = useQueryCampaigns();
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["fundraising-campaigns-for-events"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("fundraising_campaigns").select("id, name, goal, currency_code, region_id").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
