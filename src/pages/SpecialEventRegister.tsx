@@ -779,11 +779,6 @@ export default function SpecialEventRegister() {
                                   <Badge variant="outline" className="text-[10px]">child</Badge>
                                 )}
                               </div>
-                              {(row.email || row.phone) && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {row.email || row.phone}
-                                </p>
-                              )}
                             </div>
                           </label>
                         ) : null
