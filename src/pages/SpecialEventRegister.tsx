@@ -207,19 +207,19 @@ export default function SpecialEventRegister() {
   const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
 
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
-    const base: { key: StepKey; label: string }[] = [
-      { key: "identify", label: "You" },
-      { key: "details", label: "Family" },
-    ];
+    const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
+    if (registrationMode === "family") base.push({ key: "details", label: "Family" });
     if (hasExtras) base.push({ key: "extras", label: "Extras" });
     return base;
-  }, [hasExtras]);
+  }, [hasExtras, registrationMode]);
 
   const handleLookup = async () => {
     if (!lookupValue.trim()) return;
     setLookupStatus("checking");
-    const payload = lookupMode === "email" ? { email: lookupValue.trim() } : { phone: lookupValue.trim() };
+    const value = lookupValue.trim();
+    const payload = lookupMode === "email" ? { email: value } : { phone: value };
     const { data, error } = await supabase.functions.invoke("event-pre-register-lookup", { body: payload });
+    setLastCheckedValue(value);
     if (error) {
       setLookupStatus("missing");
       return;
@@ -231,7 +231,7 @@ export default function SpecialEventRegister() {
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
-      setPrimaryDraft((d) => ({ ...d, [lookupMode]: lookupValue.trim() }));
+      setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
       setLookupStatus("missing");
     }
   };
