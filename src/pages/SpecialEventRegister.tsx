@@ -778,6 +778,7 @@ export default function SpecialEventRegister() {
                       )}
                     </div>
                   ))}
+                  <div className="pt-2">{renderActions()}</div>
                 </GlassSection>
               )}
 
