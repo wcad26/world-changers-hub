@@ -19,12 +19,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Convert ISO yyyy-mm-dd -> dd/mm/yyyy for display
-const isoToDisplay = (iso: string): string => {
-  if (!iso) return "";
-  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) return `${m[3]}/${m[2]}/${m[1]}`;
-  return iso;
+// Convert stored value (ISO yyyy-mm-dd or partial digits) -> dd/mm/yyyy display
+const isoToDisplay = (stored: string): string => {
+  if (!stored) return "";
+  const iso = stored.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const digits = stored.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 };
 
 // Auto-format user input and convert dd/mm/yyyy -> ISO yyyy-mm-dd when complete
