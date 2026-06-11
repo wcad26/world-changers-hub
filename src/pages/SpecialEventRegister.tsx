@@ -882,31 +882,8 @@ export default function SpecialEventRegister() {
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">{campaign.name}</span>
                           <span>
-                          {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary"
-                          style={{ width: `${Math.min(100, ((campaign.raised || 0) / Math.max(1, campaign.goal || 1)) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{campaign.currency_code}</span>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="0"
-                        className="rounded-xl bg-background/60"
-                        value={pledgeAmount === "" ? "" : Number(pledgeAmount).toLocaleString("en-US")}
-                        onChange={(e) => {
-                          const digits = e.target.value.replace(/[^\d]/g, "");
-                          if (digits === "") return setPledgeAmount("");
-                          const n = Number(digits);
-                          setPledgeAmount(Number.isFinite(n) ? n : "");
-                        }}
-                      />
+                            {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
+                          </span>
                         </div>
                         <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
@@ -918,12 +895,17 @@ export default function SpecialEventRegister() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{campaign.currency_code}</span>
                         <Input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="numeric"
                           placeholder="0"
                           className="rounded-xl bg-background/60"
-                          value={pledgeAmount}
-                          onChange={(e) => setPledgeAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                          value={pledgeAmount === "" ? "" : Number(pledgeAmount).toLocaleString("en-US")}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[^\d]/g, "");
+                            if (digits === "") return setPledgeAmount("");
+                            const n = Number(digits);
+                            setPledgeAmount(Number.isFinite(n) ? n : "");
+                          }}
                         />
                       </div>
                     </GlassSection>
