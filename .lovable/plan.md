@@ -1,96 +1,93 @@
 
-# Special Event Registration & Management
+# Super Admin Finances — Global Rebuild Plan
 
-Leverage what already exists (`events.is_special`, `requires_pre_registration`, `event_pre_registrations`, `event-pre-register` + `event-pre-register-lookup` edge functions, visitor/member registration forms, `member_relationships` for family/children, `fundraising_campaigns`/`fundraising_donations`, child logic) and add the missing pieces.
+Replace the placeholder Super Admin Finances page with a full-featured page modeled on the regional finance page (`src/pages/admin/regional/Finances.tsx`), aggregating across all regions, with region/DCG/campaign filters, plus a dedicated "Global" scope for finances and fundraising the super admin operates themselves (distinct from any region).
 
-## 1. Database (single migration)
+## Goals
 
-Extend, do not duplicate.
+1. Aggregate finances across all regions (Regional / DCG / Fundraising tabs) with a Region filter.
+2. Let super admins record their own Global income/expenses and run Global fundraising campaigns, separate from regional books.
+3. Remove the standalone Super Admin **Fundraising** menu item and page — all fundraising lives inside the Finances page.
 
-- `events`:
-  - `event_days int[]` derived OR `is_multi_day boolean` + use existing `start_datetime`/`end_datetime` (will generate per-day attendance rows from this range — no schema needed beyond a `linked_fundraising_campaign_id uuid` FK on events).
-  - `linked_fundraising_campaign_id uuid REFERENCES fundraising_campaigns(id)`.
-  - `collect_lodging boolean default false`, `collect_meal_preferences boolean default false`, `collect_pledges boolean default false` — toggles per special event.
+---
 
-- `event_pre_registrations` (extend existing):
-  - `visitor_id uuid REFERENCES members(id)` already covered (members table stores both via `member_type`). Add:
-  - `attending_with_family boolean`
-  - `has_children boolean`
-  - `needs_lodging boolean`, `lodging_party_size int`
-  - `meal_preferences text[]` (e.g. vegetarian, halal, allergies free-text)
-  - `dietary_notes text`
-  - `pledge_amount numeric`, `pledge_currency_code text`, `pledge_status text default 'pledged'` (pledged/fulfilled/cancelled)
-  - `arrival_date date`, `departure_date date` (optional)
+## 1. Database changes (single migration)
 
-- `event_pre_registration_donations` link table OR simpler: when a pledge is fulfilled, insert a row into `fundraising_donations` with the campaign linked to the event and add `event_pre_registration_id uuid` column on `fundraising_donations` for traceability.
+Currently `financial_transactions.region_id` and `fundraising_campaigns.region_id` are `NOT NULL`. To represent "Global" (super-admin-owned) records we make them nullable, with `NULL` = global scope.
 
-- `attendance_events` already exists for daily attendance. For special events we will auto-generate one `attendance_events` row per calendar day between `start_datetime::date` and `end_datetime::date`, all linked to the same `event_id`. A trigger on insert/update of a special event regenerates the daily attendance shells.
+- `ALTER TABLE public.financial_transactions ALTER COLUMN region_id DROP NOT NULL;`
+- `ALTER TABLE public.fundraising_campaigns ALTER COLUMN region_id DROP NOT NULL;`
+- Add `scope text NOT NULL DEFAULT 'regional' CHECK (scope IN ('regional','global'))` on both tables for fast filtering and clarity. Backfill existing rows to `'regional'`.
+- Keep existing RLS (`authenticated` full access pattern already in place from prior migrations) — no policy changes needed; `NULL region_id` rows are simply "global".
+- No grants change (tables already granted).
 
-All new columns nullable; RLS keeps current "authenticated full access" pattern, with public `SELECT` only where existing policies already allow it. GRANTs included.
+## 2. Shared hook updates
 
-## 2. Public Special Event Registration Page
+`src/hooks/useRegionalLedger.ts` and `src/hooks/useFundraisingCampaigns.ts` currently scope by `userRegion.id`. Add a sibling "global aggregator" variant rather than mutating the regional ones:
 
-Route: `/events/:slug/register` (works alongside existing `EventPreRegistrationDialog`, but as a full page since the flow is longer for special events).
+- New `src/hooks/useGlobalLedger.ts` — same shape as `useRegionalLedger` but:
+  - Accepts `regionId?: string | "all" | "global"`.
+  - `regionId = "global"` → `.is("region_id", null)`.
+  - `regionId = "all"` (default) → no region filter.
+  - Otherwise filter on that region id.
+  - Joins region name for aggregation.
+- New `useGlobalFundraisingCampaigns(regionFilter)` and `useGlobalDonations(range, regionFilter)` with the same convention.
 
-Single multi-step flow that branches on lookup:
+The existing regional finance components (`RegionalLedgerTab`, `DcgLedgerTab`, `FundraisingLedgerTab`, `FundraisingTransactionsCard`, dialogs) keep working untouched for the regional portal.
 
-1. **Identify** – phone OR email lookup via existing `event-pre-register-lookup` edge function (extend to also match by phone).
-2. **Branch A – Recognized user**: confirm name, then collect interest options (attending alone / with family / has children), lodging, meal prefs, pledge. Submit.
-3. **Branch B – Unknown user**: reuse `MemberRegister` / `VisitorRegister` form components inline (extract their schemas into shared components so they can be embedded). On submit the same edge function:
-   - Creates the member/visitor (full onboarding) using existing `create-member-registration` / `create-visitor` logic.
-   - Inserts the matching `event_pre_registrations` row (interest signaled automatically).
-4. **Family/children add-on step**: a repeatable list where the primary registrant adds each family member by email/phone. For each entry:
-   - If found → linked + interest signaled.
-   - If not found → mini-form (reuse member or visitor schema, child variant when age < 16). Children automatically get linked to the primary via `member_relationships` (existing helper).
-   - All rows share a `group_id` (already supported).
-5. **Pledge step** (shown when event has linked fundraising campaign): optional pledge amount + currency, stored on the pre-registration row; visible separately in the campaign report and counted toward forecast.
-6. **Confirmation** screen with event summary and dates.
+## 3. New super-admin finance components
 
-UI built around existing dialog logic but as a stepper page; shared registration forms are extracted into `src/components/registration/MemberRegistrationForm.tsx` and `VisitorRegistrationForm.tsx` reused by current pages and this flow.
+Create `src/components/admin/super/finances/` that mirrors the regional folder, but consumes the global hooks and adds a Region selector:
 
-## 3. Edge Functions
+- `GlobalLedgerTab.tsx` — KPI cards + ledger table aggregated across regions, plus a "By Region" breakdown card (income / expenses / net per region).
+- `GlobalDcgLedgerTab.tsx` — DCG aggregation across all regions, grouped by region with drill-down per DCG.
+- `GlobalFundraisingTab.tsx` — campaigns table across regions + donations + KPI cards; "Region" column visible.
+- `GlobalFinanceTab.tsx` — *super-admin's own books* (NULL region_id). Reuses regional record-income / record-expense dialogs but inserts with `region_id = null, scope = 'global'`.
+- `GlobalFundraisingCampaignsTab.tsx` — super-admin's own campaigns (`region_id = null`). Reuses the existing campaign dialog with `region_id = null`.
+- `RegionFilterSelect.tsx` — dropdown listing every region + "All Regions" + "Global Only".
 
-- Extend `event-pre-register-lookup` to accept `{ email?, phone? }` and resolve `members.profile_id → profiles.phone/email`.
-- Extend `event-pre-register` to accept the new fields (lodging, meals, pledge, attending_with_family, has_children) and the new "onboard + register" path: when a member/visitor record does not exist yet, accept a `new_registrant: { type: 'member'|'visitor', payload }` block and invoke the existing onboarding edge functions internally before inserting the pre-registration. Family entries support the same `new_registrant` payload for batch onboarding.
-- Child linkage uses the already-built `member_relationships` insert pattern (chunked, see memory rule).
+## 4. Rewrite `src/pages/admin/super/Finances.tsx`
 
-## 4. Super Admin Portal
+Glass header (matches regional finances style) with:
+- Title "Global Financial Management".
+- `PeriodSelector` (reused from regional).
+- `RegionFilterSelect`.
 
-- **Create Special Event** (existing `SuperEvents` page): when `is_special` is on, show extra fields:
-  - Toggles: collect lodging, collect meal preferences, collect pledges.
-  - Linked fundraising campaign (dropdown of existing global campaigns or "+ create new"). Creating links it on save.
-  - Multi-day support is automatic from `start_datetime`/`end_datetime`.
-- **Special Event Report page**: `src/pages/admin/super/SpecialEventReport.tsx` at route `/admin/super/events/:eventId/special-report`. Sections:
-  - KPI cards: total registered, individuals vs families, total adults / children, expected attendance vs `attendance_target`.
-  - Lodging summary: total beds needed, arrival/departure histogram, party sizes.
-  - Meal preferences breakdown (vegetarian, halal, allergies, etc.) and totals per day.
-  - Daily attendance grid: per day, expected (from pre-reg) vs actual (from `attendance_records`).
-  - Fundraising panel: linked campaign goal, total pledged (sum of `pledge_amount`), total received (sum of donations via campaign), gap to goal, list of pledgers, "mark fulfilled" action that creates a `fundraising_donations` row.
-  - Demographics: age bands, region of origin, family vs individual.
-  - Export CSV for each section.
-- Link button "Special Event Report" added on the event row when `is_special = true`.
+Tabs:
+1. **Overview** — aggregate KPIs (total income, expenses, net, donations) + region breakdown table + trend chart (reuses `LedgerTrendChart`).
+2. **Regional** — `GlobalLedgerTab` (all regions' financial_transactions where `dcg_id is null`).
+3. **DCG** — `GlobalDcgLedgerTab`.
+4. **Fundraising** — `GlobalFundraisingTab` (all campaigns + donations across regions).
+5. **Global Books** — `GlobalFinanceTab` — super-admin's own income/expense ledger.
+6. **Global Fundraising** — `GlobalFundraisingCampaignsTab` — super-admin's own campaigns.
 
-## 5. Attendance (multi-day)
+All Region/Period filters apply to tabs 1–4; tabs 5–6 are pinned to global (NULL region) but still respect Period.
 
-- On save of a special event, a server function creates one `attendance_events` row per day in `[start_date, end_date]`, named `"<event name> – Day N (YYYY-MM-DD)"`, linked back to the parent event via existing `region_id`/`event_id` reference (add `parent_event_id uuid` on `attendance_events` to group days under the parent special event).
-- Existing Super Admin attendance UI gets a "Multi-day" view for special events showing all days as tabs; recording attendance per day uses existing `attendance_records` logic. Pre-registration list pre-populates each day's expected attendees.
+## 5. Remove standalone Fundraising page
 
-## 6. Fundraising Integration
+- Delete `src/pages/admin/super/Fundraising.tsx`.
+- Remove the `Fundraising` route from `src/App.tsx`.
+- Remove the `Fundraising` menu entry from `src/components/admin/SuperAdminLayout.tsx`.
+- Remove the `SuperFundraising` import in `App.tsx`.
 
-- `linked_fundraising_campaign_id` is the bridge.
-- Pledges live on `event_pre_registrations`; report sums them.
-- "Mark pledge fulfilled" in the report opens a donation entry dialog (reuses existing fundraising donation create flow) and writes back `event_pre_registration_id` on the donation for traceability.
-- Public registration page shows campaign progress bar if the event has a linked campaign.
+## 6. Recording dialogs (reuse, with scope=global)
 
-## 7. Validation
-
-- Verify migration applies and grants are present.
-- Smoke test: create a special multi-day event linked to a campaign → submit registration as new member with 1 spouse + 1 child + pledge → confirm `event_pre_registrations` rows (3, same group_id), `member_relationships` created, child correctly flagged (<16), pledge visible in Super Admin report.
-- Recognized-user shortcut: existing member with phone lookup signals interest without re-onboarding.
+The regional record-income, record-expense, and create-campaign dialogs accept `region_id` from context. We'll pass an explicit `scope` prop:
+- For Global Books tab the dialogs are invoked with `region_id = null, scope = 'global'`.
+- Existing regional flows unchanged.
 
 ## Technical notes
 
-- Reuse, do not duplicate: extract member/visitor forms into shared components first; the existing public registration pages keep working unchanged.
-- Keep "authenticated full access" RLS pattern per recent memory; public anon `INSERT` on `event_pre_registrations` already allowed for self pre-registration via the public edge function (function uses service role).
-- Children/adult rules unchanged — reuse `childUtils` and `fetchMemberRelationshipsForMembers`.
-- No changes to existing route guards or auth.
+- `summarizeLedger` and `aggregateByDcg` from `useRegionalLedger.ts` are reused as-is on the aggregated row set — they already operate on a plain array.
+- Region breakdown card uses a new helper `aggregateByRegion(rows)` placed next to them.
+- Charts/colors/cards reuse `FinanceKpiCard`, `LedgerTrendChart`, `PeriodSelector` from `src/components/admin/regional/finances/` (kept where they are; super components import from that path).
+- CSV export across all tabs uses existing `csvExport` util.
+
+## Validation
+
+- Open `/admin/super/finances` — see all 6 tabs, filters work, "All Regions" matches the sum of every regional finance page.
+- Switch Region filter to one region → numbers match that region's portal exactly.
+- Switch Region filter to "Global Only" → shows only super-admin-recorded rows.
+- Create a Global income/expense in tab 5 → does NOT appear in any regional portal; appears under "Global Only".
+- Create a Global fundraising campaign in tab 6 → not visible in regional fundraising lists; visible under Global Only.
+- Sidebar no longer shows "Fundraising"; `/admin/super/fundraising` returns 404.
