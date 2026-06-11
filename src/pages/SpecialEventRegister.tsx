@@ -875,6 +875,7 @@ export default function SpecialEventRegister() {
                   <div className="pt-2">{renderActions()}</div>
                 </div>
               )}
+            </>
           )}
         </div>
       </div>
