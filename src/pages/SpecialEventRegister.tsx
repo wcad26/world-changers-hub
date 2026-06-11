@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, CheckCircle2, Plus, Trash2, Search, Heart, Users, Bed, Utensils,
-  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin
+  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
