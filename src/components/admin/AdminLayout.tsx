@@ -93,7 +93,9 @@ const AdminLayoutInner: React.FC<AdminLayoutProps> = ({ children, title, menuIte
             {!isCollapsed && (
               <Link to="/" className="flex items-center gap-2 flex-1 min-w-0">
                 <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
-                  {userRegion?.name?.toUpperCase() || 'PORTAL'}
+                  {location.pathname.startsWith('/admin/super')
+                    ? 'SUPER ADMIN'
+                    : (userRegion?.name?.toUpperCase() || 'PORTAL')}
                 </span>
               </Link>
             )}
