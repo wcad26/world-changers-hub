@@ -188,7 +188,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {filtered.map((r: any) => (
                     <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="font-medium">{r.region?.name ?? (r.region_id ? "—" : "Global")}</TableCell>
@@ -199,7 +199,18 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                           {r.category?.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">
+                        {r._unconverted ? (
+                          <span className="text-amber-600" title="No FX path defined">—</span>
+                        ) : (
+                          fc(Number(r.amount))
+                        )}
+                        {r._sourceCurrency && r._sourceCurrency !== (baseCurrency?.code || baseCode) && (
+                          <div className="text-[10px] text-muted-foreground font-normal">
+                            {r._sourceCurrency} {r._originalAmount.toLocaleString()}
+                          </div>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
