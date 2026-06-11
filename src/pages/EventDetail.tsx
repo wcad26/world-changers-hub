@@ -248,7 +248,7 @@ export default function EventDetail() {
         
       </main>
       
-      <EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />
+      
       <Footer />
     </div>
   );
