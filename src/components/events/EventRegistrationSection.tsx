@@ -63,10 +63,10 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-7 text-lg font-semibold transition-all hover:scale-105"
                     asChild
                   >
-                    <a href={`/events/${(event as any).slug || event.id}/register`}>
+                    <Link to={`/events/${(event as any).slug || event.id}/register`}>
                       <UserPlus className="mr-2 h-5 w-5" />
                       Reserve your spot
-                    </a>
+                    </Link>
                   </Button>
                 )}
                 {event.registration_url && (
