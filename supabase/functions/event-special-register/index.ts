@@ -157,20 +157,32 @@ Deno.serve(async (req) => {
 
     if (insErr) return json({ error: insErr.message }, 500);
 
-    // Member relationships between primary and family
+    // Member relationships between primary and family.
+    // Use two .in() queries (one per side) and de-duplicate in JS — mirrors
+    // fetchMemberRelationshipsForMembers and avoids fragile .or() URL parsing.
     if (familyResolved.length > 0) {
       const relatedIds = familyResolved.map(f => f.member.id);
-      const { data: existingRels } = await admin
-        .from("member_relationships")
-        .select("member_id, related_member_id")
-        .or(
-          `and(member_id.eq.${primaryMember.id},related_member_id.in.(${relatedIds.join(",")})),and(related_member_id.eq.${primaryMember.id},member_id.in.(${relatedIds.join(",")}))`,
-        );
+      const [byMember, byRelated] = await Promise.all([
+        admin
+          .from("member_relationships")
+          .select("member_id, related_member_id")
+          .eq("member_id", primaryMember.id)
+          .in("related_member_id", relatedIds),
+        admin
+          .from("member_relationships")
+          .select("member_id, related_member_id")
+          .eq("related_member_id", primaryMember.id)
+          .in("member_id", relatedIds),
+      ]);
       const has = new Set<string>();
-      (existingRels ?? []).forEach((r: any) => {
-        has.add(`${r.member_id}|${r.related_member_id}`);
-        has.add(`${r.related_member_id}|${r.member_id}`);
-      });
+      const collect = (rows: any[] | null | undefined) => {
+        (rows ?? []).forEach((r: any) => {
+          has.add(`${r.member_id}|${r.related_member_id}`);
+          has.add(`${r.related_member_id}|${r.member_id}`);
+        });
+      };
+      collect(byMember.data as any[]);
+      collect(byRelated.data as any[]);
       const toInsert = familyResolved
         .filter(f => !has.has(`${primaryMember!.id}|${f.member.id}`))
         .map(f => ({
