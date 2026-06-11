@@ -597,14 +597,8 @@ export default function SpecialEventRegister() {
                     <span className="font-semibold">{campaign.name}</span>
                   </div>
                   <div className="mt-2 text-xs opacity-90">
-                    Raised {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} of {campaign.currency_code}{" "}
+                    Fundraising goal: {campaign.currency_code}{" "}
                     {((campaign.goal || 0) / 100).toLocaleString()}
-                  </div>
-                  <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-white"
-                      style={{ width: `${Math.min(100, ((campaign.raised || 0) / Math.max(1, campaign.goal || 1)) * 100)}%` }}
-                    />
                   </div>
                 </div>
               )}
