@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEventById } from "@/hooks/useEvents";
 import { useEventBySlugWithHistory } from "@/hooks/useEventBySlugWithHistory";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -15,9 +15,10 @@ import { RelatedEventsCarousel } from "@/components/events/RelatedEventsCarousel
 import { EventRegistrationSection } from "@/components/events/EventRegistrationSection";
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
+import { EventPreRegistrationDialog } from "@/components/events/EventPreRegistrationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, MessageCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,6 +46,7 @@ export default function EventDetail() {
   const error = isEventIdUUID ? errorById : errorBySlug;
   
   const { localizedField, t } = useLanguage();
+  const [preRegOpen, setPreRegOpen] = useState(false);
 
   const getStatusBadge = () => {
     if (!event) return null;
@@ -182,6 +184,16 @@ export default function EventDetail() {
                       {t('registerForEvent')}
                     </Button>
                   )}
+
+                  {(event as any).is_special && (event as any).requires_pre_registration && (
+                    <Button
+                      className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg"
+                      onClick={() => setPreRegOpen(true)}
+                    >
+                      <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
+                      Pre-Register
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -237,6 +249,7 @@ export default function EventDetail() {
         
       </main>
       
+      <EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />
       <Footer />
     </div>
   );
