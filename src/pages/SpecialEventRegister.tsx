@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { format } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type Lookup = {
@@ -194,8 +194,7 @@ export default function SpecialEventRegister() {
 
   const [needsLodging, setNeedsLodging] = useState(false);
   const [lodgingPartySize, setLodgingPartySize] = useState<number | "">("");
-  const [arrivalDate, setArrivalDate] = useState("");
-  const [departureDate, setDepartureDate] = useState("");
+  const [attendingDays, setAttendingDays] = useState<string[]>([]);
   const [mealPrefs, setMealPrefs] = useState<string[]>([]);
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [pledgeAmount, setPledgeAmount] = useState<number | "">("");
@@ -205,6 +204,19 @@ export default function SpecialEventRegister() {
   const ev: any = event;
 
   const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
+
+  const eventDays = useMemo<string[]>(() => {
+    if (!ev?.start_datetime) return [];
+    const start = new Date(ev.start_datetime);
+    const end = ev.end_datetime ? new Date(ev.end_datetime) : start;
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+    try {
+      const days = eachDayOfInterval({ start, end });
+      return days.slice(0, 30).map((d) => format(d, "yyyy-MM-dd"));
+    } catch {
+      return [format(start, "yyyy-MM-dd")];
+    }
+  }, [ev?.start_datetime, ev?.end_datetime]);
 
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
     const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
@@ -327,8 +339,8 @@ export default function SpecialEventRegister() {
         })),
         needs_lodging: needsLodging,
         lodging_party_size: needsLodging ? Number(lodgingPartySize || 0) || null : null,
-        arrival_date: arrivalDate || null,
-        departure_date: departureDate || null,
+        arrival_date: needsLodging && attendingDays.length ? attendingDays[0] : null,
+        departure_date: needsLodging && attendingDays.length ? attendingDays[attendingDays.length - 1] : null,
         meal_preferences: mealPrefs,
         dietary_notes: dietaryNotes || null,
         pledge_amount: pledgeAmount ? Number(pledgeAmount) : null,
@@ -791,25 +803,46 @@ export default function SpecialEventRegister() {
                         I need lodging provided by the organizers
                       </label>
                       {needsLodging && (
-                        <div className="grid md:grid-cols-3 gap-3 pt-2">
+                        <div className="space-y-3 pt-2">
                           <div>
                             <Label className="text-xs">Party size</Label>
                             <Input
                               type="number"
                               min={1}
-                              className="rounded-xl bg-background/60"
+                              className="rounded-xl bg-background/60 max-w-[180px]"
                               value={lodgingPartySize}
                               onChange={(e) => setLodgingPartySize(e.target.value === "" ? "" : Number(e.target.value))}
                             />
                           </div>
-                          <div>
-                            <Label className="text-xs">Arrival date</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Departure date</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} />
-                          </div>
+                          {eventDays.length > 0 && (
+                            <div>
+                              <Label className="text-xs">Days you will attend</Label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                                {eventDays.map((d) => {
+                                  const checked = attendingDays.includes(d);
+                                  return (
+                                    <label
+                                      key={d}
+                                      className={cn(
+                                        "flex items-center gap-2 text-sm rounded-xl border border-border/40 px-3 py-2 cursor-pointer transition-colors",
+                                        checked ? "bg-primary/10 border-primary/40" : "bg-background/40 hover:bg-background/60"
+                                      )}
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(v) =>
+                                          setAttendingDays((prev) =>
+                                            v ? [...prev, d].sort() : prev.filter((x) => x !== d)
+                                          )
+                                        }
+                                      />
+                                      {format(new Date(d), "EEE, MMM d")}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </GlassSection>
@@ -849,7 +882,7 @@ export default function SpecialEventRegister() {
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">{campaign.name}</span>
                           <span>
-                            {campaign.currency_code} {campaign.raised?.toLocaleString() || 0} / {campaign.goal?.toLocaleString() || 0}
+                            {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
                           </span>
                         </div>
                         <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -862,12 +895,17 @@ export default function SpecialEventRegister() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{campaign.currency_code}</span>
                         <Input
-                          type="number"
-                          min={0}
+                          type="text"
+                          inputMode="numeric"
                           placeholder="0"
                           className="rounded-xl bg-background/60"
-                          value={pledgeAmount}
-                          onChange={(e) => setPledgeAmount(e.target.value === "" ? "" : Number(e.target.value))}
+                          value={pledgeAmount === "" ? "" : Number(pledgeAmount).toLocaleString("en-US")}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/[^\d]/g, "");
+                            if (digits === "") return setPledgeAmount("");
+                            const n = Number(digits);
+                            setPledgeAmount(Number.isFinite(n) ? n : "");
+                          }}
                         />
                       </div>
                     </GlassSection>
