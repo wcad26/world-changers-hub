@@ -15,7 +15,6 @@ import { RelatedEventsCarousel } from "@/components/events/RelatedEventsCarousel
 import { EventRegistrationSection } from "@/components/events/EventRegistrationSection";
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
-import { EventPreRegistrationDialog } from "@/components/events/EventPreRegistrationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
