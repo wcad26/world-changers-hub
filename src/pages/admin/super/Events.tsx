@@ -7,16 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays, Search, Plus, MoreHorizontal, Edit, UserCheck, Eye, EyeOff,
   Link2, Copy, Trash2, Globe, Star, Layers, Target, TrendingUp, TrendingDown,
+  ChevronDown, X, Languages,
 } from "lucide-react";
 import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateGlobalEvent } from "@/hooks/useGlobalEvents";
 import { useAllRegions } from "@/hooks/useAllRegions";
+import { useCurrencies } from "@/hooks/useCurrencies";
 import { useGlobalAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -34,6 +36,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalAttendanceDialog } from "@/components/admin/super/events/GlobalAttendanceDialog";
@@ -45,15 +50,58 @@ const eventCategories = [
 
 const eventSchema = z.object({
   name: z.string().min(3, "Event name must be at least 3 characters."),
+  name_fr: z.string().optional(),
   description: z.string().optional(),
+  description_fr: z.string().optional(),
   category: z.enum(eventCategories),
   start_date: z.string().min(1, "Please select a start date."),
   start_time: z.string().min(1, "Please provide a start time."),
   end_date: z.string().optional(),
   end_time: z.string().optional(),
   location_name: z.string().min(3, "Please provide a location."),
+  location_name_fr: z.string().optional(),
   address: z.string().optional(),
+  address_fr: z.string().optional(),
   capacity: z.coerce.number().positive().int().optional(),
+  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
+  cost_currency_code: z.string().optional(),
+  event_card_image: z.instanceof(File).optional(),
+  event_card_image_fr: z.instanceof(File).optional(),
+  image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
+  image_files_fr: z.array(z.instanceof(File)).max(5, "Maximum 5 French hero images allowed").optional(),
+  gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
+  gallery_images_fr: z.array(z.instanceof(File)).max(10, "Maximum 10 French gallery images allowed").optional(),
+  organizer_name: z.string().optional(),
+  organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  whatsapp_contact: z.string().optional(),
+  testimonials: z.array(z.object({
+    name: z.string().min(2, "Name is required"),
+    name_fr: z.string().optional(),
+    role: z.string().min(2, "Role is required"),
+    role_fr: z.string().optional(),
+    content: z.string().min(10).max(300),
+    content_fr: z.string().max(300).optional(),
+    rating: z.coerce.number().min(1).max(5).default(5),
+  })).optional(),
+  faqs: z.array(z.object({
+    question: z.string().min(5).max(200),
+    question_fr: z.string().max(200).optional(),
+    answer: z.string().min(10).max(500),
+    answer_fr: z.string().max(500).optional(),
+  })).optional(),
+  speakers: z.array(z.object({
+    name: z.string().min(2, "Speaker name is required"),
+    name_fr: z.string().optional(),
+    title: z.string().min(2, "Speaker title is required"),
+    title_fr: z.string().optional(),
+    bio: z.string().max(500).optional(),
+    bio_fr: z.string().max(500).optional(),
+    photo: z.instanceof(File).optional(),
+    linkedin_url: z.string().url().optional().or(z.literal("")),
+    twitter_url: z.string().url().optional().or(z.literal("")),
+    website_url: z.string().url().optional().or(z.literal("")),
+    display_order: z.number().optional(),
+  })).optional(),
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
@@ -65,7 +113,22 @@ const eventSchema = z.object({
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
-});
+}).refine((data) => {
+  if (data.end_date && data.start_date) {
+    return new Date(data.end_date) >= new Date(data.start_date);
+  }
+  return true;
+}, { message: "End date must be after or same as start date", path: ["end_date"] });
+
+// Helper: upload a file to event-images bucket and return its public URL
+async function uploadEventImage(file: File, prefix = ""): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${prefix}${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const { error } = await supabase.storage.from('event-images').upload(fileName, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from('event-images').getPublicUrl(fileName);
+  return publicUrl;
+}
 
 const SuperEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
