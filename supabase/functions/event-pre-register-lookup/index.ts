@@ -8,6 +8,37 @@ const corsHeaders = {
 
 const digitsOnly = (s: string) => (s || "").replace(/\D/g, "");
 
+// Inverse relationship label from the perspective of the OTHER party.
+// e.g. if A.member_id -> B.related_member_id with type "parent",
+// then from B's perspective A is their "child"? No — A is parent, so B sees A as "parent"
+// of? Wait: the row says member A is "parent" of B. So when we view from B,
+// A is B's parent → relationship_type from B's perspective is "parent".
+// But when fetching relations for primary P, if row is (P, X, "parent") → X is P's parent.
+// If row is (X, P, "parent") → X is P's child (because X is parent of someone? no, X is parent of P? row means X is "parent" relating to P).
+// Convention used elsewhere: relationship_type describes member_id's relation to related_member_id.
+// i.e. row (A,B,"parent") = "A is parent of B". So from primary P:
+//   - row (P, X, t): P is t of X  → X's relation to P is the inverse of t
+//   - row (X, P, t): X is t of P  → X's relation to P is t
+const INVERSE: Record<string, string> = {
+  spouse: "spouse",
+  sibling: "sibling",
+  parent: "child",
+  child: "parent",
+  guardian: "other",
+  other: "other",
+};
+
+function calcAge(dob?: string | null): number | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let a = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) a--;
+  return a;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -38,7 +69,6 @@ Deno.serve(async (req) => {
     }
 
     if (!profile && phoneDigits.length >= 9) {
-      // Match by trailing 9 digits to handle country code differences
       const { data: profiles } = await admin
         .from("profiles")
         .select("id, first_name, last_name, email, phone, date_of_birth")
@@ -49,7 +79,7 @@ Deno.serve(async (req) => {
       ) || null;
     }
 
-    if (!profile) return json({ found: false, member: null });
+    if (!profile) return json({ found: false, member: null, relations: [] });
 
     const { data: member } = await admin
       .from("members")
@@ -57,7 +87,63 @@ Deno.serve(async (req) => {
       .eq("profile_id", profile.id)
       .maybeSingle();
 
-    if (!member) return json({ found: false, member: null });
+    if (!member) return json({ found: false, member: null, relations: [] });
+
+    // Fetch member_relationships from BOTH sides (mirrors fetchMemberRelationshipsForMembers).
+    const [byMember, byRelated] = await Promise.all([
+      admin
+        .from("member_relationships")
+        .select("member_id, related_member_id, relationship_type")
+        .eq("member_id", member.id),
+      admin
+        .from("member_relationships")
+        .select("member_id, related_member_id, relationship_type")
+        .eq("related_member_id", member.id),
+    ]);
+
+    type Rel = { other_id: string; relationship_type: string };
+    const relMap = new Map<string, Rel>();
+    (byMember.data || []).forEach((r: any) => {
+      // member.id is on the member_id side -> primary's relation to other is r.relationship_type,
+      // other's relation to primary is inverse.
+      const other = r.related_member_id;
+      if (!relMap.has(other)) {
+        relMap.set(other, { other_id: other, relationship_type: INVERSE[r.relationship_type] || "other" });
+      }
+    });
+    (byRelated.data || []).forEach((r: any) => {
+      // member.id is on the related_member_id side -> other is r.member_id,
+      // other's relation to primary is r.relationship_type (as stored).
+      const other = r.member_id;
+      if (!relMap.has(other)) {
+        relMap.set(other, { other_id: other, relationship_type: r.relationship_type || "other" });
+      }
+    });
+
+    let relations: any[] = [];
+    if (relMap.size > 0) {
+      const otherIds = Array.from(relMap.keys());
+      const { data: relMembers } = await admin
+        .from("members")
+        .select("id, profile_id, member_type, profiles:profile_id(first_name, last_name, email, phone, date_of_birth)")
+        .in("id", otherIds);
+      relations = (relMembers || []).map((rm: any) => {
+        const r = relMap.get(rm.id)!;
+        const dob = rm.profiles?.date_of_birth || null;
+        const age = calcAge(dob);
+        return {
+          member_id: rm.id,
+          profile_id: rm.profile_id,
+          first_name: rm.profiles?.first_name || "",
+          last_name: rm.profiles?.last_name || "",
+          email: rm.profiles?.email || "",
+          phone: rm.profiles?.phone || "",
+          date_of_birth: dob,
+          is_child: age !== null && age < 16,
+          relationship_type: r.relationship_type,
+        };
+      });
+    }
 
     return json({
       found: true,
@@ -71,6 +157,7 @@ Deno.serve(async (req) => {
         phone: profile.phone,
         date_of_birth: profile.date_of_birth,
       },
+      relations,
     });
   } catch (e: any) {
     return json({ error: String(e?.message ?? e) }, 500);
