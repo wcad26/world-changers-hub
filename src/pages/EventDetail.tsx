@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEventById } from "@/hooks/useEvents";
 import { useEventBySlugWithHistory } from "@/hooks/useEventBySlugWithHistory";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -15,9 +15,10 @@ import { RelatedEventsCarousel } from "@/components/events/RelatedEventsCarousel
 import { EventRegistrationSection } from "@/components/events/EventRegistrationSection";
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
+import { EventPreRegistrationDialog } from "@/components/events/EventPreRegistrationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, MessageCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
