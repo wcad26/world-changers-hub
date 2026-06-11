@@ -10,7 +10,8 @@ import FinanceFiltersBar from "@/components/admin/regional/finances/FinanceFilte
 import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendChart";
 import { useGlobalLedger, aggregateByRegion } from "@/hooks/useGlobalLedger";
 import { summarizeLedger, aggregateByDcg } from "@/hooks/useRegionalLedger";
-import { formatCurrency } from "@/utils/currencyUtils";
+import { formatWithCurrency } from "@/utils/currencyUtils";
+import { useFxConverter } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
@@ -34,23 +35,40 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
     type,
   });
 
+  const { baseCode, baseCurrency, convert } = useFxConverter();
+
+  const convertedRows = useMemo(() => {
+    return rows.map((r) => {
+      const src = r.currency_code || r.region?.currency_code || baseCode;
+      const v = convert(Number(r.amount) || 0, src);
+      return {
+        ...r,
+        _originalAmount: Number(r.amount) || 0,
+        _sourceCurrency: src,
+        amount: v ?? 0,
+        _unconverted: v == null,
+      };
+    });
+  }, [rows, convert, baseCode]);
+
   const filtered = useMemo(() => {
-    if (!search) return rows;
+    if (!search) return convertedRows;
     const s = search.toLowerCase();
-    return rows.filter(
+    return convertedRows.filter(
       (r) =>
         r.category?.name?.toLowerCase().includes(s) ||
         r.description?.toLowerCase().includes(s) ||
         r.dcg?.name?.toLowerCase().includes(s) ||
         r.region?.name?.toLowerCase().includes(s)
     );
-  }, [rows, search]);
+  }, [convertedRows, search]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const perDcg = useMemo(() => aggregateByDcg(filtered as any), [filtered]);
   const perRegion = useMemo(() => aggregateByRegion(filtered as any), [filtered]);
+  const unconvertedCount = useMemo(() => filtered.filter((r: any) => r._unconverted).length, [filtered]);
 
-  const fc = (n: number) => formatCurrency(n, "USD");
+  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
 
   const handleExport = () => {
     exportCsv(
