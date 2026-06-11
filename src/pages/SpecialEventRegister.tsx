@@ -421,7 +421,7 @@ export default function SpecialEventRegister() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-6 px-4 pb-32 md:pb-12">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-6 px-4 pb-12">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Hero */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground p-6 md:p-8 shadow-xl">
