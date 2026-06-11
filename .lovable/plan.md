@@ -1,65 +1,53 @@
 ## Goal
-Replace the Pre-Register dialog with a full, well-designed registration page that covers every section enabled on the event (family, lodging, meals, pledges).
+On the pre-registration page, after the email/phone lookup the user must explicitly choose **Individual** or **Family** before continuing. Individuals skip the family step entirely; families must add their members. Also clean up the Check button so it only re-appears when the lookup value is edited, and add a Back button on later steps.
 
-## Wiring (small)
-**`src/pages/EventDetail.tsx`**
-- Pre-Register button `onClick` → `navigate(\`/events/${event.slug || event.id}/register\`)`.
-- Remove the `EventPreRegistrationDialog` import, `preRegOpen` state, and dialog mount on this page.
+All work stays in `src/pages/SpecialEventRegister.tsx` (frontend only). No schema, edge function, or backend changes — the existing `event-special-register` payload already supports both individuals (empty `family`) and families.
 
-The route `/events/:slug/register` is already wired in `src/App.tsx` to `SpecialEventRegister`.
+## Changes
 
-## Page content — already correct, conditional on event flags
-`src/pages/SpecialEventRegister.tsx` already renders the right steps based on event flags from `events` table:
+### 1. New state
+- `registrationMode: "individual" | "family" | null` — resets to `null` whenever the lookup value changes or the user is re-checked.
+- `lastCheckedValue: string` — stores the value that was last submitted to the lookup endpoint. The Check button is hidden when `lookupStatus === "found"` AND `lookupValue === lastCheckedValue`. As soon as the user edits the email/telephone, `lookupStatus` resets to `idle` and Check reappears (current behavior — just make sure the input `onChange` also clears `registrationMode`).
+
+### 2. Identify step — after a successful lookup
+Replace the current single Alert + Continue block with:
 
 ```text
-Step 1 — Identify
-  • Email/phone lookup via event-pre-register-lookup
-  • If found: confirm identity
-  • If not found: inline onboarding (Family Name, Other Names, Email, Phone,
-    Address, DOB, Gender) — creates visitor on submit
+[green Alert] Hello {first_name}, are you registering for {event.name}
+              as a family or an individual?
 
-Step 2 — Family & Children
-  • Add multiple family members (relationship type)
-  • Each row: email/phone lookup; if not found, capture name/DOB/gender;
-    auto-flag children under 16
+[ Individual ]   [ Family ]      ← two large buttons, radio-tick when selected
+                                   (same visual pattern as the Email / Telephone
+                                    buttons already on this page — Individual in
+                                    one accent color, Family in another, green
+                                    check circle inside the selected one)
 
-Step 3 — Extras (rendered only when the event opts in)
-  • Lodging                  → when event.collect_lodging
-       party size, arrival date, departure date
-  • Meal preferences         → when event.collect_meal_preferences
-       checkboxes (Vegetarian, Vegan, Halal, Kosher, Gluten-free, allergies)
-       + free-text dietary notes
-  • Pledge to support        → when event.collect_pledges AND
-                               event.linked_fundraising_campaign_id is set
-       shows campaign name, goal/raised, accepts pledge amount in
-       campaign currency
-
-Done — confirmation screen with a link back to /events
+[ Continue → ]                    ← disabled until a mode is picked
 ```
 
-Submission posts to existing `event-special-register` edge function with the full payload (primary, family, lodging, meals, pledge).
+For users who weren't found and are onboarding inline (the "missing" branch), show the same Individual / Family selector below the new-user form so the choice is captured before Continue.
 
-## Visual redesign — match VisitorRegister
-Bring the same glassy, modern aesthetic the user already approved on visitor registration:
+The Check button is removed from view as soon as `lookupStatus === "found"` and the input hasn't been edited since. Editing the email or phone clears the found state and brings Check back (already partly wired — just ensure the registrationMode also resets).
 
-- Wrap each step in the `GlassSection` pattern from `VisitorRegister.tsx`
-  (`rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 md:p-6` with an icon-chip header).
-- Step indicator at the top: 3-dot progress (Identify → Family → Extras) with
-  active/done states using `bg-primary` / `bg-muted`.
-- Replace bare native `<select>` with shadcn `Select` for consistency, and
-  use `Input` rounded-xl variants (`nativeSelectClassName` already exists in
-  VisitorRegister and can be reused).
-- Hero header: keep the gradient hero card but tighten typography
-  (`text-fluid-3xl`, badge row with date / location chips).
-- Sticky bottom action bar on mobile (`fixed bottom-0` + `pb-24` page
-  padding) holding Back / Continue so users on mobile don't have to scroll
-  to the bottom of a long form.
-- Show a one-line campaign progress card inside Step 3 when pledges are
-  enabled (already there — restyle to glass).
-- Success state uses the same glass card + `CheckCircle2` accent.
+### 3. Step flow
+- `steps` array becomes dynamic on `registrationMode`:
+  - `individual`: `Identify → Extras` (or just `Identify` if no extras).
+  - `family`: `Identify → Family → Extras` (or `Identify → Family`).
+- `onNext` in `renderActions`:
+  - From `identify`: go to `details` if `registrationMode === "family"`, else go to `extras` if extras exist, else `submit()`.
+  - From `details` (family branch): go to `extras` if extras exist, else `submit()`.
+  - From `extras`: `submit()`.
+- `canProceedFromIdentify` also requires `registrationMode !== null`.
+- When `registrationMode === "individual"`, clear `family` to `[]` before submit so no family entries are sent.
 
-No new fields beyond what's already in the schema/edge function.
+### 4. Back button
+Add a Back button next to Continue on every step except `identify`. It moves the user one step backward in the dynamic `steps` array. Pattern mirrors the existing Continue button (outline variant, full-width on mobile, auto width on desktop, centered on mobile / right-aligned on desktop).
+
+### 5. Everything else stays
+- Family step keeps its current "Add person" / lookup / inline-onboard fields. Children-under-16 flag, relationship select, etc. unchanged.
+- Extras step (lodging / meal prefs / pledge) is unchanged — both individuals and families pass through it when the event opts in, so every detail the event is configured to collect is still gathered.
+- Submit payload is unchanged: `family: []` for individuals, populated array for families.
 
 ## Out of scope
-- No backend or schema changes.
-- The `EventPreRegistrationDialog` component file stays in the tree (we can delete it in a follow-up once we confirm nothing else uses it).
+- No edge function or DB changes.
+- No changes to `EventDetail.tsx` or any other page.

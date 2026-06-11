@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, CheckCircle2, Plus, Trash2, Search, Heart, Users, Bed, Utensils,
-  ArrowRight, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check
+  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check, User
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
@@ -174,7 +174,9 @@ export default function SpecialEventRegister() {
   const [lookupMode, setLookupMode] = useState<"email" | "phone">("email");
   const [lookupValue, setLookupValue] = useState("");
   const [lookupStatus, setLookupStatus] = useState<"idle" | "checking" | "found" | "missing">("idle");
+  const [lastCheckedValue, setLastCheckedValue] = useState("");
   const [primaryMember, setPrimaryMember] = useState<Lookup["member"] | null>(null);
+  const [registrationMode, setRegistrationMode] = useState<"individual" | "family" | null>(null);
 
   const [primaryDraft, setPrimaryDraft] = useState({
     first_name: "",
@@ -205,19 +207,19 @@ export default function SpecialEventRegister() {
   const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
 
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
-    const base: { key: StepKey; label: string }[] = [
-      { key: "identify", label: "You" },
-      { key: "details", label: "Family" },
-    ];
+    const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
+    if (registrationMode === "family") base.push({ key: "details", label: "Family" });
     if (hasExtras) base.push({ key: "extras", label: "Extras" });
     return base;
-  }, [hasExtras]);
+  }, [hasExtras, registrationMode]);
 
   const handleLookup = async () => {
     if (!lookupValue.trim()) return;
     setLookupStatus("checking");
-    const payload = lookupMode === "email" ? { email: lookupValue.trim() } : { phone: lookupValue.trim() };
+    const value = lookupValue.trim();
+    const payload = lookupMode === "email" ? { email: value } : { phone: value };
     const { data, error } = await supabase.functions.invoke("event-pre-register-lookup", { body: payload });
+    setLastCheckedValue(value);
     if (error) {
       setLookupStatus("missing");
       return;
@@ -229,7 +231,7 @@ export default function SpecialEventRegister() {
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
-      setPrimaryDraft((d) => ({ ...d, [lookupMode]: lookupValue.trim() }));
+      setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
       setLookupStatus("missing");
     }
   };
@@ -270,8 +272,9 @@ export default function SpecialEventRegister() {
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
   const canProceedFromIdentify =
-    lookupStatus === "found" ||
-    (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone);
+    registrationMode !== null &&
+    (lookupStatus === "found" ||
+      (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone));
 
   const canSubmit = useMemo(() => {
     if (!event) return false;
@@ -286,6 +289,7 @@ export default function SpecialEventRegister() {
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
+    const familyToSend = registrationMode === "family" ? family : [];
     try {
       const body: any = {
         event_id: (event as any).id,
@@ -304,7 +308,7 @@ export default function SpecialEventRegister() {
               occupation: primaryDraft.occupation,
             },
         primary_phone: primaryMember?.phone || primaryDraft.phone,
-        family: family.map((f) => ({
+        family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
           is_child: !!f.is_child,
@@ -374,27 +378,42 @@ export default function SpecialEventRegister() {
   // Action buttons
   const renderActions = () => {
     if (step === "done") return null;
-    const isLast = (hasExtras && step === "extras") || (!hasExtras && step === "details");
+    const currentIdx = steps.findIndex((s) => s.key === step);
+    const isLast = currentIdx === steps.length - 1;
+    const isFirst = currentIdx === 0;
 
     const onNext = () => {
-      if (step === "identify") setStep("details");
-      else if (step === "details") {
-        if (hasExtras) setStep("extras");
-        else submit();
-      } else if (step === "extras") submit();
+      if (isLast) {
+        submit();
+      } else {
+        setStep(steps[currentIdx + 1].key);
+      }
+    };
+    const onBack = () => {
+      if (!isFirst) setStep(steps[currentIdx - 1].key);
     };
     const nextDisabled =
       (step === "identify" && !canProceedFromIdentify) ||
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="flex items-center justify-center md:justify-end gap-3">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-center md:sm:justify-end gap-3">
+        {!isFirst && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            disabled={submitting}
+            className="w-full sm:w-auto rounded-xl"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+          </Button>
+        )}
         <Button
           onClick={onNext}
           disabled={nextDisabled}
-          className="w-full md:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
+          className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
         >
-
           {isLast ? (
             submitting ? (
               <>
@@ -410,6 +429,57 @@ export default function SpecialEventRegister() {
       </div>
     );
   };
+
+  // Reusable Individual / Family mode selector
+  const renderModeSelector = (firstName: string) => (
+    <div className="space-y-3">
+      <Alert className="border-green-500/30 bg-green-500/5">
+        <CheckCircle2 className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-justify">
+          Hello <strong className="text-primary">{firstName}</strong>, are you registering for{" "}
+          <strong className="text-primary">{ev.name}</strong> as a family or an individual?
+        </AlertDescription>
+      </Alert>
+      <div className="grid grid-cols-2 gap-2">
+        {([
+          { mode: "individual", label: "Individual", Icon: User, color: "indigo" },
+          { mode: "family", label: "Family", Icon: Users, color: "rose" },
+        ] as const).map(({ mode, label, Icon, color }) => {
+          const selected = registrationMode === mode;
+          const palette =
+            color === "indigo"
+              ? selected
+                ? "border-indigo-500 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+                : "border-border bg-background/60 hover:border-indigo-400/50"
+              : selected
+                ? "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-300"
+                : "border-border bg-background/60 hover:border-rose-400/50";
+          return (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setRegistrationMode(mode)}
+              className={cn(
+                "relative flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all",
+                palette
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors shrink-0",
+                  selected ? "border-green-500 bg-green-500" : "border-muted-foreground/40 bg-background"
+                )}
+              >
+                {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+              </span>
+              <Icon className="h-4 w-4" />
+              <span>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -539,65 +609,71 @@ export default function SpecialEventRegister() {
                           setLookupValue(e.target.value);
                           setLookupStatus("idle");
                           setPrimaryMember(null);
+                          setRegistrationMode(null);
                         }}
                       />
-                      <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
-                        {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                        <span className="ml-1">Check</span>
-                      </Button>
+                      {!(lookupStatus === "found" && lookupValue.trim() === lastCheckedValue) && (
+                        <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
+                          {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                          <span className="ml-1">Check</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
 
                   {lookupStatus === "found" && primaryMember && (
                     <>
-                      <Alert className="border-green-500/30 bg-green-500/5">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-justify">
-                          Hello <strong className="text-primary">{primaryMember.first_name}</strong>, you are already registered on the WCA system. Click Continue to pre-register for <strong className="text-primary">{ev.name}</strong>.
-                        </AlertDescription>
-                      </Alert>
+                      {renderModeSelector(primaryMember.first_name)}
                       <div className="pt-2">{renderActions()}</div>
                     </>
                   )}
 
                   {lookupStatus === "missing" && (
-                    <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
-                      <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
-                      <div className="grid md:grid-cols-2 gap-3">
-                        <div>
-                          <Label className="text-xs">Family Name *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Other Names *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Email *</Label>
-                          <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Phone *</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
-                        </div>
-                        <div className="md:col-span-2">
-                          <Label className="text-xs">Address</Label>
-                          <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Date of birth</Label>
-                          <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Gender</Label>
-                          <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
-                            <option value="">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                          </select>
+                    <>
+                      <div className="space-y-3 rounded-xl border border-border/40 bg-background/40 p-4">
+                        <p className="text-sm font-medium">We don't have you yet — let's add you.</p>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-xs">Family Name *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.last_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, last_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Other Names *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.first_name} onChange={(e) => setPrimaryDraft((d) => ({ ...d, first_name: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Email *</Label>
+                            <Input type="email" className="rounded-xl bg-background/60" value={primaryDraft.email} onChange={(e) => setPrimaryDraft((d) => ({ ...d, email: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Phone *</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.phone} onChange={(e) => setPrimaryDraft((d) => ({ ...d, phone: e.target.value }))} />
+                          </div>
+                          <div className="md:col-span-2">
+                            <Label className="text-xs">Address</Label>
+                            <Input className="rounded-xl bg-background/60" value={primaryDraft.address} onChange={(e) => setPrimaryDraft((d) => ({ ...d, address: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Date of birth</Label>
+                            <Input type="date" className="rounded-xl bg-background/60" value={primaryDraft.date_of_birth} onChange={(e) => setPrimaryDraft((d) => ({ ...d, date_of_birth: e.target.value }))} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Gender</Label>
+                            <select className={nativeSelectClassName} value={primaryDraft.gender} onChange={(e) => setPrimaryDraft((d) => ({ ...d, gender: e.target.value }))}>
+                              <option value="">Select</option>
+                              <option value="Male">Male</option>
+                              <option value="Female">Female</option>
+                            </select>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      {primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone && (
+                        <>
+                          {renderModeSelector(primaryDraft.first_name)}
+                          <div className="pt-2">{renderActions()}</div>
+                        </>
+                      )}
+                    </>
                   )}
                 </GlassSection>
               )}
@@ -702,6 +778,7 @@ export default function SpecialEventRegister() {
                       )}
                     </div>
                   ))}
+                  <div className="pt-2">{renderActions()}</div>
                 </GlassSection>
               )}
 
@@ -795,6 +872,7 @@ export default function SpecialEventRegister() {
                       </div>
                     </GlassSection>
                   )}
+                  <div className="pt-2">{renderActions()}</div>
                 </div>
               )}
             </>
