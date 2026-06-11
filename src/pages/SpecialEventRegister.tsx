@@ -252,13 +252,32 @@ export default function SpecialEventRegister() {
       return;
     }
     if ((data as Lookup)?.found) {
-      setPrimaryMember((data as Lookup).member!);
-      const m = (data as Lookup).member!;
+      const lk = data as Lookup;
+      setPrimaryMember(lk.member!);
+      const m = lk.member!;
       setPrimaryDraft((d) => ({ ...d, first_name: m.first_name, last_name: m.last_name, email: m.email, phone: m.phone || "" }));
+      // Seed family from existing relationships — user just ticks who is attending.
+      const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
+        relationship_type: r.relationship_type || "other",
+        lookupValue: r.email || r.phone || "",
+        lookupMode: "email",
+        status: "found",
+        existing_member_id: r.member_id,
+        first_name: r.first_name,
+        last_name: r.last_name,
+        email: r.email,
+        phone: r.phone,
+        date_of_birth: r.date_of_birth || undefined,
+        is_child: r.is_child,
+        prefilled: true,
+        attending: false,
+      }));
+      setFamily(prefilled);
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
       setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
+      setFamily([]);
       setLookupStatus("missing");
     }
   };
@@ -284,6 +303,7 @@ export default function SpecialEventRegister() {
             email: m.email,
             phone: m.phone,
             is_child: age !== null && age < 16,
+            attending: true,
           };
         }
         return { ...r, status: "missing", [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
