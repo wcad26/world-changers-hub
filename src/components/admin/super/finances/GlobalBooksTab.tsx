@@ -103,7 +103,7 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((r) => (
+                {convertedRows.map((r: any) => (
                   <TableRow key={r.id}>
                     <TableCell className="text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
                     <TableCell className="font-medium">{r.category?.name}</TableCell>
@@ -113,7 +113,12 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
                         {r.category?.type}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums">
+                      {r._unconverted ? <span className="text-amber-600">—</span> : fc(Number(r.amount))}
+                      {r._sourceCurrency && r._sourceCurrency !== (baseCurrency?.code || baseCode) && (
+                        <div className="text-[10px] text-muted-foreground font-normal">{r._sourceCurrency} {r._originalAmount.toLocaleString()}</div>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
