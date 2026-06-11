@@ -635,6 +635,18 @@ const SuperEvents: React.FC = () => {
                           <DropdownMenuItem onClick={() => openEditDialog(event)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyAttendanceLink(event)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
+                          {event.is_special && (
+                            <>
+                              <DropdownMenuItem onClick={() => {
+                                const id = event.slug || event.id;
+                                navigator.clipboard.writeText(`${window.location.origin}/events/${id}/register`);
+                                toast({ title: "Link copied", description: "Special event registration link copied." });
+                              }}><Link2 className="mr-2 h-4 w-4" />Copy Registration Link</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/admin/super/events/${event.id}/special-report`)}>
+                                <Star className="mr-2 h-4 w-4" />Special Event Report
+                              </DropdownMenuItem>
+                            </>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => setEventToDelete(event.id)}><Trash2 className="mr-2 h-4 w-4" />Delete</DropdownMenuItem>
                         </DropdownMenuContent>
