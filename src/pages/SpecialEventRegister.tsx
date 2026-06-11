@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
-import { format } from "date-fns";
+import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
 type Lookup = {
@@ -194,8 +194,7 @@ export default function SpecialEventRegister() {
 
   const [needsLodging, setNeedsLodging] = useState(false);
   const [lodgingPartySize, setLodgingPartySize] = useState<number | "">("");
-  const [arrivalDate, setArrivalDate] = useState("");
-  const [departureDate, setDepartureDate] = useState("");
+  const [attendingDays, setAttendingDays] = useState<string[]>([]);
   const [mealPrefs, setMealPrefs] = useState<string[]>([]);
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [pledgeAmount, setPledgeAmount] = useState<number | "">("");
@@ -205,6 +204,19 @@ export default function SpecialEventRegister() {
   const ev: any = event;
 
   const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
+
+  const eventDays = useMemo<string[]>(() => {
+    if (!ev?.start_datetime) return [];
+    const start = new Date(ev.start_datetime);
+    const end = ev.end_datetime ? new Date(ev.end_datetime) : start;
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
+    try {
+      const days = eachDayOfInterval({ start, end });
+      return days.slice(0, 30).map((d) => format(d, "yyyy-MM-dd"));
+    } catch {
+      return [format(start, "yyyy-MM-dd")];
+    }
+  }, [ev?.start_datetime, ev?.end_datetime]);
 
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
     const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
@@ -327,8 +339,8 @@ export default function SpecialEventRegister() {
         })),
         needs_lodging: needsLodging,
         lodging_party_size: needsLodging ? Number(lodgingPartySize || 0) || null : null,
-        arrival_date: arrivalDate || null,
-        departure_date: departureDate || null,
+        arrival_date: needsLodging && attendingDays.length ? attendingDays[0] : null,
+        departure_date: needsLodging && attendingDays.length ? attendingDays[attendingDays.length - 1] : null,
         meal_preferences: mealPrefs,
         dietary_notes: dietaryNotes || null,
         pledge_amount: pledgeAmount ? Number(pledgeAmount) : null,
