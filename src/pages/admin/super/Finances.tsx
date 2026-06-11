@@ -44,7 +44,7 @@ const SuperFinances: React.FC = () => {
           <p className="text-sm text-muted-foreground">Aggregate finances across all regions, plus Super Admin books and fundraising</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <DisplayCurrencySelect value={effectiveCurrency} onChange={setDisplayCurrency} />
+          <DisplayCurrencySelect value={effectiveCurrency} onChange={handleDisplayCurrencyChange} />
           <RegionFilterSelect value={regionFilter} onChange={setRegionFilter} />
           <PeriodSelector
             period={period}
