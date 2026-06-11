@@ -314,7 +314,7 @@ export default function SpecialEventRegister() {
   const addFamily = () =>
     setFamily((prev) => [
       ...prev,
-      { relationship_type: "spouse", lookupValue: "", lookupMode: "email", status: "idle" },
+      { relationship_type: "spouse", lookupValue: "", lookupMode: "email", status: "idle", attending: true },
     ]);
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
@@ -327,6 +327,7 @@ export default function SpecialEventRegister() {
     if (!event) return false;
     if (!primaryMember && (!primaryDraft.first_name || !primaryDraft.last_name || !primaryDraft.email || !primaryDraft.phone)) return false;
     for (const f of family) {
+      if (f.prefilled) continue; // prefilled rows are opt-in via `attending`
       if (!f.relationship_type) return false;
       if (!f.existing_member_id && (!f.first_name || !f.last_name)) return false;
     }
@@ -336,7 +337,15 @@ export default function SpecialEventRegister() {
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
-    const familyToSend = registrationMode === "family" ? family : [];
+    // Only send: prefilled rows the user ticked, or manually added rows that resolved/were filled.
+    const familyToSend =
+      registrationMode === "family"
+        ? family.filter((f) => {
+            if (f.prefilled) return !!f.attending;
+            // Manual rows: require either an existing member or first/last name captured.
+            return !!f.existing_member_id || (!!f.first_name && !!f.last_name);
+          })
+        : [];
     try {
       const body: any = {
         event_id: (event as any).id,
