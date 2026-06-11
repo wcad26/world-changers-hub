@@ -304,8 +304,15 @@ export default function SpecialEventOnboardForm({
           </div>
           <div>
             <Label className="text-xs">Date of birth <Req /></Label>
-            <Input type="date" className="rounded-xl bg-background/60" value={value.date_of_birth}
-              onChange={(e) => set("date_of_birth", e.target.value)} />
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="dd/mm/yyyy"
+              maxLength={10}
+              className="rounded-xl bg-background/60"
+              value={isoToDisplay(value.date_of_birth)}
+              onChange={(e) => set("date_of_birth", displayToIso(e.target.value))}
+            />
           </div>
           <div>
             <Label className="text-xs">Gender <Req /></Label>
