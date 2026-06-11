@@ -478,14 +478,14 @@ export default function SpecialEventRegister() {
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
+      <div className="grid grid-cols-3 gap-3 sm:flex sm:items-center sm:justify-end">
         {!isFirst && (
           <Button
             type="button"
             variant="outline"
             onClick={onBack}
             disabled={submitting}
-            className="w-full sm:w-auto rounded-xl"
+            className="w-full col-span-1 sm:w-auto rounded-xl"
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> Back
           </Button>
@@ -495,7 +495,7 @@ export default function SpecialEventRegister() {
           disabled={nextDisabled}
           className={cn(
             "w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow",
-            isFirst && "col-span-2"
+            isFirst ? "col-span-3" : "col-span-2"
           )}
         >
           {isLast ? (
