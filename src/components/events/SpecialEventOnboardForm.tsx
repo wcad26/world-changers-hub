@@ -19,6 +19,27 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Convert stored value (ISO yyyy-mm-dd or partial digits) -> dd/mm/yyyy display
+const isoToDisplay = (stored: string): string => {
+  if (!stored) return "";
+  const iso = stored.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const digits = stored.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+// Auto-format user input and convert dd/mm/yyyy -> ISO yyyy-mm-dd when complete
+const displayToIso = (input: string): string => {
+  const digits = input.replace(/\D/g, "").slice(0, 8);
+  if (digits.length < 8) return digits; // store partial digits; isoToDisplay handles formatting below
+  const dd = digits.slice(0, 2);
+  const mm = digits.slice(2, 4);
+  const yyyy = digits.slice(4, 8);
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export type OnboardAttendeeType = "member" | "visitor";
 
 export type OnboardFormValue = {
@@ -304,8 +325,15 @@ export default function SpecialEventOnboardForm({
           </div>
           <div>
             <Label className="text-xs">Date of birth <Req /></Label>
-            <Input type="date" className="rounded-xl bg-background/60" value={value.date_of_birth}
-              onChange={(e) => set("date_of_birth", e.target.value)} />
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="dd/mm/yyyy"
+              maxLength={10}
+              className="rounded-xl bg-background/60"
+              value={isoToDisplay(value.date_of_birth)}
+              onChange={(e) => set("date_of_birth", displayToIso(e.target.value))}
+            />
           </div>
           <div>
             <Label className="text-xs">Gender <Req /></Label>
