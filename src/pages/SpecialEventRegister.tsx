@@ -453,7 +453,7 @@ export default function SpecialEventRegister() {
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-center md:sm:justify-end gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center sm:justify-end">
         {!isFirst && (
           <Button
             type="button"
@@ -468,7 +468,10 @@ export default function SpecialEventRegister() {
         <Button
           onClick={onNext}
           disabled={nextDisabled}
-          className="w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
+          className={cn(
+            "w-full sm:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow",
+            isFirst && "col-span-2"
+          )}
         >
           {isLast ? (
             submitting ? (
