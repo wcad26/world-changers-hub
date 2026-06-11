@@ -421,7 +421,7 @@ export default function SpecialEventRegister() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-6 px-4 pb-32 md:pb-12">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 py-6 px-4 pb-12">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Hero */}
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/70 text-primary-foreground p-6 md:p-8 shadow-xl">
@@ -556,12 +556,15 @@ export default function SpecialEventRegister() {
                   </div>
 
                   {lookupStatus === "found" && primaryMember && (
-                    <Alert className="border-green-500/30 bg-green-500/5">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <AlertDescription>
-                        Welcome back, <strong>{primaryMember.last_name} {primaryMember.first_name}</strong> ({primaryMember.member_id}).
-                      </AlertDescription>
-                    </Alert>
+                    <>
+                      <Alert className="border-green-500/30 bg-green-500/5">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <AlertDescription>
+                          Hello <strong>{primaryMember.first_name}</strong>, you are already registered on the WCA system. Click Continue to pre-register for <strong>{ev.name}</strong>.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="pt-2">{renderActions()}</div>
+                    </>
                   )}
 
                   {lookupStatus === "missing" && (
@@ -804,18 +807,11 @@ export default function SpecialEventRegister() {
             </>
           )}
 
-          {/* Inline actions (desktop) */}
+          {/* Inline actions */}
           {step !== "done" && (
-            <div className="hidden md:block pt-2">{renderActions()}</div>
+            <div className="pt-2">{renderActions()}</div>
           )}
         </div>
-
-        {/* Sticky action bar (mobile) */}
-        {step !== "done" && (
-          <div className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border/40 bg-background/90 backdrop-blur-md p-3 shadow-lg">
-            <div className="max-w-3xl mx-auto">{renderActions()}</div>
-          </div>
-        )}
       </div>
       <Footer />
     </>
