@@ -272,8 +272,9 @@ export default function SpecialEventRegister() {
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
   const canProceedFromIdentify =
-    lookupStatus === "found" ||
-    (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone);
+    registrationMode !== null &&
+    (lookupStatus === "found" ||
+      (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone));
 
   const canSubmit = useMemo(() => {
     if (!event) return false;
