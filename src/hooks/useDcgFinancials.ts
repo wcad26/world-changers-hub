@@ -151,11 +151,12 @@ export const useCreateDcgTransaction = (dcgId: string) => {
 
       const { data: dcgRow, error: dcgErr } = await supabase
         .from('dcgs')
-        .select('region_id')
+        .select('region_id, region:regions(currency_code)')
         .eq('id', dcgId)
         .single();
       if (dcgErr) throw dcgErr;
       if (!dcgRow?.region_id) throw new Error('Region not found for this DCG');
+      const currencyCode = (dcgRow as any)?.region?.currency_code || 'USD';
 
       const newTransaction: Database['public']['Tables']['financial_transactions']['Insert'] = {
         region_id: dcgRow.region_id,
@@ -163,6 +164,7 @@ export const useCreateDcgTransaction = (dcgId: string) => {
         recorded_by: user.id,
         category_id: transactionData.category_id,
         amount: transactionData.amount,
+        currency_code: currencyCode,
         description: transactionData.description,
         transaction_date: transactionData.transaction_date,
       };
