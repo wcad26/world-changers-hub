@@ -11,15 +11,16 @@ import RecordGlobalTransactionDialog from "./RecordGlobalTransactionDialog";
 import { useGlobalLedger } from "@/hooks/useGlobalLedger";
 import { summarizeLedger } from "@/hooks/useRegionalLedger";
 import { formatWithCurrency } from "@/utils/currencyUtils";
-import { useFxConverter } from "@/hooks/useDisplayCurrency";
+import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
 interface Props {
   range: PeriodRange;
+  displayCurrency: string;
 }
 
-const GlobalBooksTab: React.FC<Props> = ({ range }) => {
+const GlobalBooksTab: React.FC<Props> = ({ range, displayCurrency }) => {
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
 
@@ -30,14 +31,15 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
     regionFilter: "global",
   });
 
-  const { baseCode, baseCurrency, convert } = useFxConverter();
+  const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
   const convertedRows = useMemo(() => rows.map((r) => {
     const src = r.currency_code || baseCode;
     const v = convert(Number(r.amount) || 0, src);
     return { ...r, _originalAmount: Number(r.amount) || 0, _sourceCurrency: src, amount: v ?? 0, _unconverted: v == null };
   }), [rows, convert, baseCode]);
   const summary = useMemo(() => summarizeLedger(convertedRows), [convertedRows]);
-  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
+  const unconvertedCount = convertedRows.filter((r: any) => r._unconverted).length;
+  const fc = (n: number) => formatWithCurrency(n, targetCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -48,6 +50,7 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
         type: r.category?.type ?? "",
         description: r.description ?? "",
         amount: r.amount,
+        currency: (r as any).currency_code ?? "",
       }))
     );
   };
@@ -56,6 +59,11 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
     <div className="space-y-6">
       <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
         <strong className="text-foreground">Super Admin Books</strong> — finances recorded here are owned by the Super Admin and are not attributed to any region.
+      </div>
+
+      <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
+        Reporting in <span className="font-semibold text-foreground">{targetCode}</span>
+        {unconvertedCount > 0 && <span className="text-amber-600">· {unconvertedCount} unconverted</span>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -82,7 +90,7 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
         </DropdownMenu>
       </div>
 
-      <LedgerTrendChart rows={rows as any} description="Super Admin books over the selected period" />
+      <LedgerTrendChart rows={convertedRows as any} description={`Super Admin books over the selected period (in ${targetCode})`} />
 
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
         <h3 className="text-base font-semibold text-foreground mb-4">Transactions</h3>
@@ -115,7 +123,7 @@ const GlobalBooksTab: React.FC<Props> = ({ range }) => {
                     </TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">
                       {r._unconverted ? <span className="text-amber-600">—</span> : fc(Number(r.amount))}
-                      {r._sourceCurrency && r._sourceCurrency !== (baseCurrency?.code || baseCode) && (
+                      {r._sourceCurrency && r._sourceCurrency !== targetCode && (
                         <div className="text-[10px] text-muted-foreground font-normal">{r._sourceCurrency} {r._originalAmount.toLocaleString()}</div>
                       )}
                     </TableCell>

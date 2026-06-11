@@ -11,16 +11,17 @@ import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendCh
 import { useGlobalLedger, aggregateByRegion } from "@/hooks/useGlobalLedger";
 import { summarizeLedger } from "@/hooks/useRegionalLedger";
 import { formatWithCurrency } from "@/utils/currencyUtils";
-import { useFxConverter } from "@/hooks/useDisplayCurrency";
+import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
 interface Props {
   range: PeriodRange;
   regionFilter: string;
+  displayCurrency: string;
 }
 
-const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
+const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter, displayCurrency }) => {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
@@ -35,7 +36,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
     type,
   });
 
-  const { baseCode, baseCurrency, convert } = useFxConverter();
+  const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
 
   const convertedRows = useMemo(() => {
     return rows.map((r) => {
@@ -67,7 +68,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
   const perRegion = useMemo(() => aggregateByRegion(filtered as any), [filtered]);
   const unconvertedCount = useMemo(() => filtered.filter((r: any) => r._unconverted).length, [filtered]);
 
-  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
+  const fc = (n: number) => formatWithCurrency(n, targetCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -79,7 +80,9 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
         type: r.category?.type ?? "",
         description: r.description ?? "",
         amount: r.amount,
-        currency: (r as any).currency_code ?? "",
+        currency: targetCode,
+        original_amount: (r as any)._originalAmount,
+        original_currency: (r as any)._sourceCurrency,
       }))
     );
   };
@@ -88,8 +91,8 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1">
-          Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
-          {baseCurrency?.symbol ? <span className="text-muted-foreground">({baseCurrency.symbol})</span> : null}
+          Reporting in <span className="font-semibold text-foreground">{targetCode}</span>
+          {targetCurrency?.symbol ? <span className="text-muted-foreground">({targetCurrency.symbol})</span> : null}
           {unconvertedCount > 0 && (
             <span className="text-amber-600">· {unconvertedCount} unconverted (no FX path)</span>
           )}
@@ -118,7 +121,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
         </Button>
       </div>
 
-      <LedgerTrendChart rows={filtered as any} description="Aggregated regional ledger across selected scope" />
+      <LedgerTrendChart rows={filtered as any} description={`Aggregated regional ledger (in ${targetCode})`} />
 
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
         <div className="flex items-center gap-2 mb-4">
@@ -205,7 +208,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                         ) : (
                           fc(Number(r.amount))
                         )}
-                        {r._sourceCurrency && r._sourceCurrency !== (baseCurrency?.code || baseCode) && (
+                        {r._sourceCurrency && r._sourceCurrency !== targetCode && (
                           <div className="text-[10px] text-muted-foreground font-normal">
                             {r._sourceCurrency} {r._originalAmount.toLocaleString()}
                           </div>

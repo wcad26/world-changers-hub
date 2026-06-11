@@ -2,25 +2,57 @@ import React, { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Plus, Target, Users, HeartHandshake, ArrowUpRight, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
 import CreateGlobalCampaignDialog from "./CreateGlobalCampaignDialog";
 import { useGlobalFundraisingCampaigns, useDeleteGlobalCampaign } from "@/hooks/useGlobalFundraising";
-import { formatCurrency } from "@/utils/currencyUtils";
+import { formatCurrency, formatWithCurrency } from "@/utils/currencyUtils";
+import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
 import { useToast } from "@/hooks/use-toast";
 
-const GlobalCampaignsTab: React.FC = () => {
+interface Props {
+  displayCurrency: string;
+}
+
+const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
   const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
+  const [showConverted, setShowConverted] = useState(false);
   const { data: campaigns = [], isLoading } = useGlobalFundraisingCampaigns("global");
   const del = useDeleteGlobalCampaign();
+  const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
 
-  const totalRaised = campaigns.reduce((a, c) => a + Number(c.raised || 0), 0) / 100;
-  const totalGoal = campaigns.reduce((a, c) => a + Number(c.goal || 0), 0) / 100;
+  // Aggregate KPIs in display currency.
+  let unconvertedKpi = 0;
+  const totalRaised = campaigns.reduce((a, c) => {
+    const v = convert(Number(c.raised || 0) / 100, c.currency_code || baseCode);
+    if (v == null) { unconvertedKpi += 1; return a; }
+    return a + v;
+  }, 0);
+  const totalGoal = campaigns.reduce((a, c) => {
+    const v = convert(Number(c.goal || 0) / 100, c.currency_code || baseCode);
+    return a + (v ?? 0);
+  }, 0);
   const activeCount = campaigns.filter((c) => c.status === "Active").length;
   const pct = totalGoal > 0 ? Math.min(100, (totalRaised / totalGoal) * 100) : 0;
-  const fc = (n: number) => formatCurrency(n, "USD");
+  const fc = (n: number) => formatWithCurrency(n, targetCurrency);
+
+  const renderAmount = (cents: number, src: string) => {
+    const native = formatCurrency(cents / 100, src || "USD");
+    if (!showConverted) return native;
+    const v = convert(cents / 100, src || baseCode);
+    return (
+      <div className="flex flex-col items-end">
+        <span>{v == null ? <span className="text-amber-600">—</span> : fc(v)}</span>
+        {src && src !== targetCode && (
+          <span className="text-[10px] text-muted-foreground font-normal">{native}</span>
+        )}
+      </div>
+    );
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this global campaign? All linked donations will also be removed.")) return;
@@ -38,6 +70,11 @@ const GlobalCampaignsTab: React.FC = () => {
         <strong className="text-foreground">Super Admin Fundraising</strong> — campaigns here are owned by the Super Admin (no region attribution).
       </div>
 
+      <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
+        Reporting in <span className="font-semibold text-foreground">{targetCode}</span>
+        {unconvertedKpi > 0 && <span className="text-amber-600">· {unconvertedKpi} unconverted</span>}
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FinanceKpiCard label="Total Raised" value={fc(totalRaised)} icon={ArrowUpRight} tone="income" />
         <FinanceKpiCard label="Combined Goal" value={fc(totalGoal)} icon={Target} tone="neutral" />
@@ -45,7 +82,11 @@ const GlobalCampaignsTab: React.FC = () => {
         <FinanceKpiCard label="Active Campaigns" value={activeCount} icon={Users} tone="info" />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Switch id="gc-convert" checked={showConverted} onCheckedChange={setShowConverted} />
+          <Label htmlFor="gc-convert" className="text-xs text-muted-foreground cursor-pointer">Show campaigns in {targetCode}</Label>
+        </div>
         <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground">
           <Plus className="mr-2 h-4 w-4" /> Create Campaign
         </Button>
@@ -78,8 +119,8 @@ const GlobalCampaignsTab: React.FC = () => {
                     <TableRow key={c.id}>
                       <TableCell className="font-medium">{c.name}</TableCell>
                       <TableCell><Badge variant={c.status === "Active" ? "default" : "secondary"}>{c.status}</Badge></TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(Number(c.goal) / 100, c.currency_code || "USD")}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(Number(c.raised) / 100, c.currency_code || "USD")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{renderAmount(Number(c.goal), c.currency_code || "USD")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{renderAmount(Number(c.raised), c.currency_code || "USD")}</TableCell>
                       <TableCell className="text-right tabular-nums">{p.toFixed(1)}%</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {c.start_date ? format(new Date(c.start_date), "MMM d, yyyy") : "—"}
