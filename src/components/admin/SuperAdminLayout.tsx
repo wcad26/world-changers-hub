@@ -15,7 +15,8 @@ import {
   UserPlus,
   Home,
   Coins,
-  Award
+  Award,
+  Settings as SettingsIcon
 } from "lucide-react";
 
 interface SuperAdminLayoutProps {
@@ -30,11 +31,13 @@ const menuItems = [
   { title: "Events", path: "/admin/super/events", icon: Calendar as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Locations", path: "/admin/super/locations", icon: MapPin as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Finances", path: "/admin/super/finances", icon: PiggyBank as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Currency Management", path: "/admin/super/currencies", icon: Coins as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Regions", path: "/admin/super/regions", icon: Globe as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Reports", path: "/admin/super/reports", icon: BarChart2 as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Communication", path: "/admin/super/communication", icon: MessageSquare as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Homepage Settings", path: "/admin/super/homepage-settings", icon: Home as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Certificates", path: "/admin/super/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
+  { title: "Settings", path: "/admin/super/settings", icon: SettingsIcon as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Certificates", path: "/admin/super/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
   { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
 ];

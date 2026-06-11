@@ -71,7 +71,7 @@ import SuperLocations from "./pages/admin/super/Locations";
 import SuperFinances from "./pages/admin/super/Finances";
 import SuperRegions from "./pages/admin/super/Regions";
 import SuperRegionReport from "./pages/admin/super/RegionReport";
-import SuperCurrencies from "./pages/admin/super/Currencies";
+import SuperSettings from "./pages/admin/super/Settings";
 import SuperReports from "./pages/admin/super/Reports";
 import SuperCommunication from "./pages/admin/super/Communication";
 import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
@@ -250,7 +250,8 @@ const App = () => {
                 <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />
                 <Route path="regions" element={<SuperAdminPage><SuperRegions /></SuperAdminPage>} />
                 <Route path="regions/:regionId/report" element={<SuperAdminPage><SuperRegionReport /></SuperAdminPage>} />
-                <Route path="currencies" element={<SuperAdminPage><SuperCurrencies /></SuperAdminPage>} />
+                <Route path="currencies" element={<Navigate to="/admin/super/settings?tab=currency" replace />} />
+                <Route path="settings" element={<SuperAdminPage><SuperSettings /></SuperAdminPage>} />
                 <Route path="reports" element={<SuperAdminPage><SuperReports /></SuperAdminPage>} />
                 <Route path="communication" element={<SuperAdminPage><SuperCommunication /></SuperAdminPage>} />
                 <Route path="user-management" element={<SuperAdminPage><SuperUserManagement /></SuperAdminPage>} />
