@@ -20,6 +20,18 @@ import Footer from "@/components/layout/Footer";
 import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
 
+type RelationEntry = {
+  member_id: string;
+  profile_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string | null;
+  is_child: boolean;
+  relationship_type: string;
+};
+
 type Lookup = {
   found: boolean;
   member?: {
@@ -32,6 +44,7 @@ type Lookup = {
     phone: string;
     date_of_birth: string | null;
   } | null;
+  relations?: RelationEntry[];
 };
 
 type FamilyRow = {
@@ -48,6 +61,9 @@ type FamilyRow = {
   gender?: string;
   address?: string;
   is_child?: boolean;
+  // Prefilled rows from existing relationships use this:
+  prefilled?: boolean;
+  attending?: boolean;
 };
 
 const REL_OPTIONS = [
