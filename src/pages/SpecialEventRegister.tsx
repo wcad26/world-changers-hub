@@ -19,6 +19,11 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { format, eachDayOfInterval } from "date-fns";
 import { cn } from "@/lib/utils";
+import SpecialEventOnboardForm, {
+  type OnboardFormValue,
+  emptyOnboardValue,
+  isOnboardValid,
+} from "@/components/events/SpecialEventOnboardForm";
 
 type RelationEntry = {
   member_id: string;
@@ -64,6 +69,8 @@ type FamilyRow = {
   // Prefilled rows from existing relationships use this:
   prefilled?: boolean;
   attending?: boolean;
+  // When status === "missing", a full onboarding form is collected here.
+  onboard?: OnboardFormValue;
 };
 
 const REL_OPTIONS = [
@@ -120,7 +127,7 @@ const calcAge = (dob?: string | null): number | null => {
   return a;
 };
 
-type StepKey = "identify" | "details" | "extras" | "done";
+type StepKey = "identify" | "onboard" | "details" | "extras" | "done";
 
 function StepIndicator({ step, steps }: { step: StepKey; steps: { key: StepKey; label: string }[] }) {
   const activeIdx = steps.findIndex((s) => s.key === step);
@@ -194,17 +201,8 @@ export default function SpecialEventRegister() {
   const [primaryMember, setPrimaryMember] = useState<Lookup["member"] | null>(null);
   const [registrationMode, setRegistrationMode] = useState<"individual" | "family" | null>(null);
 
-  const [primaryDraft, setPrimaryDraft] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone: "",
-    address: "",
-    date_of_birth: "",
-    gender: "",
-    occupation: "",
-    type: "visitor" as "member" | "visitor",
-  });
+  // Full onboarding form for new (not-yet-onboarded) primary registrants.
+  const [primaryOnboard, setPrimaryOnboard] = useState<OnboardFormValue>(emptyOnboardValue());
 
   const [family, setFamily] = useState<FamilyRow[]>([]);
 
@@ -233,12 +231,15 @@ export default function SpecialEventRegister() {
     }
   }, [ev?.start_datetime, ev?.end_datetime]);
 
+  const needsOnboarding = lookupStatus === "missing" && !primaryMember;
+
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
     const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
+    if (needsOnboarding) base.push({ key: "onboard", label: "Onboard" });
     if (registrationMode === "family") base.push({ key: "details", label: "Family" });
     if (hasExtras) base.push({ key: "extras", label: "Extras" });
     return base;
-  }, [hasExtras, registrationMode]);
+  }, [hasExtras, registrationMode, needsOnboarding]);
 
   const handleLookup = async () => {
     if (!lookupValue.trim()) return;
@@ -254,8 +255,6 @@ export default function SpecialEventRegister() {
     if ((data as Lookup)?.found) {
       const lk = data as Lookup;
       setPrimaryMember(lk.member!);
-      const m = lk.member!;
-      setPrimaryDraft((d) => ({ ...d, first_name: m.first_name, last_name: m.last_name, email: m.email, phone: m.phone || "" }));
       // Seed family from existing relationships — user just ticks who is attending.
       const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
         relationship_type: r.relationship_type || "other",
@@ -276,7 +275,12 @@ export default function SpecialEventRegister() {
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
-      setPrimaryDraft((d) => ({ ...d, [lookupMode]: value }));
+      // Initialise the onboard form with whatever the user just typed.
+      setPrimaryOnboard({
+        ...emptyOnboardValue(),
+        attendee_type: "visitor",
+        [lookupMode]: value,
+      } as OnboardFormValue);
       setFamily([]);
       setLookupStatus("missing");
     }
@@ -306,7 +310,15 @@ export default function SpecialEventRegister() {
             attending: true,
           };
         }
-        return { ...r, status: "missing", [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
+        // Initialise an onboard form for the missing family member; inherit
+        // region from the primary registrant when available.
+        const onboard: OnboardFormValue = {
+          ...emptyOnboardValue(),
+          attendee_type: "visitor",
+          region_id: primaryOnboard.region_id || "",
+          [r.lookupMode]: r.lookupValue.trim(),
+        } as OnboardFormValue;
+        return { ...r, status: "missing", onboard, [r.lookupMode]: r.lookupValue.trim() } as FamilyRow;
       })
     );
   };
@@ -318,68 +330,80 @@ export default function SpecialEventRegister() {
     ]);
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
+  // Step 1 (identify): "found" needs a mode; "missing" can always proceed to onboard.
   const canProceedFromIdentify =
-    registrationMode !== null &&
-    (lookupStatus === "found" ||
-      (lookupStatus === "missing" && primaryDraft.first_name && primaryDraft.last_name && primaryDraft.email && primaryDraft.phone));
+    (lookupStatus === "found" && registrationMode !== null) ||
+    lookupStatus === "missing";
+
+  // Step 2 (onboard): primary onboard form must validate AND a mode must be chosen.
+  const canProceedFromOnboard =
+    isOnboardValid(primaryOnboard) && registrationMode !== null;
+
+  // Build a NewRegistrant payload from an OnboardFormValue.
+  const buildNewRegistrant = (o: OnboardFormValue) => ({
+    type: o.attendee_type,
+    attendee_type: o.attendee_type,
+    region_id: o.region_id,
+    first_name: o.first_name.trim(),
+    last_name: o.last_name.trim(),
+    email: o.email.trim(),
+    phone: o.phone.trim(),
+    address: o.address.trim() || null,
+    date_of_birth: o.date_of_birth || null,
+    gender: o.gender || null,
+    occupation: o.occupation || null,
+    // Member-specific
+    has_completed_foundation_school: o.has_completed_foundation_school || null,
+    foundation_school_date: o.foundation_school_date || null,
+    is_baptized: o.is_baptized || null,
+    baptism_date: o.baptism_date || null,
+    ministry_interests: o.ministry_interests,
+    dcg_id: o.dcg_id || null,
+    relationships: o.relationships,
+    // Visitor-specific
+    referral_source: o.referral_source || null,
+    referral_social_media: o.referral_social_media || null,
+    referral_member_ids: o.referral_member_ids,
+    referral_relationship_type: o.referral_relationship_type || null,
+    referral_other_details: o.referral_other_details || null,
+    join_interest: o.join_interest || null,
+  });
 
   const canSubmit = useMemo(() => {
     if (!event) return false;
-    if (!primaryMember && (!primaryDraft.first_name || !primaryDraft.last_name || !primaryDraft.email || !primaryDraft.phone)) return false;
+    if (!primaryMember && !isOnboardValid(primaryOnboard)) return false;
     for (const f of family) {
       if (f.prefilled) continue; // prefilled rows are opt-in via `attending`
       if (!f.relationship_type) return false;
-      if (!f.existing_member_id && (!f.first_name || !f.last_name)) return false;
+      if (f.existing_member_id) continue;
+      // Manual / missing row — must have a valid onboard form.
+      if (!f.onboard || !isOnboardValid(f.onboard)) return false;
     }
     return true;
-  }, [event, primaryMember, primaryDraft, family]);
+  }, [event, primaryMember, primaryOnboard, family]);
 
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
-    // Only send: prefilled rows the user ticked, or manually added rows that resolved/were filled.
+    // Only send: prefilled rows the user ticked, or manually added rows that resolved/are valid.
     const familyToSend =
       registrationMode === "family"
         ? family.filter((f) => {
             if (f.prefilled) return !!f.attending;
-            // Manual rows: require either an existing member or first/last name captured.
-            return !!f.existing_member_id || (!!f.first_name && !!f.last_name);
+            return !!f.existing_member_id || (f.onboard && isOnboardValid(f.onboard));
           })
         : [];
     try {
       const body: any = {
         event_id: (event as any).id,
         primary_member_id: primaryMember?.id ?? null,
-        primary_new: primaryMember
-          ? null
-          : {
-              type: primaryDraft.type,
-              first_name: primaryDraft.first_name,
-              last_name: primaryDraft.last_name,
-              email: primaryDraft.email,
-              phone: primaryDraft.phone,
-              address: primaryDraft.address,
-              date_of_birth: primaryDraft.date_of_birth,
-              gender: primaryDraft.gender,
-              occupation: primaryDraft.occupation,
-            },
-        primary_phone: primaryMember?.phone || primaryDraft.phone,
+        primary_new: primaryMember ? null : buildNewRegistrant(primaryOnboard),
+        primary_phone: primaryMember?.phone || primaryOnboard.phone,
         family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
           is_child: !!f.is_child,
-          new_registrant: f.existing_member_id
-            ? null
-            : {
-                type: "visitor",
-                first_name: f.first_name!,
-                last_name: f.last_name!,
-                email: f.email || "",
-                phone: f.phone || "",
-                date_of_birth: f.date_of_birth,
-                gender: f.gender,
-                address: f.address,
-              },
+          new_registrant: f.existing_member_id ? null : buildNewRegistrant(f.onboard!),
         })),
         needs_lodging: needsLodging,
         lodging_party_size: null,
