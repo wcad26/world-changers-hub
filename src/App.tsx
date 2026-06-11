@@ -79,6 +79,7 @@ import HomepageSettings from "./pages/admin/super/HomepageSettings";
 import SuperUserManagement from "./pages/admin/super/UserManagement";
 import SuperCertificates from "./pages/admin/super/Certificates";
 import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
+import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
 
 // DCG Portal Routes
