@@ -38,8 +38,6 @@ const menuItems = [
   { title: "Certificates", path: "/admin/super/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
   { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
   { title: "Settings", path: "/admin/super/settings", icon: SettingsIcon as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "Certificates", path: "/admin/super/certificates", icon: Award as React.ComponentType<{ className?: string; size?: number }> },
-  { title: "About Us", path: "/admin/super/about-settings", icon: Info as React.ComponentType<{ className?: string; size?: number }> },
 ];
 
 const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children }) => {
