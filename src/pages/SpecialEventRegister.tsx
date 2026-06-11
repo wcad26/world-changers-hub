@@ -552,8 +552,8 @@ export default function SpecialEventRegister() {
                     <>
                       <Alert className="border-green-500/30 bg-green-500/5">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription>
-                          Hello <strong>{primaryMember.first_name}</strong>, you are already registered on the WCA system. Click Continue to pre-register for <strong>{ev.name}</strong>.
+                        <AlertDescription className="text-justify">
+                          Hello <strong className="text-primary">{primaryMember.first_name}</strong>, you are already registered on the WCA system. Click Continue to pre-register for <strong className="text-primary">{ev.name}</strong>.
                         </AlertDescription>
                       </Alert>
                       <div className="pt-2">{renderActions()}</div>
