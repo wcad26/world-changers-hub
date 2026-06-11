@@ -492,29 +492,67 @@ export default function SpecialEventRegister() {
                   title="Who is registering?"
                   description="Enter the email or phone you used when you registered with WCA. If you're new, we'll get you onboarded right here."
                 >
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <select
-                      className={cn(nativeSelectClassName, "sm:w-32")}
-                      value={lookupMode}
-                      onChange={(e) => setLookupMode(e.target.value as any)}
-                    >
-                      <option value="email">Email</option>
-                      <option value="phone">Phone</option>
-                    </select>
-                    <Input
-                      className="rounded-xl bg-background/60"
-                      placeholder={lookupMode === "email" ? "you@example.com" : "Phone number"}
-                      value={lookupValue}
-                      onChange={(e) => {
-                        setLookupValue(e.target.value);
-                        setLookupStatus("idle");
-                        setPrimaryMember(null);
-                      }}
-                    />
-                    <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
-                      {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                      <span className="ml-1">Check</span>
-                    </Button>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      {([
+                        { mode: "email", label: "Email", Icon: Mail, color: "blue" },
+                        { mode: "phone", label: "Telephone", Icon: Phone, color: "amber" },
+                      ] as const).map(({ mode, label, Icon, color }) => {
+                        const selected = lookupMode === mode;
+                        const palette =
+                          color === "blue"
+                            ? selected
+                              ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+                              : "border-border bg-background/60 hover:border-blue-400/50"
+                            : selected
+                              ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              : "border-border bg-background/60 hover:border-amber-400/50";
+                        return (
+                          <button
+                            key={mode}
+                            type="button"
+                            onClick={() => {
+                              setLookupMode(mode);
+                              setLookupValue("");
+                              setLookupStatus("idle");
+                              setPrimaryMember(null);
+                            }}
+                            className={cn(
+                              "relative flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all",
+                              palette
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors shrink-0",
+                                selected ? "border-green-500 bg-green-500" : "border-muted-foreground/40 bg-background"
+                              )}
+                            >
+                              {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+                            </span>
+                            <Icon className="h-4 w-4" />
+                            <span>{label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Input
+                        className="rounded-xl bg-background/60"
+                        type={lookupMode === "email" ? "email" : "tel"}
+                        placeholder={lookupMode === "email" ? "you@example.com" : "Phone number"}
+                        value={lookupValue}
+                        onChange={(e) => {
+                          setLookupValue(e.target.value);
+                          setLookupStatus("idle");
+                          setPrimaryMember(null);
+                        }}
+                      />
+                      <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
+                        {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                        <span className="ml-1">Check</span>
+                      </Button>
+                    </div>
                   </div>
 
                   {lookupStatus === "found" && primaryMember && (
