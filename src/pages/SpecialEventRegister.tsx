@@ -192,8 +192,7 @@ export default function SpecialEventRegister() {
 
   const [family, setFamily] = useState<FamilyRow[]>([]);
 
-  const [needsLodging, setNeedsLodging] = useState(false);
-  const [lodgingPartySize, setLodgingPartySize] = useState<number | "">("");
+  const [needsLodging, setNeedsLodging] = useState(true);
   const [attendingDays, setAttendingDays] = useState<string[]>([]);
   const [mealPrefs, setMealPrefs] = useState<string[]>([]);
   const [dietaryNotes, setDietaryNotes] = useState("");
