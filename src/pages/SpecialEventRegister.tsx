@@ -289,6 +289,7 @@ export default function SpecialEventRegister() {
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
+    const familyToSend = registrationMode === "family" ? family : [];
     try {
       const body: any = {
         event_id: (event as any).id,
