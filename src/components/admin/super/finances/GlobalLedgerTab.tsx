@@ -40,7 +40,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter, displayCurrency
 
   const convertedRows = useMemo(() => {
     return rows.map((r) => {
-      const src = r.currency_code || r.region?.currency_code || baseCode;
+      const src = r.region?.currency_code || r.currency_code || baseCode;
       const v = convert(Number(r.amount) || 0, src);
       return {
         ...r,
