@@ -56,6 +56,10 @@ const eventSchema = z.object({
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
   requires_pre_registration: z.boolean().default(false),
+  collect_lodging: z.boolean().default(false),
+  collect_meal_preferences: z.boolean().default(false),
+  collect_pledges: z.boolean().default(false),
+  linked_fundraising_campaign_id: z.string().uuid().optional().or(z.literal("")),
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
@@ -92,7 +96,9 @@ const SuperEvents: React.FC = () => {
     defaultValues: {
       name: "", description: "", start_date: "", start_time: "",
       end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false, slug: "", registration_url: "",
+      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false,
+      collect_lodging: false, collect_meal_preferences: false, collect_pledges: false, linked_fundraising_campaign_id: "",
+      slug: "", registration_url: "",
     },
   });
   const editForm = useForm<z.infer<typeof eventSchema>>({ resolver: zodResolver(eventSchema) });
