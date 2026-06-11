@@ -51,7 +51,7 @@ const ROUTE_TITLE_MAP: Record<string, string> = {
   '/admin/super/fundraising': 'Global Fundraising Management',
   '/admin/super/locations': 'Global Location Management',
   '/admin/super/reports': 'Global Reports & Analytics',
-  '/admin/super/currencies': 'Currency Management',
+  '/admin/super/settings': 'Super Admin Settings',
   '/admin/super/homepage-settings': 'Homepage Settings',
   '/admin/super/about-settings': 'About Us Settings',
   '/admin/super/certificates': 'Certificate Management',

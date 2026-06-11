@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   Users, 
   Calendar, 
-  DollarSign, 
   MapPin, 
   PiggyBank, 
   Globe, 
@@ -14,7 +13,6 @@ import {
   Info,
   UserPlus,
   Home,
-  Coins,
   Award,
   Settings as SettingsIcon
 } from "lucide-react";
