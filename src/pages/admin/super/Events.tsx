@@ -7,16 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays, Search, Plus, MoreHorizontal, Edit, UserCheck, Eye, EyeOff,
   Link2, Copy, Trash2, Globe, Star, Layers, Target, TrendingUp, TrendingDown,
+  ChevronDown, X, Languages,
 } from "lucide-react";
 import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateGlobalEvent } from "@/hooks/useGlobalEvents";
 import { useAllRegions } from "@/hooks/useAllRegions";
+import { useCurrencies } from "@/hooks/useCurrencies";
 import { useGlobalAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -34,6 +36,9 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalAttendanceDialog } from "@/components/admin/super/events/GlobalAttendanceDialog";
@@ -45,15 +50,58 @@ const eventCategories = [
 
 const eventSchema = z.object({
   name: z.string().min(3, "Event name must be at least 3 characters."),
+  name_fr: z.string().optional(),
   description: z.string().optional(),
+  description_fr: z.string().optional(),
   category: z.enum(eventCategories),
   start_date: z.string().min(1, "Please select a start date."),
   start_time: z.string().min(1, "Please provide a start time."),
   end_date: z.string().optional(),
   end_time: z.string().optional(),
   location_name: z.string().min(3, "Please provide a location."),
+  location_name_fr: z.string().optional(),
   address: z.string().optional(),
+  address_fr: z.string().optional(),
   capacity: z.coerce.number().positive().int().optional(),
+  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
+  cost_currency_code: z.string().optional(),
+  event_card_image: z.instanceof(File).optional(),
+  event_card_image_fr: z.instanceof(File).optional(),
+  image_files: z.array(z.instanceof(File)).max(5, "Maximum 5 images allowed").optional(),
+  image_files_fr: z.array(z.instanceof(File)).max(5, "Maximum 5 French hero images allowed").optional(),
+  gallery_images: z.array(z.instanceof(File)).max(10, "Maximum 10 gallery images allowed").optional(),
+  gallery_images_fr: z.array(z.instanceof(File)).max(10, "Maximum 10 French gallery images allowed").optional(),
+  organizer_name: z.string().optional(),
+  organizer_email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  whatsapp_contact: z.string().optional(),
+  testimonials: z.array(z.object({
+    name: z.string().min(2, "Name is required"),
+    name_fr: z.string().optional(),
+    role: z.string().min(2, "Role is required"),
+    role_fr: z.string().optional(),
+    content: z.string().min(10).max(300),
+    content_fr: z.string().max(300).optional(),
+    rating: z.coerce.number().min(1).max(5).default(5),
+  })).optional(),
+  faqs: z.array(z.object({
+    question: z.string().min(5).max(200),
+    question_fr: z.string().max(200).optional(),
+    answer: z.string().min(10).max(500),
+    answer_fr: z.string().max(500).optional(),
+  })).optional(),
+  speakers: z.array(z.object({
+    name: z.string().min(2, "Speaker name is required"),
+    name_fr: z.string().optional(),
+    title: z.string().min(2, "Speaker title is required"),
+    title_fr: z.string().optional(),
+    bio: z.string().max(500).optional(),
+    bio_fr: z.string().max(500).optional(),
+    photo: z.instanceof(File).optional(),
+    linkedin_url: z.string().url().optional().or(z.literal("")),
+    twitter_url: z.string().url().optional().or(z.literal("")),
+    website_url: z.string().url().optional().or(z.literal("")),
+    display_order: z.number().optional(),
+  })).optional(),
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
@@ -65,7 +113,22 @@ const eventSchema = z.object({
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
   registration_url: z.string().url("Please enter a valid URL.").optional().or(z.literal("")),
-});
+}).refine((data) => {
+  if (data.end_date && data.start_date) {
+    return new Date(data.end_date) >= new Date(data.start_date);
+  }
+  return true;
+}, { message: "End date must be after or same as start date", path: ["end_date"] });
+
+// Helper: upload a file to event-images bucket and return its public URL
+async function uploadEventImage(file: File, prefix = ""): Promise<string> {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${prefix}${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const { error } = await supabase.storage.from('event-images').upload(fileName, file);
+  if (error) throw error;
+  const { data: { publicUrl } } = supabase.storage.from('event-images').getPublicUrl(fileName);
+  return publicUrl;
+}
 
 const SuperEvents: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,11 +147,28 @@ const SuperEvents: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [autoGeneratedSlug, setAutoGeneratedSlug] = useState<string>('');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  // Image preview state (create dialog)
+  const [cardImagePreview, setCardImagePreview] = useState<string>('');
+  const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imagePreviewsFr, setImagePreviewsFr] = useState<string[]>([]);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+  const [galleryPreviewsFr, setGalleryPreviewsFr] = useState<string[]>([]);
+  const [speakerPhotoPreviews, setSpeakerPhotoPreviews] = useState<{[k: number]: string}>({});
+  // Image preview state (edit dialog)
+  const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
+  const [editCardImagePreviewFr, setEditCardImagePreviewFr] = useState<string>('');
+  const [editImagePreviews, setEditImagePreviews] = useState<string[]>([]);
+  const [editImagePreviewsFr, setEditImagePreviewsFr] = useState<string[]>([]);
+  const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
+  const [editGalleryPreviewsFr, setEditGalleryPreviewsFr] = useState<string[]>([]);
+  const [editSpeakerPhotoPreviews, setEditSpeakerPhotoPreviews] = useState<{[k: number]: string}>({});
   const { toast } = useToast();
 
   const { data: events, isLoading } = useGlobalEvents();
   const { data: attendanceData } = useGlobalAttendanceHistoryWithMemberTypes();
   const { data: regions } = useAllRegions();
+  const { data: currencies } = useCurrencies();
   const createEvent = useCreateGlobalEvent();
   const updateEvent = useUpdateGlobalEvent();
   const deleteEvent = useDeleteGlobalEvent();
@@ -104,17 +184,35 @@ const SuperEvents: React.FC = () => {
   });
   const navigate = useNavigate();
 
+  const defaultFormValues: any = {
+    name: "", name_fr: "", description: "", description_fr: "",
+    start_date: "", start_time: "", end_date: "", end_time: "",
+    location_name: "", location_name_fr: "", address: "", address_fr: "",
+    cost: 0, cost_currency_code: "",
+    organizer_name: "", organizer_email: "", whatsapp_contact: "",
+    is_public: true, is_featured: false, is_special: false, requires_pre_registration: false,
+    collect_lodging: false, collect_meal_preferences: false, collect_pledges: false,
+    linked_fundraising_campaign_id: "",
+    slug: "", registration_url: "",
+    testimonials: [], faqs: [], speakers: [],
+  };
+
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
-    defaultValues: {
-      name: "", description: "", start_date: "", start_time: "",
-      end_date: "", end_time: "", location_name: "", address: "",
-      is_public: true, is_featured: false, is_special: false, requires_pre_registration: false,
-      collect_lodging: false, collect_meal_preferences: false, collect_pledges: false, linked_fundraising_campaign_id: "",
-      slug: "", registration_url: "",
-    },
+    defaultValues: defaultFormValues,
   });
-  const editForm = useForm<z.infer<typeof eventSchema>>({ resolver: zodResolver(eventSchema) });
+  const editForm = useForm<z.infer<typeof eventSchema>>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: defaultFormValues,
+  });
+
+  const { fields: testimonialFields, append: appendTestimonial, remove: removeTestimonial } = useFieldArray({ control: form.control, name: "testimonials" });
+  const { fields: faqFields, append: appendFAQ, remove: removeFAQ } = useFieldArray({ control: form.control, name: "faqs" });
+  const { fields: speakerFields, append: appendSpeaker, remove: removeSpeaker } = useFieldArray({ control: form.control, name: "speakers" });
+
+  const { fields: editTestimonialFields, append: editAppendTestimonial, remove: editRemoveTestimonial } = useFieldArray({ control: editForm.control, name: "testimonials" });
+  const { fields: editFaqFields, append: editAppendFAQ, remove: editRemoveFAQ } = useFieldArray({ control: editForm.control, name: "faqs" });
+  const { fields: editSpeakerFields, append: editAppendSpeaker, remove: editRemoveSpeaker } = useFieldArray({ control: editForm.control, name: "speakers" });
 
   // Period-filtered events
   const periodFilteredEvents = useMemo(() => {
@@ -221,6 +319,138 @@ const SuperEvents: React.FC = () => {
     toast({ title: "Link Copied", description: "Self-attendance link copied to clipboard." });
   };
 
+  // Persist related entities (event_images for hero+gallery, testimonials, faqs, speakers) for a given event id
+  async function persistEventRelations(
+    eventId: string,
+    values: z.infer<typeof eventSchema>,
+    uploadedHeroUrls: string[],
+    uploadedHeroUrlsFr: string[],
+  ) {
+    // Hero images
+    if (uploadedHeroUrls.length > 0) {
+      const records = uploadedHeroUrls.map((url, idx) => ({
+        event_id: eventId,
+        image_url: url,
+        image_url_fr: uploadedHeroUrlsFr[idx] || null,
+        display_order: idx,
+        is_hero_image: true,
+      }));
+      const { error } = await supabase.from('event_images').insert(records);
+      if (error) throw error;
+    }
+
+    // Gallery images (EN)
+    let galleryUrlsEn: string[] = [];
+    if (values.gallery_images && values.gallery_images.length > 0) {
+      for (const file of values.gallery_images) {
+        galleryUrlsEn.push(await uploadEventImage(file, 'gallery-'));
+      }
+      const records = galleryUrlsEn.map((url, idx) => ({
+        event_id: eventId,
+        image_url: url,
+        display_order: idx,
+        is_hero_image: false,
+      }));
+      const { error } = await supabase.from('event_images').insert(records);
+      if (error) throw error;
+    }
+
+    // Gallery images (FR) - update existing rows with image_url_fr
+    if (values.gallery_images_fr && values.gallery_images_fr.length > 0) {
+      const galleryUrlsFr: string[] = [];
+      for (const file of values.gallery_images_fr) {
+        galleryUrlsFr.push(await uploadEventImage(file, 'gallery-fr-'));
+      }
+      const { data: existingGallery } = await supabase
+        .from('event_images')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('is_hero_image', false)
+        .order('display_order', { ascending: true });
+      if (existingGallery) {
+        for (let i = 0; i < Math.min(galleryUrlsFr.length, existingGallery.length); i++) {
+          await supabase.from('event_images').update({ image_url_fr: galleryUrlsFr[i] }).eq('id', existingGallery[i].id);
+        }
+      }
+    }
+
+    // Testimonials
+    if (values.testimonials && values.testimonials.length > 0) {
+      const records = values.testimonials.map((t, idx) => ({
+        event_id: eventId,
+        name: t.name,
+        name_fr: t.name_fr || null,
+        role: t.role,
+        role_fr: t.role_fr || null,
+        content: t.content,
+        content_fr: t.content_fr || null,
+        rating: t.rating,
+        display_order: idx,
+      }));
+      const { error } = await supabase.from('event_testimonials').insert(records);
+      if (error) throw error;
+    }
+
+    // FAQs
+    if (values.faqs && values.faqs.length > 0) {
+      const records = values.faqs.map((f, idx) => ({
+        event_id: eventId,
+        question: f.question,
+        question_fr: f.question_fr || null,
+        answer: f.answer,
+        answer_fr: f.answer_fr || null,
+        display_order: idx,
+      }));
+      const { error } = await supabase.from('event_faqs').insert(records);
+      if (error) throw error;
+    }
+
+    // Speakers (with photo upload)
+    if (values.speakers && values.speakers.length > 0) {
+      for (let i = 0; i < values.speakers.length; i++) {
+        const sp = values.speakers[i];
+        let photoUrl: string | null = null;
+        if (sp.photo) {
+          try { photoUrl = await uploadEventImage(sp.photo, `${eventId}/speakers/`); } catch (e) { /* swallow */ }
+        }
+        const { error } = await supabase.from('event_speakers').insert({
+          event_id: eventId,
+          name: sp.name,
+          name_fr: sp.name_fr || null,
+          title: sp.title,
+          title_fr: sp.title_fr || null,
+          bio: sp.bio || null,
+          bio_fr: sp.bio_fr || null,
+          photo_url: photoUrl,
+          linkedin_url: sp.linkedin_url || null,
+          twitter_url: sp.twitter_url || null,
+          website_url: sp.website_url || null,
+          display_order: sp.display_order ?? i,
+        });
+        if (error) console.error('Speaker insert error', error);
+      }
+    }
+  }
+
+  function resetCreateImagePreviews() {
+    setCardImagePreview('');
+    setCardImagePreviewFr('');
+    setImagePreviews([]);
+    setImagePreviewsFr([]);
+    setGalleryPreviews([]);
+    setGalleryPreviewsFr([]);
+    setSpeakerPhotoPreviews({});
+  }
+  function resetEditImagePreviews() {
+    setEditCardImagePreview('');
+    setEditCardImagePreviewFr('');
+    setEditImagePreviews([]);
+    setEditImagePreviewsFr([]);
+    setEditGalleryPreviews([]);
+    setEditGalleryPreviewsFr([]);
+    setEditSpeakerPhotoPreviews({});
+  }
+
   async function onSubmit(values: z.infer<typeof eventSchema>) {
     try {
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
@@ -229,21 +459,47 @@ const SuperEvents: React.FC = () => {
         const endTime = values.end_time || values.start_time;
         end_datetime = new Date(`${values.end_date}T${endTime}`).toISOString();
       }
+
+      // Card images
+      let cardUrl: string | null = null;
+      let cardUrlFr: string | null = null;
+      if (values.event_card_image) cardUrl = await uploadEventImage(values.event_card_image, 'card-');
+      if (values.event_card_image_fr) cardUrlFr = await uploadEventImage(values.event_card_image_fr, 'card-fr-');
+
+      // Hero images
+      const heroUrls: string[] = [];
+      if (values.image_files) {
+        for (const f of values.image_files) heroUrls.push(await uploadEventImage(f, 'hero-'));
+      }
+      const heroUrlsFr: string[] = [];
+      if (values.image_files_fr) {
+        for (const f of values.image_files_fr) heroUrlsFr.push(await uploadEventImage(f, 'hero-fr-'));
+      }
+
+      // Slug uniqueness
       let finalSlug = values.slug || generateSlug(values.name);
       const { data: existingEvent } = await supabase.from('events').select('slug').eq('slug', finalSlug).maybeSingle();
       if (existingEvent) finalSlug = `${finalSlug}-${Date.now().toString(36)}`;
 
-      await createEvent.mutateAsync({
+      const created = await createEvent.mutateAsync({
         name: values.name,
+        name_fr: values.name_fr || null,
         slug: finalSlug,
         description: values.description || null,
+        description_fr: values.description_fr || null,
         category: values.category as any,
         start_datetime,
         end_datetime,
         location_name: values.location_name,
+        location_name_fr: values.location_name_fr || null,
         address: values.address || null,
+        address_fr: values.address_fr || null,
         capacity: values.capacity || null,
         attendance_target: values.attendance_target || null,
+        cost: values.cost || 0,
+        cost_currency_code: values.cost_currency_code || null,
+        image_url: cardUrl || heroUrls[0] || null,
+        image_url_fr: cardUrlFr || heroUrlsFr[0] || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
@@ -253,12 +509,21 @@ const SuperEvents: React.FC = () => {
         collect_pledges: values.is_special ? !!values.collect_pledges : false,
         linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
+        organizer_name: values.organizer_name || null,
+        organizer_email: values.organizer_email || null,
+        whatsapp_contact: values.whatsapp_contact || null,
         status: 'Upcoming',
         region_id: null,
-      });
+        dcg_id: null,
+      } as any);
+
+      if (created?.id) {
+        await persistEventRelations(created.id, values, heroUrls, heroUrlsFr);
+      }
 
       toast({ title: "Success", description: "Global event created successfully." });
-      form.reset();
+      form.reset(defaultFormValues);
+      resetCreateImagePreviews();
       setAutoGeneratedSlug('');
       setSlugManuallyEdited(false);
       setCreateDialogOpen(false);
@@ -267,22 +532,37 @@ const SuperEvents: React.FC = () => {
     }
   }
 
-  function openEditDialog(event: any) {
+  async function openEditDialog(event: any) {
     setEventToEdit(event);
     const startDate = new Date(event.start_datetime);
     const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
     setSlugManuallyEdited(true);
+    resetEditImagePreviews();
+
+    // Load related testimonials, faqs, speakers
+    const [{ data: testimonials }, { data: faqs }, { data: speakers }] = await Promise.all([
+      supabase.from('event_testimonials').select('*').eq('event_id', event.id).order('display_order'),
+      supabase.from('event_faqs').select('*').eq('event_id', event.id).order('display_order'),
+      supabase.from('event_speakers').select('*').eq('event_id', event.id).order('display_order'),
+    ]);
+
     editForm.reset({
       name: event.name,
+      name_fr: event.name_fr || "",
       description: event.description || "",
+      description_fr: event.description_fr || "",
       category: event.category || "Other",
       start_date: format(startDate, 'yyyy-MM-dd'),
       start_time: format(startDate, 'HH:mm'),
       end_date: endDate ? format(endDate, 'yyyy-MM-dd') : "",
       end_time: endDate ? format(endDate, 'HH:mm') : "",
       location_name: event.location_name || "",
+      location_name_fr: event.location_name_fr || "",
       address: event.address || "",
+      address_fr: event.address_fr || "",
       capacity: event.capacity || undefined,
+      cost: event.cost || 0,
+      cost_currency_code: event.cost_currency_code || "",
       is_public: event.is_public,
       is_featured: event.is_featured,
       is_special: !!event.is_special,
@@ -294,7 +574,29 @@ const SuperEvents: React.FC = () => {
       attendance_target: event.attendance_target || undefined,
       slug: event.slug || "",
       registration_url: event.registration_url || "",
-    });
+      organizer_name: event.organizer_name || "",
+      organizer_email: event.organizer_email || "",
+      whatsapp_contact: event.whatsapp_contact || "",
+      testimonials: (testimonials || []).map((t: any) => ({
+        name: t.name || "", name_fr: t.name_fr || "",
+        role: t.role || "", role_fr: t.role_fr || "",
+        content: t.content || "", content_fr: t.content_fr || "",
+        rating: t.rating || 5,
+      })),
+      faqs: (faqs || []).map((f: any) => ({
+        question: f.question || "", question_fr: f.question_fr || "",
+        answer: f.answer || "", answer_fr: f.answer_fr || "",
+      })),
+      speakers: (speakers || []).map((s: any, idx: number) => ({
+        name: s.name || "", name_fr: s.name_fr || "",
+        title: s.title || "", title_fr: s.title_fr || "",
+        bio: s.bio || "", bio_fr: s.bio_fr || "",
+        linkedin_url: s.linkedin_url || "",
+        twitter_url: s.twitter_url || "",
+        website_url: s.website_url || "",
+        display_order: s.display_order ?? idx,
+      })),
+    } as any);
     setEditDialogOpen(true);
   }
 
@@ -311,18 +613,43 @@ const SuperEvents: React.FC = () => {
       if (newSlug && eventToEdit.slug && newSlug !== eventToEdit.slug) {
         await supabase.from('event_slug_history').insert({ event_id: eventToEdit.id, old_slug: eventToEdit.slug });
       }
+
+      // Card images (only update if new file provided)
+      let cardUrl: string | undefined;
+      let cardUrlFr: string | undefined;
+      if (values.event_card_image) cardUrl = await uploadEventImage(values.event_card_image, 'card-');
+      if (values.event_card_image_fr) cardUrlFr = await uploadEventImage(values.event_card_image_fr, 'card-fr-');
+
+      // New hero images appended
+      const heroUrls: string[] = [];
+      if (values.image_files) {
+        for (const f of values.image_files) heroUrls.push(await uploadEventImage(f, 'hero-'));
+      }
+      const heroUrlsFr: string[] = [];
+      if (values.image_files_fr) {
+        for (const f of values.image_files_fr) heroUrlsFr.push(await uploadEventImage(f, 'hero-fr-'));
+      }
+
       await updateEvent.mutateAsync({
         id: eventToEdit.id,
         name: values.name,
+        name_fr: values.name_fr || null,
         slug: newSlug,
         description: values.description || null,
+        description_fr: values.description_fr || null,
         category: values.category as any,
         start_datetime,
         end_datetime,
         location_name: values.location_name,
+        location_name_fr: values.location_name_fr || null,
         address: values.address || null,
+        address_fr: values.address_fr || null,
         capacity: values.capacity || null,
         attendance_target: values.attendance_target || null,
+        cost: values.cost || 0,
+        cost_currency_code: values.cost_currency_code || null,
+        ...(cardUrl !== undefined ? { image_url: cardUrl } : {}),
+        ...(cardUrlFr !== undefined ? { image_url_fr: cardUrlFr } : {}),
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
@@ -332,11 +659,24 @@ const SuperEvents: React.FC = () => {
         collect_pledges: values.is_special ? !!values.collect_pledges : false,
         linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
-      });
+        organizer_name: values.organizer_name || null,
+        organizer_email: values.organizer_email || null,
+        whatsapp_contact: values.whatsapp_contact || null,
+      } as any);
+
+      // Replace related entities (delete + re-insert) for testimonials/faqs/speakers; append new hero/gallery images
+      await Promise.all([
+        supabase.from('event_testimonials').delete().eq('event_id', eventToEdit.id),
+        supabase.from('event_faqs').delete().eq('event_id', eventToEdit.id),
+        supabase.from('event_speakers').delete().eq('event_id', eventToEdit.id),
+      ]);
+      await persistEventRelations(eventToEdit.id, values, heroUrls, heroUrlsFr);
+
       toast({ title: "Success", description: "Event updated successfully." });
       setEditDialogOpen(false);
       setEventToEdit(null);
       setSlugManuallyEdited(false);
+      resetEditImagePreviews();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Could not update event.", variant: "destructive" });
     }
@@ -348,6 +688,7 @@ const SuperEvents: React.FC = () => {
       onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
     });
   };
+
 
   // ---- KPI card ----
   const renderKpi = (
@@ -384,35 +725,71 @@ const SuperEvents: React.FC = () => {
   );
 
   // ---- Event form (reused for create + edit) ----
-  const renderEventForm = (formInstance: any, onSubmitFn: any, isEdit = false) => (
+  const renderEventForm = (formInstance: any, onSubmitFn: any, isEdit = false) => {
+    const tFields = isEdit ? editTestimonialFields : testimonialFields;
+    const tAppend = isEdit ? editAppendTestimonial : appendTestimonial;
+    const tRemove = isEdit ? editRemoveTestimonial : removeTestimonial;
+    const fFields = isEdit ? editFaqFields : faqFields;
+    const fAppend = isEdit ? editAppendFAQ : appendFAQ;
+    const fRemove = isEdit ? editRemoveFAQ : removeFAQ;
+    const sFields = isEdit ? editSpeakerFields : speakerFields;
+    const sAppend = isEdit ? editAppendSpeaker : appendSpeaker;
+    const sRemove = isEdit ? editRemoveSpeaker : removeSpeaker;
+
+    const cardPrev = isEdit ? editCardImagePreview : cardImagePreview;
+    const setCardPrev = isEdit ? setEditCardImagePreview : setCardImagePreview;
+    const cardPrevFr = isEdit ? editCardImagePreviewFr : cardImagePreviewFr;
+    const setCardPrevFr = isEdit ? setEditCardImagePreviewFr : setCardImagePreviewFr;
+    const heroPrevs = isEdit ? editImagePreviews : imagePreviews;
+    const setHeroPrevs = isEdit ? setEditImagePreviews : setImagePreviews;
+    const heroPrevsFr = isEdit ? editImagePreviewsFr : imagePreviewsFr;
+    const setHeroPrevsFr = isEdit ? setEditImagePreviewsFr : setImagePreviewsFr;
+    const galPrevs = isEdit ? editGalleryPreviews : galleryPreviews;
+    const setGalPrevs = isEdit ? setEditGalleryPreviews : setGalleryPreviews;
+    const galPrevsFr = isEdit ? editGalleryPreviewsFr : galleryPreviewsFr;
+    const setGalPrevsFr = isEdit ? setEditGalleryPreviewsFr : setGalleryPreviewsFr;
+    const spkPrevs = isEdit ? editSpeakerPhotoPreviews : speakerPhotoPreviews;
+    const setSpkPrevs = isEdit ? setEditSpeakerPhotoPreviews : setSpeakerPhotoPreviews;
+
+    return (
     <Form {...formInstance}>
-      <form onSubmit={formInstance.handleSubmit(onSubmitFn)} className="space-y-4 max-h-[65vh] overflow-auto p-1">
-        <FormField control={formInstance.control} name="name" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Event Name *</FormLabel>
-            <FormControl><Input placeholder="e.g. Annual Global Conference" {...field} onChange={(e) => {
-              field.onChange(e);
-              if (!slugManuallyEdited) {
-                const newSlug = generateSlug(e.target.value);
-                setAutoGeneratedSlug(newSlug);
-                formInstance.setValue('slug', newSlug);
-              }
-            }} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={formInstance.control} name="slug" render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL Slug</FormLabel>
-            <FormControl><Input placeholder="e.g. annual-global-conference" {...field} value={field.value || ''} onChange={(e) => {
-              const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
-              field.onChange(val);
-              setSlugManuallyEdited(true);
-            }} /></FormControl>
-            <p className="text-xs text-muted-foreground">Used in Event Page and Attendance URLs.</p>
-            <FormMessage />
-          </FormItem>
-        )} />
+      <form
+        onSubmit={formInstance.handleSubmit(onSubmitFn, (errors: any) => {
+          console.error('Event form validation errors:', errors);
+          toast({ title: "Validation Error", description: `Please fix: ${Object.keys(errors).join(', ')}`, variant: "destructive" });
+        })}
+        className="space-y-5 max-h-[70vh] overflow-y-auto px-1 pb-2"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField control={formInstance.control} name="name" render={({ field }: any) => (
+            <FormItem>
+              <FormLabel>Event Name *</FormLabel>
+              <FormControl><Input placeholder="e.g. Annual Global Conference" {...field} onChange={(e) => {
+                field.onChange(e);
+                if (!slugManuallyEdited) {
+                  const newSlug = generateSlug(e.target.value);
+                  setAutoGeneratedSlug(newSlug);
+                  formInstance.setValue('slug', newSlug);
+                }
+              }} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={formInstance.control} name="slug" render={({ field }: any) => (
+            <FormItem>
+              <FormLabel>URL Slug</FormLabel>
+              <FormControl><Input placeholder="annual-global-conference" {...field} value={field.value || ''} onChange={(e) => {
+                const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                field.onChange(val);
+                setSlugManuallyEdited(true);
+              }} /></FormControl>
+              <FormDescription className="text-xs">Used in Event Page and Attendance URLs.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )} />
+        </div>
+
         {formInstance.watch('slug') && (
           <div className="space-y-2 rounded-md border p-3 bg-muted/50">
             <div>
@@ -431,59 +808,452 @@ const SuperEvents: React.FC = () => {
             </div>
           </div>
         )}
-        <FormField control={formInstance.control} name="category" render={({ field }) => (
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField control={formInstance.control} name="category" render={({ field }: any) => (
+            <FormItem>
+              <FormLabel>Category *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
+                <SelectContent>{eventCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )} />
+
+          <FormField control={formInstance.control} name="start_date" render={({ field }: any) => (
+            <FormItem><FormLabel>Start Date *</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="start_time" render={({ field }: any) => (
+            <FormItem><FormLabel>Start Time *</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="end_date" render={({ field }: any) => (
+            <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="end_time" render={({ field }: any) => (
+            <FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+
+          <FormField control={formInstance.control} name="location_name" render={({ field }: any) => (
+            <FormItem><FormLabel>Location *</FormLabel><FormControl><Input placeholder="e.g. Convention Center" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="address" render={({ field }: any) => (
+            <FormItem><FormLabel>Full Address</FormLabel><FormControl><Input placeholder="123 Main St, City…" {...field} /></FormControl><FormDescription>Used for map display on event detail page.</FormDescription><FormMessage /></FormItem>
+          )} />
+
+          <FormField control={formInstance.control} name="capacity" render={({ field }: any) => (
+            <FormItem><FormLabel>Expected Turnout</FormLabel><FormControl><Input type="number" placeholder="Max attendees" {...field} value={field.value ?? ''} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="attendance_target" render={({ field }: any) => (
+            <FormItem><FormLabel>Attendance Target</FormLabel><FormControl><Input type="number" placeholder="Target attendees" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Target attendance for performance tracking.</FormDescription><FormMessage /></FormItem>
+          )} />
+
+          <FormField control={formInstance.control} name="cost_currency_code" render={({ field }: any) => (
+            <FormItem>
+              <FormLabel>Currency</FormLabel>
+              <FormControl>
+                <select {...field} value={field.value || ''} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                  <option value="">Select currency</option>
+                  {currencies?.map((c) => (<option key={c.code} value={c.code}>{c.symbol} - {c.name}</option>))}
+                </select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )} />
+          <FormField control={formInstance.control} name="cost" render={({ field }: any) => (
+            <FormItem><FormLabel>Event Cost</FormLabel><FormControl><Input type="number" step="0.01" min="0" placeholder="0.00" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)} /></FormControl><FormMessage /></FormItem>
+          )} />
+        </div>
+
+        {/* Card Image (EN) */}
+        <FormField control={formInstance.control} name="event_card_image" render={({ field: { onChange, value, ...field } }: any) => (
           <FormItem>
-            <FormLabel>Category *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger></FormControl>
-              <SelectContent>{eventCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent>
-            </Select>
+            <FormLabel>Event Card Image (for Events Page)</FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" {...field} value={undefined} onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { onChange(file); setCardPrev(URL.createObjectURL(file)); }
+              }} />
+            </FormControl>
+            <FormDescription>Recommended: 1200x900px (4:3 ratio).</FormDescription>
+            {cardPrev && (
+              <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border group">
+                <img src={cardPrev} alt="Card preview" className="object-cover w-full h-full" />
+                <button type="button" onClick={() => { setCardPrev(''); onChange(undefined); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+              </div>
+            )}
             <FormMessage />
           </FormItem>
         )} />
-        <FormField control={formInstance.control} name="description" render={({ field }) => (
-          <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Event description..." {...field} /></FormControl><FormMessage /></FormItem>
+
+        {/* Card Image (FR) */}
+        <FormField control={formInstance.control} name="event_card_image_fr" render={({ field: { onChange, value, ...field } }: any) => (
+          <FormItem>
+            <FormLabel>Event Card Image (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" {...field} value={undefined} onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { onChange(file); setCardPrevFr(URL.createObjectURL(file)); }
+              }} />
+            </FormControl>
+            <FormDescription>French version. Recommended: 1200x900px (4:3 ratio).</FormDescription>
+            {cardPrevFr && (
+              <div className="mt-2 relative w-48 aspect-[4/3] rounded-md overflow-hidden border group">
+                <img src={cardPrevFr} alt="French card preview" className="object-cover w-full h-full" />
+                <button type="button" onClick={() => { setCardPrevFr(''); onChange(undefined); }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
         )} />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField control={formInstance.control} name="start_date" render={({ field }) => (<FormItem><FormLabel>Start Date *</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={formInstance.control} name="start_time" render={({ field }) => (<FormItem><FormLabel>Start Time *</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
+
+        {/* Hero images (EN) */}
+        <FormField control={formInstance.control} name="image_files" render={({ field: { onChange, value, ...field } }: any) => (
+          <FormItem>
+            <FormLabel>Event Hero Images (Slider)</FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" multiple {...field} onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                onChange(files);
+                setHeroPrevs(files.map((f) => URL.createObjectURL(f)));
+              }} />
+            </FormControl>
+            <FormDescription>Up to 5 images. First is primary. Recommended 1920x1080px.</FormDescription>
+            {heroPrevs.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {heroPrevs.map((p, idx) => (
+                  <div key={idx} className="relative aspect-video rounded-md overflow-hidden border group">
+                    <img src={p} alt={`Preview ${idx + 1}`} className="object-cover w-full h-full" />
+                    <span className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">{idx + 1}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        {/* Hero images (FR) */}
+        <FormField control={formInstance.control} name="image_files_fr" render={({ field: { onChange, value, ...field } }: any) => (
+          <FormItem>
+            <FormLabel>Event Hero Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" multiple {...field} onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 5);
+                onChange(files);
+                setHeroPrevsFr(files.map((f) => URL.createObjectURL(f)));
+              }} />
+            </FormControl>
+            <FormDescription>Up to 5 French hero images.</FormDescription>
+            {heroPrevsFr.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {heroPrevsFr.map((p, idx) => (
+                  <div key={idx} className="relative aspect-video rounded-md overflow-hidden border">
+                    <img src={p} alt={`French ${idx + 1}`} className="object-cover w-full h-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        {/* Gallery (EN) */}
+        <FormField control={formInstance.control} name="gallery_images" render={({ field: { onChange, value, ...field } }: any) => (
+          <FormItem>
+            <FormLabel>Event Gallery Images</FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" multiple {...field} onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 10);
+                onChange(files);
+                setGalPrevs(files.map((f) => URL.createObjectURL(f)));
+              }} />
+            </FormControl>
+            <FormDescription>Up to 10 images for the event gallery section.</FormDescription>
+            {galPrevs.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {galPrevs.map((p, idx) => (
+                  <div key={idx} className="relative aspect-video rounded-md overflow-hidden border">
+                    <img src={p} alt={`Gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        {/* Gallery (FR) */}
+        <FormField control={formInstance.control} name="gallery_images_fr" render={({ field: { onChange, value, ...field } }: any) => (
+          <FormItem>
+            <FormLabel>Event Gallery Images (French) <Languages className="inline h-4 w-4 ml-1" /></FormLabel>
+            <FormControl>
+              <Input type="file" accept="image/*" multiple {...field} onChange={(e) => {
+                const files = Array.from(e.target.files || []).slice(0, 10);
+                onChange(files);
+                setGalPrevsFr(files.map((f) => URL.createObjectURL(f)));
+              }} />
+            </FormControl>
+            <FormDescription>Up to 10 French gallery images.</FormDescription>
+            {galPrevsFr.length > 0 && (
+              <div className="grid grid-cols-5 gap-2 mt-2">
+                {galPrevsFr.map((p, idx) => (
+                  <div key={idx} className="relative aspect-video rounded-md overflow-hidden border">
+                    <img src={p} alt={`French gallery ${idx + 1}`} className="object-cover w-full h-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+            <FormMessage />
+          </FormItem>
+        )} />
+
+        <FormField control={formInstance.control} name="registration_url" render={({ field }: any) => (
+          <FormItem><FormLabel>External Registration URL</FormLabel><FormControl><Input type="url" placeholder="https://forms.google.com/..." {...field} /></FormControl><FormDescription>External registration link (Google Forms, Eventbrite, etc.).</FormDescription><FormMessage /></FormItem>
+        )} />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField control={formInstance.control} name="organizer_name" render={({ field }: any) => (
+            <FormItem><FormLabel>Organizer Name</FormLabel><FormControl><Input placeholder="Jane Doe" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="organizer_email" render={({ field }: any) => (
+            <FormItem><FormLabel>Organizer Email</FormLabel><FormControl><Input type="email" placeholder="organizer@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+          )} />
+          <FormField control={formInstance.control} name="whatsapp_contact" render={({ field }: any) => (
+            <FormItem><FormLabel>WhatsApp Contact</FormLabel><FormControl><Input placeholder="+1 234 567 890" {...field} /></FormControl><FormDescription>Include country code.</FormDescription><FormMessage /></FormItem>
+          )} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <FormField control={formInstance.control} name="end_date" render={({ field }) => (<FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={formInstance.control} name="end_time" render={({ field }) => (<FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-        <FormField control={formInstance.control} name="location_name" render={({ field }) => (<FormItem><FormLabel>Location *</FormLabel><FormControl><Input placeholder="e.g. Convention Center" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={formInstance.control} name="address" render={({ field }) => (<FormItem><FormLabel>Address</FormLabel><FormControl><Input placeholder="Full address..." {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField control={formInstance.control} name="registration_url" render={({ field }) => (<FormItem><FormLabel>External Registration URL</FormLabel><FormControl><Input type="url" placeholder="https://example.com/register" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField control={formInstance.control} name="capacity" render={({ field }) => (<FormItem><FormLabel>Capacity</FormLabel><FormControl><Input type="number" placeholder="Max attendees" {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={formInstance.control} name="attendance_target" render={({ field }) => (<FormItem><FormLabel>Attendance Target</FormLabel><FormControl><Input type="number" placeholder="Target attendees" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
+
+        <FormField control={formInstance.control} name="description" render={({ field }: any) => (
+          <FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea className="min-h-[120px]" placeholder="Provide details about the event..." {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+
+        {/* French translations */}
+        <Collapsible className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold">🇫🇷 French Translations (Optional)</h4>
+              <p className="text-xs text-muted-foreground">Serve French-speaking visitors.</p>
+            </div>
+            <CollapsibleTrigger asChild><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="space-y-3">
+            <FormField control={formInstance.control} name="name_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>Event Name (French)</FormLabel><FormControl><Input placeholder="Nom de l'événement" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={formInstance.control} name="description_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>Description (French)</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Description de l'événement" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={formInstance.control} name="location_name_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>Location Name (French)</FormLabel><FormControl><Input placeholder="Nom du lieu" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={formInstance.control} name="address_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>Address (French)</FormLabel><FormControl><Textarea className="min-h-[80px]" placeholder="Adresse complète" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Testimonials */}
+        <Collapsible className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold">Testimonials (Optional)</h4>
+              <p className="text-xs text-muted-foreground">Add testimonials from previous attendees.</p>
+            </div>
+            <CollapsibleTrigger asChild><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="space-y-3">
+            {tFields.map((field, index) => (
+              <Card key={field.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-semibold text-sm">Testimonial {index + 1}</h5>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => tRemove(index)}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={formInstance.control} name={`testimonials.${index}.name`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} placeholder="John Doe" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={formInstance.control} name={`testimonials.${index}.role`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Role/Title</FormLabel><FormControl><Input {...field} placeholder="Previous Attendee" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                  <FormField control={formInstance.control} name={`testimonials.${index}.content`} render={({ field }: any) => (
+                    <FormItem><FormLabel>Content</FormLabel><FormControl><Textarea {...field} maxLength={300} rows={3} placeholder="This event was amazing..." /></FormControl><FormDescription>{field.value?.length || 0}/300</FormDescription><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={formInstance.control} name={`testimonials.${index}.rating`} render={({ field }: any) => (
+                    <FormItem><FormLabel>Rating (1-5)</FormLabel><FormControl><Input type="number" min={1} max={5} {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground"><Languages className="h-4 w-4 mr-2" />🇫🇷 French Translation</Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-3">
+                      <FormField control={formInstance.control} name={`testimonials.${index}.name_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Name (French)</FormLabel><FormControl><Input placeholder="Nom" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={formInstance.control} name={`testimonials.${index}.role_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Role (French)</FormLabel><FormControl><Input placeholder="Rôle" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={formInstance.control} name={`testimonials.${index}.content_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Content (French)</FormLabel><FormControl><Textarea className="min-h-[80px]" placeholder="Contenu" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              </Card>
+            ))}
+            <Button type="button" variant="outline" onClick={() => tAppend({ name: "", role: "", content: "", rating: 5 } as any)}>
+              <Plus className="mr-2 h-4 w-4" />Add Testimonial
+            </Button>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* FAQs */}
+        <Collapsible className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold">FAQs (Optional)</h4>
+              <p className="text-xs text-muted-foreground">Frequently asked questions.</p>
+            </div>
+            <CollapsibleTrigger asChild><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="space-y-3">
+            {fFields.map((field, index) => (
+              <Card key={field.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-semibold text-sm">FAQ {index + 1}</h5>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => fRemove(index)}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <FormField control={formInstance.control} name={`faqs.${index}.question`} render={({ field }: any) => (
+                    <FormItem><FormLabel>Question</FormLabel><FormControl><Input {...field} placeholder="How do I register?" /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={formInstance.control} name={`faqs.${index}.answer`} render={({ field }: any) => (
+                    <FormItem><FormLabel>Answer</FormLabel><FormControl><Textarea {...field} rows={3} maxLength={500} placeholder="You can register by..." /></FormControl><FormDescription>{field.value?.length || 0}/500</FormDescription><FormMessage /></FormItem>
+                  )} />
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground"><Languages className="h-4 w-4 mr-2" />🇫🇷 French Translation</Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-3">
+                      <FormField control={formInstance.control} name={`faqs.${index}.question_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Question (French)</FormLabel><FormControl><Input placeholder="Question en français" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={formInstance.control} name={`faqs.${index}.answer_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Answer (French)</FormLabel><FormControl><Textarea className="min-h-[80px]" placeholder="Réponse" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              </Card>
+            ))}
+            <Button type="button" variant="outline" onClick={() => fAppend({ question: "", answer: "" } as any)}>
+              <Plus className="mr-2 h-4 w-4" />Add FAQ
+            </Button>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Speakers */}
+        <Collapsible className="space-y-3 rounded-lg border p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-semibold">Event Speakers (Optional)</h4>
+              <p className="text-xs text-muted-foreground">Add speakers and their details.</p>
+            </div>
+            <CollapsibleTrigger asChild><Button variant="ghost" size="sm"><ChevronDown className="h-4 w-4" /></Button></CollapsibleTrigger>
+          </div>
+          <CollapsibleContent className="space-y-3">
+            {sFields.map((field, index) => (
+              <Card key={field.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-semibold text-sm">Speaker {index + 1}</h5>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => {
+                      sRemove(index);
+                      const np = { ...spkPrevs }; delete np[index]; setSpkPrevs(np);
+                    }}><X className="h-4 w-4" /></Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField control={formInstance.control} name={`speakers.${index}.name`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Name *</FormLabel><FormControl><Input {...field} value={field.value || ''} placeholder="Dr. John Smith" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={formInstance.control} name={`speakers.${index}.title`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Title/Role *</FormLabel><FormControl><Input {...field} value={field.value || ''} placeholder="Keynote Speaker" /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                  <FormField control={formInstance.control} name={`speakers.${index}.bio`} render={({ field }: any) => (
+                    <FormItem><FormLabel>Biography</FormLabel><FormControl><Textarea {...field} value={field.value || ''} rows={3} maxLength={500} placeholder="Brief biography..." /></FormControl><FormDescription>{field.value?.length || 0}/500</FormDescription><FormMessage /></FormItem>
+                  )} />
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="w-full justify-start text-muted-foreground"><Languages className="h-4 w-4 mr-2" />🇫🇷 French Translation</Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-3">
+                      <FormField control={formInstance.control} name={`speakers.${index}.name_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Name (French)</FormLabel><FormControl><Input placeholder="Nom" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={formInstance.control} name={`speakers.${index}.title_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Title (French)</FormLabel><FormControl><Input placeholder="Titre" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={formInstance.control} name={`speakers.${index}.bio_fr`} render={({ field }: any) => (
+                        <FormItem><FormLabel>Biography (French)</FormLabel><FormControl><Textarea className="min-h-[80px]" placeholder="Biographie" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                  <FormField control={formInstance.control} name={`speakers.${index}.photo`} render={({ field: { onChange, value, ...field } }: any) => (
+                    <FormItem>
+                      <FormLabel>Photo</FormLabel>
+                      <FormControl>
+                        <Input type="file" accept="image/*" {...field} value={undefined} onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            onChange(file);
+                            setSpkPrevs({ ...spkPrevs, [index]: URL.createObjectURL(file) });
+                          }
+                        }} />
+                      </FormControl>
+                      {spkPrevs[index] && (
+                        <div className="mt-2"><img src={spkPrevs[index]} alt="Preview" className="w-24 h-24 object-cover rounded-full border-2 border-primary/20" /></div>
+                      )}
+                      <FormDescription>Square image recommended (400x400px).</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <FormField control={formInstance.control} name={`speakers.${index}.linkedin_url`} render={({ field }: any) => (
+                      <FormItem><FormLabel>LinkedIn URL</FormLabel><FormControl><Input {...field} value={field.value || ''} placeholder="https://linkedin.com/in/..." /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={formInstance.control} name={`speakers.${index}.twitter_url`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Twitter/X URL</FormLabel><FormControl><Input {...field} value={field.value || ''} placeholder="https://twitter.com/..." /></FormControl><FormMessage /></FormItem>
+                    )} />
+                    <FormField control={formInstance.control} name={`speakers.${index}.website_url`} render={({ field }: any) => (
+                      <FormItem><FormLabel>Website URL</FormLabel><FormControl><Input {...field} value={field.value || ''} placeholder="https://..." /></FormControl><FormMessage /></FormItem>
+                    )} />
+                  </div>
+                </div>
+              </Card>
+            ))}
+            <Button type="button" variant="outline" onClick={() => sAppend({ name: "", title: "", bio: "", linkedin_url: "", twitter_url: "", website_url: "", display_order: sFields.length } as any)}>
+              <Plus className="mr-2 h-4 w-4" />Add Speaker
+            </Button>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Booleans */}
         <div className="flex items-center gap-6 flex-wrap">
-          <FormField control={formInstance.control} name="is_public" render={({ field }) => (
-            <FormItem className="flex items-center gap-2 space-y-0">
-              <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
-              <FormLabel className="font-normal">Public Event</FormLabel>
-            </FormItem>
+          <FormField control={formInstance.control} name="is_public" render={({ field }: any) => (
+            <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Public Event</FormLabel></FormItem>
           )} />
-          <FormField control={formInstance.control} name="is_featured" render={({ field }) => (
-            <FormItem className="flex items-center gap-2 space-y-0">
-              <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
-              <FormLabel className="font-normal">Featured</FormLabel>
-            </FormItem>
+          <FormField control={formInstance.control} name="is_featured" render={({ field }: any) => (
+            <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Featured</FormLabel></FormItem>
           )} />
-          <FormField control={formInstance.control} name="is_special" render={({ field }) => (
-            <FormItem className="flex items-center gap-2 space-y-0">
-              <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
-              <FormLabel className="font-normal">Special Event</FormLabel>
-            </FormItem>
+          <FormField control={formInstance.control} name="is_special" render={({ field }: any) => (
+            <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Special Event</FormLabel></FormItem>
           )} />
           {formInstance.watch('is_special') && (
-            <FormField control={formInstance.control} name="requires_pre_registration" render={({ field }) => (
-              <FormItem className="flex items-center gap-2 space-y-0">
-                <FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl>
-                <FormLabel className="font-normal">Requires Pre-Registration</FormLabel>
-              </FormItem>
+            <FormField control={formInstance.control} name="requires_pre_registration" render={({ field }: any) => (
+              <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Requires Pre-Registration</FormLabel></FormItem>
             )} />
           )}
         </div>
@@ -492,17 +1262,17 @@ const SuperEvents: React.FC = () => {
           <div className="border border-amber-500/30 rounded-xl p-4 bg-amber-500/5 space-y-3">
             <h4 className="text-sm font-semibold text-amber-700">Special Event Settings</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <FormField control={formInstance.control} name="collect_lodging" render={({ field }) => (
+              <FormField control={formInstance.control} name="collect_lodging" render={({ field }: any) => (
                 <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect lodging</FormLabel></FormItem>
               )} />
-              <FormField control={formInstance.control} name="collect_meal_preferences" render={({ field }) => (
+              <FormField control={formInstance.control} name="collect_meal_preferences" render={({ field }: any) => (
                 <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect meal preferences</FormLabel></FormItem>
               )} />
-              <FormField control={formInstance.control} name="collect_pledges" render={({ field }) => (
+              <FormField control={formInstance.control} name="collect_pledges" render={({ field }: any) => (
                 <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect pledges</FormLabel></FormItem>
               )} />
             </div>
-            <FormField control={formInstance.control} name="linked_fundraising_campaign_id" render={({ field }) => (
+            <FormField control={formInstance.control} name="linked_fundraising_campaign_id" render={({ field }: any) => (
               <FormItem>
                 <FormLabel>Linked Fundraising Campaign</FormLabel>
                 <FormControl>
@@ -516,14 +1286,17 @@ const SuperEvents: React.FC = () => {
             )} />
           </div>
         )}
-        <DialogFooter>
+
+        <DialogFooter className="pt-2">
           <Button type="submit" disabled={createEvent.isPending || updateEvent.isPending}>
             {(createEvent.isPending || updateEvent.isPending) ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
           </Button>
         </DialogFooter>
       </form>
     </Form>
-  );
+    );
+  };
+
 
   const renderTypeBadge = (event: any) => {
     if (event.is_special) return <Badge className="bg-amber-500/15 text-amber-700 hover:bg-amber-500/20 border-amber-500/30">Special</Badge>;
@@ -661,26 +1434,55 @@ const SuperEvents: React.FC = () => {
       </div>
 
       {/* Create Event Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create Global Event</DialogTitle>
-            <DialogDescription>Create an inter-regional event visible across all regions.</DialogDescription>
-          </DialogHeader>
-          {renderEventForm(form, onSubmit)}
+      <Dialog open={createDialogOpen} onOpenChange={(open) => {
+        setCreateDialogOpen(open);
+        if (!open) { form.reset(defaultFormValues); resetCreateImagePreviews(); setSlugManuallyEdited(false); setAutoGeneratedSlug(''); }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0">
+          <div className="relative px-6 pt-6 pb-4 border-b border-border/40 bg-gradient-to-br from-card via-card/80 to-card/40 backdrop-blur-sm">
+            <div className="absolute -top-16 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+            <DialogHeader className="relative space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+                <DialogTitle className="text-xl font-semibold tracking-tight">Create Global Event</DialogTitle>
+              </div>
+              <DialogDescription>Create an inter-regional event visible across all regions.</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5">
+            {renderEventForm(form, onSubmit)}
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Event Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit Event</DialogTitle>
-            <DialogDescription>Update event details.</DialogDescription>
-          </DialogHeader>
-          {renderEventForm(editForm, onEditSubmit, true)}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) { setEventToEdit(null); resetEditImagePreviews(); setSlugManuallyEdited(false); }
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden p-0">
+          <div className="relative px-6 pt-6 pb-4 border-b border-border/40 bg-gradient-to-br from-card via-card/80 to-card/40 backdrop-blur-sm">
+            <div className="absolute -top-16 -right-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
+            <DialogHeader className="relative space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-purple-600 text-primary-foreground shadow-lg shadow-primary/20">
+                  <Edit className="h-5 w-5" />
+                </div>
+                <DialogTitle className="text-xl font-semibold tracking-tight">Edit Event</DialogTitle>
+              </div>
+              <DialogDescription>Update event details.</DialogDescription>
+            </DialogHeader>
+          </div>
+          <div className="px-6 py-5">
+            {renderEventForm(editForm, onEditSubmit, true)}
+          </div>
         </DialogContent>
       </Dialog>
+
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!eventToDelete} onOpenChange={() => setEventToDelete(null)}>
