@@ -23,3 +23,13 @@ verify_jwt = false
 
 [functions.self-attendance]
 verify_jwt = false
+
+[functions.event-pre-register-lookup]
+verify_jwt = false
+
+[functions.event-pre-register]
+verify_jwt = false
+
+[functions.event-special-register]
+verify_jwt = false
+
