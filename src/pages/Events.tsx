@@ -140,7 +140,7 @@ const mockFeaturedEvents: Event[] = ([
     dcg_id: null,
     created_by: null
   }
-];
+].map(e => ({ ...e, ...specialEventDefaults }))) as Event[];
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
