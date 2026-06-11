@@ -388,12 +388,13 @@ export default function SpecialEventRegister() {
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="flex items-center justify-end gap-3">
+      <div className="flex items-center justify-center md:justify-end gap-3">
         <Button
           onClick={onNext}
           disabled={nextDisabled}
-          className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
+          className="w-full md:w-auto rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow"
         >
+
           {isLast ? (
             submitting ? (
               <>
