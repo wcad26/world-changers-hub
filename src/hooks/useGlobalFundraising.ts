@@ -9,6 +9,58 @@ export type FundraisingCampaign = Database["public"]["Tables"]["fundraising_camp
 };
 export type FundraisingDonation = Database["public"]["Tables"]["fundraising_donations"]["Row"];
 
+/**
+ * Fetch pledges aggregated per fundraising campaign.
+ * Pledges are stored on `event_pre_registrations.pledge_amount` and linked
+ * to a campaign via `events.linked_fundraising_campaign_id`.
+ *
+ * Returns: { [campaignId]: { byCurrency: { [code]: amount }, count } }
+ * Amounts are in MAJOR units (not cents), matching how pledge_amount is stored.
+ */
+export const useCampaignPledges = (campaignIds: string[]) => {
+  const ids = [...new Set(campaignIds.filter(Boolean))].sort();
+  return useQuery({
+    queryKey: ["campaign_pledges", ids],
+    enabled: ids.length > 0,
+    queryFn: async () => {
+      const out: Record<string, { byCurrency: Record<string, number>; count: number }> = {};
+      ids.forEach((id) => { out[id] = { byCurrency: {}, count: 0 }; });
+
+      const { data: events, error: eErr } = await supabase
+        .from("events")
+        .select("id, linked_fundraising_campaign_id")
+        .in("linked_fundraising_campaign_id", ids);
+      if (eErr) throw eErr;
+      const eventToCampaign = new Map<string, string>();
+      (events || []).forEach((e: any) => {
+        if (e.linked_fundraising_campaign_id) eventToCampaign.set(e.id, e.linked_fundraising_campaign_id);
+      });
+      const eventIds = Array.from(eventToCampaign.keys());
+      if (eventIds.length === 0) return out;
+
+      const { data: regs, error: rErr } = await supabase
+        .from("event_pre_registrations")
+        .select("event_id, pledge_amount, pledge_currency_code, pledge_status")
+        .in("event_id", eventIds);
+      if (rErr) throw rErr;
+
+      (regs || []).forEach((r: any) => {
+        if (!r.pledge_amount || Number(r.pledge_amount) <= 0) return;
+        if (r.pledge_status === "cancelled") return;
+        const campaignId = eventToCampaign.get(r.event_id);
+        if (!campaignId) return;
+        const code = (r.pledge_currency_code || "").toUpperCase() || "USD";
+        const bucket = out[campaignId];
+        bucket.byCurrency[code] = (bucket.byCurrency[code] || 0) + Number(r.pledge_amount);
+        bucket.count += 1;
+      });
+
+      return out;
+    },
+    staleTime: 60 * 1000,
+  });
+};
+
 export const useGlobalFundraisingCampaigns = (regionFilter: RegionFilter = "all", status?: string) => {
   return useQuery({
     queryKey: ["global_fundraising_campaigns", regionFilter, status],
