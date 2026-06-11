@@ -450,8 +450,8 @@ export default function SpecialEventRegister() {
                     <span className="font-semibold">{campaign.name}</span>
                   </div>
                   <div className="mt-2 text-xs opacity-90">
-                    Raised {campaign.currency_code} {campaign.raised?.toLocaleString() || 0} of {campaign.currency_code}{" "}
-                    {campaign.goal?.toLocaleString() || 0}
+                    Raised {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} of {campaign.currency_code}{" "}
+                    {((campaign.goal || 0) / 100).toLocaleString()}
                   </div>
                   <div className="mt-2 h-2 bg-white/20 rounded-full overflow-hidden">
                     <div
