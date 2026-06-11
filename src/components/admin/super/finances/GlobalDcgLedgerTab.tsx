@@ -11,16 +11,17 @@ import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendCh
 import { useGlobalLedger, aggregateByRegion } from "@/hooks/useGlobalLedger";
 import { summarizeLedger, aggregateByDcg } from "@/hooks/useRegionalLedger";
 import { formatWithCurrency } from "@/utils/currencyUtils";
-import { useFxConverter } from "@/hooks/useDisplayCurrency";
+import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
 interface Props {
   range: PeriodRange;
   regionFilter: string;
+  displayCurrency: string;
 }
 
-const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
+const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter, displayCurrency }) => {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<"all" | "income" | "expense">("all");
@@ -35,7 +36,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
     type,
   });
 
-  const { baseCode, baseCurrency, convert } = useFxConverter();
+  const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
 
   const convertedRows = useMemo(() => {
     return rows.map((r) => {
@@ -68,7 +69,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
   const perRegion = useMemo(() => aggregateByRegion(filtered as any), [filtered]);
   const unconvertedCount = useMemo(() => filtered.filter((r: any) => r._unconverted).length, [filtered]);
 
-  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
+  const fc = (n: number) => formatWithCurrency(n, targetCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -81,6 +82,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
         type: r.category?.type ?? "",
         description: r.description ?? "",
         amount: r.amount,
+        currency: targetCode,
       }))
     );
   };
@@ -88,7 +90,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
   return (
     <div className="space-y-6">
       <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
-        Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
+        Reporting in <span className="font-semibold text-foreground">{targetCode}</span>
         {unconvertedCount > 0 && <span className="text-amber-600">· {unconvertedCount} unconverted</span>}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -112,7 +114,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
         </Button>
       </div>
 
-      <LedgerTrendChart rows={filtered as any} title="DCG Trends" description="All DCG ledgers in the selected scope" />
+      <LedgerTrendChart rows={filtered as any} title="DCG Trends" description={`All DCG ledgers in the selected scope (in ${targetCode})`} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
@@ -207,7 +209,7 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {filtered.map((r: any) => (
                     <TableRow key={r.id}>
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell>{r.region?.name ?? "—"}</TableCell>
@@ -218,7 +220,12 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                           {r.category?.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">
+                        {r._unconverted ? <span className="text-amber-600">—</span> : fc(Number(r.amount))}
+                        {r._sourceCurrency && r._sourceCurrency !== targetCode && (
+                          <div className="text-[10px] text-muted-foreground font-normal">{r._sourceCurrency} {r._originalAmount.toLocaleString()}</div>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

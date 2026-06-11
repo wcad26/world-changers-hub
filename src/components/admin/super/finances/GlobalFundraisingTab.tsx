@@ -1,24 +1,28 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { ArrowUpRight, Target, Users, HeartHandshake, Download } from "lucide-react";
 import { format } from "date-fns";
 import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
 import { useGlobalFundraisingCampaigns, useGlobalDonations } from "@/hooks/useGlobalFundraising";
 import { formatWithCurrency, formatCurrency } from "@/utils/currencyUtils";
-import { useFxConverter } from "@/hooks/useDisplayCurrency";
+import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
 interface Props {
   range: PeriodRange;
   regionFilter: string;
+  displayCurrency: string;
 }
 
-const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
+const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter, displayCurrency }) => {
   const { data: campaigns = [] } = useGlobalFundraisingCampaigns(regionFilter);
   const { data: donations = [] } = useGlobalDonations(range.from, range.to, regionFilter);
+  const [showConverted, setShowConverted] = useState(false);
 
   const overlapping = useMemo(() => {
     const fromMs = range.from.getTime();
@@ -30,14 +34,16 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
     });
   }, [campaigns, range]);
 
-  const { baseCode, baseCurrency, convert } = useFxConverter();
+  const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
 
-  // Donations and campaigns store amounts in cents; convert source -> base before aggregation.
+  // Donations and campaigns store amounts in cents; convert source -> display before aggregation.
+  let unconvertedKpi = 0;
   const totalRaised = donations.reduce((a: number, d: any) => {
     const cents = Number(d.amount) || 0;
     const src = d.currency_code || d.campaign?.currency_code || baseCode;
     const v = convert(cents / 100, src);
-    return a + (v ?? 0);
+    if (v == null) { unconvertedKpi += 1; return a; }
+    return a + v;
   }, 0);
   const totalGoal = overlapping.reduce((a, c) => {
     const v = convert(Number(c.goal || 0) / 100, c.currency_code || baseCode);
@@ -45,7 +51,7 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
   }, 0);
   const activeCount = overlapping.filter((c) => c.status === "Active").length;
   const completionPct = totalGoal > 0 ? Math.min(100, (totalRaised / totalGoal) * 100) : 0;
-  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
+  const fc = (n: number) => formatWithCurrency(n, targetCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -63,10 +69,25 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
     );
   };
 
+  const renderAmount = (cents: number, src: string) => {
+    const native = formatCurrency(cents / 100, src || "USD");
+    if (!showConverted) return native;
+    const v = convert(cents / 100, src || baseCode);
+    return (
+      <div className="flex flex-col items-end">
+        <span>{v == null ? <span className="text-amber-600">—</span> : fc(v)}</span>
+        {src && src !== targetCode && (
+          <span className="text-[10px] text-muted-foreground font-normal">{native}</span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
-        Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
+        Reporting in <span className="font-semibold text-foreground">{targetCode}</span>
+        {unconvertedKpi > 0 && <span className="text-amber-600">· {unconvertedKpi} unconverted</span>}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FinanceKpiCard label="Total Raised" value={fc(totalRaised)} icon={ArrowUpRight} tone="income" hint="In selected period" />
@@ -75,7 +96,11 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
         <FinanceKpiCard label="Active Campaigns" value={activeCount} icon={Users} tone="info" />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Switch id="fr-convert" checked={showConverted} onCheckedChange={setShowConverted} />
+          <Label htmlFor="fr-convert" className="text-xs text-muted-foreground cursor-pointer">Show campaigns &amp; donations in {targetCode}</Label>
+        </div>
         <Button variant="outline" size="sm" onClick={handleExport} disabled={!campaigns.length} className="bg-card/60 backdrop-blur-sm border-border/40">
           <Download className="mr-2 h-4 w-4" /> Export
         </Button>
@@ -109,8 +134,8 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
                       <TableCell>
                         <Badge variant={c.status === "Active" ? "default" : "secondary"}>{c.status}</Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(Number(c.goal) / 100, c.currency_code || "USD")}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(Number(c.raised) / 100, c.currency_code || "USD")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{renderAmount(Number(c.goal), c.currency_code || "USD")}</TableCell>
+                      <TableCell className="text-right tabular-nums">{renderAmount(Number(c.raised), c.currency_code || "USD")}</TableCell>
                       <TableCell className="text-right tabular-nums">{pct.toFixed(1)}%</TableCell>
                       <TableCell className="text-muted-foreground text-xs">
                         {c.start_date ? format(new Date(c.start_date), "MMM d, yyyy") : "—"}
@@ -146,7 +171,9 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
                     <TableCell className="text-muted-foreground">{format(new Date(d.donation_date), "MMM dd, yyyy")}</TableCell>
                     <TableCell>{d.campaign?.name ?? "—"}</TableCell>
                     <TableCell>{d.anonymous ? "Anonymous" : d.donor_name || "—"}</TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">{formatCurrency(Number(d.amount) / 100, d.currency_code || "USD")}</TableCell>
+                    <TableCell className="text-right font-semibold tabular-nums">
+                      {renderAmount(Number(d.amount), d.currency_code || d.campaign?.currency_code || "USD")}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
