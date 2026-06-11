@@ -18,7 +18,14 @@ const categories = [
   "Community Service", "Bible Study", "Retreat", "Seminar", "DCG Meeting", "Other"
 ];
 
-const mockFeaturedEvents: Event[] = [
+const specialEventDefaults = {
+  linked_fundraising_campaign_id: null,
+  collect_lodging: false,
+  collect_meal_preferences: false,
+  collect_pledges: false,
+} as const;
+
+const mockFeaturedEvents: Event[] = ([
   {
     id: "mock-1",
     slug: null,
