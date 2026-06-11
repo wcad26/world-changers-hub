@@ -15,7 +15,6 @@ import { RelatedEventsCarousel } from "@/components/events/RelatedEventsCarousel
 import { EventRegistrationSection } from "@/components/events/EventRegistrationSection";
 import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
-import { EventPreRegistrationDialog } from "@/components/events/EventPreRegistrationDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
@@ -46,7 +45,7 @@ export default function EventDetail() {
   const error = isEventIdUUID ? errorById : errorBySlug;
   
   const { localizedField, t } = useLanguage();
-  const [preRegOpen, setPreRegOpen] = useState(false);
+  
 
   const getStatusBadge = () => {
     if (!event) return null;
@@ -164,7 +163,7 @@ export default function EventDetail() {
                   {(event as any).is_special && (event as any).requires_pre_registration && (
                     <Button
                       className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg w-full"
-                      onClick={() => setPreRegOpen(true)}
+                      onClick={() => navigate(`/events/${(event as any).slug || (event as any).id}/register`)}
                     >
                       <UserPlus className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
                       Pre-Register
@@ -249,7 +248,7 @@ export default function EventDetail() {
         
       </main>
       
-      <EventPreRegistrationDialog open={preRegOpen} onOpenChange={setPreRegOpen} event={event} />
+      
       <Footer />
     </div>
   );
