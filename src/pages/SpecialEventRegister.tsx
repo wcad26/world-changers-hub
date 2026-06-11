@@ -551,7 +551,7 @@ export default function SpecialEventRegister() {
                   <CheckCircle2 className="h-10 w-10 text-green-500" />
                 </div>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  We've recorded your interest. We'll be in touch with event details soon.
+                  Thank you for registering for <strong className="text-primary">{event?.title}</strong>. You can start preparing to have a great time with the Lord.
                 </p>
                 <Button asChild className="rounded-xl">
                   <Link to="/events">Browse other events</Link>
