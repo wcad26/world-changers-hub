@@ -803,25 +803,46 @@ export default function SpecialEventRegister() {
                         I need lodging provided by the organizers
                       </label>
                       {needsLodging && (
-                        <div className="grid md:grid-cols-3 gap-3 pt-2">
+                        <div className="space-y-3 pt-2">
                           <div>
                             <Label className="text-xs">Party size</Label>
                             <Input
                               type="number"
                               min={1}
-                              className="rounded-xl bg-background/60"
+                              className="rounded-xl bg-background/60 max-w-[180px]"
                               value={lodgingPartySize}
                               onChange={(e) => setLodgingPartySize(e.target.value === "" ? "" : Number(e.target.value))}
                             />
                           </div>
-                          <div>
-                            <Label className="text-xs">Arrival date</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={arrivalDate} onChange={(e) => setArrivalDate(e.target.value)} />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Departure date</Label>
-                            <Input type="date" className="rounded-xl bg-background/60" value={departureDate} onChange={(e) => setDepartureDate(e.target.value)} />
-                          </div>
+                          {eventDays.length > 0 && (
+                            <div>
+                              <Label className="text-xs">Days you will attend</Label>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                                {eventDays.map((d) => {
+                                  const checked = attendingDays.includes(d);
+                                  return (
+                                    <label
+                                      key={d}
+                                      className={cn(
+                                        "flex items-center gap-2 text-sm rounded-xl border border-border/40 px-3 py-2 cursor-pointer transition-colors",
+                                        checked ? "bg-primary/10 border-primary/40" : "bg-background/40 hover:bg-background/60"
+                                      )}
+                                    >
+                                      <Checkbox
+                                        checked={checked}
+                                        onCheckedChange={(v) =>
+                                          setAttendingDays((prev) =>
+                                            v ? [...prev, d].sort() : prev.filter((x) => x !== d)
+                                          )
+                                        }
+                                      />
+                                      {format(new Date(d), "EEE, MMM d")}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </GlassSection>
@@ -861,8 +882,31 @@ export default function SpecialEventRegister() {
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">{campaign.name}</span>
                           <span>
-                            {campaign.currency_code} {campaign.raised?.toLocaleString() || 0} / {campaign.goal?.toLocaleString() || 0}
-                          </span>
+                          {campaign.currency_code} {((campaign.raised || 0) / 100).toLocaleString()} / {((campaign.goal || 0) / 100).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${Math.min(100, ((campaign.raised || 0) / Math.max(1, campaign.goal || 1)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{campaign.currency_code}</span>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="0"
+                        className="rounded-xl bg-background/60"
+                        value={pledgeAmount === "" ? "" : Number(pledgeAmount).toLocaleString("en-US")}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/[^\d]/g, "");
+                          if (digits === "") return setPledgeAmount("");
+                          const n = Number(digits);
+                          setPledgeAmount(Number.isFinite(n) ? n : "");
+                        }}
+                      />
                         </div>
                         <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
