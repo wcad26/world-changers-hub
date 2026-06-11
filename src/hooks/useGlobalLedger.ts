@@ -19,7 +19,8 @@ export interface GlobalLedgerFilters {
 export interface GlobalLedgerRow extends LedgerRow {
   region_id: string | null;
   scope: string;
-  region: { id: string; name: string; code: string | null } | null;
+  currency_code: string | null;
+  region: { id: string; name: string; code: string | null; currency_code?: string | null } | null;
 }
 
 const toIso = (d?: Date) => (d ? format(d, "yyyy-MM-dd") : undefined);
@@ -31,7 +32,7 @@ export const useGlobalLedger = (filters: GlobalLedgerFilters) => {
       let q = supabase
         .from("financial_transactions")
         .select(
-          "id, amount, description, transaction_date, dcg_id, category_id, region_id, scope, category:financial_transaction_categories(name, type), dcg:dcgs(name), region:regions(id, name, code)"
+          "id, amount, description, transaction_date, dcg_id, category_id, region_id, scope, currency_code, category:financial_transaction_categories(name, type), dcg:dcgs(name), region:regions(id, name, code, currency_code)"
         );
 
       if (filters.scope === "regional") q = q.is("dcg_id", null);
