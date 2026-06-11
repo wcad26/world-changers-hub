@@ -395,7 +395,7 @@ export default function SpecialEventOnboardForm({
           </Section>
 
           {/* DCG */}
-          <Section icon={Building2} title="Deeper Christian Group">
+          <Section icon={Building2} title="Destiny Care Group">
             <Label className="text-xs">Select DCG <Req /></Label>
             <select
               className={nativeSelectClassName}
