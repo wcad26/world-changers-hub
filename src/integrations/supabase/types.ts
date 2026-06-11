@@ -1290,6 +1290,63 @@ export type Database = {
           },
         ]
       }
+      exchange_rates: {
+        Row: {
+          ask: number
+          base_code: string
+          bid: number
+          created_at: string
+          created_by: string | null
+          effective_at: string
+          id: string
+          is_active: boolean
+          mid: number | null
+          quote_code: string
+          updated_at: string
+        }
+        Insert: {
+          ask: number
+          base_code: string
+          bid: number
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          mid?: number | null
+          quote_code: string
+          updated_at?: string
+        }
+        Update: {
+          ask?: number
+          base_code?: string
+          bid?: number
+          created_at?: string
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          is_active?: boolean
+          mid?: number | null
+          quote_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rates_base_code_fkey"
+            columns: ["base_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "exchange_rates_quote_code_fkey"
+            columns: ["quote_code"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       financial_transaction_categories: {
         Row: {
           description: string | null
@@ -2290,6 +2347,27 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      system_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

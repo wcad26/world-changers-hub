@@ -10,7 +10,8 @@ import FinanceFiltersBar from "@/components/admin/regional/finances/FinanceFilte
 import LedgerTrendChart from "@/components/admin/regional/finances/LedgerTrendChart";
 import { useGlobalLedger, aggregateByRegion } from "@/hooks/useGlobalLedger";
 import { summarizeLedger } from "@/hooks/useRegionalLedger";
-import { formatCurrency } from "@/utils/currencyUtils";
+import { formatWithCurrency } from "@/utils/currencyUtils";
+import { useFxConverter } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
@@ -34,22 +35,39 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
     type,
   });
 
+  const { baseCode, baseCurrency, convert } = useFxConverter();
+
+  const convertedRows = useMemo(() => {
+    return rows.map((r) => {
+      const src = r.currency_code || r.region?.currency_code || baseCode;
+      const v = convert(Number(r.amount) || 0, src);
+      return {
+        ...r,
+        _originalAmount: Number(r.amount) || 0,
+        _sourceCurrency: src,
+        amount: v ?? 0,
+        _unconverted: v == null,
+      } as typeof r & { _originalAmount: number; _sourceCurrency: string; _unconverted: boolean };
+    });
+  }, [rows, convert, baseCode]);
+
   const filtered = useMemo(() => {
-    if (!search) return rows;
+    if (!search) return convertedRows;
     const s = search.toLowerCase();
-    return rows.filter(
+    return convertedRows.filter(
       (r) =>
         r.category?.name?.toLowerCase().includes(s) ||
         r.description?.toLowerCase().includes(s) ||
         r.region?.name?.toLowerCase().includes(s) ||
         String(r.amount).includes(s)
     );
-  }, [rows, search]);
+  }, [convertedRows, search]);
 
   const summary = useMemo(() => summarizeLedger(filtered), [filtered]);
   const perRegion = useMemo(() => aggregateByRegion(filtered as any), [filtered]);
+  const unconvertedCount = useMemo(() => filtered.filter((r: any) => r._unconverted).length, [filtered]);
 
-  const fc = (n: number) => formatCurrency(n, "USD");
+  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -68,6 +86,15 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1">
+          Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
+          {baseCurrency?.symbol ? <span className="text-muted-foreground">({baseCurrency.symbol})</span> : null}
+          {unconvertedCount > 0 && (
+            <span className="text-amber-600">· {unconvertedCount} unconverted (no FX path)</span>
+          )}
+        </div>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <FinanceKpiCard label="Total Income" value={fc(summary.total_income)} icon={ArrowUpRight} tone="income" />
         <FinanceKpiCard label="Total Expenses" value={fc(summary.total_expenses)} icon={ArrowDownRight} tone="expense" />
@@ -161,7 +188,7 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((r) => (
+                  {filtered.map((r: any) => (
                     <TableRow key={r.id} className="border-border/20 hover:bg-muted/30">
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.transaction_date), "MMM dd, yyyy")}</TableCell>
                       <TableCell className="font-medium">{r.region?.name ?? (r.region_id ? "—" : "Global")}</TableCell>
@@ -172,7 +199,18 @@ const GlobalLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
                           {r.category?.type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">{fc(Number(r.amount))}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap font-semibold tabular-nums">
+                        {r._unconverted ? (
+                          <span className="text-amber-600" title="No FX path defined">—</span>
+                        ) : (
+                          fc(Number(r.amount))
+                        )}
+                        {r._sourceCurrency && r._sourceCurrency !== (baseCurrency?.code || baseCode) && (
+                          <div className="text-[10px] text-muted-foreground font-normal">
+                            {r._sourceCurrency} {r._originalAmount.toLocaleString()}
+                          </div>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

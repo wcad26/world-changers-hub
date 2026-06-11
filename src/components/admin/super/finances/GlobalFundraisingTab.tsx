@@ -6,7 +6,8 @@ import { ArrowUpRight, Target, Users, HeartHandshake, Download } from "lucide-re
 import { format } from "date-fns";
 import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
 import { useGlobalFundraisingCampaigns, useGlobalDonations } from "@/hooks/useGlobalFundraising";
-import { formatCurrency } from "@/utils/currencyUtils";
+import { formatWithCurrency, formatCurrency } from "@/utils/currencyUtils";
+import { useFxConverter } from "@/hooks/useDisplayCurrency";
 import { exportCsv } from "@/utils/csvExport";
 import type { PeriodRange } from "@/components/admin/regional/finances/PeriodSelector";
 
@@ -29,11 +30,22 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
     });
   }, [campaigns, range]);
 
-  const totalRaised = donations.reduce((a: number, d: any) => a + Number(d.amount || 0), 0) / 100;
-  const totalGoal = overlapping.reduce((a, c) => a + Number(c.goal || 0), 0) / 100;
+  const { baseCode, baseCurrency, convert } = useFxConverter();
+
+  // Donations and campaigns store amounts in cents; convert source -> base before aggregation.
+  const totalRaised = donations.reduce((a: number, d: any) => {
+    const cents = Number(d.amount) || 0;
+    const src = d.currency_code || d.campaign?.currency_code || baseCode;
+    const v = convert(cents / 100, src);
+    return a + (v ?? 0);
+  }, 0);
+  const totalGoal = overlapping.reduce((a, c) => {
+    const v = convert(Number(c.goal || 0) / 100, c.currency_code || baseCode);
+    return a + (v ?? 0);
+  }, 0);
   const activeCount = overlapping.filter((c) => c.status === "Active").length;
   const completionPct = totalGoal > 0 ? Math.min(100, (totalRaised / totalGoal) * 100) : 0;
-  const fc = (n: number) => formatCurrency(n, "USD");
+  const fc = (n: number) => formatWithCurrency(n, baseCurrency);
 
   const handleExport = () => {
     exportCsv(
@@ -53,6 +65,9 @@ const GlobalFundraisingTab: React.FC<Props> = ({ range, regionFilter }) => {
 
   return (
     <div className="space-y-6">
+      <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
+        Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FinanceKpiCard label="Total Raised" value={fc(totalRaised)} icon={ArrowUpRight} tone="income" hint="In selected period" />
         <FinanceKpiCard label="Combined Goal" value={fc(totalGoal)} icon={Target} tone="neutral" />
