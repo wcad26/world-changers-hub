@@ -9,19 +9,35 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+type Relationship = { relationship_type: string; member_ids: string[] };
+
 type NewRegistrant = {
-  type: "member" | "visitor";
+  type?: "member" | "visitor";
+  attendee_type?: "member" | "visitor";
+  region_id?: string | null;
   first_name: string;
   last_name: string;
   email: string;
   phone: string;
-  address?: string;
-  date_of_birth?: string;
-  gender?: string;
-  occupation?: string;
+  address?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  occupation?: string | null;
   // member-only
-  has_completed_foundation_school?: string;
-  dcg_id?: string;
+  has_completed_foundation_school?: string | null;
+  foundation_school_date?: string | null;
+  is_baptized?: string | null;
+  baptism_date?: string | null;
+  ministry_interests?: string[];
+  dcg_id?: string | null;
+  relationships?: Relationship[];
+  // visitor-only
+  referral_source?: string | null;
+  referral_social_media?: string | null;
+  referral_member_ids?: string[];
+  referral_relationship_type?: string | null;
+  referral_other_details?: string | null;
+  join_interest?: string | null;
   // child indicator (auto-detected from DOB but allow explicit)
   is_child?: boolean;
 };
@@ -30,7 +46,6 @@ type FamilyEntry = {
   relationship_type: string;
   existing_member_id?: string | null;
   new_registrant?: NewRegistrant | null;
-  // Per-attendee meta
   is_child?: boolean;
 };
 
@@ -42,8 +57,6 @@ function json(payload: unknown, status = 200) {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
-
-const digits = (s?: string) => (s || "").replace(/\D/g, "");
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -71,10 +84,11 @@ Deno.serve(async (req) => {
     const primaryExistingId: string | null = body?.primary_member_id || null;
     const primaryNew: NewRegistrant | null = body?.primary_new || null;
 
-    let primaryMember = await resolveOrCreateMember(admin, {
+    const primaryMember = await resolveOrCreateMember(admin, {
       existing_member_id: primaryExistingId,
       new_registrant: primaryNew,
       fallback_region_id: event.region_id,
+      source_event_id: event_id,
     });
     if (!primaryMember) return json({ error: "Primary registrant could not be resolved" }, 400);
 
@@ -89,6 +103,7 @@ Deno.serve(async (req) => {
         existing_member_id: f.existing_member_id || null,
         new_registrant: f.new_registrant || null,
         fallback_region_id: event.region_id,
+        source_event_id: event_id,
       });
       if (!m) return json({ error: "A family member could not be resolved" }, 400);
       familyResolved.push({ entry: f, member: m });
@@ -158,8 +173,6 @@ Deno.serve(async (req) => {
     if (insErr) return json({ error: insErr.message }, 500);
 
     // Member relationships between primary and family.
-    // Use two .in() queries (one per side) and de-duplicate in JS — mirrors
-    // fetchMemberRelationshipsForMembers and avoids fragile .or() URL parsing.
     if (familyResolved.length > 0) {
       const relatedIds = familyResolved.map(f => f.member.id);
       const [byMember, byRelated] = await Promise.all([
@@ -214,6 +227,7 @@ async function resolveOrCreateMember(
     existing_member_id?: string | null;
     new_registrant?: NewRegistrant | null;
     fallback_region_id?: string | null;
+    source_event_id?: string | null;
   }
 ): Promise<{ id: string; profile_id: string; email?: string } | null> {
   if (args.existing_member_id) {
@@ -229,20 +243,22 @@ async function resolveOrCreateMember(
   const nr = args.new_registrant;
   if (!nr) return null;
 
-  // Determine region: prefer explicit fallback (event region) or any region as last resort
-  let region_id: string | null = args.fallback_region_id || null;
+  // Per-registrant region wins; falls back to event region, then any region.
+  let region_id: string | null = nr.region_id || args.fallback_region_id || null;
   if (!region_id) {
     const { data: r } = await admin.from("regions").select("id").limit(1).maybeSingle();
     region_id = r?.id || null;
   }
   if (!region_id) return null;
 
-  // Check existing profile by email
+  // Check existing profile by email — reuse and create a member in this region if missing.
   const email = (nr.email || "").trim().toLowerCase();
+  let profileId: string | null = null;
   if (email) {
     const { data: existingProfile } = await admin
       .from("profiles").select("id, email").ilike("email", email).maybeSingle();
     if (existingProfile) {
+      profileId = existingProfile.id;
       const { data: existingMember } = await admin
         .from("members").select("id, profile_id").eq("profile_id", existingProfile.id).maybeSingle();
       if (existingMember) {
@@ -251,49 +267,108 @@ async function resolveOrCreateMember(
     }
   }
 
-  // Create profile (visitor-style: no auth user; member type can be 'member' later)
-  const profileId = crypto.randomUUID();
-  const { error: profErr } = await admin.from("profiles").insert({
-    id: profileId,
-    first_name: nr.first_name,
-    last_name: nr.last_name,
-    email: email || null,
-    phone: nr.phone || null,
-    address: nr.address || null,
-    date_of_birth: nr.date_of_birth || null,
-    gender: nr.gender ? String(nr.gender).toLowerCase() : null,
-    occupation: nr.occupation || null,
-    region_id,
-  });
-  if (profErr) {
-    console.error("profile insert failed", profErr);
-    return null;
+  // Create profile if needed
+  if (!profileId) {
+    profileId = crypto.randomUUID();
+    const { error: profErr } = await admin.from("profiles").insert({
+      id: profileId,
+      first_name: nr.first_name,
+      last_name: nr.last_name,
+      email: email || null,
+      phone: nr.phone || null,
+      address: nr.address || null,
+      date_of_birth: nr.date_of_birth || null,
+      gender: nr.gender ? String(nr.gender).toLowerCase() : null,
+      occupation: nr.occupation || null,
+      region_id,
+    });
+    if (profErr) {
+      console.error("profile insert failed", profErr);
+      return null;
+    }
   }
 
-  // Generate member id
+  // Decide member_type: member only when explicitly chosen AND foundation school done.
+  const requestedType = nr.attendee_type || nr.type || "visitor";
+  const memberType =
+    requestedType === "member" && nr.has_completed_foundation_school === "yes"
+      ? "member"
+      : "visitor";
+
   const { data: memberIdGen } = await admin.rpc("generate_member_id", { _region_id: region_id });
-  const memberType = nr.type === "member" && nr.has_completed_foundation_school === "yes" ? "member" : "visitor";
+
+  const memberInsert: any = {
+    profile_id: profileId,
+    member_id: memberIdGen,
+    region_id,
+    member_type: memberType,
+    status: "new",
+    join_date: new Date().toISOString().split("T")[0],
+    membership_class_completed: nr.has_completed_foundation_school === "yes",
+    foundation_school_date:
+      nr.has_completed_foundation_school === "yes" && nr.foundation_school_date
+        ? nr.foundation_school_date
+        : null,
+    baptism_date: nr.is_baptized === "yes" && nr.baptism_date ? nr.baptism_date : null,
+    preferred_service_areas:
+      Array.isArray(nr.ministry_interests) && nr.ministry_interests.length
+        ? nr.ministry_interests
+        : null,
+  };
+
+  // Visitor-specific fields
+  if (requestedType !== "member") {
+    memberInsert.referral_source = nr.referral_source || null;
+    memberInsert.referral_other_details = nr.referral_other_details || null;
+    memberInsert.join_interest = nr.join_interest || null;
+    if (args.source_event_id) memberInsert.rated_event_id = args.source_event_id;
+  }
 
   const { data: newMember, error: memErr } = await admin
-    .from("members").insert({
-      profile_id: profileId,
-      member_id: memberIdGen,
-      region_id,
-      member_type: memberType,
-      status: "new",
-      join_date: new Date().toISOString().split("T")[0],
-    }).select("id, profile_id").single();
+    .from("members").insert(memberInsert).select("id, profile_id").single();
 
   if (memErr) {
     console.error("member insert failed", memErr);
     return null;
   }
 
-  if (nr.dcg_id) {
+  // DCG (member only)
+  if (requestedType === "member" && nr.dcg_id) {
     await admin.from("dcg_members").insert({
-      dcg_id: nr.dcg_id, member_id: newMember.id, role: "Member", is_active: true,
+      dcg_id: nr.dcg_id,
+      member_id: newMember.id,
+      role: "Member",
+      is_active: true,
       joined_date: new Date().toISOString().split("T")[0],
     });
+  }
+
+  // Member family relationships (member only)
+  if (requestedType === "member" && Array.isArray(nr.relationships)) {
+    for (const rel of nr.relationships) {
+      if (!rel?.relationship_type || !Array.isArray(rel.member_ids) || rel.member_ids.length === 0) continue;
+      const rows = rel.member_ids.map((rid) => ({
+        member_id: newMember.id,
+        related_member_id: rid,
+        relationship_type: rel.relationship_type,
+      }));
+      await admin.from("member_relationships").insert(rows);
+    }
+  }
+
+  // Visitor referral relationships
+  if (
+    requestedType !== "member" &&
+    Array.isArray(nr.referral_member_ids) &&
+    nr.referral_member_ids.length > 0 &&
+    nr.referral_relationship_type
+  ) {
+    const rows = nr.referral_member_ids.map((rid) => ({
+      member_id: newMember.id,
+      related_member_id: rid,
+      relationship_type: nr.referral_relationship_type,
+    }));
+    await admin.from("member_relationships").insert(rows);
   }
 
   return { id: newMember.id, profile_id: newMember.profile_id, email };
