@@ -87,6 +87,10 @@ const GlobalDcgLedgerTab: React.FC<Props> = ({ range, regionFilter }) => {
 
   return (
     <div className="space-y-6">
+      <div className="inline-flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 border border-border/30 rounded-full px-3 py-1 w-fit">
+        Reporting in <span className="font-semibold text-foreground">{baseCurrency?.code ?? baseCode}</span>
+        {unconvertedCount > 0 && <span className="text-amber-600">· {unconvertedCount} unconverted</span>}
+      </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <FinanceKpiCard label="DCG Income" value={fc(summary.total_income)} icon={ArrowUpRight} tone="income" />
         <FinanceKpiCard label="DCG Expenses" value={fc(summary.total_expenses)} icon={ArrowDownRight} tone="expense" />
