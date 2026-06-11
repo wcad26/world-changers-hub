@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, CheckCircle2, Plus, Trash2, Search, Heart, Users, Bed, Utensils,
-  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check
+  ArrowRight, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
@@ -371,16 +371,11 @@ export default function SpecialEventRegister() {
     );
   }
 
-  // Sticky action bar buttons
+  // Action buttons
   const renderActions = () => {
     if (step === "done") return null;
-    const isFirst = step === "identify";
     const isLast = (hasExtras && step === "extras") || (!hasExtras && step === "details");
 
-    const onBack = () => {
-      if (step === "extras") setStep("details");
-      else if (step === "details") setStep("identify");
-    };
     const onNext = () => {
       if (step === "identify") setStep("details");
       else if (step === "details") {
@@ -393,10 +388,7 @@ export default function SpecialEventRegister() {
       (isLast && (!canSubmit || submitting));
 
     return (
-      <div className="flex items-center justify-between gap-3">
-        <Button variant="outline" onClick={onBack} disabled={isFirst} className="rounded-xl">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
+      <div className="flex items-center justify-end gap-3">
         <Button
           onClick={onNext}
           disabled={nextDisabled}
@@ -805,11 +797,6 @@ export default function SpecialEventRegister() {
                 </div>
               )}
             </>
-          )}
-
-          {/* Inline actions */}
-          {step !== "done" && (
-            <div className="pt-2">{renderActions()}</div>
           )}
         </div>
       </div>
