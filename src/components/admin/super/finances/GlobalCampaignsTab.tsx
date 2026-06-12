@@ -117,9 +117,14 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
           <Switch id="gc-convert" checked={showConverted} onCheckedChange={setShowConverted} />
           <Label htmlFor="gc-convert" className="text-xs text-muted-foreground cursor-pointer">Show campaigns in {targetCode}</Label>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground">
-          <Plus className="mr-2 h-4 w-4" /> Create Campaign
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setDonateOpen(true)}>
+            <HandCoins className="mr-2 h-4 w-4" /> Record Donation
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground">
+            <Plus className="mr-2 h-4 w-4" /> Create Campaign
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
