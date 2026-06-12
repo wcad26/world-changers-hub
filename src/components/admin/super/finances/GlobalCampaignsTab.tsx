@@ -176,6 +176,7 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
       </div>
 
       <CreateGlobalCampaignDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <RecordDonationDialog open={donateOpen} onOpenChange={setDonateOpen} />
     </div>
   );
 };
