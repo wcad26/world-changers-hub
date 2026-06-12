@@ -262,6 +262,7 @@ export const useCreateDonation = () => {
         anonymous: !!input.anonymous,
         donation_date: input.donation_date || new Date().toISOString(),
         currency_code: input.currency_code || regionCurrency?.code || 'USD',
+        event_pre_registration_id: input.event_pre_registration_id ?? null,
       };
       const { data, error } = await supabase
         .from('fundraising_donations')
