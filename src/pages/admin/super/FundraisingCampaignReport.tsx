@@ -24,6 +24,7 @@ import EditFundraisingCampaignDialog from "@/components/admin/regional/EditFundr
 import ViewDonationDialog from "@/components/admin/regional/finances/ViewDonationDialog";
 import FundraisingDonationRowActions from "@/components/admin/regional/finances/FundraisingDonationRowActions";
 import PeriodSelector, { resolvePeriod, type PeriodKey } from "@/components/admin/regional/finances/PeriodSelector";
+import PledgesCard from "@/components/admin/regional/finances/PledgesCard";
 import {
   ResponsiveContainer, ComposedChart, Bar, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
