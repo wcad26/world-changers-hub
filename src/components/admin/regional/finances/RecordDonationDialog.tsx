@@ -118,7 +118,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
       toast({ title: "Donor required", description: "Select a member or change donor type.", variant: "destructive" });
       return;
     }
-    if (donorType === "external" && !donorId) {
+    if (donorType === "external" && !donorId && !redeemPledge) {
       toast({ title: "Donor required", description: "Select a donor or register a new one.", variant: "destructive" });
       return;
     }
@@ -128,12 +128,13 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
         amount,
         donor_name: donorType === "anonymous" ? null : (donorType === "member" ? memberLabel : donorLabel) || null,
         donor_email: donorType === "external" ? (donorEmail || null) : null,
-        donor_id: donorType === "external" ? donorId : null,
+        donor_id: donorType === "external" ? (donorId || null) : null,
         member_id: donorType === "member" ? memberId : null,
         message: message.trim() || null,
         anonymous: donorType === "anonymous",
         donation_date: new Date(date).toISOString(),
         currency_code: currencyCode,
+        event_pre_registration_id: redeemPledge?.pre_registration_id || null,
       });
       toast({ title: "Donation recorded", description: `${symbol} ${amount.toLocaleString("en-US")} added to the campaign.` });
       onOpenChange(false);
