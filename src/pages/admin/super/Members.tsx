@@ -3,19 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Search, MoreVertical, Eye, Users } from 'lucide-react';
+import { Download, Search, MoreVertical, Eye, Users, Pen, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAllMembers } from '@/hooks/useAllMembers';
 import { useAllRegions } from '@/hooks/useAllRegions';
+import { useDeleteMember } from '@/hooks/useMembers';
 import { buildChildrenSet } from '@/utils/childUtils';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import GlobalMemberKPICards from '@/components/admin/super/GlobalMemberKPICards';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 
 const SuperMembers: React.FC = () => {
   const navigate = useNavigate();
