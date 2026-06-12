@@ -30,6 +30,21 @@ const SuperMembers: React.FC = () => {
 
   const { data: regions } = useAllRegions();
   const { data: members, isLoading, error } = useAllMembers({});
+  const [editMember, setEditMember] = React.useState<any | null>(null);
+  const [memberToDelete, setMemberToDelete] = React.useState<any | null>(null);
+  const deleteMutation = useDeleteMember();
+
+  const handleDeleteMember = async () => {
+    if (!memberToDelete?.profiles?.id) return;
+    try {
+      await deleteMutation.mutateAsync(memberToDelete.profiles.id);
+      toast.success('Member deleted successfully');
+      setMemberToDelete(null);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete member');
+    }
+  };
 
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
   const sortedKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
