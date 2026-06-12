@@ -12,7 +12,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useFundraisingCampaigns, useCreateDonation } from "@/hooks/useFundraisingCampaigns";
+import { useCreateDonation } from "@/hooks/useFundraisingCampaigns";
+import { useGlobalFundraisingCampaigns } from "@/hooks/useGlobalFundraising";
 import { useSearchDonors, type DonorRow } from "@/hooks/useDonors";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
