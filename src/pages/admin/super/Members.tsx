@@ -353,20 +353,6 @@ const SuperMembers: React.FC = () => {
 };
 
 export default SuperMembers;
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow><TableCell colSpan={8} className="text-center h-24">No members found</TableCell></TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+
 
 export default SuperMembers;
