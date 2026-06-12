@@ -354,5 +354,3 @@ const SuperMembers: React.FC = () => {
 
 export default SuperMembers;
 
-
-export default SuperMembers;
