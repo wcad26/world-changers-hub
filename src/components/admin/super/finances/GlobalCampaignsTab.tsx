@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Plus, Target, Users, HeartHandshake, ArrowUpRight } from "lucide-react";
+import { Plus, Target, Users, HeartHandshake, ArrowUpRight, HandCoins } from "lucide-react";
 import { format } from "date-fns";
 import FinanceKpiCard from "@/components/admin/regional/finances/FinanceKpiCard";
 import CreateGlobalCampaignDialog from "./CreateGlobalCampaignDialog";
 import GlobalCampaignRowActions from "./GlobalCampaignRowActions";
+import RecordDonationDialog from "@/components/admin/regional/finances/RecordDonationDialog";
 import { useGlobalFundraisingCampaigns, useCampaignPledges } from "@/hooks/useGlobalFundraising";
 import { formatCurrency, formatWithCurrency } from "@/utils/currencyUtils";
 import { useFxConverterFor } from "@/hooks/useDisplayCurrency";
@@ -19,6 +20,7 @@ interface Props {
 
 const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
   const [createOpen, setCreateOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [showConverted, setShowConverted] = useState(false);
   const { data: campaigns = [], isLoading } = useGlobalFundraisingCampaigns("global");
   const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
@@ -115,9 +117,14 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
           <Switch id="gc-convert" checked={showConverted} onCheckedChange={setShowConverted} />
           <Label htmlFor="gc-convert" className="text-xs text-muted-foreground cursor-pointer">Show campaigns in {targetCode}</Label>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground">
-          <Plus className="mr-2 h-4 w-4" /> Create Campaign
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setDonateOpen(true)}>
+            <HandCoins className="mr-2 h-4 w-4" /> Record Donation
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 text-primary-foreground">
+            <Plus className="mr-2 h-4 w-4" /> Create Campaign
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
@@ -169,6 +176,7 @@ const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
       </div>
 
       <CreateGlobalCampaignDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <RecordDonationDialog open={donateOpen} onOpenChange={setDonateOpen} />
     </div>
   );
 };

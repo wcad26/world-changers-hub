@@ -1,25 +1,63 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Bed, Utensils, Heart, CalendarDays, Baby, ArrowLeft, Download } from "lucide-react";
-import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Users, Bed, Utensils, CalendarDays, Baby, ArrowLeft, Download, Search,
+  AlertTriangle, MapPin, UsersRound, Activity, ChevronDown,
+} from "lucide-react";
+import { format, parseISO, differenceInYears, eachDayOfInterval } from "date-fns";
+import {
+  ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis,
+  CartesianGrid, LineChart, Line, Legend,
+} from "recharts";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const calcAge = (dob?: string | null): number | null => {
   if (!dob) return null;
   const d = new Date(dob);
   if (isNaN(d.getTime())) return null;
-  const n = new Date();
-  let a = n.getFullYear() - d.getFullYear();
-  const m = n.getMonth() - d.getMonth();
-  if (m < 0 || (m === 0 && n.getDate() < d.getDate())) a--;
-  return a;
+  return differenceInYears(new Date(), d);
 };
+
+type AgeGroup = "adult" | "youth" | "child" | "unknown";
+const ageGroup = (age: number | null): AgeGroup => {
+  if (age === null) return "unknown";
+  if (age >= 18) return "adult";
+  if (age >= 15) return "youth";
+  return "child";
+};
+
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+const ALLERGEN_KEYWORDS = ["nut", "peanut", "gluten", "dairy", "milk", "lactose", "shellfish", "egg", "soy", "sesame", "fish", "wheat"];
+
+interface RegRow {
+  id: string;
+  event_id: string;
+  member_id: string | null;
+  group_id: string | null;
+  is_primary: boolean;
+  attending_with_family: boolean;
+  needs_lodging: boolean;
+  has_children: boolean;
+  email: string | null;
+  phone: string | null;
+  meal_preferences: string[] | null;
+  dietary_notes: string | null;
+  arrival_date: string | null;
+  departure_date: string | null;
+  pledge_amount: number | null;
+  members?: any;
+}
 
 export default function SpecialEventReport() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -30,264 +68,747 @@ export default function SpecialEventReport() {
     queryFn: async () => {
       const { data } = await supabase
         .from("events")
-        .select("*, fundraising_campaigns:linked_fundraising_campaign_id(*)")
+        .select("*")
         .eq("id", eventId!)
         .maybeSingle();
       return data;
     },
   });
 
-  const { data: registrations, isLoading } = useQuery({
+  const { data: registrations = [], isLoading } = useQuery({
     queryKey: ["special-event-registrations", eventId],
     enabled: !!eventId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("event_pre_registrations")
-        .select("*, members:member_id(id, member_id, member_type, region_id, profiles:profile_id(first_name, last_name, email, phone, date_of_birth, gender, address))")
+        .select(
+          "*, members:member_id(id, member_id, member_type, region_id, profiles:profile_id(first_name, last_name, email, phone, date_of_birth, gender, address), region:regions(name))"
+        )
         .eq("event_id", eventId!);
       if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const { data: donations } = useQuery({
-    queryKey: ["special-event-donations", (event as any)?.linked_fundraising_campaign_id],
-    enabled: !!(event as any)?.linked_fundraising_campaign_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("fundraising_donations")
-        .select("*")
-        .eq("campaign_id", (event as any).linked_fundraising_campaign_id);
-      return data || [];
+      return (data || []) as RegRow[];
     },
   });
 
   const ev: any = event;
-  const campaign: any = ev?.fundraising_campaigns ?? null;
 
-  const stats = useMemo(() => {
-    const regs = registrations || [];
-    const primary = regs.filter((r: any) => r.is_primary);
-    const totalPeople = regs.length;
-    const families = primary.filter((r: any) => r.attending_with_family).length;
-    const individuals = primary.length - families;
-
-    let adults = 0, children = 0;
-    for (const r of regs) {
-      const dob = r.members?.profiles?.date_of_birth;
-      const age = calcAge(dob);
-      if (age !== null && age < 16) children++;
-      else adults++;
-    }
-
-    const lodgingNeeded = primary.filter((r: any) => r.needs_lodging);
-    const totalBeds = lodgingNeeded.reduce((s: number, r: any) => s + (r.lodging_party_size || 1), 0);
-
-    const mealTotals: Record<string, number> = {};
-    regs.forEach((r: any) => (r.meal_preferences || []).forEach((m: string) => { mealTotals[m] = (mealTotals[m] || 0) + 1; }));
-
-    const totalPledged = primary.reduce((s: number, r: any) => s + Number(r.pledge_amount || 0), 0);
-    const totalReceived = (donations || []).reduce((s: number, d: any) => s + Number(d.amount || 0), 0);
-
-    // Gender
-    let male = 0, female = 0, unspec = 0;
-    regs.forEach((r: any) => {
-      const g = (r.members?.profiles?.gender || "").toLowerCase();
-      if (g === "male") male++;
-      else if (g === "female") female++;
-      else unspec++;
-    });
-
-    return { totalPeople, families, individuals, adults, children, lodgingNeeded: lodgingNeeded.length, totalBeds, mealTotals, totalPledged, totalReceived, male, female, unspec, target: ev?.attendance_target || null };
-  }, [registrations, donations, ev]);
-
-  const exportCsv = () => {
-    if (!registrations) return;
-    const headers = ["Name", "Member ID", "Type", "Email", "Phone", "Primary", "Family", "Lodging", "Party size", "Arrival", "Departure", "Meals", "Pledge"];
-    const rows = registrations.map((r: any) => {
+  // ---- Normalised attendees ----
+  const attendees = useMemo(() => {
+    return (registrations || []).map((r: any) => {
       const p = r.members?.profiles || {};
-      return [
-        `${p.last_name || ""} ${p.first_name || ""}`.trim(),
-        r.members?.member_id || "",
-        r.members?.member_type || "",
-        p.email || "",
-        p.phone || "",
-        r.is_primary ? "Yes" : "No",
-        r.attending_with_family ? "Yes" : "No",
-        r.needs_lodging ? "Yes" : "No",
-        r.lodging_party_size || "",
-        r.arrival_date || "",
-        r.departure_date || "",
-        (r.meal_preferences || []).join("; "),
-        r.pledge_amount || "",
-      ];
+      const age = calcAge(p.date_of_birth);
+      const name =
+        `${p.last_name || ""} ${p.first_name || ""}`.trim() ||
+        r.email ||
+        r.phone ||
+        "Unknown";
+      const region = r.members?.region?.name || "—";
+      const type: "member" | "visitor" = r.member_id ? "member" : "visitor";
+      const arrival = r.arrival_date ? parseISO(r.arrival_date) : null;
+      const departure = r.departure_date ? parseISO(r.departure_date) : null;
+      const nights =
+        arrival && departure
+          ? Math.max(0, Math.round((departure.getTime() - arrival.getTime()) / 86400000))
+          : 0;
+      return {
+        ...r,
+        name,
+        first_name: p.first_name || "",
+        last_name: p.last_name || "",
+        region,
+        type,
+        age,
+        ageGroup: ageGroup(age),
+        gender: (p.gender || "").toLowerCase(),
+        email: p.email || r.email || "",
+        phone: p.phone || r.phone || "",
+        memberCode: r.members?.member_id || "",
+        arrival,
+        departure,
+        nights,
+        allergyFlag: !!(r.dietary_notes && r.dietary_notes.trim().length > 0),
+      };
     });
-    const csv = [headers, ...rows].map(r => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  }, [registrations]);
+
+  // ---- Global filters ----
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [ageFilter, setAgeFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [lodgingFilter, setLodgingFilter] = useState("all");
+  const [allergyFilter, setAllergyFilter] = useState("all");
+  const [mealFilter, setMealFilter] = useState("all");
+
+  const regions = useMemo(
+    () => Array.from(new Set(attendees.map((a) => a.region))).filter(Boolean).sort(),
+    [attendees]
+  );
+  const mealOptions = useMemo(() => {
+    const s = new Set<string>();
+    attendees.forEach((a) => (a.meal_preferences || []).forEach((m: string) => s.add(m)));
+    return Array.from(s).sort();
+  }, [attendees]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return attendees.filter((a) => {
+      if (q && !(a.name.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q) || a.phone?.toLowerCase().includes(q))) return false;
+      if (regionFilter !== "all" && a.region !== regionFilter) return false;
+      if (typeFilter !== "all" && a.type !== typeFilter) return false;
+      if (ageFilter !== "all" && a.ageGroup !== ageFilter) return false;
+      if (genderFilter !== "all" && a.gender !== genderFilter) return false;
+      if (lodgingFilter === "yes" && !a.needs_lodging) return false;
+      if (lodgingFilter === "no" && a.needs_lodging) return false;
+      if (allergyFilter === "yes" && !a.allergyFlag) return false;
+      if (allergyFilter === "no" && a.allergyFlag) return false;
+      if (mealFilter !== "all" && !(a.meal_preferences || []).includes(mealFilter)) return false;
+      return true;
+    });
+  }, [attendees, search, regionFilter, typeFilter, ageFilter, genderFilter, lodgingFilter, allergyFilter, mealFilter]);
+
+  // ---- KPIs ----
+  const stats = useMemo(() => {
+    const total = filtered.length;
+    const groups = new Map<string, any[]>();
+    filtered.forEach((a) => {
+      const key = a.group_id || `_solo_${a.id}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(a);
+    });
+    const families = Array.from(groups.values()).filter((g) => g.length > 1).length;
+    const individuals = Array.from(groups.values()).filter((g) => g.length === 1).length;
+
+    let adults = 0, youth = 0, children = 0, unknownAge = 0;
+    let male = 0, female = 0, otherGender = 0;
+    let lodgingPeople = 0, totalNights = 0;
+    let lodgingFamilies = 0;
+    filtered.forEach((a) => {
+      if (a.ageGroup === "adult") adults++;
+      else if (a.ageGroup === "youth") youth++;
+      else if (a.ageGroup === "child") children++;
+      else unknownAge++;
+      if (a.gender === "male") male++;
+      else if (a.gender === "female") female++;
+      else otherGender++;
+      if (a.needs_lodging) lodgingPeople++;
+      totalNights += a.nights;
+    });
+    groups.forEach((g) => {
+      if (g.some((a) => a.needs_lodging)) lodgingFamilies++;
+    });
+
+    return {
+      total, families, individuals, adults, youth, children, unknownAge,
+      male, female, otherGender, lodgingPeople, lodgingFamilies, totalNights,
+    };
+  }, [filtered]);
+
+  // ---- Day rollups ----
+  const dayRollup = useMemo(() => {
+    if (filtered.length === 0) return [] as Array<{ date: string; attendance: number; lodging: number }>;
+    let min = filtered[0]?.arrival || null;
+    let max = filtered[0]?.departure || filtered[0]?.arrival || null;
+    filtered.forEach((a) => {
+      if (a.arrival && (!min || a.arrival < min)) min = a.arrival;
+      if (a.departure && (!max || a.departure > max)) max = a.departure;
+      if (a.arrival && (!max || a.arrival > max)) max = a.arrival;
+    });
+    if (!min || !max) return [];
+    const days = eachDayOfInterval({ start: min, end: max });
+    return days.map((d) => {
+      let attendance = 0, lodging = 0;
+      filtered.forEach((a) => {
+        if (!a.arrival) return;
+        const dep = a.departure || a.arrival;
+        if (d >= a.arrival && d <= dep) {
+          attendance++;
+          if (a.needs_lodging) lodging++;
+        }
+      });
+      return { date: format(d, "MMM d"), attendance, lodging };
+    });
+  }, [filtered]);
+
+  // ---- Meal day rollup ----
+  const mealDayRollup = useMemo(() => {
+    if (filtered.length === 0 || mealOptions.length === 0) return [] as any[];
+    let min: Date | null = null;
+    let max: Date | null = null;
+    filtered.forEach((a) => {
+      if (a.arrival && (!min || a.arrival < min)) min = a.arrival;
+      if (a.departure && (!max || a.departure > max)) max = a.departure;
+      if (a.arrival && (!max || a.arrival > max)) max = a.arrival;
+    });
+    if (!min || !max) return [];
+    const days = eachDayOfInterval({ start: min, end: max });
+    return days.map((d) => {
+      const row: any = { date: format(d, "MMM d") };
+      mealOptions.forEach((m) => (row[m] = 0));
+      filtered.forEach((a) => {
+        if (!a.arrival) return;
+        const dep = a.departure || a.arrival;
+        if (d >= a.arrival && d <= dep) {
+          (a.meal_preferences || []).forEach((m: string) => { row[m] = (row[m] || 0) + 1; });
+        }
+      });
+      return row;
+    });
+  }, [filtered, mealOptions]);
+
+  // ---- Families grouped ----
+  const families = useMemo(() => {
+    const map = new Map<string, any[]>();
+    filtered.forEach((a) => {
+      if (!a.group_id) return;
+      if (!map.has(a.group_id)) map.set(a.group_id, []);
+      map.get(a.group_id)!.push(a);
+    });
+    return Array.from(map.entries())
+      .map(([id, members]) => {
+        const primary = members.find((m) => m.is_primary) || members[0];
+        const adults = members.filter((m) => m.ageGroup === "adult").length;
+        const youth = members.filter((m) => m.ageGroup === "youth").length;
+        const children = members.filter((m) => m.ageGroup === "child").length;
+        const arrivals = members.map((m) => m.arrival).filter(Boolean);
+        const departures = members.map((m) => m.departure).filter(Boolean);
+        const arrival = arrivals.length ? new Date(Math.min(...arrivals.map((d: Date) => d.getTime()))) : null;
+        const departure = departures.length ? new Date(Math.max(...departures.map((d: Date) => d.getTime()))) : null;
+        const nights = arrival && departure ? Math.max(0, Math.round((departure.getTime() - arrival.getTime()) / 86400000)) : 0;
+        const needsLodging = members.some((m) => m.needs_lodging);
+        const meals = new Set<string>();
+        members.forEach((m) => (m.meal_preferences || []).forEach((mp: string) => meals.add(mp)));
+        const dietary = members.filter((m) => m.dietary_notes).map((m) => `${m.first_name}: ${m.dietary_notes}`);
+        return {
+          id, members, primary, size: members.length, adults, youth, children,
+          arrival, departure, nights, needsLodging,
+          meals: Array.from(meals), dietary,
+          region: primary?.region || "—",
+        };
+      })
+      .sort((a, b) => b.size - a.size);
+  }, [filtered]);
+
+  const lodgingIndividuals = useMemo(
+    () => filtered.filter((a) => !a.group_id && a.needs_lodging),
+    [filtered]
+  );
+
+  // ---- CSV export ----
+  const exportCsv = () => {
+    const headers = [
+      "Name", "Region", "Type", "Age", "Age Group", "Gender", "Email", "Phone",
+      "Arrival", "Departure", "Nights", "Needs Lodging", "Family Group", "Meal Preferences", "Dietary Notes",
+    ];
+    const rows = filtered.map((a) => [
+      a.name, a.region, a.type, a.age ?? "", a.ageGroup, a.gender || "—",
+      a.email, a.phone, a.arrival_date || "", a.departure_date || "", a.nights,
+      a.needs_lodging ? "Yes" : "No", a.group_id || "—",
+      (a.meal_preferences || []).join("; "), a.dietary_notes || "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c: any) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${ev?.name || "special-event"}-registrations.csv`;
+    a.download = `${ev?.name || "special-event"}-attendees.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  if (!ev) {
-    return <div className="p-6"><Skeleton className="h-24 w-full" /></div>;
-  }
+  if (!ev) return <div className="p-6"><Skeleton className="h-24 w-full" /></div>;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <Button asChild variant="ghost" size="sm" className="mb-2">
+          <Button asChild variant="ghost" size="sm" className="mb-2 text-muted-foreground">
             <Link to="/admin/super/events"><ArrowLeft className="h-4 w-4 mr-1" />Back to events</Link>
           </Button>
-          <h1 className="text-2xl font-semibold">{ev.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            Special Event Report · {format(new Date(ev.start_datetime), "PPP")}
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{ev.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+            <CalendarDays className="h-4 w-4" />
+            {format(new Date(ev.start_datetime), "PPP")}
             {ev.end_datetime ? ` – ${format(new Date(ev.end_datetime), "PPP")}` : ""}
+            {ev.location && <span className="ml-2 inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{ev.location}</span>}
           </p>
         </div>
-        <Button onClick={exportCsv} variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export CSV</Button>
+        <Button onClick={exportCsv} variant="outline" size="sm">
+          <Download className="h-4 w-4 mr-2" />Export CSV
+        </Button>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPI icon={Users} label="Total Registered" value={stats.totalPeople} sub={`${stats.individuals} individuals · ${stats.families} families`} />
-        <KPI icon={Baby} label="Adults / Children" value={`${stats.adults} / ${stats.children}`} sub={`Target: ${stats.target || "—"}`} />
-        <KPI icon={Bed} label="Beds Needed" value={stats.totalBeds} sub={`${stats.lodgingNeeded} parties need lodging`} />
-        <KPI icon={Heart} label="Pledged" value={campaign ? `${campaign.currency_code} ${stats.totalPledged.toLocaleString()}` : "—"} sub={campaign ? `Received: ${campaign.currency_code} ${stats.totalReceived.toLocaleString()}` : "No campaign linked"} />
+      {/* KPIs */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} indiv · ${stats.families} families`} />
+        <KPI icon={Activity} label="Adults / Youth / Children" value={`${stats.adults} / ${stats.youth} / ${stats.children}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown` : "≥18 / 15–17 / <15"} />
+        <KPI icon={UsersRound} label="Gender" value={`${stats.male} M · ${stats.female} F`} sub={stats.otherGender > 0 ? `${stats.otherGender} other/—` : "—"} />
+        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingFamilies} families/parties`} />
+        <KPI icon={CalendarDays} label="Person-nights" value={stats.totalNights} sub="Sum of nights across attendees" />
+        <KPI icon={Utensils} label="With Dietary Notes" value={attendees.filter((a) => a.allergyFlag).length} sub="Allergies & preferences" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Utensils className="h-4 w-4" /> Meal preferences</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(stats.mealTotals).length === 0 ? (
-              <p className="text-sm text-muted-foreground">No meal preferences submitted.</p>
+      {/* Filter bar */}
+      <Card className="bg-card/60 backdrop-blur-sm border-border/40">
+        <CardContent className="p-4 grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+          <div className="relative col-span-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search name, email, phone…" className="pl-9 bg-background/60 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <FilterSelect value={regionFilter} onChange={setRegionFilter} placeholder="Region"
+            options={[{ value: "all", label: "All regions" }, ...regions.map((r) => ({ value: r, label: r }))]} />
+          <FilterSelect value={typeFilter} onChange={setTypeFilter} placeholder="Type"
+            options={[{ value: "all", label: "All types" }, { value: "member", label: "Members" }, { value: "visitor", label: "Visitors" }]} />
+          <FilterSelect value={ageFilter} onChange={setAgeFilter} placeholder="Age"
+            options={[{ value: "all", label: "All ages" }, { value: "adult", label: "Adults (≥18)" }, { value: "youth", label: "Youth (15-17)" }, { value: "child", label: "Children (<15)" }, { value: "unknown", label: "Unknown" }]} />
+          <FilterSelect value={genderFilter} onChange={setGenderFilter} placeholder="Gender"
+            options={[{ value: "all", label: "All genders" }, { value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
+          <FilterSelect value={lodgingFilter} onChange={setLodgingFilter} placeholder="Lodging"
+            options={[{ value: "all", label: "Any" }, { value: "yes", label: "Needs lodging" }, { value: "no", label: "No lodging" }]} />
+          <FilterSelect value={allergyFilter} onChange={setAllergyFilter} placeholder="Dietary"
+            options={[{ value: "all", label: "Any" }, { value: "yes", label: "Has notes" }, { value: "no", label: "No notes" }]} />
+          <FilterSelect value={mealFilter} onChange={setMealFilter} placeholder="Meal"
+            options={[{ value: "all", label: "All meals" }, ...mealOptions.map((m) => ({ value: m, label: m }))]} />
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="bg-card/60 backdrop-blur-sm border border-border/30">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="attendees">Attendees</TabsTrigger>
+          <TabsTrigger value="families">Families & Lodging</TabsTrigger>
+          <TabsTrigger value="meals">Meals & Dietary</TabsTrigger>
+          <TabsTrigger value="travel">Travel & Schedule</TabsTrigger>
+        </TabsList>
+
+        {/* OVERVIEW */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ChartCard title="Age groups">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie dataKey="value" data={[
+                    { name: "Adults", value: stats.adults },
+                    { name: "Youth", value: stats.youth },
+                    { name: "Children", value: stats.children },
+                    ...(stats.unknownAge > 0 ? [{ name: "Unknown", value: stats.unknownAge }] : []),
+                  ]} outerRadius={80} label>
+                    {[stats.adults, stats.youth, stats.children, stats.unknownAge].map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Gender split">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie dataKey="value" data={[
+                    { name: "Male", value: stats.male },
+                    { name: "Female", value: stats.female },
+                    ...(stats.otherGender > 0 ? [{ name: "Other/—", value: stats.otherGender }] : []),
+                  ]} outerRadius={80} label>
+                    {[stats.male, stats.female, stats.otherGender].map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="By region">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={regions.map((r) => ({ region: r, count: filtered.filter((a) => a.region === r).length }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="region" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          <ChartCard title="Daily attendance & lodging need">
+            {dayRollup.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No arrival/departure data captured yet.</p>
             ) : (
-              <Table>
-                <TableHeader><TableRow><TableHead>Preference</TableHead><TableHead className="text-right">Count</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {Object.entries(stats.mealTotals).sort((a, b) => b[1] - a[1]).map(([k, v]) => (
-                    <TableRow key={k}><TableCell>{k}</TableCell><TableCell className="text-right">{v}</TableCell></TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={dayRollup}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="attendance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="lodging" stroke="hsl(var(--chart-4))" strokeWidth={2.5} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
             )}
-          </CardContent>
-        </Card>
+          </ChartCard>
+        </TabsContent>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Heart className="h-4 w-4" /> Fundraising</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {!campaign ? (
-              <p className="text-muted-foreground">No fundraising campaign is linked to this event.</p>
-            ) : (
-              <>
-                <div className="flex items-center justify-between"><span>Campaign</span><span className="font-medium">{campaign.name}</span></div>
-                <div className="flex items-center justify-between"><span>Goal</span><span className="font-medium">{campaign.currency_code} {Number(campaign.goal || 0).toLocaleString()}</span></div>
-                <div className="flex items-center justify-between"><span>Total pledged via event</span><span className="font-medium">{campaign.currency_code} {stats.totalPledged.toLocaleString()}</span></div>
-                <div className="flex items-center justify-between"><span>Total received</span><span className="font-medium">{campaign.currency_code} {Number(campaign.raised || 0).toLocaleString()}</span></div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${Math.min(100, ((Number(campaign.raised || 0) + stats.totalPledged) / Math.max(1, Number(campaign.goal || 1))) * 100)}%` }} />
+        {/* ATTENDEES */}
+        <TabsContent value="attendees">
+          <Card>
+            <CardHeader><CardTitle className="text-base">Attendees ({filtered.length})</CardTitle></CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border/30">
+                  <Table>
+                    <TableHeader className="bg-muted/40">
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Region</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Age</TableHead>
+                        <TableHead>Gender</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Arrival</TableHead>
+                        <TableHead>Departure</TableHead>
+                        <TableHead className="text-right">Nights</TableHead>
+                        <TableHead>Family</TableHead>
+                        <TableHead>Meals</TableHead>
+                        <TableHead>Allergy</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map((a) => (
+                        <TableRow key={a.id}>
+                          <TableCell>
+                            <div className="font-medium">{a.name}</div>
+                            {a.email && <div className="text-xs text-muted-foreground">{a.email}</div>}
+                          </TableCell>
+                          <TableCell className="text-sm">{a.region}</TableCell>
+                          <TableCell><Badge variant={a.type === "member" ? "default" : "secondary"} className="capitalize">{a.type}</Badge></TableCell>
+                          <TableCell className="text-sm">
+                            {a.age ?? "—"}
+                            <Badge variant="outline" className="ml-1 capitalize text-[10px]">{a.ageGroup}</Badge>
+                          </TableCell>
+                          <TableCell className="capitalize text-sm">{a.gender || "—"}</TableCell>
+                          <TableCell className="text-sm">{a.phone || "—"}</TableCell>
+                          <TableCell className="text-sm">{a.arrival_date || "—"}</TableCell>
+                          <TableCell className="text-sm">{a.departure_date || "—"}</TableCell>
+                          <TableCell className="text-right tabular-nums">{a.nights || "—"}</TableCell>
+                          <TableCell>{a.group_id ? <Badge variant="outline">{a.is_primary ? "Primary" : "Family"}</Badge> : "—"}</TableCell>
+                          <TableCell className="text-xs">{(a.meal_preferences || []).join(", ") || "—"}</TableCell>
+                          <TableCell>{a.allergyFlag ? <AlertTriangle className="h-4 w-4 text-amber-500" /> : "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                      {filtered.length === 0 && (
+                        <TableRow><TableCell colSpan={12} className="text-center text-muted-foreground py-8">No attendees match the filters.</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-                <Button asChild variant="outline" size="sm"><Link to={`/admin/super/fundraising`}>Manage campaign</Link></Button>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Lodging breakdown */}
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Bed className="h-4 w-4" /> Lodging requests</CardTitle></CardHeader>
-        <CardContent>
-          {(registrations || []).filter((r: any) => r.is_primary && r.needs_lodging).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No lodging requests yet.</p>
-          ) : (
-            <Table>
-              <TableHeader><TableRow><TableHead>Primary attendee</TableHead><TableHead className="text-right">Party size</TableHead><TableHead>Arrival</TableHead><TableHead>Departure</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {(registrations || []).filter((r: any) => r.is_primary && r.needs_lodging).map((r: any) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.members?.profiles?.last_name} {r.members?.profiles?.first_name}</TableCell>
-                    <TableCell className="text-right">{r.lodging_party_size || 1}</TableCell>
-                    <TableCell>{r.arrival_date || "—"}</TableCell>
-                    <TableCell>{r.departure_date || "—"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* All registrants */}
-      <Card>
-        <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" /> All registrations</CardTitle></CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <Skeleton className="h-32 w-full" />
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Member ID</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Pledge</TableHead>
-                  <TableHead>Group</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(registrations || []).map((r: any) => {
-                  const p = r.members?.profiles || {};
-                  const age = calcAge(p.date_of_birth);
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell>
-                        <div className="font-medium">{p.last_name} {p.first_name}</div>
-                        <div className="flex gap-1 mt-1">
-                          {r.is_primary && <Badge variant="secondary">Primary</Badge>}
-                          {age !== null && age < 16 && <Badge className="bg-orange-500/15 text-orange-700 border-orange-500/30">Child</Badge>}
+        {/* FAMILIES */}
+        <TabsContent value="families" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <UsersRound className="h-4 w-4" /> Family Groups ({families.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {families.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No family groups in the current filter.</p>
+              ) : (
+                <div className="space-y-3">
+                  {families.map((fam) => (
+                    <Collapsible key={fam.id} className="rounded-xl border border-border/30 bg-card/40">
+                      <CollapsibleTrigger className="w-full flex items-center justify-between p-4 group">
+                        <div className="flex items-center gap-3 flex-wrap text-left">
+                          <span className="font-semibold">{fam.primary?.name || "Family"}</span>
+                          <Badge variant="outline">{fam.size} people</Badge>
+                          <Badge variant="secondary">{fam.adults} adults · {fam.youth} youth · {fam.children} children</Badge>
+                          {fam.needsLodging && <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30"><Bed className="h-3 w-3 mr-1" />Needs lodging</Badge>}
+                          <span className="text-xs text-muted-foreground">{fam.region}</span>
+                          {fam.arrival && fam.departure && (
+                            <span className="text-xs text-muted-foreground">{format(fam.arrival, "MMM d")} → {format(fam.departure, "MMM d")} ({fam.nights}n)</span>
+                          )}
                         </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{r.members?.member_id}</TableCell>
-                      <TableCell><Badge variant="outline">{r.members?.member_type}</Badge></TableCell>
-                      <TableCell className="text-sm">{p.email}</TableCell>
-                      <TableCell className="text-sm">{p.phone}</TableCell>
-                      <TableCell className="text-sm">{r.pledge_amount ? `${r.pledge_currency_code || ""} ${Number(r.pledge_amount).toLocaleString()}` : "—"}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{r.group_id ? r.group_id.slice(0, 8) : "—"}</TableCell>
-                    </TableRow>
-                  );
-                })}
-                {(!registrations || registrations.length === 0) && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">No registrations yet.</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="px-4 pb-4">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Name</TableHead>
+                              <TableHead>Age</TableHead>
+                              <TableHead>Gender</TableHead>
+                              <TableHead>Meals</TableHead>
+                              <TableHead>Dietary notes</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {fam.members.map((m: any) => (
+                              <TableRow key={m.id}>
+                                <TableCell>
+                                  {m.name} {m.is_primary && <Badge variant="secondary" className="ml-1">Primary</Badge>}
+                                </TableCell>
+                                <TableCell>{m.age ?? "—"} <span className="text-xs text-muted-foreground capitalize">({m.ageGroup})</span></TableCell>
+                                <TableCell className="capitalize">{m.gender || "—"}</TableCell>
+                                <TableCell className="text-xs">{(m.meal_preferences || []).join(", ") || "—"}</TableCell>
+                                <TableCell className="text-xs">{m.dietary_notes || "—"}</TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bed className="h-4 w-4" /> Individuals needing lodging ({lodgingIndividuals.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {lodgingIndividuals.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No solo registrants need lodging.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Gender</TableHead><TableHead>Arrival</TableHead><TableHead>Departure</TableHead><TableHead className="text-right">Nights</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lodgingIndividuals.map((a) => (
+                      <TableRow key={a.id}>
+                        <TableCell>{a.name}</TableCell>
+                        <TableCell>{a.region}</TableCell>
+                        <TableCell className="capitalize">{a.gender || "—"}</TableCell>
+                        <TableCell>{a.arrival_date || "—"}</TableCell>
+                        <TableCell>{a.departure_date || "—"}</TableCell>
+                        <TableCell className="text-right tabular-nums">{a.nights || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* MEALS */}
+        <TabsContent value="meals" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <ChartCard title="Meal preferences overall">
+              {mealOptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">No meal preferences captured.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={mealOptions.map((m) => ({ meal: m, count: filtered.filter((a) => (a.meal_preferences || []).includes(m)).length }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <XAxis dataKey="meal" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+
+            <ChartCard title="Daily meal demand">
+              {mealDayRollup.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">Needs arrival/departure dates.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={mealDayRollup}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    {mealOptions.map((m, i) => (
+                      <Bar key={m} dataKey={m} stackId="a" fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </ChartCard>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-amber-500" /> Allergies & dietary notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filtered.filter((a) => a.allergyFlag).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No dietary notes submitted in the current filter.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Meals</TableHead><TableHead>Notes</TableHead></TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.filter((a) => a.allergyFlag).map((a) => {
+                      const note = a.dietary_notes || "";
+                      const lower = note.toLowerCase();
+                      const matched = ALLERGEN_KEYWORDS.filter((k) => lower.includes(k));
+                      return (
+                        <TableRow key={a.id}>
+                          <TableCell className="font-medium">{a.name}</TableCell>
+                          <TableCell className="text-sm">{a.region}</TableCell>
+                          <TableCell className="text-xs">{(a.meal_preferences || []).join(", ") || "—"}</TableCell>
+                          <TableCell className="text-sm">
+                            <div>{note}</div>
+                            {matched.length > 0 && (
+                              <div className="mt-1 flex gap-1 flex-wrap">
+                                {matched.map((m) => (
+                                  <Badge key={m} className="bg-amber-500/15 text-amber-700 border-amber-500/30 capitalize">{m}</Badge>
+                                ))}
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TRAVEL */}
+        <TabsContent value="travel" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Arrivals by day</CardTitle></CardHeader>
+              <CardContent>
+                <ArrivalDepartureTable rows={filtered} field="arrival_date" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle className="text-base">Departures by day</CardTitle></CardHeader>
+              <CardContent>
+                <ArrivalDepartureTable rows={filtered} field="departure_date" />
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader><CardTitle className="text-base">Nights distribution</CardTitle></CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={nightsHistogram(filtered)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <XAxis dataKey="nights" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
 function KPI({ icon: Icon, label, value, sub }: { icon: any; label: string; value: any; sub: string }) {
   return (
-    <Card>
-      <CardContent className="p-5">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary"><Icon className="h-5 w-5" /></div>
-          <span className="text-sm text-muted-foreground">{label}</span>
-        </div>
-        <p className="text-xl font-bold tabular-nums">{value}</p>
-        <p className="text-xs text-muted-foreground mt-1">{sub}</p>
-      </CardContent>
+    <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
+      <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <div className="font-semibold tabular-nums text-foreground text-lg">{value}</div>
+      <div className="mt-1 text-xs text-muted-foreground">{sub}</div>
+    </div>
+  );
+}
+
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Card className="bg-card/60 backdrop-blur-sm border-border/40">
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent>{children}</CardContent>
     </Card>
   );
+}
+
+function FilterSelect({
+  value, onChange, placeholder, options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className="bg-background/60 border-border/50"><SelectValue placeholder={placeholder} /></SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value || "_blank"} value={o.value || "_blank"}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function ArrivalDepartureTable({ rows, field }: { rows: any[]; field: "arrival_date" | "departure_date" }) {
+  const buckets = new Map<string, any[]>();
+  rows.forEach((r) => {
+    const k = r[field] || "—";
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k)!.push(r);
+  });
+  const entries = Array.from(buckets.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  if (entries.length === 0 || (entries.length === 1 && entries[0][0] === "—")) {
+    return <p className="text-sm text-muted-foreground">No dates captured.</p>;
+  }
+  return (
+    <Table>
+      <TableHeader><TableRow><TableHead>Date</TableHead><TableHead className="text-right">People</TableHead><TableHead>Sample</TableHead></TableRow></TableHeader>
+      <TableBody>
+        {entries.map(([date, list]) => (
+          <TableRow key={date}>
+            <TableCell className="font-medium">{date}</TableCell>
+            <TableCell className="text-right tabular-nums">{list.length}</TableCell>
+            <TableCell className="text-xs text-muted-foreground">
+              {list.slice(0, 3).map((a) => a.name).join(", ")}{list.length > 3 ? ` +${list.length - 3} more` : ""}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function nightsHistogram(rows: any[]) {
+  const buckets = new Map<number, number>();
+  rows.forEach((r) => {
+    if (r.nights > 0) buckets.set(r.nights, (buckets.get(r.nights) || 0) + 1);
+  });
+  return Array.from(buckets.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([nights, count]) => ({ nights: `${nights}n`, count }));
 }

@@ -12,7 +12,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useFundraisingCampaigns, useCreateDonation } from "@/hooks/useFundraisingCampaigns";
+import { useCreateDonation } from "@/hooks/useFundraisingCampaigns";
+import { useGlobalFundraisingCampaigns } from "@/hooks/useGlobalFundraising";
 import { useSearchDonors, type DonorRow } from "@/hooks/useDonors";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
@@ -20,20 +21,30 @@ import { getCurrencySymbol } from "@/utils/currencyUtils";
 import { cn } from "@/lib/utils";
 import RegisterDonorDialog from "./RegisterDonorDialog";
 
+interface RedeemPledge {
+  pre_registration_id: string;
+  member_id: string | null;
+  donor_name: string;
+  donor_email: string | null;
+  remaining: number;
+  currency_code: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCampaignId?: string;
+  redeemPledge?: RedeemPledge | null;
 }
 
 type DonorType = "member" | "external" | "anonymous";
 
-const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCampaignId }) => {
+const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCampaignId, redeemPledge }) => {
   const { toast } = useToast();
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const symbol = getCurrencySymbol(regionCurrency);
-  const { data: campaigns = [] } = useFundraisingCampaigns();
+  const { data: campaigns = [] } = useGlobalFundraisingCampaigns("all");
   const createDonation = useCreateDonation();
 
   const [campaignId, setCampaignId] = useState<string>(defaultCampaignId || "");
@@ -60,10 +71,20 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   useEffect(() => {
     if (open) {
       setCampaignId(defaultCampaignId || "");
-      setDonorType("member");
-      setMemberId(""); setMemberLabel(""); setMemberSearch("");
-      setDonorId(""); setDonorLabel(""); setDonorEmail(""); setDonorSearch("");
-      setAmount(0);
+      if (redeemPledge) {
+        setDonorType(redeemPledge.member_id ? "member" : "external");
+        setMemberId(redeemPledge.member_id || "");
+        setMemberLabel(redeemPledge.member_id ? redeemPledge.donor_name : "");
+        setDonorId("");
+        setDonorLabel(redeemPledge.member_id ? "" : redeemPledge.donor_name);
+        setDonorEmail(redeemPledge.donor_email || "");
+        setAmount(Math.max(0, Math.round(redeemPledge.remaining)));
+      } else {
+        setDonorType("member");
+        setMemberId(""); setMemberLabel(""); setMemberSearch("");
+        setDonorId(""); setDonorLabel(""); setDonorEmail(""); setDonorSearch("");
+        setAmount(0);
+      }
       setMessage("");
       setDate(new Date().toISOString().slice(0, 10));
     }
@@ -97,7 +118,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
       toast({ title: "Donor required", description: "Select a member or change donor type.", variant: "destructive" });
       return;
     }
-    if (donorType === "external" && !donorId) {
+    if (donorType === "external" && !donorId && !redeemPledge) {
       toast({ title: "Donor required", description: "Select a donor or register a new one.", variant: "destructive" });
       return;
     }
@@ -107,12 +128,13 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
         amount,
         donor_name: donorType === "anonymous" ? null : (donorType === "member" ? memberLabel : donorLabel) || null,
         donor_email: donorType === "external" ? (donorEmail || null) : null,
-        donor_id: donorType === "external" ? donorId : null,
+        donor_id: donorType === "external" ? (donorId || null) : null,
         member_id: donorType === "member" ? memberId : null,
         message: message.trim() || null,
         anonymous: donorType === "anonymous",
         donation_date: new Date(date).toISOString(),
         currency_code: currencyCode,
+        event_pre_registration_id: redeemPledge?.pre_registration_id || null,
       });
       toast({ title: "Donation recorded", description: `${symbol} ${amount.toLocaleString("en-US")} added to the campaign.` });
       onOpenChange(false);
@@ -160,9 +182,12 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
                   {campaigns.length === 0 && (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">No campaigns available</div>
                   )}
-                  {campaigns.map(c => (
+                  {campaigns.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name} <span className="text-muted-foreground text-xs ml-1">· {c.status}</span>
+                      {c.name}
+                      <span className="text-muted-foreground text-xs ml-1">
+                        · {c.region?.name || "Global"} · {c.status}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
