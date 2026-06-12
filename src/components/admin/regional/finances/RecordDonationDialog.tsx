@@ -71,10 +71,20 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   useEffect(() => {
     if (open) {
       setCampaignId(defaultCampaignId || "");
-      setDonorType("member");
-      setMemberId(""); setMemberLabel(""); setMemberSearch("");
-      setDonorId(""); setDonorLabel(""); setDonorEmail(""); setDonorSearch("");
-      setAmount(0);
+      if (redeemPledge) {
+        setDonorType(redeemPledge.member_id ? "member" : "external");
+        setMemberId(redeemPledge.member_id || "");
+        setMemberLabel(redeemPledge.member_id ? redeemPledge.donor_name : "");
+        setDonorId("");
+        setDonorLabel(redeemPledge.member_id ? "" : redeemPledge.donor_name);
+        setDonorEmail(redeemPledge.donor_email || "");
+        setAmount(Math.max(0, Math.round(redeemPledge.remaining)));
+      } else {
+        setDonorType("member");
+        setMemberId(""); setMemberLabel(""); setMemberSearch("");
+        setDonorId(""); setDonorLabel(""); setDonorEmail(""); setDonorSearch("");
+        setAmount(0);
+      }
       setMessage("");
       setDate(new Date().toISOString().slice(0, 10));
     }
