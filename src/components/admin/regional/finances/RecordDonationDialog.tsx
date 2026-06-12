@@ -21,10 +21,20 @@ import { getCurrencySymbol } from "@/utils/currencyUtils";
 import { cn } from "@/lib/utils";
 import RegisterDonorDialog from "./RegisterDonorDialog";
 
+interface RedeemPledge {
+  pre_registration_id: string;
+  member_id: string | null;
+  donor_name: string;
+  donor_email: string | null;
+  remaining: number;
+  currency_code: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultCampaignId?: string;
+  redeemPledge?: RedeemPledge | null;
 }
 
 type DonorType = "member" | "external" | "anonymous";
