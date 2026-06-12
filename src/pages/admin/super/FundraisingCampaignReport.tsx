@@ -301,44 +301,7 @@ const SuperFundraisingCampaignReport: React.FC = () => {
         )}
       </div>
 
-      <Collapsible defaultOpen={false} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
-        <CollapsibleTrigger className="w-full flex items-center justify-between p-6 group">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-primary" />
-            <h3 className="text-base font-semibold">Top donors</h3>
-            <span className="text-xs text-muted-foreground">({topDonors.length})</span>
-          </div>
-          <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="px-6 pb-6">
-          {topDonors.length === 0 ? (
-            <p className="py-8 text-center text-muted-foreground text-sm">No donors yet.</p>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-border/30">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="border-border/30 hover:bg-transparent">
-                    <TableHead className="w-10">#</TableHead>
-                    <TableHead>Donor</TableHead>
-                    <TableHead className="text-right">Donations</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topDonors.map((d, i) => (
-                    <TableRow key={d.key} className="border-border/20">
-                      <TableCell className="text-muted-foreground">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{d.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{d.count}</TableCell>
-                      <TableCell className="text-right tabular-nums font-semibold text-green-600">{fc(d.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CollapsibleContent>
-      </Collapsible>
+      <PledgesCard campaignId={campaignId || ""} />
 
       {/* All donations */}
       <Collapsible defaultOpen={false} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm">
