@@ -3,19 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Download, Search, MoreVertical, Eye, Users } from 'lucide-react';
+import { Download, Search, MoreVertical, Eye, Users, Pen, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAllMembers } from '@/hooks/useAllMembers';
 import { useAllRegions } from '@/hooks/useAllRegions';
+import { useDeleteMember } from '@/hooks/useMembers';
 import { buildChildrenSet } from '@/utils/childUtils';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import GlobalMemberKPICards from '@/components/admin/super/GlobalMemberKPICards';
+import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 
 const SuperMembers: React.FC = () => {
   const navigate = useNavigate();
@@ -26,6 +30,21 @@ const SuperMembers: React.FC = () => {
 
   const { data: regions } = useAllRegions();
   const { data: members, isLoading, error } = useAllMembers({});
+  const [editMember, setEditMember] = React.useState<any | null>(null);
+  const [memberToDelete, setMemberToDelete] = React.useState<any | null>(null);
+  const deleteMutation = useDeleteMember();
+
+  const handleDeleteMember = async () => {
+    if (!memberToDelete?.profiles?.id) return;
+    try {
+      await deleteMutation.mutateAsync(memberToDelete.profiles.id);
+      toast.success('Member deleted successfully');
+      setMemberToDelete(null);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to delete member');
+    }
+  };
 
   const memberIds = React.useMemo(() => members?.map(m => m.id) || [], [members]);
   const sortedKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
@@ -274,6 +293,15 @@ const SuperMembers: React.FC = () => {
                               <DropdownMenuItem onClick={() => navigate(`/admin/super/members/${member.id}`)}>
                                 <Eye className="h-4 w-4 mr-2" /> View
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditMember(member)}>
+                                <Pen className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setMemberToDelete(member)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -288,8 +316,41 @@ const SuperMembers: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle>Edit Member</DialogTitle>
+            <DialogDescription>Update member information and details.</DialogDescription>
+          </DialogHeader>
+          {editMember && (
+            <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete {memberToDelete?.profiles?.last_name} {memberToDelete?.profiles?.first_name} and all associated data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default SuperMembers;
+
