@@ -104,8 +104,13 @@ const SuperFundraisingCampaignReport: React.FC = () => {
   const pledgeDisplay = useMemo(() => {
     const entries = Object.entries(pledgeStats.byCurrency);
     if (entries.length === 0) return "—";
-    return entries.map(([code, amt]) => formatCurrency(amt, code)).join(" + ");
-  }, [pledgeStats]);
+    return entries
+      .map(([code, amt]) => {
+        const c = currencies.find((cc) => cc.code?.toLowerCase() === code.toLowerCase()) || null;
+        return formatCurrencyWithSymbol(amt, c);
+      })
+      .join(" + ");
+  }, [pledgeStats, currencies]);
 
   const daysInfo = useMemo(() => {
     if (!campaign?.start_date) return { label: "—", value: "—" };
