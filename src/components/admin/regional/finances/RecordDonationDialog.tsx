@@ -34,7 +34,7 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
   const symbol = getCurrencySymbol(regionCurrency);
-  const { data: campaigns = [] } = useFundraisingCampaigns();
+  const { data: campaigns = [] } = useGlobalFundraisingCampaigns("all");
   const createDonation = useCreateDonation();
 
   const [campaignId, setCampaignId] = useState<string>(defaultCampaignId || "");
