@@ -366,7 +366,7 @@ export default function SpecialEventReport() {
           <FilterSelect value={ageFilter} onChange={setAgeFilter} placeholder="Age"
             options={[{ value: "all", label: "All ages" }, { value: "adult", label: "Adults (≥18)" }, { value: "youth", label: "Youth (15-17)" }, { value: "child", label: "Children (<15)" }, { value: "unknown", label: "Unknown" }]} />
           <FilterSelect value={genderFilter} onChange={setGenderFilter} placeholder="Gender"
-            options={[{ value: "all", label: "All genders" }, { value: "male", label: "Male" }, { value: "female", label: "Female" }, { value: "", label: "Unspecified" }]} />
+            options={[{ value: "all", label: "All genders" }, { value: "male", label: "Male" }, { value: "female", label: "Female" }]} />
           <FilterSelect value={lodgingFilter} onChange={setLodgingFilter} placeholder="Lodging"
             options={[{ value: "all", label: "Any" }, { value: "yes", label: "Needs lodging" }, { value: "no", label: "No lodging" }]} />
           <FilterSelect value={allergyFilter} onChange={setAllergyFilter} placeholder="Dietary"
