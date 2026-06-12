@@ -20,6 +20,7 @@ interface Props {
 
 const GlobalCampaignsTab: React.FC<Props> = ({ displayCurrency }) => {
   const [createOpen, setCreateOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [showConverted, setShowConverted] = useState(false);
   const { data: campaigns = [], isLoading } = useGlobalFundraisingCampaigns("global");
   const { targetCode, targetCurrency, baseCode, convert } = useFxConverterFor(displayCurrency);
