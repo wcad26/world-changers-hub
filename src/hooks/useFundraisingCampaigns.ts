@@ -242,6 +242,7 @@ export interface NewDonationInput {
   anonymous?: boolean;
   donation_date?: string; // ISO
   currency_code?: string;
+  event_pre_registration_id?: string | null;
 }
 
 export const useCreateDonation = () => {
