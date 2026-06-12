@@ -39,7 +39,7 @@ interface Props {
 
 type DonorType = "member" | "external" | "anonymous";
 
-const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCampaignId }) => {
+const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCampaignId, redeemPledge }) => {
   const { toast } = useToast();
   const { userRegion } = useAuth();
   const { data: regionCurrency } = useRegionCurrency(userRegion?.id);
