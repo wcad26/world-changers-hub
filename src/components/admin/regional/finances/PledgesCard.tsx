@@ -223,6 +223,14 @@ const PledgesCard: React.FC<Props> = ({ campaignId }) => {
         open={donateOpen}
         onOpenChange={(o) => { setDonateOpen(o); if (!o) setEditing(null); }}
         defaultCampaignId={campaignId}
+        redeemPledge={editing && donateOpen ? {
+          pre_registration_id: editing.id,
+          member_id: editing.member_id,
+          donor_name: editing.name,
+          donor_email: editing.email,
+          remaining: editing.remaining,
+          currency_code: editing.pledge_currency_code,
+        } : null}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
