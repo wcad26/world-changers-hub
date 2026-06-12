@@ -161,9 +161,12 @@ const RecordDonationDialog: React.FC<Props> = ({ open, onOpenChange, defaultCamp
                   {campaigns.length === 0 && (
                     <div className="px-2 py-1.5 text-sm text-muted-foreground">No campaigns available</div>
                   )}
-                  {campaigns.map(c => (
+                  {campaigns.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.name} <span className="text-muted-foreground text-xs ml-1">· {c.status}</span>
+                      {c.name}
+                      <span className="text-muted-foreground text-xs ml-1">
+                        · {c.region?.name || "Global"} · {c.status}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
