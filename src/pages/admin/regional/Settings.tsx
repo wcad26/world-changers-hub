@@ -65,13 +65,21 @@ const Settings = () => {
     }
   };
 
+  const [params, setParams] = useSearchParams();
+  const activeTab = params.get("tab") || "regional";
+
   return (
     <>
       <div className="space-y-6">
-        <Tabs defaultValue="regional" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 h-auto">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setParams({ tab: v })}
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto">
             <TabsTrigger value="regional">Regional Portal</TabsTrigger>
             <TabsTrigger value="branch">Branch Details</TabsTrigger>
+            <TabsTrigger value="access">Access</TabsTrigger>
             <TabsTrigger value="dcg">DCG Management</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
