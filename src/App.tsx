@@ -76,7 +76,7 @@ import SuperReports from "./pages/admin/super/Reports";
 import SuperCommunication from "./pages/admin/super/Communication";
 import AboutUsSettings from "./pages/admin/super/AboutUsSettings";
 import HomepageSettings from "./pages/admin/super/HomepageSettings";
-import SuperUserManagement from "./pages/admin/super/UserManagement";
+
 import SuperCertificates from "./pages/admin/super/Certificates";
 import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
 import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
@@ -202,6 +202,8 @@ const App = () => {
                 <Route path="discipleship" element={<RegionalDiscipleship />} />
                 
                 <Route path="settings" element={<RegionalSettings />} />
+                <Route path="user-roles" element={<Navigate to="/admin/regional/settings?tab=access" replace />} />
+                <Route path="user-management" element={<Navigate to="/admin/regional/settings?tab=access" replace />} />
               </Route>
             </Route>
 
@@ -256,7 +258,7 @@ const App = () => {
                 <Route path="settings" element={<SuperAdminPage><SuperSettings /></SuperAdminPage>} />
                 <Route path="reports" element={<SuperAdminPage><SuperReports /></SuperAdminPage>} />
                 <Route path="communication" element={<SuperAdminPage><SuperCommunication /></SuperAdminPage>} />
-                <Route path="user-management" element={<SuperAdminPage><SuperUserManagement /></SuperAdminPage>} />
+                <Route path="user-management" element={<Navigate to="/admin/super/settings?tab=access" replace />} />
                 <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
                 <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
                 <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />

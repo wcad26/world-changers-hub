@@ -2348,6 +2348,77 @@ export type Database = {
           },
         ]
       }
+      super_admin_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_reserved: boolean
+          name: string
+          permissions: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_reserved?: boolean
+          name: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_reserved?: boolean
+          name?: string
+          permissions?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      super_admin_user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          is_active: boolean
+          super_admin_role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          super_admin_role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          is_active?: boolean
+          super_admin_role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "super_admin_user_roles_super_admin_role_id_fkey"
+            columns: ["super_admin_role_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           key: string
@@ -2373,9 +2444,12 @@ export type Database = {
         Row: {
           assigned_at: string | null
           assigned_by: string | null
+          decided_at: string | null
+          decided_by: string | null
           id: string
           is_active: boolean | null
           region_id: string | null
+          rejection_reason: string | null
           requested_regional_role_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["user_role_status"] | null
@@ -2384,9 +2458,12 @@ export type Database = {
         Insert: {
           assigned_at?: string | null
           assigned_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
           is_active?: boolean | null
           region_id?: string | null
+          rejection_reason?: string | null
           requested_regional_role_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_role_status"] | null
@@ -2395,9 +2472,12 @@ export type Database = {
         Update: {
           assigned_at?: string | null
           assigned_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
           is_active?: boolean | null
           region_id?: string | null
+          rejection_reason?: string | null
           requested_regional_role_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["user_role_status"] | null
@@ -2489,6 +2569,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_super_permission: {
+        Args: { _perm: string; _user_id: string }
+        Returns: boolean
+      }
+      is_principal_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin_user: { Args: { _user_id: string }; Returns: boolean }
       search_all_donors: {
         Args: { _search?: string }
         Returns: {

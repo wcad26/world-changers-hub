@@ -1,99 +1,298 @@
 
-## 1. Fix Pledges KPI currency symbol (Fundraising Campaign Report)
+# Access Management — Regional + Super Admin (with Super Admin role tiers)
 
-In `src/pages/admin/regional/FundraisingCampaignReport.tsx` and `src/pages/admin/super/FundraisingCampaignReport.tsx`, render the Pledges KPI with the campaign currency formatter (same one used by Raised/Goal) instead of the raw `pledge_currency_code`. Convert pledge sums into campaign currency via the existing FX util so the symbol matches ("₣ 50,000").
+Goal: reinstate **Access Management** in the Regional portal (inside Settings) and rebuild the Super Admin **User Management** into a comprehensive Access hub inside Super Admin Settings — including a brand-new **Super Admin role catalog** so the principal Super Admin can limit what other super admins can see and do.
 
-## 2. Cross-region donation recording
+The plumbing already exists for the regional side (`regional_roles`, `regional_user_roles`, `user_roles` with `requested_regional_role_id` + `status`, `useAssignUserRole`, `PendingApprovalsList`). For the super admin side we will add a mirrored, simpler structure.
 
-Anyone with finance access (regional admin or super admin) can record a donation against ANY campaign across all regions. Listing of campaigns is still scoped: regions see only their own campaigns in their Fundraising tab; super admin sees all in the Global Campaigns tab.
+---
 
-- `RecordDonationDialog.tsx` (regional): broaden its campaign loader to fetch all `fundraising_campaigns` (regional + global), with the region name shown next to each campaign in the dropdown.
-- `GlobalCampaignsTab.tsx`: add a "Record Donation" button next to "Create Campaign", reusing the same dialog component.
-- RLS: verify and (if needed) relax the `fundraising_donations` INSERT policy so an authenticated user with a finance role can insert against any campaign regardless of region. SELECT policy stays as-is (regional admins still only see their own donations in their tab; super admin sees all). Surface a migration if the current policy blocks this.
+## 1. Regional Portal — Settings → "Access" tab
 
-## 3. Replace "Top donors" with "Pledges" table (both report pages)
+Add a new **Access** tab to `src/pages/admin/regional/Settings.tsx`, between *Branch Details* and *DCG Management*.
 
-Replace the Top Donors card in `src/pages/admin/regional/FundraisingCampaignReport.tsx` and `src/pages/admin/super/FundraisingCampaignReport.tsx` with a Pledges table.
+```text
+[ Access KPI Cards: Roles, Users with Access, Pending Approvals, Last change ]
 
-**Source:** `event_pre_registrations` joined to its `event` (where `linked_fundraising_campaign_id = campaignId`), `pledge_amount > 0`, `pledge_status != 'cancelled'`. Paid % per pledge = sum(`fundraising_donations.amount` where `event_pre_registration_id = preReg.id`) / `pledge_amount` × 100 (capped at 100). Donor name/region/type comes from `members` → `profiles` + `regions` when `member_id` is set; otherwise from the pre-reg `email`/`phone` and labeled Visitor.
+[ GlassSection: Access Management ]
+   Tabs:
+     - Users with Access   (table of users + their assigned roles + actions)
+     - Roles & Permissions (role cards grid)
+     - My Requests        (NEW — this admin's pending/approved/rejected requests)
+   Header action: [ + Create Role ] / [ + Assign Access ] (context-aware per inner tab)
+```
 
-**Columns:** Name · Region · Type (Member/Visitor) · Pledge (amount + currency) · Status (paid % with progress bar + remaining) · Actions:
-- **Redeem** — opens `RecordDonationDialog` pre-filled with campaign + donor + remaining balance, and stamps `event_pre_registration_id` on the new donation.
-- **Edit** — new `EditPledgeDialog` to adjust amount / currency / status / notes (updates `event_pre_registrations`).
-- **Delete** — confirmation, then delete the pledge fields from the pre-reg (or hard-delete the row if it has no attendance dependency — decided at build time).
+Reuses (re-skinned with `GlassSection`):
+- `AccessKpiCards`
+- `UsersWithAccessTable` + `AssignRoleDialog`
+- `RoleManagementGrid` + `CreateRoleDialog` / `EditRoleDialog` / `RoleDetailsDialog`
 
-**Filters above the table:** search by name/email, region filter, type filter (member/visitor), status filter (unpaid / partial / fully paid).
+Behavior reinstated:
+- Create / edit / deactivate / hard-delete custom roles (reserved `Regional Admin` role stays read-only for regional admins).
+- Assign one or more roles to a member; **every assignment goes to Super Admin for approval** (existing `useAssignUserRole({ requiresApproval: true })`).
+- Edit a user's role set = revoke + re-assign (re-assignment goes through approval).
+- Revoke (single or all roles) is immediate; no approval needed.
+- **My Requests** lists requests submitted by the current admin with status badges and a "Cancel" button while pending.
 
-New files: `PledgesCard.tsx`, `EditPledgeDialog.tsx`, and a `useCampaignPledgesDetailed(campaignId)` hook.
+Cleanup:
+- Drop the standalone item from `EnhancedRegionalAdminLayout` sidebar; keep `/admin/regional/user-roles` as a redirect to `/admin/regional/settings?tab=access`.
 
-## 4. Rebuild Special Event Report (`src/pages/admin/super/SpecialEventReport.tsx` + regional equivalent)
+---
 
-Planning-focused dashboard for the event team. No pledge/financial data — that lives in the finance module.
+## 2. Super Admin Portal — Settings → "Access" tab
 
-### Terminology fix
-"Party size" is removed as a user-facing concept. Today the field is not collected on the registration form, so the column is empty. Lodging unit size is computed from the family group (`group_id` + primary + linked family members). If a future need arises for non-family parties, the form needs a new question — flagged but out of scope here.
+Move and rebuild User Management.
 
-### Header
-Event name, date range, back link, Export CSV (current selection / current tab).
+`src/components/admin/SuperAdminLayout.tsx`: remove the "User Management" sidebar item.
+`src/App.tsx`: keep `/admin/super/user-management` as a redirect to `/admin/super/settings?tab=access`.
 
-### Top KPI row (glass cards)
-- Total Registered (individuals · families)
-- Adults / Youth (15–17) / Children (<15)
-- Gender split (M / F)
-- Lodging needed (families + individuals needing lodging, total beds across all nights)
-- Total person-nights (sum of nights across attendees)
-- Meal coverage (count of attendees by meal preference, top tag)
+New **Access** tab in `SuperSettings` (placed right after General):
 
-### Tabs (modern glass design)
+```text
+[ Global Access KPI Cards ]
+  - Active super admins      (with role breakdown)
+  - Active regional admins   (across all regions)
+  - Pending approvals        (animated badge when > 0)
+  - Regions without an admin (alert)
 
-1. **Overview** — at-a-glance charts:
-   - Age group pie · Gender pie · Region distribution bar
-   - Member vs Visitor split
-   - Daily attendance curve (headcount per date between any attendee's arrival and departure)
-   - Daily beds-needed curve (headcount per date among parties needing lodging)
+[ GlassSection: Global Access Management ]
+   Tabs:
+     1. Pending Approvals     (default when count > 0)
+     2. Super Admins          (NEW — manage super-admin users & roles)
+     3. Super Admin Roles     (NEW — create/edit super-admin role catalog)
+     4. Regional Users        (all regional admins, all regions)
+     5. Regional Roles        (browse/edit any region's role catalog)
+     6. Create Regional Admin
+     7. Activity Log
+```
 
-2. **Attendees** — full searchable/filterable table:
-   - Columns: Name · Region · Type (Member/Visitor) · Age Group (Adult ≥18 / Youth 15–17 / Child <15) · Gender · Phone · Arrival · Departure · Nights · Family group indicator · Meal pref tags · Allergy flag.
-   - Filters: search · region · type · age group · gender · arrival date · departure date · meal preference · "has allergy/dietary note" · "needs lodging".
-   - CSV export of the filtered set.
+### 2.1 Pending Approvals
+Modernized rewrite of `PendingApprovalsList`:
+- Filters: region, requested role, submitter, date range.
+- Row info: requester, region, requested regional role, submitter, age.
+- Actions: **Approve**, **Reject (with reason)**, **View role permissions**.
+- Bulk select + bulk approve / reject.
+- Approve updates `user_roles.status='active'` and inserts `regional_user_roles` (existing logic), plus stamps `decided_by`/`decided_at`.
 
-3. **Families & Lodging** — primary unit for room planning:
-   - Grouped list by `group_id`: primary attendee at the top, then each family member with age group, gender, relationship hint (child/adult).
-   - Per family: total size, adults / youth / children breakdown, arrival → departure, nights, "needs lodging" flag, dietary notes summary, meal preferences summary.
-   - Side panel: daily beds-needed chart broken down by family vs individual.
-   - Filters: needs lodging only · has children · region · arrival/departure window.
-   - Individual (non-family) registrants needing lodging shown separately so the planner can match singles into shared rooms.
+### 2.2 Super Admins (NEW)
+Table of every user holding `user_roles.role='super_admin'`:
+- Columns: User, Email, Super Admin Role (chip), Assigned by, Assigned at, Last login, Actions.
+- Actions: **Change role**, **Revoke super admin**, **Promote member to super admin** (top-right button opens a member-picker + role-picker dialog).
+- Only the **Principal Super Admin** (see §3) can promote, revoke, or change the Principal flag.
 
-4. **Meals & Dietary** — full reporting on what we currently collect but don't show:
-   - Stacked bar / pie of meal_preferences counts across all attendees.
-   - Breakdown by day (using arrival/departure to compute who is on-site each day × their meal pref) so the kitchen can plan portions per day per preference.
-   - Allergy & dietary notes list: every attendee with a non-empty `dietary_notes`, alongside name, region, and the raw note. Simple keyword highlight for common allergens (nuts, gluten, dairy, shellfish, etc.) for quick visibility.
-   - Filter by meal pref / dietary keyword / day.
+### 2.3 Super Admin Roles (NEW)
+Mirror of the regional role catalog, but with a global permission set:
+- Card grid of `super_admin_roles` (Principal Super Admin role is reserved + read-only — full access).
+- Create / Edit / Deactivate / Hard-delete custom super-admin roles.
+- Each role holds a `permissions jsonb` array keyed against a new `SUPER_PERMISSION_CATALOG` (see §4).
+- "Used by N super admins" usage count per card.
 
-5. **Travel & Schedule** — arrival/departure planning:
-   - Table of arrival dates × headcount, departure dates × headcount.
-   - List of attendees grouped by arrival day for pickup coordination.
-   - Nights distribution histogram.
+### 2.4 Regional Users (all regions)
+Single global table joining `regional_user_roles` + `profiles` + `regions`:
+- Columns: User, Email, Region, Roles (chips), Assigned by, Last updated, Actions.
+- Filters: region, role, search.
+- Row actions: **Edit roles**, **Revoke role**, **Revoke all access**, **View profile**.
+- "Edit roles" reuses `AssignRoleDialog` with `requiresApproval=false` (super admin bypasses approval) and a `regionIdOverride` prop.
 
-### Data layer
-- New hook `useSpecialEventReport(eventId)`:
-  - `event_pre_registrations` for the event (all fields).
-  - Join `members` → `profiles` (name, DOB → age group, gender, region) when `member_id` is set; otherwise use pre-reg `email`/`phone` and label Visitor / region "—".
-  - Family grouping via `group_id` + `is_primary`.
-  - Per-day rollups computed in the hook (`arrival_date` → `departure_date` inclusive).
-- Empty/missing data handled gracefully (the form doesn't collect everything — show "—" rather than crash).
+### 2.5 Regional Roles
+- Region selector (defaults to first).
+- Reuses `RoleManagementGrid` / `CreateRoleDialog` / `EditRoleDialog` with `regionIdOverride`.
+- Super admin can edit the reserved `Regional Admin` role's permissions too.
 
-### Filters
-Global filter bar (search, region, type, age group, gender, needs-lodging, has-allergy, date range) that applies across every tab. Each tab can layer its own extra filters.
+### 2.6 Create Regional Admin
+Existing `CreateRegionalAdminForm` dropped into a `GlassSection`.
 
-## Technical notes
-- Reuse existing `formatMoney`, FX converter, glass UI primitives (`GlassSection`, `GlassKPICard`).
-- All new dialogs follow the glass dialog standard.
-- No schema changes other than possibly the donations RLS relaxation in §2.
-- Charts via existing `recharts` setup used elsewhere.
+### 2.7 Activity Log
+Read-only feed (last 50) of role assignments, revocations, approvals, rejections — derived from `user_roles` + `regional_user_roles` timestamps. No new audit table for v1.
 
-## Execution order
-1. §1 (currency symbol — trivial).
-2. §2 (RLS check → migration if needed → UI: regional dialog campaign list + super admin button).
-3. §3 (Pledges card + Edit/Delete + Redeem wiring).
-4. §4 (Special Event Report rebuild).
+---
+
+## 3. Super Admin role model
+
+DB additions (schema migration):
+
+```sql
+-- Catalog of super-admin roles (global, no region scope)
+CREATE TABLE public.super_admin_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  description text,
+  permissions jsonb NOT NULL DEFAULT '[]'::jsonb,
+  is_reserved boolean NOT NULL DEFAULT false,  -- the Principal role
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Which super-admin users hold which super-admin role
+CREATE TABLE public.super_admin_user_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  super_admin_role_id uuid NOT NULL REFERENCES public.super_admin_roles(id) ON DELETE RESTRICT,
+  assigned_by uuid,
+  assigned_at timestamptz NOT NULL DEFAULT now(),
+  is_active boolean NOT NULL DEFAULT true,
+  UNIQUE (user_id, super_admin_role_id)
+);
+
+-- Mark the first existing super admin as Principal and seed the reserved role.
+-- A separate idempotent INSERT handles seeding "Principal Super Admin" with all permissions.
+```
+
+GRANTs (authenticated + service_role), RLS:
+- `super_admin_roles`: SELECT for any super admin; INSERT/UPDATE/DELETE only when caller has the `manage_super_admin_roles` permission (checked via security-definer helper `public.has_super_permission(_user_id, _perm text)`).
+- `super_admin_user_roles`: SELECT for any super admin; INSERT/UPDATE/DELETE only for callers with `manage_super_admin_users` (the Principal role, by default).
+- Reserved role row can never be deleted or edited (trigger).
+
+Helper SQL functions:
+- `public.has_super_permission(_user_id uuid, _perm text) returns boolean security definer`
+- `public.is_principal_super_admin(_user_id uuid) returns boolean security definer`
+
+The existing `has_role(_user_id, 'super_admin')` keeps gating super-admin login; super admin permissions are then layered on top via `has_super_permission`.
+
+---
+
+## 4. Super admin permission catalog
+
+New file `src/config/superAdminPermissions.ts` mirroring `regionalPermissions.ts`. Each entry maps to one super-admin page or capability.
+
+```ts
+export const SUPER_PERMISSION_CATALOG = [
+  // Overview
+  { key: 'super_dashboard_view',    group: 'Overview', label: 'View Dashboard' },
+
+  // People & Access
+  { key: 'super_members_view',      group: 'People',   label: 'View Global Members' },
+  { key: 'super_members_edit',      group: 'People',   label: 'Edit / Delete Members' },
+  { key: 'manage_regional_users',   group: 'Access',   label: 'Manage Regional Users & Roles' },
+  { key: 'approve_role_requests',   group: 'Access',   label: 'Approve Role Requests' },
+  { key: 'manage_super_admin_users',group: 'Access',   label: 'Manage Super Admin Users' },   // Principal only by default
+  { key: 'manage_super_admin_roles',group: 'Access',   label: 'Manage Super Admin Roles' },   // Principal only by default
+
+  // Programs
+  { key: 'super_events_view',       group: 'Programs', label: 'View Events' },
+  { key: 'super_events_manage',     group: 'Programs', label: 'Manage Global Events' },
+  { key: 'super_certificates_view', group: 'Programs', label: 'View Certificates' },
+  { key: 'super_certificates_manage', group: 'Programs', label: 'Manage Certificates' },
+
+  // Money
+  { key: 'super_finances_view',     group: 'Money',    label: 'View Finances' },
+  { key: 'super_finances_manage',   group: 'Money',    label: 'Manage Finances' },
+  { key: 'super_reports_view',      group: 'Money',    label: 'View Reports' },
+
+  // Outreach
+  { key: 'super_communication_view',group: 'Outreach', label: 'View Communications' },
+  { key: 'super_communication_send',group: 'Outreach', label: 'Send Communications' },
+
+  // Admin
+  { key: 'super_regions_view',      group: 'Admin',    label: 'View Regions' },
+  { key: 'super_regions_manage',    group: 'Admin',    label: 'Create / Edit Regions' },
+  { key: 'super_locations_manage',  group: 'Admin',    label: 'Manage Locations' },
+  { key: 'super_homepage_manage',   group: 'Admin',    label: 'Edit Homepage / About' },
+  { key: 'super_settings_view',     group: 'Admin',    label: 'View Settings' },
+  { key: 'super_settings_edit',     group: 'Admin',    label: 'Edit System Settings' },
+] as const;
+
+export const SUPER_PAGES = [
+  { permission: 'super_dashboard_view',     path: '/admin/super/dashboard',     title: 'Dashboard' },
+  { permission: 'super_members_view',       path: '/admin/super/members',       title: 'Members' },
+  { permission: 'super_events_view',        path: '/admin/super/events',        title: 'Events' },
+  { permission: 'super_locations_manage',   path: '/admin/super/locations',     title: 'Locations' },
+  { permission: 'super_finances_view',      path: '/admin/super/finances',      title: 'Finances' },
+  { permission: 'super_regions_view',       path: '/admin/super/regions',       title: 'Regions' },
+  { permission: 'super_reports_view',       path: '/admin/super/reports',       title: 'Reports' },
+  { permission: 'super_communication_view', path: '/admin/super/communication', title: 'Communication' },
+  { permission: 'super_homepage_manage',    path: '/admin/super/homepage-settings', title: 'Homepage Settings' },
+  { permission: 'super_certificates_view',  path: '/admin/super/certificates',  title: 'Certificates' },
+  { permission: 'super_homepage_manage',    path: '/admin/super/about-settings', title: 'About Us' },
+  { permission: 'super_settings_view',      path: '/admin/super/settings',      title: 'Settings' },
+];
+```
+
+Seeded built-in super-admin roles:
+- **Principal Super Admin** — `is_reserved=true`, every permission. Cannot be edited or removed; cannot be revoked from the original principal.
+- **Operations Admin** — everything except `manage_super_admin_users`, `manage_super_admin_roles`, destructive region/finance edits.
+- **Finance Admin** — finances/reports + read-only elsewhere.
+- **Content Admin** — homepage, about, certificates, communications.
+- **Read-Only Auditor** — only `*_view` permissions.
+
+Principals may edit or delete any non-reserved seeded role.
+
+---
+
+## 5. Enforcement in the Super Admin portal
+
+- New hook `useSuperAdminPermissions()` loads the caller's effective permission set (union of all active super-admin roles via `super_admin_user_roles`, or all permissions when Principal).
+- New route guard `<SuperPermissionRoute permission="...">` wrapping each `/admin/super/*` route in `App.tsx`. On missing permission → redirect to `/admin/super/dashboard` and toast "You don't have access to that page."
+- `SuperAdminLayout` sidebar items filtered by `useSuperAdminPermissions().has(permission)` so each admin only sees pages they can open.
+- Buttons/menu items for destructive or scoped actions use a small `<SuperPermissionGate>` (mirrors regional `PermissionGate`).
+
+Approval workflow stays unchanged for regional requests: any super admin with `approve_role_requests` can act on them.
+
+---
+
+## 6. Approval flow (unchanged, with audit columns)
+
+```text
+Regional admin assigns role
+  └─► useAssignUserRole({ requiresApproval: true })
+        └─► UPSERT user_roles {role:'regional_admin', status:'pending',
+                               requested_regional_role_id, is_active:false}
+
+Super admin (with `approve_role_requests`) opens Access → Pending Approvals
+  ├─► Approve  → user_roles.status='active', is_active=true,
+  │              decided_by=auth.uid(), decided_at=now()
+  │              + INSERT regional_user_roles(user_id, region_id, regional_role_id)
+  └─► Reject   → user_roles.status='rejected', is_active=false,
+                  rejection_reason, decided_by, decided_at
+```
+
+Migration adds to `user_roles`: `rejection_reason text`, `decided_by uuid`, `decided_at timestamptz`.
+
+---
+
+## 7. Files to touch
+
+New:
+- `src/config/superAdminPermissions.ts`
+- `src/hooks/useSuperAdminRoles.ts`         (CRUD + list)
+- `src/hooks/useSuperAdminUsers.ts`         (list + assign / revoke / change)
+- `src/hooks/useSuperAdminPermissions.ts`   (effective permission set for current user)
+- `src/components/auth/SuperPermissionRoute.tsx`
+- `src/components/auth/SuperPermissionGate.tsx`
+- `src/components/admin/regional/access/AccessTab.tsx`
+- `src/components/admin/regional/access/MyRequestsList.tsx`
+- `src/components/admin/super/access/AccessTab.tsx`
+- `src/components/admin/super/access/GlobalAccessKpiCards.tsx`
+- `src/components/admin/super/access/PendingApprovalsTable.tsx`
+- `src/components/admin/super/access/SuperAdminsTable.tsx`
+- `src/components/admin/super/access/PromoteSuperAdminDialog.tsx`
+- `src/components/admin/super/access/SuperAdminRolesGrid.tsx`
+- `src/components/admin/super/access/CreateSuperAdminRoleDialog.tsx`
+- `src/components/admin/super/access/EditSuperAdminRoleDialog.tsx`
+- `src/components/admin/super/access/RegionalUsersTable.tsx`
+- `src/components/admin/super/access/RegionalRolesPanel.tsx`
+- `src/components/admin/super/access/AccessActivityFeed.tsx`
+
+Edited:
+- `src/pages/admin/regional/Settings.tsx`              (add Access tab)
+- `src/pages/admin/super/Settings.tsx`                 (add Access tab)
+- `src/components/admin/SuperAdminLayout.tsx`          (remove User Management; filter items by permission)
+- `src/components/admin/EnhancedRegionalAdminLayout.tsx` (drop standalone Access link)
+- `src/App.tsx`                                        (redirects + `<SuperPermissionRoute>` wrappers)
+- `src/components/admin/regional/roles/CreateRoleDialog.tsx`,
+  `EditRoleDialog.tsx`, `AssignRoleDialog.tsx`         (accept `regionIdOverride`, `bypassApproval`)
+- `src/hooks/useRegionalRoles.ts`                      (accept explicit regionId in mutations)
+
+Migrations:
+1. `user_roles`: add `rejection_reason`, `decided_by`, `decided_at`.
+2. Create `super_admin_roles` + `super_admin_user_roles` with GRANTs, RLS, reserved-row trigger.
+3. Helper functions `has_super_permission`, `is_principal_super_admin`.
+4. Seed reserved + built-in super-admin roles; mark the earliest active super admin as Principal.
+
+---
+
+## 8. Out of scope (callouts)
+- Email / in-app notifications on approve / reject (follow-up).
+- Dedicated immutable audit log table — current "Activity Log" reads existing timestamps; we can add `access_audit_log` later if you want tamper-proof history.
