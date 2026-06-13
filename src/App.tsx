@@ -202,6 +202,8 @@ const App = () => {
                 <Route path="discipleship" element={<RegionalDiscipleship />} />
                 
                 <Route path="settings" element={<RegionalSettings />} />
+                <Route path="user-roles" element={<Navigate to="/admin/regional/settings?tab=access" replace />} />
+                <Route path="user-management" element={<Navigate to="/admin/regional/settings?tab=access" replace />} />
               </Route>
             </Route>
 
