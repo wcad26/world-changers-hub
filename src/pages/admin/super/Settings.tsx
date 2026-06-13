@@ -10,6 +10,7 @@ import { Bell, Mail, Shield, Clock } from "lucide-react";
 import { GlassSection, GlassSectionHeader } from "@/components/ui/GlassSection";
 import GeneralTab from "@/components/admin/super/settings/GeneralTab";
 import CurrencyTab from "@/components/admin/super/settings/CurrencyTab";
+import SuperAccessTab from "@/components/admin/super/access/AccessTab";
 
 export default function SuperSettings() {
   const [params, setParams] = useSearchParams();
