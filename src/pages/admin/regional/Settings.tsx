@@ -22,6 +22,8 @@ import { useCurrencies } from "@/hooks/useCurrencies";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionMutations } from "@/hooks/useRegionMutations";
 import { useToast } from "@/hooks/use-toast";
+import RegionalAccessTab from "@/components/admin/regional/access/AccessTab";
+import { useSearchParams } from "react-router-dom";
 import { GlassSection, GlassSectionHeader } from "@/components/ui/GlassSection";
 
 const Settings = () => {
