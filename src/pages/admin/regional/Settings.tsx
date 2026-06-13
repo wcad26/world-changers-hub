@@ -133,6 +133,11 @@ const Settings = () => {
             <RegionalBranchForm />
           </TabsContent>
 
+          <TabsContent value="access" className="space-y-6">
+            <RegionalAccessTab />
+          </TabsContent>
+
+
           <TabsContent value="dcg" className="space-y-6">
             <GlassSection>
               <GlassSectionHeader
