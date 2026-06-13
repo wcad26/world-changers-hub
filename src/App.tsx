@@ -258,7 +258,7 @@ const App = () => {
                 <Route path="settings" element={<SuperAdminPage><SuperSettings /></SuperAdminPage>} />
                 <Route path="reports" element={<SuperAdminPage><SuperReports /></SuperAdminPage>} />
                 <Route path="communication" element={<SuperAdminPage><SuperCommunication /></SuperAdminPage>} />
-                <Route path="user-management" element={<SuperAdminPage><SuperUserManagement /></SuperAdminPage>} />
+                <Route path="user-management" element={<Navigate to="/admin/super/settings?tab=access" replace />} />
                 <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
                 <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
                 <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />
