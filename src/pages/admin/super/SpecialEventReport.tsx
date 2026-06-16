@@ -628,7 +628,7 @@ export default function SpecialEventReport() {
               )}
             </ChartCard>
 
-            <ChartCard title="Daily meal demand">
+            <ChartCard title="Daily health & allergy load">
               {mealDayRollup.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">Needs arrival/departure dates.</p>
               ) : (
