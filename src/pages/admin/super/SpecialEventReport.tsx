@@ -612,9 +612,9 @@ export default function SpecialEventReport() {
         {/* MEALS */}
         <TabsContent value="meals" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <ChartCard title="Meal preferences overall">
+            <ChartCard title="Health & allergy concerns overall">
               {mealOptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">No meal preferences captured.</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">No health or allergy concerns captured.</p>
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={mealOptions.map((m) => ({ meal: m, count: filtered.filter((a) => (a.meal_preferences || []).includes(m)).length }))}>
