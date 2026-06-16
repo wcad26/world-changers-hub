@@ -371,8 +371,8 @@ export default function SpecialEventReport() {
             options={[{ value: "all", label: "Any" }, { value: "yes", label: "Needs lodging" }, { value: "no", label: "No lodging" }]} />
           <FilterSelect value={allergyFilter} onChange={setAllergyFilter} placeholder="Dietary"
             options={[{ value: "all", label: "Any" }, { value: "yes", label: "Has notes" }, { value: "no", label: "No notes" }]} />
-          <FilterSelect value={mealFilter} onChange={setMealFilter} placeholder="Meal"
-            options={[{ value: "all", label: "All meals" }, ...mealOptions.map((m) => ({ value: m, label: m }))]} />
+          <FilterSelect value={mealFilter} onChange={setMealFilter} placeholder="Health/Allergy"
+            options={[{ value: "all", label: "All health & allergies" }, ...mealOptions.map((m) => ({ value: m, label: m }))]} />
         </CardContent>
       </Card>
 
