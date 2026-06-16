@@ -656,11 +656,11 @@ export default function SpecialEventReport() {
             </CardHeader>
             <CardContent>
               {filtered.filter((a) => a.allergyFlag).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No dietary notes submitted in the current filter.</p>
+                <p className="text-sm text-muted-foreground">No health or allergy notes submitted in the current filter.</p>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Meals</TableHead><TableHead>Notes</TableHead></TableRow>
+                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Health/Allergies</TableHead><TableHead>Notes</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {filtered.filter((a) => a.allergyFlag).map((a) => {
