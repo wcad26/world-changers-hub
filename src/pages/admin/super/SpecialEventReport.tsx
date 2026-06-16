@@ -299,7 +299,7 @@ export default function SpecialEventReport() {
   const exportCsv = () => {
     const headers = [
       "Name", "Region", "Type", "Age", "Age Group", "Gender", "Email", "Phone",
-      "Arrival", "Departure", "Nights", "Needs Lodging", "Family Group", "Meal Preferences", "Dietary Notes",
+      "Arrival", "Departure", "Nights", "Needs Lodging", "Family Group", "Health/Allergies", "Notes",
     ];
     const rows = filtered.map((a) => [
       a.name, a.region, a.type, a.age ?? "", a.ageGroup, a.gender || "—",
@@ -371,8 +371,8 @@ export default function SpecialEventReport() {
             options={[{ value: "all", label: "Any" }, { value: "yes", label: "Needs lodging" }, { value: "no", label: "No lodging" }]} />
           <FilterSelect value={allergyFilter} onChange={setAllergyFilter} placeholder="Dietary"
             options={[{ value: "all", label: "Any" }, { value: "yes", label: "Has notes" }, { value: "no", label: "No notes" }]} />
-          <FilterSelect value={mealFilter} onChange={setMealFilter} placeholder="Meal"
-            options={[{ value: "all", label: "All meals" }, ...mealOptions.map((m) => ({ value: m, label: m }))]} />
+          <FilterSelect value={mealFilter} onChange={setMealFilter} placeholder="Health/Allergy"
+            options={[{ value: "all", label: "All health & allergies" }, ...mealOptions.map((m) => ({ value: m, label: m }))]} />
         </CardContent>
       </Card>
 
@@ -382,7 +382,7 @@ export default function SpecialEventReport() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="attendees">Attendees</TabsTrigger>
           <TabsTrigger value="families">Families & Lodging</TabsTrigger>
-          <TabsTrigger value="meals">Meals & Dietary</TabsTrigger>
+          <TabsTrigger value="meals">Health & Allergies</TabsTrigger>
           <TabsTrigger value="travel">Travel & Schedule</TabsTrigger>
         </TabsList>
 
@@ -478,8 +478,8 @@ export default function SpecialEventReport() {
                         <TableHead>Departure</TableHead>
                         <TableHead className="text-right">Nights</TableHead>
                         <TableHead>Family</TableHead>
-                        <TableHead>Meals</TableHead>
-                        <TableHead>Allergy</TableHead>
+                        <TableHead>Health/Allergies</TableHead>
+                        <TableHead>Notes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -551,8 +551,8 @@ export default function SpecialEventReport() {
                               <TableHead>Name</TableHead>
                               <TableHead>Age</TableHead>
                               <TableHead>Gender</TableHead>
-                              <TableHead>Meals</TableHead>
-                              <TableHead>Dietary notes</TableHead>
+                              <TableHead>Health/Allergies</TableHead>
+                              <TableHead>Notes</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -612,9 +612,9 @@ export default function SpecialEventReport() {
         {/* MEALS */}
         <TabsContent value="meals" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <ChartCard title="Meal preferences overall">
+            <ChartCard title="Health & allergy concerns overall">
               {mealOptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">No meal preferences captured.</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">No health or allergy concerns captured.</p>
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={mealOptions.map((m) => ({ meal: m, count: filtered.filter((a) => (a.meal_preferences || []).includes(m)).length }))}>
@@ -628,7 +628,7 @@ export default function SpecialEventReport() {
               )}
             </ChartCard>
 
-            <ChartCard title="Daily meal demand">
+            <ChartCard title="Daily health & allergy load">
               {mealDayRollup.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">Needs arrival/departure dates.</p>
               ) : (
@@ -651,16 +651,16 @@ export default function SpecialEventReport() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500" /> Allergies & dietary notes
+                <AlertTriangle className="h-4 w-4 text-amber-500" /> Allergies & health notes
               </CardTitle>
             </CardHeader>
             <CardContent>
               {filtered.filter((a) => a.allergyFlag).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No dietary notes submitted in the current filter.</p>
+                <p className="text-sm text-muted-foreground">No health or allergy notes submitted in the current filter.</p>
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Meals</TableHead><TableHead>Notes</TableHead></TableRow>
+                    <TableRow><TableHead>Name</TableHead><TableHead>Region</TableHead><TableHead>Health/Allergies</TableHead><TableHead>Notes</TableHead></TableRow>
                   </TableHeader>
                   <TableBody>
                     {filtered.filter((a) => a.allergyFlag).map((a) => {

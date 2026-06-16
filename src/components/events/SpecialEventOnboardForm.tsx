@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAllRegions } from "@/hooks/useAllRegions";
@@ -18,6 +18,7 @@ import {
   User, Heart, BookOpen, Users, MapPin, Check, X, Search, UserCheck, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
 
 // Convert stored value (ISO yyyy-mm-dd or partial digits) -> dd/mm/yyyy display
 const isoToDisplay = (stored: string): string => {
@@ -33,7 +34,7 @@ const isoToDisplay = (stored: string): string => {
 // Auto-format user input and convert dd/mm/yyyy -> ISO yyyy-mm-dd when complete
 const displayToIso = (input: string): string => {
   const digits = input.replace(/\D/g, "").slice(0, 8);
-  if (digits.length < 8) return digits; // store partial digits; isoToDisplay handles formatting below
+  if (digits.length < 8) return digits;
   const dd = digits.slice(0, 2);
   const mm = digits.slice(2, 4);
   const yyyy = digits.slice(4, 8);
@@ -53,7 +54,6 @@ export type OnboardFormValue = {
   date_of_birth: string;
   gender: string;
   occupation: string;
-  // member-only
   has_completed_foundation_school: string;
   foundation_school_date: string;
   is_baptized: string;
@@ -61,7 +61,6 @@ export type OnboardFormValue = {
   ministry_interests: string[];
   dcg_id: string;
   relationships: { relationship_type: string; member_ids: string[] }[];
-  // visitor-only
   referral_source: string;
   referral_social_media: string;
   referral_member_ids: string[];
@@ -96,19 +95,27 @@ export const emptyOnboardValue = (): OnboardFormValue => ({
   join_interest: "",
 });
 
-const MINISTRY_OPTIONS = [
-  "Music & Worship", "Teaching & Preaching", "Youth Ministry", "Children's Ministry",
-  "Hospitality", "Media & Technology", "Administration", "Counseling",
-  "Prayer Ministry", "Outreach & Evangelism",
+// Stored values stay English. Labels are translated.
+const MINISTRY_OPTIONS: { value: string; key: Parameters<ReturnType<typeof useLanguage>["t"]>[0] }[] = [
+  { value: "Music & Worship", key: "sr_ministry_music" },
+  { value: "Teaching & Preaching", key: "sr_ministry_teaching" },
+  { value: "Youth Ministry", key: "sr_ministry_youth" },
+  { value: "Children's Ministry", key: "sr_ministry_children" },
+  { value: "Hospitality", key: "sr_ministry_hospitality" },
+  { value: "Media & Technology", key: "sr_ministry_media" },
+  { value: "Administration", key: "sr_ministry_admin" },
+  { value: "Counseling", key: "sr_ministry_counseling" },
+  { value: "Prayer Ministry", key: "sr_ministry_prayer" },
+  { value: "Outreach & Evangelism", key: "sr_ministry_outreach" },
 ];
 
-const REL_OPTIONS = [
-  { value: "spouse", label: "Spouse" },
-  { value: "parent", label: "Parent" },
-  { value: "child", label: "Child" },
-  { value: "sibling", label: "Sibling" },
-  { value: "guardian", label: "Guardian" },
-  { value: "other", label: "Other" },
+const REL_OPTIONS: { value: string; key: Parameters<ReturnType<typeof useLanguage>["t"]>[0] }[] = [
+  { value: "spouse", key: "sr_rel_spouse" },
+  { value: "parent", key: "sr_rel_parent" },
+  { value: "child", key: "sr_rel_child" },
+  { value: "sibling", key: "sr_rel_sibling" },
+  { value: "guardian", key: "sr_rel_guardian" },
+  { value: "other", key: "sr_rel_other" },
 ];
 
 const nativeSelectClassName =
@@ -157,15 +164,14 @@ export function isOnboardValid(v: OnboardFormValue): boolean {
 interface Props {
   value: OnboardFormValue;
   onChange: (next: OnboardFormValue) => void;
-  /** Hide the attendee type chooser (e.g. when the caller already locked it). */
   hideAttendeeTypeChooser?: boolean;
-  /** Hide the region selector (e.g. inherit from primary). */
   hideRegionSelector?: boolean;
 }
 
 export default function SpecialEventOnboardForm({
   value, onChange, hideAttendeeTypeChooser, hideRegionSelector,
 }: Props) {
+  const { t } = useLanguage();
   const set = <K extends keyof OnboardFormValue>(k: K, val: OnboardFormValue[K]) =>
     onChange({ ...value, [k]: val });
 
@@ -187,7 +193,6 @@ export default function SpecialEventOnboardForm({
     },
   });
 
-  // Member search for relationships / referrals
   const [memberSearchText, setMemberSearchText] = useState("");
   const { data: allMembers = [] } = useQuery({
     queryKey: ["onboard-members-search", memberSearchText],
@@ -198,7 +203,6 @@ export default function SpecialEventOnboardForm({
     },
   });
 
-  // Relationship draft
   const [relType, setRelType] = useState<string>("");
   const [relIds, setRelIds] = useState<string[]>([]);
   const [relOpen, setRelOpen] = useState(false);
@@ -211,7 +215,6 @@ export default function SpecialEventOnboardForm({
   const removeRel = (i: number) =>
     set("relationships", value.relationships.filter((_, idx) => idx !== i));
 
-  // Referral popover
   const [refOpen, setRefOpen] = useState(false);
   const toggleRefMember = (id: string) =>
     set("referral_member_ids",
@@ -221,17 +224,16 @@ export default function SpecialEventOnboardForm({
 
   const isMember = value.attendee_type === "member";
 
-  // Attendee-type buttons
   const renderTypeChooser = () => (
     <div className="space-y-3 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 shadow-sm">
       <div>
-        <p className="text-sm font-medium text-foreground">Select the attendee type to register below.</p>
-        <p className="text-xs text-muted-foreground mt-0.5">Pick the option that best fits this person.</p>
+        <p className="text-sm font-medium text-foreground">{t("sr_onboard_select_type_title")}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t("sr_onboard_select_type_desc")}</p>
       </div>
       <div className="grid grid-cols-2 gap-2">
         {([
-          { type: "member", label: "Member", Icon: UserCheck, color: "indigo" },
-          { type: "visitor", label: "Visitor", Icon: User, color: "rose" },
+          { type: "member", label: t("sr_member_type"), Icon: UserCheck, color: "indigo" },
+          { type: "visitor", label: t("sr_visitor_type"), Icon: User, color: "rose" },
         ] as const).map(({ type, label, Icon, color }) => {
           const selected = value.attendee_type === type;
           const palette =
@@ -273,58 +275,54 @@ export default function SpecialEventOnboardForm({
     <div className="space-y-5">
       {!hideAttendeeTypeChooser && renderTypeChooser()}
 
-      {/* Region */}
       {!hideRegionSelector && (
-        <Section icon={MapPin} title="WCA Region">
+        <Section icon={MapPin} title={t("sr_region_section")}>
           <div>
-            <Label className="text-xs">Region <Req /></Label>
+            <Label className="text-xs">{t("sr_region_label")} <Req /></Label>
             <select
               className={nativeSelectClassName}
               value={value.region_id}
               onChange={(e) => set("region_id", e.target.value)}
             >
-              <option value="">Select your region</option>
+              <option value="">{t("sr_region_placeholder")}</option>
               {regions.map((r) => (
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground mt-1">
-              The WCA region you belong to or wish to be associated with.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t("sr_region_help")}</p>
           </div>
         </Section>
       )}
 
-      {/* Personal Information */}
-      <Section icon={User} title="Personal Information">
+      <Section icon={User} title={t("sr_personal_info")}>
         <div className="grid md:grid-cols-2 gap-3">
           <div>
-            <Label className="text-xs">Family Name <Req /></Label>
+            <Label className="text-xs">{t("sr_family_name")} <Req /></Label>
             <Input className="rounded-xl bg-background/60" value={value.last_name}
               onChange={(e) => set("last_name", e.target.value)} placeholder="Doe" />
           </div>
           <div>
-            <Label className="text-xs">Other Names <Req /></Label>
+            <Label className="text-xs">{t("sr_other_names")} <Req /></Label>
             <Input className="rounded-xl bg-background/60" value={value.first_name}
               onChange={(e) => set("first_name", e.target.value)} placeholder="John" />
           </div>
           <div>
-            <Label className="text-xs">Email <Req /></Label>
+            <Label className="text-xs">{t("sr_email")} <Req /></Label>
             <Input type="email" className="rounded-xl bg-background/60" value={value.email}
-              onChange={(e) => set("email", e.target.value)} placeholder="john@example.com" />
+              onChange={(e) => set("email", e.target.value)} placeholder={t("sr_email_placeholder")} />
           </div>
           <div>
-            <Label className="text-xs">Phone <Req /></Label>
+            <Label className="text-xs">{t("sr_phone")} <Req /></Label>
             <Input type="tel" className="rounded-xl bg-background/60" value={value.phone}
-              onChange={(e) => set("phone", e.target.value)} placeholder="+1 555 123 4567" />
+              onChange={(e) => set("phone", e.target.value)} placeholder={t("sr_phone_placeholder_full")} />
           </div>
           <div className="md:col-span-2">
-            <Label className="text-xs">Address <Req /></Label>
+            <Label className="text-xs">{t("sr_address")} <Req /></Label>
             <Textarea className="rounded-xl bg-background/60 min-h-[72px]" value={value.address}
-              onChange={(e) => set("address", e.target.value)} placeholder="Street, City, Country" />
+              onChange={(e) => set("address", e.target.value)} placeholder={t("sr_address_placeholder")} />
           </div>
           <div>
-            <Label className="text-xs">Date of birth <Req /></Label>
+            <Label className="text-xs">{t("sr_dob")} <Req /></Label>
             <Input
               type="text"
               inputMode="numeric"
@@ -336,19 +334,19 @@ export default function SpecialEventOnboardForm({
             />
           </div>
           <div>
-            <Label className="text-xs">Gender <Req /></Label>
+            <Label className="text-xs">{t("sr_gender")} <Req /></Label>
             <select className={nativeSelectClassName} value={value.gender}
               onChange={(e) => set("gender", e.target.value)}>
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="">{t("sr_select_gender")}</option>
+              <option value="Male">{t("sr_male")}</option>
+              <option value="Female">{t("sr_female")}</option>
             </select>
           </div>
           <div className="md:col-span-2">
-            <Label className="text-xs">Occupation{!isMember && <Req />}</Label>
+            <Label className="text-xs">{t("sr_occupation")}{!isMember && <Req />}</Label>
             <select className={nativeSelectClassName} value={value.occupation}
               onChange={(e) => set("occupation", e.target.value)}>
-              <option value="">Select occupation</option>
+              <option value="">{t("sr_select_occupation")}</option>
               {occupations.map((o: any) => (
                 <option key={o.id} value={o.name}>{o.name}</option>
               ))}
@@ -359,39 +357,38 @@ export default function SpecialEventOnboardForm({
 
       {isMember && (
         <>
-          {/* Spiritual */}
-          <Section icon={BookOpen} title="Spiritual Information">
+          <Section icon={BookOpen} title={t("sr_spiritual_info")}>
             <div className="grid md:grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Completed Foundation School?</Label>
+                <Label className="text-xs">{t("sr_foundation_q")}</Label>
                 <select className={nativeSelectClassName}
                   value={value.has_completed_foundation_school}
                   onChange={(e) => set("has_completed_foundation_school", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
+                  <option value="">{t("sr_select")}</option>
+                  <option value="yes">{t("sr_yes")}</option>
+                  <option value="no">{t("sr_no")}</option>
                 </select>
               </div>
               {value.has_completed_foundation_school === "yes" && (
                 <div>
-                  <Label className="text-xs">Foundation School Date</Label>
+                  <Label className="text-xs">{t("sr_foundation_date")}</Label>
                   <Input type="date" className="rounded-xl bg-background/60"
                     value={value.foundation_school_date}
                     onChange={(e) => set("foundation_school_date", e.target.value)} />
                 </div>
               )}
               <div>
-                <Label className="text-xs">Are you baptized?</Label>
+                <Label className="text-xs">{t("sr_baptized_q")}</Label>
                 <select className={nativeSelectClassName} value={value.is_baptized}
                   onChange={(e) => set("is_baptized", e.target.value)}>
-                  <option value="">Select</option>
-                  <option value="yes">Yes</option>
-                  <option value="no">No</option>
+                  <option value="">{t("sr_select")}</option>
+                  <option value="yes">{t("sr_yes")}</option>
+                  <option value="no">{t("sr_no")}</option>
                 </select>
               </div>
               {value.is_baptized === "yes" && (
                 <div>
-                  <Label className="text-xs">Baptism Date</Label>
+                  <Label className="text-xs">{t("sr_baptism_date")}</Label>
                   <Input type="date" className="rounded-xl bg-background/60"
                     value={value.baptism_date}
                     onChange={(e) => set("baptism_date", e.target.value)} />
@@ -400,51 +397,50 @@ export default function SpecialEventOnboardForm({
             </div>
           </Section>
 
-          {/* Ministry */}
-          <Section icon={Heart} title="Ministry & Service">
-            <p className="text-xs text-muted-foreground">Select any ministries you're interested in serving.</p>
+          <Section icon={Heart} title={t("sr_ministry_title")}>
+            <p className="text-xs text-muted-foreground">{t("sr_ministry_desc")}</p>
             <div className="grid md:grid-cols-2 gap-2">
               {MINISTRY_OPTIONS.map((m) => {
-                const checked = value.ministry_interests.includes(m);
+                const checked = value.ministry_interests.includes(m.value);
                 return (
-                  <label key={m} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <label key={m.value} className="flex items-center gap-2 cursor-pointer text-sm">
                     <Checkbox
                       checked={checked}
                       onCheckedChange={(v) => {
-                        if (v) set("ministry_interests", [...value.ministry_interests, m]);
-                        else set("ministry_interests", value.ministry_interests.filter(x => x !== m));
+                        if (v) set("ministry_interests", [...value.ministry_interests, m.value]);
+                        else set("ministry_interests", value.ministry_interests.filter(x => x !== m.value));
                       }}
                     />
-                    <span>{m}</span>
+                    <span>{t(m.key)}</span>
                   </label>
                 );
               })}
             </div>
           </Section>
 
-          {/* DCG */}
-          <Section icon={Building2} title="Destiny Care Group">
-            <Label className="text-xs">Select DCG <Req /></Label>
+          <Section icon={Building2} title={t("sr_dcg_title")}>
+            <Label className="text-xs">{t("sr_dcg_label")} <Req /></Label>
             <select
               className={nativeSelectClassName}
               value={value.dcg_id}
               onChange={(e) => set("dcg_id", e.target.value)}
               disabled={!value.region_id}
             >
-              <option value="">{value.region_id ? "Select a DCG" : "Select region first"}</option>
+              <option value="">{value.region_id ? t("sr_dcg_select_placeholder") : t("sr_dcg_select_region_first")}</option>
               {dcgs.map((d: any) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </Section>
 
-          {/* Family relationships */}
-          <Section icon={Users} title="Family Relationships (Optional)">
+          <Section icon={Users} title={t("sr_family_rel_title")}>
             {value.relationships.length > 0 && (
               <div className="space-y-2">
                 {value.relationships.map((rel, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-3 rounded-xl border border-border/30 bg-muted/30">
-                    <Badge variant="secondary" className="capitalize rounded-lg">{rel.relationship_type}</Badge>
+                    <Badge variant="secondary" className="capitalize rounded-lg">
+                      {t((REL_OPTIONS.find(o => o.value === rel.relationship_type)?.key) || "sr_rel_other")}
+                    </Badge>
                     <div className="flex-1 flex flex-wrap gap-1">
                       {rel.member_ids.map(mid => {
                         const m = allMembers.find(x => x.id === mid);
@@ -465,28 +461,28 @@ export default function SpecialEventOnboardForm({
             <div className="space-y-3 p-4 rounded-xl border border-dashed border-border/40 bg-muted/20">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Relationship Type</Label>
+                  <Label className="text-xs">{t("sr_rel_type")}</Label>
                   <select className={nativeSelectClassName} value={relType}
                     onChange={(e) => setRelType(e.target.value)}>
-                    <option value="">Select relationship</option>
-                    {REL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    <option value="">{t("sr_select_rel")}</option>
+                    {REL_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.key)}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Related Members</Label>
+                  <Label className="text-xs">{t("sr_related_members")}</Label>
                   <Popover open={relOpen} onOpenChange={setRelOpen}>
                     <PopoverTrigger asChild>
                       <Button type="button" variant="outline"
                         className="w-full justify-between font-normal rounded-xl bg-background/60">
-                        {relIds.length > 0 ? `${relIds.length} selected` : "Search members…"}
+                        {relIds.length > 0 ? `${relIds.length} ${t("sr_n_selected")}` : t("sr_search_members")}
                         <Search className="ml-2 h-4 w-4 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Search members…" onValueChange={setMemberSearchText} />
+                        <CommandInput placeholder={t("sr_search_members")} onValueChange={setMemberSearchText} />
                         <CommandList>
-                          <CommandEmpty>No members found.</CommandEmpty>
+                          <CommandEmpty>{t("sr_no_members")}</CommandEmpty>
                           <CommandGroup className="max-h-60 overflow-auto">
                             {allMembers.map(m => {
                               const sel = relIds.includes(m.id);
@@ -513,7 +509,7 @@ export default function SpecialEventOnboardForm({
               <div className="flex justify-end">
                 <Button type="button" size="sm" variant="secondary" onClick={addRel}
                   disabled={!relType || relIds.length === 0} className="rounded-xl">
-                  Add relationship
+                  {t("sr_add_rel")}
                 </Button>
               </div>
             </div>
@@ -523,17 +519,16 @@ export default function SpecialEventOnboardForm({
 
       {!isMember && (
         <>
-          {/* Referral (renamed from Event & Referral, no event field) */}
-          <Section icon={Heart} title="Referral">
+          <Section icon={Heart} title={t("sr_referral_title")}>
             <div>
-              <Label className="text-xs">How did you hear about us?</Label>
+              <Label className="text-xs">{t("sr_referral_q")}</Label>
               <select className={nativeSelectClassName} value={value.referral_source}
                 onChange={(e) => set("referral_source", e.target.value)}>
-                <option value="">Select referral source</option>
-                <option value="invited_by">Invited by someone</option>
-                <option value="social_media">Social media</option>
-                <option value="website">Website</option>
-                <option value="other">Other</option>
+                <option value="">{t("sr_select_referral")}</option>
+                <option value="invited_by">{t("sr_referral_invited_by")}</option>
+                <option value="social_media">{t("sr_referral_social_media")}</option>
+                <option value="website">{t("sr_referral_website")}</option>
+                <option value="other">{t("sr_referral_other")}</option>
               </select>
             </div>
 
@@ -541,22 +536,22 @@ export default function SpecialEventOnboardForm({
               <div className="space-y-3 p-4 rounded-xl border border-dashed border-border/40 bg-muted/20">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Member(s) who invited you <Req /></Label>
+                    <Label className="text-xs">{t("sr_invited_by_members")} <Req /></Label>
                     <Popover open={refOpen} onOpenChange={setRefOpen}>
                       <PopoverTrigger asChild>
                         <Button type="button" variant="outline"
                           className="w-full justify-between font-normal rounded-xl bg-background/60">
                           {value.referral_member_ids.length > 0
-                            ? `${value.referral_member_ids.length} selected`
-                            : "Search members…"}
+                            ? `${value.referral_member_ids.length} ${t("sr_n_selected")}`
+                            : t("sr_search_members")}
                           <Search className="ml-2 h-4 w-4 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0" align="start">
                         <Command>
-                          <CommandInput placeholder="Search members…" onValueChange={setMemberSearchText} />
+                          <CommandInput placeholder={t("sr_search_members")} onValueChange={setMemberSearchText} />
                           <CommandList>
-                            <CommandEmpty>No members found.</CommandEmpty>
+                            <CommandEmpty>{t("sr_no_members")}</CommandEmpty>
                             <CommandGroup className="max-h-60 overflow-auto">
                               {allMembers.map(m => {
                                 const sel = value.referral_member_ids.includes(m.id);
@@ -580,11 +575,11 @@ export default function SpecialEventOnboardForm({
                     </Popover>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Relationship <Req /></Label>
+                    <Label className="text-xs">{t("sr_relationship")} <Req /></Label>
                     <select className={nativeSelectClassName} value={value.referral_relationship_type}
                       onChange={(e) => set("referral_relationship_type", e.target.value)}>
-                      <option value="">Select relationship</option>
-                      {REL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      <option value="">{t("sr_select_rel")}</option>
+                      {REL_OPTIONS.map(o => <option key={o.value} value={o.value}>{t(o.key)}</option>)}
                     </select>
                   </div>
                 </div>
@@ -606,10 +601,10 @@ export default function SpecialEventOnboardForm({
 
             {value.referral_source === "social_media" && (
               <div>
-                <Label className="text-xs">Which platform? <Req /></Label>
+                <Label className="text-xs">{t("sr_which_platform")} <Req /></Label>
                 <select className={nativeSelectClassName} value={value.referral_social_media}
                   onChange={(e) => set("referral_social_media", e.target.value)}>
-                  <option value="">Select platform</option>
+                  <option value="">{t("sr_select_platform")}</option>
                   <option value="facebook">Facebook</option>
                   <option value="instagram">Instagram</option>
                   <option value="twitter">Twitter / X</option>
@@ -618,25 +613,24 @@ export default function SpecialEventOnboardForm({
                   <option value="whatsapp">WhatsApp</option>
                   <option value="telegram">Telegram</option>
                   <option value="linkedin">LinkedIn</option>
-                  <option value="other_social">Other</option>
+                  <option value="other_social">{t("sr_platform_other")}</option>
                 </select>
               </div>
             )}
 
             {value.referral_source === "other" && (
               <div>
-                <Label className="text-xs">Tell us more <Req /></Label>
+                <Label className="text-xs">{t("sr_tell_more")} <Req /></Label>
                 <Textarea className="rounded-xl bg-background/60 min-h-[72px]"
                   value={value.referral_other_details}
                   onChange={(e) => set("referral_other_details", e.target.value)}
-                  placeholder="How did you hear about us?" />
+                  placeholder={t("sr_tell_more_placeholder")} />
               </div>
             )}
           </Section>
 
-          {/* Join Interest */}
-          <Section icon={Heart} title="Interest">
-            <Label className="text-xs">Would you like to join WCA?</Label>
+          <Section icon={Heart} title={t("sr_interest_title")}>
+            <Label className="text-xs">{t("sr_join_q")}</Label>
             <RadioGroup
               value={value.join_interest}
               onValueChange={(v) => set("join_interest", v)}
@@ -644,15 +638,15 @@ export default function SpecialEventOnboardForm({
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="yes" id="ji-yes" />
-                <label htmlFor="ji-yes" className="text-sm cursor-pointer">Yes</label>
+                <label htmlFor="ji-yes" className="text-sm cursor-pointer">{t("sr_yes")}</label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="no" id="ji-no" />
-                <label htmlFor="ji-no" className="text-sm cursor-pointer">No</label>
+                <label htmlFor="ji-no" className="text-sm cursor-pointer">{t("sr_no")}</label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="undecided" id="ji-und" />
-                <label htmlFor="ji-und" className="text-sm cursor-pointer">Undecided</label>
+                <label htmlFor="ji-und" className="text-sm cursor-pointer">{t("sr_undecided")}</label>
               </div>
             </RadioGroup>
           </Section>
