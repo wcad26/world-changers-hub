@@ -299,7 +299,7 @@ export default function SpecialEventReport() {
   const exportCsv = () => {
     const headers = [
       "Name", "Region", "Type", "Age", "Age Group", "Gender", "Email", "Phone",
-      "Arrival", "Departure", "Nights", "Needs Lodging", "Family Group", "Meal Preferences", "Dietary Notes",
+      "Arrival", "Departure", "Nights", "Needs Lodging", "Family Group", "Health/Allergies", "Notes",
     ];
     const rows = filtered.map((a) => [
       a.name, a.region, a.type, a.age ?? "", a.ageGroup, a.gender || "—",
