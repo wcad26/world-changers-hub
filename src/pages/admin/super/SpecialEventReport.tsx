@@ -551,8 +551,8 @@ export default function SpecialEventReport() {
                               <TableHead>Name</TableHead>
                               <TableHead>Age</TableHead>
                               <TableHead>Gender</TableHead>
-                              <TableHead>Meals</TableHead>
-                              <TableHead>Dietary notes</TableHead>
+                              <TableHead>Health/Allergies</TableHead>
+                              <TableHead>Notes</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
