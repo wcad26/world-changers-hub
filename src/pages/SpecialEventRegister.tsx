@@ -18,7 +18,9 @@ import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { format, eachDayOfInterval } from "date-fns";
+import { fr as frLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
 import SpecialEventOnboardForm, {
   type OnboardFormValue,
   emptyOnboardValue,
@@ -66,23 +68,30 @@ type FamilyRow = {
   gender?: string;
   address?: string;
   is_child?: boolean;
-  // Prefilled rows from existing relationships use this:
   prefilled?: boolean;
   attending?: boolean;
-  // When status === "missing", a full onboarding form is collected here.
   onboard?: OnboardFormValue;
 };
 
-const REL_OPTIONS = [
-  { value: "spouse", label: "Spouse" },
-  { value: "child", label: "Child" },
-  { value: "parent", label: "Parent" },
-  { value: "sibling", label: "Sibling" },
-  { value: "guardian", label: "Guardian" },
-  { value: "other", label: "Other" },
+// Stored values stay English so backend payload and analytics don't change.
+const REL_OPTIONS: { value: string; key: Parameters<ReturnType<typeof useLanguage>["t"]>[0] }[] = [
+  { value: "spouse", key: "sr_rel_spouse" },
+  { value: "child", key: "sr_rel_child" },
+  { value: "parent", key: "sr_rel_parent" },
+  { value: "sibling", key: "sr_rel_sibling" },
+  { value: "guardian", key: "sr_rel_guardian" },
+  { value: "other", key: "sr_rel_other" },
 ];
 
-const MEAL_OPTIONS = ["Vegetarian", "Vegan", "Halal", "Kosher", "Gluten-free", "Nut allergy", "Other allergy"];
+const HEALTH_OPTIONS: { value: string; key: Parameters<ReturnType<typeof useLanguage>["t"]>[0] }[] = [
+  { value: "Food allergy", key: "sr_health_food" },
+  { value: "Drug allergy", key: "sr_health_drug" },
+  { value: "Asthma / Respiratory", key: "sr_health_asthma" },
+  { value: "Diabetes", key: "sr_health_diabetes" },
+  { value: "Hypertension", key: "sr_health_hypertension" },
+  { value: "Mobility / Accessibility", key: "sr_health_mobility" },
+  { value: "Other health/allergy", key: "sr_health_other" },
+];
 
 const nativeSelectClassName =
   "flex h-10 w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
@@ -170,6 +179,8 @@ function StepIndicator({ step, steps }: { step: StepKey; steps: { key: StepKey; 
 
 export default function SpecialEventRegister() {
   const { slug } = useParams<{ slug: string }>();
+  const { t, language, localizedField } = useLanguage();
+  const dateLocale = language === "fr" ? { locale: frLocale } : undefined;
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["special-event-by-slug", slug],
@@ -201,7 +212,6 @@ export default function SpecialEventRegister() {
   const [primaryMember, setPrimaryMember] = useState<Lookup["member"] | null>(null);
   const [registrationMode, setRegistrationMode] = useState<"individual" | "family" | null>(null);
 
-  // Full onboarding form for new (not-yet-onboarded) primary registrants.
   const [primaryOnboard, setPrimaryOnboard] = useState<OnboardFormValue>(emptyOnboardValue());
 
   const [family, setFamily] = useState<FamilyRow[]>([]);
@@ -215,6 +225,9 @@ export default function SpecialEventRegister() {
 
   const campaign = (event as any)?.fundraising_campaigns ?? null;
   const ev: any = event;
+
+  const eventName = (localizedField(ev?.name, ev?.name_fr) as string) || ev?.name || "";
+  const eventLocation = (localizedField(ev?.location_name, ev?.location_name_fr) as string) || ev?.location_name || "";
 
   const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
 
@@ -234,12 +247,12 @@ export default function SpecialEventRegister() {
   const needsOnboarding = lookupStatus === "missing" && !primaryMember;
 
   const steps: { key: StepKey; label: string }[] = useMemo(() => {
-    const base: { key: StepKey; label: string }[] = [{ key: "identify", label: "You" }];
-    if (needsOnboarding) base.push({ key: "onboard", label: "Onboard" });
-    if (registrationMode === "family") base.push({ key: "details", label: "Family" });
-    if (hasExtras) base.push({ key: "extras", label: "Extras" });
+    const base: { key: StepKey; label: string }[] = [{ key: "identify", label: t("sr_step_you") }];
+    if (needsOnboarding) base.push({ key: "onboard", label: t("sr_step_onboard") });
+    if (registrationMode === "family") base.push({ key: "details", label: t("sr_step_family") });
+    if (hasExtras) base.push({ key: "extras", label: t("sr_step_extras") });
     return base;
-  }, [hasExtras, registrationMode, needsOnboarding]);
+  }, [hasExtras, registrationMode, needsOnboarding, t]);
 
   const handleLookup = async () => {
     if (!lookupValue.trim()) return;
@@ -255,7 +268,6 @@ export default function SpecialEventRegister() {
     if ((data as Lookup)?.found) {
       const lk = data as Lookup;
       setPrimaryMember(lk.member!);
-      // Seed family from existing relationships — user just ticks who is attending.
       const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
         relationship_type: r.relationship_type || "other",
         lookupValue: r.email || r.phone || "",
@@ -275,7 +287,6 @@ export default function SpecialEventRegister() {
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
-      // Initialise the onboard form with whatever the user just typed.
       setPrimaryOnboard({
         ...emptyOnboardValue(),
         attendee_type: "visitor",
@@ -310,8 +321,6 @@ export default function SpecialEventRegister() {
             attending: true,
           };
         }
-        // Initialise an onboard form for the missing family member; inherit
-        // region from the primary registrant when available.
         const onboard: OnboardFormValue = {
           ...emptyOnboardValue(),
           attendee_type: "visitor",
@@ -330,16 +339,13 @@ export default function SpecialEventRegister() {
     ]);
   const removeFamily = (i: number) => setFamily((prev) => prev.filter((_, idx) => idx !== i));
 
-  // Step 1 (identify): "found" needs a mode; "missing" can always proceed to onboard.
   const canProceedFromIdentify =
     (lookupStatus === "found" && registrationMode !== null) ||
     lookupStatus === "missing";
 
-  // Step 2 (onboard): primary onboard form must validate AND a mode must be chosen.
   const canProceedFromOnboard =
     isOnboardValid(primaryOnboard) && registrationMode !== null;
 
-  // Build a NewRegistrant payload from an OnboardFormValue.
   const buildNewRegistrant = (o: OnboardFormValue) => ({
     type: o.attendee_type,
     attendee_type: o.attendee_type,
@@ -352,7 +358,6 @@ export default function SpecialEventRegister() {
     date_of_birth: o.date_of_birth || null,
     gender: o.gender || null,
     occupation: o.occupation || null,
-    // Member-specific
     has_completed_foundation_school: o.has_completed_foundation_school || null,
     foundation_school_date: o.foundation_school_date || null,
     is_baptized: o.is_baptized || null,
@@ -360,7 +365,6 @@ export default function SpecialEventRegister() {
     ministry_interests: o.ministry_interests,
     dcg_id: o.dcg_id || null,
     relationships: o.relationships,
-    // Visitor-specific
     referral_source: o.referral_source || null,
     referral_social_media: o.referral_social_media || null,
     referral_member_ids: o.referral_member_ids,
@@ -373,10 +377,9 @@ export default function SpecialEventRegister() {
     if (!event) return false;
     if (!primaryMember && !isOnboardValid(primaryOnboard)) return false;
     for (const f of family) {
-      if (f.prefilled) continue; // prefilled rows are opt-in via `attending`
+      if (f.prefilled) continue;
       if (!f.relationship_type) return false;
       if (f.existing_member_id) continue;
-      // Manual / missing row — must have a valid onboard form.
       if (!f.onboard || !isOnboardValid(f.onboard)) return false;
     }
     return true;
@@ -385,7 +388,6 @@ export default function SpecialEventRegister() {
   const submit = async () => {
     if (!event) return;
     setSubmitting(true);
-    // Only send: prefilled rows the user ticked, or manually added rows that resolved/are valid.
     const familyToSend =
       registrationMode === "family"
         ? family.filter((f) => {
@@ -417,9 +419,9 @@ export default function SpecialEventRegister() {
       const { data, error } = await supabase.functions.invoke("event-special-register", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
       setStep("done");
-      toast.success(`Registered ${(data as any).registered} attendee(s)!`);
+      toast.success(`${t("sr_toast_success_prefix")} ${(data as any).registered} ${t("sr_toast_success_suffix")}`);
     } catch (e: any) {
-      toast.error(e.message || "Could not complete registration");
+      toast.error(e.message || t("sr_toast_error"));
     } finally {
       setSubmitting(false);
     }
@@ -443,10 +445,10 @@ export default function SpecialEventRegister() {
         <div className="min-h-screen flex items-center justify-center p-6">
           <Card className="max-w-md w-full">
             <CardContent className="p-6 text-center space-y-3">
-              <h2 className="text-xl font-semibold">Event not available</h2>
-              <p className="text-sm text-muted-foreground">This event isn't open for special registration.</p>
+              <h2 className="text-xl font-semibold">{t("sr_event_unavailable_title")}</h2>
+              <p className="text-sm text-muted-foreground">{t("sr_event_unavailable_desc")}</p>
               <Button asChild>
-                <Link to="/events">Back to events</Link>
+                <Link to="/events">{t("sr_back_to_events")}</Link>
               </Button>
             </CardContent>
           </Card>
@@ -455,7 +457,6 @@ export default function SpecialEventRegister() {
     );
   }
 
-  // Action buttons
   const renderActions = () => {
     if (step === "done") return null;
     const currentIdx = steps.findIndex((s) => s.key === step);
@@ -487,7 +488,7 @@ export default function SpecialEventRegister() {
             disabled={submitting}
             className="w-full col-span-1 sm:w-auto rounded-xl"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <ArrowLeft className="h-4 w-4 mr-1" /> {t("sr_back")}
           </Button>
         )}
         <Button
@@ -501,33 +502,32 @@ export default function SpecialEventRegister() {
           {isLast ? (
             submitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting…
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("sr_submitting")}
               </>
             ) : (
-              <>Confirm registration <CheckCircle2 className="h-4 w-4 ml-1" /></>
+              <>{t("sr_confirm")} <CheckCircle2 className="h-4 w-4 ml-1" /></>
             )
           ) : (
-            <>Continue <ArrowRight className="h-4 w-4 ml-1" /></>
+            <>{t("sr_continue")} <ArrowRight className="h-4 w-4 ml-1" /></>
           )}
         </Button>
       </div>
     );
   };
 
-  // Reusable Individual / Family mode selector
   const renderModeSelector = (firstName: string) => (
     <div className="space-y-3">
       <Alert className="border-green-500/30 bg-green-500/5">
         <CheckCircle2 className="h-4 w-4 text-green-600" />
         <AlertDescription className="text-justify">
-          Hello <strong className="text-primary">{firstName}</strong>, are you registering for{" "}
-          <strong className="text-primary">{ev.name}</strong> as a family or an individual?
+          {t("sr_hello_prefix")} <strong className="text-primary">{firstName}</strong>{t("sr_hello_middle")}{" "}
+          <strong className="text-primary">{eventName}</strong> {t("sr_hello_suffix")}
         </AlertDescription>
       </Alert>
       <div className="grid grid-cols-2 gap-2">
         {([
-          { mode: "individual", label: "Individual", Icon: User, color: "indigo" },
-          { mode: "family", label: "Family", Icon: Users, color: "rose" },
+          { mode: "individual", label: t("sr_individual"), Icon: User, color: "indigo" },
+          { mode: "family", label: t("sr_family_mode"), Icon: Users, color: "rose" },
         ] as const).map(({ mode, label, Icon, color }) => {
           const selected = registrationMode === mode;
           const palette =
@@ -575,18 +575,18 @@ export default function SpecialEventRegister() {
             <div className="absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-accent/30 blur-3xl" />
             <div className="relative">
-              <Badge className="bg-amber-500/90 hover:bg-amber-500 text-white mb-3 border-0">Special Event Pre-Registration</Badge>
-              <h1 className="text-2xl md:text-fluid-3xl font-bold leading-tight">{ev.name}</h1>
+              <Badge className="bg-amber-500/90 hover:bg-amber-500 text-white mb-3 border-0">{t("sr_badge")}</Badge>
+              <h1 className="text-2xl md:text-fluid-3xl font-bold leading-tight">{eventName}</h1>
               <div className="flex flex-wrap items-center gap-3 mt-3 text-sm opacity-90">
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarIcon className="h-4 w-4" />
-                  {format(new Date(ev.start_datetime), "PPP")}
-                  {ev.end_datetime ? ` – ${format(new Date(ev.end_datetime), "PPP")}` : ""}
+                  {format(new Date(ev.start_datetime), "PPP", dateLocale)}
+                  {ev.end_datetime ? ` – ${format(new Date(ev.end_datetime), "PPP", dateLocale)}` : ""}
                 </span>
-                {ev.location_name && (
+                {eventLocation && (
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
-                    {ev.location_name}
+                    {eventLocation}
                   </span>
                 )}
               </div>
@@ -597,7 +597,7 @@ export default function SpecialEventRegister() {
                     <span className="font-semibold">{campaign.name}</span>
                   </div>
                   <div className="mt-2 text-xs opacity-90">
-                    Fundraising goal: {campaign.currency_code}{" "}
+                    {t("sr_fundraising_goal")}: {campaign.currency_code}{" "}
                     {((campaign.goal || 0) / 100).toLocaleString()}
                   </div>
                 </div>
@@ -612,16 +612,16 @@ export default function SpecialEventRegister() {
           )}
 
           {step === "done" ? (
-            <GlassSection icon={CheckCircle2} title="You're registered!">
+            <GlassSection icon={CheckCircle2} title={t("sr_done_title")}>
               <div className="text-center space-y-4 py-4">
                 <div className="mx-auto h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
                   <CheckCircle2 className="h-10 w-10 text-green-500" />
                 </div>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Thank you for registering for <strong className="text-primary">{ev.name}</strong>. You can start preparing to have a great time with the Lord.
+                  {t("sr_done_body_prefix")} <strong className="text-primary">{eventName}</strong>{t("sr_done_body_suffix")}
                 </p>
                 <Button asChild className="rounded-xl">
-                  <Link to="/events">Browse other events</Link>
+                  <Link to="/events">{t("sr_browse_other")}</Link>
                 </Button>
               </div>
             </GlassSection>
@@ -630,14 +630,14 @@ export default function SpecialEventRegister() {
               {step === "identify" && (
                 <GlassSection
                   icon={UserCheck}
-                  title="Who is registering?"
-                  description="Enter the email or phone you used when you registered with WCA. If you're new, we'll get you onboarded right here."
+                  title={t("sr_identify_title")}
+                  description={t("sr_identify_desc")}
                 >
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
                       {([
-                        { mode: "email", label: "Email", Icon: Mail, color: "blue" },
-                        { mode: "phone", label: "Telephone", Icon: Phone, color: "amber" },
+                        { mode: "email", label: t("sr_email"), Icon: Mail, color: "blue" },
+                        { mode: "phone", label: t("sr_telephone"), Icon: Phone, color: "amber" },
                       ] as const).map(({ mode, label, Icon, color }) => {
                         const selected = lookupMode === mode;
                         const palette =
@@ -681,7 +681,7 @@ export default function SpecialEventRegister() {
                       <Input
                         className="rounded-xl bg-background/60"
                         type={lookupMode === "email" ? "email" : "tel"}
-                        placeholder={lookupMode === "email" ? "you@example.com" : "Phone number"}
+                        placeholder={lookupMode === "email" ? t("sr_email_placeholder") : t("sr_phone_placeholder")}
                         value={lookupValue}
                         onChange={(e) => {
                           setLookupValue(e.target.value);
@@ -693,7 +693,7 @@ export default function SpecialEventRegister() {
                       {!(lookupStatus === "found" && lookupValue.trim() === lastCheckedValue) && (
                         <Button onClick={handleLookup} disabled={lookupStatus === "checking" || !lookupValue.trim()} className="rounded-xl">
                           {lookupStatus === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                          <span className="ml-1">Check</span>
+                          <span className="ml-1">{t("sr_check")}</span>
                         </Button>
                       )}
                     </div>
@@ -710,7 +710,7 @@ export default function SpecialEventRegister() {
                     <Alert className="border-amber-500/30 bg-amber-500/5">
                       <UserCheck className="h-4 w-4 text-amber-600" />
                       <AlertDescription className="text-justify">
-                        We don't have you in the system yet. Click <strong>Continue</strong> to onboard and complete your registration.
+                        {t("sr_not_in_system")} <strong>{t("sr_not_in_system_cta")}</strong> {t("sr_not_in_system_tail")}
                       </AlertDescription>
                     </Alert>
                   )}
@@ -739,13 +739,13 @@ export default function SpecialEventRegister() {
               {step === "details" && (
                 <GlassSection
                   icon={Users}
-                  title="Family & Children"
-                  description="Tick the family members joining you. You can also add someone new."
+                  title={t("sr_family_section_title")}
+                  description={t("sr_family_section_desc")}
                 >
                   {family.some((f) => f.prefilled) && (
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Your family
+                        {t("sr_your_family")}
                       </p>
                       {family.map((row, i) =>
                         row.prefilled ? (
@@ -772,10 +772,10 @@ export default function SpecialEventRegister() {
                                   {row.last_name} {row.first_name}
                                 </span>
                                 <Badge variant="secondary" className="text-[10px] capitalize">
-                                  {row.relationship_type}
+                                  {t((REL_OPTIONS.find(o => o.value === row.relationship_type)?.key) || "sr_rel_other")}
                                 </Badge>
                                 {row.is_child && (
-                                  <Badge variant="outline" className="text-[10px]">child</Badge>
+                                  <Badge variant="outline" className="text-[10px]">{t("sr_child_badge")}</Badge>
                                 )}
                               </div>
                             </div>
@@ -788,13 +788,13 @@ export default function SpecialEventRegister() {
                   <div className="flex justify-end">
                     <Button onClick={addFamily} variant="outline" size="sm" className="rounded-xl">
                       <Plus className="h-4 w-4 mr-1" />
-                      Add person
+                      {t("sr_add_person")}
                     </Button>
                   </div>
 
                   {family.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-8 border border-dashed border-border/50 rounded-xl">
-                      No family added — that's fine if you're attending alone.
+                      {t("sr_no_family")}
                     </p>
                   )}
 
@@ -808,7 +808,7 @@ export default function SpecialEventRegister() {
                             onChange={(e) => setFamily((p) => p.map((r, idx) => (idx === i ? { ...r, relationship_type: e.target.value } : r)))}
                           >
                             {REL_OPTIONS.map((o) => (
-                              <option key={o.value} value={o.value}>{o.label}</option>
+                              <option key={o.value} value={o.value}>{t(o.key)}</option>
                             ))}
                           </select>
                           <Button variant="ghost" size="icon" onClick={() => removeFamily(i)}>
@@ -818,8 +818,8 @@ export default function SpecialEventRegister() {
                         <div className="space-y-3">
                           <div className="grid grid-cols-2 gap-2">
                             {([
-                              { mode: "email", label: "Email", Icon: Mail, color: "blue" },
-                              { mode: "phone", label: "Telephone", Icon: Phone, color: "amber" },
+                              { mode: "email", label: t("sr_email"), Icon: Mail, color: "blue" },
+                              { mode: "phone", label: t("sr_telephone"), Icon: Phone, color: "amber" },
                             ] as const).map(({ mode, label, Icon, color }) => {
                               const selected = row.lookupMode === mode;
                               const palette =
@@ -865,7 +865,7 @@ export default function SpecialEventRegister() {
                           <Input
                             className="rounded-xl bg-background/60"
                             type={row.lookupMode === "email" ? "email" : "tel"}
-                            placeholder={row.lookupMode === "email" ? "you@example.com" : "Phone number"}
+                            placeholder={row.lookupMode === "email" ? t("sr_email_placeholder") : t("sr_phone_placeholder")}
                             value={row.lookupValue}
                             onChange={(e) =>
                               setFamily((p) =>
@@ -881,22 +881,20 @@ export default function SpecialEventRegister() {
                             className="rounded-xl w-full"
                           >
                             {row.status === "checking" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                            <span className="ml-1">Check</span>
+                            <span className="ml-1">{t("sr_check")}</span>
                           </Button>
                         </div>
                         {row.status === "found" && (
                           <Alert className="border-green-500/30 bg-green-500/5">
                             <CheckCircle2 className="h-4 w-4 text-green-600" />
                             <AlertDescription>
-                              Linked: {row.last_name} {row.first_name}{row.is_child ? " (child)" : ""}
+                              {t("sr_linked")}: {row.last_name} {row.first_name}{row.is_child ? ` (${t("sr_child_badge")})` : ""}
                             </AlertDescription>
                           </Alert>
                         )}
                         {row.status === "missing" && row.onboard && (
                           <div className="pt-3 border-t border-border/30">
-                            <p className="text-sm font-medium mb-3">
-                              We don't have this person yet — onboard them here.
-                            </p>
+                            <p className="text-sm font-medium mb-3">{t("sr_dont_have_person")}</p>
                             <SpecialEventOnboardForm
                               value={row.onboard}
                               onChange={(next) =>
@@ -934,17 +932,16 @@ export default function SpecialEventRegister() {
               {step === "extras" && (
                 <div className="space-y-5">
                   {ev.collect_lodging && (
-                    <GlassSection icon={Bed} title="Lodging" description="Let us know if you need accommodation arranged by the organizers.">
+                    <GlassSection icon={Bed} title={t("sr_lodging_title")} description={t("sr_lodging_desc")}>
                       <label className="flex items-center gap-2 text-sm">
                         <Checkbox checked={needsLodging} onCheckedChange={(v) => setNeedsLodging(!!v)} />
-                        I need lodging provided by the organizers
+                        {t("sr_need_lodging")}
                       </label>
                       {needsLodging && (
                         <div className="space-y-3 pt-2">
-
                           {eventDays.length > 0 && (
                             <div>
-                              <Label className="text-xs">Days you will attend</Label>
+                              <Label className="text-xs">{t("sr_days_attend")}</Label>
                               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-1">
                                 {eventDays.map((d) => {
                                   const checked = attendingDays.includes(d);
@@ -964,7 +961,7 @@ export default function SpecialEventRegister() {
                                           )
                                         }
                                       />
-                                      {format(new Date(d), "EEE, MMM d")}
+                                      {format(new Date(d), "EEE, MMM d", dateLocale)}
                                     </label>
                                   );
                                 })}
@@ -977,27 +974,27 @@ export default function SpecialEventRegister() {
                   )}
 
                   {ev.collect_meal_preferences && (
-                    <GlassSection icon={Utensils} title="Meal preferences" description="Select any dietary preferences or restrictions we should accommodate.">
+                    <GlassSection icon={Utensils} title={t("sr_health_title")} description={t("sr_health_desc")}>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {MEAL_OPTIONS.map((m) => (
+                        {HEALTH_OPTIONS.map((m) => (
                           <label
-                            key={m}
+                            key={m.value}
                             className={cn(
                               "flex items-center gap-2 text-sm rounded-xl border border-border/40 px-3 py-2 cursor-pointer transition-colors",
-                              mealPrefs.includes(m) ? "bg-primary/10 border-primary/40" : "bg-background/40 hover:bg-background/60"
+                              mealPrefs.includes(m.value) ? "bg-primary/10 border-primary/40" : "bg-background/40 hover:bg-background/60"
                             )}
                           >
                             <Checkbox
-                              checked={mealPrefs.includes(m)}
-                              onCheckedChange={(v) => setMealPrefs((p) => (v ? [...p, m] : p.filter((x) => x !== m)))}
+                              checked={mealPrefs.includes(m.value)}
+                              onCheckedChange={(v) => setMealPrefs((p) => (v ? [...p, m.value] : p.filter((x) => x !== m.value)))}
                             />
-                            {m}
+                            {t(m.key)}
                           </label>
                         ))}
                       </div>
                       <Textarea
                         className="rounded-xl bg-background/60"
-                        placeholder="Other dietary notes or allergies"
+                        placeholder={t("sr_other_health_placeholder")}
                         value={dietaryNotes}
                         onChange={(e) => setDietaryNotes(e.target.value)}
                       />
@@ -1005,7 +1002,7 @@ export default function SpecialEventRegister() {
                   )}
 
                   {ev.collect_pledges && campaign && (
-                    <GlassSection icon={Heart} title="Pledge to support" description="Optional — pledge an amount to help fund the event. We'll follow up to collect.">
+                    <GlassSection icon={Heart} title={t("sr_pledge_title")} description={t("sr_pledge_desc")}>
                       <div className="rounded-xl bg-background/40 border border-border/40 p-3 text-xs text-muted-foreground">
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">{campaign.name}</span>
