@@ -478,8 +478,8 @@ export default function SpecialEventReport() {
                         <TableHead>Departure</TableHead>
                         <TableHead className="text-right">Nights</TableHead>
                         <TableHead>Family</TableHead>
-                        <TableHead>Meals</TableHead>
-                        <TableHead>Allergy</TableHead>
+                        <TableHead>Health/Allergies</TableHead>
+                        <TableHead>Notes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
