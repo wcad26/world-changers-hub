@@ -382,7 +382,7 @@ export default function SpecialEventReport() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="attendees">Attendees</TabsTrigger>
           <TabsTrigger value="families">Families & Lodging</TabsTrigger>
-          <TabsTrigger value="meals">Meals & Dietary</TabsTrigger>
+          <TabsTrigger value="meals">Health & Allergies</TabsTrigger>
           <TabsTrigger value="travel">Travel & Schedule</TabsTrigger>
         </TabsList>
 
