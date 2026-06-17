@@ -218,6 +218,46 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div>
+                  <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Cover image</FormLabel>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      "mt-2 rounded-xl border-2 border-dashed border-border/60 cursor-pointer transition hover:border-primary",
+                      (imagePreview || currentImageUrl) ? "p-0 overflow-hidden" : "p-6"
+                    )}
+                  >
+                    {(imagePreview || currentImageUrl) ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview || currentImageUrl || ""}
+                          alt="Cover"
+                          className="w-full h-40 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); clearImage(); }}
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 border flex items-center justify-center"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center text-muted-foreground text-sm">
+                        <ImagePlus className="h-6 w-6 mb-2" />
+                        Drop an image or click to upload
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files?.[0])}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="rounded-xl border border-border/40 bg-card/50 backdrop-blur-sm p-4 space-y-4">
