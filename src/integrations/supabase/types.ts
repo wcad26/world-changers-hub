@@ -1457,6 +1457,7 @@ export type Database = {
           image_url: string | null
           is_public: boolean
           name: string
+          pledged_total: number
           raised: number
           region_id: string | null
           scope: string
@@ -1475,6 +1476,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean
           name: string
+          pledged_total?: number
           raised?: number
           region_id?: string | null
           scope?: string
@@ -1493,6 +1495,7 @@ export type Database = {
           image_url?: string | null
           is_public?: boolean
           name?: string
+          pledged_total?: number
           raised?: number
           region_id?: string | null
           scope?: string
@@ -1532,6 +1535,7 @@ export type Database = {
           id: string
           member_id: string | null
           message: string | null
+          status: string
         }
         Insert: {
           amount: number
@@ -1547,6 +1551,7 @@ export type Database = {
           id?: string
           member_id?: string | null
           message?: string | null
+          status?: string
         }
         Update: {
           amount?: number
@@ -1562,6 +1567,7 @@ export type Database = {
           id?: string
           member_id?: string | null
           message?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -1590,6 +1596,76 @@ export type Database = {
             columns: ["event_pre_registration_id"]
             isOneToOne: false
             referencedRelation: "event_pre_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fundraising_pledges: {
+        Row: {
+          amount: number
+          campaign_id: string
+          created_at: string
+          currency_code: string
+          donor_id: string | null
+          id: string
+          member_id: string | null
+          note: string | null
+          pledger_email: string | null
+          pledger_name: string
+          pledger_phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          campaign_id: string
+          created_at?: string
+          currency_code: string
+          donor_id?: string | null
+          id?: string
+          member_id?: string | null
+          note?: string | null
+          pledger_email?: string | null
+          pledger_name: string
+          pledger_phone: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string
+          created_at?: string
+          currency_code?: string
+          donor_id?: string | null
+          id?: string
+          member_id?: string | null
+          note?: string | null
+          pledger_email?: string | null
+          pledger_name?: string
+          pledger_phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fundraising_pledges_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "fundraising_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraising_pledges_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fundraising_pledges_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]

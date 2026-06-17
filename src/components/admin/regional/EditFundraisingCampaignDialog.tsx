@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, PiggyBank, Sparkles, Target } from "lucide-react";
+import { CalendarIcon, ImagePlus, Loader2, PiggyBank, Sparkles, Target, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,7 +25,10 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 interface Props {
   open: boolean;
@@ -53,6 +56,11 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
   });
 
   const [status, setStatus] = React.useState<string>("Active");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (campaign && open) {
@@ -66,12 +74,62 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
         isPublic: campaign.is_public ?? true,
       });
       setStatus(campaign.status || "Active");
+      setCurrentImageUrl(campaign.image_url || null);
+      setImageFile(null);
+      setImagePreview(null);
     }
   }, [campaign, open]);
+
+  const handleFile = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image must be smaller than 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setCurrentImageUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  async function uploadImage(): Promise<string | null> {
+    if (!imageFile) return null;
+    setUploading(true);
+    try {
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const prefix = campaign?.region_id || "global";
+      const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("campaign-images")
+        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("campaign-images").getPublicUrl(path);
+      return publicUrl;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function onSubmit(values: CampaignData) {
     if (!campaign) return;
     try {
+      let nextImageUrl: string | null | undefined = undefined;
+      if (imageFile) {
+        nextImageUrl = await uploadImage();
+      } else if (currentImageUrl === null && campaign.image_url) {
+        // Image was cleared
+        nextImageUrl = null;
+      }
       await updateMutation.mutateAsync({
         id: campaign.id,
         name: values.name,
@@ -81,6 +139,7 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
         endDate: values.endDate || null,
         isPublic: values.isPublic,
         status,
+        ...(nextImageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
       });
       toast.success("Campaign updated");
       onOpenChange(false);
@@ -89,7 +148,7 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
     }
   }
 
-  const isSubmitting = updateMutation.isPending;
+  const isSubmitting = updateMutation.isPending || uploading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,6 +217,46 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
                       <SelectItem value="Cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div>
+                  <FormLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Cover image</FormLabel>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(
+                      "mt-2 rounded-xl border-2 border-dashed border-border/60 cursor-pointer transition hover:border-primary",
+                      (imagePreview || currentImageUrl) ? "p-0 overflow-hidden" : "p-6"
+                    )}
+                  >
+                    {(imagePreview || currentImageUrl) ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview || currentImageUrl || ""}
+                          alt="Cover"
+                          className="w-full h-40 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); clearImage(); }}
+                          className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 border flex items-center justify-center"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center text-muted-foreground text-sm">
+                        <ImagePlus className="h-6 w-6 mb-2" />
+                        Drop an image or click to upload
+                      </div>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFile(e.target.files?.[0])}
+                    />
+                  </div>
                 </div>
               </div>
 
