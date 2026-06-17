@@ -33,3 +33,13 @@ verify_jwt = false
 [functions.event-special-register]
 verify_jwt = false
 
+[functions.fundraising-lookup]
+verify_jwt = false
+
+[functions.fundraising-public-pledge]
+verify_jwt = false
+
+[functions.fundraising-public-donate]
+verify_jwt = false
+
+

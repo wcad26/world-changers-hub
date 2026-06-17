@@ -1,8 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Loader2, PiggyBank, Sparkles, Target } from "lucide-react";
+import { CalendarIcon, ImagePlus, Loader2, PiggyBank, Sparkles, Target, X } from "lucide-react";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,7 +25,10 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useRegionCurrency } from "@/hooks/useCurrencies";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 interface Props {
   open: boolean;

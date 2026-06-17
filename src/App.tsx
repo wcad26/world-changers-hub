@@ -16,6 +16,9 @@ import Store from "./pages/Store";
 import Blog from "./pages/Blog";
 import Counseling from "./pages/Counseling";
 import Fundraising from "./pages/Fundraising";
+import FundraisingDetails from "./pages/FundraisingDetails";
+import FundraisingPledge from "./pages/FundraisingPledge";
+import FundraisingDonate from "./pages/FundraisingDonate";
 import CertificateVerify from "./pages/CertificateVerify";
 import NotFound from "./pages/NotFound";
 
@@ -220,6 +223,9 @@ const App = () => {
             <Route path="/blog" element={<Blog />} />
             <Route path="/counseling" element={<Counseling />} />
             <Route path="/fundraising" element={<Fundraising />} />
+            <Route path="/fundraising/:id" element={<FundraisingDetails />} />
+            <Route path="/fundraising/:id/pledge" element={<FundraisingPledge />} />
+            <Route path="/fundraising/:id/donate" element={<FundraisingDonate />} />
             <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
             <Route path="/attend/:eventId" element={<SelfAttendance />} />
 
