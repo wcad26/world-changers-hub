@@ -56,6 +56,11 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
   });
 
   const [status, setStatus] = React.useState<string>("Active");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (campaign && open) {
@@ -69,12 +74,62 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
         isPublic: campaign.is_public ?? true,
       });
       setStatus(campaign.status || "Active");
+      setCurrentImageUrl(campaign.image_url || null);
+      setImageFile(null);
+      setImagePreview(null);
     }
   }, [campaign, open]);
+
+  const handleFile = (file?: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      toast.error("Image must be smaller than 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+    setCurrentImageUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  async function uploadImage(): Promise<string | null> {
+    if (!imageFile) return null;
+    setUploading(true);
+    try {
+      const ext = imageFile.name.split(".").pop() || "jpg";
+      const prefix = campaign?.region_id || "global";
+      const path = `${prefix}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("campaign-images")
+        .upload(path, imageFile, { cacheControl: "3600", upsert: false });
+      if (error) throw error;
+      const { data: { publicUrl } } = supabase.storage.from("campaign-images").getPublicUrl(path);
+      return publicUrl;
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function onSubmit(values: CampaignData) {
     if (!campaign) return;
     try {
+      let nextImageUrl: string | null | undefined = undefined;
+      if (imageFile) {
+        nextImageUrl = await uploadImage();
+      } else if (currentImageUrl === null && campaign.image_url) {
+        // Image was cleared
+        nextImageUrl = null;
+      }
       await updateMutation.mutateAsync({
         id: campaign.id,
         name: values.name,
@@ -84,6 +139,7 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
         endDate: values.endDate || null,
         isPublic: values.isPublic,
         status,
+        ...(nextImageUrl !== undefined ? { imageUrl: nextImageUrl } : {}),
       });
       toast.success("Campaign updated");
       onOpenChange(false);
@@ -92,7 +148,7 @@ const EditFundraisingCampaignDialog: React.FC<Props> = ({ open, onOpenChange, ca
     }
   }
 
-  const isSubmitting = updateMutation.isPending;
+  const isSubmitting = updateMutation.isPending || uploading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
