@@ -109,17 +109,47 @@ Deno.serve(async (req) => {
       familyResolved.push({ entry: f, member: m });
     }
 
-    // Capacity
+    // Detect existing pre-registration for this primary member (this is an UPDATE flow).
+    const { data: existingPrimary } = await admin
+      .from("event_pre_registrations")
+      .select("id, group_id")
+      .eq("event_id", event_id)
+      .eq("member_id", primaryMember.id)
+      .maybeSingle();
+
+    const familyMemberIds = familyResolved.map(f => f.member.id);
+    let existingGroupRows: any[] = [];
+    if (existingPrimary?.group_id) {
+      const { data } = await admin
+        .from("event_pre_registrations")
+        .select("id, member_id")
+        .eq("event_id", event_id)
+        .eq("group_id", existingPrimary.group_id);
+      existingGroupRows = data || [];
+    }
+    const previouslyRegisteredIds = new Set<string>([
+      primaryMember.id,
+      ...existingGroupRows.map((r: any) => r.member_id),
+    ]);
+
+    // Capacity check (subtract people who were already in the previous registration).
     if (event.capacity) {
       const { count } = await admin
         .from("event_pre_registrations")
         .select("id", { count: "exact", head: true })
         .eq("event_id", event_id);
-      const total = (count ?? 0) + 1 + familyResolved.length;
+      const submittedTotal = 1 + familyResolved.length;
+      const newAdds = (familyMemberIds.filter(id => !previouslyRegisteredIds.has(id)).length) +
+        (existingPrimary ? 0 : 1);
+      const total = (count ?? 0) + newAdds;
       if (total > event.capacity) return json({ error: "Event capacity reached" }, 409);
+      void submittedTotal;
     }
 
-    const groupId = familyResolved.length > 0 ? crypto.randomUUID() : null;
+    // Reuse existing group_id when family present (or generate new one); null when individual.
+    const groupId = familyResolved.length > 0
+      ? (existingPrimary?.group_id || crypto.randomUUID())
+      : null;
     const registration_type = familyResolved.length > 0 ? "family" : "individual";
 
     const meals: string[] = Array.isArray(body?.meal_preferences) ? body.meal_preferences : [];
@@ -172,6 +202,55 @@ Deno.serve(async (req) => {
 
     if (insErr) return json({ error: insErr.message }, 500);
 
+    // Delete stale family rows from the previous group (members removed in this submission).
+    if (existingPrimary?.group_id) {
+      const keepIds = new Set<string>([primaryMember.id, ...familyMemberIds]);
+      const staleIds = existingGroupRows
+        .filter((r: any) => !keepIds.has(r.member_id))
+        .map((r: any) => r.id);
+      if (staleIds.length) {
+        await admin.from("event_pre_registrations").delete().in("id", staleIds);
+      }
+    }
+
+    // Pledge sync into fundraising_pledges (single active pledge per member per campaign).
+    if (event.collect_pledges && event.linked_fundraising_campaign_id) {
+      const campaignId = event.linked_fundraising_campaign_id;
+      const { data: existingPledge } = await admin
+        .from("fundraising_pledges")
+        .select("id, status")
+        .eq("campaign_id", campaignId)
+        .eq("member_id", primaryMember.id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (pledge_amount && Number(pledge_amount) > 0) {
+        const pledgerName = body?.primary_pledger_name
+          || (primaryNew ? `${primaryNew.first_name || ""} ${primaryNew.last_name || ""}`.trim() : null);
+        const payload: any = {
+          campaign_id: campaignId,
+          member_id: primaryMember.id,
+          pledger_name: pledgerName || null,
+          pledger_phone: body?.primary_phone || null,
+          amount: Number(pledge_amount),
+          currency_code: pledge_currency_code,
+          status: "active",
+          source_event_id: event_id,
+        };
+        if (existingPledge) {
+          await admin.from("fundraising_pledges").update(payload).eq("id", existingPledge.id);
+        } else {
+          await admin.from("fundraising_pledges").insert(payload);
+        }
+      } else if (existingPledge) {
+        // Pledge cleared by user → cancel the existing one.
+        await admin
+          .from("fundraising_pledges")
+          .update({ status: "cancelled" })
+          .eq("id", existingPledge.id);
+      }
+    }
+
     // Member relationships between primary and family.
     if (familyResolved.length > 0) {
       const relatedIds = familyResolved.map(f => f.member.id);
@@ -208,6 +287,7 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
+      was_update: !!existingPrimary,
       registered: rows.length,
       group_id: groupId,
       primary_member_id: primaryMember.id,

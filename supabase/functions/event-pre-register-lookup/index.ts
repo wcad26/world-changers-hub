@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
     const emailRaw = String(body?.email ?? "").trim().toLowerCase();
     const phoneRaw = String(body?.phone ?? "").trim();
     const phoneDigits = digitsOnly(phoneRaw);
+    const eventIdRaw = String(body?.event_id ?? "").trim();
+    const eventId = eventIdRaw || null;
 
     if (!emailRaw && phoneDigits.length < 9) {
       return json({ error: "Provide a valid email or phone (>=9 digits)" }, 400);
@@ -145,6 +147,91 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Optional: existing pre-registration for this event
+    let existing_registration: any = null;
+    if (eventId) {
+      const { data: myReg } = await admin
+        .from("event_pre_registrations")
+        .select("id, group_id, is_primary, needs_lodging, lodging_party_size, meal_preferences, dietary_notes, arrival_date, departure_date, phone, pledge_amount, pledge_currency_code")
+        .eq("event_id", eventId)
+        .eq("member_id", member.id)
+        .maybeSingle();
+      if (myReg) {
+        let familyRegs: any[] = [];
+        if (myReg.group_id) {
+          const { data: groupRows } = await admin
+            .from("event_pre_registrations")
+            .select("member_id, is_primary")
+            .eq("event_id", eventId)
+            .eq("group_id", myReg.group_id);
+          const otherIds = (groupRows || [])
+            .filter((r: any) => r.member_id !== member.id)
+            .map((r: any) => r.member_id);
+          if (otherIds.length) {
+            const { data: famMembers } = await admin
+              .from("members")
+              .select("id, profile_id, profiles:profile_id(first_name, last_name, email, phone, date_of_birth)")
+              .in("id", otherIds);
+
+            // Determine each other's relationship to primary using member_relationships
+            const [byMember2, byRelated2] = await Promise.all([
+              admin
+                .from("member_relationships")
+                .select("member_id, related_member_id, relationship_type")
+                .eq("member_id", member.id)
+                .in("related_member_id", otherIds),
+              admin
+                .from("member_relationships")
+                .select("member_id, related_member_id, relationship_type")
+                .eq("related_member_id", member.id)
+                .in("member_id", otherIds),
+            ]);
+            const relTypeMap = new Map<string, string>();
+            (byMember2.data || []).forEach((r: any) => {
+              if (!relTypeMap.has(r.related_member_id)) {
+                relTypeMap.set(r.related_member_id, INVERSE[r.relationship_type] || "other");
+              }
+            });
+            (byRelated2.data || []).forEach((r: any) => {
+              if (!relTypeMap.has(r.member_id)) {
+                relTypeMap.set(r.member_id, r.relationship_type || "other");
+              }
+            });
+
+            familyRegs = (famMembers || []).map((fm: any) => {
+              const dob = fm.profiles?.date_of_birth || null;
+              const age = calcAge(dob);
+              return {
+                member_id: fm.id,
+                first_name: fm.profiles?.first_name || "",
+                last_name: fm.profiles?.last_name || "",
+                email: fm.profiles?.email || "",
+                phone: fm.profiles?.phone || "",
+                date_of_birth: dob,
+                is_child: age !== null && age < 16,
+                relationship_type: relTypeMap.get(fm.id) || "other",
+              };
+            });
+          }
+        }
+        existing_registration = {
+          id: myReg.id,
+          is_primary: !!myReg.is_primary,
+          group_id: myReg.group_id,
+          needs_lodging: myReg.needs_lodging,
+          lodging_party_size: myReg.lodging_party_size,
+          meal_preferences: myReg.meal_preferences || [],
+          dietary_notes: myReg.dietary_notes,
+          arrival_date: myReg.arrival_date,
+          departure_date: myReg.departure_date,
+          phone: myReg.phone,
+          pledge_amount: myReg.pledge_amount,
+          pledge_currency_code: myReg.pledge_currency_code,
+          family: familyRegs,
+        };
+      }
+    }
+
     return json({
       found: true,
       member: {
@@ -158,6 +245,7 @@ Deno.serve(async (req) => {
         date_of_birth: profile.date_of_birth,
       },
       relations,
+      existing_registration,
     });
   } catch (e: any) {
     return json({ error: String(e?.message ?? e) }, 500);

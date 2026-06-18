@@ -1,146 +1,75 @@
-## 1. French copy fixes
-In `src/utils/languageUtils.ts`:
-- `sr_who_register_subtitle` FR → `"Saisissez l'e-mail ou le numéro de téléphone utilisé lors de votre inscription à WCA. Si vous êtes nouveau, nous vous inscrirons ici-même."`
-- `sr_pledge_subtitle` FR → `"Prenez un engagement financier pour soutenir l'organisation de l'événement. Nous reviendrons vers vous pour le suivi."`
+## Goal
 
-## 2. Public `/fundraising` page — wire to real data
-Rewrite `src/pages/Fundraising.tsx` to drop the hard‑coded sample campaigns and pull from the DB.
+Allow users to re-run the special event pre-registration flow at `/events/:slug/register` and have the system **detect their previous registration and update it** instead of creating a duplicate. This lets users correct mistakes or add missing details.
 
-- New hook `usePublicFundraisingCampaigns()` in `src/hooks/useFundraisingCampaigns.ts`: selects from `fundraising_campaigns` where `is_public = true`, ordered by `status` (active first) then `created_at desc`. Joins region name; works without auth (RLS already allows public read for `is_public`).
-- Card layout matches the current visual (status badge, image, category/region chip, title, description, progress, raised/goal, date, supporter count) but:
-  - **Buttons reorder**: `Details` first (primary, filled) → links to `/fundraising/:id`. `Donate` second (secondary variant) → links to `/fundraising/:id/donate`.
-  - Both are `<Link>` navigations — no dialogs.
-- Remove the existing `CampaignDetailsDialog`-style inline modal usage from this public page.
+## Current behavior
 
-## 3. Campaign image upload — admin parity
-- `src/components/admin/super/finances/CreateGlobalCampaignDialog.tsx`: add the same image‑upload block already present in `CreateFundraisingCampaignDialog.tsx` (file input + preview + upload to `campaign-images` bucket, then `image_url` saved on the campaign). Storage path prefix `global/<uuid>.<ext>`.
-- `src/components/admin/regional/EditFundraisingCampaignDialog.tsx` + matching super edit dialog (if present, otherwise add): support replacing/clearing `image_url` with the same uploader.
-- Bucket `campaign-images` already used by regional create; ensure it exists and is public via migration (idempotent `insert ... on conflict do nothing` into `storage.buckets`, plus public read policy).
+- DB already enforces `UNIQUE (event_id, member_id)` on `event_pre_registrations`, and the edge function `event-special-register` already does an `upsert` on that key for the primary row.
+- However, the UI doesn't recognize a returning user, so the experience feels like a brand-new registration. Worse, several side effects duplicate or go stale:
+  - **Capacity check** counts the user's existing row, so a returning user near the cap gets a false "Event capacity reached".
+  - **Family members** removed/changed by the user remain in the DB (orphan rows from the previous attempt).
+  - **Pledge** inserts a brand-new row into `fundraising_pledges` every time, inflating `pledged_total`.
+  - **Done screen** still says "Registered" with no hint that the prior submission was updated.
 
-## 4. New page: `/fundraising/:id` (Details)
-File `src/pages/FundraisingDetails.tsx`, route added in `src/App.tsx`.
+## Changes
 
-Sections:
-- Hero with cover image, status badge, title, region chip, dates, supporters, currency-aware raised/goal + progress.
-- "About this project" (campaign description).
-- "Gallery" (for now just the cover image; structured so we can add more images later — no DB change required now).
-- Sticky CTA panel on desktop, stacked on mobile, with two buttons:
-  - **Pledge** (primary) → `/fundraising/:id/pledge`
-  - **Donate** (secondary) → `/fundraising/:id/donate`
-- Recent supporters list (anonymous-aware) pulled from `fundraising_donations`.
+### 1. Edge function `event-special-register`
 
-## 5. New page: `/fundraising/:id/pledge`
-File `src/pages/FundraisingPledge.tsx`.
+- After resolving `primaryMember`, look up the existing pre-registration:
+  ```sql
+  select id, group_id from event_pre_registrations
+   where event_id = :event_id and member_id = :primary.id
+  ```
+  - If found, treat the submission as an **update**: reuse `group_id` (or generate one only if family is now present and old was solo).
+  - Capacity check: subtract previously-registered rows for this `group_id`/primary member from the total before comparing to `event.capacity`.
+- Family rows:
+  - Upsert all submitted family member rows on `(event_id, member_id)` as today.
+  - **Delete stale family rows**: any existing `event_pre_registrations` rows with the prior `group_id` whose `member_id` is not in `{primary} ∪ submitted family member ids`. Limit deletion to rows linked to this primary's previous `group_id` so we never touch unrelated registrants.
+- Pledge handling (only when `collect_pledges` + `linked_fundraising_campaign_id`):
+  - On the primary row update, also update or insert a single `fundraising_pledges` row keyed by `(campaign_id, member_id)` — update `amount`, `pledger_name`, `pledger_phone`, `status='active'`; if amount cleared, mark prior pledge `status='cancelled'`. The existing `fr_sync_pledged_total` trigger keeps `pledged_total` correct.
+  - Add a partial unique index `fundraising_pledges (campaign_id, member_id) where member_id is not null and status='active'` via migration to back the upsert and prevent duplicates going forward.
+- Response payload adds `was_update: boolean` so the UI can show the right confirmation copy.
 
-Flow:
-1. Step 1 — phone number input + **Proceed**. Calls a new lookup edge function `fundraising-lookup` (or reuses `event-pre-register-lookup`'s phone branch) that searches `members` and a generalized "registered visitor" view by phone.
-2. Step 2 — form
-   - If matched: greeting `Hello {first_name}, input your pledge amount below and confirm to send in your pledge.` Only fields shown: pledge amount + currency (defaults to campaign currency) + optional note.
-   - If not matched: message `Fill the form below and confirm to send in your pledge.` Fields: Family Name, Other Names, Telephone Number (prefilled), Email, Pledge Amount.
-3. **Confirm** submits to a new edge function `fundraising-public-pledge` that:
-   - Resolves or creates the donor in `public.donors` (region inferred from campaign).
-   - Inserts a row in a **new `fundraising_pledges` table** (see Section 7).
-   - Updates an aggregate `pledged_total` on `fundraising_campaigns` (added in same migration) so the public page can show pledged-vs-goal later.
-4. Success screen with shareable summary.
+### 2. Lookup function `event-pre-register-lookup`
 
-French translations added for all strings in `languageUtils.ts` (prefix `fp_`).
+- Accept optional `event_id` in the request body. When provided and a member is found, also return:
+  ```ts
+  existing_registration: {
+    is_primary: boolean;
+    group_id: string | null;
+    needs_lodging, lodging_party_size, meal_preferences, dietary_notes,
+    arrival_date, departure_date, phone,
+    pledge_amount, pledge_currency_code,
+    family: [{ member_id, relationship_type, first_name, last_name, email, phone }]
+  } | null
+  ```
+  Family list is built from rows sharing the same `group_id`, joined with `members`/`profiles`/`member_relationships` for the relationship label (same inverse logic already in the file).
 
-## 6. New page: `/fundraising/:id/donate`
-File `src/pages/FundraisingDonate.tsx`.
+### 3. UI `src/pages/SpecialEventRegister.tsx`
 
-Flow:
-1. Phone number input + **Proceed** (same lookup as pledge).
-2. Branches:
-   - **Match + has open pledge on this campaign** → show pledge card (amount, currency, progress bar of redeemed vs pledged via existing donations sum). Below: amount input + **Pay Now** (stub button — payment integration deferred).
-   - **Match, no pledge** → show donor info pre-filled; amount input + **Pay Now**.
-   - **No match** → form with Family Name, Other Names, Phone, Amount + **Pay Now**.
-   - Toggle **Donate anonymously** at top: collapses to just amount + **Pay Now**.
-3. Pay Now currently records intent only (no real charge yet). It calls `fundraising-public-donate` edge function that:
-   - Resolves/creates donor (unless anonymous).
-   - Inserts into `fundraising_donations` with `status = 'pending'` (new column added in Section 7).
-   - Returns the donation id for the future payment step.
+- Pass `event_id: ev.id` in the lookup payload (primary lookup only).
+- When the lookup returns `existing_registration`, pre-populate state before letting the user advance:
+  - `attending`, `needsLodging`, `lodgingPartySize`, `mealPreferences`, `dietaryNotes`, `arrival_date`, `departure_date`, `pledgeAmount`, `primary_phone`.
+  - `family` rows: each known relative becomes a `FamilyRow` with `status: "found"`, `existing_member_id`, `lookupValue` set to their email/phone for display, and `attending: true`.
+  - Set a new `isUpdatingExisting` flag.
+- Banner on the "Who" step when `isUpdatingExisting`: localized message (EN/FR) — "We found your previous registration. Make any changes and re-submit to update it." Replace primary CTA label with "Update registration" / "Mettre à jour l'inscription".
+- Stepper still walks through the same steps so the user can edit family/extras/pledge; nothing is locked.
+- On success, when `was_update`, the Done screen shows "Registration updated" / "Inscription mise à jour" with adjusted body copy.
+- Add ~6 i18n keys to `src/utils/languageUtils.ts` (`sr_update_banner_title`, `sr_update_banner_desc`, `sr_update_cta`, `sr_done_updated_title`, `sr_done_updated_desc`, `sr_family_prefilled_note`).
 
-French translations added.
+### 4. Database migration
 
-## 7. Database migration
-Single migration file:
+- Add partial unique index on `fundraising_pledges (campaign_id, member_id) where member_id is not null and status = 'active'`.
+- No table/column additions; everything else is supported by current schema.
 
-```sql
--- 7.1 Image column already exists; add pledge aggregate
-ALTER TABLE public.fundraising_campaigns
-  ADD COLUMN IF NOT EXISTS pledged_total bigint NOT NULL DEFAULT 0;
+## Out of scope
 
--- 7.2 Donation status (for pending payments)
-ALTER TABLE public.fundraising_donations
-  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'completed'
-    CHECK (status IN ('pending','completed','failed','refunded'));
+- Editing or removing the registration after the event has started.
+- Self-service cancellation flow (would be a separate feature).
+- Admin-side bulk edits.
 
--- 7.3 Public pledges
-CREATE TABLE public.fundraising_pledges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  campaign_id uuid NOT NULL REFERENCES public.fundraising_campaigns(id) ON DELETE CASCADE,
-  donor_id uuid REFERENCES public.donors(id) ON DELETE SET NULL,
-  member_id uuid REFERENCES public.members(id) ON DELETE SET NULL,
-  pledger_name text NOT NULL,
-  pledger_phone text NOT NULL,
-  pledger_email text,
-  amount bigint NOT NULL CHECK (amount > 0),
-  currency_code text NOT NULL,
-  status text NOT NULL DEFAULT 'active'
-    CHECK (status IN ('active','fulfilled','cancelled')),
-  note text,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.fundraising_pledges TO authenticated;
-GRANT SELECT, INSERT ON public.fundraising_pledges TO anon;
-GRANT ALL ON public.fundraising_pledges TO service_role;
-ALTER TABLE public.fundraising_pledges ENABLE ROW LEVEL SECURITY;
+## Technical notes
 
--- Anyone may create a pledge for a public campaign
-CREATE POLICY "Public can insert pledges for public campaigns"
-  ON public.fundraising_pledges FOR INSERT TO anon, authenticated
-  WITH CHECK (EXISTS (SELECT 1 FROM public.fundraising_campaigns c
-    WHERE c.id = campaign_id AND c.is_public = true));
--- Regional/super admins manage pledges for their campaigns (mirrors existing donation policies)
--- (full policy block in migration body)
-
--- 7.4 Trigger to keep pledged_total in sync
-CREATE OR REPLACE FUNCTION public.fr_sync_pledged_total() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-BEGIN
-  UPDATE public.fundraising_campaigns SET pledged_total = COALESCE((
-    SELECT SUM(amount) FROM public.fundraising_pledges
-     WHERE campaign_id = COALESCE(NEW.campaign_id, OLD.campaign_id)
-       AND status = 'active'
-  ),0) WHERE id = COALESCE(NEW.campaign_id, OLD.campaign_id);
-  RETURN NULL;
-END $$;
-CREATE TRIGGER trg_fr_sync_pledged AFTER INSERT OR UPDATE OR DELETE
-  ON public.fundraising_pledges FOR EACH ROW EXECUTE FUNCTION public.fr_sync_pledged_total();
-
--- 7.5 Storage bucket idempotent ensure (public)
-INSERT INTO storage.buckets (id, name, public) VALUES ('campaign-images','campaign-images',true)
-  ON CONFLICT (id) DO NOTHING;
--- Read/write storage policies for authenticated; public read.
-```
-
-## 8. Edge functions (no auth required, use service role)
-- `supabase/functions/fundraising-lookup/index.ts` — POST `{ phone }` → `{ found, first_name?, last_name?, type: 'member'|'visitor'|'donor', id?, has_pledge?, pledge? }` for a given `campaign_id`.
-- `supabase/functions/fundraising-public-pledge/index.ts` — POST `{ campaign_id, phone, family_name?, other_names?, email?, amount, currency_code, note? }`.
-- `supabase/functions/fundraising-public-donate/index.ts` — POST `{ campaign_id, phone?, family_name?, other_names?, anonymous, amount, currency_code }` → inserts pending donation, returns id.
-
-All three registered in `supabase/config.toml` with `verify_jwt = false`.
-
-## 9. Routing & navigation
-`src/App.tsx`:
-- `/fundraising/:id` → `FundraisingDetails`
-- `/fundraising/:id/pledge` → `FundraisingPledge`
-- `/fundraising/:id/donate` → `FundraisingDonate`
-
-## 10. i18n
-Add ~25 EN/FR keys in `languageUtils.ts` covering details page sections, pledge & donate flow labels, buttons, success/error toasts.
-
-## Out of scope (deferred)
-- Actual payment processing on "Pay Now" — wired as TODO; will be tackled in the follow-up prompt as you noted.
-- Multi-image gallery upload for campaigns (current scope: single cover image).
+- `group_id`: if previous was individual and the user now adds family, generate a new `group_id` and backfill it on the primary's existing row in the same `update`. If previous had a group and the user removes everyone, set `group_id = null` and `registration_type = 'individual'` on the primary, and delete the stale family rows.
+- All deletes/updates use the service role inside the edge function — no client-side privilege changes.
+- The `(event_id, member_id)` unique constraint guarantees idempotency even on rapid double submits.

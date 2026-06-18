@@ -434,6 +434,13 @@ export const translations = {
     sr_toast_success_prefix: "Registered",
     sr_toast_success_suffix: "attendee(s)!",
     sr_toast_error: "Could not complete registration",
+    sr_toast_updated: "Your registration has been updated",
+    sr_update_banner_title: "We found your previous registration",
+    sr_update_banner_desc: "Make any changes below and re-submit to update your registration.",
+    sr_update_cta: "Update registration",
+    sr_done_updated_title: "Registration updated",
+    sr_done_updated_body_prefix: "Your registration for",
+    sr_done_updated_body_suffix: " has been updated.",
 
     // Public fundraising
     fr_title: "Fundraising Projects",
@@ -880,6 +887,13 @@ export const translations = {
     sr_toast_success_prefix: "Inscription réussie de",
     sr_toast_success_suffix: "participant(s) !",
     sr_toast_error: "Impossible de finaliser l'inscription",
+    sr_toast_updated: "Votre inscription a été mise à jour",
+    sr_update_banner_title: "Nous avons retrouvé votre inscription précédente",
+    sr_update_banner_desc: "Apportez vos modifications ci-dessous et soumettez à nouveau pour mettre à jour votre inscription.",
+    sr_update_cta: "Mettre à jour l'inscription",
+    sr_done_updated_title: "Inscription mise à jour",
+    sr_done_updated_body_prefix: "Votre inscription à",
+    sr_done_updated_body_suffix: " a été mise à jour.",
 
     // Public fundraising
     fr_title: "Projets de collecte de fonds",
