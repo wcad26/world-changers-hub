@@ -759,6 +759,14 @@ export default function SpecialEventRegister() {
 
                   {lookupStatus === "found" && primaryMember && (
                     <>
+                      {isUpdatingExisting && (
+                        <Alert className="border-blue-500/30 bg-blue-500/5">
+                          <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="text-justify">
+                            <strong>{t("sr_update_banner_title")}.</strong> {t("sr_update_banner_desc")}
+                          </AlertDescription>
+                        </Alert>
+                      )}
                       {renderModeSelector(primaryMember.first_name)}
                       <div className="pt-2">{renderActions()}</div>
                     </>
