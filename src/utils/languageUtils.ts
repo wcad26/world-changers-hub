@@ -434,6 +434,13 @@ export const translations = {
     sr_toast_success_prefix: "Registered",
     sr_toast_success_suffix: "attendee(s)!",
     sr_toast_error: "Could not complete registration",
+    sr_toast_updated: "Your registration has been updated",
+    sr_update_banner_title: "We found your previous registration",
+    sr_update_banner_desc: "Make any changes below and re-submit to update your registration.",
+    sr_update_cta: "Update registration",
+    sr_done_updated_title: "Registration updated",
+    sr_done_updated_body_prefix: "Your registration for",
+    sr_done_updated_body_suffix: " has been updated.",
 
     // Public fundraising
     fr_title: "Fundraising Projects",
