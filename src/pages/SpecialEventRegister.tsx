@@ -222,6 +222,9 @@ export default function SpecialEventRegister() {
   const [dietaryNotes, setDietaryNotes] = useState("");
   const [pledgeAmount, setPledgeAmount] = useState<number | "">("");
   const [submitting, setSubmitting] = useState(false);
+  const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
+  const [wasUpdated, setWasUpdated] = useState(false);
+  const [primaryPhone, setPrimaryPhone] = useState("");
 
   const campaign = (event as any)?.fundraising_campaigns ?? null;
   const ev: any = event;
