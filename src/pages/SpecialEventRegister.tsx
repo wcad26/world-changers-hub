@@ -666,13 +666,17 @@ export default function SpecialEventRegister() {
           )}
 
           {step === "done" ? (
-            <GlassSection icon={CheckCircle2} title={t("sr_done_title")}>
+            <GlassSection icon={CheckCircle2} title={wasUpdated ? t("sr_done_updated_title") : t("sr_done_title")}>
               <div className="text-center space-y-4 py-4">
                 <div className="mx-auto h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
                   <CheckCircle2 className="h-10 w-10 text-green-500" />
                 </div>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {t("sr_done_body_prefix")} <strong className="text-primary">{eventName}</strong>{t("sr_done_body_suffix")}
+                  {wasUpdated ? (
+                    <>{t("sr_done_updated_body_prefix")} <strong className="text-primary">{eventName}</strong>{t("sr_done_updated_body_suffix")}</>
+                  ) : (
+                    <>{t("sr_done_body_prefix")} <strong className="text-primary">{eventName}</strong>{t("sr_done_body_suffix")}</>
+                  )}
                 </p>
                 <Button asChild className="rounded-xl">
                   <Link to="/events">{t("sr_browse_other")}</Link>
