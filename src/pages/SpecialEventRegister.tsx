@@ -261,7 +261,8 @@ export default function SpecialEventRegister() {
     if (!lookupValue.trim()) return;
     setLookupStatus("checking");
     const value = lookupValue.trim();
-    const payload = lookupMode === "email" ? { email: value } : { phone: value };
+    const payload: any = lookupMode === "email" ? { email: value } : { phone: value };
+    if ((event as any)?.id) payload.event_id = (event as any).id;
     const { data, error } = await supabase.functions.invoke("event-pre-register-lookup", { body: payload });
     setLastCheckedValue(value);
     if (error) {
@@ -269,9 +270,35 @@ export default function SpecialEventRegister() {
       return;
     }
     if ((data as Lookup)?.found) {
-      const lk = data as Lookup;
+      const lk = data as Lookup & { existing_registration?: any };
       setPrimaryMember(lk.member!);
-      const prefilled: FamilyRow[] = (lk.relations || []).map((r) => ({
+      const existingReg = lk.existing_registration || null;
+      setIsUpdatingExisting(!!existingReg);
+
+      // Build family rows. Prefer the people already on the existing registration
+      // (so we can pre-attend them); fall back to all known relations.
+      const existingFamilyIds = new Set<string>(
+        (existingReg?.family || []).map((f: any) => f.member_id)
+      );
+      const baseRelations = (lk.relations || []);
+      // Add any registered family that isn't already in relations (edge case).
+      (existingReg?.family || []).forEach((f: any) => {
+        if (!baseRelations.find((r) => r.member_id === f.member_id)) {
+          baseRelations.push({
+            member_id: f.member_id,
+            profile_id: "",
+            first_name: f.first_name,
+            last_name: f.last_name,
+            email: f.email,
+            phone: f.phone,
+            date_of_birth: f.date_of_birth,
+            is_child: !!f.is_child,
+            relationship_type: f.relationship_type || "other",
+          });
+        }
+      });
+
+      const prefilled: FamilyRow[] = baseRelations.map((r) => ({
         relationship_type: r.relationship_type || "other",
         lookupValue: r.email || r.phone || "",
         lookupMode: "email",
@@ -284,12 +311,30 @@ export default function SpecialEventRegister() {
         date_of_birth: r.date_of_birth || undefined,
         is_child: r.is_child,
         prefilled: true,
-        attending: false,
+        attending: existingFamilyIds.has(r.member_id),
       }));
       setFamily(prefilled);
+
+      if (existingReg) {
+        // Preload extras + pledge
+        setNeedsLodging(!!existingReg.needs_lodging);
+        if (Array.isArray(existingReg.meal_preferences)) {
+          setMealPrefs(existingReg.meal_preferences);
+        }
+        if (existingReg.dietary_notes) setDietaryNotes(existingReg.dietary_notes);
+        if (existingReg.pledge_amount) setPledgeAmount(Number(existingReg.pledge_amount));
+        if (existingReg.phone) setPrimaryPhone(existingReg.phone);
+        // Default mode based on previous registration
+        setRegistrationMode(existingFamilyIds.size > 0 ? "family" : "individual");
+        // Days: if arrival + departure exist, mark them
+        if (existingReg.arrival_date && existingReg.departure_date) {
+          setAttendingDays([existingReg.arrival_date, existingReg.departure_date].filter((v, i, a) => a.indexOf(v) === i));
+        }
+      }
       setLookupStatus("found");
     } else {
       setPrimaryMember(null);
+      setIsUpdatingExisting(false);
       setPrimaryOnboard({
         ...emptyOnboardValue(),
         attendee_type: "visitor",
