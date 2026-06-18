@@ -559,7 +559,7 @@ export default function SpecialEventRegister() {
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("sr_submitting")}
               </>
             ) : (
-              <>{t("sr_confirm")} <CheckCircle2 className="h-4 w-4 ml-1" /></>
+              <>{isUpdatingExisting ? t("sr_update_cta") : t("sr_confirm")} <CheckCircle2 className="h-4 w-4 ml-1" /></>
             )
           ) : (
             <>{t("sr_continue")} <ArrowRight className="h-4 w-4 ml-1" /></>
