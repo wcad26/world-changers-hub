@@ -448,7 +448,7 @@ export default function SpecialEventRegister() {
         event_id: (event as any).id,
         primary_member_id: primaryMember?.id ?? null,
         primary_new: primaryMember ? null : buildNewRegistrant(primaryOnboard),
-        primary_phone: primaryMember?.phone || primaryOnboard.phone,
+        primary_phone: primaryPhone || primaryMember?.phone || primaryOnboard.phone,
         family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
@@ -466,8 +466,14 @@ export default function SpecialEventRegister() {
       };
       const { data, error } = await supabase.functions.invoke("event-special-register", { body });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      setWasUpdated(!!(data as any)?.was_update);
       setStep("done");
-      toast.success(`${t("sr_toast_success_prefix")} ${(data as any).registered} ${t("sr_toast_success_suffix")}`);
+      const isUpdate = !!(data as any)?.was_update;
+      toast.success(
+        isUpdate
+          ? t("sr_toast_updated")
+          : `${t("sr_toast_success_prefix")} ${(data as any).registered} ${t("sr_toast_success_suffix")}`
+      );
     } catch (e: any) {
       toast.error(e.message || t("sr_toast_error"));
     } finally {
