@@ -47,6 +47,8 @@ Deno.serve(async (req) => {
     const emailRaw = String(body?.email ?? "").trim().toLowerCase();
     const phoneRaw = String(body?.phone ?? "").trim();
     const phoneDigits = digitsOnly(phoneRaw);
+    const eventIdRaw = String(body?.event_id ?? "").trim();
+    const eventId = eventIdRaw || null;
 
     if (!emailRaw && phoneDigits.length < 9) {
       return json({ error: "Provide a valid email or phone (>=9 digits)" }, 400);
