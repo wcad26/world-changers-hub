@@ -560,7 +560,7 @@ export default function SpecialEventReport() {
                                 <TableCell>
                                   {m.name} {m.is_primary && <Badge variant="secondary" className="ml-1">Primary</Badge>}
                                 </TableCell>
-                                <TableCell>{m.age ?? "—"} <span className="text-xs text-muted-foreground capitalize">({m.ageGroup})</span></TableCell>
+                                <TableCell><Badge variant="outline" className="capitalize text-[10px]">{m.ageGroup}</Badge></TableCell>
                                 <TableCell className="capitalize">{m.gender || "—"}</TableCell>
                                 <TableCell className="text-xs">{(m.meal_preferences || []).join(", ") || "—"}</TableCell>
                                 <TableCell className="text-xs">{m.dietary_notes || "—"}</TableCell>
