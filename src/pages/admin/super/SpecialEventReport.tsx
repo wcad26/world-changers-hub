@@ -492,8 +492,7 @@ export default function SpecialEventReport() {
                           <TableCell className="text-sm">{a.region}</TableCell>
                           <TableCell><Badge variant={a.type === "member" ? "default" : "secondary"} className="capitalize">{a.type}</Badge></TableCell>
                           <TableCell className="text-sm">
-                            {a.age ?? "—"}
-                            <Badge variant="outline" className="ml-1 capitalize text-[10px]">{a.ageGroup}</Badge>
+                            <Badge variant="outline" className="capitalize text-[10px]">{a.ageGroup}</Badge>
                           </TableCell>
                           <TableCell className="capitalize text-sm">{a.gender || "—"}</TableCell>
                           <TableCell className="text-sm">{a.phone || "—"}</TableCell>
