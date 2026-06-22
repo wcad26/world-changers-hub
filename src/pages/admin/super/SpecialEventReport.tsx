@@ -492,8 +492,7 @@ export default function SpecialEventReport() {
                           <TableCell className="text-sm">{a.region}</TableCell>
                           <TableCell><Badge variant={a.type === "member" ? "default" : "secondary"} className="capitalize">{a.type}</Badge></TableCell>
                           <TableCell className="text-sm">
-                            {a.age ?? "—"}
-                            <Badge variant="outline" className="ml-1 capitalize text-[10px]">{a.ageGroup}</Badge>
+                            <Badge variant="outline" className="capitalize text-[10px]">{a.ageGroup}</Badge>
                           </TableCell>
                           <TableCell className="capitalize text-sm">{a.gender || "—"}</TableCell>
                           <TableCell className="text-sm">{a.phone || "—"}</TableCell>
@@ -561,7 +560,7 @@ export default function SpecialEventReport() {
                                 <TableCell>
                                   {m.name} {m.is_primary && <Badge variant="secondary" className="ml-1">Primary</Badge>}
                                 </TableCell>
-                                <TableCell>{m.age ?? "—"} <span className="text-xs text-muted-foreground capitalize">({m.ageGroup})</span></TableCell>
+                                <TableCell><Badge variant="outline" className="capitalize text-[10px]">{m.ageGroup}</Badge></TableCell>
                                 <TableCell className="capitalize">{m.gender || "—"}</TableCell>
                                 <TableCell className="text-xs">{(m.meal_preferences || []).join(", ") || "—"}</TableCell>
                                 <TableCell className="text-xs">{m.dietary_notes || "—"}</TableCell>
