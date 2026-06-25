@@ -130,6 +130,33 @@ export type Database = {
           },
         ]
       }
+      backfill_auth_users_report: {
+        Row: {
+          action: string
+          email: string | null
+          id: string
+          note: string | null
+          profile_id: string | null
+          run_at: string
+        }
+        Insert: {
+          action: string
+          email?: string | null
+          id?: string
+          note?: string | null
+          profile_id?: string | null
+          run_at?: string
+        }
+        Update: {
+          action?: string
+          email?: string | null
+          id?: string
+          note?: string | null
+          profile_id?: string | null
+          run_at?: string
+        }
+        Relationships: []
+      }
       bible_books: {
         Row: {
           abbreviation: string
