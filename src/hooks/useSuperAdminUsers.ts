@@ -104,8 +104,8 @@ export const useAssignSuperAdminRole = () => {
         .maybeSingle();
       if (checkErr) throw checkErr;
 
-      if (!existing) {
-        const { error: insErr } = await supabase
+      const tryInsertRole = async () =>
+        supabase
           .from('user_roles')
           .insert({
             user_id: userId,
@@ -114,6 +114,17 @@ export const useAssignSuperAdminRole = () => {
             status: 'active' as any,
             assigned_by: user?.id,
           } as any);
+
+      if (!existing) {
+        let { error: insErr } = await tryInsertRole();
+        if (insErr && (insErr as any).code === '23503') {
+          // Profile has no auth.users row — provision one transparently.
+          const { error: provErr } = await supabase.functions.invoke('provision-auth-user', {
+            body: { profile_id: userId },
+          });
+          if (provErr) throw new Error(`Could not create sign-in account: ${provErr.message}`);
+          ({ error: insErr } = await tryInsertRole());
+        }
         if (insErr) throw insErr;
       } else if (!existing.is_active || existing.status !== 'active') {
         const { error: upErr } = await supabase
@@ -122,6 +133,7 @@ export const useAssignSuperAdminRole = () => {
           .eq('id', existing.id);
         if (upErr) throw upErr;
       }
+
 
       // Then upsert the super_admin_user_roles assignment
       const { data: priorAssign } = await supabase

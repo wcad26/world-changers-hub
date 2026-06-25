@@ -114,38 +114,56 @@ export const useAssignUserRole = () => {
 
           if (updateError) throw updateError;
         } else {
-          // Create new pending role request
-          const { error: insertError } = await supabase
-            .from('user_roles')
-            .insert({
-              user_id: userId,
-              role: 'regional_admin',
-              region_id: userRegion.id,
-              status: 'pending',
-              is_active: false,
-              requested_regional_role_id: roleId,
+          // Create new pending role request, auto-provisioning auth user if missing.
+          const insertPending = () =>
+            supabase
+              .from('user_roles')
+              .insert({
+                user_id: userId,
+                role: 'regional_admin',
+                region_id: userRegion.id,
+                status: 'pending',
+                is_active: false,
+                requested_regional_role_id: roleId,
+              });
+          let { error: insertError } = await insertPending();
+          if (insertError && (insertError as any).code === '23503') {
+            const { error: provErr } = await supabase.functions.invoke('provision-auth-user', {
+              body: { profile_id: userId },
             });
-
+            if (provErr) throw new Error(`Could not create sign-in account: ${provErr.message}`);
+            ({ error: insertError } = await insertPending());
+          }
           if (insertError) throw insertError;
         }
 
         return { requiresApproval: true };
       } else {
         // Direct assignment (for already approved admins)
-        const { data, error } = await supabase
-          .from('regional_user_roles')
-          .insert({
-            user_id: userId,
-            region_id: userRegion.id,
-            regional_role_id: roleId,
-            assigned_by: user?.id,
-          })
-          .select()
-          .single();
+        const directInsert = () =>
+          supabase
+            .from('regional_user_roles')
+            .insert({
+              user_id: userId,
+              region_id: userRegion.id,
+              regional_role_id: roleId,
+              assigned_by: user?.id,
+            })
+            .select()
+            .single();
 
+        let { data, error } = await directInsert();
+        if (error && (error as any).code === '23503') {
+          const { error: provErr } = await supabase.functions.invoke('provision-auth-user', {
+            body: { profile_id: userId },
+          });
+          if (provErr) throw new Error(`Could not create sign-in account: ${provErr.message}`);
+          ({ data, error } = await directInsert());
+        }
         if (error) throw error;
         return data;
       }
+
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['user-regional-roles'] });

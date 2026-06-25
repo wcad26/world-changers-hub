@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Crown, Shield, UserPlus, KeyRound, Trash2, Edit2 } from 'lucide-react';
+import { Crown, Shield, UserPlus, KeyRound, Trash2, Edit2, KeyRound as KeyIcon, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,8 +64,27 @@ const SuperAdminsTable: React.FC = () => {
   const [confirm, setConfirm] = useState<{ user: SuperAdminUserRow; assignmentId?: string } | null>(
     null,
   );
+  const [backfilling, setBackfilling] = useState(false);
+  const { toast } = useToast();
 
   const canManage = isPrincipal;
+
+  const runBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('backfill-auth-users', {});
+      if (error) throw error;
+      const d = data as any;
+      toast({
+        title: 'Backfill complete',
+        description: `Created ${d?.created ?? 0} accounts, merged ${d?.merged ?? 0}, skipped ${d?.skipped ?? 0}, errors ${d?.errors_count ?? 0}.`,
+      });
+    } catch (e: any) {
+      toast({ title: 'Backfill failed', description: e?.message, variant: 'destructive' });
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -72,12 +94,19 @@ const SuperAdminsTable: React.FC = () => {
           or change role assignments here.
         </p>
         {canManage && (
-          <Button onClick={() => setPromoteOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Promote Super Admin
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={runBackfill} variant="outline" className="gap-2" disabled={backfilling}>
+              {backfilling ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyIcon className="h-4 w-4" />}
+              Backfill sign-in accounts
+            </Button>
+            <Button onClick={() => setPromoteOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Promote Super Admin
+            </Button>
+          </div>
         )}
       </div>
+
 
       <div className="rounded-lg border bg-card overflow-hidden">
         {isLoading ? (

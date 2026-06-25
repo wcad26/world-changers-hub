@@ -43,3 +43,9 @@ verify_jwt = false
 verify_jwt = false
 
 
+
+[functions.backfill-auth-users]
+verify_jwt = true
+
+[functions.provision-auth-user]
+verify_jwt = true
