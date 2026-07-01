@@ -65,25 +65,42 @@ const SuperAdminsTable: React.FC = () => {
     null,
   );
   const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<any>(null);
+  const [reportRows, setReportRows] = useState<any[] | null>(null);
   const { toast } = useToast();
 
   const canManage = isPrincipal;
 
   const runBackfill = async () => {
     setBackfilling(true);
+    setBackfillResult(null);
     try {
       const { data, error } = await supabase.functions.invoke('backfill-auth-users', {});
       if (error) throw error;
       const d = data as any;
+      setBackfillResult(d);
       toast({
         title: 'Backfill complete',
-        description: `Created ${d?.created ?? 0} accounts, merged ${d?.merged ?? 0}, skipped ${d?.skipped ?? 0}, errors ${d?.errors_count ?? 0}.`,
+        description: `Scanned ${d?.scanned ?? 0} · Created ${d?.created ?? 0} · Merged ${d?.merged ?? 0} · Errors ${d?.errors_count ?? 0}`,
       });
     } catch (e: any) {
       toast({ title: 'Backfill failed', description: e?.message, variant: 'destructive' });
     } finally {
       setBackfilling(false);
     }
+  };
+
+  const openReport = async () => {
+    const { data, error } = await supabase
+      .from('backfill_auth_users_report')
+      .select('profile_id,email,action,note')
+      .order('id', { ascending: false })
+      .limit(50);
+    if (error) {
+      toast({ title: 'Could not load report', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setReportRows(data ?? []);
   };
 
   return (
