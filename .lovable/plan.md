@@ -1,44 +1,89 @@
-## Root Cause
+## Problem
 
-The recent `profiles_require_auth_user` trigger (added to enforce that every profile has an `auth.users` row for role assignment) now blocks all flows that create a profile without a paired auth account. Edge function logs confirm it:
+The Super Admin "Backfill sign-in accounts" button ran but produced **1052 error rows and only 6 merges** in `backfill_auth_users_report`, leaving **526 profiles still orphaned** (684 profiles vs 159 auth users). All error notes are empty (`{}`), and every subsequent role assignment for those profiles still fails with FK code `23503`, so the inline `provision-auth-user` fallback in the dialogs also fails.
 
+### Root cause
+
+Both `backfill-auth-users` and `provision-auth-user` call `admin.auth.admin.createUser({ id: p.id, ... })`. The GoTrue JS admin SDK **silently drops the `id` field** (and other create-user quirks), so either the create fails or a new random id is generated — either way `auth.users.id` never matches `profiles.id`, and the orphan stays orphaned. Errors returned by the SDK stringify to `{}` in our logger, hiding this.
+
+## Fix
+
+Move auth-user creation into a **Postgres SECURITY DEFINER function** that inserts directly into `auth.users` with the exact profile id and a bcrypted default password. This is deterministic, avoids SDK quirks, and lets us handle 500+ rows in one pass.
+
+### 1. New DB function (migration)
+
+```sql
+create or replace function public.admin_create_auth_user_for_profile(
+  p_profile_id uuid,
+  p_email text,
+  p_password text default '123456'
+) returns uuid
+language plpgsql security definer set search_path = public, auth, extensions
+as $$
+declare v_id uuid;
+begin
+  -- idempotent
+  select id into v_id from auth.users where id = p_profile_id;
+  if v_id is not null then return v_id; end if;
+
+  insert into auth.users (
+    id, instance_id, aud, role, email, encrypted_password,
+    email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
+    created_at, updated_at, confirmation_token, recovery_token,
+    email_change_token_new, email_change
+  ) values (
+    p_profile_id, '00000000-0000-0000-0000-000000000000', 'authenticated',
+    'authenticated', lower(p_email),
+    extensions.crypt(p_password, extensions.gen_salt('bf')),
+    now(), '{"provider":"email","providers":["email"]}'::jsonb,
+    '{}'::jsonb, now(), now(), '', '', '', ''
+  );
+
+  insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
+  values (gen_random_uuid(), p_profile_id, p_profile_id::text,
+          jsonb_build_object('sub', p_profile_id::text, 'email', lower(p_email)),
+          'email', now(), now(), now());
+
+  return p_profile_id;
+end $$;
+
+revoke all on function public.admin_create_auth_user_for_profile(uuid,text,text) from public, anon, authenticated;
+grant execute on function public.admin_create_auth_user_for_profile(uuid,text,text) to service_role;
 ```
-create-visitor: Profile creation failed: {
-  code: "23503",
-  message: "Profile aeb55c0c-... cannot be created without a matching auth.users row.
-            Create the auth account first."
-}
-```
 
-The same failure will hit any public-facing flow that inserts into `profiles` without first creating an `auth.users` row:
-- `create-visitor` (visitor registration link — the reported bug)
-- `create-member-registration` (member self-registration)
-- `event-special-register` / `event-pre-register` (event pre-registration for new attendees)
-- `create-member` (admin-created members)
+(pgcrypto is already installed on Supabase.)
 
-## Fix Strategy
+### 2. Rewrite `backfill-auth-users/index.ts`
 
-Provision an `auth.users` row FIRST in every profile-creating edge function, then insert the profile with that user's id. Password defaults to `123456` (per project convention), email confirmed automatically so users can sign in later. This satisfies the trigger AND keeps the "every profile is sign-in ready" invariant the user asked for previously.
+- Iterate every orphan profile in batches of 100.
+- For each row:
+  - If another auth user already owns that email → merge (repoint `members.profile_id`, delete orphan profile) — keep existing behavior.
+  - Otherwise call `admin.rpc('admin_create_auth_user_for_profile', { p_profile_id, p_email })`.
+- Fix the logger: use `JSON.stringify(err, Object.getOwnPropertyNames(err))` and include `err.code / err.details / err.hint` so we never write empty `{}` again.
+- Clear old error rows for the profile before re-logging (so re-runs are clean).
+- Return `{ created, merged, skipped, errors_count, errors: first 20 }`.
 
-### Changes
+### 3. Rewrite `provision-auth-user/index.ts`
 
-1. **`supabase/functions/_shared/cors.ts` (or new `_shared/provisionAuthUser.ts`)** — add a shared helper `ensureAuthUser(admin, { email, password?, metadata })` that:
-   - Looks up an existing auth user by email (via `admin.auth.admin.listUsers` filter).
-   - If missing, calls `admin.auth.admin.createUser({ email, password: '123456', email_confirm: true, user_metadata })` and returns the new id.
-   - If email is missing/blank (rare visitor edge case), generates a placeholder like `visitor+<uuid>@placeholder.wcaglobal.org` so the auth row can exist. Store the real contact info on the profile only.
+- Same RPC path (`admin_create_auth_user_for_profile`).
+- If profile lacks an email, generate placeholder `visitor+<uuid>@placeholder.wcaglobal.org` and update the profile, then create auth row.
+- Keep the "already exists" short-circuit.
+- Return better error text (`err.message + err.details`) so the Settings toast is actionable.
 
-2. **`supabase/functions/create-visitor/index.ts`** — replace `crypto.randomUUID()` profile id generation with `ensureAuthUser({ email, metadata: { first_name, last_name, region_id } })` and use the returned id for the profile insert. Keep the existing duplicate-check behavior.
+### 4. Settings page UX (`SuperAdminsTable.tsx`)
 
-3. **`supabase/functions/create-member-registration/index.ts`** — same treatment: provision auth user first, then insert profile.
+- After the backfill call, show summary: `Created X · Merged Y · Skipped Z · Errors N` with a "View report" link that opens a small dialog reading the last 50 rows of `backfill_auth_users_report`.
+- Disable the button while running; auto-refresh the orphan count.
 
-4. **`supabase/functions/event-special-register/index.ts`** and **`supabase/functions/event-pre-register/index.ts`** — audit the paths that create new attendee profiles; route them through `ensureAuthUser` before the profile insert. Existing-attendee updates are unaffected.
+### 5. Verify
 
-5. **`supabase/functions/create-member/index.ts`** — same pattern, so admin-created members also become sign-in ready automatically.
+- Re-run backfill → expect 526 → 0 orphans.
+- Assign a role to a previously-orphan profile in both Regional (`useAssignUserRole`) and Super Admin (`useAssignSuperAdminRole`) portals → succeeds without invoking `provision-auth-user`.
+- Attempt sign-in with default password `123456` for a backfilled user → works.
 
-6. **No schema changes.** The trigger stays in place — it is the correct enforcement, we're aligning the writers with it.
+## Files touched
 
-### Verification
-
-- Re-run the failing visitor registration on `/visitor/register/wca-buea` from the preview; confirm success and that a new row exists in both `auth.users` and `public.profiles` with matching ids.
-- Check `create-visitor` edge function logs — no more `23503` errors.
-- Spot-check member self-registration and event pre-registration for a brand-new email.
+- `supabase/migrations/<new>_admin_create_auth_user_for_profile.sql` (via migration tool)
+- `supabase/functions/backfill-auth-users/index.ts`
+- `supabase/functions/provision-auth-user/index.ts`
+- `src/components/admin/super/access/SuperAdminsTable.tsx` (result summary + report dialog)
