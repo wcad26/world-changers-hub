@@ -1,71 +1,44 @@
-## Root cause
+## Root Cause
 
-`user_roles.user_id` and `regional_user_roles.user_id` are FKs to `auth.users(id)`. **532 of 690 profiles have no matching `auth.users` row**, so the moment one of them is picked in a role-assignment dialog the insert fails with `user_roles_user_id_fkey`. Those same 532 people also cannot sign in to the member portal — there is literally no auth account behind their profile, default password or not.
+The recent `profiles_require_auth_user` trigger (added to enforce that every profile has an `auth.users` row for role assignment) now blocks all flows that create a profile without a paired auth account. Edge function logs confirm it:
 
-The existing `create-member` edge function already mints an auth user with password `123456`, but other historical paths (bulk imports, early pre-registration, manual SQL) created `profiles` rows without ever calling it. We need a one-time backfill, a guarantee for new rows going forward, and a graceful UX in the role pickers.
-
-## Plan
-
-### 1. One-time backfill: give every profile an `auth.users` row
-
-A new edge function `backfill-auth-users` (callable only by a Principal super admin) iterates over every profile where no `auth.users` row exists and creates one with the **service-role admin API**:
-
-```ts
-await supabaseAdmin.auth.admin.createUser({
-  id: profile.id,                 // preserve profile.id == auth.users.id
-  email: profile.email,
-  password: '123456',
-  email_confirm: true,
-  user_metadata: { first_name, last_name },
-});
+```
+create-visitor: Profile creation failed: {
+  code: "23503",
+  message: "Profile aeb55c0c-... cannot be created without a matching auth.users row.
+            Create the auth account first."
+}
 ```
 
-Pre-flight handling for the edge cases we already measured:
+The same failure will hit any public-facing flow that inserts into `profiles` without first creating an `auth.users` row:
+- `create-visitor` (visitor registration link — the reported bug)
+- `create-member-registration` (member self-registration)
+- `event-special-register` / `event-pre-register` (event pre-registration for new attendees)
+- `create-member` (admin-created members)
 
-| Case | Count | Resolution |
-|---|---|---|
-| Profile has no auth user, email is unique | ~523 | Create auth user with `id = profile.id`, password `123456`. |
-| Two profiles share the same email, both missing auth | 3 emails / 6 profiles | Create auth user for the older profile; for the duplicate(s) append `+dup<n>@…` to the email so the create succeeds, log them in a `backfill_auth_users_report` table for the admin to reconcile. |
-| Profile email collides with an existing `auth.users` row owned by a different id | 6 | Re-point all FKs from the orphan profile id to the existing auth user id (`members.profile_id`, `event_pre_registrations.profile_id`, `member_relationships.*`, `donors`, `dcg_members`, etc.), then delete the orphan `profiles` row. Done in a single SQL transaction in the same migration so nothing dangles. |
+## Fix Strategy
 
-The function returns a JSON summary `{ created, merged, skipped, errors[] }` and writes it to `backfill_auth_users_report` for an audit trail. Idempotent — re-running it is a no-op once everyone has an auth row.
+Provision an `auth.users` row FIRST in every profile-creating edge function, then insert the profile with that user's id. Password defaults to `123456` (per project convention), email confirmed automatically so users can sign in later. This satisfies the trigger AND keeps the "every profile is sign-in ready" invariant the user asked for previously.
 
-### 2. Guarantee for the future
+### Changes
 
-Add a Postgres trigger `profiles_require_auth_user` (`BEFORE INSERT` on `public.profiles`) that raises an exception if `NEW.id` is not present in `auth.users`. This makes it impossible for any code path (admin import, edge function, manual SQL) to silently create a profile without an auth account again.
+1. **`supabase/functions/_shared/cors.ts` (or new `_shared/provisionAuthUser.ts`)** — add a shared helper `ensureAuthUser(admin, { email, password?, metadata })` that:
+   - Looks up an existing auth user by email (via `admin.auth.admin.listUsers` filter).
+   - If missing, calls `admin.auth.admin.createUser({ email, password: '123456', email_confirm: true, user_metadata })` and returns the new id.
+   - If email is missing/blank (rare visitor edge case), generates a placeholder like `visitor+<uuid>@placeholder.wcaglobal.org` so the auth row can exist. Store the real contact info on the profile only.
 
-Audit the remaining profile-creating paths and route them through `auth.admin.createUser`:
-- `create-member-registration` and `create-regional-admin` — already do this. ✓
-- Bulk-import / CSV paths under `src/components/admin/regional/members/import/*` — wire through the new shared `create-member` flow instead of inserting into `profiles` directly.
-- Special-event pre-registration (`event_pre_registrations`) — if it creates a profile for a brand-new attendee, route through the same flow.
+2. **`supabase/functions/create-visitor/index.ts`** — replace `crypto.randomUUID()` profile id generation with `ensureAuthUser({ email, metadata: { first_name, last_name, region_id } })` and use the returned id for the profile insert. Keep the existing duplicate-check behavior.
 
-### 3. Friendlier role-picker UX
+3. **`supabase/functions/create-member-registration/index.ts`** — same treatment: provision auth user first, then insert profile.
 
-Even after backfill, the dialogs should never show a raw FK error:
-- `useAssignSuperAdminRole`, `useRegionalRoles` assign mutations: catch Postgres `23503` on `user_id` and translate to a toast: **"This user has no sign-in account yet. Click 'Provision account' to fix."**
-- `PromoteSuperAdminDialog` and `AssignRoleDialog`: if a picked user has no auth row, show an inline **"Provision sign-in account"** button that calls a small `provision-auth-user` edge function (single-user version of step 1) before retrying the role assignment.
+4. **`supabase/functions/event-special-register/index.ts`** and **`supabase/functions/event-pre-register/index.ts`** — audit the paths that create new attendee profiles; route them through `ensureAuthUser` before the profile insert. Existing-attendee updates are unaffected.
 
-### 4. Verification
+5. **`supabase/functions/create-member/index.ts`** — same pattern, so admin-created members also become sign-in ready automatically.
 
-After the backfill runs, confirm:
+6. **No schema changes.** The trigger stays in place — it is the correct enforcement, we're aligning the writers with it.
 
-```sql
-select count(*) from profiles p
-left join auth.users au on au.id = p.id
-where au.id is null;       -- expect 0
-```
+### Verification
 
-Then sanity-test by signing in to the member portal as `chiangehamandine5@gmail.com` / `123456`, and re-trying the "Promote to Super Admin" action for "Chiangeh Amandine Dwin" — both should now succeed.
-
-### Out of scope
-
-- Forcing users to change `123456` on first sign-in (separate UX request).
-- Sending notification emails to the 532 backfilled users — current request is to make sign-in work silently.
-
-## Technical notes
-
-- New tables / schema changes go through `supabase--migration`:
-  - `backfill_auth_users_report (id, run_at, profile_id, action, note)` with grants + RLS limited to super admins.
-  - `BEFORE INSERT` trigger on `profiles`.
-- New edge functions: `backfill-auth-users` and `provision-auth-user`, both gated by `is_principal_super_admin(auth.uid())`.
-- Existing code touched: `PromoteSuperAdminDialog.tsx`, `AssignRoleDialog.tsx`, `useSuperAdminUsers.ts`, `useRegionalRoles.ts`, bulk-import components under `src/components/admin/regional/members/import/`.
+- Re-run the failing visitor registration on `/visitor/register/wca-buea` from the preview; confirm success and that a new row exists in both `auth.users` and `public.profiles` with matching ids.
+- Check `create-visitor` edge function logs — no more `23503` errors.
+- Spot-check member self-registration and event pre-registration for a brand-new email.
