@@ -65,25 +65,42 @@ const SuperAdminsTable: React.FC = () => {
     null,
   );
   const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<any>(null);
+  const [reportRows, setReportRows] = useState<any[] | null>(null);
   const { toast } = useToast();
 
   const canManage = isPrincipal;
 
   const runBackfill = async () => {
     setBackfilling(true);
+    setBackfillResult(null);
     try {
       const { data, error } = await supabase.functions.invoke('backfill-auth-users', {});
       if (error) throw error;
       const d = data as any;
+      setBackfillResult(d);
       toast({
         title: 'Backfill complete',
-        description: `Created ${d?.created ?? 0} accounts, merged ${d?.merged ?? 0}, skipped ${d?.skipped ?? 0}, errors ${d?.errors_count ?? 0}.`,
+        description: `Scanned ${d?.scanned ?? 0} · Created ${d?.created ?? 0} · Merged ${d?.merged ?? 0} · Errors ${d?.errors_count ?? 0}`,
       });
     } catch (e: any) {
       toast({ title: 'Backfill failed', description: e?.message, variant: 'destructive' });
     } finally {
       setBackfilling(false);
     }
+  };
+
+  const openReport = async () => {
+    const { data, error } = await supabase
+      .from('backfill_auth_users_report')
+      .select('profile_id,email,action,note')
+      .order('id', { ascending: false })
+      .limit(50);
+    if (error) {
+      toast({ title: 'Could not load report', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setReportRows(data ?? []);
   };
 
   return (
@@ -106,6 +123,20 @@ const SuperAdminsTable: React.FC = () => {
           </div>
         )}
       </div>
+
+      {backfillResult && (
+        <div className="rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between">
+          <div>
+            <strong>Backfill result:</strong> Scanned {backfillResult.scanned ?? 0} · Created{' '}
+            {backfillResult.created ?? 0} · Merged {backfillResult.merged ?? 0} · Errors{' '}
+            {backfillResult.errors_count ?? 0}
+          </div>
+          <Button size="sm" variant="ghost" onClick={openReport}>
+            View report
+          </Button>
+        </div>
+      )}
+
 
 
       <div className="rounded-lg border bg-card overflow-hidden">
@@ -318,7 +349,52 @@ const SuperAdminsTable: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!reportRows} onOpenChange={(o) => !o && setReportRows(null)}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Backfill report (last 50)</DialogTitle>
+            <DialogDescription>Most recent auth-account provisioning actions.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-auto rounded border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Note</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(reportRows ?? []).map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          r.action === 'error'
+                            ? 'bg-destructive/10 text-destructive border-destructive/30'
+                            : r.action === 'created' || r.action === 'provisioned'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-muted text-muted-foreground'
+                        }
+                      >
+                        {r.action}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{r.email}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-md truncate" title={r.note ?? ''}>
+                      {r.note}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 

@@ -2608,6 +2608,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_auth_user_for_profile: {
+        Args: { p_email: string; p_password?: string; p_profile_id: string }
+        Returns: string
+      }
       generate_member_id: { Args: { _region_id: string }; Returns: string }
       get_attendance_summary: {
         Args: { p_region_id: string }
