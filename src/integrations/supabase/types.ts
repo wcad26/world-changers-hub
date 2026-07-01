@@ -2612,6 +2612,10 @@ export type Database = {
         Args: { p_email: string; p_password?: string; p_profile_id: string }
         Returns: string
       }
+      admin_sync_auth_email_for_profile: {
+        Args: { p_profile_id: string }
+        Returns: string
+      }
       generate_member_id: { Args: { _region_id: string }; Returns: string }
       get_attendance_summary: {
         Args: { p_region_id: string }
