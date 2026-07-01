@@ -1,89 +1,51 @@
-## Problem
+## Goal
+Ensure every existing visitor/member profile can sign in to the member portal with the default password `123456`, and admins can assign portal roles to any profile without foreign-key failures.
 
-The Super Admin "Backfill sign-in accounts" button ran but produced **1052 error rows and only 6 merges** in `backfill_auth_users_report`, leaving **526 profiles still orphaned** (684 profiles vs 159 auth users). All error notes are empty (`{}`), and every subsequent role assignment for those profiles still fails with FK code `23503`, so the inline `provision-auth-user` fallback in the dialogs also fails.
+## What I found
+- The backfill currently reports: `Scanned 526 · Created 0 · Merged 0 · Errors 526`.
+- The report errors are not empty anymore; they show the real issue:
+  - `duplicate key value violates unique constraint "profiles_pkey"`
+  - This happens because inserting directly into `auth.users` fires the existing `on_auth_user_created` trigger, which calls `handle_new_user()` and tries to insert a duplicate `public.profiles` row using the same ID.
+- Current database count:
+  - `685` profiles total
+  - `526` profiles have no matching `auth.users` row
+  - `522` of those orphan profiles are attached to member/visitor records
 
-### Root cause
+## Fix plan
 
-Both `backfill-auth-users` and `provision-auth-user` call `admin.auth.admin.createUser({ id: p.id, ... })`. The GoTrue JS admin SDK **silently drops the `id` field** (and other create-user quirks), so either the create fails or a new random id is generated — either way `auth.users.id` never matches `profiles.id`, and the orphan stays orphaned. Errors returned by the SDK stringify to `{}` in our logger, hiding this.
+### 1. Make profile creation idempotent
+Update the database trigger function `public.handle_new_user()` so it no longer fails when the profile already exists.
 
-## Fix
+Instead of blindly inserting a profile, it will upsert/merge safely:
+- If the profile does not exist, create it from auth metadata.
+- If the profile already exists, keep the existing profile and only fill missing safe fields where appropriate.
+- This prevents duplicate-profile errors when backfilling `auth.users` for existing profiles.
 
-Move auth-user creation into a **Postgres SECURITY DEFINER function** that inserts directly into `auth.users` with the exact profile id and a bcrypted default password. This is deterministic, avoids SDK quirks, and lets us handle 500+ rows in one pass.
+### 2. Keep the profile-auth safety trigger
+Keep `profiles_require_auth_user()` in place so future flows do not create orphan profiles directly.
 
-### 1. New DB function (migration)
+The existing visitor/member/event flows already use auth provisioning first, so this safety trigger should remain useful after `handle_new_user()` is fixed.
 
-```sql
-create or replace function public.admin_create_auth_user_for_profile(
-  p_profile_id uuid,
-  p_email text,
-  p_password text default '123456'
-) returns uuid
-language plpgsql security definer set search_path = public, auth, extensions
-as $$
-declare v_id uuid;
-begin
-  -- idempotent
-  select id into v_id from auth.users where id = p_profile_id;
-  if v_id is not null then return v_id; end if;
+### 3. Harden the auth-user creation SQL function
+Update `public.admin_create_auth_user_for_profile(...)` to be more robust:
+- Preserve the existing profile ID as the `auth.users.id`.
+- Create confirmed email/password login with password `123456`.
+- Avoid duplicate email failures by suffixing only when needed.
+- Ensure `auth.identities` is created idempotently.
+- Return the created user ID.
 
-  insert into auth.users (
-    id, instance_id, aud, role, email, encrypted_password,
-    email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
-    created_at, updated_at, confirmation_token, recovery_token,
-    email_change_token_new, email_change
-  ) values (
-    p_profile_id, '00000000-0000-0000-0000-000000000000', 'authenticated',
-    'authenticated', lower(p_email),
-    extensions.crypt(p_password, extensions.gen_salt('bf')),
-    now(), '{"provider":"email","providers":["email"]}'::jsonb,
-    '{}'::jsonb, now(), now(), '', '', '', ''
-  );
+### 4. Re-run the backfill safely
+After the migration is approved:
+- Re-run the Super Admin **Backfill sign-in accounts** flow, or call the deployed edge function with the authenticated super-admin session.
+- Expected result: `Created 526`, with very few or zero errors.
+- Existing member/visitor profiles stay intact; no member records are deleted.
 
-  insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at, last_sign_in_at)
-  values (gen_random_uuid(), p_profile_id, p_profile_id::text,
-          jsonb_build_object('sub', p_profile_id::text, 'email', lower(p_email)),
-          'email', now(), now(), now());
+### 5. Verify the outcome
+Confirm through database checks that:
+- Profiles without auth users drop from `526` to `0` or only intentional non-login system profiles remain.
+- Member/visitor profiles without auth users drop to `0`.
+- A newly backfilled profile can be assigned a regional/super role.
+- That user can sign in using their email and default password `123456` unless they had already changed their password.
 
-  return p_profile_id;
-end $$;
-
-revoke all on function public.admin_create_auth_user_for_profile(uuid,text,text) from public, anon, authenticated;
-grant execute on function public.admin_create_auth_user_for_profile(uuid,text,text) to service_role;
-```
-
-(pgcrypto is already installed on Supabase.)
-
-### 2. Rewrite `backfill-auth-users/index.ts`
-
-- Iterate every orphan profile in batches of 100.
-- For each row:
-  - If another auth user already owns that email → merge (repoint `members.profile_id`, delete orphan profile) — keep existing behavior.
-  - Otherwise call `admin.rpc('admin_create_auth_user_for_profile', { p_profile_id, p_email })`.
-- Fix the logger: use `JSON.stringify(err, Object.getOwnPropertyNames(err))` and include `err.code / err.details / err.hint` so we never write empty `{}` again.
-- Clear old error rows for the profile before re-logging (so re-runs are clean).
-- Return `{ created, merged, skipped, errors_count, errors: first 20 }`.
-
-### 3. Rewrite `provision-auth-user/index.ts`
-
-- Same RPC path (`admin_create_auth_user_for_profile`).
-- If profile lacks an email, generate placeholder `visitor+<uuid>@placeholder.wcaglobal.org` and update the profile, then create auth row.
-- Keep the "already exists" short-circuit.
-- Return better error text (`err.message + err.details`) so the Settings toast is actionable.
-
-### 4. Settings page UX (`SuperAdminsTable.tsx`)
-
-- After the backfill call, show summary: `Created X · Merged Y · Skipped Z · Errors N` with a "View report" link that opens a small dialog reading the last 50 rows of `backfill_auth_users_report`.
-- Disable the button while running; auto-refresh the orphan count.
-
-### 5. Verify
-
-- Re-run backfill → expect 526 → 0 orphans.
-- Assign a role to a previously-orphan profile in both Regional (`useAssignUserRole`) and Super Admin (`useAssignSuperAdminRole`) portals → succeeds without invoking `provision-auth-user`.
-- Attempt sign-in with default password `123456` for a backfilled user → works.
-
-## Files touched
-
-- `supabase/migrations/<new>_admin_create_auth_user_for_profile.sql` (via migration tool)
-- `supabase/functions/backfill-auth-users/index.ts`
-- `supabase/functions/provision-auth-user/index.ts`
-- `src/components/admin/super/access/SuperAdminsTable.tsx` (result summary + report dialog)
+### 6. Improve the UI report if needed
+If errors remain after the backend fix, update the Super Admin Access report dialog to show the exact remaining records and reasons so admins can resolve edge cases without guessing.
