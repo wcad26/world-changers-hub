@@ -143,9 +143,16 @@ Deno.serve(async (req) => {
     }
 
 
-    // === FAMILY ===
-    const familyInput: FamilyEntry[] = Array.isArray(body?.family) ? body.family : [];
+    const primaryMember = await resolveOrCreateMember(admin, {
+      existing_member_id: primaryExistingId,
+      new_registrant: primaryNew,
+      fallback_region_id: event.region_id,
+      source_event_id: event_id,
+    });
+    if (!primaryMember) return json({ error: "Primary registrant could not be resolved" }, 400);
+
     const familyResolved: { entry: FamilyEntry; member: { id: string; profile_id: string; email?: string } }[] = [];
+    const resolvedIds = new Set<string>([primaryMember.id]);
     for (const f of familyInput) {
       if (!VALID_RELS.includes((f.relationship_type || "").toLowerCase())) {
         return json({ error: `Invalid relationship_type: ${f.relationship_type}` }, 400);
@@ -157,8 +164,15 @@ Deno.serve(async (req) => {
         source_event_id: event_id,
       });
       if (!m) return json({ error: "A family member could not be resolved" }, 400);
+      // Two rows resolved to the same person (e.g. shared email pointing at the
+      // same existing profile). Surface a clear duplicate error.
+      if (resolvedIds.has(m.id)) {
+        return json({ error: "duplicate_member" }, 409);
+      }
+      resolvedIds.add(m.id);
       familyResolved.push({ entry: f, member: m });
     }
+
 
     // Detect existing pre-registration for this primary member (this is an UPDATE flow).
     const { data: existingPrimary } = await admin
