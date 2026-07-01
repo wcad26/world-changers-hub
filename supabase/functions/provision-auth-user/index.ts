@@ -2,12 +2,11 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// Single-profile version of backfill-auth-users.
-// Called inline from role-assignment dialogs when an admin tries to assign a
-// role to a user that has no auth account yet.
+// Provision a single auth.users row for a profile that doesn't have one,
+// preserving the profile id (so all existing FK targets keep working).
+// Uses the SECURITY DEFINER SQL function admin_create_auth_user_for_profile.
 //
-// Caller must be an authenticated admin (super admin OR regional admin).
-// Returns the auth user id (== profile id) on success.
+// Callable by any super admin or regional admin.
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -32,7 +31,6 @@ serve(async (req) => {
     if (claimsErr || !claims?.claims?.sub) return json({ error: 'Unauthorized' }, 401)
     const callerId = claims.claims.sub as string
 
-    // Caller must be either super admin OR have any regional admin role.
     const { data: isSuper } = await admin.rpc('is_super_admin_user', { _user_id: callerId })
     let allowed = !!isSuper
     if (!allowed) {
@@ -41,7 +39,9 @@ serve(async (req) => {
         .select('role')
         .eq('user_id', callerId)
         .eq('is_active', true)
-      allowed = (roles ?? []).some((r: any) => r.role === 'regional_admin' || r.role === 'super_admin')
+      allowed = (roles ?? []).some(
+        (r: any) => r.role === 'regional_admin' || r.role === 'super_admin',
+      )
     }
     if (!allowed) return json({ error: 'Forbidden' }, 403)
 
@@ -60,31 +60,26 @@ serve(async (req) => {
       .maybeSingle()
     if (pErr || !profile) return json({ error: 'Profile not found' }, 404)
 
-    let useEmail: string = profile.email ?? ''
-    if (!useEmail) return json({ error: 'Profile has no email' }, 400)
-
-    // If email already taken by a different auth user, append +dup suffix.
-    const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-    const taken = (list?.users ?? []).find(
-      (u) => (u.email ?? '').toLowerCase() === useEmail.toLowerCase(),
-    )
-    if (taken) {
-      const suffix = profile.id.slice(0, 8)
-      useEmail = useEmail.replace(/@/, `+dup-${suffix}@`)
+    let useEmail: string = (profile.email ?? '').trim()
+    if (!useEmail) {
+      useEmail = `user+${profile.id}@placeholder.wcaglobal.org`
       await admin.from('profiles').update({ email: useEmail }).eq('id', profile.id)
     }
 
-    const { error: createErr } = await admin.auth.admin.createUser({
-      id: profile.id,
-      email: useEmail,
-      password: '123456',
-      email_confirm: true,
-      user_metadata: {
-        first_name: profile.first_name ?? '',
-        last_name: profile.last_name ?? '',
-      },
-    } as any)
-    if (createErr) return json({ error: createErr.message }, 400)
+    const { data: newId, error: rpcErr } = await admin.rpc(
+      'admin_create_auth_user_for_profile',
+      { p_profile_id: profile.id, p_email: useEmail, p_password: '123456' },
+    )
+    if (rpcErr) {
+      const msg = describeError(rpcErr)
+      await admin.from('backfill_auth_users_report').insert({
+        profile_id: profile.id,
+        email: useEmail,
+        action: 'error',
+        note: `single-provision: ${msg}`,
+      })
+      return json({ error: msg }, 400)
+    }
 
     await admin.from('backfill_auth_users_report').insert({
       profile_id: profile.id,
@@ -93,9 +88,9 @@ serve(async (req) => {
       note: 'single-user provision from role dialog',
     })
 
-    return json({ ok: true, user_id: profile.id, email: useEmail })
-  } catch (e: any) {
-    return json({ ok: false, error: e?.message ?? String(e) }, 500)
+    return json({ ok: true, user_id: newId, email: useEmail })
+  } catch (e) {
+    return json({ ok: false, error: describeError(e) }, 500)
   }
 })
 
@@ -104,4 +99,12 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
+}
+
+function describeError(e: any): string {
+  if (!e) return 'unknown error'
+  if (typeof e === 'string') return e
+  const parts = [e.message, e.details, e.hint, e.code].filter(Boolean)
+  if (parts.length) return parts.join(' | ')
+  try { return JSON.stringify(e, Object.getOwnPropertyNames(e)) } catch { return String(e) }
 }

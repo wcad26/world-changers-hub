@@ -2,20 +2,19 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// One-time (idempotent) backfill: every public.profiles row must have a matching
-// auth.users row so that user_roles / regional_user_roles FK targets exist and
-// people can sign in with the default password "123456".
+// Backfill sign-in accounts for every public.profiles row that has no matching
+// auth.users row. Uses the SECURITY DEFINER SQL function
+// public.admin_create_auth_user_for_profile so the created auth.users.id
+// exactly matches the profile id (which the JS admin SDK does not support).
 //
-// Only callable by a Principal Super Admin (is_principal_super_admin).
+// Only callable by a Principal Super Admin.
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
     const authHeader = req.headers.get('Authorization') ?? ''
-    if (!authHeader.startsWith('Bearer ')) {
-      return json({ error: 'Unauthorized' }, 401)
-    }
+    if (!authHeader.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -32,110 +31,105 @@ serve(async (req) => {
       authHeader.replace('Bearer ', ''),
     )
     if (claimsErr || !claims?.claims?.sub) return json({ error: 'Unauthorized' }, 401)
-
     const callerId = claims.claims.sub as string
+
     const { data: isPrincipal } = await admin.rpc('is_principal_super_admin', {
       _user_id: callerId,
     })
     if (!isPrincipal) return json({ error: 'Forbidden — Principal Super Admin only' }, 403)
 
-    // Pull all orphan profiles (no matching auth.users row).
-    // Cap at 2000 per run to stay within edge runtime limits.
-    const { data: orphans, error: listErr } = await admin
-      .rpc('list_orphan_profiles', {})
-      .select()
-      .returns<Array<{ id: string; email: string; first_name: string | null; last_name: string | null; created_at: string }>>()
-      .limit(2000)
-      .order('created_at', { ascending: true })
+    // Load every auth user email (for merge detection).
+    const authByEmail = await collectAuthByEmail(admin)
+    const authIds = await collectAllAuthUserIds(admin)
 
-    // Fallback: simple SQL via PostgREST if RPC missing.
-    let orphanList = orphans as any[] | null
-    if (listErr || !orphanList) {
-      const { data: allProfiles } = await admin
+    // Load orphan profiles (paginate to avoid the 1000-row limit).
+    const orphans: Array<{
+      id: string
+      email: string | null
+      first_name: string | null
+      last_name: string | null
+    }> = []
+    const PAGE = 1000
+    let from = 0
+    while (true) {
+      const { data, error } = await admin
         .from('profiles')
-        .select('id,email,first_name,last_name,created_at')
+        .select('id,email,first_name,last_name')
         .order('created_at', { ascending: true })
-        .limit(5000)
-      const { data: authList } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 })
-      // need a more reliable listing — iterate pages
-      const authIds = await collectAllAuthUserIds(admin)
-      orphanList = (allProfiles ?? []).filter((p: any) => !authIds.has(p.id))
+        .range(from, from + PAGE - 1)
+      if (error) throw error
+      const batch = data ?? []
+      for (const p of batch) if (!authIds.has(p.id)) orphans.push(p as any)
+      if (batch.length < PAGE) break
+      from += PAGE
+      if (from > 20000) break
     }
 
     let created = 0
     let merged = 0
     let skipped = 0
-    const errors: Array<{ profile_id: string; email: string; error: string }> = []
+    const errors: Array<{ profile_id: string; email: string | null; error: string }> = []
     const seenEmail = new Set<string>()
 
-    // Build email → existing auth user map.
-    const allAuthByEmail = await collectAuthByEmail(admin)
-
-    for (const p of orphanList ?? []) {
+    for (const p of orphans) {
+      const rawEmail = (p.email ?? '').trim().toLowerCase()
       try {
-        const email = (p.email ?? '').trim().toLowerCase()
-        if (!email) {
-          await logRow(admin, p.id, p.email, 'skip', 'no email')
-          skipped++
-          continue
-        }
+        // Clear previous error rows for this profile so re-runs are clean.
+        await admin.from('backfill_auth_users_report').delete().eq('profile_id', p.id).eq('action', 'error')
 
-        // Case A: email already owned by a different auth user → merge.
-        const existingAuthId = allAuthByEmail.get(email)
+        // Case A: another auth user already owns this email → merge.
+        const existingAuthId = rawEmail ? authByEmail.get(rawEmail) : undefined
         if (existingAuthId && existingAuthId !== p.id) {
-          // Re-point members.profile_id from orphan → existing auth user.
           const { error: upErr } = await admin
             .from('members')
             .update({ profile_id: existingAuthId })
             .eq('profile_id', p.id)
           if (upErr) throw upErr
-          // Delete the orphan profile (no FK collisions since member moved).
-          const { error: delErr } = await admin
-            .from('profiles')
-            .delete()
-            .eq('id', p.id)
+          const { error: delErr } = await admin.from('profiles').delete().eq('id', p.id)
           if (delErr) throw delErr
           await logRow(admin, p.id, p.email, 'merged', `merged into ${existingAuthId}`)
           merged++
           continue
         }
 
-        // Case B: duplicate email among orphans → rename later duplicates.
-        let useEmail = p.email as string
-        if (seenEmail.has(email)) {
+        // Case B: rename duplicated orphan emails so auth.users unique index holds.
+        let useEmail = p.email ?? ''
+        if (rawEmail && seenEmail.has(rawEmail)) {
           const suffix = p.id.slice(0, 8)
-          useEmail = p.email.replace(/@/, `+dup-${suffix}@`)
-          await admin
-            .from('profiles')
-            .update({ email: useEmail })
-            .eq('id', p.id)
+          useEmail = useEmail.replace(/@/, `+dup-${suffix}@`)
+          await admin.from('profiles').update({ email: useEmail }).eq('id', p.id)
         }
-        seenEmail.add(useEmail.toLowerCase())
+        if (rawEmail) seenEmail.add(useEmail.toLowerCase())
 
-        // Case C: create auth user preserving id.
-        const { error: createErr } = await admin.auth.admin.createUser({
-          id: p.id,
-          email: useEmail,
-          password: '123456',
-          email_confirm: true,
-          user_metadata: {
-            first_name: p.first_name ?? '',
-            last_name: p.last_name ?? '',
-          },
-        } as any)
-        if (createErr) throw createErr
+        // Case C: create the matching auth.users row via SECURITY DEFINER RPC.
+        const { data: newId, error: rpcErr } = await admin.rpc(
+          'admin_create_auth_user_for_profile',
+          { p_profile_id: p.id, p_email: useEmail || '', p_password: '123456' },
+        )
+        if (rpcErr) throw rpcErr
+
         await logRow(admin, p.id, useEmail, 'created', useEmail === p.email ? null : 'email renamed due to duplicate')
-        allAuthByEmail.set(useEmail.toLowerCase(), p.id)
+        authByEmail.set((useEmail || '').toLowerCase(), newId as string)
+        authIds.add(newId as string)
         created++
-      } catch (e: any) {
-        errors.push({ profile_id: p.id, email: p.email, error: e?.message ?? String(e) })
-        await logRow(admin, p.id, p.email, 'error', e?.message ?? String(e))
+      } catch (e) {
+        const msg = describeError(e)
+        errors.push({ profile_id: p.id, email: p.email, error: msg })
+        await logRow(admin, p.id, p.email, 'error', msg)
       }
     }
 
-    return json({ ok: true, created, merged, skipped, errors_count: errors.length, errors })
-  } catch (e: any) {
-    return json({ ok: false, error: e?.message ?? String(e) }, 500)
+    return json({
+      ok: true,
+      scanned: orphans.length,
+      created,
+      merged,
+      skipped,
+      errors_count: errors.length,
+      errors: errors.slice(0, 20),
+    })
+  } catch (e) {
+    return json({ ok: false, error: describeError(e) }, 500)
   }
 })
 
@@ -146,6 +140,18 @@ function json(body: unknown, status = 200) {
   })
 }
 
+function describeError(e: any): string {
+  if (!e) return 'unknown error'
+  if (typeof e === 'string') return e
+  const parts = [e.message, e.details, e.hint, e.code].filter(Boolean)
+  if (parts.length) return parts.join(' | ')
+  try {
+    return JSON.stringify(e, Object.getOwnPropertyNames(e))
+  } catch {
+    return String(e)
+  }
+}
+
 async function logRow(
   admin: ReturnType<typeof createClient>,
   profileId: string,
@@ -153,12 +159,7 @@ async function logRow(
   action: string,
   note: string | null,
 ) {
-  await admin.from('backfill_auth_users_report').insert({
-    profile_id: profileId,
-    email,
-    action,
-    note,
-  })
+  await admin.from('backfill_auth_users_report').insert({ profile_id: profileId, email, action, note })
 }
 
 async function collectAllAuthUserIds(admin: ReturnType<typeof createClient>): Promise<Set<string>> {
