@@ -124,6 +124,20 @@ const SuperAdminsTable: React.FC = () => {
         )}
       </div>
 
+      {backfillResult && (
+        <div className="rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between">
+          <div>
+            <strong>Backfill result:</strong> Scanned {backfillResult.scanned ?? 0} · Created{' '}
+            {backfillResult.created ?? 0} · Merged {backfillResult.merged ?? 0} · Errors{' '}
+            {backfillResult.errors_count ?? 0}
+          </div>
+          <Button size="sm" variant="ghost" onClick={openReport}>
+            View report
+          </Button>
+        </div>
+      )}
+
+
 
       <div className="rounded-lg border bg-card overflow-hidden">
         {isLoading ? (
