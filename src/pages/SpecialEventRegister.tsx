@@ -537,13 +537,6 @@ export default function SpecialEventRegister() {
     }
   };
 
-  const safeParseError = async (err: any) => {
-    try {
-      const res = err?.context;
-      if (res && typeof res.json === "function") return await res.json();
-    } catch { /* ignore */ }
-    return null;
-  };
 
 
   if (isLoading) {
