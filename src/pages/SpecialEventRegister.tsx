@@ -433,6 +433,14 @@ export default function SpecialEventRegister() {
     return true;
   }, [event, primaryMember, primaryOnboard, family]);
 
+  const safeParseError = async (err: any) => {
+    try {
+      const res = err?.context;
+      if (res && typeof res.json === "function") return await res.json();
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const submit = async () => {
     if (!event) return;
     const familyToSend =
