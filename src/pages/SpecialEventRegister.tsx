@@ -433,9 +433,16 @@ export default function SpecialEventRegister() {
     return true;
   }, [event, primaryMember, primaryOnboard, family]);
 
+  const safeParseError = async (err: any) => {
+    try {
+      const res = err?.context;
+      if (res && typeof res.json === "function") return await res.json();
+    } catch { /* ignore */ }
+    return null;
+  };
+
   const submit = async () => {
     if (!event) return;
-    setSubmitting(true);
     const familyToSend =
       registrationMode === "family"
         ? family.filter((f) => {
@@ -443,6 +450,43 @@ export default function SpecialEventRegister() {
             return !!f.existing_member_id || (f.onboard && isOnboardValid(f.onboard));
           })
         : [];
+
+    // Client-side duplicate check: same email/phone reused across attendees.
+    const normEmail = (s?: string | null) => (s ?? "").trim().toLowerCase();
+    const normPhone = (s?: string | null) => (s ?? "").replace(/\D+/g, "");
+    const emailSlots: string[] = [];
+    const phoneSlots: string[] = [];
+    if (primaryMember?.email) emailSlots.push(normEmail(primaryMember.email));
+    else if (primaryOnboard.email) emailSlots.push(normEmail(primaryOnboard.email));
+    const primaryPhoneVal = primaryPhone || primaryMember?.phone || primaryOnboard.phone;
+    if (primaryPhoneVal) phoneSlots.push(normPhone(primaryPhoneVal));
+    familyToSend.forEach((f) => {
+      const em = f.existing_member_id ? normEmail(f.email) : normEmail(f.onboard?.email);
+      const ph = f.existing_member_id ? normPhone(f.phone) : normPhone(f.onboard?.phone);
+      if (em) emailSlots.push(em);
+      if (ph) phoneSlots.push(ph);
+    });
+    const firstDup = (arr: string[]) => {
+      const seen = new Set<string>();
+      for (const v of arr) {
+        if (!v) continue;
+        if (seen.has(v)) return v;
+        seen.add(v);
+      }
+      return null;
+    };
+    const dupE = firstDup(emailSlots);
+    if (dupE) {
+      toast.error(t("sr_dup_email").replace("{value}", dupE), { description: t("sr_dup_hint") });
+      return;
+    }
+    const dupP = firstDup(phoneSlots);
+    if (dupP) {
+      toast.error(t("sr_dup_phone").replace("{value}", dupP), { description: t("sr_dup_hint") });
+      return;
+    }
+
+    setSubmitting(true);
     try {
       const body: any = {
         event_id: (event as any).id,
@@ -465,7 +509,19 @@ export default function SpecialEventRegister() {
         pledge_currency_code: campaign?.currency_code || null,
       };
       const { data, error } = await supabase.functions.invoke("event-special-register", { body });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      const errPayload: any = (data as any)?.error ? data : error?.context ? await safeParseError(error) : null;
+      if (errPayload?.error || error) {
+        const code = errPayload?.error;
+        if (code === "duplicate_contact") {
+          const key = errPayload.field === "phone" ? "sr_dup_phone" : "sr_dup_email";
+          toast.error(t(key).replace("{value}", errPayload.value ?? ""), { description: t("sr_dup_hint") });
+        } else if (code === "duplicate_member") {
+          toast.error(t("sr_dup_member"));
+        } else {
+          throw new Error(errPayload?.detail || errPayload?.error || error?.message || t("sr_toast_error"));
+        }
+        return;
+      }
       setWasUpdated(!!(data as any)?.was_update);
       setStep("done");
       const isUpdate = !!(data as any)?.was_update;
@@ -480,6 +536,8 @@ export default function SpecialEventRegister() {
       setSubmitting(false);
     }
   };
+
+
 
   if (isLoading) {
     return (

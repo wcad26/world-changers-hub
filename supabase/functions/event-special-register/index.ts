@@ -86,6 +86,63 @@ Deno.serve(async (req) => {
     const primaryExistingId: string | null = body?.primary_member_id || null;
     const primaryNew: NewRegistrant | null = body?.primary_new || null;
 
+    // === FAMILY ===
+    const familyInput: FamilyEntry[] = Array.isArray(body?.family) ? body.family : [];
+
+    // --- Pre-flight: reject duplicate emails / phones across the whole submission
+    // before we touch the DB, so the user gets a clear message.
+    const normEmail = (s?: string | null) => (s ?? "").trim().toLowerCase();
+    const normPhone = (s?: string | null) => (s ?? "").replace(/\D+/g, "");
+    const emailSlots: { value: string; label: string }[] = [];
+    const phoneSlots: { value: string; label: string }[] = [];
+    const primaryLabel = primaryNew
+      ? `${primaryNew.first_name || ""} ${primaryNew.last_name || ""}`.trim() || "primary registrant"
+      : "primary registrant";
+    if (primaryNew?.email) emailSlots.push({ value: normEmail(primaryNew.email), label: primaryLabel });
+    const primaryPhoneRaw = body?.primary_phone || primaryNew?.phone || "";
+    if (primaryPhoneRaw) phoneSlots.push({ value: normPhone(primaryPhoneRaw), label: primaryLabel });
+    familyInput.forEach((f, idx) => {
+      const nr = f.new_registrant;
+      const label = nr
+        ? `${nr.first_name || ""} ${nr.last_name || ""}`.trim() || `family member #${idx + 1}`
+        : `family member #${idx + 1}`;
+      if (nr?.email) emailSlots.push({ value: normEmail(nr.email), label });
+      if (nr?.phone) phoneSlots.push({ value: normPhone(nr.phone), label });
+    });
+    const firstDup = (slots: { value: string; label: string }[]) => {
+      const seen = new Map<string, string>();
+      for (const s of slots) {
+        if (!s.value) continue;
+        if (seen.has(s.value)) return { value: s.value, labels: [seen.get(s.value)!, s.label] };
+        seen.set(s.value, s.label);
+      }
+      return null;
+    };
+    const dupEmail = firstDup(emailSlots);
+    if (dupEmail) {
+      return json({ error: "duplicate_contact", field: "email", value: dupEmail.value, labels: dupEmail.labels }, 409);
+    }
+    const dupPhone = firstDup(phoneSlots);
+    if (dupPhone) {
+      return json({ error: "duplicate_contact", field: "phone", value: dupPhone.value, labels: dupPhone.labels }, 409);
+    }
+
+    // Existing-member ids provided more than once in the family list.
+    const existingIds = familyInput
+      .map((f) => f.existing_member_id)
+      .filter(Boolean) as string[];
+    const seenExisting = new Set<string>();
+    for (const id of existingIds) {
+      if (seenExisting.has(id)) {
+        return json({ error: "duplicate_member" }, 409);
+      }
+      seenExisting.add(id);
+    }
+    if (primaryExistingId && seenExisting.has(primaryExistingId)) {
+      return json({ error: "duplicate_member" }, 409);
+    }
+
+
     const primaryMember = await resolveOrCreateMember(admin, {
       existing_member_id: primaryExistingId,
       new_registrant: primaryNew,
@@ -94,9 +151,8 @@ Deno.serve(async (req) => {
     });
     if (!primaryMember) return json({ error: "Primary registrant could not be resolved" }, 400);
 
-    // === FAMILY ===
-    const familyInput: FamilyEntry[] = Array.isArray(body?.family) ? body.family : [];
     const familyResolved: { entry: FamilyEntry; member: { id: string; profile_id: string; email?: string } }[] = [];
+    const resolvedIds = new Set<string>([primaryMember.id]);
     for (const f of familyInput) {
       if (!VALID_RELS.includes((f.relationship_type || "").toLowerCase())) {
         return json({ error: `Invalid relationship_type: ${f.relationship_type}` }, 400);
@@ -108,8 +164,15 @@ Deno.serve(async (req) => {
         source_event_id: event_id,
       });
       if (!m) return json({ error: "A family member could not be resolved" }, 400);
+      // Two rows resolved to the same person (e.g. shared email pointing at the
+      // same existing profile). Surface a clear duplicate error.
+      if (resolvedIds.has(m.id)) {
+        return json({ error: "duplicate_member" }, 409);
+      }
+      resolvedIds.add(m.id);
       familyResolved.push({ entry: f, member: m });
     }
+
 
     // Detect existing pre-registration for this primary member (this is an UPDATE flow).
     const { data: existingPrimary } = await admin
@@ -202,7 +265,17 @@ Deno.serve(async (req) => {
       .upsert(rows, { onConflict: "event_id,member_id", ignoreDuplicates: false })
       .select("id, member_id, is_primary");
 
-    if (insErr) return json({ error: insErr.message }, 500);
+    if (insErr) {
+      console.error("event-special-register upsert failed", insErr);
+      const code = (insErr as any).code;
+      if (code === "23505") {
+        return json({ error: "duplicate_contact", field: "email" }, 409);
+      }
+      if (code === "23503") {
+        return json({ error: "auth_provisioning_failed", detail: insErr.message }, 500);
+      }
+      return json({ error: insErr.message }, 500);
+    }
 
     // Delete stale family rows from the previous group (members removed in this submission).
     if (existingPrimary?.group_id) {
