@@ -349,7 +349,52 @@ const SuperAdminsTable: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!reportRows} onOpenChange={(o) => !o && setReportRows(null)}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Backfill report (last 50)</DialogTitle>
+            <DialogDescription>Most recent auth-account provisioning actions.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-auto rounded border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Note</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(reportRows ?? []).map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          r.action === 'error'
+                            ? 'bg-destructive/10 text-destructive border-destructive/30'
+                            : r.action === 'created' || r.action === 'provisioned'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-muted text-muted-foreground'
+                        }
+                      >
+                        {r.action}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs">{r.email}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-md truncate" title={r.note ?? ''}>
+                      {r.note}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 };
 
