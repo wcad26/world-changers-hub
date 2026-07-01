@@ -349,10 +349,17 @@ async function resolveOrCreateMember(
     }
   }
 
-  // Create profile if needed
+  // Create profile if needed — provision the auth account first so the
+  // profiles_require_auth_user trigger is satisfied.
   if (!profileId) {
-    profileId = crypto.randomUUID();
-    const { error: profErr } = await admin.from("profiles").insert({
+    const auth = await ensureAuthUser(admin, {
+      email,
+      firstName: nr.first_name,
+      lastName: nr.last_name,
+      metadata: { region_id },
+    });
+    profileId = auth.id;
+    const { error: profErr } = await admin.from("profiles").upsert({
       id: profileId,
       first_name: nr.first_name,
       last_name: nr.last_name,
@@ -363,12 +370,13 @@ async function resolveOrCreateMember(
       gender: nr.gender ? String(nr.gender).toLowerCase() : null,
       occupation: nr.occupation || null,
       region_id,
-    });
+    }, { onConflict: "id" });
     if (profErr) {
       console.error("profile insert failed", profErr);
       return null;
     }
   }
+
 
   // Decide member_type: member only when explicitly chosen AND foundation school done.
   const requestedType = nr.attendee_type || nr.type || "visitor";
