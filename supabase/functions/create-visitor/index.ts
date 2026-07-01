@@ -1,6 +1,8 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { ensureAuthUser } from '../_shared/ensureAuthUser.ts'
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -77,14 +79,22 @@ serve(async (req) => {
       }
     }
 
-    // Generate UUID for profile
-    const profileId = crypto.randomUUID()
-    console.log('create-visitor: Generated profile ID:', profileId)
+    // Provision (or reuse) an auth account so the profiles trigger is satisfied
+    // and the visitor can sign in later with the default password.
+    const auth = await ensureAuthUser(supabaseAdmin, {
+      email,
+      firstName: first_name,
+      lastName: last_name,
+      metadata: { region_id, phone, address },
+    })
+    const profileId = auth.id
+    console.log('create-visitor: Auth account ready:', profileId, 'created:', auth.created)
 
-    // Create profile (not linked to auth user)
+    // handle_new_user trigger inserts a profiles row from auth metadata.
+    // Upsert to cover both the fresh-account and reused-account paths.
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
+      .upsert({
         id: profileId,
         first_name,
         last_name,
@@ -95,16 +105,16 @@ serve(async (req) => {
         gender: gender ? gender.toLowerCase() : null,
         occupation: occupation || null,
         region_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
 
     if (profileError) {
-      console.error('create-visitor: Profile creation failed:', profileError)
+      console.error('create-visitor: Profile upsert failed:', profileError)
       throw profileError
     }
 
-    console.log('create-visitor: Profile created successfully')
+    console.log('create-visitor: Profile ready')
+
 
     // Generate member ID
     const { data: memberId, error: memberIdError } = await supabaseAdmin.rpc(
