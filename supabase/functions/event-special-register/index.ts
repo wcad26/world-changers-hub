@@ -2,6 +2,8 @@
 // Accepts a primary registrant (existing member_id, or new visitor/member payload)
 // plus optional family entries (existing or new), lodging/meals/pledge info.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ensureAuthUser } from "../_shared/ensureAuthUser.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
