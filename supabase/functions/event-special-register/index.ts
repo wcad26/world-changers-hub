@@ -265,7 +265,17 @@ Deno.serve(async (req) => {
       .upsert(rows, { onConflict: "event_id,member_id", ignoreDuplicates: false })
       .select("id, member_id, is_primary");
 
-    if (insErr) return json({ error: insErr.message }, 500);
+    if (insErr) {
+      console.error("event-special-register upsert failed", insErr);
+      const code = (insErr as any).code;
+      if (code === "23505") {
+        return json({ error: "duplicate_contact", field: "email" }, 409);
+      }
+      if (code === "23503") {
+        return json({ error: "auth_provisioning_failed", detail: insErr.message }, 500);
+      }
+      return json({ error: insErr.message }, 500);
+    }
 
     // Delete stale family rows from the previous group (members removed in this submission).
     if (existingPrimary?.group_id) {
