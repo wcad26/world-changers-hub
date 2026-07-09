@@ -395,9 +395,6 @@ export default function SpecialEventRegister() {
     (lookupStatus === "found" && registrationMode !== null) ||
     lookupStatus === "missing";
 
-  const canProceedFromOnboard =
-    isOnboardValid(primaryOnboard) && registrationMode !== null;
-
   const buildNewRegistrant = (o: OnboardFormValue) => ({
     type: o.attendee_type,
     attendee_type: o.attendee_type,
