@@ -328,6 +328,7 @@ Deno.serve(async (req) => {
           member_id: primaryMember.id,
           pledger_name: pledgerName || null,
           pledger_phone: body?.primary_phone || null,
+          pledger_email: body?.primary_email || null,
           amount: Number(pledge_amount),
           currency_code: pledge_currency_code,
           status: "active",
