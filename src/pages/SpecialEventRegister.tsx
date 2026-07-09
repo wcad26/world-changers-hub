@@ -551,6 +551,9 @@ export default function SpecialEventRegister() {
         event_id: (event as any).id,
         primary_member_id: primaryMember?.id ?? null,
         primary_new: primaryMember ? null : buildNewRegistrant(primaryOnboard),
+        primary_pledger_name: primaryMember
+          ? `${primaryMember.last_name || ""} ${primaryMember.first_name || ""}`.trim()
+          : `${primaryOnboard.last_name || ""} ${primaryOnboard.first_name || ""}`.trim(),
         primary_email: primaryEmailVal,
         primary_phone: primaryPhoneVal,
         family: familyToSend.map((f) => ({
