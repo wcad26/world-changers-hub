@@ -838,6 +838,8 @@ export default function SpecialEventRegister() {
                               setLookupValue("");
                               setLookupStatus("idle");
                               setPrimaryMember(null);
+                              setPrimaryEmail("");
+                              setPrimaryPhone("");
                             }}
                             className={cn(
                               "relative flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all",
@@ -868,6 +870,8 @@ export default function SpecialEventRegister() {
                           setLookupValue(e.target.value);
                           setLookupStatus("idle");
                           setPrimaryMember(null);
+                          setPrimaryEmail("");
+                          setPrimaryPhone("");
                           setRegistrationMode(null);
                         }}
                       />
