@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
     if (eventId) {
       const { data: myReg } = await admin
         .from("event_pre_registrations")
-        .select("id, group_id, is_primary, needs_lodging, lodging_party_size, meal_preferences, dietary_notes, arrival_date, departure_date, phone, pledge_amount, pledge_currency_code")
+            .select("id, group_id, is_primary, needs_lodging, lodging_party_size, meal_preferences, dietary_notes, arrival_date, departure_date, email, phone, pledge_amount, pledge_currency_code")
         .eq("event_id", eventId)
         .eq("member_id", member.id)
         .maybeSingle();
@@ -224,6 +224,7 @@ Deno.serve(async (req) => {
           dietary_notes: myReg.dietary_notes,
           arrival_date: myReg.arrival_date,
           departure_date: myReg.departure_date,
+          email: myReg.email,
           phone: myReg.phone,
           pledge_amount: myReg.pledge_amount,
           pledge_currency_code: myReg.pledge_currency_code,
