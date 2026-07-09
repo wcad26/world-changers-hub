@@ -1,46 +1,55 @@
-## Problems observed
-
-**1. Duplicate emails / phones inside a single submission are silently swallowed.**
-Nothing in `SpecialEventRegister.tsx` or `event-special-register/index.ts` checks that the primary and each family member use distinct emails and phones. When a user reuses one email for several people:
-- `resolveOrCreateMember` resolves both entries to the same profile → same member id.
-- `event_pre_registrations.upsert` with `onConflict: "event_id,member_id"` collapses two rows into one.
-- The submission "succeeds" with fewer people than the user filled in, OR fails with a cryptic Postgres duplicate-key error that surfaces to the toast as raw SQL text.
-- Users have no idea which field is wrong.
-
-**2. Some registrations still fail with the profile/auth issue.**
-`supabase/functions/_shared/ensureAuthUser.ts` still calls `admin.auth.admin.createUser`, the same GoTrue path that was unreliable during the backfill (it can't reuse an existing profile id, and it fails when the email is already attached to an orphan profile with no auth row). This affects any new visitor whose email matches an already-existing profile that lacks an auth.users row — exactly the population we just backfilled, plus any profile created between the backfill and now via a path that bypassed auth.
-
 ## Plan
 
-### A. Frontend duplicate validation (`src/pages/SpecialEventRegister.tsx`)
-- Add a `collectDuplicates()` helper that gathers `{ email, phone }` from the primary registrant + every attending family row (both existing-member rows and new-onboard rows), normalises them (`trim().toLowerCase()` for email, digits-only for phone), and returns any value that appears more than once with the labels of the rows that share it.
-- Run this check inside `submit()` before invoking the edge function and also when the user tries to advance past the family step. If duplicates exist, show a targeted `toast.error` naming the field ("Two people share the email x@y.com — please give each attendee a unique email") and mark the offending fields (red border + inline helper text) instead of calling the function.
-- Add the same check inside `SpecialEventOnboardForm` so newly typed contact info that collides with another attendee is flagged immediately.
-- Add French + English strings (`sr_dup_email`, `sr_dup_phone`, `sr_dup_hint`) via `LanguageContext`.
+1. **Separate lookup contact from submitted attendee details**
+   - Treat the first email/phone used to find a person as a lookup key only.
+   - Treat the emails and phones entered in the attendee details form as the final registration data that must be saved.
+   - Ensure choosing “telephone” for lookup never causes submitted email fields to be ignored.
 
-### B. Backend duplicate + friendly-error handling (`supabase/functions/event-special-register/index.ts`)
-- Before touching the DB, build a set of normalised emails and phones across primary + family. If any collide, return `{ error: "duplicate_contact", field: "email"|"phone", value }` with HTTP 409.
-- Wrap `resolveOrCreateMember` results in a `Map<memberId, label>`; if the same member id resolves twice (existing member reused across two family slots), return `{ error: "duplicate_member", label }` so the frontend can point to the row.
-- Catch Postgres errors from the upsert and translate common ones (`23505` unique-violation on profiles.email, `23503` foreign-key on profiles/auth) into human-readable error codes so the toast is never raw SQL.
+2. **Frontend registration payload fixes**
+   - Review `SpecialEventRegister.tsx` and `SpecialEventOnboardForm.tsx` so every new primary attendee and every new family attendee sends:
+     - family name / last name
+     - other names / first name
+     - email
+     - phone
+     - address
+     - date of birth
+     - gender
+     - occupation and other registration fields
+   - Preserve the email entered in the form even when the lookup mode is phone.
+   - Preserve the phone entered in the form even when the lookup mode is email.
+   - In update mode, avoid overwriting a valid stored email with blank data.
 
-### C. Frontend error surface
-- Extend the `catch (e)` block in `submit()` to inspect the returned `error` / `field` / `value` and render a translated, actionable toast (e.g. "The email jane@x.com is used twice — please correct the highlighted rows"). Fallback to the current generic message when the code is unknown.
+3. **Backend profile/member resolution fixes**
+   - Update `event-special-register` so `resolveOrCreateMember` uses both submitted email and submitted phone gracefully.
+   - If a matching profile is found by phone and the submitted email belongs to the same person or the profile email is blank, update the profile email safely.
+   - If the submitted email already belongs to a different person, return a clear duplicate-email error instead of failing silently.
+   - Do the same protection for phone collisions where one phone points to another profile.
 
-### D. Reuse the reliable auth-provisioning path (`supabase/functions/_shared/ensureAuthUser.ts`)
-- Rewrite the helper to prefer the SQL function `admin_create_auth_user_for_profile` (the one that fixed the backfill) instead of `admin.auth.admin.createUser`:
-  1. If an email is provided, look it up in `auth.users` via `admin.auth.admin.listUsers` (kept as a fast path).
-  2. If not found, look up `public.profiles` by email; if a profile exists, call `admin_create_auth_user_for_profile(profile_id, email)` so the auth row is created with the profile's id — no orphan, no duplicate profile.
-  3. Only when neither an auth row nor a profile exists do we mint a fresh id and call the SQL function with that id, then let the existing `handle_new_user` `ON CONFLICT DO UPDATE` trigger populate the profile.
-- This keeps the helper's public signature (`{ id, email, created }`) so callers (`event-special-register`, `create-visitor`, any future function) don't change.
-- Add structured logging (`console.error` with the branch taken + error) so future failures are diagnosable from Edge Function logs.
+4. **Event pre-registration row storage**
+   - Ensure `event_pre_registrations.email` and `event_pre_registrations.phone` are populated from the final submitted attendee details, not only from the lookup method.
+   - For existing members/family found by lookup, fall back to profile email/phone only when no submitted contact value is available.
+   - For update registrations, refresh the previous pre-registration row with the corrected email/phone instead of leaving stale or null values.
 
-### E. Verification
-- Reproduce the duplicate-email case with two family rows sharing the primary's email — confirm the new toast fires and the request never reaches the DB.
-- Attempt registration with an email belonging to one of the recently backfilled profiles — confirm it succeeds and reuses the existing profile/member.
-- Confirm French locale delivers the new duplicate messages.
-- Tail edge function logs for `event-special-register` and `create-visitor` to make sure no unhandled errors remain.
+5. **Submit-button and validation behavior**
+   - Keep the submit button enabled whenever all visible required form details are valid.
+   - Add clearer validation feedback for missing/invalid email or phone so users know exactly what prevents submission.
+   - Ensure update mode follows the same validation rules and does not get blocked because the user originally searched by phone.
 
-## Technical notes
-- No schema changes required; all fixes are in the edge function and frontend.
-- `admin_create_auth_user_for_profile` already exists and is `SECURITY DEFINER`; no new grants needed.
-- `SpecialEventOnboardForm` already exposes `value.email` / `value.phone`, so duplicate marking can be driven by a `duplicates: Set<string>` prop passed from the parent.
+6. **Friendly duplicate handling**
+   - Keep client-side duplicate detection across primary + family attendees.
+   - Strengthen server-side duplicate checks so repeated emails or repeated phone numbers return localized, user-friendly messages in English and French.
+   - Handle database uniqueness/auth/profile conflicts with clear messages such as “This email is already used by another registrant. Please enter the correct email.”
+
+7. **Verify the profile/auth-account problem is not recurring**
+   - Confirm the event registration path still provisions or reuses `auth.users` correctly through the shared `ensureAuthUser` helper.
+   - Ensure new profiles created through special-event pre-registration can later sign in to the member portal with the default password.
+   - Ensure admins can assign roles to those profiles after registration.
+
+8. **Test scenarios**
+   - New registrant found by phone, then fills email: email is saved to profile and pre-registration.
+   - New registrant found by email, then fills phone: phone is saved.
+   - Family member added by phone, then fills email: email is saved.
+   - Update existing registration found by phone: corrected email is preserved.
+   - Duplicate email across two submitted attendees: clear error shown.
+   - Email belongs to another profile: clear conflict error shown.
+   - Successful submission/update reaches the confirmation screen.

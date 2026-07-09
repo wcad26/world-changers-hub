@@ -47,11 +47,27 @@ type NewRegistrant = {
 type FamilyEntry = {
   relationship_type: string;
   existing_member_id?: string | null;
+  submitted_email?: string | null;
+  submitted_phone?: string | null;
   new_registrant?: NewRegistrant | null;
   is_child?: boolean;
 };
 
 const VALID_RELS = ["spouse", "parent", "child", "sibling", "guardian", "other"];
+
+class RegistrationError extends Error {
+  payload: Record<string, unknown>;
+  status: number;
+
+  constructor(payload: Record<string, unknown>, status = 400) {
+    super(String(payload.error || "registration_error"));
+    this.payload = payload;
+    this.status = status;
+  }
+}
+
+const normEmail = (s?: string | null) => (s ?? "").trim().toLowerCase();
+const normPhone = (s?: string | null) => (s ?? "").replace(/\D+/g, "");
 
 function json(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
@@ -91,14 +107,13 @@ Deno.serve(async (req) => {
 
     // --- Pre-flight: reject duplicate emails / phones across the whole submission
     // before we touch the DB, so the user gets a clear message.
-    const normEmail = (s?: string | null) => (s ?? "").trim().toLowerCase();
-    const normPhone = (s?: string | null) => (s ?? "").replace(/\D+/g, "");
     const emailSlots: { value: string; label: string }[] = [];
     const phoneSlots: { value: string; label: string }[] = [];
     const primaryLabel = primaryNew
       ? `${primaryNew.first_name || ""} ${primaryNew.last_name || ""}`.trim() || "primary registrant"
       : "primary registrant";
-    if (primaryNew?.email) emailSlots.push({ value: normEmail(primaryNew.email), label: primaryLabel });
+    const primaryEmailRaw = body?.primary_email || primaryNew?.email || "";
+    if (primaryEmailRaw) emailSlots.push({ value: normEmail(primaryEmailRaw), label: primaryLabel });
     const primaryPhoneRaw = body?.primary_phone || primaryNew?.phone || "";
     if (primaryPhoneRaw) phoneSlots.push({ value: normPhone(primaryPhoneRaw), label: primaryLabel });
     familyInput.forEach((f, idx) => {
@@ -106,8 +121,10 @@ Deno.serve(async (req) => {
       const label = nr
         ? `${nr.first_name || ""} ${nr.last_name || ""}`.trim() || `family member #${idx + 1}`
         : `family member #${idx + 1}`;
-      if (nr?.email) emailSlots.push({ value: normEmail(nr.email), label });
-      if (nr?.phone) phoneSlots.push({ value: normPhone(nr.phone), label });
+      const emailRaw = f.submitted_email || nr?.email || "";
+      const phoneRaw = f.submitted_phone || nr?.phone || "";
+      if (emailRaw) emailSlots.push({ value: normEmail(emailRaw), label });
+      if (phoneRaw) phoneSlots.push({ value: normPhone(phoneRaw), label });
     });
     const firstDup = (slots: { value: string; label: string }[]) => {
       const seen = new Map<string, string>();
@@ -146,12 +163,14 @@ Deno.serve(async (req) => {
     const primaryMember = await resolveOrCreateMember(admin, {
       existing_member_id: primaryExistingId,
       new_registrant: primaryNew,
+      submitted_email: body?.primary_email || null,
+      submitted_phone: body?.primary_phone || null,
       fallback_region_id: event.region_id,
       source_event_id: event_id,
     });
     if (!primaryMember) return json({ error: "Primary registrant could not be resolved" }, 400);
 
-    const familyResolved: { entry: FamilyEntry; member: { id: string; profile_id: string; email?: string } }[] = [];
+    const familyResolved: { entry: FamilyEntry; member: { id: string; profile_id: string; email?: string | null; phone?: string | null } }[] = [];
     const resolvedIds = new Set<string>([primaryMember.id]);
     for (const f of familyInput) {
       if (!VALID_RELS.includes((f.relationship_type || "").toLowerCase())) {
@@ -160,6 +179,8 @@ Deno.serve(async (req) => {
       const m = await resolveOrCreateMember(admin, {
         existing_member_id: f.existing_member_id || null,
         new_registrant: f.new_registrant || null,
+        submitted_email: f.submitted_email || null,
+        submitted_phone: f.submitted_phone || null,
         fallback_region_id: event.region_id,
         source_event_id: event_id,
       });
@@ -245,8 +266,8 @@ Deno.serve(async (req) => {
         ...baseRow,
         member_id: primaryMember.id,
         is_primary: true,
-        email: primaryMember.email || null,
-        phone: body?.primary_phone || null,
+        email: body?.primary_email || primaryMember.email || null,
+        phone: body?.primary_phone || primaryMember.phone || null,
         pledge_amount,
         pledge_currency_code,
         pledge_status: pledge_amount ? "pledged" : null,
@@ -255,8 +276,8 @@ Deno.serve(async (req) => {
         ...baseRow,
         member_id: f.member.id,
         is_primary: false,
-        email: f.member.email || null,
-        phone: null as string | null,
+        email: f.entry.submitted_email || f.member.email || null,
+        phone: f.entry.submitted_phone || f.member.phone || null,
       })),
     ];
 
@@ -307,6 +328,7 @@ Deno.serve(async (req) => {
           member_id: primaryMember.id,
           pledger_name: pledgerName || null,
           pledger_phone: body?.primary_phone || null,
+          pledger_email: body?.primary_email || null,
           amount: Number(pledge_amount),
           currency_code: pledge_currency_code,
           status: "active",
@@ -369,6 +391,9 @@ Deno.serve(async (req) => {
       pre_registration_ids: (inserted ?? []).map((r: any) => r.id),
     });
   } catch (e: any) {
+    if (e instanceof RegistrationError) {
+      return json(e.payload, e.status);
+    }
     console.error("event-special-register error:", e);
     return json({ error: String(e?.message ?? e) }, 500);
   }
@@ -381,17 +406,35 @@ async function resolveOrCreateMember(
   args: {
     existing_member_id?: string | null;
     new_registrant?: NewRegistrant | null;
+    submitted_email?: string | null;
+    submitted_phone?: string | null;
     fallback_region_id?: string | null;
     source_event_id?: string | null;
   }
-): Promise<{ id: string; profile_id: string; email?: string } | null> {
+): Promise<{ id: string; profile_id: string; email?: string | null; phone?: string | null } | null> {
+  const submittedEmail = normEmail(args.submitted_email || args.new_registrant?.email || null);
+  const submittedPhone = (args.submitted_phone || args.new_registrant?.phone || "").trim();
+
   if (args.existing_member_id) {
     const { data: m } = await admin
       .from("members")
-      .select("id, profile_id, profiles:profile_id(email)")
+      .select("id, profile_id, profiles:profile_id(email, phone)")
       .eq("id", args.existing_member_id)
       .maybeSingle();
-    if (m) return { id: m.id, profile_id: m.profile_id, email: m.profiles?.email };
+    if (m) {
+      await safelyUpdateProfileContact(admin, m.profile_id, { email: submittedEmail, phone: submittedPhone });
+      const { data: refreshed } = await admin
+        .from("profiles")
+        .select("email, phone")
+        .eq("id", m.profile_id)
+        .maybeSingle();
+      return {
+        id: m.id,
+        profile_id: m.profile_id,
+        email: refreshed?.email ?? m.profiles?.email ?? null,
+        phone: refreshed?.phone ?? m.profiles?.phone ?? null,
+      };
+    }
     return null;
   }
 
@@ -406,19 +449,45 @@ async function resolveOrCreateMember(
   }
   if (!region_id) return null;
 
-  // Check existing profile by email — reuse and create a member in this region if missing.
-  const email = (nr.email || "").trim().toLowerCase();
+  // Lookup mode is only for finding a person. The final submitted form email
+  // and phone are both considered for matching and are saved when valid.
+  const email = normEmail(nr.email);
+  const phone = (nr.phone || "").trim();
   let profileId: string | null = null;
-  if (email) {
-    const { data: existingProfile } = await admin
-      .from("profiles").select("id, email").ilike("email", email).maybeSingle();
-    if (existingProfile) {
-      profileId = existingProfile.id;
-      const { data: existingMember } = await admin
-        .from("members").select("id, profile_id").eq("profile_id", existingProfile.id).maybeSingle();
-      if (existingMember) {
-        return { id: existingMember.id, profile_id: existingMember.profile_id, email };
-      }
+
+  const existingByEmail = email ? await findProfileByEmail(admin, email) : null;
+  const existingByPhone = await findProfileByPhone(admin, phone);
+  if (existingByEmail && existingByPhone && existingByEmail.id !== existingByPhone.id) {
+    throw new RegistrationError({
+      error: "duplicate_contact",
+      field: "email",
+      value: email,
+      detail: "The submitted email and phone number belong to different existing profiles.",
+    }, 409);
+  }
+
+  const existingProfile = existingByEmail || existingByPhone;
+  if (existingProfile) {
+    profileId = existingProfile.id;
+    await updateProfileFromRegistrant(admin, profileId, nr, region_id);
+    await ensureProfileAuth(admin, profileId, email);
+    const { data: existingMember } = await admin
+      .from("members")
+      .select("id, profile_id")
+      .eq("profile_id", existingProfile.id)
+      .maybeSingle();
+    if (existingMember) {
+      const { data: refreshed } = await admin
+        .from("profiles")
+        .select("email, phone")
+        .eq("id", existingMember.profile_id)
+        .maybeSingle();
+      return {
+        id: existingMember.id,
+        profile_id: existingMember.profile_id,
+        email: refreshed?.email ?? email,
+        phone: refreshed?.phone ?? phone,
+      };
     }
   }
 
@@ -437,7 +506,7 @@ async function resolveOrCreateMember(
       first_name: nr.first_name,
       last_name: nr.last_name,
       email: email || null,
-      phone: nr.phone || null,
+      phone: phone || null,
       address: nr.address || null,
       date_of_birth: nr.date_of_birth || null,
       gender: nr.gender ? String(nr.gender).toLowerCase() : null,
@@ -534,5 +603,112 @@ async function resolveOrCreateMember(
     await admin.from("member_relationships").insert(rows);
   }
 
-  return { id: newMember.id, profile_id: newMember.profile_id, email };
+  return { id: newMember.id, profile_id: newMember.profile_id, email, phone };
+}
+
+async function findProfileByEmail(admin: any, email?: string | null) {
+  const normalized = normEmail(email);
+  if (!normalized) return null;
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id, email, phone")
+    .ilike("email", normalized)
+    .maybeSingle();
+  if (error) throw new RegistrationError({ error: error.message }, 500);
+  return data || null;
+}
+
+async function findProfileByPhone(admin: any, phone?: string | null) {
+  const digits = normPhone(phone);
+  if (digits.length < 9) return null;
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id, email, phone")
+    .not("phone", "is", null)
+    .limit(5000);
+  if (error) throw new RegistrationError({ error: error.message }, 500);
+  const tail = digits.slice(-9);
+  return (data || []).find((p: any) => normPhone(p.phone).endsWith(tail)) || null;
+}
+
+async function assertEmailAvailable(admin: any, email: string, profileId: string) {
+  if (!email) return;
+  const existing = await findProfileByEmail(admin, email);
+  if (existing && existing.id !== profileId) {
+    throw new RegistrationError({ error: "duplicate_contact", field: "email", value: email }, 409);
+  }
+}
+
+async function assertPhoneAvailable(admin: any, phone: string, profileId: string) {
+  if (!phone || normPhone(phone).length < 9) return;
+  const existing = await findProfileByPhone(admin, phone);
+  if (existing && existing.id !== profileId) {
+    throw new RegistrationError({ error: "duplicate_contact", field: "phone", value: normPhone(phone) }, 409);
+  }
+}
+
+async function ensureProfileAuth(admin: any, profileId: string, email?: string | null) {
+  const normalized = normEmail(email);
+  const { error: createErr } = await admin.rpc("admin_create_auth_user_for_profile", {
+    p_profile_id: profileId,
+    p_email: normalized || null,
+    p_password: "123456",
+  });
+  if (createErr) {
+    console.error("auth provision failed for profile", profileId, createErr);
+    throw new RegistrationError({ error: "auth_provisioning_failed", detail: createErr.message }, 500);
+  }
+  if (normalized) {
+    const { error: syncErr } = await admin.rpc("admin_sync_auth_email_for_profile", { p_profile_id: profileId });
+    if (syncErr) {
+      console.error("auth email sync failed for profile", profileId, syncErr);
+      throw new RegistrationError({ error: "duplicate_contact", field: "email", value: normalized, detail: syncErr.message }, 409);
+    }
+  }
+}
+
+async function safelyUpdateProfileContact(
+  admin: any,
+  profileId: string,
+  contact: { email?: string | null; phone?: string | null },
+) {
+  const email = normEmail(contact.email);
+  const phone = (contact.phone || "").trim();
+  const patch: Record<string, unknown> = {};
+  if (email) {
+    await assertEmailAvailable(admin, email, profileId);
+    patch.email = email;
+  }
+  if (phone) {
+    await assertPhoneAvailable(admin, phone, profileId);
+    patch.phone = phone;
+  }
+  if (!Object.keys(patch).length) return;
+  patch.updated_at = new Date().toISOString();
+  const { error } = await admin.from("profiles").update(patch).eq("id", profileId);
+  if (error) throw new RegistrationError({ error: error.message }, 500);
+  await ensureProfileAuth(admin, profileId, email || null);
+}
+
+async function updateProfileFromRegistrant(admin: any, profileId: string, nr: NewRegistrant, regionId: string) {
+  const email = normEmail(nr.email);
+  const phone = (nr.phone || "").trim();
+  await assertEmailAvailable(admin, email, profileId);
+  await assertPhoneAvailable(admin, phone, profileId);
+
+  const patch: Record<string, unknown> = {
+    first_name: nr.first_name,
+    last_name: nr.last_name,
+    updated_at: new Date().toISOString(),
+  };
+  if (email) patch.email = email;
+  if (phone) patch.phone = phone;
+  if (nr.address) patch.address = nr.address;
+  if (nr.date_of_birth) patch.date_of_birth = nr.date_of_birth;
+  if (nr.gender) patch.gender = String(nr.gender).toLowerCase();
+  if (nr.occupation) patch.occupation = nr.occupation;
+  if (regionId) patch.region_id = regionId;
+
+  const { error } = await admin.from("profiles").update(patch).eq("id", profileId);
+  if (error) throw new RegistrationError({ error: error.message }, 500);
 }

@@ -224,6 +224,7 @@ export default function SpecialEventRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [isUpdatingExisting, setIsUpdatingExisting] = useState(false);
   const [wasUpdated, setWasUpdated] = useState(false);
+  const [primaryEmail, setPrimaryEmail] = useState("");
   const [primaryPhone, setPrimaryPhone] = useState("");
 
   const campaign = (event as any)?.fundraising_campaigns ?? null;
@@ -274,6 +275,8 @@ export default function SpecialEventRegister() {
       setPrimaryMember(lk.member!);
       const existingReg = lk.existing_registration || null;
       setIsUpdatingExisting(!!existingReg);
+      setPrimaryEmail(existingReg?.email || lk.member?.email || (lookupMode === "email" ? value : ""));
+      setPrimaryPhone(existingReg?.phone || lk.member?.phone || (lookupMode === "phone" ? value : ""));
 
       // Build family rows. Prefer the people already on the existing registration
       // (so we can pre-attend them); fall back to all known relations.
@@ -323,7 +326,6 @@ export default function SpecialEventRegister() {
         }
         if (existingReg.dietary_notes) setDietaryNotes(existingReg.dietary_notes);
         if (existingReg.pledge_amount) setPledgeAmount(Number(existingReg.pledge_amount));
-        if (existingReg.phone) setPrimaryPhone(existingReg.phone);
         // Default mode based on previous registration
         setRegistrationMode(existingFamilyIds.size > 0 ? "family" : "individual");
         // Days: if arrival + departure exist, mark them
@@ -335,6 +337,8 @@ export default function SpecialEventRegister() {
     } else {
       setPrimaryMember(null);
       setIsUpdatingExisting(false);
+      setPrimaryEmail("");
+      setPrimaryPhone("");
       setPrimaryOnboard({
         ...emptyOnboardValue(),
         attendee_type: "visitor",
@@ -391,9 +395,6 @@ export default function SpecialEventRegister() {
     (lookupStatus === "found" && registrationMode !== null) ||
     lookupStatus === "missing";
 
-  const canProceedFromOnboard =
-    isOnboardValid(primaryOnboard) && registrationMode !== null;
-
   const buildNewRegistrant = (o: OnboardFormValue) => ({
     type: o.attendee_type,
     attendee_type: o.attendee_type,
@@ -421,17 +422,65 @@ export default function SpecialEventRegister() {
     join_interest: o.join_interest || null,
   });
 
-  const canSubmit = useMemo(() => {
-    if (!event) return false;
-    if (!primaryMember && !isOnboardValid(primaryOnboard)) return false;
-    for (const f of family) {
-      if (f.prefilled) continue;
-      if (!f.relationship_type) return false;
-      if (f.existing_member_id) continue;
-      if (!f.onboard || !isOnboardValid(f.onboard)) return false;
+  const countDigits = (value?: string | null) => (value?.match(/\d/g) || []).length;
+  const isValidEmail = (value?: string | null) => /^\S+@\S+\.\S+$/.test((value || "").trim());
+
+  const getOnboardMissingFields = (o: OnboardFormValue) => {
+    const missing: string[] = [];
+    if (!o.region_id) missing.push(t("sr_region_label"));
+    if (!o.last_name?.trim()) missing.push(t("sr_family_name"));
+    if (!o.first_name?.trim()) missing.push(t("sr_other_names"));
+    if (!isValidEmail(o.email)) missing.push(t("sr_email"));
+    if (!o.phone?.trim() || countDigits(o.phone) < 9) missing.push(t("sr_phone"));
+    if (!o.address?.trim()) missing.push(t("sr_address"));
+    if (!o.date_of_birth) missing.push(t("sr_dob"));
+    if (!o.gender) missing.push(t("sr_gender"));
+    if (o.attendee_type === "member") {
+      if (!o.dcg_id) missing.push(t("sr_dcg_label"));
+    } else {
+      if (!o.occupation) missing.push(t("sr_occupation"));
+      if (o.referral_source === "invited_by" && (o.referral_member_ids.length === 0 || !o.referral_relationship_type)) {
+        missing.push(t("sr_referral_q"));
+      }
+      if (o.referral_source === "social_media" && !o.referral_social_media) missing.push(t("sr_referral_social_media"));
+      if (o.referral_source === "other" && !o.referral_other_details?.trim()) missing.push(t("sr_referral_other"));
     }
-    return true;
-  }, [event, primaryMember, primaryOnboard, family]);
+    return missing;
+  };
+
+  const getSubmissionValidationErrors = () => {
+    const errors: string[] = [];
+    if (!event) errors.push(t("sr_event_unavailable_title"));
+    if (!registrationMode) errors.push(t("sr_select_registration_mode"));
+    if (primaryMember) {
+      if (!isValidEmail(primaryEmail || primaryMember.email)) errors.push(`${t("sr_primary_contact")}: ${t("sr_email")}`);
+      if (countDigits(primaryPhone || primaryMember.phone) < 9) errors.push(`${t("sr_primary_contact")}: ${t("sr_phone")}`);
+    } else {
+      const missing = getOnboardMissingFields(primaryOnboard);
+      if (missing.length) errors.push(`${t("sr_personal_info")}: ${missing.join(", ")}`);
+    }
+
+    if (registrationMode === "family") {
+      family.forEach((f, idx) => {
+        if (f.prefilled) return;
+        const label = `${t("sr_family_member")} ${idx + 1}`;
+        if (!f.relationship_type) errors.push(`${label}: ${t("sr_relationship_required")}`);
+        if (f.existing_member_id) return;
+        if (!f.onboard) {
+          errors.push(`${label}: ${t("sr_check_or_complete")}`);
+          return;
+        }
+        const missing = getOnboardMissingFields(f.onboard);
+        if (missing.length) errors.push(`${label}: ${missing.join(", ")}`);
+      });
+    }
+
+    return errors;
+  };
+
+  const canSubmit = useMemo(() => {
+    return !!event;
+  }, [event]);
 
   const safeParseError = async (err: any) => {
     try {
@@ -443,6 +492,14 @@ export default function SpecialEventRegister() {
 
   const submit = async () => {
     if (!event) return;
+    const validationErrors = getSubmissionValidationErrors();
+    if (validationErrors.length) {
+      toast.error(t("sr_validation_title"), {
+        description: validationErrors.slice(0, 4).join(" • "),
+      });
+      return;
+    }
+
     const familyToSend =
       registrationMode === "family"
         ? family.filter((f) => {
@@ -456,9 +513,9 @@ export default function SpecialEventRegister() {
     const normPhone = (s?: string | null) => (s ?? "").replace(/\D+/g, "");
     const emailSlots: string[] = [];
     const phoneSlots: string[] = [];
-    if (primaryMember?.email) emailSlots.push(normEmail(primaryMember.email));
-    else if (primaryOnboard.email) emailSlots.push(normEmail(primaryOnboard.email));
-    const primaryPhoneVal = primaryPhone || primaryMember?.phone || primaryOnboard.phone;
+    const primaryEmailVal = primaryMember ? primaryEmail || primaryMember.email : primaryOnboard.email;
+    if (primaryEmailVal) emailSlots.push(normEmail(primaryEmailVal));
+    const primaryPhoneVal = primaryMember ? primaryPhone || primaryMember.phone : primaryOnboard.phone;
     if (primaryPhoneVal) phoneSlots.push(normPhone(primaryPhoneVal));
     familyToSend.forEach((f) => {
       const em = f.existing_member_id ? normEmail(f.email) : normEmail(f.onboard?.email);
@@ -492,11 +549,17 @@ export default function SpecialEventRegister() {
         event_id: (event as any).id,
         primary_member_id: primaryMember?.id ?? null,
         primary_new: primaryMember ? null : buildNewRegistrant(primaryOnboard),
-        primary_phone: primaryPhone || primaryMember?.phone || primaryOnboard.phone,
+        primary_pledger_name: primaryMember
+          ? `${primaryMember.last_name || ""} ${primaryMember.first_name || ""}`.trim()
+          : `${primaryOnboard.last_name || ""} ${primaryOnboard.first_name || ""}`.trim(),
+        primary_email: primaryEmailVal,
+        primary_phone: primaryPhoneVal,
         family: familyToSend.map((f) => ({
           relationship_type: f.relationship_type,
           existing_member_id: f.existing_member_id || null,
           is_child: !!f.is_child,
+          submitted_email: f.existing_member_id ? f.email || null : f.onboard?.email || null,
+          submitted_phone: f.existing_member_id ? f.phone || null : f.onboard?.phone || null,
           new_registrant: f.existing_member_id ? null : buildNewRegistrant(f.onboard!),
         })),
         needs_lodging: needsLodging,
@@ -578,6 +641,15 @@ export default function SpecialEventRegister() {
     const onNext = () => {
       if (isLast) {
         submit();
+      } else if (step === "onboard" && !isOnboardValid(primaryOnboard)) {
+        const missing = getOnboardMissingFields(primaryOnboard);
+        toast.error(t("sr_validation_title"), {
+          description: missing.slice(0, 6).join(", "),
+        });
+      } else if (step === "onboard" && !registrationMode) {
+        toast.error(t("sr_validation_title"), {
+          description: t("sr_select_registration_mode"),
+        });
       } else {
         setStep(steps[currentIdx + 1].key);
       }
@@ -587,7 +659,6 @@ export default function SpecialEventRegister() {
     };
     const nextDisabled =
       (step === "identify" && !canProceedFromIdentify) ||
-      (step === "onboard" && !canProceedFromOnboard) ||
       (isLast && (!canSubmit || submitting));
 
     return (
@@ -773,6 +844,8 @@ export default function SpecialEventRegister() {
                               setLookupValue("");
                               setLookupStatus("idle");
                               setPrimaryMember(null);
+                              setPrimaryEmail("");
+                              setPrimaryPhone("");
                             }}
                             className={cn(
                               "relative flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all",
@@ -803,6 +876,8 @@ export default function SpecialEventRegister() {
                           setLookupValue(e.target.value);
                           setLookupStatus("idle");
                           setPrimaryMember(null);
+                          setPrimaryEmail("");
+                          setPrimaryPhone("");
                           setRegistrationMode(null);
                         }}
                       />
@@ -826,6 +901,28 @@ export default function SpecialEventRegister() {
                         </Alert>
                       )}
                       {renderModeSelector(primaryMember.first_name)}
+                      <div className="grid gap-3 sm:grid-cols-2 pt-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t("sr_email")}</Label>
+                          <Input
+                            className="rounded-xl bg-background/60"
+                            type="email"
+                            placeholder={t("sr_email_placeholder")}
+                            value={primaryEmail}
+                            onChange={(e) => setPrimaryEmail(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">{t("sr_phone")}</Label>
+                          <Input
+                            className="rounded-xl bg-background/60"
+                            type="tel"
+                            placeholder={t("sr_phone_placeholder_full")}
+                            value={primaryPhone}
+                            onChange={(e) => setPrimaryPhone(e.target.value)}
+                          />
+                        </div>
+                      </div>
                       <div className="pt-2">{renderActions()}</div>
                     </>
                   )}
