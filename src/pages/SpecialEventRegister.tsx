@@ -454,6 +454,7 @@ export default function SpecialEventRegister() {
   const getSubmissionValidationErrors = () => {
     const errors: string[] = [];
     if (!event) errors.push(t("sr_event_unavailable_title"));
+    if (!registrationMode) errors.push(t("sr_select_registration_mode"));
     if (primaryMember) {
       if (!isValidEmail(primaryEmail || primaryMember.email)) errors.push(`${t("sr_primary_contact")}: ${t("sr_email")}`);
       if (countDigits(primaryPhone || primaryMember.phone) < 9) errors.push(`${t("sr_primary_contact")}: ${t("sr_phone")}`);
@@ -647,6 +648,10 @@ export default function SpecialEventRegister() {
         const missing = getOnboardMissingFields(primaryOnboard);
         toast.error(t("sr_validation_title"), {
           description: missing.slice(0, 6).join(", "),
+        });
+      } else if (step === "onboard" && !registrationMode) {
+        toast.error(t("sr_validation_title"), {
+          description: t("sr_select_registration_mode"),
         });
       } else {
         setStep(steps[currentIdx + 1].key);
