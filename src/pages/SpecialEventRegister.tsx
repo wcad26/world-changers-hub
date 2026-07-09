@@ -643,6 +643,11 @@ export default function SpecialEventRegister() {
     const onNext = () => {
       if (isLast) {
         submit();
+      } else if (step === "onboard" && !isOnboardValid(primaryOnboard)) {
+        const missing = getOnboardMissingFields(primaryOnboard);
+        toast.error(t("sr_validation_title"), {
+          description: missing.slice(0, 6).join(", "),
+        });
       } else {
         setStep(steps[currentIdx + 1].key);
       }
@@ -652,7 +657,6 @@ export default function SpecialEventRegister() {
     };
     const nextDisabled =
       (step === "identify" && !canProceedFromIdentify) ||
-      (step === "onboard" && !canProceedFromOnboard) ||
       (isLast && (!canSubmit || submitting));
 
     return (
