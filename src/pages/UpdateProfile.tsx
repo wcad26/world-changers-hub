@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, CalendarIcon, Plus, X, Check, Mail, Phone } from 'lucide-react';
+import { Loader2, CheckCircle2, ArrowLeft, Search, User, Heart, BookOpen, Users, Church, CalendarIcon, Plus, X, Check, Mail, Phone, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import Navbar from '@/components/layout/Navbar';
@@ -96,12 +96,12 @@ export default function UpdateProfile() {
       if (lookupMode === 'email') body.email = lookupValue;
       else body.phone = lookupValue;
       const r = await callFn('profile-update-lookup', body);
-      if (r.status === 404) { setNotFound(true); return null; }
-      if (!r.ok && r.json?.error !== 'multiple_matches') {
-        setLookupError(r.json?.error || 'Lookup failed');
+      if (r.json?.error === 'not_found') { setNotFound(true); return null; }
+      if (r.json?.error === 'multiple_matches') { setCandidates(r.json.candidates || []); return null; }
+      if (!r.ok || r.json?.success === false) {
+        setLookupError(r.json?.error || 'Lookup failed. Please try again.');
         return null;
       }
-      if (r.json?.error === 'multiple_matches') { setCandidates(r.json.candidates || []); return null; }
       setLookup(r.json as LookupResult);
       return r.json;
     },
@@ -240,7 +240,19 @@ export default function UpdateProfile() {
               </Tabs>
 
               {notFound && (
-                <Alert variant="destructive"><AlertDescription>No profile found for this {lookupMode}. If you're new, please register instead.</AlertDescription></Alert>
+                <Alert className="border-primary/30 bg-primary/5">
+                  <Info className="h-4 w-4 text-primary" />
+                  <AlertDescription className="space-y-2 text-sm">
+                    <p className="font-medium text-foreground">
+                      We couldn't find a profile matching that {lookupMode === 'email' ? 'email address' : 'phone number'}.
+                    </p>
+                    <p className="text-muted-foreground">
+                      {lookupMode === 'email'
+                        ? 'Please double-check for typos, or try searching with your phone number instead. If you have never registered with us, this update page is only for existing members — please register through your regional branch first.'
+                        : 'Please check the number (with or without country code), or try searching with your email instead. If you have never registered with us, this update page is only for existing members — please register through your regional branch first.'}
+                    </p>
+                  </AlertDescription>
+                </Alert>
               )}
               {lookupError && (
                 <Alert variant="destructive"><AlertDescription>{lookupError}</AlertDescription></Alert>

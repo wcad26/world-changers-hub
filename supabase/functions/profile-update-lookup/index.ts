@@ -48,8 +48,9 @@ serve(async (req) => {
     }
 
     if (!profiles.length) {
+      // Return 200 with success:false so the client doesn't treat this as a runtime error.
       return new Response(JSON.stringify({ success: false, error: 'not_found' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
