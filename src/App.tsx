@@ -29,6 +29,7 @@ import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import SpecialEventRegister from "./pages/SpecialEventRegister";
 import MemberRegister from "./pages/MemberRegister";
+import UpdateProfile from "./pages/UpdateProfile";
 import PortalSelector from "./components/auth/PortalSelector";
 import DcgSessionRoute from "./components/auth/DcgSessionRoute";
 import { AuthProvider } from "@/contexts/AuthProvider";
@@ -231,6 +232,7 @@ const App = () => {
 
             {/* Auth (login) pages */}
             <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
+            <Route path="/profile/update" element={<UpdateProfile />} />
             <Route path="/member/register/:regionCode" element={<MemberRegister />} />
             <Route path="/auth/super" element={<SuperAuth />} />
             <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
