@@ -107,15 +107,16 @@ export default function UpdateProfile() {
     },
   });
 
-  // DCGs for the region
+  // DCGs — scoped to the user's region if we have one, otherwise all active DCGs.
   const { data: dcgs = [], isLoading: dcgsLoading } = useQuery({
-    queryKey: ['profile-update-dcgs', lookup?.region?.id],
+    queryKey: ['profile-update-dcgs', lookup?.region?.id || 'all'],
     queryFn: async () => {
-      if (!lookup?.region?.id) return [];
-      const { data } = await supabase.from('dcgs').select('*').eq('region_id', lookup.region.id).eq('is_active', true).order('name');
+      let q = supabase.from('dcgs').select('*').eq('is_active', true).order('name');
+      if (lookup?.region?.id) q = q.eq('region_id', lookup.region.id);
+      const { data } = await q;
       return data || [];
     },
-    enabled: !!lookup?.region?.id,
+    enabled: !!lookup,
   });
 
   const form = useForm<MemberRegistrationFormData>({
@@ -506,9 +507,9 @@ export default function UpdateProfile() {
               <GlassSection icon={Church} title="DCG">
                 <FormField control={form.control} name="dcg_id" render={({ field }) => (
                   <FormItem><FormLabel>Select your DCG <Req /></FormLabel><FormControl>
-                    <select className={nativeSelectClassName} value={field.value || ''} onChange={field.onChange} disabled={dcgsLoading || dcgs.length === 0}>
-                      <option value="" disabled>{dcgsLoading ? 'Loading...' : dcgs.length === 0 ? 'No DCGs' : 'Select a DCG'}</option>
-                      {dcgs.map((d) => <option key={d.id} value={d.id}>{d.name}{d.location ? ` - ${d.location}` : ''}</option>)}
+                    <select className={nativeSelectClassName} value={field.value || ''} onChange={field.onChange} disabled={dcgsLoading}>
+                      <option value="" disabled>{dcgsLoading ? 'Loading...' : 'Select a DCG'}</option>
+                      {dcgs.map((d: any) => <option key={d.id} value={d.id}>{d.name}{d.location ? ` - ${d.location}` : ''}</option>)}
                     </select></FormControl><FormMessage /></FormItem>
                 )} />
               </GlassSection>
