@@ -507,9 +507,9 @@ export default function UpdateProfile() {
               <GlassSection icon={Church} title="DCG">
                 <FormField control={form.control} name="dcg_id" render={({ field }) => (
                   <FormItem><FormLabel>Select your DCG <Req /></FormLabel><FormControl>
-                    <select className={nativeSelectClassName} value={field.value || ''} onChange={field.onChange} disabled={dcgsLoading || dcgs.length === 0}>
-                      <option value="" disabled>{dcgsLoading ? 'Loading...' : dcgs.length === 0 ? 'No DCGs' : 'Select a DCG'}</option>
-                      {dcgs.map((d) => <option key={d.id} value={d.id}>{d.name}{d.location ? ` - ${d.location}` : ''}</option>)}
+                    <select className={nativeSelectClassName} value={field.value || ''} onChange={field.onChange} disabled={dcgsLoading}>
+                      <option value="" disabled>{dcgsLoading ? 'Loading...' : 'Select a DCG'}</option>
+                      {dcgs.map((d: any) => <option key={d.id} value={d.id}>{d.name}{d.location ? ` - ${d.location}` : ''}</option>)}
                     </select></FormControl><FormMessage /></FormItem>
                 )} />
               </GlassSection>
