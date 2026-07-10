@@ -33,11 +33,17 @@ serve(async (req) => {
       profiles = data || [];
     }
     if (!profiles.length && p) {
-      // Digit-normalized phone comparison
-      const { data } = await supabase.from('profiles').select('*').not('phone', 'is', null).limit(500);
-      profiles = (data || []).filter((row: any) => normDigits(row.phone).endsWith(p) || p.endsWith(normDigits(row.phone)));
-      // prefer exact digit match
-      const exact = profiles.filter((row: any) => normDigits(row.phone) === p);
+      // Match by last 9 digits using ilike patterns that ignore separators.
+      const last9 = p.slice(-9);
+      const pattern = '%' + last9.split('').join('%') + '%';
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('phone', pattern)
+        .limit(20);
+      profiles = data || [];
+      // Prefer exact digit match if multiple
+      const exact = profiles.filter((row: any) => normDigits(row.phone) === p || normDigits(row.phone).endsWith(last9));
       if (exact.length) profiles = exact;
     }
 
