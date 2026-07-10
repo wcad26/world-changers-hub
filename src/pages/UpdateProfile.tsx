@@ -107,15 +107,16 @@ export default function UpdateProfile() {
     },
   });
 
-  // DCGs for the region
+  // DCGs — scoped to the user's region if we have one, otherwise all active DCGs.
   const { data: dcgs = [], isLoading: dcgsLoading } = useQuery({
-    queryKey: ['profile-update-dcgs', lookup?.region?.id],
+    queryKey: ['profile-update-dcgs', lookup?.region?.id || 'all'],
     queryFn: async () => {
-      if (!lookup?.region?.id) return [];
-      const { data } = await supabase.from('dcgs').select('*').eq('region_id', lookup.region.id).eq('is_active', true).order('name');
+      let q = supabase.from('dcgs').select('*').eq('is_active', true).order('name');
+      if (lookup?.region?.id) q = q.eq('region_id', lookup.region.id);
+      const { data } = await q;
       return data || [];
     },
-    enabled: !!lookup?.region?.id,
+    enabled: !!lookup,
   });
 
   const form = useForm<MemberRegistrationFormData>({
