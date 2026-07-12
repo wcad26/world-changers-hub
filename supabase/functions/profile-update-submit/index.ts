@@ -36,15 +36,18 @@ serve(async (req) => {
       ministry_interests, dcg_id, relationships,
     } = data;
 
+    const normalizedGender = typeof gender === 'string' ? gender.trim().toLowerCase() : null;
+    const safeGender = normalizedGender === 'male' || normalizedGender === 'female' ? normalizedGender : null;
+
     // Update profile (email is not changed)
     const { error: profErr } = await supabase.from('profiles').update({
-      first_name: first_name || null,
-      last_name: last_name || null,
-      phone: phone || null,
-      address: address || null,
+      first_name: (first_name || '').trim() || null,
+      last_name: (last_name || '').trim() || null,
+      phone: (phone || '').trim() || null,
+      address: (address || '').trim() || null,
       date_of_birth: date_of_birth || null,
-      gender: gender || null,
-      occupation: occupation || null,
+      gender: safeGender,
+      occupation: (occupation || '').trim() || null,
       updated_at: new Date().toISOString(),
     }).eq('id', profileId);
     if (profErr) throw profErr;
