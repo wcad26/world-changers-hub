@@ -107,20 +107,28 @@ serve(async (req) => {
         }
       }
 
-      // Replace relationships
+      // Replace relationships (safe: null created_by, drop self, de-dupe, ignore unique violations)
       if (Array.isArray(relationships)) {
         await supabase.from('member_relationships').delete().eq('member_id', member.id);
+        const seen = new Set<string>();
         for (const rel of relationships) {
           const relType = rel?.relationship_type;
           const ids: string[] = Array.isArray(rel?.member_ids) ? rel.member_ids : [];
           if (!relType || !ids.length) continue;
           for (const relatedId of ids) {
-            await supabase.from('member_relationships').insert({
+            if (!relatedId || relatedId === member.id) continue; // self-check constraint
+            const key = `${relatedId}|${relType}`;
+            if (seen.has(key)) continue; // de-dupe
+            seen.add(key);
+            const { error: relErr } = await supabase.from('member_relationships').insert({
               member_id: member.id,
               related_member_id: relatedId,
               relationship_type: relType,
-              created_by: profileId,
+              created_by: null, // FK to auth.users — may not exist for legacy profiles
             });
+            if (relErr && relErr.code !== '23505') {
+              console.warn('relationship insert failed', relErr);
+            }
           }
         }
       }
