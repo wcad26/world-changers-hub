@@ -156,7 +156,7 @@ export default function UpdateProfile() {
       phone: p.phone || '',
       address: p.address || '',
       date_of_birth: p.date_of_birth || '',
-      gender: p.gender || '',
+      gender: (p.gender || '').toLowerCase(),
       occupation: p.occupation || '',
       has_completed_foundation_school: m?.membership_class_completed ? 'yes' : (m ? 'no' : ''),
       foundation_school_date: m?.foundation_school_date || '',
@@ -297,7 +297,17 @@ export default function UpdateProfile() {
   const isMinor = registrantAge !== null && registrantAge < 16;
 
   const onSubmit = (data: MemberRegistrationFormData) => submitMutation.mutate(data);
-  const onInvalid = () => { toast.error('Please complete the required fields.'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const FIELD_LABELS: Record<string, string> = {
+    first_name: 'First Name', last_name: 'Last Name', email: 'Email', phone: 'Phone',
+    address: 'Address', date_of_birth: 'Date of Birth', gender: 'Gender',
+    occupation: 'Occupation', dcg_id: 'DCG',
+  };
+  const onInvalid = (errors: any) => {
+    const names = Object.keys(errors || {});
+    const labels = names.map((n) => FIELD_LABELS[n] || n).join(', ');
+    toast.error(labels ? `Please fix: ${labels}` : 'Please complete the required fields.');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <>
@@ -358,7 +368,7 @@ export default function UpdateProfile() {
                     <FormItem><FormLabel>Gender <Req /></FormLabel><FormControl>
                       <select className={nativeSelectClassName} value={field.value || ''} onChange={field.onChange}>
                         <option value="" disabled>Select gender</option>
-                        <option value="Male">Male</option><option value="Female">Female</option>
+                        <option value="male">Male</option><option value="female">Female</option>
                       </select></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
