@@ -386,7 +386,7 @@ export default function SpecialEventReport() {
         <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} Individuals · ${stats.families} Families${stats.families > 0 ? ` (${stats.familyMemberTotal} in families)` : ""}`} />
         <KPI icon={Activity} label="Adults / Children" value={`${stats.adultsCombined} / ${stats.childrenCombined}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown (counted as adults)` : "≥15 / <15"} />
         <KPI icon={UsersRound} label="Gender" value={`${stats.male} M · ${stats.female} F`} sub={stats.otherGender > 0 ? `${stats.otherGender} other/—` : "—"} />
-        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingFamilies} Families (${stats.familyChildrenLodging} children · ${stats.familyParentsLodging} parents w/ kids · ${stats.familyAdultsAloneLodging} adults) / ${stats.lodgingIndividualsCount} Individuals`} />
+        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingIndividualsCount} Individuals / ${stats.lodgingFamilies} Families (${stats.familyChildrenLodging} children · ${stats.familyParentsLodging} parents w/ kids · ${stats.familyAdultsAloneLodging} adults)`} />
         <KPI icon={CalendarDays} label="Peak Day Attendance" value={peakDay ? `${peakDay.adults} Adults / ${peakDay.children} Children` : "—"} sub={peakDay ? `Peak on ${peakDay.date} · night ${peakDay.index} of ${peakDay.totalNights}` : "No dated attendees"} />
         <KPI icon={Utensils} label="With Dietary Notes" value={attendees.filter((a) => a.allergyFlag).length} sub="Allergies & preferences" />
       </div>
