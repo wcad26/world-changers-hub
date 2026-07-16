@@ -169,6 +169,10 @@ export default function SpecialEventReport() {
   }, [attendees, search, regionFilter, typeFilter, ageFilter, genderFilter, lodgingFilter, allergyFilter, mealFilter]);
 
   // ---- KPIs ----
+  // New Adult / Child buckets: adult = age >= 15 OR unknown; child = age < 15.
+  const isChildBucket = (ag: AgeGroup) => ag === "child";
+  const isAdultBucket = (ag: AgeGroup) => ag !== "child"; // adult, youth, unknown
+
   const stats = useMemo(() => {
     const total = filtered.length;
     const groups = new Map<string, any[]>();
@@ -177,13 +181,15 @@ export default function SpecialEventReport() {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(a);
     });
-    const families = Array.from(groups.values()).filter((g) => g.length > 1).length;
-    const individuals = Array.from(groups.values()).filter((g) => g.length === 1).length;
+    const familyGroups = Array.from(groups.values()).filter((g) => g.length > 1);
+    const soloGroups = Array.from(groups.values()).filter((g) => g.length === 1);
+    const families = familyGroups.length;
+    const individuals = soloGroups.length;
+    const familyMemberTotal = familyGroups.reduce((sum, g) => sum + g.length, 0);
 
     let adults = 0, youth = 0, children = 0, unknownAge = 0;
     let male = 0, female = 0, otherGender = 0;
     let lodgingPeople = 0, totalNights = 0;
-    let lodgingFamilies = 0;
     filtered.forEach((a) => {
       if (a.ageGroup === "adult") adults++;
       else if (a.ageGroup === "youth") youth++;
@@ -195,19 +201,39 @@ export default function SpecialEventReport() {
       if (a.needs_lodging) lodgingPeople++;
       totalNights += a.nights;
     });
-    groups.forEach((g) => {
-      if (g.some((a) => a.needs_lodging)) lodgingFamilies++;
+
+    // Lodging breakdowns
+    let lodgingFamilies = 0;
+    let lodgingIndividualsCount = 0;
+    let familyChildrenLodging = 0;
+    let familyParentsLodging = 0; // adults inside families that also have children
+    let familyAdultsAloneLodging = 0; // adults inside families with no children
+    familyGroups.forEach((g) => {
+      if (!g.some((a) => a.needs_lodging)) return;
+      lodgingFamilies++;
+      const kids = g.filter((a) => isChildBucket(a.ageGroup)).length;
+      const adultsInGroup = g.filter((a) => isAdultBucket(a.ageGroup)).length;
+      familyChildrenLodging += kids;
+      if (kids > 0) familyParentsLodging += adultsInGroup;
+      else familyAdultsAloneLodging += adultsInGroup;
     });
+    soloGroups.forEach((g) => { if (g[0].needs_lodging) lodgingIndividualsCount++; });
 
     return {
-      total, families, individuals, adults, youth, children, unknownAge,
-      male, female, otherGender, lodgingPeople, lodgingFamilies, totalNights,
+      total, families, individuals, familyMemberTotal,
+      adults, youth, children, unknownAge,
+      adultsCombined: adults + youth + unknownAge,
+      childrenCombined: children,
+      male, female, otherGender,
+      lodgingPeople, lodgingFamilies, lodgingIndividualsCount,
+      familyChildrenLodging, familyParentsLodging, familyAdultsAloneLodging,
+      totalNights,
     };
   }, [filtered]);
 
   // ---- Day rollups ----
   const dayRollup = useMemo(() => {
-    if (filtered.length === 0) return [] as Array<{ date: string; attendance: number; lodging: number }>;
+    if (filtered.length === 0) return [] as Array<{ date: string; attendance: number; lodging: number; adults: number; children: number; rawDate: Date }>;
     let min = filtered[0]?.arrival || null;
     let max = filtered[0]?.departure || filtered[0]?.arrival || null;
     filtered.forEach((a) => {
@@ -218,18 +244,31 @@ export default function SpecialEventReport() {
     if (!min || !max) return [];
     const days = eachDayOfInterval({ start: min, end: max });
     return days.map((d) => {
-      let attendance = 0, lodging = 0;
+      let attendance = 0, lodging = 0, adults = 0, children = 0;
       filtered.forEach((a) => {
         if (!a.arrival) return;
         const dep = a.departure || a.arrival;
         if (d >= a.arrival && d <= dep) {
           attendance++;
           if (a.needs_lodging) lodging++;
+          if (isChildBucket(a.ageGroup)) children++;
+          else adults++;
         }
       });
-      return { date: format(d, "MMM d"), attendance, lodging };
+      return { date: format(d, "MMM d"), attendance, lodging, adults, children, rawDate: d };
     });
   }, [filtered]);
+
+  // ---- Peak day ----
+  const peakDay = useMemo(() => {
+    if (dayRollup.length === 0) return null;
+    let best = dayRollup[0];
+    let bestIndex = 0;
+    dayRollup.forEach((r, i) => {
+      if (r.attendance > best.attendance) { best = r; bestIndex = i; }
+    });
+    return { ...best, index: bestIndex + 1, totalNights: dayRollup.length };
+  }, [dayRollup]);
 
   // ---- Meal day rollup ----
   const mealDayRollup = useMemo(() => {
@@ -344,11 +383,11 @@ export default function SpecialEventReport() {
 
       {/* KPIs */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} indiv · ${stats.families} families`} />
-        <KPI icon={Activity} label="Adults / Youth / Children" value={`${stats.adults} / ${stats.youth} / ${stats.children}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown` : "≥18 / 15–17 / <15"} />
+        <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} Individuals · ${stats.families} Families${stats.families > 0 ? ` (${stats.familyMemberTotal} in families)` : ""}`} />
+        <KPI icon={Activity} label="Adults / Children" value={`${stats.adultsCombined} / ${stats.childrenCombined}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown (counted as adults)` : "≥15 / <15"} />
         <KPI icon={UsersRound} label="Gender" value={`${stats.male} M · ${stats.female} F`} sub={stats.otherGender > 0 ? `${stats.otherGender} other/—` : "—"} />
-        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingFamilies} families/parties`} />
-        <KPI icon={CalendarDays} label="Person-nights" value={stats.totalNights} sub="Sum of nights across attendees" />
+        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingFamilies} Families (${stats.familyChildrenLodging} children · ${stats.familyParentsLodging} parents w/ kids · ${stats.familyAdultsAloneLodging} adults) / ${stats.lodgingIndividualsCount} Individuals`} />
+        <KPI icon={CalendarDays} label="Peak Day Attendance" value={peakDay ? `${peakDay.adults} Adults / ${peakDay.children} Children` : "—"} sub={peakDay ? `Peak on ${peakDay.date} · night ${peakDay.index} of ${peakDay.totalNights}` : "No dated attendees"} />
         <KPI icon={Utensils} label="With Dietary Notes" value={attendees.filter((a) => a.allergyFlag).length} sub="Allergies & preferences" />
       </div>
 
