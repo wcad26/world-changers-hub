@@ -169,6 +169,10 @@ export default function SpecialEventReport() {
   }, [attendees, search, regionFilter, typeFilter, ageFilter, genderFilter, lodgingFilter, allergyFilter, mealFilter]);
 
   // ---- KPIs ----
+  // New Adult / Child buckets: adult = age >= 15 OR unknown; child = age < 15.
+  const isChildBucket = (ag: AgeGroup) => ag === "child";
+  const isAdultBucket = (ag: AgeGroup) => ag !== "child"; // adult, youth, unknown
+
   const stats = useMemo(() => {
     const total = filtered.length;
     const groups = new Map<string, any[]>();
@@ -177,13 +181,15 @@ export default function SpecialEventReport() {
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(a);
     });
-    const families = Array.from(groups.values()).filter((g) => g.length > 1).length;
-    const individuals = Array.from(groups.values()).filter((g) => g.length === 1).length;
+    const familyGroups = Array.from(groups.values()).filter((g) => g.length > 1);
+    const soloGroups = Array.from(groups.values()).filter((g) => g.length === 1);
+    const families = familyGroups.length;
+    const individuals = soloGroups.length;
+    const familyMemberTotal = familyGroups.reduce((sum, g) => sum + g.length, 0);
 
     let adults = 0, youth = 0, children = 0, unknownAge = 0;
     let male = 0, female = 0, otherGender = 0;
     let lodgingPeople = 0, totalNights = 0;
-    let lodgingFamilies = 0;
     filtered.forEach((a) => {
       if (a.ageGroup === "adult") adults++;
       else if (a.ageGroup === "youth") youth++;
@@ -195,19 +201,39 @@ export default function SpecialEventReport() {
       if (a.needs_lodging) lodgingPeople++;
       totalNights += a.nights;
     });
-    groups.forEach((g) => {
-      if (g.some((a) => a.needs_lodging)) lodgingFamilies++;
+
+    // Lodging breakdowns
+    let lodgingFamilies = 0;
+    let lodgingIndividualsCount = 0;
+    let familyChildrenLodging = 0;
+    let familyParentsLodging = 0; // adults inside families that also have children
+    let familyAdultsAloneLodging = 0; // adults inside families with no children
+    familyGroups.forEach((g) => {
+      if (!g.some((a) => a.needs_lodging)) return;
+      lodgingFamilies++;
+      const kids = g.filter((a) => isChildBucket(a.ageGroup)).length;
+      const adultsInGroup = g.filter((a) => isAdultBucket(a.ageGroup)).length;
+      familyChildrenLodging += kids;
+      if (kids > 0) familyParentsLodging += adultsInGroup;
+      else familyAdultsAloneLodging += adultsInGroup;
     });
+    soloGroups.forEach((g) => { if (g[0].needs_lodging) lodgingIndividualsCount++; });
 
     return {
-      total, families, individuals, adults, youth, children, unknownAge,
-      male, female, otherGender, lodgingPeople, lodgingFamilies, totalNights,
+      total, families, individuals, familyMemberTotal,
+      adults, youth, children, unknownAge,
+      adultsCombined: adults + youth + unknownAge,
+      childrenCombined: children,
+      male, female, otherGender,
+      lodgingPeople, lodgingFamilies, lodgingIndividualsCount,
+      familyChildrenLodging, familyParentsLodging, familyAdultsAloneLodging,
+      totalNights,
     };
   }, [filtered]);
 
   // ---- Day rollups ----
   const dayRollup = useMemo(() => {
-    if (filtered.length === 0) return [] as Array<{ date: string; attendance: number; lodging: number }>;
+    if (filtered.length === 0) return [] as Array<{ date: string; attendance: number; lodging: number; adults: number; children: number; rawDate: Date }>;
     let min = filtered[0]?.arrival || null;
     let max = filtered[0]?.departure || filtered[0]?.arrival || null;
     filtered.forEach((a) => {
@@ -218,18 +244,31 @@ export default function SpecialEventReport() {
     if (!min || !max) return [];
     const days = eachDayOfInterval({ start: min, end: max });
     return days.map((d) => {
-      let attendance = 0, lodging = 0;
+      let attendance = 0, lodging = 0, adults = 0, children = 0;
       filtered.forEach((a) => {
         if (!a.arrival) return;
         const dep = a.departure || a.arrival;
         if (d >= a.arrival && d <= dep) {
           attendance++;
           if (a.needs_lodging) lodging++;
+          if (isChildBucket(a.ageGroup)) children++;
+          else adults++;
         }
       });
-      return { date: format(d, "MMM d"), attendance, lodging };
+      return { date: format(d, "MMM d"), attendance, lodging, adults, children, rawDate: d };
     });
   }, [filtered]);
+
+  // ---- Peak day ----
+  const peakDay = useMemo(() => {
+    if (dayRollup.length === 0) return null;
+    let best = dayRollup[0];
+    let bestIndex = 0;
+    dayRollup.forEach((r, i) => {
+      if (r.attendance > best.attendance) { best = r; bestIndex = i; }
+    });
+    return { ...best, index: bestIndex + 1, totalNights: dayRollup.length };
+  }, [dayRollup]);
 
   // ---- Meal day rollup ----
   const mealDayRollup = useMemo(() => {

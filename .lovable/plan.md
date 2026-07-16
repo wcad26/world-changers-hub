@@ -1,64 +1,38 @@
-## Full audit — issues found in the update profile flow
+Update the six KPI cards at the top of `src/pages/admin/super/SpecialEventReport.tsx`. Definitions used everywhere below:
 
-### 1. Gender option values don't match DB check constraint (the reported error)
-- DB: `CHECK (gender IN ('male','female'))` — lowercase only.
-- Form line 361: `<option value="Male">` / `<option value="Female">` — capitalized.
-- Every submit violates `profiles_gender_check`.
+- Adult = age ≥ 15 OR age unknown (existing "adult" + "youth" buckets merged; unknown-age adults still counted here since we no longer surface youth separately)
+- Child = age < 15
 
-**Fix:** lowercase the `value` attributes (keep "Male"/"Female" labels). Also lowercase `p.gender` on prefill so legacy capitalized records land on a valid option.
+Note: for the "unknown age" tally shown as a sub-hint elsewhere we keep the existing rule — this change only affects how adults/children are displayed.
 
-### 2. `member_relationships.created_by` FK to `auth.users` will break inserts
-- Submit passes `created_by: profileId`. If the profile has no matching `auth.users` row (many legacy profiles), the insert throws a foreign-key error and the whole update fails.
+### 1. Total Registered card
 
-**Fix:** in `profile-update-submit`, set `created_by: null`. It's already nullable and FK is `ON DELETE SET NULL`.
+- Keep main value = total attendees.
+- Sub-line becomes: `{individuals} Individuals · {families} Families ({sizeA, sizeB, sizeC…})` where the bracketed list shows the member count of each family group, sorted descending. Truncate to first 8 with a trailing `…` if there are more, and drop the bracket entirely when there are no families. (no don't do the member count sort in the family. instead indicate the total number of individuals in the family pool.)
 
-### 3. Self-relationship crash
-- `CHECK (member_id <> related_member_id)` — if a user accidentally picks themselves in the family picker, the insert fails.
+### 2. Adults / Youth / Children card
 
-**Fix:** filter out `related_member_id === member.id` in the submit function before inserting.
+- Rename label to `Adults / Children`.
+- Value becomes `{adults+youth} / {children}`.
+- Sub-line: keep `{unknownAge} age unknown` when > 0, otherwise `≥15 / <15`.
 
-### 4. Duplicate-relationship crash
-- `UNIQUE (member_id, related_member_id, relationship_type)`. Two identical entries → constraint violation.
+### 3. Lodging Needed card
 
-**Fix:** de-dupe the incoming list per `(related_member_id, relationship_type)` in the submit function.
+- Recompute two numbers over groups that need lodging:
+  - `lodgingFamilies` = groups with size > 1 that need lodging 
+  - `lodgingIndividualsCount` = solo attendees (no group, or group size 1) that need lodging
+- Value stays as total people needing lodging.
+- Sub-line becomes: `{lodgingFamilies} Families (` (here, indicate the number of children in the family pool and the number of adults in the family pool, so that it will guide the event organizers to know how many people in the families are adults that will be lodged separete from the family. in this separation, also indicate the parent separate as they will have to stay with the children instead of being lodged separately.) `/ {lodgingIndividualsCount} Individuals`.
 
-### 5. Gender selection silently rejected in strict `Select` on tablet browsers
-- Native `<select>` with `<option value="" disabled>` is fine; no change needed. Just noting we verified it.
+### 4. Person-nights card → Peak Day card
 
-### 6. Zod submit-time validation friction (no inline scroll to error)
-- `onInvalid` shows a generic toast but doesn't tell the user which field failed. If phone is under 9 digits or DCG missing, they see just "Please complete the required fields."
+- Rebuild the day rollup to also track adult and child counts per day (reusing `dayRollup` logic but adding `adults` and `children` per day using the new Adult/Child definition).
+- Compute `peakDay` = the day with the highest total attendance (adults + children). Ties break to the earliest date.
+- Compute `totalNights` = number of distinct days in the event span (`dayRollup.length`).
+- Label stays or becomes `Peak Day Attendance` (short, fits card).
+- Value: `{peakAdults} Adults / {peakChildren} Children`.
+- Sub-line: `Peak on {peakDate} · night {index} of {totalNights}` where `index` is the 1-based position of the peak day within the event span.
 
-**Fix:** enumerate the specific missing/invalid fields in the toast (e.g. "Missing: Date of Birth, Gender") using `form.formState.errors`.
+### Files touched
 
-### 7. DCG unique constraint edge case
-- Submit deactivates all `dcg_members` rows for the member, then reactivates or inserts the chosen one. Safe today, but if the row was previously deactivated for another DCG and reactivated here, we reactivate correctly. Verified — no change needed.
-
-### 8. Ministry interests: schema mismatch in prefill
-- `lookup` already maps `preferred_service_areas` → `ministry_interests` in the response. Confirmed correct.
-
-### 9. Members `member_type` never downgrades
-- Intentional: unchecking Foundation School does not demote an existing member back to visitor. Confirmed desired behavior.
-
-### 10. Minor rule not enforced on submit
-- Schema doesn't require `relationships` for under-16 registrants; the UI shows a hint but submission still succeeds. For an update page (where minors already exist), this is acceptable.
-
----
-
-## Implementation
-
-### `src/pages/UpdateProfile.tsx`
-- Change gender option values to `"male"` / `"female"` (line 361).
-- On prefill (line 159): `gender: (p.gender || '').toLowerCase()`.
-- Update `onInvalid` to list the specific invalid fields from `form.formState.errors` in the toast.
-
-### `supabase/functions/profile-update-submit/index.ts`
-- Normalize `gender` to lowercase before updating profiles (defense in depth — protects other clients too).
-- Trim & normalize other text fields (phone digits kept as entered, but trim whitespace).
-- When writing `member_relationships`:
-  - Set `created_by: null` (avoid FK-to-auth.users failure).
-  - Filter out `related_member_id === member.id` (self-relationship check constraint).
-  - De-dupe on `(related_member_id, relationship_type)` before insert.
-  - Wrap each insert in try/catch and continue on unique-violation so one bad row doesn't fail the whole update.
-- Return a clearer error payload (`{ success: false, error, detail }`) so the client toast is informative.
-
-No database migration is required — all fixes are in application code.
+- `src/pages/admin/super/SpecialEventReport.tsx` only — extend the `stats` and `dayRollup` `useMemo` blocks and update the six `<KPI …/>` calls. No schema, hook, or edge-function changes.
