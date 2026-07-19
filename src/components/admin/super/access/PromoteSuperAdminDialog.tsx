@@ -71,8 +71,9 @@ const PromoteSuperAdminDialog: React.FC<Props> = ({ open, onOpenChange }) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, first_name, last_name, email')
-        .order('last_name', { ascending: true })
-        .limit(500);
+        .order('last_name', { ascending: true, nullsFirst: false })
+        .order('first_name', { ascending: true, nullsFirst: false })
+        .limit(5000);
       if (error) throw error;
       return (data ?? []).filter((p: any) => !existingActive.has(p.id));
     },
