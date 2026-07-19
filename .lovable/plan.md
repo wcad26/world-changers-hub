@@ -1,38 +1,41 @@
-Update the six KPI cards at the top of `src/pages/admin/super/SpecialEventReport.tsx`. Definitions used everywhere below:
+# Fix: emmanuelamiki@gmail.com missing from Promote-to-Super-Admin picker
 
-- Adult = age ≥ 15 OR age unknown (existing "adult" + "youth" buckets merged; unknown-age adults still counted here since we no longer surface youth separately)
-- Child = age < 15
+## Root cause (verified against the database)
 
-Note: for the "unknown age" tally shown as a sub-hint elsewhere we keep the existing rule — this change only affects how adults/children are displayed.
+Two distinct profiles exist with the name fields swapped between them:
 
-### 1. Total Registered card
+| email | first_name | last_name | position when ordered by last_name |
+| --- | --- | --- | --- |
+| ghislainsilafe@gmail.com | Silafe | Ghislain | 257 |
+| emmanuelamiki@gmail.com | Ghislain | Silafe | **638** |
 
-- Keep main value = total attendees.
-- Sub-line becomes: `{individuals} Individuals · {families} Families ({sizeA, sizeB, sizeC…})` where the bracketed list shows the member count of each family group, sorted descending. Truncate to first 8 with a trailing `…` if there are more, and drop the bracket entirely when there are no families. (no don't do the member count sort in the family. instead indicate the total number of individuals in the family pool.)
+`profiles` currently has 747 rows. The Promote picker in `src/components/admin/super/access/PromoteSuperAdminDialog.tsx` fetches candidates with:
 
-### 2. Adults / Youth / Children card
+```ts
+supabase.from('profiles')
+  .select('id, first_name, last_name, email')
+  .order('last_name', { ascending: true })
+  .limit(500);
+```
 
-- Rename label to `Adults / Children`.
-- Value becomes `{adults+youth} / {children}`.
-- Sub-line: keep `{unknownAge} age unknown` when > 0, otherwise `≥15 / <15`.
+Row 638 falls beyond the 500-row cap, so `emmanuelamiki@gmail.com` is never in the candidate list — no matter what you type in the search box, cmdk can only filter what was loaded. `ghislainsilafe@gmail.com` sits at row 257 and appears normally, which is why the search "silafe ghi" returns exactly one result.
 
-### 3. Lodging Needed card
+The user's `auth.users` row and role state are healthy; nothing else is wrong with the account.
 
-- Recompute two numbers over groups that need lodging:
-  - `lodgingFamilies` = groups with size > 1 that need lodging 
-  - `lodgingIndividualsCount` = solo attendees (no group, or group size 1) that need lodging
-- Value stays as total people needing lodging.
-- Sub-line becomes: `{lodgingFamilies} Families (` (here, indicate the number of children in the family pool and the number of adults in the family pool, so that it will guide the event organizers to know how many people in the families are adults that will be lodged separete from the family. in this separation, also indicate the parent separate as they will have to stay with the children instead of being lodged separately.) `/ {lodgingIndividualsCount} Individuals`.
+## Fix
 
-### 4. Person-nights card → Peak Day card
+Edit only `src/components/admin/super/access/PromoteSuperAdminDialog.tsx`:
 
-- Rebuild the day rollup to also track adult and child counts per day (reusing `dayRollup` logic but adding `adults` and `children` per day using the new Adult/Child definition).
-- Compute `peakDay` = the day with the highest total attendance (adults + children). Ties break to the earliest date.
-- Compute `totalNights` = number of distinct days in the event span (`dayRollup.length`).
-- Label stays or becomes `Peak Day Attendance` (short, fits card).
-- Value: `{peakAdults} Adults / {peakChildren} Children`.
-- Sub-line: `Peak on {peakDate} · night {index} of {totalNights}` where `index` is the 1-based position of the peak day within the event span.
+1. Remove the `.limit(500)` on the candidates query so all non-super-admin profiles are returned (747 rows is well within Supabase's 1000-row default; if we want headroom, page in batches, but a single fetch is sufficient here).
+2. Add `first_name` as a secondary sort so rows with null `last_name` remain discoverable.
+3. Leave the cmdk `CommandInput` client-side filter as-is — it handles a few hundred rows without issue.
 
-### Files touched
+No schema, RLS, backend, or data changes. Once the picker loads the full set, `emmanuelamiki@gmail.com` will be selectable and the existing `useAssignSuperAdminRole` flow will grant super admin access normally.
 
-- `src/pages/admin/super/SpecialEventReport.tsx` only — extend the `stats` and `dayRollup` `useMemo` blocks and update the six `<KPI …/>` calls. No schema, hook, or edge-function changes.
+## Optional follow-up (not required for this fix)
+
+The two profiles have `first_name`/`last_name` swapped on one of them. That's a data-quality issue, not a bug in the picker. Worth flagging to whoever owns those records, but out of scope here.
+
+## Files touched
+
+- `src/components/admin/super/access/PromoteSuperAdminDialog.tsx`
