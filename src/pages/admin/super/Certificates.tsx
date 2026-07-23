@@ -209,14 +209,16 @@ const SuperCertificates = () => {
   };
 
   const handleGenerateCertificates = async () => {
-    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType) {
-      toast({ title: 'Missing information', description: 'Please select a template, members, and certificate type', variant: 'destructive' });
+    const isPreReg = recipientSource === 'preregs';
+    const ids = isPreReg ? selectedPreRegIds : selectedMembers;
+    if (!selectedTemplate || ids.length === 0 || !certificateType) {
+      toast({ title: 'Missing information', description: 'Please select a template, recipients, and type', variant: 'destructive' });
       return;
     }
 
     setShowGenerateDialog(false);
     setIsGenerating(true);
-    setGenerationProgress({ current: 0, total: selectedMembers.length });
+    setGenerationProgress({ current: 0, total: ids.length });
 
     try {
       const { data: template } = await supabase.from('certificate_templates')
@@ -228,26 +230,43 @@ const SuperCertificates = () => {
 
       const baseUrl = window.location.origin;
       let successCount = 0, failCount = 0;
+      const namePos = template.name_position as any || undefined;
+      const qrPos = template.qr_position as any || undefined;
 
-      for (let i = 0; i < selectedMembers.length; i++) {
-        const memberId = selectedMembers[i];
+      for (let i = 0; i < ids.length; i++) {
+        const rowId = ids[i];
         let recipientName = 'Unknown';
         try {
-          const { data: member } = await supabase.from('members')
-            .select('profiles(first_name, last_name, email), region_id').eq('id', memberId).single();
-          if (!member?.profiles) { failCount++; continue; }
+          let recipientEmail: string | null = null;
+          let memberId: string | null = null;
+          let regionId: string | null = null;
+          let preRegistrationId: string | null = null;
 
-          recipientName = `${(member.profiles as any).last_name} ${(member.profiles as any).first_name}`;
-          const memberRegionId = (member as any).region_id;
+          if (isPreReg) {
+            const row = (preRegistrants || []).find((r) => r.id === rowId);
+            if (!row) { failCount++; continue; }
+            recipientName = row.full_name;
+            recipientEmail = row.email;
+            memberId = row.member_id;
+            regionId = row.region_id;
+            preRegistrationId = row.id;
+          } else {
+            const { data: member } = await supabase.from('members')
+              .select('profiles(first_name, last_name, email), region_id').eq('id', rowId).single();
+            if (!member?.profiles) { failCount++; continue; }
+            recipientName = `${(member.profiles as any).last_name} ${(member.profiles as any).first_name}`;
+            recipientEmail = (member.profiles as any).email || null;
+            memberId = rowId;
+            regionId = (member as any).region_id;
+          }
+
           const certificateNumber = await generateUniqueCode('certificate');
           const verificationCode = await generateUniqueCode('verification');
 
-          const namePos = template.name_position as any || undefined;
-          const qrPos = template.qr_position as any || undefined;
-
           const blob = await generateCertificateImage(templatePublicUrl, recipientName, certificateNumber, verificationCode, baseUrl, namePos, qrPos);
 
-          const filePath = `${memberRegionId || 'global'}/${memberId}/${certificateNumber}.png`;
+          const folderKey = memberId || preRegistrationId || 'anon';
+          const filePath = `${regionId || 'global'}/${folderKey}/${certificateNumber}.png`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('certificates').upload(filePath, blob, { contentType: 'image/png', upsert: true });
           if (uploadError) throw uploadError;
@@ -257,35 +276,38 @@ const SuperCertificates = () => {
           const { error: insertError } = await supabase.from('certificates').insert({
             certificate_number: certificateNumber, certificate_type: certificateType,
             certificate_url: publicUrl, verification_code: verificationCode,
-            recipient_name: recipientName, recipient_email: (member.profiles as any).email,
+            recipient_name: recipientName, recipient_email: recipientEmail,
             event_name: eventName || null, event_date: eventDate || null,
             issued_date: new Date().toISOString().split('T')[0],
-            region_id: memberRegionId, // Use member's region
+            region_id: regionId,
             member_id: memberId, issued_by: profile?.id,
             qr_code_data: getVerificationUrl(verificationCode, baseUrl),
-          });
+            output_type: outputType,
+            pre_registration_id: preRegistrationId,
+          } as any);
           if (insertError) throw insertError;
 
           successCount++;
-          setGenerationProgress({ current: i + 1, total: selectedMembers.length });
+          setGenerationProgress({ current: i + 1, total: ids.length });
         } catch (error) {
-          console.error(`Failed for member ${memberId}:`, error);
+          console.error(`Failed for ${rowId}:`, error);
           failCount++;
         }
       }
 
       if (successCount > 0) {
-        toast({ title: 'Success', description: `Generated ${successCount} certificate(s)` });
+        toast({ title: 'Success', description: `Generated ${successCount} ${outputType}(s)` });
         await queryClient.invalidateQueries({ queryKey: ['certificates'] });
+        await queryClient.invalidateQueries({ queryKey: ['event-pre-registrants'] });
         setActiveTab('issued');
       }
       if (failCount > 0) {
-        toast({ title: 'Partial failure', description: `${failCount} certificate(s) failed`, variant: 'destructive' });
+        toast({ title: 'Partial failure', description: `${failCount} ${outputType}(s) failed`, variant: 'destructive' });
       }
 
-      setSelectedMembers([]); setCertificateType(''); setEventName(''); setEventDate(''); setSelectedEventId('');
+      setSelectedMembers([]); setSelectedPreRegIds([]); setCertificateType(''); setEventName(''); setEventDate(''); setSelectedEventId('');
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to generate certificates', variant: 'destructive' });
+      toast({ title: 'Error', description: `Failed to generate ${outputType}s`, variant: 'destructive' });
     } finally {
       setIsGenerating(false); setGenerationProgress({ current: 0, total: 0 });
     }
