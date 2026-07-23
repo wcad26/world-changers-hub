@@ -185,7 +185,8 @@ const SuperCertificates = () => {
         region_id: null, // Global template
         created_by: profile?.id || null,
         name_position: namePosition, qr_position: qrPosition,
-      },
+        output_type: templateOutputType,
+      } as any,
     }, {
       onSuccess: () => { setTemplateFile(null); setTemplateName(''); setTemplateType(''); setTemplatePreviewUrl(null); },
     });
@@ -199,7 +200,7 @@ const SuperCertificates = () => {
 
   const generateUniqueCode = async (type: 'certificate' | 'verification'): Promise<string> => {
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = type === 'certificate' ? generateCertificateNumber('GLOBAL') : generateVerificationCode();
+      const code = type === 'certificate' ? generateCertificateNumber('GLOBAL', outputType) : generateVerificationCode();
       const { data } = await supabase.from('certificates').select('id')
         .eq(type === 'certificate' ? 'certificate_number' : 'verification_code', code).maybeSingle();
       if (!data) return code;
