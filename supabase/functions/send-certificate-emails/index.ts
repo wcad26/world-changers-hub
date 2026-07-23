@@ -73,11 +73,15 @@ serve(async (req) => {
         }
         const certificateBase64 = btoa(binary);
 
-        // Send email with certificate attachment
+        const isBadge = (certificate as any).output_type === 'badge';
+        const outputLabel = isBadge ? 'Badge' : 'Certificate';
+        const outputEmoji = isBadge ? '🪪' : '🎓';
+
+        // Send email with certificate/badge attachment
         const emailResponse = await resend.emails.send({
           from: 'World Changers Association <certificates@wcaglobal.org>',
           to: [certificate.recipient_email],
-          subject: `Your Certificate from World Changers Association - ${certificate.certificate_type}`,
+          subject: `Your ${outputLabel} from World Changers Association - ${certificate.certificate_type}`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -95,36 +99,38 @@ serve(async (req) => {
               <body>
                 <div class="container">
                   <div class="header">
-                    <h1>🎓 Certificate Issued</h1>
+                    <h1>${outputEmoji} ${outputLabel} Issued</h1>
                   </div>
                   <div class="content">
                     <p>Dear <strong>${certificate.recipient_name}</strong>,</p>
-                    
-                    <p>Congratulations! Your certificate has been issued by World Changers Association.</p>
-                    
+
+                    <p>${isBadge
+                      ? `Your event badge has been issued by World Changers Association. Please bring it with you (printed or on your phone) for check-in.`
+                      : `Congratulations! Your certificate has been issued by World Changers Association.`}</p>
+
                     <div class="verification">
-                      <strong>Certificate Details:</strong><br>
+                      <strong>${outputLabel} Details:</strong><br>
                       <strong>Type:</strong> ${certificate.certificate_type}<br>
                       ${certificate.event_name ? `<strong>Event:</strong> ${certificate.event_name}<br>` : ''}
                       ${certificate.event_date ? `<strong>Date:</strong> ${new Date(certificate.event_date).toLocaleDateString()}<br>` : ''}
-                      <strong>Certificate Number:</strong> ${certificate.certificate_number}<br>
+                      <strong>${outputLabel} Number:</strong> ${certificate.certificate_number}<br>
                       <strong>Issued:</strong> ${new Date(certificate.issued_date).toLocaleDateString()}
                     </div>
-                    
-                    <p>You can verify the authenticity of this certificate anytime by visiting:</p>
-                    
+
+                    <p>You can verify the authenticity of this ${outputLabel.toLowerCase()} anytime by visiting:</p>
+
                     <center>
                       <a href="${certificate.qr_code_data}" class="button">
-                        Verify Certificate Online
+                        Verify ${outputLabel} Online
                       </a>
                     </center>
-                    
+
                     <p style="font-size: 14px; color: #6b7280;">
-                      Or scan the QR code on your certificate with any QR code reader.
+                      Or scan the QR code on your ${outputLabel.toLowerCase()} with any QR code reader.
                     </p>
-                    
-                    <p>Your certificate is attached to this email. You can download and print it for your records.</p>
-                    
+
+                    <p>Your ${outputLabel.toLowerCase()} is attached to this email. You can download and print it for your records.</p>
+
                     <div class="footer">
                       <p>
                         <strong>World Changers Association</strong><br>

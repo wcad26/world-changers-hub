@@ -29,6 +29,8 @@ import {
 import { useAllMembers } from '@/hooks/useAllMembers';
 import { useGlobalEvents } from '@/hooks/useGlobalEvents';
 import { useEventAttendees } from '@/hooks/useAttendance';
+import { useEventPreRegistrants } from '@/hooks/useEventPreRegistrants';
+import { useAllRegions } from '@/hooks/useAllRegions';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   getCertificateTypeOptions, 
@@ -93,7 +95,18 @@ const SuperCertificates = () => {
   const [sentCertificateSearchTerm, setSentCertificateSearchTerm] = useState('');
   const [issuedEventFilter, setIssuedEventFilter] = useState('all');
   const [issuedTypeFilter, setIssuedTypeFilter] = useState('all');
-  
+  const [issuedOutputFilter, setIssuedOutputFilter] = useState<'all' | 'certificate' | 'badge'>('all');
+
+  // New: output type + recipient source
+  const [outputType, setOutputType] = useState<'certificate' | 'badge'>('certificate');
+  const [recipientSource, setRecipientSource] = useState<'members' | 'attendees' | 'preregs'>('members');
+  const [selectedPreRegIds, setSelectedPreRegIds] = useState<string[]>([]);
+  const [preRegPrimaryOnly, setPreRegPrimaryOnly] = useState(false);
+  const [preRegLodgingOnly, setPreRegLodgingOnly] = useState(false);
+  const [preRegAttendeeType, setPreRegAttendeeType] = useState<'all' | 'adult' | 'child'>('all');
+  const [preRegRegionFilter, setPreRegRegionFilter] = useState<string>('all');
+  const [templateOutputType, setTemplateOutputType] = useState<'certificate' | 'badge'>('certificate');
+
   // Global queries - no region filter
   const { data: templates, isLoading: templatesLoading } = useGlobalCertificateTemplates();
   const { data: members, isLoading: membersLoading } = useAllMembers({ searchTerm: memberSearchTerm });
@@ -101,9 +114,25 @@ const SuperCertificates = () => {
   const { data: issuedCertificates, isLoading: certificatesLoading } = useGlobalIssuedCertificates();
   const { data: unsentCertificates } = useGlobalUnsentCertificates();
   const { data: sentCertificates } = useGlobalSentCertificates();
+  const { data: allRegions } = useAllRegions();
   const { data: eventAttendees, isLoading: attendeesLoading } = useEventAttendees(
-    selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
+    recipientSource === 'attendees' && selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
     undefined // No region filter for global
+  );
+  const { data: preRegistrants, isLoading: preRegsLoading } = useEventPreRegistrants(
+    recipientSource === 'preregs' ? selectedEventId : undefined,
+    {
+      search: memberSearchTerm,
+      primaryOnly: preRegPrimaryOnly,
+      needsLodging: preRegLodgingOnly,
+      attendeeType: preRegAttendeeType,
+      regionId: preRegRegionFilter,
+    }
+  );
+
+  // Filter templates by output type for dropdown
+  const templatesForOutput = (templates || []).filter(
+    (t: any) => (t.output_type || 'certificate') === outputType
   );
 
   const baseMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
@@ -156,7 +185,8 @@ const SuperCertificates = () => {
         region_id: null, // Global template
         created_by: profile?.id || null,
         name_position: namePosition, qr_position: qrPosition,
-      },
+        output_type: templateOutputType,
+      } as any,
     }, {
       onSuccess: () => { setTemplateFile(null); setTemplateName(''); setTemplateType(''); setTemplatePreviewUrl(null); },
     });
@@ -170,7 +200,7 @@ const SuperCertificates = () => {
 
   const generateUniqueCode = async (type: 'certificate' | 'verification'): Promise<string> => {
     for (let attempt = 0; attempt < 5; attempt++) {
-      const code = type === 'certificate' ? generateCertificateNumber('GLOBAL') : generateVerificationCode();
+      const code = type === 'certificate' ? generateCertificateNumber('GLOBAL', outputType) : generateVerificationCode();
       const { data } = await supabase.from('certificates').select('id')
         .eq(type === 'certificate' ? 'certificate_number' : 'verification_code', code).maybeSingle();
       if (!data) return code;
@@ -179,14 +209,16 @@ const SuperCertificates = () => {
   };
 
   const handleGenerateCertificates = async () => {
-    if (!selectedTemplate || selectedMembers.length === 0 || !certificateType) {
-      toast({ title: 'Missing information', description: 'Please select a template, members, and certificate type', variant: 'destructive' });
+    const isPreReg = recipientSource === 'preregs';
+    const ids = isPreReg ? selectedPreRegIds : selectedMembers;
+    if (!selectedTemplate || ids.length === 0 || !certificateType) {
+      toast({ title: 'Missing information', description: 'Please select a template, recipients, and type', variant: 'destructive' });
       return;
     }
 
     setShowGenerateDialog(false);
     setIsGenerating(true);
-    setGenerationProgress({ current: 0, total: selectedMembers.length });
+    setGenerationProgress({ current: 0, total: ids.length });
 
     try {
       const { data: template } = await supabase.from('certificate_templates')
@@ -198,26 +230,43 @@ const SuperCertificates = () => {
 
       const baseUrl = window.location.origin;
       let successCount = 0, failCount = 0;
+      const namePos = template.name_position as any || undefined;
+      const qrPos = template.qr_position as any || undefined;
 
-      for (let i = 0; i < selectedMembers.length; i++) {
-        const memberId = selectedMembers[i];
+      for (let i = 0; i < ids.length; i++) {
+        const rowId = ids[i];
         let recipientName = 'Unknown';
         try {
-          const { data: member } = await supabase.from('members')
-            .select('profiles(first_name, last_name, email), region_id').eq('id', memberId).single();
-          if (!member?.profiles) { failCount++; continue; }
+          let recipientEmail: string | null = null;
+          let memberId: string | null = null;
+          let regionId: string | null = null;
+          let preRegistrationId: string | null = null;
 
-          recipientName = `${(member.profiles as any).last_name} ${(member.profiles as any).first_name}`;
-          const memberRegionId = (member as any).region_id;
+          if (isPreReg) {
+            const row = (preRegistrants || []).find((r) => r.id === rowId);
+            if (!row) { failCount++; continue; }
+            recipientName = row.full_name;
+            recipientEmail = row.email;
+            memberId = row.member_id;
+            regionId = row.region_id;
+            preRegistrationId = row.id;
+          } else {
+            const { data: member } = await supabase.from('members')
+              .select('profiles(first_name, last_name, email), region_id').eq('id', rowId).single();
+            if (!member?.profiles) { failCount++; continue; }
+            recipientName = `${(member.profiles as any).last_name} ${(member.profiles as any).first_name}`;
+            recipientEmail = (member.profiles as any).email || null;
+            memberId = rowId;
+            regionId = (member as any).region_id;
+          }
+
           const certificateNumber = await generateUniqueCode('certificate');
           const verificationCode = await generateUniqueCode('verification');
 
-          const namePos = template.name_position as any || undefined;
-          const qrPos = template.qr_position as any || undefined;
-
           const blob = await generateCertificateImage(templatePublicUrl, recipientName, certificateNumber, verificationCode, baseUrl, namePos, qrPos);
 
-          const filePath = `${memberRegionId || 'global'}/${memberId}/${certificateNumber}.png`;
+          const folderKey = memberId || preRegistrationId || 'anon';
+          const filePath = `${regionId || 'global'}/${folderKey}/${certificateNumber}.png`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('certificates').upload(filePath, blob, { contentType: 'image/png', upsert: true });
           if (uploadError) throw uploadError;
@@ -227,35 +276,38 @@ const SuperCertificates = () => {
           const { error: insertError } = await supabase.from('certificates').insert({
             certificate_number: certificateNumber, certificate_type: certificateType,
             certificate_url: publicUrl, verification_code: verificationCode,
-            recipient_name: recipientName, recipient_email: (member.profiles as any).email,
+            recipient_name: recipientName, recipient_email: recipientEmail,
             event_name: eventName || null, event_date: eventDate || null,
             issued_date: new Date().toISOString().split('T')[0],
-            region_id: memberRegionId, // Use member's region
+            region_id: regionId,
             member_id: memberId, issued_by: profile?.id,
             qr_code_data: getVerificationUrl(verificationCode, baseUrl),
-          });
+            output_type: outputType,
+            pre_registration_id: preRegistrationId,
+          } as any);
           if (insertError) throw insertError;
 
           successCount++;
-          setGenerationProgress({ current: i + 1, total: selectedMembers.length });
+          setGenerationProgress({ current: i + 1, total: ids.length });
         } catch (error) {
-          console.error(`Failed for member ${memberId}:`, error);
+          console.error(`Failed for ${rowId}:`, error);
           failCount++;
         }
       }
 
       if (successCount > 0) {
-        toast({ title: 'Success', description: `Generated ${successCount} certificate(s)` });
+        toast({ title: 'Success', description: `Generated ${successCount} ${outputType}(s)` });
         await queryClient.invalidateQueries({ queryKey: ['certificates'] });
+        await queryClient.invalidateQueries({ queryKey: ['event-pre-registrants'] });
         setActiveTab('issued');
       }
       if (failCount > 0) {
-        toast({ title: 'Partial failure', description: `${failCount} certificate(s) failed`, variant: 'destructive' });
+        toast({ title: 'Partial failure', description: `${failCount} ${outputType}(s) failed`, variant: 'destructive' });
       }
 
-      setSelectedMembers([]); setCertificateType(''); setEventName(''); setEventDate(''); setSelectedEventId('');
+      setSelectedMembers([]); setSelectedPreRegIds([]); setCertificateType(''); setEventName(''); setEventDate(''); setSelectedEventId('');
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to generate certificates', variant: 'destructive' });
+      toast({ title: 'Error', description: `Failed to generate ${outputType}s`, variant: 'destructive' });
     } finally {
       setIsGenerating(false); setGenerationProgress({ current: 0, total: 0 });
     }
@@ -332,24 +384,63 @@ const SuperCertificates = () => {
           <TabsContent value="generate" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Bulk Generate Certificates</CardTitle>
-                <CardDescription>Select a template, choose members from any region, and generate certificates</CardDescription>
+                <CardTitle>Bulk Generate {outputType === 'badge' ? 'Badges' : 'Certificates'}</CardTitle>
+                <CardDescription>
+                  Choose an output type, pick a recipient source, and generate in bulk
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Output Type</Label>
+                    <Select value={outputType} onValueChange={(v: 'certificate' | 'badge') => {
+                      setOutputType(v);
+                      setSelectedTemplate('');
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="certificate">Certificate</SelectItem>
+                        <SelectItem value="badge">Badge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Recipient Source</Label>
+                    <Select value={recipientSource} onValueChange={(v: 'members' | 'attendees' | 'preregs') => {
+                      setRecipientSource(v);
+                      setSelectedMembers([]);
+                      setSelectedPreRegIds([]);
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="members">All Members</SelectItem>
+                        <SelectItem value="attendees">Event Attendees</SelectItem>
+                        <SelectItem value="preregs">Event Pre-registrations</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Certificate Template</Label>
+                  <Label>{outputType === 'badge' ? 'Badge' : 'Certificate'} Template</Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger><SelectValue placeholder="Select a template" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={`Select a ${outputType} template`} /></SelectTrigger>
                     <SelectContent>
-                      {templates?.map(t => <SelectItem key={t.id} value={t.id}>{t.template_name} ({t.template_type})</SelectItem>)}
+                      {templatesForOutput.length === 0 ? (
+                        <div className="p-3 text-sm text-muted-foreground">
+                          No {outputType} templates yet. Upload one in the Templates tab.
+                        </div>
+                      ) : templatesForOutput.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>{t.template_name} ({t.template_type})</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Certificate Type</Label>
+                  <Label>{outputType === 'badge' ? 'Badge' : 'Certificate'} Type</Label>
                   <Select value={certificateType} onValueChange={setCertificateType}>
-                    <SelectTrigger><SelectValue placeholder="Select certificate type" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={`Select ${outputType} type`} /></SelectTrigger>
                     <SelectContent>
                       {getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
@@ -358,11 +449,14 @@ const SuperCertificates = () => {
 
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>Associated Event (Optional)</Label>
+                    <Label>
+                      Associated Event {(recipientSource === 'preregs' || recipientSource === 'attendees') ? '' : '(Optional)'}
+                    </Label>
                     <Select value={selectedEventId} onValueChange={(value) => {
                       setSelectedEventId(value);
                       setCertificateStatusFilter('all');
                       setSelectedMembers([]);
+                      setSelectedPreRegIds([]);
                       if (value === 'none') { setEventName(''); setEventDate(''); }
                       else {
                         const ev = events?.find(e => e.id === value);
@@ -384,62 +478,159 @@ const SuperCertificates = () => {
                     <Label>Event Date</Label>
                     <Input type="date" value={eventDate} readOnly className="bg-muted" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Certificate Status</Label>
-                    <Select value={certificateStatusFilter} onValueChange={setCertificateStatusFilter} disabled={!selectedEventId || selectedEventId === 'none'}>
-                      <SelectTrigger><SelectValue placeholder="Filter" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="generated">Generated</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {recipientSource !== 'preregs' && (
+                    <div className="space-y-2">
+                      <Label>Status Filter</Label>
+                      <Select value={certificateStatusFilter} onValueChange={setCertificateStatusFilter} disabled={!selectedEventId || selectedEventId === 'none'}>
+                        <SelectTrigger><SelectValue placeholder="Filter" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="generated">Generated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Select Recipients</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={toggleSelectAllMembers} disabled={filteredMembers.length === 0}>
-                      {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  </div>
-                  <Input placeholder="Search by name or member ID..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
-                  <div className="border rounded-lg max-h-64 overflow-y-auto">
-                    {(membersLoading || attendeesLoading) ? (
-                      <div className="p-4 text-sm text-muted-foreground">Loading...</div>
-                    ) : filteredMembers.length > 0 ? (
-                      <div className="divide-y">
-                        {filteredMembers.map(member => {
-                          const fullName = member.profiles?.first_name && member.profiles?.last_name
-                            ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.profiles?.email || 'Unknown';
-                          return (
-                            <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
-                              <Checkbox checked={selectedMembers.includes(member.id)} onCheckedChange={() => toggleMemberSelection(member.id)} />
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{fullName}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {member.member_id} • {member.member_type}
-                                  {(member as any).regions?.name && <> • {(member as any).regions.name}</>}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                {recipientSource === 'preregs' ? (
+                  <div className="space-y-4">
+                    {(!selectedEventId || selectedEventId === 'none') ? (
+                      <div className="border rounded-lg p-4 text-sm text-muted-foreground">
+                        Select an event above to load its pre-registrations.
                       </div>
                     ) : (
-                      <div className="p-4 text-sm text-muted-foreground">No members found</div>
+                      <>
+                        <div className="grid gap-3 md:grid-cols-4">
+                          <Select value={preRegAttendeeType} onValueChange={(v: 'all' | 'adult' | 'child') => setPreRegAttendeeType(v)}>
+                            <SelectTrigger><SelectValue placeholder="Attendee type" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All ages</SelectItem>
+                              <SelectItem value="adult">Adults (15+)</SelectItem>
+                              <SelectItem value="child">Children (&lt;15)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={preRegRegionFilter} onValueChange={setPreRegRegionFilter}>
+                            <SelectTrigger><SelectValue placeholder="Region" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All regions</SelectItem>
+                              {(allRegions || []).map((r: any) => (
+                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <label className="flex items-center gap-2 text-sm border rounded-md px-3">
+                            <Checkbox checked={preRegPrimaryOnly} onCheckedChange={(c) => setPreRegPrimaryOnly(!!c)} />
+                            Primary registrants only
+                          </label>
+                          <label className="flex items-center gap-2 text-sm border rounded-md px-3">
+                            <Checkbox checked={preRegLodgingOnly} onCheckedChange={(c) => setPreRegLodgingOnly(!!c)} />
+                            Needs lodging
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Select Pre-registrants</Label>
+                          <Button type="button" variant="outline" size="sm"
+                            onClick={() => setSelectedPreRegIds(
+                              selectedPreRegIds.length === (preRegistrants || []).length ? [] : (preRegistrants || []).map(r => r.id)
+                            )}
+                            disabled={!preRegistrants || preRegistrants.length === 0}>
+                            {selectedPreRegIds.length === (preRegistrants || []).length ? 'Deselect All' : 'Select All'}
+                          </Button>
+                        </div>
+                        <Input placeholder="Search by name, email or phone..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
+                        <div className="border rounded-lg max-h-72 overflow-y-auto">
+                          {preRegsLoading ? (
+                            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                          ) : (preRegistrants && preRegistrants.length > 0) ? (
+                            <div className="divide-y">
+                              {preRegistrants.map(row => {
+                                const alreadyIssued = outputType === 'badge' ? row.has_badge : row.has_certificate;
+                                return (
+                                  <div key={row.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                                    <Checkbox
+                                      checked={selectedPreRegIds.includes(row.id)}
+                                      onCheckedChange={() => setSelectedPreRegIds(prev =>
+                                        prev.includes(row.id) ? prev.filter(i => i !== row.id) : [...prev, row.id])}
+                                    />
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium flex items-center gap-2">
+                                        {row.full_name}
+                                        {row.is_primary && <Badge variant="secondary" className="text-[10px]">Primary</Badge>}
+                                        <Badge variant="outline" className="text-[10px] capitalize">{row.age_category}</Badge>
+                                        {row.needs_lodging && <Badge variant="outline" className="text-[10px]">Lodging</Badge>}
+                                        {alreadyIssued && <Badge className="text-[10px]">Already issued</Badge>}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {row.email || row.phone || '—'}
+                                        {row.region_name && <> • {row.region_name}</>}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="p-4 text-sm text-muted-foreground">No pre-registrations match these filters</div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedPreRegIds.length} of {(preRegistrants || []).length} selected
+                        </p>
+                      </>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{selectedMembers.length} of {filteredMembers.length} selected</p>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Select Recipients</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={toggleSelectAllMembers} disabled={filteredMembers.length === 0}>
+                        {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                    </div>
+                    <Input placeholder="Search by name or member ID..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
+                    <div className="border rounded-lg max-h-64 overflow-y-auto">
+                      {(membersLoading || attendeesLoading) ? (
+                        <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                      ) : filteredMembers.length > 0 ? (
+                        <div className="divide-y">
+                          {filteredMembers.map(member => {
+                            const fullName = member.profiles?.first_name && member.profiles?.last_name
+                              ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.profiles?.email || 'Unknown';
+                            return (
+                              <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                                <Checkbox checked={selectedMembers.includes(member.id)} onCheckedChange={() => toggleMemberSelection(member.id)} />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{fullName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {member.member_id} • {member.member_type}
+                                    {(member as any).regions?.name && <> • {(member as any).regions.name}</>}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-sm text-muted-foreground">No members found</div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{selectedMembers.length} of {filteredMembers.length} selected</p>
+                  </div>
+                )}
 
-                <Button onClick={() => setShowGenerateDialog(true)}
-                  disabled={!selectedTemplate || selectedMembers.length === 0 || !certificateType || isGenerating}
-                  className="w-full" size="lg">
-                  <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
-                  {isGenerating ? `Generating... (${generationProgress.current}/${generationProgress.total})` : `Generate ${selectedMembers.length} Certificate(s)`}
-                </Button>
+                {(() => {
+                  const count = recipientSource === 'preregs' ? selectedPreRegIds.length : selectedMembers.length;
+                  const label = outputType === 'badge' ? 'Badge' : 'Certificate';
+                  return (
+                    <Button onClick={() => setShowGenerateDialog(true)}
+                      disabled={!selectedTemplate || count === 0 || !certificateType || isGenerating}
+                      className="w-full" size="lg">
+                      <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
+                      {isGenerating ? `Generating... (${generationProgress.current}/${generationProgress.total})` : `Generate ${count} ${label}(s)`}
+                    </Button>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
@@ -456,12 +647,24 @@ const SuperCertificates = () => {
                   <Label>Template Name</Label>
                   <Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g., Global Conference Certificate 2024" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Template Type</Label>
-                  <Select value={templateType} onValueChange={setTemplateType}>
-                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>{getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Output Type</Label>
+                    <Select value={templateOutputType} onValueChange={(v: 'certificate' | 'badge') => setTemplateOutputType(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="certificate">Certificate</SelectItem>
+                        <SelectItem value="badge">Badge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Template Type</Label>
+                    <Select value={templateType} onValueChange={setTemplateType}>
+                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>{getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Template File</Label>
