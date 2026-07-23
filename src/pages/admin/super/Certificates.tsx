@@ -29,6 +29,8 @@ import {
 import { useAllMembers } from '@/hooks/useAllMembers';
 import { useGlobalEvents } from '@/hooks/useGlobalEvents';
 import { useEventAttendees } from '@/hooks/useAttendance';
+import { useEventPreRegistrants } from '@/hooks/useEventPreRegistrants';
+import { useAllRegions } from '@/hooks/useAllRegions';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   getCertificateTypeOptions, 
