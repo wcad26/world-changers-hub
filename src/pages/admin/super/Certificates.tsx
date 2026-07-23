@@ -384,24 +384,63 @@ const SuperCertificates = () => {
           <TabsContent value="generate" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Bulk Generate Certificates</CardTitle>
-                <CardDescription>Select a template, choose members from any region, and generate certificates</CardDescription>
+                <CardTitle>Bulk Generate {outputType === 'badge' ? 'Badges' : 'Certificates'}</CardTitle>
+                <CardDescription>
+                  Choose an output type, pick a recipient source, and generate in bulk
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Output Type</Label>
+                    <Select value={outputType} onValueChange={(v: 'certificate' | 'badge') => {
+                      setOutputType(v);
+                      setSelectedTemplate('');
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="certificate">Certificate</SelectItem>
+                        <SelectItem value="badge">Badge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Recipient Source</Label>
+                    <Select value={recipientSource} onValueChange={(v: 'members' | 'attendees' | 'preregs') => {
+                      setRecipientSource(v);
+                      setSelectedMembers([]);
+                      setSelectedPreRegIds([]);
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="members">All Members</SelectItem>
+                        <SelectItem value="attendees">Event Attendees</SelectItem>
+                        <SelectItem value="preregs">Event Pre-registrations</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label>Certificate Template</Label>
+                  <Label>{outputType === 'badge' ? 'Badge' : 'Certificate'} Template</Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger><SelectValue placeholder="Select a template" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={`Select a ${outputType} template`} /></SelectTrigger>
                     <SelectContent>
-                      {templates?.map(t => <SelectItem key={t.id} value={t.id}>{t.template_name} ({t.template_type})</SelectItem>)}
+                      {templatesForOutput.length === 0 ? (
+                        <div className="p-3 text-sm text-muted-foreground">
+                          No {outputType} templates yet. Upload one in the Templates tab.
+                        </div>
+                      ) : templatesForOutput.map((t: any) => (
+                        <SelectItem key={t.id} value={t.id}>{t.template_name} ({t.template_type})</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Certificate Type</Label>
+                  <Label>{outputType === 'badge' ? 'Badge' : 'Certificate'} Type</Label>
                   <Select value={certificateType} onValueChange={setCertificateType}>
-                    <SelectTrigger><SelectValue placeholder="Select certificate type" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={`Select ${outputType} type`} /></SelectTrigger>
                     <SelectContent>
                       {getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                     </SelectContent>
@@ -410,11 +449,14 @@ const SuperCertificates = () => {
 
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label>Associated Event (Optional)</Label>
+                    <Label>
+                      Associated Event {(recipientSource === 'preregs' || recipientSource === 'attendees') ? '' : '(Optional)'}
+                    </Label>
                     <Select value={selectedEventId} onValueChange={(value) => {
                       setSelectedEventId(value);
                       setCertificateStatusFilter('all');
                       setSelectedMembers([]);
+                      setSelectedPreRegIds([]);
                       if (value === 'none') { setEventName(''); setEventDate(''); }
                       else {
                         const ev = events?.find(e => e.id === value);
@@ -436,62 +478,159 @@ const SuperCertificates = () => {
                     <Label>Event Date</Label>
                     <Input type="date" value={eventDate} readOnly className="bg-muted" />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Certificate Status</Label>
-                    <Select value={certificateStatusFilter} onValueChange={setCertificateStatusFilter} disabled={!selectedEventId || selectedEventId === 'none'}>
-                      <SelectTrigger><SelectValue placeholder="Filter" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="generated">Generated</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {recipientSource !== 'preregs' && (
+                    <div className="space-y-2">
+                      <Label>Status Filter</Label>
+                      <Select value={certificateStatusFilter} onValueChange={setCertificateStatusFilter} disabled={!selectedEventId || selectedEventId === 'none'}>
+                        <SelectTrigger><SelectValue placeholder="Filter" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="generated">Generated</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Select Recipients</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={toggleSelectAllMembers} disabled={filteredMembers.length === 0}>
-                      {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
-                    </Button>
-                  </div>
-                  <Input placeholder="Search by name or member ID..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
-                  <div className="border rounded-lg max-h-64 overflow-y-auto">
-                    {(membersLoading || attendeesLoading) ? (
-                      <div className="p-4 text-sm text-muted-foreground">Loading...</div>
-                    ) : filteredMembers.length > 0 ? (
-                      <div className="divide-y">
-                        {filteredMembers.map(member => {
-                          const fullName = member.profiles?.first_name && member.profiles?.last_name
-                            ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.profiles?.email || 'Unknown';
-                          return (
-                            <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
-                              <Checkbox checked={selectedMembers.includes(member.id)} onCheckedChange={() => toggleMemberSelection(member.id)} />
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{fullName}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {member.member_id} • {member.member_type}
-                                  {(member as any).regions?.name && <> • {(member as any).regions.name}</>}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                {recipientSource === 'preregs' ? (
+                  <div className="space-y-4">
+                    {(!selectedEventId || selectedEventId === 'none') ? (
+                      <div className="border rounded-lg p-4 text-sm text-muted-foreground">
+                        Select an event above to load its pre-registrations.
                       </div>
                     ) : (
-                      <div className="p-4 text-sm text-muted-foreground">No members found</div>
+                      <>
+                        <div className="grid gap-3 md:grid-cols-4">
+                          <Select value={preRegAttendeeType} onValueChange={(v: 'all' | 'adult' | 'child') => setPreRegAttendeeType(v)}>
+                            <SelectTrigger><SelectValue placeholder="Attendee type" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All ages</SelectItem>
+                              <SelectItem value="adult">Adults (15+)</SelectItem>
+                              <SelectItem value="child">Children (&lt;15)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={preRegRegionFilter} onValueChange={setPreRegRegionFilter}>
+                            <SelectTrigger><SelectValue placeholder="Region" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All regions</SelectItem>
+                              {(allRegions || []).map((r: any) => (
+                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <label className="flex items-center gap-2 text-sm border rounded-md px-3">
+                            <Checkbox checked={preRegPrimaryOnly} onCheckedChange={(c) => setPreRegPrimaryOnly(!!c)} />
+                            Primary registrants only
+                          </label>
+                          <label className="flex items-center gap-2 text-sm border rounded-md px-3">
+                            <Checkbox checked={preRegLodgingOnly} onCheckedChange={(c) => setPreRegLodgingOnly(!!c)} />
+                            Needs lodging
+                          </label>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <Label>Select Pre-registrants</Label>
+                          <Button type="button" variant="outline" size="sm"
+                            onClick={() => setSelectedPreRegIds(
+                              selectedPreRegIds.length === (preRegistrants || []).length ? [] : (preRegistrants || []).map(r => r.id)
+                            )}
+                            disabled={!preRegistrants || preRegistrants.length === 0}>
+                            {selectedPreRegIds.length === (preRegistrants || []).length ? 'Deselect All' : 'Select All'}
+                          </Button>
+                        </div>
+                        <Input placeholder="Search by name, email or phone..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
+                        <div className="border rounded-lg max-h-72 overflow-y-auto">
+                          {preRegsLoading ? (
+                            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                          ) : (preRegistrants && preRegistrants.length > 0) ? (
+                            <div className="divide-y">
+                              {preRegistrants.map(row => {
+                                const alreadyIssued = outputType === 'badge' ? row.has_badge : row.has_certificate;
+                                return (
+                                  <div key={row.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                                    <Checkbox
+                                      checked={selectedPreRegIds.includes(row.id)}
+                                      onCheckedChange={() => setSelectedPreRegIds(prev =>
+                                        prev.includes(row.id) ? prev.filter(i => i !== row.id) : [...prev, row.id])}
+                                    />
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium flex items-center gap-2">
+                                        {row.full_name}
+                                        {row.is_primary && <Badge variant="secondary" className="text-[10px]">Primary</Badge>}
+                                        <Badge variant="outline" className="text-[10px] capitalize">{row.age_category}</Badge>
+                                        {row.needs_lodging && <Badge variant="outline" className="text-[10px]">Lodging</Badge>}
+                                        {alreadyIssued && <Badge className="text-[10px]">Already issued</Badge>}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {row.email || row.phone || '—'}
+                                        {row.region_name && <> • {row.region_name}</>}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="p-4 text-sm text-muted-foreground">No pre-registrations match these filters</div>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedPreRegIds.length} of {(preRegistrants || []).length} selected
+                        </p>
+                      </>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground">{selectedMembers.length} of {filteredMembers.length} selected</p>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Select Recipients</Label>
+                      <Button type="button" variant="outline" size="sm" onClick={toggleSelectAllMembers} disabled={filteredMembers.length === 0}>
+                        {selectedMembers.length === filteredMembers.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                    </div>
+                    <Input placeholder="Search by name or member ID..." value={memberSearchTerm} onChange={(e) => setMemberSearchTerm(e.target.value)} />
+                    <div className="border rounded-lg max-h-64 overflow-y-auto">
+                      {(membersLoading || attendeesLoading) ? (
+                        <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                      ) : filteredMembers.length > 0 ? (
+                        <div className="divide-y">
+                          {filteredMembers.map(member => {
+                            const fullName = member.profiles?.first_name && member.profiles?.last_name
+                              ? `${member.profiles.last_name} ${member.profiles.first_name}` : member.profiles?.email || 'Unknown';
+                            return (
+                              <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                                <Checkbox checked={selectedMembers.includes(member.id)} onCheckedChange={() => toggleMemberSelection(member.id)} />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium">{fullName}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {member.member_id} • {member.member_type}
+                                    {(member as any).regions?.name && <> • {(member as any).regions.name}</>}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-sm text-muted-foreground">No members found</div>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{selectedMembers.length} of {filteredMembers.length} selected</p>
+                  </div>
+                )}
 
-                <Button onClick={() => setShowGenerateDialog(true)}
-                  disabled={!selectedTemplate || selectedMembers.length === 0 || !certificateType || isGenerating}
-                  className="w-full" size="lg">
-                  <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
-                  {isGenerating ? `Generating... (${generationProgress.current}/${generationProgress.total})` : `Generate ${selectedMembers.length} Certificate(s)`}
-                </Button>
+                {(() => {
+                  const count = recipientSource === 'preregs' ? selectedPreRegIds.length : selectedMembers.length;
+                  const label = outputType === 'badge' ? 'Badge' : 'Certificate';
+                  return (
+                    <Button onClick={() => setShowGenerateDialog(true)}
+                      disabled={!selectedTemplate || count === 0 || !certificateType || isGenerating}
+                      className="w-full" size="lg">
+                      <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
+                      {isGenerating ? `Generating... (${generationProgress.current}/${generationProgress.total})` : `Generate ${count} ${label}(s)`}
+                    </Button>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
