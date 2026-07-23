@@ -2,10 +2,11 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 
-export const generateCertificateNumber = (regionId: string): string => {
+export const generateCertificateNumber = (regionId: string, outputType: 'certificate' | 'badge' = 'certificate'): string => {
   const year = new Date().getFullYear();
   const random = Math.random().toString(36).substring(2, 7).toUpperCase();
-  return `CERT-${regionId.substring(0, 4)}-${year}-${random}`;
+  const prefix = outputType === 'badge' ? 'BADGE' : 'CERT';
+  return `${prefix}-${regionId.substring(0, 4)}-${year}-${random}`;
 };
 
 export const generateVerificationCode = (): string => {
@@ -75,6 +76,10 @@ export const getCertificateTypeOptions = () => [
   { value: 'leadership_training', label: 'Leadership Training' },
   { value: 'volunteer_service', label: 'Volunteer Service' },
   { value: 'achievement_award', label: 'Achievement Award' },
+  { value: 'event_badge', label: 'Event Badge' },
+  { value: 'attendee_badge', label: 'Attendee Badge' },
+  { value: 'speaker_badge', label: 'Speaker Badge' },
+  { value: 'volunteer_badge', label: 'Volunteer Badge' },
   { value: 'other', label: 'Other' },
 ];
 
