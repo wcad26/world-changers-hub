@@ -185,7 +185,8 @@ const CertificateVerify = () => {
               </CardContent>
             </Card>
           </div>
-        )}
+          );
+        })()}
       </main>
 
       <Footer />
