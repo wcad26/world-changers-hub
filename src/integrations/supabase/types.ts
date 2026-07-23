@@ -278,6 +278,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           name_position: Json | null
+          output_type: string
           qr_position: Json | null
           region_id: string | null
           template_name: string
@@ -291,6 +292,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name_position?: Json | null
+          output_type?: string
           qr_position?: Json | null
           region_id?: string | null
           template_name: string
@@ -304,6 +306,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           name_position?: Json | null
+          output_type?: string
           qr_position?: Json | null
           region_id?: string | null
           template_name?: string
@@ -339,6 +342,8 @@ export type Database = {
           issued_by: string | null
           issued_date: string
           member_id: string | null
+          output_type: string
+          pre_registration_id: string | null
           qr_code_data: string | null
           recipient_email: string | null
           recipient_name: string
@@ -365,6 +370,8 @@ export type Database = {
           issued_by?: string | null
           issued_date?: string
           member_id?: string | null
+          output_type?: string
+          pre_registration_id?: string | null
           qr_code_data?: string | null
           recipient_email?: string | null
           recipient_name: string
@@ -391,6 +398,8 @@ export type Database = {
           issued_by?: string | null
           issued_date?: string
           member_id?: string | null
+          output_type?: string
+          pre_registration_id?: string | null
           qr_code_data?: string | null
           recipient_email?: string | null
           recipient_name?: string
@@ -405,6 +414,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_pre_registration_id_fkey"
+            columns: ["pre_registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_pre_registrations"
             referencedColumns: ["id"]
           },
           {
