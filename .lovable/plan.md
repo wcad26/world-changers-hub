@@ -1,41 +1,47 @@
-# Fix: emmanuelamiki@gmail.com missing from Promote-to-Super-Admin picker
+# Extend Certificate System for Badges & Pre-Registrant Recipients
 
-## Root cause (verified against the database)
+Today the Generate flow only picks from `members`/event `attendance` records and requires each recipient to have a `member_id`. Badges for people who only pre-registered (including non-members) can't be produced. This plan adds a "Badge" output alongside certificates and a new recipient source: **event pre-registrations**.
 
-Two distinct profiles exist with the name fields swapped between them:
+## What changes for the user
 
-| email | first_name | last_name | position when ordered by last_name |
-| --- | --- | --- | --- |
-| ghislainsilafe@gmail.com | Silafe | Ghislain | 257 |
-| emmanuelamiki@gmail.com | Ghislain | Silafe | **638** |
+**Global Certificates page** (`/admin/super/certificates`) and **Regional Certificates page** get:
 
-`profiles` currently has 747 rows. The Promote picker in `src/components/admin/super/access/PromoteSuperAdminDialog.tsx` fetches candidates with:
+1. A new **Output Type** toggle at the top of the Generate tab: `Certificate` | `Badge`.
+   - Badge uses the same template/positioning pipeline (image + name + QR) — templates are just tagged as badges.
+2. A new **Recipient Source** picker: `Members` | `Event attendees` | `Event pre-registrations` (new).
+3. When source = pre-registrations:
+   - Event selector is required (already exists).
+   - Extra filters: primary-only vs. include family group, needs-lodging, attendee type (adult/youth/child derived from DOB), region (super admin only), search by name/email/phone.
+   - Recipient list shows pre-registrants with name, email/phone, region, family-group indicator, and a "already has badge for this event" pill (so re-runs skip).
+4. Template Type dropdown gains a `Badge` option; Templates tab shows a Badge vs Certificate filter.
+5. Issued/Sent tabs get an "Output type" column and filter (Certificate/Badge).
 
-```ts
-supabase.from('profiles')
-  .select('id, first_name, last_name, email')
-  .order('last_name', { ascending: true })
-  .limit(500);
-```
+## What changes under the hood
 
-Row 638 falls beyond the 500-row cap, so `emmanuelamiki@gmail.com` is never in the candidate list — no matter what you type in the search box, cmdk can only filter what was loaded. `ghislainsilafe@gmail.com` sits at row 257 and appears normally, which is why the search "silafe ghi" returns exactly one result.
+- **DB**: add `output_type text` (`'certificate' | 'badge'`, default `'certificate'`) to both `certificate_templates` and `certificates`. Backfill existing rows to `'certificate'`. Add `pre_registration_id uuid` (nullable, FK to `event_pre_registrations`) and make `member_id` nullable on `certificates` so non-member badges can be issued. Add unique partial index `(pre_registration_id, output_type)` where not null to prevent duplicates per event/badge.
+- **Recipient resolver**: new hook `useEventPreRegistrants(eventId, filters)` that joins `event_pre_registrations` with `profiles`/`members` for name/email and derives display name using the "Last Name First Name" rule.
+- **Generation flow**: in `Certificates.tsx` (both super + regional), branch on recipient source. For pre-registrants, use the pre-registrant's `name`/`email` (falling back to profile if linked), set `member_id` when available else null, and set `pre_registration_id`. `region_id` comes from the event or the pre-registrant's linked member.
+- **Certificate number prefix**: use `BADGE-…` when output_type is badge, `CERT-…` otherwise (small change in `certificateUtils.generateCertificateNumber`).
+- **Emails**: reuse existing `send-certificate-emails` edge function — subject/body switch on `output_type` (Badge vs Certificate wording). Skip recipients with no email.
+- **Verification page** (`/verify/:code`) copy adjusts to say "Badge" or "Certificate" based on the stored `output_type`.
 
-The user's `auth.users` row and role state are healthy; nothing else is wrong with the account.
+## Out of scope
 
-## Fix
+- No changes to badge visual layout beyond what templates + name/QR positioning already provide (organizers upload their own badge artwork).
+- No printing/PDF sheet layout (Avery-style multi-up) — v1 exports single PNGs per badge, same as certificates. Can be a follow-up if wanted.
+- No standalone badges for people with neither a member nor a pre-registration record.
 
-Edit only `src/components/admin/super/access/PromoteSuperAdminDialog.tsx`:
+## Files to touch
 
-1. Remove the `.limit(500)` on the candidates query so all non-super-admin profiles are returned (747 rows is well within Supabase's 1000-row default; if we want headroom, page in batches, but a single fetch is sufficient here).
-2. Add `first_name` as a secondary sort so rows with null `last_name` remain discoverable.
-3. Leave the cmdk `CommandInput` client-side filter as-is — it handles a few hundred rows without issue.
+- `supabase/migrations/*` — new migration for the two columns + backfill + index.
+- `src/hooks/useCertificates.ts` — thread `output_type` through mutations/queries; add filter.
+- `src/hooks/useEventPreRegistrants.ts` — **new** hook.
+- `src/utils/certificateUtils.ts` — badge number prefix; type option additions.
+- `src/pages/admin/super/Certificates.tsx` and `src/pages/admin/regional/Certificates.tsx` — Generate tab: output type toggle, recipient source picker, pre-registrant list, generation branch; Templates/Issued/Sent: output-type column + filter.
+- `src/components/admin/regional/EditCertificateTemplateDialog.tsx` — add output_type field.
+- `supabase/functions/generate-certificates/index.ts` and `send-certificate-emails/index.ts` — accept `output_type` and `pre_registration_id`, adjust wording.
+- `src/pages/CertificateVerify.tsx` — dynamic label.
 
-No schema, RLS, backend, or data changes. Once the picker loads the full set, `emmanuelamiki@gmail.com` will be selectable and the existing `useAssignSuperAdminRole` flow will grant super admin access normally.
+## Open question
 
-## Optional follow-up (not required for this fix)
-
-The two profiles have `first_name`/`last_name` swapped on one of them. That's a data-quality issue, not a bug in the picker. Worth flagging to whoever owns those records, but out of scope here.
-
-## Files touched
-
-- `src/components/admin/super/access/PromoteSuperAdminDialog.tsx`
+Ask before implementation: should badges be **generated per pre-registrant even if they have no email** (name-only, download-only), or **skip email-less pre-registrants** entirely? Default in the plan: generate for all, skip email step for those without an address.
