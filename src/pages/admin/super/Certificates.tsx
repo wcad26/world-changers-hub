@@ -95,7 +95,18 @@ const SuperCertificates = () => {
   const [sentCertificateSearchTerm, setSentCertificateSearchTerm] = useState('');
   const [issuedEventFilter, setIssuedEventFilter] = useState('all');
   const [issuedTypeFilter, setIssuedTypeFilter] = useState('all');
-  
+  const [issuedOutputFilter, setIssuedOutputFilter] = useState<'all' | 'certificate' | 'badge'>('all');
+
+  // New: output type + recipient source
+  const [outputType, setOutputType] = useState<'certificate' | 'badge'>('certificate');
+  const [recipientSource, setRecipientSource] = useState<'members' | 'attendees' | 'preregs'>('members');
+  const [selectedPreRegIds, setSelectedPreRegIds] = useState<string[]>([]);
+  const [preRegPrimaryOnly, setPreRegPrimaryOnly] = useState(false);
+  const [preRegLodgingOnly, setPreRegLodgingOnly] = useState(false);
+  const [preRegAttendeeType, setPreRegAttendeeType] = useState<'all' | 'adult' | 'child'>('all');
+  const [preRegRegionFilter, setPreRegRegionFilter] = useState<string>('all');
+  const [templateOutputType, setTemplateOutputType] = useState<'certificate' | 'badge'>('certificate');
+
   // Global queries - no region filter
   const { data: templates, isLoading: templatesLoading } = useGlobalCertificateTemplates();
   const { data: members, isLoading: membersLoading } = useAllMembers({ searchTerm: memberSearchTerm });
@@ -103,9 +114,25 @@ const SuperCertificates = () => {
   const { data: issuedCertificates, isLoading: certificatesLoading } = useGlobalIssuedCertificates();
   const { data: unsentCertificates } = useGlobalUnsentCertificates();
   const { data: sentCertificates } = useGlobalSentCertificates();
+  const { data: allRegions } = useAllRegions();
   const { data: eventAttendees, isLoading: attendeesLoading } = useEventAttendees(
-    selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
+    recipientSource === 'attendees' && selectedEventId && selectedEventId !== 'none' ? selectedEventId : undefined,
     undefined // No region filter for global
+  );
+  const { data: preRegistrants, isLoading: preRegsLoading } = useEventPreRegistrants(
+    recipientSource === 'preregs' ? selectedEventId : undefined,
+    {
+      search: memberSearchTerm,
+      primaryOnly: preRegPrimaryOnly,
+      needsLodging: preRegLodgingOnly,
+      attendeeType: preRegAttendeeType,
+      regionId: preRegRegionFilter,
+    }
+  );
+
+  // Filter templates by output type for dropdown
+  const templatesForOutput = (templates || []).filter(
+    (t: any) => (t.output_type || 'certificate') === outputType
   );
 
   const baseMembers = selectedEventId && selectedEventId !== 'none' ? eventAttendees || [] : members || [];
