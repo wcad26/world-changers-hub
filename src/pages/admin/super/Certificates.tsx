@@ -647,12 +647,24 @@ const SuperCertificates = () => {
                   <Label>Template Name</Label>
                   <Input value={templateName} onChange={(e) => setTemplateName(e.target.value)} placeholder="e.g., Global Conference Certificate 2024" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Template Type</Label>
-                  <Select value={templateType} onValueChange={setTemplateType}>
-                    <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>{getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                  </Select>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Output Type</Label>
+                    <Select value={templateOutputType} onValueChange={(v: 'certificate' | 'badge') => setTemplateOutputType(v)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="certificate">Certificate</SelectItem>
+                        <SelectItem value="badge">Badge</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Template Type</Label>
+                    <Select value={templateType} onValueChange={setTemplateType}>
+                      <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <SelectContent>{getCertificateTypeOptions().map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Template File</Label>
