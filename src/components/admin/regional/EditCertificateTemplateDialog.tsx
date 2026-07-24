@@ -10,13 +10,7 @@ import { useUpdateCertificateTemplate, type CertificateTemplate } from '@/hooks/
 import { supabase } from '@/integrations/supabase/client';
 import { Save, Loader2, ImageIcon } from 'lucide-react';
 
-interface Position {
-  x: number;
-  y: number;
-  fontSize?: number;
-  fontFamily?: string;
-  color?: string;
-}
+import type { NamePosition } from '@/utils/certificateUtils';
 
 interface QRPosition {
   x: number;
@@ -37,12 +31,10 @@ export const EditCertificateTemplateDialog = ({
 }: EditCertificateTemplateDialogProps) => {
   const [templateName, setTemplateName] = useState('');
   const [templateType, setTemplateType] = useState('');
-  const [namePosition, setNamePosition] = useState<Position>({ 
-    x: 400, 
-    y: 477, 
-    fontSize: 38, 
-    fontFamily: 'Georgia, serif', 
-    color: '#1a365d' 
+  const [namePosition, setNamePosition] = useState<NamePosition>({
+    x: 160, y: 440, width: 480, height: 90,
+    fontSize: 38, fontFamily: 'Georgia, serif', color: '#1a365d',
+    align: 'center', verticalAlign: 'middle', autoShrink: true,
   });
   const [qrPosition, setQRPosition] = useState<QRPosition>({ x: 708, y: 591, size: 100 });
   const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null);
@@ -56,19 +48,23 @@ export const EditCertificateTemplateDialog = ({
     if (template && open) {
       setTemplateName(template.template_name);
       setTemplateType(template.template_type);
-      
-      // Parse position data from JSON
+
       if (template.name_position && typeof template.name_position === 'object' && !Array.isArray(template.name_position)) {
-        const pos = template.name_position as unknown as Position;
+        const pos = template.name_position as unknown as NamePosition;
         setNamePosition({
-          x: pos.x || 400,
-          y: pos.y || 477,
-          fontSize: pos.fontSize || 38,
-          fontFamily: pos.fontFamily || 'Georgia, serif',
-          color: pos.color || '#1a365d'
+          x: pos.x ?? 160,
+          y: pos.y ?? 440,
+          width: pos.width,
+          height: pos.height,
+          fontSize: pos.fontSize ?? 38,
+          fontFamily: pos.fontFamily ?? 'Georgia, serif',
+          color: pos.color ?? '#1a365d',
+          align: pos.align ?? 'center',
+          verticalAlign: pos.verticalAlign ?? 'middle',
+          autoShrink: pos.autoShrink ?? true,
         });
       }
-      
+
       if (template.qr_position && typeof template.qr_position === 'object' && !Array.isArray(template.qr_position)) {
         const qr = template.qr_position as unknown as QRPosition;
         setQRPosition({
