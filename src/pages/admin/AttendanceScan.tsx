@@ -80,6 +80,12 @@ export default function AttendanceScan() {
   }, [days.map((d) => d.id).join(",")]);
 
   const targetEventId = dayEventId || selectedEventId;
+  const currentDay = days.find((d) => d.id === dayEventId);
+  const totalDays = days.length;
+  const parentEvent = events.find((e) => e.id === selectedEventId);
+  const activeEventName = parentEvent?.name || currentDay?.name || "";
+  const activeEventDate = currentDay?.event_date || parentEvent?.event_date;
+  const todayMatchesADay = totalDays === 0 ? true : days.some((d) => d.event_date === today());
 
   // Manual search
   useEffect(() => {
