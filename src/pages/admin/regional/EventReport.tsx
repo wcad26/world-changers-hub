@@ -361,6 +361,21 @@ const EventReport: React.FC = () => {
                       <SelectItem value="not_specified">Not Specified</SelectItem>
                     </SelectContent>
                   </Select>
+                  {isMultiDay && reportData?.days && (
+                    <Select value={dayFilter} onValueChange={setDayFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Days</SelectItem>
+                        {reportData.days.map(d => (
+                          <SelectItem key={d.attendanceEventId} value={d.attendanceEventId}>
+                            Day {d.dayIndex} — {format(new Date(d.eventDate), 'PP')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
