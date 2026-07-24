@@ -79,24 +79,40 @@ const EventReport: React.FC = () => {
 
   const exportToCSV = () => {
     if (!filteredAttendees.length) return;
-    
+
+    const daySuffix = dayFilter !== "all" && reportData?.days
+      ? (() => {
+          const d = reportData.days.find(x => x.attendanceEventId === dayFilter);
+          return d ? `-day${d.dayIndex}` : "";
+        })()
+      : "";
+
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Member Type', 'Member ID', 'Join Interest'];
-    const rows = filteredAttendees.map(a => [
-      `${a.member?.profile?.last_name || ''} ${a.member?.profile?.first_name || ''}`.trim(),
-      a.member?.profile?.email || '',
-      a.member?.profile?.phone || '',
-      a.member?.profile?.gender || '',
-      a.member?.member_type || '',
-      a.member?.member_id || '',
-      a.member?.join_interest || 'not_specified',
-    ]);
-    
+    if (isMultiDay && dayFilter === "all") headers.push('Days Attended', 'Days Present');
+
+    const rows = filteredAttendees.map(a => {
+      const base = [
+        `${a.member?.profile?.last_name || ''} ${a.member?.profile?.first_name || ''}`.trim(),
+        a.member?.profile?.email || '',
+        a.member?.profile?.phone || '',
+        a.member?.profile?.gender || '',
+        a.member?.member_type || '',
+        a.member?.member_id || '',
+        a.member?.join_interest || 'not_specified',
+      ];
+      if (isMultiDay && dayFilter === "all") {
+        base.push(`${a.days_attended}/${reportData?.totalDays || 0}`);
+        base.push(a.days_present.map(d => `D${d}`).join(' '));
+      }
+      return base;
+    });
+
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `event-report-${reportData?.event?.name || eventId}.csv`;
+    link.download = `event-report-${reportData?.event?.name || eventId}${daySuffix}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
