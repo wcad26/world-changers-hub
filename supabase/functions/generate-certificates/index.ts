@@ -100,9 +100,11 @@ serve(async (req) => {
         // Generate certificate number
         const certificateNumber = `CERT-${region_id.substring(0, 4)}-${new Date().getFullYear()}-${crypto.randomUUID().substring(0, 5).toUpperCase()}`;
 
-        // Generate QR code URL
+        // Generate QR payload — badges encode the member id directly for scanner resolution.
+        const outputType = (template as any)?.output_type || 'certificate';
         const verificationUrl = `${supabaseUrl.replace('.supabase.co', '')}.vercel.app/verify/${verificationCode}`;
-        const qrCodeDataURL = await QRCode.toDataURL(verificationUrl, {
+        const qrPayload = outputType === 'badge' ? String(memberId) : verificationUrl;
+        const qrCodeDataURL = await QRCode.toDataURL(qrPayload, {
           width: 300,
           margin: 1,
           color: {
