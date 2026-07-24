@@ -396,6 +396,9 @@ const EventReport: React.FC = () => {
                           <TableHead>Type</TableHead>
                           <TableHead>Member ID</TableHead>
                           <TableHead>Join Interest</TableHead>
+                          {isMultiDay && dayFilter === "all" && (
+                            <TableHead className="text-right">Days Attended</TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
