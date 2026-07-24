@@ -200,6 +200,7 @@ const App = () => {
                 <Route path="dcg" element={<RegionalDCG />} />
                 <Route path="dcg/:dcgId" element={<DcgProfile />} />
                 <Route path="certificates" element={<RegionalCertificates />} />
+                <Route path="attendance/scan" element={<AttendanceScan />} />
                 
                 <Route path="communication" element={<RegionalCommunication />} />
                 <Route path="planning" element={<RegionalPlanning />} />
