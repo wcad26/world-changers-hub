@@ -7,13 +7,7 @@ import { generateCertificateImage } from '@/utils/certificateUtils';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-interface Position {
-  x: number;
-  y: number;
-  fontSize?: number;
-  fontFamily?: string;
-  color?: string;
-}
+import type { NamePosition } from '@/utils/certificateUtils';
 
 interface QRPosition {
   x: number;
@@ -25,7 +19,7 @@ interface PreviewCertificateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templateUrl: string;
-  namePosition: Position;
+  namePosition: NamePosition;
   qrPosition: QRPosition;
 }
 
