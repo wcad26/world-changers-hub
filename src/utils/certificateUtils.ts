@@ -271,7 +271,8 @@ export const generateCertificateImage = async (
   verificationCode: string,
   baseUrl: string,
   namePosition?: Partial<NamePosition>,
-  qrPosition?: { x: number; y: number; size: number }
+  qrPosition?: { x: number; y: number; size: number },
+  options?: { outputType?: 'certificate' | 'badge'; memberId?: string | null; preRegistrationId?: string | null }
 ): Promise<Blob> => {
   // Create canvas
   const canvas = document.createElement('canvas');
@@ -286,9 +287,18 @@ export const generateCertificateImage = async (
   const box = normalizeNamePosition(namePosition, canvas.width, canvas.height);
   drawWrappedNameOnCanvas(ctx, recipientName, box);
 
-  // Generate and draw QR code
-  const verificationUrl = `${baseUrl}/verify/${verificationCode}`;
-  const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+  // Badges encode the member/pre-reg identifier directly for fast scanner resolution.
+  // Certificates keep the public verification URL.
+  const isBadge = options?.outputType === 'badge';
+  const qrPayload = isBadge
+    ? (options?.memberId
+        ? String(options.memberId)
+        : options?.preRegistrationId
+          ? `pre_reg:${options.preRegistrationId}`
+          : verificationCode)
+    : `${baseUrl}/verify/${verificationCode}`;
+
+  const qrDataUrl = await QRCode.toDataURL(qrPayload, {
     width: qrPosition?.size ?? 100,
     margin: 0,
     color: { dark: '#000000', light: '#FFFFFF' }
@@ -313,3 +323,4 @@ export const generateCertificateImage = async (
     }, 'image/png');
   });
 };
+
