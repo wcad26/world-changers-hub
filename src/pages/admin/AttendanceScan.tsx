@@ -145,7 +145,7 @@ export default function AttendanceScan() {
           <CardContent className="p-3 space-y-2">
             {noEventsToday ? (
               <div className="text-sm">
-                <p className="text-muted-foreground">No events scheduled for today.</p>
+                <p className="text-muted-foreground">No upcoming events scheduled.</p>
                 <button
                   className="mt-1 text-xs text-primary underline"
                   onClick={() => setShowAll(true)}
