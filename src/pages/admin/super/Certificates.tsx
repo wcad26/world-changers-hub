@@ -265,7 +265,7 @@ const SuperCertificates = () => {
           const certificateNumber = await generateUniqueCode('certificate');
           const verificationCode = await generateUniqueCode('verification');
 
-          const blob = await generateCertificateImage(templatePublicUrl, recipientName, certificateNumber, verificationCode, baseUrl, namePos, qrPos);
+          const blob = await generateCertificateImage(templatePublicUrl, recipientName, certificateNumber, verificationCode, baseUrl, namePos, qrPos, { outputType, memberId, preRegistrationId });
 
           const folderKey = memberId || preRegistrationId || 'anon';
           const filePath = `${regionId || 'global'}/${folderKey}/${certificateNumber}.png`;
