@@ -1,70 +1,51 @@
-## Goal
-Add a fast, cart-style QR scanner that marks attendees present per event (per day for multi-day events), accessible from both the regional and super admin Events pages. Also change badge QR codes so they encode the member's identifier directly, which makes scanning and resolution trivial.
+## Shortest-path QR + scanner fix
 
-## Change 1 — Badge QR encodes the member identifier
-Certificates keep the current `/verify/<verification_code>` QR (used for public verification). Badges are different:
-- The QR payload becomes the **member UUID** (i.e. `members.id`, the same value already stored in `certificates.member_id`). Plain text, no URL wrapper.
-- Applies to every `output_type = 'badge'` template.
-- Pre-registration-only badges (no linked member yet) fall back to `pre_reg:<pre_registration_id>`; the scanner recognises both.
+### Proposal: which ID to encode in the badge QR
 
-Files:
-- `src/utils/certificateUtils.ts` — in `generateCertificateImage`, accept `outputType` and, for badges, generate the QR from the member id instead of the verify URL.
-- `supabase/functions/generate-certificates/index.ts` — same branch server-side.
-- `src/pages/admin/super/Certificates.tsx` / `src/pages/admin/regional/Certificates.tsx` — pass `output_type` into the generator.
+Encode **`members.id`** (the row id in `public.members`) directly as the QR payload — nothing else, no prefix, no URL.
 
-No schema change: `member_id` and `pre_registration_id` already exist on `certificates`.
+Why this is the fastest possible route:
+- `attendance_records.member_id` is a foreign key to `members.id`. So the scanned value can be inserted directly into attendance with **zero translation**.
+- Resolving the display name is a **single query**: `select id, member_id, profile_id, profiles(first_name,last_name) from members where id in (...)`.
+- No certificate lookup, no verification-code lookup, no pre_reg lookup in the hot path.
+- The value is already what the badge generator has in hand today (`certificates.member_id`), so no schema change is needed — only the resolver is simplified.
 
-## Change 2 — Multi-day attendance
-`attendance_events` already supports multi-day via `parent_event_id` + `day_index`, and `attendance_records` is keyed by `event_id + member_id`. The scanner requires the operator to pick both the event and (for multi-day events) the specific day before scanning. If a source event doesn't yet have per-day child attendance_events, the submit function creates the missing child row for the chosen date on first use.
+Rejected alternatives:
+- `profile_id`: would still require a second hop to `members.id` before we can insert into `attendance_records`.
+- `certificates.verification_code`: forces a `certificates` lookup on every scan, and the code is per-certificate not per-person.
+- Pre-registration id: not linked to a member row, so it cannot mark attendance directly.
 
-## Change 3 — New scanner page
-Route: `/admin/attendance/scan`, mounted under both `AdminLayout` (regional) and `SuperAdminLayout` (super). Existing route guards apply — no new roles.
+### Fixes to actually stop the "Scan failed" toast
 
-Flow:
-1. **Event picker** — searchable dropdown of events the user can record for (regional user → own region; super admin → all). Multi-day events show a day selector (defaults to today when in range).
-2. **Scanner panel** — live camera via `@yudiel/react-qr-scanner` (or `html5-qrcode`, whichever installs cleanly). Continuous scanning with a short debounce so a badge held in view doesn't re-fire. Torch + camera-switch controls on mobile.
-3. **Cart panel — kept simple.** Every successful scan resolves the scanned value to a member and appends **one line: the member's full name** (Last First). No photos, no region chips, no metadata. A small ✕ removes a line. Duplicates within the current cart, or a member already marked present for this event+day, are silently ignored (with a brief beep so the operator knows the scan registered).
-4. **Submit** — one call marks every cart entry present. Success toast + short summary: total submitted and how many were newly marked vs already present. Cart clears; scanner stays open.
-5. **Manual fallback** — a small "Add by name" field (uses `search_region_members` / `search_all_members`) for badges that won't scan.
+1. **Register the edge functions** in `supabase/config.toml`:
+   - `[functions.attendance-scan-resolve] verify_jwt = true`
+   - `[functions.attendance-mark-present] verify_jwt = true`
+   Missing config is the most likely reason the invoke returned an error and the hook fell through to the generic `Scan failed` message.
 
-## Speed
-- Batched edge function `attendance-scan-resolve` accepts many codes at once and returns `{ code → { member_id, display_name } }`, using indexed lookups.
-- In-session cache so re-scanning the same badge is instant.
-- Beep on successful scan; distinct tone on unknown/duplicate.
-- Submit uses one edge function `attendance-mark-present` that upserts many `attendance_records` in a single call (idempotent via `unique(event_id, member_id)`).
+2. **Simplify `attendance-scan-resolve`** to the shortest path:
+   - Accept `codes: string[]`.
+   - For each code, trim it. If it matches a UUID, treat it as a `members.id`.
+   - One query: `from('members').select('id, member_id, profile_id').in('id', uuids)`.
+   - One query: `from('profiles').select('id, first_name, last_name').in('id', profileIds)`.
+   - Return `{ code, member_id, display_name: "Last First", member_code }`.
+   - Keep a small backwards-compat branch for old badges that still encode `/verify/CODE`, but do it only when the raw string is clearly not a bare UUID.
 
-## Entry point
-Add a **Record Attendance** button beside **Add Event** on:
-- `src/pages/admin/super/Events.tsx`
-- Regional Events page (`src/pages/admin/regional/…`)
+3. **Surface the real error in the hook** — `useAttendanceScan` currently prints `Scan failed` for every error. Change it to show `error.message` (or the `results[0].error`) so future failures are self-diagnosing.
 
-The button navigates to the scanner page (full-screen, mobile-first).
+### Mobile-only scanner page
 
-## Files to add
-- `src/pages/admin/AttendanceScan.tsx` — page shell (event/day picker, scanner, simple cart, submit).
-- `src/components/attendance/QrScannerView.tsx` — camera + decode wrapper.
-- `src/components/attendance/ScanCart.tsx` — flat list of names + remove + submit.
-- `src/components/attendance/EventDaySelector.tsx` — event and day picker.
-- `src/hooks/useAttendanceScan.ts` — cart state, resolver calls, submit call.
-- `supabase/functions/attendance-scan-resolve/index.ts` — batch resolver that accepts either a bare member UUID, a `pre_reg:<uuid>` string, a `verification_code`, or a full `/verify/<code>` URL, and returns display names.
-- `supabase/functions/attendance-mark-present/index.ts` — batch upsert of `attendance_records` for a given event_id (child day event when multi-day), ensuring the child attendance_event exists.
+Remove the admin bottom bars from the scanner experience and make the page mobile-first:
+- Drop the shared admin layout wrappers (`SuperAdminLayout` / `RegionalAdminShell`) for `/admin/*/attendance/scan` so there is no bottom navigation bar.
+- Full-width camera, large Pause/Resume, name-only cart directly below, sticky Submit button with safe-area padding.
+- Manual add fallback for damaged badges.
 
-## Files to edit
-- `src/App.tsx` — register `/admin/attendance/scan` under both admin layouts.
-- `src/pages/admin/super/Events.tsx` — add "Record Attendance" button.
-- Regional Events page — same button.
-- `src/utils/certificateUtils.ts`, `supabase/functions/generate-certificates/index.ts`, both Certificates pages — badge QR change from Change 1.
+### Today-only event selector
 
-## Migration
-Only if verification confirms they're missing:
-- Unique index on `certificates.verification_code` (kept — still used by cert verify).
-- Unique constraint on `attendance_records(event_id, member_id)` so submit is idempotent.
-No new tables.
+- Load only attendance events with `event_date = today` (plus child rows of today's multi-day events).
+- Auto-select when there is exactly one.
+- If none today, show a clear message and a small "Show recent events" link for edge cases.
 
-## Out of scope
-- Regenerating already-issued badges (users can re-issue if they want the new QR).
-- Offline scanning.
-- Face recognition / NFC.
+### Verify
 
-## Summary
-Simplify badge QR codes to encode the member id directly, then add a shared scanner page reachable from a new "Record Attendance" button on both admin Events pages. The cart is a plain list of names; submit marks everyone present against the chosen event/day in one batched call.
+- Deploy both edge functions after config change, then scan a real badge and confirm the name lands in the cart and Submit marks attendance.
+- Confirm no bottom bar appears on the scanner route on a phone viewport.

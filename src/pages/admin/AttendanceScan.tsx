@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, X, Loader2, Send, CameraOff, ScanLine, Search } from "lucide-react";
 import { Scanner } from "@yudiel/react-qr-scanner";
@@ -23,6 +21,8 @@ type EventRow = {
   day_index: number | null;
 };
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 export default function AttendanceScan() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,23 +30,33 @@ export default function AttendanceScan() {
   const { cart, lastMessage, isSubmitting, resolveAndAdd, addMemberDirect, removeAt, submit, clear } = useAttendanceScan();
 
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [showAll, setShowAll] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [scannerEnabled, setScannerEnabled] = useState(true);
   const [manualQuery, setManualQuery] = useState("");
   const [manualResults, setManualResults] = useState<{ id: string; name: string }[]>([]);
-  const isSuper = typeof window !== "undefined" && window.location.pathname.startsWith("/admin/super");
 
   useEffect(() => {
     (async () => {
-      const q = supabase
+      let query = supabase
         .from("attendance_events")
         .select("id, name, event_date, region_id, parent_event_id, day_index")
-        .order("event_date", { ascending: false })
-        .limit(200);
-      const { data } = await q;
+        .order("event_date", { ascending: false });
+      if (!showAll) query = query.eq("event_date", today());
+      const { data } = await query.limit(showAll ? 200 : 50);
       setEvents((data as any) || []);
     })();
-  }, [user?.id]);
+  }, [user?.id, showAll]);
+
+  // Auto-select when there is exactly one event today.
+  useEffect(() => {
+    const roots = events.filter((e) => !e.parent_event_id);
+    if (!selectedEventId && roots.length === 1) {
+      setSelectedEventId(roots[0].id);
+    }
+  }, [events, selectedEventId]);
+
+  const rootEvents = useMemo(() => events.filter((e) => !e.parent_event_id), [events]);
 
   const days = useMemo(() => {
     if (!selectedEventId) return [] as EventRow[];
@@ -60,8 +70,8 @@ export default function AttendanceScan() {
   const [dayEventId, setDayEventId] = useState<string>("");
   useEffect(() => {
     if (days.length > 0) {
-      const today = new Date().toISOString().slice(0, 10);
-      const match = days.find((d) => d.event_date === today);
+      const t = today();
+      const match = days.find((d) => d.event_date === t);
       setDayEventId((match || days[0]).id);
     } else {
       setDayEventId("");
@@ -108,71 +118,94 @@ export default function AttendanceScan() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6 pb-32">
-      <div className="mx-auto max-w-3xl space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold">Record Attendance</h1>
-            <p className="text-sm text-muted-foreground">Scan badges to mark attendees present.</p>
-          </div>
-        </div>
+  const noEventsToday = !showAll && rootEvents.length === 0;
 
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Compact header */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+        <div className="mx-auto max-w-2xl flex items-center gap-2 px-3 py-2">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-base font-semibold leading-tight">Record Attendance</h1>
+            <p className="text-[11px] text-muted-foreground leading-tight truncate">
+              Scan badges to mark attendees present
+            </p>
+          </div>
+          <Badge variant="secondary" className="shrink-0">{cart.length}</Badge>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-2xl px-3 py-3 space-y-3">
+        {/* Event picker */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Event</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <Label className="text-xs">Event</Label>
-              <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select event…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {events.filter((e) => !e.parent_event_id).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name} — {e.event_date}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {days.length > 0 && (
-              <div>
-                <Label className="text-xs">Day</Label>
-                <Select value={dayEventId} onValueChange={setDayEventId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select day…" />
+          <CardContent className="p-3 space-y-2">
+            {noEventsToday ? (
+              <div className="text-sm">
+                <p className="text-muted-foreground">No events scheduled for today.</p>
+                <button
+                  className="mt-1 text-xs text-primary underline"
+                  onClick={() => setShowAll(true)}
+                >
+                  Show recent events
+                </button>
+              </div>
+            ) : (
+              <>
+                <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder={showAll ? "Select event…" : "Today's event"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {days.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        Day {d.day_index ?? 1} — {d.event_date}
+                    {rootEvents.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}{showAll ? ` — ${e.event_date}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
+                {days.length > 0 && (
+                  <Select value={dayEventId} onValueChange={setDayEventId}>
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select day…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {days.map((d) => (
+                        <SelectItem key={d.id} value={d.id}>
+                          Day {d.day_index ?? 1} — {d.event_date}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {!showAll && (
+                  <button
+                    className="text-[11px] text-muted-foreground underline"
+                    onClick={() => setShowAll(true)}
+                  >
+                    Show recent events
+                  </button>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
 
+        {/* Scanner */}
         <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ScanLine className="h-4 w-4" /> Scanner
-            </CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setScannerEnabled((v) => !v)}>
-              {scannerEnabled ? (<><CameraOff className="mr-1 h-3 w-3" /> Pause</>) : "Resume"}
-            </Button>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ScanLine className="h-4 w-4" /> Scanner
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setScannerEnabled((v) => !v)}>
+                {scannerEnabled ? (<><CameraOff className="mr-1 h-3 w-3" /> Pause</>) : "Resume"}
+              </Button>
+            </div>
             {scannerEnabled ? (
-              <div className="overflow-hidden rounded-md bg-black aspect-square max-h-[360px] mx-auto">
+              <div className="overflow-hidden rounded-md bg-black aspect-square w-full">
                 <Scanner
                   onScan={handleScan}
                   onError={() => {}}
@@ -186,25 +219,25 @@ export default function AttendanceScan() {
               <div className="text-sm text-muted-foreground text-center py-8">Scanner paused</div>
             )}
             {lastMessage && (
-              <p className="mt-2 text-xs text-center text-muted-foreground">{lastMessage}</p>
+              <p className="text-xs text-center text-muted-foreground min-h-[1rem]">{lastMessage}</p>
             )}
           </CardContent>
         </Card>
 
+        {/* Manual add */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
               <Search className="h-4 w-4" /> Add by name
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
+            </div>
             <Input
+              className="h-11"
               placeholder="Type a name…"
               value={manualQuery}
               onChange={(e) => setManualQuery(e.target.value)}
             />
             {manualResults.length > 0 && (
-              <div className="border rounded-md max-h-40 overflow-auto divide-y">
+              <div className="border rounded-md max-h-48 overflow-auto divide-y">
                 {manualResults.map((m) => (
                   <button
                     key={m.id}
@@ -219,46 +252,43 @@ export default function AttendanceScan() {
           </CardContent>
         </Card>
 
+        {/* Cart */}
         <Card>
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Cart <Badge variant="secondary" className="ml-2">{cart.length}</Badge></CardTitle>
-            {cart.length > 0 && (
-              <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
-            )}
-          </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="max-h-[300px]">
-              {cart.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No scans yet.</p>
-              ) : (
-                <ul className="divide-y">
-                  {cart.map((c, i) => (
-                    <li key={`${c.member_id}-${i}`} className="flex items-center justify-between px-4 py-2 text-sm">
-                      <span className="truncate">{c.display_name}</span>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeAt(i)}>
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+            <div className="flex items-center justify-between px-3 py-2 border-b">
+              <div className="text-sm font-medium">
+                Cart <span className="text-muted-foreground">({cart.length})</span>
+              </div>
+              {cart.length > 0 && (
+                <Button size="sm" variant="ghost" onClick={clear}>Clear</Button>
               )}
-            </ScrollArea>
+            </div>
+            {cart.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No scans yet.</p>
+            ) : (
+              <ul className="divide-y">
+                {cart.map((c, i) => (
+                  <li key={`${c.member_id}-${i}`} className="flex items-center justify-between px-3 py-2 text-sm">
+                    <span className="truncate">{c.display_name}</span>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeAt(i)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
-      </div>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur p-3 z-40">
-        <div className="mx-auto max-w-3xl flex items-center gap-3">
-          <div className="text-sm text-muted-foreground">
-            {cart.length} to submit
-          </div>
+        {/* Inline sticky submit — no admin bottom bar */}
+        <div className="sticky bottom-0 -mx-3 px-3 py-3 bg-background/95 backdrop-blur border-t pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button
-            className="ml-auto"
+            className="w-full h-12 text-base"
             disabled={!targetEventId || cart.length === 0 || isSubmitting}
             onClick={handleSubmit}
           >
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            Submit attendance
+            Submit {cart.length > 0 ? `(${cart.length})` : ""}
           </Button>
         </div>
       </div>
