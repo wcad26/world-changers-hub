@@ -423,6 +423,13 @@ const EventReport: React.FC = () => {
                             <TableCell>
                               {getJoinInterestBadge(attendee.member?.join_interest)}
                             </TableCell>
+                            {isMultiDay && dayFilter === "all" && (
+                              <TableCell className="text-right">
+                                <Badge variant="outline">
+                                  {attendee.days_attended} / {reportData?.totalDays}
+                                </Badge>
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>
