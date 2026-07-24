@@ -42,7 +42,8 @@ export default function AttendanceScan() {
         .from("attendance_events")
         .select("id, name, event_date, region_id, parent_event_id, day_index")
         .order("event_date", { ascending: false });
-      if (!showAll) query = query.eq("event_date", today());
+      // TEMP: include today + future events so upcoming DESCO can be tested with the scanner.
+      if (!showAll) query = query.gte("event_date", today());
       const { data } = await query.limit(showAll ? 200 : 50);
       setEvents((data as any) || []);
     })();
