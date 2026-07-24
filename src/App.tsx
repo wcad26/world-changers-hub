@@ -271,6 +271,7 @@ const App = () => {
                 <Route path="user-management" element={<Navigate to="/admin/super/settings?tab=access" replace />} />
                 <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
                 <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
+                <Route path="attendance/scan" element={<SuperAdminPage><AttendanceScan /></SuperAdminPage>} />
                 <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />
               </Route>
             </Route>
