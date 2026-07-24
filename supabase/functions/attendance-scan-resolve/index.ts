@@ -16,20 +16,20 @@ interface ResolveResult {
   error?: string;
 }
 
-function parseCode(raw: string): { kind: "member" | "prereg" | "verification"; value: string } | null {
+/**
+ * Badges encode `members.id` directly. This is the shortest possible resolution
+ * path because `attendance_records.member_id` FKs to `members.id`, so no
+ * translation is needed to mark attendance.
+ *
+ * Kept for backwards compatibility only:
+ *   - `/verify/CODE` URLs → look up via `certificates.verification_code`.
+ */
+function parseCode(raw: string): { kind: "member" | "verification"; value: string } | null {
   const s = (raw || "").trim();
   if (!s) return null;
-  // /verify/<CODE>
+  if (UUID_RE.test(s)) return { kind: "member", value: s };
   const verifyMatch = s.match(/\/verify\/([A-Z0-9]+)/i);
   if (verifyMatch) return { kind: "verification", value: verifyMatch[1].toUpperCase() };
-  // pre_reg:<uuid>
-  if (s.toLowerCase().startsWith("pre_reg:")) {
-    const v = s.split(":")[1]?.trim();
-    if (v && UUID_RE.test(v)) return { kind: "prereg", value: v };
-  }
-  // raw uuid → member
-  if (UUID_RE.test(s)) return { kind: "member", value: s };
-  // otherwise assume verification code (short alphanumeric)
   if (/^[A-Z0-9]{6,}$/i.test(s)) return { kind: "verification", value: s.toUpperCase() };
   return null;
 }
@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const codes: string[] = Array.isArray(body?.codes) ? body.codes : [];
     if (codes.length === 0) {
       return new Response(JSON.stringify({ results: [] }), {
@@ -51,81 +51,83 @@ Deno.serve(async (req) => {
       });
     }
 
-    const memberIds = new Set<string>();
-    const preregIds = new Set<string>();
-    const verifCodes = new Set<string>();
     const parsed = codes.map((c) => ({ raw: c, parsed: parseCode(c) }));
 
+    const memberIds = new Set<string>();
+    const verifCodes = new Set<string>();
     for (const p of parsed) {
       if (!p.parsed) continue;
       if (p.parsed.kind === "member") memberIds.add(p.parsed.value);
-      else if (p.parsed.kind === "prereg") preregIds.add(p.parsed.value);
       else if (p.parsed.kind === "verification") verifCodes.add(p.parsed.value);
     }
 
-    // Resolve verification codes to member_id via certificates
+    // Backwards-compat: translate verification codes → members.id.
     const verifToMember = new Map<string, string>();
     if (verifCodes.size > 0) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("certificates")
         .select("verification_code, member_id")
         .in("verification_code", Array.from(verifCodes));
-      for (const r of data || []) {
-        if ((r as any).member_id) {
-          verifToMember.set((r as any).verification_code, (r as any).member_id);
-          memberIds.add((r as any).member_id);
+      if (error) console.error("cert lookup error", error);
+      for (const r of (data as any[]) || []) {
+        if (r.member_id) {
+          verifToMember.set(r.verification_code, r.member_id);
+          memberIds.add(r.member_id);
         }
       }
     }
 
-    // Bulk load members with profile
-    const membersById = new Map<string, { name: string; code: string }>();
+    // Single hot-path lookup: members + profiles.
+    const memberInfo = new Map<string, { name: string; code: string }>();
     if (memberIds.size > 0) {
-      const { data } = await supabase
+      const { data: members, error: mErr } = await supabase
         .from("members")
-        .select("id, member_id, profiles(first_name, last_name)")
+        .select("id, member_id, profile_id")
         .in("id", Array.from(memberIds));
-      for (const m of data || []) {
-        const p = (m as any).profiles || {};
-        const name = `${p.last_name || ""} ${p.first_name || ""}`.trim() || "Unknown";
-        membersById.set((m as any).id, { name, code: (m as any).member_id });
-      }
-    }
+      if (mErr) console.error("members lookup error", mErr);
 
-    // Pre-registration → look up matching member by email/phone
-    const preregToMember = new Map<string, { member_id: string; name: string; code: string }>();
-    if (preregIds.size > 0) {
-      const { data: pregs } = await supabase
-        .from("event_pre_registrations")
-        .select("id, first_name, last_name, email, phone")
-        .in("id", Array.from(preregIds));
-      for (const pr of pregs || []) {
-        const nm = `${(pr as any).last_name || ""} ${(pr as any).first_name || ""}`.trim() || "Guest";
-        preregToMember.set((pr as any).id, { member_id: "", name: nm, code: "" });
+      const profileIds = Array.from(
+        new Set(((members as any[]) || []).map((m) => m.profile_id).filter(Boolean)),
+      );
+
+      const profileMap = new Map<string, { first: string; last: string }>();
+      if (profileIds.length > 0) {
+        const { data: profiles, error: pErr } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", profileIds);
+        if (pErr) console.error("profiles lookup error", pErr);
+        for (const p of (profiles as any[]) || []) {
+          profileMap.set(p.id, { first: p.first_name || "", last: p.last_name || "" });
+        }
+      }
+
+      for (const m of (members as any[]) || []) {
+        const p = m.profile_id ? profileMap.get(m.profile_id) : undefined;
+        // Global convention: "Last Name First Name".
+        const name = p ? `${p.last} ${p.first}`.trim() : "";
+        memberInfo.set(m.id, { name: name || "Unknown", code: m.member_id || "" });
       }
     }
 
     const results: ResolveResult[] = parsed.map(({ raw, parsed: p }) => {
-      if (!p) return { code: raw, error: "unrecognized" };
+      if (!p) return { code: raw, error: "unrecognized_code" };
       if (p.kind === "member") {
-        const m = membersById.get(p.value);
+        const m = memberInfo.get(p.value);
         return m
           ? { code: raw, member_id: p.value, display_name: m.name, member_code: m.code }
           : { code: raw, error: "member_not_found" };
       }
-      if (p.kind === "verification") {
-        const mid = verifToMember.get(p.value);
-        if (!mid) return { code: raw, error: "verification_not_found" };
-        const m = membersById.get(mid);
-        return { code: raw, member_id: mid, display_name: m?.name || "Unknown", member_code: m?.code };
-      }
-      if (p.kind === "prereg") {
-        const pr = preregToMember.get(p.value);
-        if (!pr) return { code: raw, error: "prereg_not_found" };
-        // pre-reg-only badges cannot mark attendance without a member_id
-        return { code: raw, display_name: pr.name, error: "prereg_no_member" };
-      }
-      return { code: raw, error: "unrecognized" };
+      // verification
+      const mid = verifToMember.get(p.value);
+      if (!mid) return { code: raw, error: "verification_not_found" };
+      const m = memberInfo.get(mid);
+      return {
+        code: raw,
+        member_id: mid,
+        display_name: m?.name || "Unknown",
+        member_code: m?.code || "",
+      };
     });
 
     return new Response(JSON.stringify({ results }), {

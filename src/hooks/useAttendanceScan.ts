@@ -59,17 +59,21 @@ export function useAttendanceScan() {
     });
     if (error) {
       beep(false);
-      setLastMessage("Scan failed");
+      setLastMessage(`Scan failed: ${error.message || "network error"}`);
       return;
     }
     const result: ResolveResp | undefined = (data as any)?.results?.[0];
-    if (!result) return;
+    if (!result) {
+      beep(false);
+      setLastMessage("Scan failed: no result");
+      return;
+    }
     cacheRef.current.set(code, result);
 
     if (result.error || !result.member_id) {
       beep(false);
-      const label = result.display_name ? ` (${result.display_name})` : "";
-      setLastMessage(`Unrecognized badge${label}`);
+      const reason = result.error ? ` (${result.error})` : "";
+      setLastMessage(`Unrecognized badge${reason}`);
       return;
     }
     if (seenMembersRef.current.has(result.member_id)) {

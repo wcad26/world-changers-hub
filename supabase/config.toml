@@ -42,10 +42,14 @@ verify_jwt = false
 [functions.fundraising-public-donate]
 verify_jwt = false
 
-
-
 [functions.backfill-auth-users]
 verify_jwt = true
 
 [functions.provision-auth-user]
+verify_jwt = true
+
+[functions.attendance-scan-resolve]
+verify_jwt = true
+
+[functions.attendance-mark-present]
 verify_jwt = true
