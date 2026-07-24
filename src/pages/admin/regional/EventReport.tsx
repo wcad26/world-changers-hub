@@ -22,8 +22,14 @@ const EventReport: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [joinInterestFilter, setJoinInterestFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
+  const [dayFilter, setDayFilter] = useState<string>("all");
 
-  const { data: reportData, isLoading, error } = useEventReport(eventId, userRegion?.id);
+  const { data: reportData, isLoading, error } = useEventReport(
+    eventId,
+    userRegion?.id,
+    dayFilter !== "all" ? dayFilter : undefined,
+  );
+  const isMultiDay = (reportData?.totalDays || 0) > 1;
 
   const filteredAttendees = useMemo(() => {
     if (!reportData?.attendees) return [];
