@@ -22,8 +22,14 @@ const EventReport: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [joinInterestFilter, setJoinInterestFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
+  const [dayFilter, setDayFilter] = useState<string>("all");
 
-  const { data: reportData, isLoading, error } = useEventReport(eventId, userRegion?.id);
+  const { data: reportData, isLoading, error } = useEventReport(
+    eventId,
+    userRegion?.id,
+    dayFilter !== "all" ? dayFilter : undefined,
+  );
+  const isMultiDay = (reportData?.totalDays || 0) > 1;
 
   const filteredAttendees = useMemo(() => {
     if (!reportData?.attendees) return [];
@@ -73,24 +79,40 @@ const EventReport: React.FC = () => {
 
   const exportToCSV = () => {
     if (!filteredAttendees.length) return;
-    
+
+    const daySuffix = dayFilter !== "all" && reportData?.days
+      ? (() => {
+          const d = reportData.days.find(x => x.attendanceEventId === dayFilter);
+          return d ? `-day${d.dayIndex}` : "";
+        })()
+      : "";
+
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Member Type', 'Member ID', 'Join Interest'];
-    const rows = filteredAttendees.map(a => [
-      `${a.member?.profile?.last_name || ''} ${a.member?.profile?.first_name || ''}`.trim(),
-      a.member?.profile?.email || '',
-      a.member?.profile?.phone || '',
-      a.member?.profile?.gender || '',
-      a.member?.member_type || '',
-      a.member?.member_id || '',
-      a.member?.join_interest || 'not_specified',
-    ]);
-    
+    if (isMultiDay && dayFilter === "all") headers.push('Days Attended', 'Days Present');
+
+    const rows = filteredAttendees.map(a => {
+      const base = [
+        `${a.member?.profile?.last_name || ''} ${a.member?.profile?.first_name || ''}`.trim(),
+        a.member?.profile?.email || '',
+        a.member?.profile?.phone || '',
+        a.member?.profile?.gender || '',
+        a.member?.member_type || '',
+        a.member?.member_id || '',
+        a.member?.join_interest || 'not_specified',
+      ];
+      if (isMultiDay && dayFilter === "all") {
+        base.push(`${a.days_attended}/${reportData?.totalDays || 0}`);
+        base.push(a.days_present.map(d => `D${d}`).join(' '));
+      }
+      return base;
+    });
+
     const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `event-report-${reportData?.event?.name || eventId}.csv`;
+    link.download = `event-report-${reportData?.event?.name || eventId}${daySuffix}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -175,8 +197,41 @@ const EventReport: React.FC = () => {
               </Card>
             )}
 
+            {/* Daily attendance breakdown (multi-day only) */}
+            {isMultiDay && reportData?.days && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Daily Attendance</CardTitle>
+                  <CardDescription>Unique attendees marked present each day</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Day</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Present</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {reportData.days.map(d => (
+                          <TableRow key={d.attendanceEventId}>
+                            <TableCell className="font-medium">Day {d.dayIndex}</TableCell>
+                            <TableCell>{format(new Date(d.eventDate), 'EEE, PP')}</TableCell>
+                            <TableCell className="text-right font-semibold">{d.presentCount}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Attendees</CardTitle>
@@ -306,6 +361,21 @@ const EventReport: React.FC = () => {
                       <SelectItem value="not_specified">Not Specified</SelectItem>
                     </SelectContent>
                   </Select>
+                  {isMultiDay && reportData?.days && (
+                    <Select value={dayFilter} onValueChange={setDayFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Day" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Days</SelectItem>
+                        {reportData.days.map(d => (
+                          <SelectItem key={d.attendanceEventId} value={d.attendanceEventId}>
+                            Day {d.dayIndex} — {format(new Date(d.eventDate), 'PP')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -326,6 +396,9 @@ const EventReport: React.FC = () => {
                           <TableHead>Type</TableHead>
                           <TableHead>Member ID</TableHead>
                           <TableHead>Join Interest</TableHead>
+                          {isMultiDay && dayFilter === "all" && (
+                            <TableHead className="text-right">Days Attended</TableHead>
+                          )}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -350,6 +423,13 @@ const EventReport: React.FC = () => {
                             <TableCell>
                               {getJoinInterestBadge(attendee.member?.join_interest)}
                             </TableCell>
+                            {isMultiDay && dayFilter === "all" && (
+                              <TableCell className="text-right">
+                                <Badge variant="outline">
+                                  {attendee.days_attended} / {reportData?.totalDays}
+                                </Badge>
+                              </TableCell>
+                            )}
                           </TableRow>
                         ))}
                       </TableBody>

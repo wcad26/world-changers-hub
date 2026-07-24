@@ -80,6 +80,12 @@ export default function AttendanceScan() {
   }, [days.map((d) => d.id).join(",")]);
 
   const targetEventId = dayEventId || selectedEventId;
+  const currentDay = days.find((d) => d.id === dayEventId);
+  const totalDays = days.length;
+  const parentEvent = events.find((e) => e.id === selectedEventId);
+  const activeEventName = parentEvent?.name || currentDay?.name || "";
+  const activeEventDate = currentDay?.event_date || parentEvent?.event_date;
+  const todayMatchesADay = totalDays === 0 ? true : days.some((d) => d.event_date === today());
 
   // Manual search
   useEffect(() => {
@@ -130,9 +136,15 @@ export default function AttendanceScan() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-base font-semibold leading-tight">Record Attendance</h1>
+            <h1 className="text-base font-semibold leading-tight truncate">
+              {activeEventName || "Record Attendance"}
+            </h1>
             <p className="text-[11px] text-muted-foreground leading-tight truncate">
-              Scan badges to mark attendees present
+              {totalDays > 0 && currentDay
+                ? `Day ${currentDay.day_index ?? 1} of ${totalDays} · ${currentDay.event_date}`
+                : activeEventDate
+                  ? `Session · ${activeEventDate}`
+                  : "Scan badges to mark attendees present"}
             </p>
           </div>
           <Badge variant="secondary" className="shrink-0">{cart.length}</Badge>
@@ -179,18 +191,38 @@ export default function AttendanceScan() {
                   </SelectContent>
                 </Select>
                 {days.length > 0 && (
-                  <Select value={dayEventId} onValueChange={setDayEventId}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select day…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {days.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          Day {d.day_index ?? 1} — {d.event_date}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <div className={`rounded-md border p-2 text-xs flex items-center justify-between ${todayMatchesADay ? "bg-primary/5 border-primary/20" : "bg-yellow-50 border-yellow-300"}`}>
+                      <span className="font-medium">
+                        {currentDay
+                          ? `Marking Day ${currentDay.day_index ?? 1} of ${totalDays}`
+                          : `Pick a day (${totalDays} total)`}
+                      </span>
+                      {currentDay && (
+                        <Badge variant={currentDay.event_date === today() ? "default" : "outline"}>
+                          {currentDay.event_date === today() ? "Today" : currentDay.event_date}
+                        </Badge>
+                      )}
+                    </div>
+                    {!todayMatchesADay && (
+                      <p className="text-[11px] text-yellow-800">
+                        Today's date is outside the event schedule — confirm the day below.
+                      </p>
+                    )}
+                    <Select value={dayEventId} onValueChange={setDayEventId}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select day…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {days.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            Day {d.day_index ?? 1} · {d.event_date}
+                            {d.event_date === today() ? " (today)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
                 )}
                 {!showAll && (
                   <button
