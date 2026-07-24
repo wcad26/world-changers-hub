@@ -191,18 +191,38 @@ export default function AttendanceScan() {
                   </SelectContent>
                 </Select>
                 {days.length > 0 && (
-                  <Select value={dayEventId} onValueChange={setDayEventId}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select day…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {days.map((d) => (
-                        <SelectItem key={d.id} value={d.id}>
-                          Day {d.day_index ?? 1} — {d.event_date}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <div className={`rounded-md border p-2 text-xs flex items-center justify-between ${todayMatchesADay ? "bg-primary/5 border-primary/20" : "bg-yellow-50 border-yellow-300"}`}>
+                      <span className="font-medium">
+                        {currentDay
+                          ? `Marking Day ${currentDay.day_index ?? 1} of ${totalDays}`
+                          : `Pick a day (${totalDays} total)`}
+                      </span>
+                      {currentDay && (
+                        <Badge variant={currentDay.event_date === today() ? "default" : "outline"}>
+                          {currentDay.event_date === today() ? "Today" : currentDay.event_date}
+                        </Badge>
+                      )}
+                    </div>
+                    {!todayMatchesADay && (
+                      <p className="text-[11px] text-yellow-800">
+                        Today's date is outside the event schedule — confirm the day below.
+                      </p>
+                    )}
+                    <Select value={dayEventId} onValueChange={setDayEventId}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select day…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {days.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            Day {d.day_index ?? 1} · {d.event_date}
+                            {d.event_date === today() ? " (today)" : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
                 )}
                 {!showAll && (
                   <button
