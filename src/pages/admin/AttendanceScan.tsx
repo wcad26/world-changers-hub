@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, X, Loader2, Send, CameraOff, ScanLine, Search } from "lucide-react";
+import { ArrowLeft, X, Loader2, Send, CameraOff, ScanLine, Search, LogOut } from "lucide-react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useAttendanceScan } from "@/hooks/useAttendanceScan";
 import { useToast } from "@/hooks/use-toast";
