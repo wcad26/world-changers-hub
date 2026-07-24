@@ -118,23 +118,89 @@ serve(async (req) => {
         // Draw template
         ctx.drawImage(templateImage, 0, 0);
 
-        // Use template positions or defaults
-        const namePos = template.name_position as any || { x: canvas.width / 2, y: 477, fontSize: 38, fontFamily: 'Georgia, serif', color: '#1a365d' };
-        const qrPos = template.qr_position as any || { x: canvas.width - 92, y: canvas.height - 109, size: 100 };
-        
-        // Draw recipient name
-        ctx.font = `bold ${namePos.fontSize || 38}px ${namePos.fontFamily || 'Georgia, serif'}`;
-        ctx.fillStyle = namePos.color || '#1a365d';
-        ctx.textAlign = 'center';
+        // Name box (supports both legacy point-based and new box shape)
+        const rawName = (template.name_position as any) || {};
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+        const fontSize = rawName.fontSize || 38;
+        const fontFamily = rawName.fontFamily || 'Georgia, serif';
+        const color = rawName.color || '#1a365d';
+        const align = rawName.align || 'center';
+        const verticalAlign = rawName.verticalAlign || 'middle';
+        const autoShrink = rawName.autoShrink ?? true;
+
+        let boxX: number, boxY: number, boxW: number, boxH: number;
+        if (rawName.width && rawName.height) {
+          boxX = rawName.x; boxY = rawName.y;
+          boxW = rawName.width; boxH = rawName.height;
+        } else {
+          boxW = Math.round(canvasW * 0.6);
+          boxH = Math.round(fontSize * 2.5);
+          const cx = rawName.x ?? canvasW / 2;
+          const cy = rawName.y ?? canvasH / 2;
+          boxX = Math.round(cx - boxW / 2);
+          boxY = Math.round(cy - boxH / 2);
+        }
+
+        const qrPos = (template.qr_position as any) || { x: canvasW - 92, y: canvasH - 109, size: 100 };
+
+        // Wrap + fit
+        const wrapLines = (text: string, maxWidth: number): string[] => {
+          const words = text.split(/\s+/).filter(Boolean);
+          const lines: string[] = [];
+          let current = '';
+          for (const w of words) {
+            const trial = current ? `${current} ${w}` : w;
+            if (ctx.measureText(trial).width <= maxWidth) { current = trial; continue; }
+            if (ctx.measureText(w).width > maxWidth) {
+              if (current) { lines.push(current); current = ''; }
+              let chunk = '';
+              for (const ch of w) {
+                const t = chunk + ch;
+                if (ctx.measureText(t).width <= maxWidth) chunk = t;
+                else { if (chunk) lines.push(chunk); chunk = ch; }
+              }
+              current = chunk;
+            } else {
+              if (current) lines.push(current);
+              current = w;
+            }
+          }
+          if (current) lines.push(current);
+          return lines.length ? lines : [text];
+        };
+
+        const minFont = Math.max(8, Math.floor(fontSize * 0.5));
+        let size = fontSize;
+        let lines: string[] = [];
+        let lineHeight = size * 1.2;
+        while (size >= minFont) {
+          ctx.font = `bold ${size}px ${fontFamily}`;
+          lines = wrapLines(recipientName, boxW);
+          lineHeight = size * 1.2;
+          if (!autoShrink || lines.length * lineHeight <= boxH) break;
+          size -= 2;
+        }
+        ctx.font = `bold ${size}px ${fontFamily}`;
+        ctx.fillStyle = color;
+        const totalH = lines.length * lineHeight;
+        let yStart: number;
+        if (verticalAlign === 'top') yStart = boxY + lineHeight / 2;
+        else if (verticalAlign === 'bottom') yStart = boxY + boxH - totalH + lineHeight / 2;
+        else yStart = boxY + (boxH - totalH) / 2 + lineHeight / 2;
+        let xAnchor: number;
+        if (align === 'left') { ctx.textAlign = 'left'; xAnchor = boxX; }
+        else if (align === 'right') { ctx.textAlign = 'right'; xAnchor = boxX + boxW; }
+        else { ctx.textAlign = 'center'; xAnchor = boxX + boxW / 2; }
         ctx.textBaseline = 'middle';
-        ctx.fillText(recipientName, namePos.x, namePos.y);
+        lines.forEach((line, i) => ctx.fillText(line, xAnchor, yStart + i * lineHeight));
 
         // Draw event name if provided
         if (event_name) {
           ctx.font = `24px Arial`;
           ctx.fillStyle = '#000000';
           ctx.textAlign = 'center';
-          ctx.fillText(event_name, namePos.x, namePos.y + 60);
+          ctx.fillText(event_name, boxX + boxW / 2, boxY + boxH + 34);
         }
 
         // Draw event date if provided
@@ -142,7 +208,7 @@ serve(async (req) => {
           ctx.font = `20px Arial`;
           ctx.fillStyle = '#666666';
           ctx.textAlign = 'center';
-          ctx.fillText(new Date(event_date).toLocaleDateString(), namePos.x, namePos.y + 90);
+          ctx.fillText(new Date(event_date).toLocaleDateString(), boxX + boxW / 2, boxY + boxH + 64);
         }
 
         // Draw QR code
