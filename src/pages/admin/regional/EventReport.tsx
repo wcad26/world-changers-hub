@@ -197,8 +197,41 @@ const EventReport: React.FC = () => {
               </Card>
             )}
 
+            {/* Daily attendance breakdown (multi-day only) */}
+            {isMultiDay && reportData?.days && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Daily Attendance</CardTitle>
+                  <CardDescription>Unique attendees marked present each day</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Day</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead className="text-right">Present</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {reportData.days.map(d => (
+                          <TableRow key={d.attendanceEventId}>
+                            <TableCell className="font-medium">Day {d.dayIndex}</TableCell>
+                            <TableCell>{format(new Date(d.eventDate), 'EEE, PP')}</TableCell>
+                            <TableCell className="text-right font-semibold">{d.presentCount}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stats Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Total Attendees</CardTitle>
