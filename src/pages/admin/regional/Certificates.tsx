@@ -343,8 +343,10 @@ const Certificates = () => {
             verificationCode,
             baseUrl,
             namePos,
-            qrPos
+            qrPos,
+            { outputType: (template as any)?.output_type || 'certificate', memberId }
           );
+
 
           // Upload to storage with organized path structure
           const filePath = `${regionId}/${memberId}/${certificateNumber}.png`;

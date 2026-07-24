@@ -1665,8 +1665,12 @@ const RegionalEvents: React.FC = () => {
               <SelectItem value="past">Past</SelectItem>
             </SelectContent>
           </Select>
-          <div className="sm:ml-auto">
-            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
+          <div className="sm:ml-auto flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => navigate('/admin/regional/attendance/scan')} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
+              <UserCheck className="h-4 w-4" />
+              Record Attendance
+            </Button>
+            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
               <Plus className="h-4 w-4" />
               Add Event
             </Button>

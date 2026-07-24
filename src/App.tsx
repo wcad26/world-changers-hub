@@ -85,6 +85,7 @@ import SuperCertificates from "./pages/admin/super/Certificates";
 import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
 import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
+import AttendanceScan from "./pages/admin/AttendanceScan";
 
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
@@ -199,6 +200,7 @@ const App = () => {
                 <Route path="dcg" element={<RegionalDCG />} />
                 <Route path="dcg/:dcgId" element={<DcgProfile />} />
                 <Route path="certificates" element={<RegionalCertificates />} />
+                <Route path="attendance/scan" element={<AttendanceScan />} />
                 
                 <Route path="communication" element={<RegionalCommunication />} />
                 <Route path="planning" element={<RegionalPlanning />} />
@@ -269,6 +271,7 @@ const App = () => {
                 <Route path="user-management" element={<Navigate to="/admin/super/settings?tab=access" replace />} />
                 <Route path="homepage-settings" element={<SuperAdminPage><HomepageSettings /></SuperAdminPage>} />
                 <Route path="certificates" element={<SuperAdminPage><SuperCertificates /></SuperAdminPage>} />
+                <Route path="attendance/scan" element={<SuperAdminPage><AttendanceScan /></SuperAdminPage>} />
                 <Route path="about-settings" element={<SuperAdminPage><AboutUsSettings /></SuperAdminPage>} />
               </Route>
             </Route>

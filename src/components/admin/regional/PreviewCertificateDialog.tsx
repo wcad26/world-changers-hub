@@ -21,6 +21,7 @@ interface PreviewCertificateDialogProps {
   templateUrl: string;
   namePosition: NamePosition;
   qrPosition: QRPosition;
+  outputType?: 'certificate' | 'badge';
 }
 
 export const PreviewCertificateDialog = ({
@@ -28,7 +29,8 @@ export const PreviewCertificateDialog = ({
   onOpenChange,
   templateUrl,
   namePosition,
-  qrPosition
+  qrPosition,
+  outputType = 'certificate'
 }: PreviewCertificateDialogProps) => {
   const [sampleName, setSampleName] = useState('John Doe');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -45,8 +47,10 @@ export const PreviewCertificateDialog = ({
         'PREVIEW123',
         window.location.origin,
         namePosition,
-        qrPosition
+        qrPosition,
+        { outputType, memberId: 'preview-member-id' }
       );
+
       
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);

@@ -1341,6 +1341,7 @@ const SuperEvents: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
+          <Button variant="outline" onClick={() => navigate('/admin/super/attendance/scan')}><UserCheck className="mr-2 h-4 w-4" />Record Attendance</Button>
           <Button onClick={() => setCreateDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />Add Event</Button>
         </div>
       </div>
