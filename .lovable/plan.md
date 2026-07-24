@@ -1,47 +1,66 @@
-# Extend Certificate System for Badges & Pre-Registrant Recipients
+## Goal
+Give the name field a bounding box (like the QR box) with auto text-wrapping so long names stay inside the box on both certificates and badges.
 
-Today the Generate flow only picks from `members`/event `attendance` records and requires each recipient to have a `member_id`. Badges for people who only pre-registered (including non-members) can't be produced. This plan adds a "Badge" output alongside certificates and a new recipient source: **event pre-registrations**.
+## Model change
+Extend the name position from a single point to a box + text options:
 
-## What changes for the user
+```
+NamePosition {
+  x, y,               // top-left of box (image coords)
+  width, height,      // box size
+  fontSize,           // starting/max font size
+  fontFamily,
+  color,
+  align?: 'center' | 'left' | 'right',   // horizontal (default center)
+  verticalAlign?: 'middle' | 'top' | 'bottom', // default middle
+  autoShrink?: boolean // if true, shrink font down to a min (e.g. 60% of fontSize) when even wrapped text overflows height
+}
+```
 
-**Global Certificates page** (`/admin/super/certificates`) and **Regional Certificates page** get:
+Backwards compatibility: old templates stored `{x, y, fontSize, ...}` (point-based). At load, if `width`/`height` are missing, synthesize a default box centered on the existing `x,y` (e.g. width = 60% of image width, height = 2× fontSize) so existing templates keep working; the user can then adjust.
 
-1. A new **Output Type** toggle at the top of the Generate tab: `Certificate` | `Badge`.
-   - Badge uses the same template/positioning pipeline (image + name + QR) — templates are just tagged as badges.
-2. A new **Recipient Source** picker: `Members` | `Event attendees` | `Event pre-registrations` (new).
-3. When source = pre-registrations:
-   - Event selector is required (already exists).
-   - Extra filters: primary-only vs. include family group, needs-lodging, attendee type (adult/youth/child derived from DOB), region (super admin only), search by name/email/phone.
-   - Recipient list shows pre-registrants with name, email/phone, region, family-group indicator, and a "already has badge for this event" pill (so re-runs skip).
-4. Template Type dropdown gains a `Badge` option; Templates tab shows a Badge vs Certificate filter.
-5. Issued/Sent tabs get an "Output type" column and filter (Certificate/Badge).
+## Wrapping algorithm (shared)
+Word-wrap the name into lines that fit `width` at the current font size using canvas `measureText`. If `autoShrink` is on and total wrapped height exceeds `height`, step font size down (e.g. by 2px, min 50% of original) and re-wrap. Draw each line respecting `align` and `verticalAlign` inside the box.
 
-## What changes under the hood
+Single very long token: break inside the word at the character level as a fallback so it never overflows horizontally.
 
-- **DB**: add `output_type text` (`'certificate' | 'badge'`, default `'certificate'`) to both `certificate_templates` and `certificates`. Backfill existing rows to `'certificate'`. Add `pre_registration_id uuid` (nullable, FK to `event_pre_registrations`) and make `member_id` nullable on `certificates` so non-member badges can be issued. Add unique partial index `(pre_registration_id, output_type)` where not null to prevent duplicates per event/badge.
-- **Recipient resolver**: new hook `useEventPreRegistrants(eventId, filters)` that joins `event_pre_registrations` with `profiles`/`members` for name/email and derives display name using the "Last Name First Name" rule.
-- **Generation flow**: in `Certificates.tsx` (both super + regional), branch on recipient source. For pre-registrants, use the pre-registrant's `name`/`email` (falling back to profile if linked), set `member_id` when available else null, and set `pre_registration_id`. `region_id` comes from the event or the pre-registrant's linked member.
-- **Certificate number prefix**: use `BADGE-…` when output_type is badge, `CERT-…` otherwise (small change in `certificateUtils.generateCertificateNumber`).
-- **Emails**: reuse existing `send-certificate-emails` edge function — subject/body switch on `output_type` (Badge vs Certificate wording). Skip recipients with no email.
-- **Verification page** (`/verify/:code`) copy adjusts to say "Badge" or "Certificate" based on the stored `output_type`.
+## Files to change
+
+1. **`src/utils/certificateUtils.ts`** — `generateCertificateImage`
+   - Add `wrapText(ctx, text, maxWidth)` and `drawWrappedText(ctx, text, box, opts)` helpers.
+   - Replace the single `fillText(recipientName, x, y)` with the box-based wrapped draw.
+   - Keep the QR drawing unchanged.
+
+2. **`src/components/admin/regional/CertificatePositionPicker.tsx`**
+   - Render the name area as a dashed rectangle (like the QR box) instead of a crosshair.
+   - Add inputs for `Width`, `Height`, `Align`, `Vertical Align`, `Auto-shrink`.
+   - Click-to-place sets the box top-left (or drag a rectangle — MVP: click sets top-left, keep current W/H; user adjusts via numeric inputs and presets).
+   - Update the on-canvas preview to draw wrapped "Sample Name" (and offer a "Long name preview" toggle to sanity-check wrapping).
+   - Add presets: "Full-width name band" (spans ~80% width centered).
+
+3. **`src/components/admin/regional/PreviewCertificateDialog.tsx`**
+   - Types updated to include width/height/align — just pass through to `generateCertificateImage`.
+
+4. **`src/components/admin/regional/EditCertificateTemplateDialog.tsx`**
+   - Same type extension; ensure saved `name_position` JSON includes the new fields.
+
+5. **`src/pages/admin/super/Certificates.tsx`** and **`src/pages/admin/regional/Certificates.tsx`**
+   - Update the default `namePosition` state to include `width`, `height`, `align`, `verticalAlign`, `autoShrink`.
+   - Sensible defaults per output type: **badge** → smaller box, autoShrink on; **certificate** → wider band.
+
+6. **`supabase/functions/generate-certificates/index.ts`**
+   - Port the same wrap/shrink helpers to the Deno canvas path so server-side generation matches the client preview.
+
+## Data / schema
+`name_position` is already `jsonb`, so no migration is required. Old records without `width`/`height` are auto-upgraded in memory at read time. New saves persist the full shape.
 
 ## Out of scope
+- Drag-to-resize on the canvas (numeric inputs + presets cover it for MVP).
+- Multi-line manual line breaks (auto wrap handles it).
+- Changes to badge/certificate template upload storage.
 
-- No changes to badge visual layout beyond what templates + name/QR positioning already provide (organizers upload their own badge artwork).
-- No printing/PDF sheet layout (Avery-style multi-up) — v1 exports single PNGs per badge, same as certificates. Can be a follow-up if wanted.
-- No standalone badges for people with neither a member nor a pre-registration record.
-
-## Files to touch
-
-- `supabase/migrations/*` — new migration for the two columns + backfill + index.
-- `src/hooks/useCertificates.ts` — thread `output_type` through mutations/queries; add filter.
-- `src/hooks/useEventPreRegistrants.ts` — **new** hook.
-- `src/utils/certificateUtils.ts` — badge number prefix; type option additions.
-- `src/pages/admin/super/Certificates.tsx` and `src/pages/admin/regional/Certificates.tsx` — Generate tab: output type toggle, recipient source picker, pre-registrant list, generation branch; Templates/Issued/Sent: output-type column + filter.
-- `src/components/admin/regional/EditCertificateTemplateDialog.tsx` — add output_type field.
-- `supabase/functions/generate-certificates/index.ts` and `send-certificate-emails/index.ts` — accept `output_type` and `pre_registration_id`, adjust wording.
-- `src/pages/CertificateVerify.tsx` — dynamic label.
-
-## Open question
-
-Ask before implementation: should badges be **generated per pre-registrant even if they have no email** (name-only, download-only), or **skip email-less pre-registrants** entirely? Default in the plan: generate for all, skip email step for those without an address.
+## Acceptance
+- Uploading a template shows a dashed **name box** (like the QR box) that can be moved/resized via inputs.
+- Generating a badge/certificate with a long name (e.g. "YAFOR MINOUE PRINCESS ROSE LOVE") wraps the name onto multiple lines inside the box and no longer overflows the frame.
+- Short names still render centered on one line as before.
+- Existing saved templates keep working without re-configuration.

@@ -60,12 +60,10 @@ const Certificates = () => {
   const [templateName, setTemplateName] = useState('');
   const [templateType, setTemplateType] = useState('');
   const [templatePreviewUrl, setTemplatePreviewUrl] = useState<string | null>(null);
-  const [namePosition, setNamePosition] = useState<{ x: number; y: number; fontSize?: number; fontFamily?: string; color?: string }>({ 
-    x: 400, 
-    y: 477, 
-    fontSize: 38, 
-    fontFamily: 'Georgia, serif', 
-    color: '#1a365d' 
+  const [namePosition, setNamePosition] = useState<import('@/utils/certificateUtils').NamePosition>({
+    x: 160, y: 440, width: 480, height: 90,
+    fontSize: 38, fontFamily: 'Georgia, serif', color: '#1a365d',
+    align: 'center', verticalAlign: 'middle', autoShrink: true,
   });
   const [qrPosition, setQRPosition] = useState({ x: 708, y: 591, size: 100 });
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
@@ -192,8 +190,8 @@ const Certificates = () => {
           template_type: templateType,
           region_id: regionId || null,
           created_by: profile?.id || null,
-          name_position: namePosition,
-          qr_position: qrPosition,
+          name_position: JSON.parse(JSON.stringify(namePosition)),
+          qr_position: JSON.parse(JSON.stringify(qrPosition)),
         },
       },
       {
