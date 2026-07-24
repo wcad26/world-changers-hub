@@ -241,6 +241,8 @@ const App = () => {
             <Route path="/fundraising/:id/donate" element={<FundraisingDonate />} />
             <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
             <Route path="/attend/:eventId" element={<SelfAttendance />} />
+            <Route path="/attendance/login" element={<AttendanceLogin />} />
+            <Route path="/attendance/scan" element={<AttendanceScan />} />
 
             {/* Auth (login) pages */}
             <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />
