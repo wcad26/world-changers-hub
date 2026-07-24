@@ -190,8 +190,8 @@ const Certificates = () => {
           template_type: templateType,
           region_id: regionId || null,
           created_by: profile?.id || null,
-          name_position: namePosition,
-          qr_position: qrPosition,
+          name_position: JSON.parse(JSON.stringify(namePosition)),
+          qr_position: JSON.parse(JSON.stringify(qrPosition)),
         },
       },
       {
