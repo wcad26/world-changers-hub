@@ -136,6 +136,17 @@ export default function AttendanceScan() {
             </p>
           </div>
           <Badge variant="secondary" className="shrink-0">{cart.length}</Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Sign out"
+            onClick={async () => {
+              try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+              navigate("/attendance/login", { replace: true });
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
