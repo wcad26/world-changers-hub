@@ -86,6 +86,7 @@ import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
 import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
 import AttendanceScan from "./pages/admin/AttendanceScan";
+import AttendanceLogin from "./pages/AttendanceLogin";
 
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
