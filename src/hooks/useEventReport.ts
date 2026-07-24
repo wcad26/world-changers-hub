@@ -3,12 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildChildrenSet } from '@/utils/childUtils';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 
+export interface EventReportDay {
+  attendanceEventId: string;
+  dayIndex: number;
+  eventDate: string;
+  name: string;
+  presentCount: number;
+}
+
 export interface EventAttendeeWithDetails {
   id: string;
   member_id: string;
   is_present: boolean;
   recorded_at: string | null;
   is_child?: boolean;
+  days_attended: number;
+  days_present: number[]; // day_index values where member was marked present
   member: {
     id: string;
     member_id: string;
@@ -37,6 +47,8 @@ export interface EventReportData {
     attendance_target: number | null;
   } | null;
   attendees: EventAttendeeWithDetails[];
+  days: EventReportDay[];
+  totalDays: number;
   stats: {
     totalAttendees: number;
     members: number;
@@ -51,98 +63,118 @@ export interface EventReportData {
   };
 }
 
-export const useEventReport = (eventId?: string, regionId?: string) => {
+export const useEventReport = (eventId?: string, regionId?: string, dayEventId?: string) => {
   return useQuery({
-    queryKey: ['event_report', eventId, regionId],
+    queryKey: ['event_report', eventId, regionId, dayEventId || 'all'],
     queryFn: async (): Promise<EventReportData> => {
       if (!eventId || !regionId) {
         throw new Error('Event ID and Region ID are required');
       }
 
-      // Fetch event details
       const { data: event, error: eventError } = await supabase
         .from('events')
         .select('id, name, start_datetime, end_datetime, location_name, category, attendance_target')
         .eq('id', eventId)
         .single();
-
       if (eventError) throw eventError;
 
-      // Fetch attendance events for this source event
+      // All attendance_events linked to this source event
       const { data: attendanceEvents, error: aeError } = await supabase
         .from('attendance_events')
-        .select('id')
+        .select('id, event_date, day_index, name, parent_event_id')
         .eq('source_event_id', eventId)
         .eq('region_id', regionId);
-
       if (aeError) throw aeError;
 
-      if (!attendanceEvents || attendanceEvents.length === 0) {
-        return {
-          event,
-          attendees: [],
-          stats: {
-            totalAttendees: 0,
-            members: 0,
-            visitors: 0,
-            children: 0,
-            maleCount: 0,
-            femaleCount: 0,
-            wantToJoin: 0,
-            notWantToJoin: 0,
-            undecided: 0,
-            attendanceRate: 0,
-          },
-        };
-      }
+      const empty: EventReportData = {
+        event,
+        attendees: [],
+        days: [],
+        totalDays: 0,
+        stats: {
+          totalAttendees: 0, members: 0, visitors: 0, children: 0,
+          maleCount: 0, femaleCount: 0, wantToJoin: 0, notWantToJoin: 0,
+          undecided: 0, attendanceRate: 0,
+        },
+      };
 
-      const attendanceEventIds = attendanceEvents.map(e => e.id);
+      if (!attendanceEvents || attendanceEvents.length === 0) return empty;
 
-      // Fetch attendance records with member and profile details
+      // Determine day structure: prefer children of a parent; otherwise treat each attendance_event as a "day"
+      const parents = attendanceEvents.filter(e => !e.parent_event_id);
+      const children = attendanceEvents.filter(e => !!e.parent_event_id);
+      const dayRows = children.length > 0
+        ? [...parents, ...children].sort((a, b) => (a.day_index || 0) - (b.day_index || 0))
+        : attendanceEvents.slice().sort((a, b) => (a.event_date || '').localeCompare(b.event_date || ''));
+
+      // Assign a stable dayIndex (1-based) if missing
+      const dayMeta = dayRows.map((r, i) => ({
+        attendanceEventId: r.id,
+        dayIndex: r.day_index ?? (i + 1),
+        eventDate: r.event_date,
+        name: r.name,
+      }));
+
+      // Which attendance_event ids to include in stats
+      const includeIds = dayEventId
+        ? [dayEventId]
+        : attendanceEvents.map(e => e.id);
+
       const { data: records, error: recordsError } = await supabase
         .from('attendance_records')
-        .select(`
-          id,
-          member_id,
-          is_present,
-          recorded_at
-        `)
-        .in('event_id', attendanceEventIds)
+        .select('id, member_id, is_present, recorded_at, event_id')
+        .in('event_id', includeIds)
         .eq('is_present', true);
-
       if (recordsError) throw recordsError;
 
-      // Deduplicate by member_id
+      // Present counts per day (always across all days, regardless of filter)
+      const allRecordsRes = dayEventId
+        ? await supabase
+            .from('attendance_records')
+            .select('member_id, event_id')
+            .in('event_id', attendanceEvents.map(e => e.id))
+            .eq('is_present', true)
+        : { data: records?.map(r => ({ member_id: r.member_id, event_id: r.event_id })) || [], error: null };
+      if ((allRecordsRes as any).error) throw (allRecordsRes as any).error;
+      const allRecords = (allRecordsRes as any).data as { member_id: string; event_id: string }[];
+
+      const dayIdToIndex = new Map(dayMeta.map(d => [d.attendanceEventId, d.dayIndex]));
+      const presentPerDay = new Map<string, Set<string>>();
+      for (const r of allRecords) {
+        if (!presentPerDay.has(r.event_id)) presentPerDay.set(r.event_id, new Set());
+        presentPerDay.get(r.event_id)!.add(r.member_id);
+      }
+      const days: EventReportDay[] = dayMeta.map(d => ({
+        ...d,
+        presentCount: presentPerDay.get(d.attendanceEventId)?.size || 0,
+      }));
+
+      // Build per-member "days attended" map from allRecords
+      const memberDays = new Map<string, Set<number>>();
+      for (const r of allRecords) {
+        const di = dayIdToIndex.get(r.event_id);
+        if (di == null) continue;
+        if (!memberDays.has(r.member_id)) memberDays.set(r.member_id, new Set());
+        memberDays.get(r.member_id)!.add(di);
+      }
+
       const uniqueMemberIds = [...new Set((records || []).map(r => r.member_id))];
 
-      // Fetch member details
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          id,
-          member_id,
-          member_type,
-          join_interest,
+          id, member_id, member_type, join_interest,
           profile:profiles!members_profile_id_fkey (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            gender,
-            date_of_birth
+            id, first_name, last_name, email, phone, gender, date_of_birth
           )
         `)
         .in('id', uniqueMemberIds);
-
       if (membersError) throw membersError;
 
-      // Fetch relationships touching these attendees so we can apply the strict child rule
       let attendeeRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (uniqueMemberIds.length > 0) {
         attendeeRelationships = await fetchMemberRelationshipsForMembers(uniqueMemberIds);
       }
-
       const attendeeChildrenSet = buildChildrenSet(
         (members || []).map(m => ({
           id: m.id,
@@ -152,17 +184,26 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
       );
 
       const membersMap = new Map(members?.map(m => [m.id, m]) || []);
+      const recordByMember = new Map<string, typeof records[0]>();
+      for (const r of records || []) {
+        const existing = recordByMember.get(r.member_id);
+        if (!existing || (r.recorded_at && existing.recorded_at && r.recorded_at < existing.recorded_at)) {
+          recordByMember.set(r.member_id, r);
+        }
+      }
 
-      // Build attendees list
       const attendees: EventAttendeeWithDetails[] = uniqueMemberIds.map(memberId => {
-        const record = records?.find(r => r.member_id === memberId);
+        const record = recordByMember.get(memberId);
         const member = membersMap.get(memberId);
+        const daysSet = memberDays.get(memberId) || new Set<number>();
         return {
           id: record?.id || '',
           member_id: memberId,
           is_present: true,
           recorded_at: record?.recorded_at || null,
           is_child: attendeeChildrenSet.has(memberId),
+          days_attended: daysSet.size,
+          days_present: [...daysSet].sort((a, b) => a - b),
           member: member ? {
             id: member.id,
             member_id: member.member_id,
@@ -173,7 +214,6 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
         };
       });
 
-      // Calculate stats — exclude children from member/visitor counts
       const totalAttendees = attendees.length;
       const childrenCount = attendees.filter(a => a.is_child).length;
       const membersCount = attendees.filter(a => !a.is_child && a.member?.member_type === 'member').length;
@@ -183,24 +223,19 @@ export const useEventReport = (eventId?: string, regionId?: string) => {
       const wantToJoin = attendees.filter(a => a.member?.join_interest === 'yes').length;
       const notWantToJoin = attendees.filter(a => a.member?.join_interest === 'no').length;
       const undecided = attendees.filter(a => a.member?.join_interest === 'undecided').length;
-      const attendanceRate = event?.attendance_target && event.attendance_target > 0 
-        ? (totalAttendees / event.attendance_target) * 100 
+      const attendanceRate = event?.attendance_target && event.attendance_target > 0
+        ? (totalAttendees / event.attendance_target) * 100
         : 0;
 
       return {
         event,
         attendees,
+        days,
+        totalDays: days.length,
         stats: {
-          totalAttendees,
-          members: membersCount,
-          visitors: visitorsCount,
-          children: childrenCount,
-          maleCount,
-          femaleCount,
-          wantToJoin,
-          notWantToJoin,
-          undecided,
-          attendanceRate,
+          totalAttendees, members: membersCount, visitors: visitorsCount,
+          children: childrenCount, maleCount, femaleCount,
+          wantToJoin, notWantToJoin, undecided, attendanceRate,
         },
       };
     },
