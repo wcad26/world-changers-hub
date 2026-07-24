@@ -86,6 +86,7 @@ import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
 import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
 import AttendanceScan from "./pages/admin/AttendanceScan";
+import AttendanceLogin from "./pages/AttendanceLogin";
 
 // DCG Portal Routes
 import DcgDashboard from "./pages/dcg/Dashboard";
@@ -241,6 +242,8 @@ const App = () => {
             <Route path="/fundraising/:id/donate" element={<FundraisingDonate />} />
             <Route path="/verify/:verificationCode" element={<CertificateVerify />} />
             <Route path="/attend/:eventId" element={<SelfAttendance />} />
+            <Route path="/attendance/login" element={<AttendanceLogin />} />
+            <Route path="/attendance/scan" element={<AttendanceScan />} />
 
             {/* Auth (login) pages */}
             <Route path="/visitor/register/:regionCode" element={<VisitorRegister />} />

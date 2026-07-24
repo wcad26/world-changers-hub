@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, X, Loader2, Send, CameraOff, ScanLine, Search } from "lucide-react";
+import { ArrowLeft, X, Loader2, Send, CameraOff, ScanLine, Search, LogOut } from "lucide-react";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { useAttendanceScan } from "@/hooks/useAttendanceScan";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +136,17 @@ export default function AttendanceScan() {
             </p>
           </div>
           <Badge variant="secondary" className="shrink-0">{cart.length}</Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Sign out"
+            onClick={async () => {
+              try { await supabase.auth.signOut({ scope: "local" }); } catch {}
+              navigate("/attendance/login", { replace: true });
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
