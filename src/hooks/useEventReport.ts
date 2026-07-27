@@ -54,11 +54,15 @@ export interface EventReportData {
     members: number;
     visitors: number;
     children: number;
+    unknownType: number;
     maleCount: number;
     femaleCount: number;
+    unknownGender: number;
     wantToJoin: number;
     notWantToJoin: number;
     undecided: number;
+    joinInterestNotSpecified: number;
+    visitorsTotal: number;
     attendanceRate: number;
   };
 }
@@ -94,9 +98,10 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
         days: [],
         totalDays: 0,
         stats: {
-          totalAttendees: 0, members: 0, visitors: 0, children: 0,
-          maleCount: 0, femaleCount: 0, wantToJoin: 0, notWantToJoin: 0,
-          undecided: 0, attendanceRate: 0,
+          totalAttendees: 0, members: 0, visitors: 0, children: 0, unknownType: 0,
+          maleCount: 0, femaleCount: 0, unknownGender: 0,
+          wantToJoin: 0, notWantToJoin: 0, undecided: 0,
+          joinInterestNotSpecified: 0, visitorsTotal: 0, attendanceRate: 0,
         },
       };
 
@@ -218,13 +223,18 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
 
       const totalAttendees = attendees.length;
       const childrenCount = attendees.filter(a => a.is_child).length;
-      const membersCount = attendees.filter(a => !a.is_child && a.member?.member_type === 'member').length;
-      const visitorsCount = attendees.filter(a => !a.is_child && a.member?.member_type === 'visitor').length;
+      const nonChild = attendees.filter(a => !a.is_child);
+      const membersCount = nonChild.filter(a => a.member?.member_type === 'member').length;
+      const visitorsCount = nonChild.filter(a => a.member?.member_type === 'visitor').length;
+      const unknownType = nonChild.length - membersCount - visitorsCount;
       const maleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'male').length;
       const femaleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'female').length;
-      const wantToJoin = attendees.filter(a => a.member?.join_interest === 'yes').length;
-      const notWantToJoin = attendees.filter(a => a.member?.join_interest === 'no').length;
-      const undecided = attendees.filter(a => a.member?.join_interest === 'undecided').length;
+      const unknownGender = totalAttendees - maleCount - femaleCount;
+      const visitorsAll = attendees.filter(a => a.member?.member_type === 'visitor');
+      const wantToJoin = visitorsAll.filter(a => a.member?.join_interest === 'yes').length;
+      const notWantToJoin = visitorsAll.filter(a => a.member?.join_interest === 'no').length;
+      const undecided = visitorsAll.filter(a => a.member?.join_interest === 'undecided').length;
+      const joinInterestNotSpecified = visitorsAll.length - wantToJoin - notWantToJoin - undecided;
       const attendanceRate = event?.attendance_target && event.attendance_target > 0
         ? (totalAttendees / event.attendance_target) * 100
         : 0;
@@ -236,8 +246,11 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
         totalDays: days.length,
         stats: {
           totalAttendees, members: membersCount, visitors: visitorsCount,
-          children: childrenCount, maleCount, femaleCount,
-          wantToJoin, notWantToJoin, undecided, attendanceRate,
+          children: childrenCount, unknownType,
+          maleCount, femaleCount, unknownGender,
+          wantToJoin, notWantToJoin, undecided,
+          joinInterestNotSpecified, visitorsTotal: visitorsAll.length,
+          attendanceRate,
         },
       };
     },
