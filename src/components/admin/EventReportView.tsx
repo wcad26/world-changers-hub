@@ -167,23 +167,37 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
             </Card>
           )}
 
-          {/* Day tabs */}
-          {isMultiDay && reportData?.days && (
-            <Tabs value={dayFilter} onValueChange={setDayFilter}>
-              <TabsList className="flex flex-wrap h-auto justify-start">
-                <TabsTrigger value="all">All Days</TabsTrigger>
-                {reportData.days.map(d => {
-                  const today = isSameLocalDate(d.eventDate);
-                  return (
-                    <TabsTrigger key={d.attendanceEventId} value={d.attendanceEventId} className="gap-2">
-                      Day {d.dayIndex} · {format(new Date(d.eventDate), 'MMM d')}
-                      {today && <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">Today</Badge>}
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </Tabs>
-          )}
+          {/* Day tabs / per-day report panel — always visible */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Per-day report</CardTitle>
+              <CardDescription>
+                {isMultiDay
+                  ? "Click a day below to filter the entire report — KPIs, participants, and CSV export — to that day only."
+                  : (reportData?.totalDays === 1
+                      ? "Single-day event · 1 attendance day recorded."
+                      : "No attendance sessions have been recorded for this event yet. Day tabs will appear here once attendance is taken.")}
+              </CardDescription>
+            </CardHeader>
+            {isMultiDay && reportData?.days && (
+              <CardContent className="pt-0">
+                <Tabs value={dayFilter} onValueChange={setDayFilter}>
+                  <TabsList className="flex flex-wrap h-auto justify-start">
+                    <TabsTrigger value="all">All Days</TabsTrigger>
+                    {reportData.days.map(d => {
+                      const today = isSameLocalDate(d.eventDate);
+                      return (
+                        <TabsTrigger key={d.attendanceEventId} value={d.attendanceEventId} className="gap-2">
+                          Day {d.dayIndex} · {format(new Date(d.eventDate), 'MMM d')}
+                          {today && <Badge variant="secondary" className="ml-1 text-[10px] px-1.5 py-0">Today</Badge>}
+                        </TabsTrigger>
+                      );
+                    })}
+                  </TabsList>
+                </Tabs>
+              </CardContent>
+            )}
+          </Card>
 
           {/* Daily attendance breakdown (All Days only) */}
           {isMultiDay && dayFilter === "all" && reportData?.days && (
@@ -237,21 +251,30 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Members vs Visitors</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Composition</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-primary" />
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <div className="flex items-center gap-1">
+                    <UserCheck className="h-4 w-4 text-primary" />
                     <span className="text-xl font-bold">{reportData?.stats.members || 0}</span>
-                    <span className="text-sm text-muted-foreground">Members</span>
+                    <span className="text-xs text-muted-foreground">Members</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <UserPlus className="h-5 w-5 text-accent-foreground" />
+                  <div className="flex items-center gap-1">
+                    <UserPlus className="h-4 w-4 text-accent-foreground" />
                     <span className="text-xl font-bold">{reportData?.stats.visitors || 0}</span>
-                    <span className="text-sm text-muted-foreground">Visitors</span>
+                    <span className="text-xs text-muted-foreground">Visitors</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xl font-bold">{reportData?.stats.children || 0}</span>
+                    <span className="text-xs text-muted-foreground">Children</span>
                   </div>
                 </div>
+                {(reportData?.stats.unknownType || 0) > 0 && (
+                  <Badge variant="outline" className="mt-2 text-xs" title="Attendees whose member/visitor status isn't set">
+                    Unknown type: {reportData!.stats.unknownType}
+                  </Badge>
+                )}
               </CardContent>
             </Card>
 
@@ -270,6 +293,11 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                     <span className="text-sm text-muted-foreground ml-1">Female</span>
                   </div>
                 </div>
+                {(reportData?.stats.unknownGender || 0) > 0 && (
+                  <Badge variant="outline" className="mt-2 text-xs" title="Attendees with no gender recorded">
+                    Unknown: {reportData!.stats.unknownGender}
+                  </Badge>
+                )}
               </CardContent>
             </Card>
 
@@ -282,7 +310,15 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                   <Badge variant="default">{reportData?.stats.wantToJoin || 0} Yes</Badge>
                   <Badge variant="destructive">{reportData?.stats.notWantToJoin || 0} No</Badge>
                   <Badge variant="secondary">{reportData?.stats.undecided || 0} Undecided</Badge>
+                  {(reportData?.stats.joinInterestNotSpecified || 0) > 0 && (
+                    <Badge variant="outline" title="Visitors with no join interest recorded">
+                      {reportData!.stats.joinInterestNotSpecified} Not specified
+                    </Badge>
+                  )}
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Based on {reportData?.stats.visitorsTotal || 0} visitors
+                </p>
               </CardContent>
             </Card>
           </div>
