@@ -54,11 +54,15 @@ export interface EventReportData {
     members: number;
     visitors: number;
     children: number;
+    unknownType: number;
     maleCount: number;
     femaleCount: number;
+    unknownGender: number;
     wantToJoin: number;
     notWantToJoin: number;
     undecided: number;
+    joinInterestNotSpecified: number;
+    visitorsTotal: number;
     attendanceRate: number;
   };
 }
