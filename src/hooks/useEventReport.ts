@@ -241,6 +241,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
         },
       };
     },
-    enabled: !!eventId && !!regionId,
+    enabled: !!eventId,
   });
 };
+
