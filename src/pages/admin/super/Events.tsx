@@ -14,7 +14,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   CalendarDays, Search, Plus, MoreHorizontal, Edit, UserCheck, Eye, EyeOff,
   Link2, Copy, Trash2, Globe, Star, Layers, Target, TrendingUp, TrendingDown,
-  ChevronDown, X, Languages,
+  ChevronDown, X, Languages, BarChart2,
+
 } from "lucide-react";
 import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateGlobalEvent } from "@/hooks/useGlobalEvents";
 import { useAllRegions } from "@/hooks/useAllRegions";
