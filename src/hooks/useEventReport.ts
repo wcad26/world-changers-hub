@@ -63,12 +63,12 @@ export interface EventReportData {
   };
 }
 
-export const useEventReport = (eventId?: string, regionId?: string, dayEventId?: string) => {
+export const useEventReport = (eventId?: string, regionId?: string | null, dayEventId?: string) => {
   return useQuery({
-    queryKey: ['event_report', eventId, regionId, dayEventId || 'all'],
+    queryKey: ['event_report', eventId, regionId ?? 'any', dayEventId || 'all'],
     queryFn: async (): Promise<EventReportData> => {
-      if (!eventId || !regionId) {
-        throw new Error('Event ID and Region ID are required');
+      if (!eventId) {
+        throw new Error('Event ID is required');
       }
 
       const { data: event, error: eventError } = await supabase
@@ -79,12 +79,14 @@ export const useEventReport = (eventId?: string, regionId?: string, dayEventId?:
       if (eventError) throw eventError;
 
       // All attendance_events linked to this source event
-      const { data: attendanceEvents, error: aeError } = await supabase
+      let aeQuery = supabase
         .from('attendance_events')
         .select('id, event_date, day_index, name, parent_event_id')
-        .eq('source_event_id', eventId)
-        .eq('region_id', regionId);
+        .eq('source_event_id', eventId);
+      if (regionId) aeQuery = aeQuery.eq('region_id', regionId);
+      const { data: attendanceEvents, error: aeError } = await aeQuery;
       if (aeError) throw aeError;
+
 
       const empty: EventReportData = {
         event,
