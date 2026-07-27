@@ -83,6 +83,8 @@ import HomepageSettings from "./pages/admin/super/HomepageSettings";
 
 import SuperCertificates from "./pages/admin/super/Certificates";
 import SuperSpecialEventReport from "./pages/admin/super/SpecialEventReport";
+import SuperEventReport from "./pages/admin/super/EventReport";
+
 import SuperFundraisingCampaignReport from "./pages/admin/super/FundraisingCampaignReport";
 import SelfAttendance from "./pages/SelfAttendance";
 import AttendanceScan from "./pages/admin/AttendanceScan";
@@ -270,7 +272,9 @@ const App = () => {
                 <Route path="members" element={<SuperAdminPage><SuperMembers /></SuperAdminPage>} />
                 <Route path="members/:memberId" element={<SuperAdminPage><SuperMemberProfile /></SuperAdminPage>} />
                 <Route path="events" element={<SuperAdminPage><SuperEvents /></SuperAdminPage>} />
+                <Route path="events/:eventId/report" element={<SuperAdminPage><SuperEventReport /></SuperAdminPage>} />
                 <Route path="events/:eventId/special-report" element={<SuperAdminPage><SuperSpecialEventReport /></SuperAdminPage>} />
+
                 <Route path="fundraising" element={<Navigate to="/admin/super/finances" replace />} />
                 <Route path="locations" element={<SuperAdminPage><SuperLocations /></SuperAdminPage>} />
                 <Route path="finances" element={<SuperAdminPage><SuperFinances /></SuperAdminPage>} />

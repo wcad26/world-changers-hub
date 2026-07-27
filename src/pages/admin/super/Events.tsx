@@ -1411,7 +1411,9 @@ const SuperEvents: React.FC = () => {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEditDialog(event)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/admin/super/events/${event.id}/report`)}><BarChart2 className="mr-2 h-4 w-4" />View Report</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyAttendanceLink(event)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
+
                           {event.is_special && (
                             <>
                               <DropdownMenuItem onClick={() => {
