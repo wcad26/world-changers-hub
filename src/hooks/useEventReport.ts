@@ -98,9 +98,10 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
         days: [],
         totalDays: 0,
         stats: {
-          totalAttendees: 0, members: 0, visitors: 0, children: 0,
-          maleCount: 0, femaleCount: 0, wantToJoin: 0, notWantToJoin: 0,
-          undecided: 0, attendanceRate: 0,
+          totalAttendees: 0, members: 0, visitors: 0, children: 0, unknownType: 0,
+          maleCount: 0, femaleCount: 0, unknownGender: 0,
+          wantToJoin: 0, notWantToJoin: 0, undecided: 0,
+          joinInterestNotSpecified: 0, visitorsTotal: 0, attendanceRate: 0,
         },
       };
 
