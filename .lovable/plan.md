@@ -1,99 +1,61 @@
+## Root cause (verified)
 
-## Goal
+DESCO CMR 2026 runs Jul 27 → Aug 2 (7 days), but only **one** `attendance_events` row exists for it:
 
-Fix two related issues on the Event Report page (used by both Super Admin and Regional):
-1. **KPI numbers don't add up** because attendees with missing/unknown attributes are silently dropped from the sub-totals.
-2. **Multi-day tabs are invisible** when the event only has one attendance day, and the user cannot tell where per-day reporting lives.
+- `id: 46e16b91…`, `event_date: 2026-07-27`, `day_index: NULL`, `parent_event_id: NULL`
 
-Only presentation and the report hook's stats aggregation change. No schema, no attendance-recording changes.
+There are no child day rows, so:
+- The scanner's day picker has nothing to switch to — every scan is written against the Jul 27 session, regardless of which day it actually is.
+- The Event Report shows "Single-day event · 1 attendance day recorded" (matches your earlier screenshot).
 
----
+The scanner code itself already supports day tabs (`parent + children` model in `AttendanceScan.tsx`), and the report already recomputes per day. The missing piece is the **day rows in the database** and a way for admins to create them without hand-writing SQL.
 
-## What's wrong today (verified against your DESCO screenshot)
+## Fix
 
-`src/hooks/useEventReport.ts` computes:
-- `members` = attendees where `member_type === 'member'` AND not child
-- `visitors` = attendees where `member_type === 'visitor'` AND not child
-- `maleCount` / `femaleCount` = strict gender match
-- `wantToJoin` / `notWantToJoin` / `undecided` = strict `join_interest` match
+### 1. Backfill DESCO's day sessions (one-off migration)
 
-Anything else (null gender, `child` type, `member_type` outside those two, null `join_interest`) is silently dropped. Result on DESCO: 36 + 19 = 55 out of 82, 22 + 56 = 78 out of 82, 7 + 0 + 7 = 14 out of 19 visitors. The KPI cards look wrong.
+Convert the existing single attendance_event into the Day 1 parent, then create Day 2–7 children:
 
-Multi-day: `EventReportView.tsx` already renders day tabs and a "Daily Attendance" breakdown table, but ONLY when `totalDays > 1`. DESCO currently has a single attendance_event linked, so tabs never render and there's no hint that the feature exists.
+```
+UPDATE attendance_events
+SET day_index = 1, name = 'DESCO CMR 2026 — Day 1'
+WHERE id = '46e16b91-d621-44dd-8a43-a5a1139030ca';
 
----
-
-## Changes
-
-### 1. `src/hooks/useEventReport.ts` — extend stats with unknowns
-
-Add to `EventReportData.stats`:
-- `childrenCount` (already there as `children`)
-- `unknownType` — attendees with neither `member` nor `visitor` (excluding children)
-- `unknownGender` — attendees with no gender or gender outside male/female
-- `visitorsTotal` — count of visitors (denominator for join interest)
-- `joinInterestNotSpecified` — visitors with null/blank `join_interest` (already computable but not surfaced)
-
-Invariant to preserve: `members + visitors + children + unknownType === totalAttendees`.
-
-### 2. `src/components/admin/EventReportView.tsx` — accurate KPI cards
-
-Rework the 4 KPI cards so every count is reconciled to the total:
-
-- **Total Attendees**: unchanged, still shows target %.
-- **Composition** (renamed from "Members vs Visitors"): show Members / Visitors / Children, and a small muted `+N unknown type` chip when > 0 (with tooltip "Attendees whose member/visitor status isn't set").
-- **Gender Distribution**: show Male / Female, and a muted `Unknown: N` badge when > 0.
-- **Join Interest (Visitors)**: show Yes / No / Undecided, and add a `Not specified: N` badge. Sub-line: `Based on N visitors`.
-
-Rule: whenever a count > 0 exists in an "unknown/not specified" bucket, render it visibly (muted badge) instead of hiding it. This is the "indicate unknowns" behavior you asked for.
-
-### 3. Make multi-day tabs & per-day reporting discoverable
-
-Currently tabs only appear when `totalDays > 1`. Improve visibility in three ways:
-
-a. **Always render a "Days" panel** above the KPI cards, right under the event summary:
-   - Multi-day (>1 attendance_event linked): render the existing `Tabs` (All Days · Day 1 · Day 2 …) with a small header "Per-day report — click a day to filter this entire report to that day."
-   - Single-day: render a compact info line: "Single-day event · 1 attendance day recorded" — no tabs.
-   - Zero attendance days: render an amber alert: "No attendance sessions have been recorded for this event yet. Days will appear here once attendance is taken."
-
-b. **Add a `Day` column to the Daily Attendance table** header note: "Click a day above to filter the participants list and KPIs to that day only."
-
-c. **Filter chip near the Participants title** when `dayFilter !== 'all'`: `Filtered to Day X (date) · Clear` — clarifies which slice you're reading and how to get back to the aggregate.
-
-### 4. Per-day separation confirmation
-
-The existing hook already re-queries `attendance_records` scoped to the selected `dayEventId`, so KPIs, participants table, and CSV export all recompute per day when a day tab is active. Verify and keep. The CSV filename already includes `-dayN`. No change needed beyond making sure the new "unknown" buckets recompute per day too (they will, since they're derived from the same filtered attendee set).
-
----
-
-## Where multi-day tabs will appear
-
-On the Event Report page (both `/admin/super/events/:eventId/report` and `/admin/regional/events/:eventId/report`), directly under the event summary card and above the KPI cards:
-
-```text
-┌─ Event summary (name, date, location) ──────────────┐
-├─ Per-day report ────────────────────────────────────┤
-│  [ All Days ] [ Day 1 · Jul 27 ] [ Day 2 · Jul 28 ] │  ← click to filter
-├─ Daily Attendance breakdown (only on All Days) ─────┤
-├─ KPI cards (recompute per selected day) ────────────┤
-└─ Participants table + filters + CSV ────────────────┘
+INSERT INTO attendance_events (name, event_date, day_index, parent_event_id, source_event_id, region_id, created_by)
+SELECT 'DESCO CMR 2026 — Day ' || d, ('2026-07-27'::date + (d-1)), d,
+       '46e16b91-d621-44dd-8a43-a5a1139030ca', '078aff4a-8910-4332-90b4-8f41d9026cf6', NULL, created_by
+FROM attendance_events, generate_series(2,7) AS d
+WHERE id = '46e16b91-d621-44dd-8a43-a5a1139030ca';
 ```
 
-For DESCO to actually show multiple day tabs, DESCO must have multiple `attendance_events` rows linked via `source_event_id`. Today's data controls how many tabs appear — the UI is ready.
+Result: scanner immediately shows a Day dropdown with Day 1 (Jul 27) … Day 7 (Aug 2). Existing scans from Jul 27 remain attached to Day 1. Day 2 badges scanned today will land on Day 2.
 
----
+### 2. General: auto-create day sessions for any multi-day event
+
+To prevent this happening again for other multi-day events:
+
+- Add a helper in `src/pages/admin/AttendanceScan.tsx`: when the selected root `attendance_event` maps to a source `events` row whose `end_datetime` date > `start_datetime` date AND no child days exist, show a small **"Set up N-day sessions"** button. Clicking it inserts the day rows (parent → children, day_index 1..N) using dates derived from the source event's date range.
+- Same button also appears when children exist but today's date is missing (e.g., event extended). It inserts only the missing days.
+
+### 3. Scanner UX guardrails (small tweaks in `AttendanceScan.tsx`)
+
+- If children exist and none matches today, keep the current yellow "Today's date is outside the event schedule" banner but also **auto-select the day matching today** on load (currently done — verify it works with the new day rows).
+- Add a tiny caption under the Day selector: `Scans will be recorded against: Day X — <date>` so the operator sees the exact target before submitting.
+
+### 4. Verify
+
+After the migration:
+- Open `/attendance/scan`, pick DESCO — Day dropdown should list 7 days, default to today (Day 2 = Jul 28 while testing).
+- Scan a badge, submit, then open the Super Admin Event Report — the Per-day report card should show tabs for Day 1..7, and the Day 2 tab should show the newly scanned attendee.
 
 ## Files touched
 
-- `src/hooks/useEventReport.ts` — add unknown/not-specified fields to stats.
-- `src/components/admin/EventReportView.tsx` — new KPI card layout with unknown chips, always-visible Days panel, filter chip, "click a day" helper text.
+- New migration: backfill DESCO Day 1 rename + insert Day 2–7 children.
+- `src/pages/admin/AttendanceScan.tsx`: "Set up N-day sessions" action + confirm caption under Day selector.
 
-No changes to attendance recording, edge functions, or DB.
-
----
+No changes to the report page or edge functions — they already handle multi-day correctly once the day rows exist.
 
 ## Out of scope
 
-- Backfilling missing gender/DOB/join_interest on existing profiles.
-- Splitting a single-day event into multiple days (that's a data setup task, not a report bug).
-- Redesigning the Participants table columns beyond the new "Days Attended" already present.
+- Automatic day creation on event creation (can be added later; for now it's a one-click admin action).
+- Editing individual day names/dates (Day rows can be edited directly in Supabase if needed).
