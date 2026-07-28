@@ -206,11 +206,14 @@ export default function AttendanceScan() {
                     <SelectValue placeholder={showAll ? "Select event…" : "Today's event"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {rootEvents.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.name}{showAll ? ` — ${e.event_date}` : ""}
-                      </SelectItem>
-                    ))}
+                    {rootEvents.map((e) => {
+                      const label = e.name.replace(/\s*—\s*Day\s*\d+\s*$/i, "");
+                      return (
+                        <SelectItem key={e.id} value={e.id}>
+                          {label}{showAll ? ` — ${e.event_date}` : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 {days.length > 0 && (
