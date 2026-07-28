@@ -18,8 +18,13 @@ type EventRow = {
   event_date: string;
   region_id: string | null;
   parent_event_id: string | null;
+  source_event_id: string | null;
   day_index: number | null;
 };
+
+// Group key: use the source event id when set (so all days of a multi-day event group
+// together), otherwise fall back to the attendance_event's own id.
+const groupKey = (e: EventRow) => e.source_event_id || e.id;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -40,33 +45,51 @@ export default function AttendanceScan() {
     (async () => {
       let query = supabase
         .from("attendance_events")
-        .select("id, name, event_date, region_id, parent_event_id, day_index")
+        .select("id, name, event_date, region_id, parent_event_id, source_event_id, day_index")
         .order("event_date", { ascending: false });
       // TEMP: include today + future events so upcoming DESCO can be tested with the scanner.
       if (!showAll) query = query.gte("event_date", today());
-      const { data } = await query.limit(showAll ? 200 : 50);
+      const { data } = await query.limit(showAll ? 400 : 200);
       setEvents((data as any) || []);
     })();
   }, [user?.id, showAll]);
 
-  // Auto-select when there is exactly one event today.
+  // Auto-select when there is exactly one event group.
   useEffect(() => {
-    const roots = events.filter((e) => !e.parent_event_id);
-    if (!selectedEventId && roots.length === 1) {
-      setSelectedEventId(roots[0].id);
+    const groups = Array.from(new Set(events.map(groupKey)));
+    if (!selectedEventId && groups.length === 1) {
+      // Pick the day 1 (or earliest) row within the group as the "root".
+      const inGroup = events
+        .filter((e) => groupKey(e) === groups[0])
+        .sort((a, b) => (a.day_index ?? 99) - (b.day_index ?? 99));
+      if (inGroup[0]) setSelectedEventId(inGroup[0].id);
     }
   }, [events, selectedEventId]);
 
-  const rootEvents = useMemo(() => events.filter((e) => !e.parent_event_id), [events]);
+  // One entry per group for the picker; label uses the earliest day's name.
+  const rootEvents = useMemo(() => {
+    const byGroup = new Map<string, EventRow>();
+    for (const e of events) {
+      const key = groupKey(e);
+      const cur = byGroup.get(key);
+      if (!cur || (e.day_index ?? 99) < (cur.day_index ?? 99)) byGroup.set(key, e);
+    }
+    return Array.from(byGroup.values());
+  }, [events]);
 
+  // All days for the selected group (a "day" is any attendance_event sharing the group key).
   const days = useMemo(() => {
     if (!selectedEventId) return [] as EventRow[];
-    const parent = events.find((e) => e.id === selectedEventId);
-    if (!parent) return [];
-    const children = events.filter((e) => e.parent_event_id === parent.id);
-    return children.length > 0
-      ? [parent, ...children].sort((a, b) => (a.day_index || 0) - (b.day_index || 0))
-      : [];
+    const selected = events.find((e) => e.id === selectedEventId);
+    if (!selected) return [];
+    const key = groupKey(selected);
+    const siblings = events.filter((e) => groupKey(e) === key);
+    if (siblings.length <= 1) return [];
+    return siblings.slice().sort((a, b) => {
+      const ai = a.day_index ?? 99, bi = b.day_index ?? 99;
+      if (ai !== bi) return ai - bi;
+      return (a.event_date || "").localeCompare(b.event_date || "");
+    });
   }, [selectedEventId, events]);
   const [dayEventId, setDayEventId] = useState<string>("");
   useEffect(() => {
@@ -83,7 +106,7 @@ export default function AttendanceScan() {
   const currentDay = days.find((d) => d.id === dayEventId);
   const totalDays = days.length;
   const parentEvent = events.find((e) => e.id === selectedEventId);
-  const activeEventName = parentEvent?.name || currentDay?.name || "";
+  const activeEventName = (parentEvent?.name || currentDay?.name || "").replace(/\s*—\s*Day\s*\d+\s*$/i, "");
   const activeEventDate = currentDay?.event_date || parentEvent?.event_date;
   const todayMatchesADay = totalDays === 0 ? true : days.some((d) => d.event_date === today());
 
@@ -183,11 +206,14 @@ export default function AttendanceScan() {
                     <SelectValue placeholder={showAll ? "Select event…" : "Today's event"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {rootEvents.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.name}{showAll ? ` — ${e.event_date}` : ""}
-                      </SelectItem>
-                    ))}
+                    {rootEvents.map((e) => {
+                      const label = e.name.replace(/\s*—\s*Day\s*\d+\s*$/i, "");
+                      return (
+                        <SelectItem key={e.id} value={e.id}>
+                          {label}{showAll ? ` — ${e.event_date}` : ""}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 {days.length > 0 && (
