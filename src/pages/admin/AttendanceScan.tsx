@@ -18,8 +18,13 @@ type EventRow = {
   event_date: string;
   region_id: string | null;
   parent_event_id: string | null;
+  source_event_id: string | null;
   day_index: number | null;
 };
+
+// Group key: use the source event id when set (so all days of a multi-day event group
+// together), otherwise fall back to the attendance_event's own id.
+const groupKey = (e: EventRow) => e.source_event_id || e.id;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
