@@ -175,13 +175,27 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          id, member_id, member_type, join_interest,
+          id, member_id, member_type, join_interest, region_id,
           profile:profiles!members_profile_id_fkey (
             id, first_name, last_name, email, phone, gender, date_of_birth
           )
         `)
         .in('id', uniqueMemberIds);
       if (membersError) throw membersError;
+
+      const attendeeRegionIds = [...new Set((members || []).map(m => m.region_id).filter(Boolean))] as string[];
+      let regionNameMap = new Map<string, string>();
+      if (attendeeRegionIds.length > 0) {
+        const { data: regionRows } = await supabase
+          .from('regions')
+          .select('id, name')
+          .in('id', attendeeRegionIds);
+        regionNameMap = new Map((regionRows || []).map(r => [r.id, r.name]));
+      }
+      const regions = attendeeRegionIds
+        .map(id => ({ id, name: regionNameMap.get(id) || 'Unknown' }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
 
       let attendeeRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (uniqueMemberIds.length > 0) {
