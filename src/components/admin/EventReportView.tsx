@@ -78,6 +78,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         })()
       : "";
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Member Type', 'Member ID', 'Join Interest'];
+    if (showRegionFilter) headers.splice(5, 0, 'Region');
     if (isMultiDay && dayFilter === "all") headers.push('Days Attended', 'Days Present');
     const rows = filteredAttendees.map(a => {
       const base = [
@@ -86,6 +87,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         a.member?.profile?.phone || '',
         a.member?.profile?.gender || '',
         a.member?.member_type || '',
+        ...(showRegionFilter ? [a.region_name || ''] : []),
         a.member?.member_id || '',
         a.member?.join_interest || 'not_specified',
       ];
