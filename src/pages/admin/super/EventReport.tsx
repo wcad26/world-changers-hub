@@ -30,6 +30,7 @@ const SuperEventReport: React.FC = () => {
       eventId={eventId}
       regionId={eventMeta?.region_id ?? null}
       backTo="/admin/super/events"
+      showRegionFilter
       headerSuffix={
         eventMeta ? (
           eventMeta.region_id ? (

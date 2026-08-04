@@ -19,11 +19,14 @@ export interface EventAttendeeWithDetails {
   is_child?: boolean;
   days_attended: number;
   days_present: number[]; // day_index values where member was marked present
+  region_id?: string | null;
+  region_name?: string | null;
   member: {
     id: string;
     member_id: string;
     member_type: string;
     join_interest: string | null;
+    region_id?: string | null;
     profile: {
       id: string;
       first_name: string | null;
@@ -47,6 +50,7 @@ export interface EventReportData {
     attendance_target: number | null;
   } | null;
   attendees: EventAttendeeWithDetails[];
+  regions: { id: string; name: string }[];
   days: EventReportDay[];
   totalDays: number;
   stats: {
@@ -95,6 +99,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const empty: EventReportData = {
         event,
         attendees: [],
+        regions: [],
         days: [],
         totalDays: 0,
         stats: {
@@ -170,13 +175,27 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          id, member_id, member_type, join_interest,
+          id, member_id, member_type, join_interest, region_id,
           profile:profiles!members_profile_id_fkey (
             id, first_name, last_name, email, phone, gender, date_of_birth
           )
         `)
         .in('id', uniqueMemberIds);
       if (membersError) throw membersError;
+
+      const attendeeRegionIds = [...new Set((members || []).map(m => m.region_id).filter(Boolean))] as string[];
+      let regionNameMap = new Map<string, string>();
+      if (attendeeRegionIds.length > 0) {
+        const { data: regionRows } = await supabase
+          .from('regions')
+          .select('id, name')
+          .in('id', attendeeRegionIds);
+        regionNameMap = new Map((regionRows || []).map(r => [r.id, r.name]));
+      }
+      const regions = attendeeRegionIds
+        .map(id => ({ id, name: regionNameMap.get(id) || 'Unknown' }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
 
       let attendeeRelationships: Array<{ member_id: string; related_member_id: string }> = [];
       if (uniqueMemberIds.length > 0) {
@@ -211,11 +230,14 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
           is_child: attendeeChildrenSet.has(memberId),
           days_attended: daysSet.size,
           days_present: [...daysSet].sort((a, b) => a - b),
+          region_id: (member as any)?.region_id ?? null,
+          region_name: (member as any)?.region_id ? (regionNameMap.get((member as any).region_id) || null) : null,
           member: member ? {
             id: member.id,
             member_id: member.member_id,
             member_type: member.member_type,
             join_interest: member.join_interest,
+            region_id: (member as any).region_id ?? null,
             profile: member.profile as EventAttendeeWithDetails['member']['profile'],
           } : null,
         };
@@ -242,6 +264,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       return {
         event,
         attendees,
+        regions,
         days,
         totalDays: days.length,
         stats: {

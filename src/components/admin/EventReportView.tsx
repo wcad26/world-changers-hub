@@ -18,6 +18,7 @@ interface Props {
   regionId?: string | null;
   backTo: string;
   headerSuffix?: React.ReactNode;
+  showRegionFilter?: boolean;
 }
 
 const isSameLocalDate = (iso: string) => {
@@ -30,11 +31,11 @@ const isSameLocalDate = (iso: string) => {
   } catch { return false; }
 };
 
-const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuffix }) => {
+const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuffix, showRegionFilter }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [genderFilter, setGenderFilter] = useState<string>("all");
-  const [joinInterestFilter, setJoinInterestFilter] = useState<string>("all");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
   const [dayFilter, setDayFilter] = useState<string>("all");
 
@@ -44,6 +45,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
     dayFilter !== "all" ? dayFilter : undefined,
   );
   const isMultiDay = (reportData?.totalDays || 0) > 1;
+  const regionOptions = reportData?.regions || [];
 
   const filteredAttendees = useMemo(() => {
     if (!reportData?.attendees) return [];
@@ -57,22 +59,15 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         email.includes(searchTerm.toLowerCase()) ||
         memberId.includes(searchTerm.toLowerCase());
       const matchesGender = genderFilter === "all" || profile?.gender?.toLowerCase() === genderFilter.toLowerCase();
-      const joinInterest = attendee.member?.join_interest || 'not_specified';
-      const matchesJoinInterest = joinInterestFilter === "all" || joinInterest === joinInterestFilter;
       const memberType = attendee.member?.member_type || '';
       const matchesMemberType = memberTypeFilter === "all" || memberType === memberTypeFilter;
-      return matchesSearch && matchesGender && matchesJoinInterest && matchesMemberType;
+      const matchesRegion = !showRegionFilter || regionFilter === "all" || attendee.region_id === regionFilter;
+      return matchesSearch && matchesGender && matchesMemberType && matchesRegion;
     });
-  }, [reportData?.attendees, searchTerm, genderFilter, joinInterestFilter, memberTypeFilter]);
+  }, [reportData?.attendees, searchTerm, genderFilter, memberTypeFilter, regionFilter, showRegionFilter]);
 
-  const getJoinInterestBadge = (joinInterest: string | null | undefined) => {
-    switch (joinInterest) {
-      case 'yes': return <Badge className="bg-primary hover:bg-primary/90">Yes - Wants to Join</Badge>;
-      case 'no': return <Badge variant="destructive">No</Badge>;
-      case 'undecided': return <Badge variant="secondary">Undecided</Badge>;
-      default: return <Badge variant="outline">Not Specified</Badge>;
-    }
-  };
+
+
 
   const exportToCSV = () => {
     if (!filteredAttendees.length) return;
@@ -83,6 +78,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         })()
       : "";
     const headers = ['Name', 'Email', 'Phone', 'Gender', 'Member Type', 'Member ID', 'Join Interest'];
+    if (showRegionFilter) headers.splice(5, 0, 'Region');
     if (isMultiDay && dayFilter === "all") headers.push('Days Attended', 'Days Present');
     const rows = filteredAttendees.map(a => {
       const base = [
@@ -91,6 +87,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         a.member?.profile?.phone || '',
         a.member?.profile?.gender || '',
         a.member?.member_type || '',
+        ...(showRegionFilter ? [a.region_name || ''] : []),
         a.member?.member_id || '',
         a.member?.join_interest || 'not_specified',
       ];
@@ -369,16 +366,17 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                     <SelectItem value="female">Female</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={joinInterestFilter} onValueChange={setJoinInterestFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Join Interest" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Interests</SelectItem>
-                    <SelectItem value="yes">Wants to Join</SelectItem>
-                    <SelectItem value="no">Doesn't Want to Join</SelectItem>
-                    <SelectItem value="undecided">Undecided</SelectItem>
-                    <SelectItem value="not_specified">Not Specified</SelectItem>
-                  </SelectContent>
-                </Select>
+                {showRegionFilter && (
+                  <Select value={regionFilter} onValueChange={setRegionFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Region" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Regions</SelectItem>
+                      {regionOptions.map(r => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -397,8 +395,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                         <TableHead>Phone</TableHead>
                         <TableHead>Gender</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Member ID</TableHead>
-                        <TableHead>Join Interest</TableHead>
+                        {showRegionFilter && <TableHead>Region</TableHead>}
                         {isMultiDay && dayFilter === "all" && (
                           <TableHead className="text-right">Days Attended</TableHead>
                         )}
@@ -418,8 +415,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                               {attendee.member?.member_type === 'visitor' ? 'Visitor' : 'Member'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{attendee.member?.member_id || '-'}</TableCell>
-                          <TableCell>{getJoinInterestBadge(attendee.member?.join_interest)}</TableCell>
+                          {showRegionFilter && <TableCell>{attendee.region_name || '-'}</TableCell>}
                           {isMultiDay && dayFilter === "all" && (
                             <TableCell className="text-right">
                               <Badge variant="outline">
