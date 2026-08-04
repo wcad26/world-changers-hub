@@ -66,14 +66,8 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
     });
   }, [reportData?.attendees, searchTerm, genderFilter, memberTypeFilter, regionFilter, showRegionFilter]);
 
-  const getJoinInterestBadge = (joinInterest: string | null | undefined) => {
-    switch (joinInterest) {
-      case 'yes': return <Badge className="bg-primary hover:bg-primary/90">Yes - Wants to Join</Badge>;
-      case 'no': return <Badge variant="destructive">No</Badge>;
-      case 'undecided': return <Badge variant="secondary">Undecided</Badge>;
-      default: return <Badge variant="outline">Not Specified</Badge>;
-    }
-  };
+
+
 
   const exportToCSV = () => {
     if (!filteredAttendees.length) return;
