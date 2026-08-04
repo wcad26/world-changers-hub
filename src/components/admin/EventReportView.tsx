@@ -31,11 +31,11 @@ const isSameLocalDate = (iso: string) => {
   } catch { return false; }
 };
 
-const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuffix }) => {
+const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuffix, showRegionFilter }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [genderFilter, setGenderFilter] = useState<string>("all");
-  const [joinInterestFilter, setJoinInterestFilter] = useState<string>("all");
+  const [regionFilter, setRegionFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
   const [dayFilter, setDayFilter] = useState<string>("all");
 
@@ -45,6 +45,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
     dayFilter !== "all" ? dayFilter : undefined,
   );
   const isMultiDay = (reportData?.totalDays || 0) > 1;
+  const regionOptions = reportData?.regions || [];
 
   const filteredAttendees = useMemo(() => {
     if (!reportData?.attendees) return [];
@@ -58,13 +59,12 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         email.includes(searchTerm.toLowerCase()) ||
         memberId.includes(searchTerm.toLowerCase());
       const matchesGender = genderFilter === "all" || profile?.gender?.toLowerCase() === genderFilter.toLowerCase();
-      const joinInterest = attendee.member?.join_interest || 'not_specified';
-      const matchesJoinInterest = joinInterestFilter === "all" || joinInterest === joinInterestFilter;
       const memberType = attendee.member?.member_type || '';
       const matchesMemberType = memberTypeFilter === "all" || memberType === memberTypeFilter;
-      return matchesSearch && matchesGender && matchesJoinInterest && matchesMemberType;
+      const matchesRegion = !showRegionFilter || regionFilter === "all" || attendee.region_id === regionFilter;
+      return matchesSearch && matchesGender && matchesMemberType && matchesRegion;
     });
-  }, [reportData?.attendees, searchTerm, genderFilter, joinInterestFilter, memberTypeFilter]);
+  }, [reportData?.attendees, searchTerm, genderFilter, memberTypeFilter, regionFilter, showRegionFilter]);
 
   const getJoinInterestBadge = (joinInterest: string | null | undefined) => {
     switch (joinInterest) {
