@@ -370,16 +370,17 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                     <SelectItem value="female">Female</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={joinInterestFilter} onValueChange={setJoinInterestFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Join Interest" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Interests</SelectItem>
-                    <SelectItem value="yes">Wants to Join</SelectItem>
-                    <SelectItem value="no">Doesn't Want to Join</SelectItem>
-                    <SelectItem value="undecided">Undecided</SelectItem>
-                    <SelectItem value="not_specified">Not Specified</SelectItem>
-                  </SelectContent>
-                </Select>
+                {showRegionFilter && (
+                  <Select value={regionFilter} onValueChange={setRegionFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Region" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Regions</SelectItem>
+                      {regionOptions.map(r => (
+                        <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </CardHeader>
             <CardContent>
