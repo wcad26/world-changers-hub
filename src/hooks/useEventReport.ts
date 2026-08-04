@@ -264,6 +264,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       return {
         event,
         attendees,
+        regions,
         days,
         totalDays: days.length,
         stats: {
