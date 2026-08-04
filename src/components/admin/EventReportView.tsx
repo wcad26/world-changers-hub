@@ -399,8 +399,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                         <TableHead>Phone</TableHead>
                         <TableHead>Gender</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Member ID</TableHead>
-                        <TableHead>Join Interest</TableHead>
+                        {showRegionFilter && <TableHead>Region</TableHead>}
                         {isMultiDay && dayFilter === "all" && (
                           <TableHead className="text-right">Days Attended</TableHead>
                         )}
