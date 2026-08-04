@@ -18,6 +18,7 @@ interface Props {
   regionId?: string | null;
   backTo: string;
   headerSuffix?: React.ReactNode;
+  showRegionFilter?: boolean;
 }
 
 const isSameLocalDate = (iso: string) => {
