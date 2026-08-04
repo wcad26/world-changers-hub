@@ -99,6 +99,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const empty: EventReportData = {
         event,
         attendees: [],
+        regions: [],
         days: [],
         totalDays: 0,
         stats: {
