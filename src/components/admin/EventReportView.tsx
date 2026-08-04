@@ -419,8 +419,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                               {attendee.member?.member_type === 'visitor' ? 'Visitor' : 'Member'}
                             </Badge>
                           </TableCell>
-                          <TableCell className="font-mono text-sm">{attendee.member?.member_id || '-'}</TableCell>
-                          <TableCell>{getJoinInterestBadge(attendee.member?.join_interest)}</TableCell>
+                          {showRegionFilter && <TableCell>{attendee.region_name || '-'}</TableCell>}
                           {isMultiDay && dayFilter === "all" && (
                             <TableCell className="text-right">
                               <Badge variant="outline">
