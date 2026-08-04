@@ -230,11 +230,14 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
           is_child: attendeeChildrenSet.has(memberId),
           days_attended: daysSet.size,
           days_present: [...daysSet].sort((a, b) => a - b),
+          region_id: (member as any)?.region_id ?? null,
+          region_name: (member as any)?.region_id ? (regionNameMap.get((member as any).region_id) || null) : null,
           member: member ? {
             id: member.id,
             member_id: member.member_id,
             member_type: member.member_type,
             join_interest: member.join_interest,
+            region_id: (member as any).region_id ?? null,
             profile: member.profile as EventAttendeeWithDetails['member']['profile'],
           } : null,
         };
