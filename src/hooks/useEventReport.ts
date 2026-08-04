@@ -50,6 +50,7 @@ export interface EventReportData {
     attendance_target: number | null;
   } | null;
   attendees: EventAttendeeWithDetails[];
+  regions: { id: string; name: string }[];
   days: EventReportDay[];
   totalDays: number;
   stats: {
