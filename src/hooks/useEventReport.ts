@@ -19,11 +19,14 @@ export interface EventAttendeeWithDetails {
   is_child?: boolean;
   days_attended: number;
   days_present: number[]; // day_index values where member was marked present
+  region_id?: string | null;
+  region_name?: string | null;
   member: {
     id: string;
     member_id: string;
     member_type: string;
     join_interest: string | null;
+    region_id?: string | null;
     profile: {
       id: string;
       first_name: string | null;
