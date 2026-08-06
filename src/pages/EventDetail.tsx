@@ -44,7 +44,7 @@ export default function EventDetail() {
   const isLoading = isEventIdUUID ? isLoadingById : isLoadingBySlug;
   const error = isEventIdUUID ? errorById : errorBySlug;
   
-  const { localizedField, t } = useLanguage();
+  const { localizedField, t, language } = useLanguage();
   
 
   const getStatusBadge = () => {
