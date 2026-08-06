@@ -617,6 +617,7 @@ const RegionalEvents: React.FC = () => {
           content_fr: t.content_fr || null,
           rating: t.rating,
           display_order: index,
+          status: 'approved',
         }));
         
         const { error: testimonialError } = await supabase
@@ -819,6 +820,7 @@ const RegionalEvents: React.FC = () => {
             content_fr: t.content_fr,
             rating: t.rating,
             display_order: idx,
+            status: 'approved',
           }))
         );
       }
@@ -1222,6 +1224,7 @@ const RegionalEvents: React.FC = () => {
           content_fr: t.content_fr || null,
           rating: t.rating,
           display_order: index,
+          status: 'approved',
         }));
         
         await supabase

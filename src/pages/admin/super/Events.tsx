@@ -387,6 +387,7 @@ const SuperEvents: React.FC = () => {
         content_fr: t.content_fr || null,
         rating: t.rating,
         display_order: idx,
+        status: 'approved',
       }));
       const { error } = await supabase.from('event_testimonials').insert(records);
       if (error) throw error;
