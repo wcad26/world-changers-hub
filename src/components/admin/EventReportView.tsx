@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ArrowLeft, Users, UserCheck, UserPlus, Search, AlertCircle, Calendar, MapPin, Download } from "lucide-react";
 import { useEventReport } from "@/hooks/useEventReport";
+import EventFeedbackPanel from "@/components/admin/EventFeedbackPanel";
 import { format } from "date-fns";
 
 interface Props {
