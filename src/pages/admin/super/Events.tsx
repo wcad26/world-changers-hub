@@ -387,6 +387,7 @@ const SuperEvents: React.FC = () => {
         content_fr: t.content_fr || null,
         rating: t.rating,
         display_order: idx,
+        status: 'approved',
       }));
       const { error } = await supabase.from('event_testimonials').insert(records);
       if (error) throw error;
@@ -667,7 +668,7 @@ const SuperEvents: React.FC = () => {
 
       // Replace related entities (delete + re-insert) for testimonials/faqs/speakers; append new hero/gallery images
       await Promise.all([
-        supabase.from('event_testimonials').delete().eq('event_id', eventToEdit.id),
+        supabase.from('event_testimonials').delete().is('member_id', null).eq('event_id', eventToEdit.id),
         supabase.from('event_faqs').delete().eq('event_id', eventToEdit.id),
         supabase.from('event_speakers').delete().eq('event_id', eventToEdit.id),
       ]);

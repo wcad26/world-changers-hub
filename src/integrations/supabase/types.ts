@@ -903,6 +903,103 @@ export type Database = {
           },
         ]
       }
+      event_feedback: {
+        Row: {
+          challenges: string | null
+          children_management_rating: number | null
+          communication_rating: number | null
+          created_at: string
+          enjoyed_most: string[]
+          enjoyed_most_other: string | null
+          event_id: string
+          fellowship: string | null
+          first_time_attending: boolean | null
+          food_rating: number | null
+          future_topics: string | null
+          id: string
+          impactful_sessions: string | null
+          lodging_rating: number | null
+          member_id: string
+          overall_rating: number | null
+          profile_id: string | null
+          schedule_feedback: string | null
+          submitted_at: string
+          suggestions: string | null
+          teaching_impact: string | null
+          updated_at: string
+        }
+        Insert: {
+          challenges?: string | null
+          children_management_rating?: number | null
+          communication_rating?: number | null
+          created_at?: string
+          enjoyed_most?: string[]
+          enjoyed_most_other?: string | null
+          event_id: string
+          fellowship?: string | null
+          first_time_attending?: boolean | null
+          food_rating?: number | null
+          future_topics?: string | null
+          id?: string
+          impactful_sessions?: string | null
+          lodging_rating?: number | null
+          member_id: string
+          overall_rating?: number | null
+          profile_id?: string | null
+          schedule_feedback?: string | null
+          submitted_at?: string
+          suggestions?: string | null
+          teaching_impact?: string | null
+          updated_at?: string
+        }
+        Update: {
+          challenges?: string | null
+          children_management_rating?: number | null
+          communication_rating?: number | null
+          created_at?: string
+          enjoyed_most?: string[]
+          enjoyed_most_other?: string | null
+          event_id?: string
+          fellowship?: string | null
+          first_time_attending?: boolean | null
+          food_rating?: number | null
+          future_topics?: string | null
+          id?: string
+          impactful_sessions?: string | null
+          lodging_rating?: number | null
+          member_id?: string
+          overall_rating?: number | null
+          profile_id?: string | null
+          schedule_feedback?: string | null
+          submitted_at?: string
+          suggestions?: string | null
+          teaching_impact?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_feedback_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_feedback_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_feedback_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_images: {
         Row: {
           created_at: string | null
@@ -1130,11 +1227,14 @@ export type Database = {
           display_order: number | null
           event_id: string
           id: string
+          member_id: string | null
           name: string
           name_fr: string | null
           rating: number | null
           role: string
           role_fr: string | null
+          status: string
+          submitted_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1144,11 +1244,14 @@ export type Database = {
           display_order?: number | null
           event_id: string
           id?: string
+          member_id?: string | null
           name: string
           name_fr?: string | null
           rating?: number | null
           role: string
           role_fr?: string | null
+          status?: string
+          submitted_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1158,11 +1261,14 @@ export type Database = {
           display_order?: number | null
           event_id?: string
           id?: string
+          member_id?: string | null
           name?: string
           name_fr?: string | null
           rating?: number | null
           role?: string
           role_fr?: string | null
+          status?: string
+          submitted_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1171,6 +1277,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_testimonials_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]

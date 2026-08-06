@@ -26,6 +26,7 @@ export function useEventTestimonials(eventId: string | undefined) {
         .from('event_testimonials')
         .select('*')
         .eq('event_id', eventId)
+        .eq('status', 'approved')
         .order('display_order', { ascending: true });
       
       if (error) throw error;

@@ -28,6 +28,7 @@ import DcgAuth from "./pages/DcgAuth";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import SpecialEventRegister from "./pages/SpecialEventRegister";
+import EventFeedback from "./pages/EventFeedback";
 import MemberRegister from "./pages/MemberRegister";
 import UpdateProfile from "./pages/UpdateProfile";
 import PortalSelector from "./components/auth/PortalSelector";
@@ -234,6 +235,7 @@ const App = () => {
             <Route path="/events" element={<Events />} />
             <Route path="/events/:eventId" element={<EventDetail />} />
             <Route path="/events/:slug/register" element={<SpecialEventRegister />} />
+            <Route path="/events/:slug/feedback" element={<EventFeedback />} />
             <Route path="/media" element={<Media />} />
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />

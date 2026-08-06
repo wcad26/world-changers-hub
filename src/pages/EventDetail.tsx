@@ -17,7 +17,7 @@ import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus, MessageSquareHeart } from "lucide-react";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
@@ -44,7 +44,7 @@ export default function EventDetail() {
   const isLoading = isEventIdUUID ? isLoadingById : isLoadingBySlug;
   const error = isEventIdUUID ? errorById : errorBySlug;
   
-  const { localizedField, t } = useLanguage();
+  const { localizedField, t, language } = useLanguage();
   
 
   const getStatusBadge = () => {
@@ -195,7 +195,20 @@ export default function EventDetail() {
                   )}
                 </div>
               )}
+
+              {!canRegister && (
+                <div className="flex flex-col gap-2 lg:gap-3 w-full max-w-sm">
+                  <Button
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all hover:scale-105 px-3 py-2 text-sm md:px-6 md:py-3 md:text-base shadow-lg w-full"
+                    onClick={() => navigate(`/events/${(event as any).slug || (event as any).id}/feedback`)}
+                  >
+                    <MessageSquareHeart className="mr-1.5 h-4 w-4 md:mr-2 md:h-5 md:w-5" />
+                    {language === 'fr' ? 'Partagez vos impressions' : 'Share Your Feedback'}
+                  </Button>
+                </div>
+              )}
             </div>
+
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="glass-panel-soft p-4 hover:scale-105 transition-all duration-300 border border-white/10 backdrop-blur-md bg-white/90 dark:bg-background/90">

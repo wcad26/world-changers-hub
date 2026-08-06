@@ -27,6 +27,14 @@ verify_jwt = false
 [functions.event-pre-register-lookup]
 verify_jwt = false
 
+[functions.event-feedback-lookup]
+verify_jwt = false
+
+[functions.event-feedback-submit]
+verify_jwt = false
+
+
+
 [functions.event-pre-register]
 verify_jwt = false
 
