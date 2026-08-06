@@ -1208,6 +1208,7 @@ const RegionalEvents: React.FC = () => {
       await supabase
         .from('event_testimonials')
         .delete()
+        .is('member_id', null)
         .eq('event_id', eventToEdit.id);
       
       if (values.testimonials && values.testimonials.length > 0) {
