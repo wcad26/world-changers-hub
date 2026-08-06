@@ -17,7 +17,7 @@ import { EventTestimonials } from "@/components/events/EventTestimonials";
 import { EventFAQ } from "@/components/events/EventFAQ";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, MessageCircle, UserPlus, MessageSquareHeart } from "lucide-react";
 import { format, isToday, isPast, isFuture } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 
