@@ -28,6 +28,7 @@ import DcgAuth from "./pages/DcgAuth";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import VisitorRegister from "./pages/VisitorRegister";
 import SpecialEventRegister from "./pages/SpecialEventRegister";
+import EventFeedback from "./pages/EventFeedback";
 import MemberRegister from "./pages/MemberRegister";
 import UpdateProfile from "./pages/UpdateProfile";
 import PortalSelector from "./components/auth/PortalSelector";
