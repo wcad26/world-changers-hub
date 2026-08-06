@@ -96,34 +96,8 @@ const HEALTH_OPTIONS: { value: string; key: Parameters<ReturnType<typeof useLang
 const nativeSelectClassName =
   "flex h-10 w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
-function GlassSection({
-  icon: Icon,
-  title,
-  description,
-  children,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 md:p-6 space-y-4 shadow-sm">
-      <div className="flex items-start gap-2.5 pb-3 border-b border-border/30">
-        <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 shrink-0">
-          <Icon className="h-4 w-4 text-primary" />
-        </div>
-        <div className="min-w-0">
-          <h3 className="text-base font-semibold text-foreground">{title}</h3>
-          {description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-          )}
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
+
+
 
 const calcAge = (dob?: string | null): number | null => {
   if (!dob) return null;
