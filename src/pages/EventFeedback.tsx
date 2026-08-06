@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -188,7 +188,6 @@ type StepKey = "identify" | "experience" | "logistics" | "testimony" | "done";
 
 const EventFeedback = () => {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   const { language } = useLanguage();
   const lang = (language === "fr" ? "fr" : "en") as Lang;
   const t = T[lang];
