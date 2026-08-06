@@ -49,7 +49,7 @@ The whole flow is bilingual (English/French) using the existing language detecti
 ## Technical notes
 
 - **Database migration**
-  - New table `public.event_feedback`: `id`, `event_id`, `member_id`, `profile_id`, ratings (`overall_rating`, `organisation_rating`, `venue_rating`, `content_rating` — all nullable smallints), `what_went_well`, `what_to_improve`, `suggestions`, `submitted_at`, `updated_at`; unique on `(event_id, member_id)` so re-submission updates.
+  - New table `public.event_feedback` (all answer columns nullable): `id`, `event_id`, `member_id`, `profile_id`, `first_time_attending boolean`, `fellowship text`, `overall_rating`, `communication_rating`, `lodging_rating`, `food_rating`, `children_management_rating` (smallints 1–5), `teaching_impact text`, `schedule_feedback text` (too_strict / just_right / too_relaxed), `impactful_sessions text`, `enjoyed_most text[]`, `enjoyed_most_other text`, `challenges text`, `future_topics text`, `suggestions text`, `submitted_at`, `updated_at`; unique on `(event_id, member_id)` so re-submission updates.
   - Grants: `service_role` full access (edge functions write), `authenticated` select for admin reads; no `anon` access. RLS on, with admin-scoped read policies mirroring existing event policies (region admins for their region, super admins globally).
   - `event_testimonials`: add `status text default 'pending'`, `member_id uuid`, `submitted_at timestamptz`. Existing rows backfilled to `approved`. Public read policy narrowed to `status = 'approved'`.
 - **Edge functions** (service role, mirroring `event-pre-register-lookup` patterns)
