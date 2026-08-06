@@ -7,14 +7,36 @@ Let attendees of an event share feedback and (optionally) a public testimonial, 
 1. On the public event page (e.g. `/events/desco-2026`) a new button appears: "Share Your Feedback".
 2. It opens `/events/:slug/feedback`, which first asks for a phone number **or** email.
 3. The system looks the person up. If they are recognised (a member/profile who pre-registered for, or was marked present at, this event), they continue. Otherwise they see a friendly "we couldn't find you" message with a hint to use the number/email they registered with.
-4. The feedback form opens, pre-filled with their name. Every field is optional:
-   - Overall rating (1–5 stars)
-   - Ratings for organisation, venue, content/sessions
-   - What went well
-   - What could be improved
-   - Suggestions for future events
-   - Testimonial text + how they'd like to be credited (name shown / role or title / anonymous)
+4. The feedback form opens with their name shown at the top (no name/email/personal fields — identity comes from the lookup). Every question is optional and mirrors the DESCO feedback form:
+
+   **About you**
+   - First time attending this event? (Yes / No)
+   - Fellowship / region (pre-filled from their member record, editable, with "Other")
+
+   **General experience**
+   - Overall experience (1 = Very disappointing to 5 = Excellent)
+   - Pre-event communication (1 = Poor to 5 = Very clear and timely)
+   - Impact of the teachings (Not impactful / Somewhat impactful / Impactful / Very impactful / Extremely impactful)
+   - Which speaker(s) or session(s) impacted you the most, and why? (text)
+   - What did you enjoy most? (multi-select: Teachings, Group Fellowship, Food, Gala Night, Accommodation, Other + free text)
+   - What challenges or difficulties did you face? (text)
+
+   **Logistics & comfort**
+   - Lodging / accommodation (1–5)
+   - Food quality, variety and timing (1–5)
+   - Wake-up and sleep times (Too strict / Just right / Too relaxed)
+   - Management of children, for parents (1–5, skippable)
+
+   **Future expectations**
+   - Topics or speakers you'd like next time (text)
+   - Other suggestions or comments for the planning team (text)
+
+   **Testimonial (optional)**
+   - Your testimonial (text)
+   - How you'd like to be credited: name shown / role or title / anonymous
+
 5. Submit shows a thank-you screen. Re-submitting later updates their existing feedback instead of duplicating.
+
 
 ## Moderation
 
