@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/hooks/useLanguage";
 import Navbar from "@/components/layout/Navbar";
@@ -9,11 +10,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Star, MessageSquareHeart, CheckCircle2, Search } from "lucide-react";
+import { format } from "date-fns";
+import { fr as frLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
+import {
+  Loader2, Star, CheckCircle2, Search, UserCheck, Mail, Phone, Check,
+  Sparkles, Bed, MessageSquareHeart, Calendar as CalendarIcon, MapPin,
+  ArrowLeft, ArrowRight,
+} from "lucide-react";
+
 
 type Lang = "en" | "fr";
 
