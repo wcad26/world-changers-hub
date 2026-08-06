@@ -112,44 +112,8 @@ const calcAge = (dob?: string | null): number | null => {
 
 type StepKey = "identify" | "onboard" | "details" | "extras" | "done";
 
-function StepIndicator({ step, steps }: { step: StepKey; steps: { key: StepKey; label: string }[] }) {
-  const activeIdx = steps.findIndex((s) => s.key === step);
-  return (
-    <div className="flex items-center justify-center gap-2 md:gap-3">
-      {steps.map((s, i) => {
-        const done = i < activeIdx;
-        const active = i === activeIdx;
-        return (
-          <div key={s.key} className="flex items-center gap-2 md:gap-3">
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  "flex items-center justify-center h-7 w-7 rounded-full text-xs font-semibold transition-colors",
-                  active && "bg-primary text-primary-foreground shadow",
-                  done && "bg-primary/80 text-primary-foreground",
-                  !active && !done && "bg-muted text-muted-foreground"
-                )}
-              >
-                {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
-              </div>
-              <span
-                className={cn(
-                  "text-xs md:text-sm font-medium hidden sm:inline",
-                  active ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                {s.label}
-              </span>
-            </div>
-            {i < steps.length - 1 && (
-              <div className={cn("h-px w-6 md:w-10", i < activeIdx ? "bg-primary/60" : "bg-border")} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
+
 
 export default function SpecialEventRegister() {
   const { slug } = useParams<{ slug: string }>();
