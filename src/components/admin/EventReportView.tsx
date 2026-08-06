@@ -431,6 +431,10 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
               )}
             </CardContent>
           </Card>
+
+          {/* Feedback & testimonies */}
+          <EventFeedbackPanel eventId={eventId} />
+
         </>
       )}
     </div>
