@@ -39,6 +39,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
   const [dayFilter, setDayFilter] = useState<string>("all");
+  const [sectionTab, setSectionTab] = useState<string>("overview");
 
   const { data: reportData, isLoading, error } = useEventReport(
     eventId,
