@@ -179,16 +179,10 @@ const EventFeedback = () => {
   const t = T[lang];
   const dateLocale = lang === "fr" ? { locale: frLocale } : undefined;
 
-  const [step, setStep] = useState<StepKey>("identify");
+  const [step, setStep] = useState<StepKey>("experience");
   const [loading, setLoading] = useState(false);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-
-  const [lookupMode, setLookupMode] = useState<"email" | "phone">("email");
-  const [lookupValue, setLookupValue] = useState("");
-
-  const [eventInfo, setEventInfo] = useState<{ id: string; name: string; name_fr?: string; slug?: string } | null>(null);
-  const [member, setMember] = useState<any>(null);
   const [testimonySubmitted, setTestimonySubmitted] = useState(false);
+
 
   // form state
   const [firstTime, setFirstTime] = useState<string>("");
@@ -208,6 +202,8 @@ const EventFeedback = () => {
   const [suggestions, setSuggestions] = useState("");
   const [testimonial, setTestimonial] = useState("");
   const [testimonialRole, setTestimonialRole] = useState("");
+  const [testimonialName, setTestimonialName] = useState("");
+
 
   const { data: eventHero } = useQuery({
     queryKey: ["feedback-event-hero", slug],
@@ -223,17 +219,14 @@ const EventFeedback = () => {
     },
   });
 
-  const eventTitle = eventInfo
-    ? (lang === "fr" && eventInfo.name_fr ? eventInfo.name_fr : eventInfo.name)
-    : eventHero
-      ? (lang === "fr" && eventHero.name_fr ? eventHero.name_fr : eventHero.name)
-      : "";
+  const eventTitle = eventHero
+    ? (lang === "fr" && eventHero.name_fr ? eventHero.name_fr : eventHero.name)
+    : "";
   const eventLocation = eventHero
     ? (lang === "fr" && eventHero.location_name_fr ? eventHero.location_name_fr : eventHero.location_name) || ""
     : "";
 
   const steps: { key: StepKey; label: string }[] = [
-    { key: "identify", label: t.stepIdentify },
     { key: "experience", label: t.stepExperience },
     { key: "logistics", label: t.stepLogistics },
     { key: "testimony", label: t.stepTestimony },
@@ -242,71 +235,26 @@ const EventFeedback = () => {
   const toggleEnjoyed = (v: string) =>
     setEnjoyed((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
-  const handleLookup = async () => {
-    setLookupError(null);
-    const email = lookupMode === "email" ? lookupValue.trim() : "";
-    const phone = lookupMode === "phone" ? lookupValue.trim() : "";
-    if (!email && phone.replace(/\D/g, "").length < 9) {
-      setLookupError(t.provideOne);
+  const handleSubmit = async () => {
+    if (!eventHero?.id) return;
+
+    const hasAnswer =
+      firstTime !== "" ||
+      [fellowship, impactSessions, teachingImpact, schedule, challenges, futureTopics, suggestions, testimonial, enjoyedOther]
+        .some((v) => v.trim().length > 0) ||
+      [overall, communication, lodging, food, children].some((v) => v !== null) ||
+      enjoyed.length > 0;
+
+    if (!hasAnswer) {
+      toast({ title: t.emptyForm, variant: "destructive" });
       return;
     }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("event-feedback-lookup", {
-        body: { slug, email, phone },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
-      if (!data?.found) {
-        setLookupError(t.notFound);
-        return;
-      }
-      if (!data?.eligible) {
-        setLookupError(t.notEligible);
-        return;
-      }
-
-      setEventInfo(data.event);
-      setMember(data.member);
-
-      const f = data.feedback;
-      if (f) {
-        setFirstTime(f.first_time_attending === null ? "" : f.first_time_attending ? "yes" : "no");
-        setFellowship(f.fellowship || "");
-        setOverall(f.overall_rating ?? null);
-        setCommunication(f.communication_rating ?? null);
-        setLodging(f.lodging_rating ?? null);
-        setFood(f.food_rating ?? null);
-        setChildren(f.children_management_rating ?? null);
-        setImpactSessions(f.impactful_sessions || "");
-        setTeachingImpact(f.teaching_impact || "");
-        setEnjoyed(f.enjoyed_most || []);
-        setEnjoyedOther(f.enjoyed_most_other || "");
-        setSchedule(f.schedule_feedback || "");
-        setChallenges(f.challenges || "");
-        setFutureTopics(f.future_topics || "");
-        setSuggestions(f.suggestions || "");
-      }
-      if (data.testimonial) {
-        setTestimonial(data.testimonial.content || "");
-        setTestimonialRole(data.testimonial.role || "");
-      }
-    } catch (err: any) {
-      setLookupError(err?.message || t.lookupError);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!eventInfo || !member) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("event-feedback-submit", {
         body: {
-          event_id: eventInfo.id,
-          member_id: member.id,
+          event_id: eventHero.id,
           feedback: {
             first_time_attending: firstTime === "" ? null : firstTime === "yes",
             fellowship,
@@ -324,7 +272,7 @@ const EventFeedback = () => {
             future_topics: futureTopics,
             suggestions,
           },
-          testimonial: { content: testimonial, role: testimonialRole },
+          testimonial: { content: testimonial, role: testimonialRole, name: testimonialName },
         },
       });
       if (error) throw error;
@@ -334,7 +282,7 @@ const EventFeedback = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       toast({
-        title: t.lookupError,
+        title: t.submitError,
         description: err?.message,
         variant: "destructive",
       });
@@ -342,6 +290,7 @@ const EventFeedback = () => {
       setLoading(false);
     }
   };
+
 
   const renderActions = () => {
     if (step === "done") return null;
