@@ -446,9 +446,14 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
               )}
             </CardContent>
           </Card>
+            </TabsContent>
 
-          {/* Feedback & testimonies */}
-          <EventFeedbackPanel eventId={eventId} />
+            <TabsContent value="feedback" className="mt-6">
+              <EventFeedbackPanel eventId={eventId} />
+            </TabsContent>
+          </Tabs>
+
+
 
         </>
       )}
