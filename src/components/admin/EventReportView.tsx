@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +39,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
   const [regionFilter, setRegionFilter] = useState<string>("all");
   const [memberTypeFilter, setMemberTypeFilter] = useState<string>("all");
   const [dayFilter, setDayFilter] = useState<string>("all");
+  const [sectionTab, setSectionTab] = useState<string>("overview");
 
   const { data: reportData, isLoading, error } = useEventReport(
     eventId,
@@ -197,39 +198,17 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
             )}
           </Card>
 
-          {/* Daily attendance breakdown (All Days only) */}
-          {isMultiDay && dayFilter === "all" && reportData?.days && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Daily Attendance</CardTitle>
-                <CardDescription>Unique attendees marked present each day</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Day</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Present</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reportData.days.map(d => (
-                        <TableRow key={d.attendanceEventId}>
-                          <TableCell className="font-medium">Day {d.dayIndex}</TableCell>
-                          <TableCell>{format(new Date(d.eventDate), 'EEE, PP')}</TableCell>
-                          <TableCell className="text-right font-semibold">{d.presentCount}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Tabs value={sectionTab} onValueChange={setSectionTab} className="w-full">
+            <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              {isMultiDay && <TabsTrigger value="daily">Daily Attendance</TabsTrigger>}
+              <TabsTrigger value="participants">Participants</TabsTrigger>
+              <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            </TabsList>
 
+            <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Attendees</CardTitle>
@@ -320,8 +299,44 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
               </CardContent>
             </Card>
           </div>
+            </TabsContent>
 
+            {isMultiDay && (
+              <TabsContent value="daily" className="mt-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Daily Attendance</CardTitle>
+                    <CardDescription>Unique attendees marked present each day</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Day</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead className="text-right">Present</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {(reportData?.days || []).map(d => (
+                            <TableRow key={d.attendanceEventId} data-state={d.attendanceEventId === dayFilter ? "selected" : undefined}>
+                              <TableCell className="font-medium">Day {d.dayIndex}</TableCell>
+                              <TableCell>{format(new Date(d.eventDate), 'EEE, PP')}</TableCell>
+                              <TableCell className="text-right font-semibold">{d.presentCount}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            )}
+
+            <TabsContent value="participants" className="mt-6">
           <Card>
+
             <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between gap-4">
                 <div>
@@ -432,9 +447,14 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
               )}
             </CardContent>
           </Card>
+            </TabsContent>
 
-          {/* Feedback & testimonies */}
-          <EventFeedbackPanel eventId={eventId} />
+            <TabsContent value="feedback" className="mt-6">
+              <EventFeedbackPanel eventId={eventId} />
+            </TabsContent>
+          </Tabs>
+
+
 
         </>
       )}
