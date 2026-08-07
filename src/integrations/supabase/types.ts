@@ -919,7 +919,7 @@ export type Database = {
           id: string
           impactful_sessions: string | null
           lodging_rating: number | null
-          member_id: string
+          member_id: string | null
           overall_rating: number | null
           profile_id: string | null
           schedule_feedback: string | null
@@ -943,7 +943,7 @@ export type Database = {
           id?: string
           impactful_sessions?: string | null
           lodging_rating?: number | null
-          member_id: string
+          member_id?: string | null
           overall_rating?: number | null
           profile_id?: string | null
           schedule_feedback?: string | null
@@ -967,7 +967,7 @@ export type Database = {
           id?: string
           impactful_sessions?: string | null
           lodging_rating?: number | null
-          member_id?: string
+          member_id?: string | null
           overall_rating?: number | null
           profile_id?: string | null
           schedule_feedback?: string | null
