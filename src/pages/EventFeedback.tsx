@@ -397,7 +397,7 @@ const EventFeedback = () => {
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">{t.thanksTestimony}</p>
                 )}
                 <Button asChild className="rounded-xl">
-                  <Link to={`/events/${eventInfo?.slug || slug}`}>{t.backToEvent}</Link>
+                  <Link to={`/events/${eventHero?.slug || slug}`}>{t.backToEvent}</Link>
                 </Button>
               </div>
             </GlassSection>
