@@ -20,7 +20,7 @@ import { fr as frLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
 import {
-  Loader2, Star, CheckCircle2, Search, UserCheck, Mail, Phone, Check,
+  Loader2, Star, CheckCircle2, UserCheck, ShieldCheck,
   Sparkles, Bed, MessageSquareHeart, Calendar as CalendarIcon, MapPin,
   ArrowLeft, ArrowRight,
 } from "lucide-react";
@@ -30,25 +30,16 @@ type Lang = "en" | "fr";
 const T = {
   en: {
     title: "Share Your Feedback",
-    subtitle: "Tell us about your experience. All questions are optional.",
+    subtitle: "Tell us about your experience. All questions are optional and your response is anonymous.",
     badge: "Event feedback",
-    lookupTitle: "Find your registration",
-    lookupHelp: "Enter the email or phone number you used to register or attend.",
-    email: "Email",
-    phone: "Phone number",
-    or: "or",
-    check: "Check",
     continue: "Continue",
     back: "Back",
-    notFound: "We couldn't find your details. Please check your email or phone number.",
-    notEligible: "We couldn't find a registration or attendance record for you at this event.",
-    lookupError: "Something went wrong. Please try again.",
-    hello: "Hello",
-    helloTail: ", thank you for taking a moment to share your experience.",
-    stepIdentify: "Identify",
+    submitError: "Something went wrong. Please try again.",
+    emptyForm: "Please answer at least one question before submitting.",
     stepExperience: "Experience",
     stepLogistics: "Logistics",
     stepTestimony: "Testimony",
+
     aboutYou: "About you",
     firstTime: "Is this your first time attending this event?",
     yes: "Yes",
@@ -81,26 +72,19 @@ const T = {
     thanksTestimony: "Your testimony has been submitted and will appear after review.",
     backToEvent: "Back to event",
     notRated: "Not rated",
-    provideOne: "Please enter an email or phone number.",
+    testimonialName: "Name to display (leave blank to stay anonymous)",
+    anonymousNote: "This form is anonymous — we do not collect your name, email or phone number.",
+
   },
   fr: {
     title: "Partagez vos impressions",
-    subtitle: "Parlez-nous de votre expérience. Toutes les questions sont facultatives.",
+    subtitle: "Parlez-nous de votre expérience. Toutes les questions sont facultatives et votre réponse est anonyme.",
     badge: "Avis sur l'événement",
-    lookupTitle: "Retrouvez votre inscription",
-    lookupHelp: "Entrez l'e-mail ou le numéro de téléphone utilisé pour vous inscrire ou participer.",
-    email: "E-mail",
-    phone: "Numéro de téléphone",
-    or: "ou",
-    check: "Vérifier",
     continue: "Continuer",
     back: "Retour",
-    notFound: "Nous n'avons pas trouvé vos informations. Vérifiez votre e-mail ou téléphone.",
-    notEligible: "Aucune inscription ni présence n'a été trouvée pour vous à cet événement.",
-    lookupError: "Une erreur est survenue. Veuillez réessayer.",
-    hello: "Bonjour",
-    helloTail: ", merci de prendre un instant pour partager votre expérience.",
-    stepIdentify: "Identification",
+    submitError: "Une erreur est survenue. Veuillez réessayer.",
+    emptyForm: "Veuillez répondre à au moins une question avant d'envoyer.",
+
     stepExperience: "Expérience",
     stepLogistics: "Logistique",
     stepTestimony: "Témoignage",
@@ -136,7 +120,9 @@ const T = {
     thanksTestimony: "Votre témoignage a été soumis et apparaîtra après validation.",
     backToEvent: "Retour à l'événement",
     notRated: "Non noté",
-    provideOne: "Veuillez saisir un e-mail ou un numéro de téléphone.",
+    testimonialName: "Nom à afficher (laissez vide pour rester anonyme)",
+    anonymousNote: "Ce formulaire est anonyme — nous ne collectons ni nom, ni e-mail, ni téléphone.",
+
   },
 } as const;
 
@@ -184,7 +170,7 @@ function StarRating({
   );
 }
 
-type StepKey = "identify" | "experience" | "logistics" | "testimony" | "done";
+type StepKey = "experience" | "logistics" | "testimony" | "done";
 
 const EventFeedback = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -193,16 +179,10 @@ const EventFeedback = () => {
   const t = T[lang];
   const dateLocale = lang === "fr" ? { locale: frLocale } : undefined;
 
-  const [step, setStep] = useState<StepKey>("identify");
+  const [step, setStep] = useState<StepKey>("experience");
   const [loading, setLoading] = useState(false);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-
-  const [lookupMode, setLookupMode] = useState<"email" | "phone">("email");
-  const [lookupValue, setLookupValue] = useState("");
-
-  const [eventInfo, setEventInfo] = useState<{ id: string; name: string; name_fr?: string; slug?: string } | null>(null);
-  const [member, setMember] = useState<any>(null);
   const [testimonySubmitted, setTestimonySubmitted] = useState(false);
+
 
   // form state
   const [firstTime, setFirstTime] = useState<string>("");
@@ -222,6 +202,8 @@ const EventFeedback = () => {
   const [suggestions, setSuggestions] = useState("");
   const [testimonial, setTestimonial] = useState("");
   const [testimonialRole, setTestimonialRole] = useState("");
+  const [testimonialName, setTestimonialName] = useState("");
+
 
   const { data: eventHero } = useQuery({
     queryKey: ["feedback-event-hero", slug],
@@ -237,17 +219,14 @@ const EventFeedback = () => {
     },
   });
 
-  const eventTitle = eventInfo
-    ? (lang === "fr" && eventInfo.name_fr ? eventInfo.name_fr : eventInfo.name)
-    : eventHero
-      ? (lang === "fr" && eventHero.name_fr ? eventHero.name_fr : eventHero.name)
-      : "";
+  const eventTitle = eventHero
+    ? (lang === "fr" && eventHero.name_fr ? eventHero.name_fr : eventHero.name)
+    : "";
   const eventLocation = eventHero
     ? (lang === "fr" && eventHero.location_name_fr ? eventHero.location_name_fr : eventHero.location_name) || ""
     : "";
 
   const steps: { key: StepKey; label: string }[] = [
-    { key: "identify", label: t.stepIdentify },
     { key: "experience", label: t.stepExperience },
     { key: "logistics", label: t.stepLogistics },
     { key: "testimony", label: t.stepTestimony },
@@ -256,71 +235,26 @@ const EventFeedback = () => {
   const toggleEnjoyed = (v: string) =>
     setEnjoyed((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
-  const handleLookup = async () => {
-    setLookupError(null);
-    const email = lookupMode === "email" ? lookupValue.trim() : "";
-    const phone = lookupMode === "phone" ? lookupValue.trim() : "";
-    if (!email && phone.replace(/\D/g, "").length < 9) {
-      setLookupError(t.provideOne);
+  const handleSubmit = async () => {
+    if (!eventHero?.id) return;
+
+    const hasAnswer =
+      firstTime !== "" ||
+      [fellowship, impactSessions, teachingImpact, schedule, challenges, futureTopics, suggestions, testimonial, enjoyedOther]
+        .some((v) => v.trim().length > 0) ||
+      [overall, communication, lodging, food, children].some((v) => v !== null) ||
+      enjoyed.length > 0;
+
+    if (!hasAnswer) {
+      toast({ title: t.emptyForm, variant: "destructive" });
       return;
     }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("event-feedback-lookup", {
-        body: { slug, email, phone },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
 
-      if (!data?.found) {
-        setLookupError(t.notFound);
-        return;
-      }
-      if (!data?.eligible) {
-        setLookupError(t.notEligible);
-        return;
-      }
-
-      setEventInfo(data.event);
-      setMember(data.member);
-
-      const f = data.feedback;
-      if (f) {
-        setFirstTime(f.first_time_attending === null ? "" : f.first_time_attending ? "yes" : "no");
-        setFellowship(f.fellowship || "");
-        setOverall(f.overall_rating ?? null);
-        setCommunication(f.communication_rating ?? null);
-        setLodging(f.lodging_rating ?? null);
-        setFood(f.food_rating ?? null);
-        setChildren(f.children_management_rating ?? null);
-        setImpactSessions(f.impactful_sessions || "");
-        setTeachingImpact(f.teaching_impact || "");
-        setEnjoyed(f.enjoyed_most || []);
-        setEnjoyedOther(f.enjoyed_most_other || "");
-        setSchedule(f.schedule_feedback || "");
-        setChallenges(f.challenges || "");
-        setFutureTopics(f.future_topics || "");
-        setSuggestions(f.suggestions || "");
-      }
-      if (data.testimonial) {
-        setTestimonial(data.testimonial.content || "");
-        setTestimonialRole(data.testimonial.role || "");
-      }
-    } catch (err: any) {
-      setLookupError(err?.message || t.lookupError);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!eventInfo || !member) return;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("event-feedback-submit", {
         body: {
-          event_id: eventInfo.id,
-          member_id: member.id,
+          event_id: eventHero.id,
           feedback: {
             first_time_attending: firstTime === "" ? null : firstTime === "yes",
             fellowship,
@@ -338,7 +272,7 @@ const EventFeedback = () => {
             future_topics: futureTopics,
             suggestions,
           },
-          testimonial: { content: testimonial, role: testimonialRole },
+          testimonial: { content: testimonial, role: testimonialRole, name: testimonialName },
         },
       });
       if (error) throw error;
@@ -348,7 +282,7 @@ const EventFeedback = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
       toast({
-        title: t.lookupError,
+        title: t.submitError,
         description: err?.message,
         variant: "destructive",
       });
@@ -356,6 +290,7 @@ const EventFeedback = () => {
       setLoading(false);
     }
   };
+
 
   const renderActions = () => {
     if (step === "done") return null;
@@ -462,116 +397,20 @@ const EventFeedback = () => {
                   <p className="text-sm text-muted-foreground max-w-md mx-auto">{t.thanksTestimony}</p>
                 )}
                 <Button asChild className="rounded-xl">
-                  <Link to={`/events/${eventInfo?.slug || slug}`}>{t.backToEvent}</Link>
+                  <Link to={`/events/${eventHero?.slug || slug}`}>{t.backToEvent}</Link>
                 </Button>
               </div>
             </GlassSection>
           ) : (
             <>
-              {step === "identify" && (
-                <GlassSection icon={UserCheck} title={t.lookupTitle} description={t.lookupHelp}>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      {([
-                        { mode: "email", label: t.email, Icon: Mail, color: "blue" },
-                        { mode: "phone", label: t.phone, Icon: Phone, color: "amber" },
-                      ] as const).map(({ mode, label, Icon, color }) => {
-                        const selected = lookupMode === mode;
-                        const palette =
-                          color === "blue"
-                            ? selected
-                              ? "border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300"
-                              : "border-border bg-background/60 hover:border-blue-400/50"
-                            : selected
-                              ? "border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                              : "border-border bg-background/60 hover:border-amber-400/50";
-                        return (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => {
-                              setLookupMode(mode);
-                              setLookupValue("");
-                              setLookupError(null);
-                              setMember(null);
-                            }}
-                            className={cn(
-                              "relative flex items-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all",
-                              palette
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors shrink-0",
-                                selected ? "border-green-500 bg-green-500" : "border-muted-foreground/40 bg-background"
-                              )}
-                            >
-                              {selected && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
-                            </span>
-                            <Icon className="h-4 w-4" />
-                            <span>{label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Input
-                        className="rounded-xl bg-background/60"
-                        type={lookupMode === "email" ? "email" : "tel"}
-                        placeholder={lookupMode === "email" ? "you@example.com" : "6XX XXX XXX"}
-                        maxLength={lookupMode === "email" ? 255 : 30}
-                        value={lookupValue}
-                        onChange={(e) => {
-                          setLookupValue(e.target.value);
-                          setLookupError(null);
-                          setMember(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleLookup();
-                          }
-                        }}
-                      />
-                      {!member && (
-                        <Button
-                          type="button"
-                          onClick={handleLookup}
-                          disabled={loading || !lookupValue.trim()}
-                          className="rounded-xl"
-                        >
-                          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                          <span className="ml-1">{t.check}</span>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {member && (
-                    <>
-                      <Alert className="border-green-500/30 bg-green-500/5">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-justify">
-                          {t.hello} <strong className="text-primary">{member.first_name}</strong>
-                          {t.helloTail}
-                        </AlertDescription>
-                      </Alert>
-                      <div className="pt-2">{renderActions()}</div>
-                    </>
-                  )}
-
-                  {lookupError && (
-                    <Alert className="border-amber-500/30 bg-amber-500/5">
-                      <UserCheck className="h-4 w-4 text-amber-600" />
-                      <AlertDescription className="text-justify">{lookupError}</AlertDescription>
-                    </Alert>
-                  )}
-                </GlassSection>
-              )}
-
               {step === "experience" && (
                 <div className="space-y-5">
+                  <Alert className="border-green-500/30 bg-green-500/5">
+                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-justify">{t.anonymousNote}</AlertDescription>
+                  </Alert>
                   <GlassSection icon={UserCheck} title={t.aboutYou}>
+
                     <div className="space-y-2">
                       <Label>{t.firstTime}</Label>
                       <RadioGroup value={firstTime} onValueChange={setFirstTime} className="flex gap-6">
@@ -683,8 +522,13 @@ const EventFeedback = () => {
                       <Textarea id="testimony" className="rounded-xl bg-background/60" value={testimonial} onChange={(e) => setTestimonial(e.target.value)} maxLength={2000} rows={5} />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="tname">{t.testimonialName}</Label>
+                      <Input id="tname" className="rounded-xl bg-background/60" value={testimonialName} onChange={(e) => setTestimonialName(e.target.value)} maxLength={120} />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="trole">{t.testimonialRole}</Label>
                       <Input id="trole" className="rounded-xl bg-background/60" value={testimonialRole} onChange={(e) => setTestimonialRole(e.target.value)} maxLength={120} />
+
                     </div>
                   </GlassSection>
 

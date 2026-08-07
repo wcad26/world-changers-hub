@@ -30,61 +30,34 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const eventId = String(body?.event_id ?? "").trim();
-    const memberId = String(body?.member_id ?? "").trim();
+    const eventKey = String(body?.event_id ?? body?.slug ?? "").trim();
     const f = body?.feedback ?? {};
     const testimonialText = clean(body?.testimonial?.content, 2000);
     const testimonialRole = clean(body?.testimonial?.role, 120);
+    const testimonialName = clean(body?.testimonial?.name, 120);
 
-    if (!eventId || !memberId) return json({ error: "Missing event or member" }, 400);
+    if (!eventKey) return json({ error: "Missing event identifier" }, 400);
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: member } = await admin
-      .from("members")
-      .select("id, profile_id, profiles:profile_id(first_name, last_name)")
-      .eq("id", memberId)
-      .maybeSingle();
-    if (!member) return json({ error: "Member not found" }, 404);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventKey);
+    const { data: event } = isUuid
+      ? await admin.from("events").select("id").eq("id", eventKey).maybeSingle()
+      : await admin.from("events").select("id").eq("slug", eventKey).maybeSingle();
 
-    const { data: preReg } = await admin
-      .from("event_pre_registrations")
-      .select("id")
-      .eq("event_id", eventId)
-      .eq("member_id", memberId)
-      .maybeSingle();
-
-    let eligible = !!preReg;
-    if (!eligible) {
-      const { data: attEvents } = await admin
-        .from("attendance_events")
-        .select("id")
-        .or(`source_event_id.eq.${eventId},parent_event_id.eq.${eventId}`);
-      const attIds = (attEvents ?? []).map((a: any) => a.id);
-      if (attIds.length) {
-        const { data: recs } = await admin
-          .from("attendance_records")
-          .select("id")
-          .eq("member_id", memberId)
-          .eq("is_present", true)
-          .in("event_id", attIds)
-          .limit(1);
-        eligible = !!(recs && recs.length);
-      }
-    }
-    if (!eligible) return json({ error: "Not eligible to submit feedback for this event" }, 403);
+    if (!event) return json({ error: "Event not found" }, 404);
 
     const enjoyed = Array.isArray(f?.enjoyed_most)
       ? f.enjoyed_most.map((x: unknown) => String(x).slice(0, 120)).slice(0, 20)
       : [];
 
     const payload = {
-      event_id: eventId,
-      member_id: memberId,
-      profile_id: member.profile_id,
+      event_id: event.id,
+      member_id: null,
+      profile_id: null,
       first_time_attending: typeof f?.first_time_attending === "boolean" ? f.first_time_attending : null,
       fellowship: clean(f?.fellowship, 160),
       overall_rating: clampRating(f?.overall_rating),
@@ -103,37 +76,46 @@ Deno.serve(async (req) => {
       submitted_at: new Date().toISOString(),
     };
 
-    const { error: fbError } = await admin
-      .from("event_feedback")
-      .upsert(payload, { onConflict: "event_id,member_id" });
+    // Reject completely empty submissions
+    const hasContent =
+      payload.first_time_attending !== null ||
+      enjoyed.length > 0 ||
+      !!testimonialText ||
+      [
+        payload.fellowship,
+        payload.teaching_impact,
+        payload.schedule_feedback,
+        payload.impactful_sessions,
+        payload.enjoyed_most_other,
+        payload.challenges,
+        payload.future_topics,
+        payload.suggestions,
+      ].some((v) => v !== null) ||
+      [
+        payload.overall_rating,
+        payload.communication_rating,
+        payload.lodging_rating,
+        payload.food_rating,
+        payload.children_management_rating,
+      ].some((v) => v !== null);
+
+    if (!hasContent) return json({ error: "Empty submission" }, 400);
+
+    const { error: fbError } = await admin.from("event_feedback").insert(payload);
     if (fbError) return json({ error: fbError.message }, 400);
 
     let testimonialSaved = false;
     if (testimonialText) {
-      const prof: any = (member as any).profiles;
-      const name = [prof?.last_name, prof?.first_name].filter(Boolean).join(" ") || "Attendee";
-
-      const { data: existing } = await admin
-        .from("event_testimonials")
-        .select("id")
-        .eq("event_id", eventId)
-        .eq("member_id", memberId)
-        .maybeSingle();
-
-      const record = {
-        event_id: eventId,
-        member_id: memberId,
-        name,
+      const { error: tError } = await admin.from("event_testimonials").insert({
+        event_id: event.id,
+        member_id: null,
+        name: testimonialName || "Anonymous",
         role: testimonialRole || "Attendee",
         content: testimonialText,
         rating: clampRating(f?.overall_rating) ?? 5,
         status: "pending",
         submitted_at: new Date().toISOString(),
-      };
-
-      const { error: tError } = existing
-        ? await admin.from("event_testimonials").update(record).eq("id", existing.id)
-        : await admin.from("event_testimonials").insert(record);
+      });
       if (tError) return json({ error: tError.message }, 400);
       testimonialSaved = true;
     }
