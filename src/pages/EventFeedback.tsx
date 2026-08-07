@@ -20,7 +20,7 @@ import { fr as frLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
 import {
-  Loader2, Star, CheckCircle2, Search, UserCheck, Mail, Phone, Check,
+  Loader2, Star, CheckCircle2, UserCheck, ShieldCheck,
   Sparkles, Bed, MessageSquareHeart, Calendar as CalendarIcon, MapPin,
   ArrowLeft, ArrowRight,
 } from "lucide-react";
@@ -170,7 +170,7 @@ function StarRating({
   );
 }
 
-type StepKey = "identify" | "experience" | "logistics" | "testimony" | "done";
+type StepKey = "experience" | "logistics" | "testimony" | "done";
 
 const EventFeedback = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -405,7 +405,12 @@ const EventFeedback = () => {
             <>
               {step === "experience" && (
                 <div className="space-y-5">
+                  <Alert className="border-green-500/30 bg-green-500/5">
+                    <ShieldCheck className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-justify">{t.anonymousNote}</AlertDescription>
+                  </Alert>
                   <GlassSection icon={UserCheck} title={t.aboutYou}>
+
                     <div className="space-y-2">
                       <Label>{t.firstTime}</Label>
                       <RadioGroup value={firstTime} onValueChange={setFirstTime} className="flex gap-6">
@@ -517,8 +522,13 @@ const EventFeedback = () => {
                       <Textarea id="testimony" className="rounded-xl bg-background/60" value={testimonial} onChange={(e) => setTestimonial(e.target.value)} maxLength={2000} rows={5} />
                     </div>
                     <div className="space-y-2">
+                      <Label htmlFor="tname">{t.testimonialName}</Label>
+                      <Input id="tname" className="rounded-xl bg-background/60" value={testimonialName} onChange={(e) => setTestimonialName(e.target.value)} maxLength={120} />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="trole">{t.testimonialRole}</Label>
                       <Input id="trole" className="rounded-xl bg-background/60" value={testimonialRole} onChange={(e) => setTestimonialRole(e.target.value)} maxLength={120} />
+
                     </div>
                   </GlassSection>
 
