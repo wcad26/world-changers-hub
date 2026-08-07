@@ -31,8 +31,6 @@ verify_jwt = false
 verify_jwt = false
 
 
-[functions.event-feedback-submit]
-verify_jwt = false
 
 
 
