@@ -197,39 +197,17 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
             )}
           </Card>
 
-          {/* Daily attendance breakdown (All Days only) */}
-          {isMultiDay && dayFilter === "all" && reportData?.days && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Daily Attendance</CardTitle>
-                <CardDescription>Unique attendees marked present each day</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Day</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Present</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reportData.days.map(d => (
-                        <TableRow key={d.attendanceEventId}>
-                          <TableCell className="font-medium">Day {d.dayIndex}</TableCell>
-                          <TableCell>{format(new Date(d.eventDate), 'EEE, PP')}</TableCell>
-                          <TableCell className="text-right font-semibold">{d.presentCount}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <Tabs value={sectionTab} onValueChange={setSectionTab} className="w-full">
+            <TabsList className="w-full justify-start overflow-x-auto flex-nowrap">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              {isMultiDay && <TabsTrigger value="daily">Daily Attendance</TabsTrigger>}
+              <TabsTrigger value="participants">Participants</TabsTrigger>
+              <TabsTrigger value="feedback">Feedback</TabsTrigger>
+            </TabsList>
 
+            <TabsContent value="overview" className="mt-6 space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Total Attendees</CardTitle>
