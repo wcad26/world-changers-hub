@@ -163,6 +163,27 @@ const EventFeedbackPanel: React.FC<{ eventId?: string }> = ({ eventId }) => {
         </CardContent>
       </Card>
 
+      {parents > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Baby className="h-5 w-5 text-primary" />
+              Children's Class
+            </CardTitle>
+            <CardDescription>
+              {parents} parent{parents === 1 ? "" : "s"} indicated their child attended · sent daily: {sentDaily} · sometimes: {sentSometimes} · not sent: {sentNever}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <RatingStat label="Lesson comprehension & retention" value={stats.kidsComprehension.v} count={stats.kidsComprehension.c} />
+              <RatingStat label="Daily care of child" value={stats.kidsCare.v} count={stats.kidsCare.c} />
+              <RatingStat label="Meals provision" value={stats.kidsMeals.v} count={stats.kidsMeals.c} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {rows.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
@@ -176,6 +197,7 @@ const EventFeedbackPanel: React.FC<{ eventId?: string }> = ({ eventId }) => {
                   <span>{format(new Date(r.submitted_at), "PPP")}</span>
                   {r.fellowship && <Badge variant="outline">{r.fellowship}</Badge>}
                   {r.first_time_attending && <Badge variant="secondary">First time</Badge>}
+                  {r.kids_attended && <Badge variant="secondary">Parent</Badge>}
                   {r.overall_rating && <Badge>{r.overall_rating}/5</Badge>}
                 </div>
                 {r.impactful_sessions && <p className="text-sm"><span className="font-medium">Sessions: </span>{r.impactful_sessions}</p>}
@@ -184,6 +206,7 @@ const EventFeedbackPanel: React.FC<{ eventId?: string }> = ({ eventId }) => {
                 {r.challenges && <p className="text-sm"><span className="font-medium">Challenges: </span>{r.challenges}</p>}
                 {r.future_topics && <p className="text-sm"><span className="font-medium">Future topics: </span>{r.future_topics}</p>}
                 {r.suggestions && <p className="text-sm"><span className="font-medium">Suggestions: </span>{r.suggestions}</p>}
+                {r.kids_remarks && <p className="text-sm"><span className="font-medium">Children's class: </span>{r.kids_remarks}</p>}
               </div>
             ))}
           </CardContent>
