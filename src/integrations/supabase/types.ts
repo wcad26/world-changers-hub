@@ -918,6 +918,12 @@ export type Database = {
           future_topics: string | null
           id: string
           impactful_sessions: string | null
+          kids_attended: boolean | null
+          kids_care_rating: number | null
+          kids_comprehension_rating: number | null
+          kids_daily_attendance: string | null
+          kids_meals_rating: number | null
+          kids_remarks: string | null
           lodging_rating: number | null
           member_id: string | null
           overall_rating: number | null
@@ -942,6 +948,12 @@ export type Database = {
           future_topics?: string | null
           id?: string
           impactful_sessions?: string | null
+          kids_attended?: boolean | null
+          kids_care_rating?: number | null
+          kids_comprehension_rating?: number | null
+          kids_daily_attendance?: string | null
+          kids_meals_rating?: number | null
+          kids_remarks?: string | null
           lodging_rating?: number | null
           member_id?: string | null
           overall_rating?: number | null
@@ -966,6 +978,12 @@ export type Database = {
           future_topics?: string | null
           id?: string
           impactful_sessions?: string | null
+          kids_attended?: boolean | null
+          kids_care_rating?: number | null
+          kids_comprehension_rating?: number | null
+          kids_daily_attendance?: string | null
+          kids_meals_rating?: number | null
+          kids_remarks?: string | null
           lodging_rating?: number | null
           member_id?: string | null
           overall_rating?: number | null
