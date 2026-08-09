@@ -1,3 +1,4 @@
+import ComingSoon from "@/components/ComingSoon";
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -460,4 +461,14 @@ const Store = () => {
       <Footer />
     </div>;
 };
-export default Store;
+export default function StorePage() {
+  // Existing design preserved above; temporarily hidden behind the coming soon page.
+  return (
+    <ComingSoon
+      title="WCA Store"
+      description="Books, resources and merchandise from World Changers Association — opening soon."
+      icon={ShoppingCart}
+      highlights={["Books & resources", "Merchandise", "Digital courses"]}
+    />
+  );
+}

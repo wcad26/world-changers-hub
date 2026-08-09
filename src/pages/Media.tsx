@@ -1,3 +1,4 @@
+import ComingSoon from "@/components/ComingSoon";
 import { useState } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -217,4 +218,14 @@ const Media = () => {
       <Footer />
     </div>;
 };
-export default Media;
+export default function MediaPage() {
+  // Existing design preserved above; temporarily hidden behind the coming soon page.
+  return (
+    <ComingSoon
+      title="Media & Sermons"
+      description="A rich library of sermons, event recordings and teachings is being prepared for you."
+      icon={PlayCircle}
+      highlights={["Sermon archive", "Event recordings", "Audio teachings"]}
+    />
+  );
+}
