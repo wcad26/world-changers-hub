@@ -525,7 +525,20 @@ const EventFeedback = () => {
                   <GlassSection icon={Bed} title={t.logistics}>
                     <StarRating value={lodging} onChange={setLodging} label={t.lodging} notRatedLabel={t.notRated} />
                     <StarRating value={food} onChange={setFood} label={t.food} notRatedLabel={t.notRated} />
-                    <StarRating value={children} onChange={setChildren} label={t.children} notRatedLabel={t.notRated} />
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>{t.kidsAttendedQ}</Label>
+                      <RadioGroup value={kidsAttended} onValueChange={setKidsAttended} className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="kids-yes" />
+                          <Label htmlFor="kids-yes" className="font-normal">{t.yes}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="kids-no" />
+                          <Label htmlFor="kids-no" className="font-normal">{t.no}</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
                     <Separator />
                     <div className="space-y-2">
                       <Label htmlFor="schedule">{t.schedule}</Label>
@@ -534,6 +547,42 @@ const EventFeedback = () => {
                     <div className="space-y-2">
                       <Label htmlFor="challenges">{t.challenges}</Label>
                       <Textarea id="challenges" className="rounded-xl bg-background/60" value={challenges} onChange={(e) => setChallenges(e.target.value)} maxLength={2000} rows={3} />
+                    </div>
+                  </GlassSection>
+
+                  {renderActions()}
+                </div>
+              )}
+
+              {step === "children" && (
+                <div className="space-y-5">
+                  <GlassSection icon={Baby} title={t.kidsSection} description={t.kidsSectionHelp}>
+                    <div className="space-y-2">
+                      <Label>{t.kidsDaily}</Label>
+                      <RadioGroup value={kidsDaily} onValueChange={setKidsDaily} className="flex flex-wrap gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="kd-yes" />
+                          <Label htmlFor="kd-yes" className="font-normal">{t.yes}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="kd-no" />
+                          <Label htmlFor="kd-no" className="font-normal">{t.no}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="sometimes" id="kd-some" />
+                          <Label htmlFor="kd-some" className="font-normal">{t.sometimes}</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <Separator />
+                    <StarRating value={kidsComprehension} onChange={setKidsComprehension} label={t.kidsComprehension} notRatedLabel={t.notRated} />
+                    <StarRating value={kidsCare} onChange={setKidsCare} label={t.kidsCare} notRatedLabel={t.notRated} />
+                    <StarRating value={kidsMeals} onChange={setKidsMeals} label={t.kidsMeals} notRatedLabel={t.notRated} />
+                    <StarRating value={children} onChange={setChildren} label={t.children} notRatedLabel={t.notRated} />
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label htmlFor="kids-remarks">{t.kidsRemarks}</Label>
+                      <Textarea id="kids-remarks" className="rounded-xl bg-background/60" value={kidsRemarks} onChange={(e) => setKidsRemarks(e.target.value)} maxLength={2000} rows={4} />
                     </div>
                   </GlassSection>
 
