@@ -1,3 +1,4 @@
+import ComingSoon from "@/components/ComingSoon";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -437,4 +438,14 @@ const Blog = () => {
       <Footer />
     </div>;
 };
-export default Blog;
+export default function BlogPage() {
+  // Existing design preserved above; temporarily hidden behind the coming soon page.
+  return (
+    <ComingSoon
+      title="Blog & Testimonies"
+      description="News, articles and life-changing testimonies from across the World Changers family — arriving soon."
+      icon={Newspaper}
+      highlights={["Ministry news", "Member testimonies", "In-depth articles"]}
+    />
+  );
+}
