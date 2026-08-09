@@ -254,9 +254,12 @@ const EventFeedback = () => {
     ? (lang === "fr" && eventHero.location_name_fr ? eventHero.location_name_fr : eventHero.location_name) || ""
     : "";
 
+  const showKids = kidsAttended === "yes";
+
   const steps: { key: StepKey; label: string }[] = [
     { key: "experience", label: t.stepExperience },
     { key: "logistics", label: t.stepLogistics },
+    ...(showKids ? [{ key: "children" as StepKey, label: t.stepChildren }] : []),
     { key: "testimony", label: t.stepTestimony },
   ];
 
@@ -268,6 +271,7 @@ const EventFeedback = () => {
 
     const hasAnswer =
       firstTime !== "" ||
+      kidsAttended !== "" ||
       [fellowship, impactSessions, teachingImpact, schedule, challenges, futureTopics, suggestions, testimonial, enjoyedOther]
         .some((v) => v.trim().length > 0) ||
       [overall, communication, lodging, food, children].some((v) => v !== null) ||
@@ -290,7 +294,7 @@ const EventFeedback = () => {
             communication_rating: communication,
             lodging_rating: lodging,
             food_rating: food,
-            children_management_rating: children,
+            children_management_rating: showKids ? children : null,
             impactful_sessions: impactSessions,
             teaching_impact: teachingImpact,
             enjoyed_most: enjoyed,
@@ -299,6 +303,12 @@ const EventFeedback = () => {
             challenges,
             future_topics: futureTopics,
             suggestions,
+            kids_attended: kidsAttended === "" ? null : kidsAttended === "yes",
+            kids_daily_attendance: showKids ? kidsDaily : "",
+            kids_comprehension_rating: showKids ? kidsComprehension : null,
+            kids_care_rating: showKids ? kidsCare : null,
+            kids_meals_rating: showKids ? kidsMeals : null,
+            kids_remarks: showKids ? kidsRemarks : "",
           },
           testimonial: { content: testimonial, role: testimonialRole, name: testimonialName },
         },
