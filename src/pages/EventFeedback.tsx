@@ -22,7 +22,7 @@ import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
 import {
   Loader2, Star, CheckCircle2, UserCheck, ShieldCheck,
   Sparkles, Bed, MessageSquareHeart, Calendar as CalendarIcon, MapPin,
-  ArrowLeft, ArrowRight,
+  ArrowLeft, ArrowRight, Baby,
 } from "lucide-react";
 
 type Lang = "en" | "fr";
@@ -38,7 +38,18 @@ const T = {
     emptyForm: "Please answer at least one question before submitting.",
     stepExperience: "Experience",
     stepLogistics: "Logistics",
+    stepChildren: "Children",
     stepTestimony: "Testimony",
+
+    kidsAttendedQ: "Did your child / children attend the event?",
+    kidsSection: "Children's class",
+    kidsSectionHelp: "For parents whose children attended the children's service.",
+    kidsDaily: "Were you able to send your child daily for the children's class?",
+    sometimes: "Sometimes",
+    kidsComprehension: "Satisfaction with lesson comprehension and retention",
+    kidsCare: "Satisfaction with the care of your child daily at the children's service",
+    kidsMeals: "Satisfaction with meals provision at the children's service",
+    kidsRemarks: "Any remarks, complaints or suggestions?",
 
     aboutYou: "About you",
     firstTime: "Is this your first time attending this event?",
@@ -87,7 +98,18 @@ const T = {
 
     stepExperience: "Expérience",
     stepLogistics: "Logistique",
+    stepChildren: "Enfants",
     stepTestimony: "Témoignage",
+
+    kidsAttendedQ: "Votre / vos enfant(s) ont-ils participé à l'événement ?",
+    kidsSection: "Classe des enfants",
+    kidsSectionHelp: "Pour les parents dont les enfants ont participé au service des enfants.",
+    kidsDaily: "Avez-vous pu envoyer votre enfant chaque jour à la classe des enfants ?",
+    sometimes: "Parfois",
+    kidsComprehension: "Satisfaction quant à la compréhension et la rétention des leçons",
+    kidsCare: "Satisfaction quant à la prise en charge quotidienne de votre enfant",
+    kidsMeals: "Satisfaction quant aux repas servis au service des enfants",
+    kidsRemarks: "Des remarques, plaintes ou suggestions ?",
     aboutYou: "À propos de vous",
     firstTime: "Est-ce votre première participation à cet événement ?",
     yes: "Oui",
@@ -170,7 +192,7 @@ function StarRating({
   );
 }
 
-type StepKey = "experience" | "logistics" | "testimony" | "done";
+type StepKey = "experience" | "logistics" | "children" | "testimony" | "done";
 
 const EventFeedback = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -192,6 +214,12 @@ const EventFeedback = () => {
   const [lodging, setLodging] = useState<number | null>(null);
   const [food, setFood] = useState<number | null>(null);
   const [children, setChildren] = useState<number | null>(null);
+  const [kidsAttended, setKidsAttended] = useState<string>("");
+  const [kidsDaily, setKidsDaily] = useState<string>("");
+  const [kidsComprehension, setKidsComprehension] = useState<number | null>(null);
+  const [kidsCare, setKidsCare] = useState<number | null>(null);
+  const [kidsMeals, setKidsMeals] = useState<number | null>(null);
+  const [kidsRemarks, setKidsRemarks] = useState("");
   const [impactSessions, setImpactSessions] = useState("");
   const [teachingImpact, setTeachingImpact] = useState("");
   const [enjoyed, setEnjoyed] = useState<string[]>([]);
@@ -226,9 +254,12 @@ const EventFeedback = () => {
     ? (lang === "fr" && eventHero.location_name_fr ? eventHero.location_name_fr : eventHero.location_name) || ""
     : "";
 
+  const showKids = kidsAttended === "yes";
+
   const steps: { key: StepKey; label: string }[] = [
     { key: "experience", label: t.stepExperience },
     { key: "logistics", label: t.stepLogistics },
+    ...(showKids ? [{ key: "children" as StepKey, label: t.stepChildren }] : []),
     { key: "testimony", label: t.stepTestimony },
   ];
 
@@ -240,6 +271,7 @@ const EventFeedback = () => {
 
     const hasAnswer =
       firstTime !== "" ||
+      kidsAttended !== "" ||
       [fellowship, impactSessions, teachingImpact, schedule, challenges, futureTopics, suggestions, testimonial, enjoyedOther]
         .some((v) => v.trim().length > 0) ||
       [overall, communication, lodging, food, children].some((v) => v !== null) ||
@@ -262,7 +294,7 @@ const EventFeedback = () => {
             communication_rating: communication,
             lodging_rating: lodging,
             food_rating: food,
-            children_management_rating: children,
+            children_management_rating: showKids ? children : null,
             impactful_sessions: impactSessions,
             teaching_impact: teachingImpact,
             enjoyed_most: enjoyed,
@@ -271,6 +303,12 @@ const EventFeedback = () => {
             challenges,
             future_topics: futureTopics,
             suggestions,
+            kids_attended: kidsAttended === "" ? null : kidsAttended === "yes",
+            kids_daily_attendance: showKids ? kidsDaily : "",
+            kids_comprehension_rating: showKids ? kidsComprehension : null,
+            kids_care_rating: showKids ? kidsCare : null,
+            kids_meals_rating: showKids ? kidsMeals : null,
+            kids_remarks: showKids ? kidsRemarks : "",
           },
           testimonial: { content: testimonial, role: testimonialRole, name: testimonialName },
         },
@@ -487,7 +525,20 @@ const EventFeedback = () => {
                   <GlassSection icon={Bed} title={t.logistics}>
                     <StarRating value={lodging} onChange={setLodging} label={t.lodging} notRatedLabel={t.notRated} />
                     <StarRating value={food} onChange={setFood} label={t.food} notRatedLabel={t.notRated} />
-                    <StarRating value={children} onChange={setChildren} label={t.children} notRatedLabel={t.notRated} />
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label>{t.kidsAttendedQ}</Label>
+                      <RadioGroup value={kidsAttended} onValueChange={setKidsAttended} className="flex gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="kids-yes" />
+                          <Label htmlFor="kids-yes" className="font-normal">{t.yes}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="kids-no" />
+                          <Label htmlFor="kids-no" className="font-normal">{t.no}</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
                     <Separator />
                     <div className="space-y-2">
                       <Label htmlFor="schedule">{t.schedule}</Label>
@@ -496,6 +547,42 @@ const EventFeedback = () => {
                     <div className="space-y-2">
                       <Label htmlFor="challenges">{t.challenges}</Label>
                       <Textarea id="challenges" className="rounded-xl bg-background/60" value={challenges} onChange={(e) => setChallenges(e.target.value)} maxLength={2000} rows={3} />
+                    </div>
+                  </GlassSection>
+
+                  {renderActions()}
+                </div>
+              )}
+
+              {step === "children" && (
+                <div className="space-y-5">
+                  <GlassSection icon={Baby} title={t.kidsSection} description={t.kidsSectionHelp}>
+                    <div className="space-y-2">
+                      <Label>{t.kidsDaily}</Label>
+                      <RadioGroup value={kidsDaily} onValueChange={setKidsDaily} className="flex flex-wrap gap-6">
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="yes" id="kd-yes" />
+                          <Label htmlFor="kd-yes" className="font-normal">{t.yes}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="no" id="kd-no" />
+                          <Label htmlFor="kd-no" className="font-normal">{t.no}</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <RadioGroupItem value="sometimes" id="kd-some" />
+                          <Label htmlFor="kd-some" className="font-normal">{t.sometimes}</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                    <Separator />
+                    <StarRating value={kidsComprehension} onChange={setKidsComprehension} label={t.kidsComprehension} notRatedLabel={t.notRated} />
+                    <StarRating value={kidsCare} onChange={setKidsCare} label={t.kidsCare} notRatedLabel={t.notRated} />
+                    <StarRating value={kidsMeals} onChange={setKidsMeals} label={t.kidsMeals} notRatedLabel={t.notRated} />
+                    <StarRating value={children} onChange={setChildren} label={t.children} notRatedLabel={t.notRated} />
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label htmlFor="kids-remarks">{t.kidsRemarks}</Label>
+                      <Textarea id="kids-remarks" className="rounded-xl bg-background/60" value={kidsRemarks} onChange={(e) => setKidsRemarks(e.target.value)} maxLength={2000} rows={4} />
                     </div>
                   </GlassSection>
 

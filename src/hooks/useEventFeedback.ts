@@ -20,6 +20,12 @@ export interface EventFeedbackRow {
   challenges: string | null;
   future_topics: string | null;
   suggestions: string | null;
+  kids_attended: boolean | null;
+  kids_daily_attendance: string | null;
+  kids_comprehension_rating: number | null;
+  kids_care_rating: number | null;
+  kids_meals_rating: number | null;
+  kids_remarks: string | null;
   submitted_at: string;
 }
 

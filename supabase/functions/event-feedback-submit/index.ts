@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       ? f.enjoyed_most.map((x: unknown) => String(x).slice(0, 120)).slice(0, 20)
       : [];
 
+    const dailyRaw = clean(f?.kids_daily_attendance, 20)?.toLowerCase() ?? null;
+    const kidsDaily = ["yes", "no", "sometimes"].includes(dailyRaw ?? "") ? dailyRaw : null;
+
     const payload = {
       event_id: event.id,
       member_id: null,
@@ -73,12 +76,19 @@ Deno.serve(async (req) => {
       challenges: clean(f?.challenges),
       future_topics: clean(f?.future_topics),
       suggestions: clean(f?.suggestions),
+      kids_attended: typeof f?.kids_attended === "boolean" ? f.kids_attended : null,
+      kids_daily_attendance: kidsDaily,
+      kids_comprehension_rating: clampRating(f?.kids_comprehension_rating),
+      kids_care_rating: clampRating(f?.kids_care_rating),
+      kids_meals_rating: clampRating(f?.kids_meals_rating),
+      kids_remarks: clean(f?.kids_remarks),
       submitted_at: new Date().toISOString(),
     };
 
     // Reject completely empty submissions
     const hasContent =
       payload.first_time_attending !== null ||
+      payload.kids_attended !== null ||
       enjoyed.length > 0 ||
       !!testimonialText ||
       [
@@ -90,6 +100,8 @@ Deno.serve(async (req) => {
         payload.challenges,
         payload.future_topics,
         payload.suggestions,
+        payload.kids_daily_attendance,
+        payload.kids_remarks,
       ].some((v) => v !== null) ||
       [
         payload.overall_rating,
@@ -97,6 +109,9 @@ Deno.serve(async (req) => {
         payload.lodging_rating,
         payload.food_rating,
         payload.children_management_rating,
+        payload.kids_comprehension_rating,
+        payload.kids_care_rating,
+        payload.kids_meals_rating,
       ].some((v) => v !== null);
 
     if (!hasContent) return json({ error: "Empty submission" }, 400);
