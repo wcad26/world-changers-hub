@@ -192,7 +192,7 @@ function StarRating({
   );
 }
 
-type StepKey = "experience" | "logistics" | "testimony" | "done";
+type StepKey = "experience" | "logistics" | "children" | "testimony" | "done";
 
 const EventFeedback = () => {
   const { slug } = useParams<{ slug: string }>();
