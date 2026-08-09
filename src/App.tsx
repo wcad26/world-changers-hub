@@ -15,6 +15,8 @@ import Media from "./pages/Media";
 import Store from "./pages/Store";
 import Blog from "./pages/Blog";
 import Counseling from "./pages/Counseling";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Fundraising from "./pages/Fundraising";
 import FundraisingDetails from "./pages/FundraisingDetails";
 import FundraisingPledge from "./pages/FundraisingPledge";
