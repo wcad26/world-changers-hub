@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MessageSquareHeart, Check, EyeOff, Download } from "lucide-react";
+import { Star, MessageSquareHeart, Check, EyeOff, Download, Baby } from "lucide-react";
 import { format } from "date-fns";
 import {
   useEventFeedback,
