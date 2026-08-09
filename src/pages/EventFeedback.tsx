@@ -38,7 +38,18 @@ const T = {
     emptyForm: "Please answer at least one question before submitting.",
     stepExperience: "Experience",
     stepLogistics: "Logistics",
+    stepChildren: "Children",
     stepTestimony: "Testimony",
+
+    kidsAttendedQ: "Did your child / children attend the event?",
+    kidsSection: "Children's class",
+    kidsSectionHelp: "For parents whose children attended the children's service.",
+    kidsDaily: "Were you able to send your child daily for the children's class?",
+    sometimes: "Sometimes",
+    kidsComprehension: "Satisfaction with lesson comprehension and retention",
+    kidsCare: "Satisfaction with the care of your child daily at the children's service",
+    kidsMeals: "Satisfaction with meals provision at the children's service",
+    kidsRemarks: "Any remarks, complaints or suggestions?",
 
     aboutYou: "About you",
     firstTime: "Is this your first time attending this event?",
