@@ -98,7 +98,18 @@ const T = {
 
     stepExperience: "Expérience",
     stepLogistics: "Logistique",
+    stepChildren: "Enfants",
     stepTestimony: "Témoignage",
+
+    kidsAttendedQ: "Votre / vos enfant(s) ont-ils participé à l'événement ?",
+    kidsSection: "Classe des enfants",
+    kidsSectionHelp: "Pour les parents dont les enfants ont participé au service des enfants.",
+    kidsDaily: "Avez-vous pu envoyer votre enfant chaque jour à la classe des enfants ?",
+    sometimes: "Parfois",
+    kidsComprehension: "Satisfaction quant à la compréhension et la rétention des leçons",
+    kidsCare: "Satisfaction quant à la prise en charge quotidienne de votre enfant",
+    kidsMeals: "Satisfaction quant aux repas servis au service des enfants",
+    kidsRemarks: "Des remarques, plaintes ou suggestions ?",
     aboutYou: "À propos de vous",
     firstTime: "Est-ce votre première participation à cet événement ?",
     yes: "Oui",
