@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
       ? f.enjoyed_most.map((x: unknown) => String(x).slice(0, 120)).slice(0, 20)
       : [];
 
+    const dailyRaw = clean(f?.kids_daily_attendance, 20)?.toLowerCase() ?? null;
+    const kidsDaily = ["yes", "no", "sometimes"].includes(dailyRaw ?? "") ? dailyRaw : null;
+
     const payload = {
       event_id: event.id,
       member_id: null,
@@ -73,6 +76,12 @@ Deno.serve(async (req) => {
       challenges: clean(f?.challenges),
       future_topics: clean(f?.future_topics),
       suggestions: clean(f?.suggestions),
+      kids_attended: typeof f?.kids_attended === "boolean" ? f.kids_attended : null,
+      kids_daily_attendance: kidsDaily,
+      kids_comprehension_rating: clampRating(f?.kids_comprehension_rating),
+      kids_care_rating: clampRating(f?.kids_care_rating),
+      kids_meals_rating: clampRating(f?.kids_meals_rating),
+      kids_remarks: clean(f?.kids_remarks),
       submitted_at: new Date().toISOString(),
     };
 
