@@ -104,7 +104,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li className="flex items-start">
                 <MapPin size={18} className="mr-2 mt-0.5 text-wca-purple" />
-                <span className="text-gray-600 dark:text-gray-400">Jardin Logbaba, Douala, Cameroon</span>
+                <span className="text-gray-600 dark:text-gray-400">Douala, Yaounde, Buea, Kaélé, North America & Europe</span>
               </li>
               <li className="flex items-center">
                 <Mail size={18} className="mr-2 text-wca-purple" />
