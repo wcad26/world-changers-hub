@@ -214,6 +214,12 @@ const EventFeedback = () => {
   const [lodging, setLodging] = useState<number | null>(null);
   const [food, setFood] = useState<number | null>(null);
   const [children, setChildren] = useState<number | null>(null);
+  const [kidsAttended, setKidsAttended] = useState<string>("");
+  const [kidsDaily, setKidsDaily] = useState<string>("");
+  const [kidsComprehension, setKidsComprehension] = useState<number | null>(null);
+  const [kidsCare, setKidsCare] = useState<number | null>(null);
+  const [kidsMeals, setKidsMeals] = useState<number | null>(null);
+  const [kidsRemarks, setKidsRemarks] = useState("");
   const [impactSessions, setImpactSessions] = useState("");
   const [teachingImpact, setTeachingImpact] = useState("");
   const [enjoyed, setEnjoyed] = useState<string[]>([]);
