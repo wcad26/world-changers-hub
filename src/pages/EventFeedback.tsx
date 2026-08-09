@@ -22,7 +22,7 @@ import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
 import {
   Loader2, Star, CheckCircle2, UserCheck, ShieldCheck,
   Sparkles, Bed, MessageSquareHeart, Calendar as CalendarIcon, MapPin,
-  ArrowLeft, ArrowRight,
+  ArrowLeft, ArrowRight, Baby,
 } from "lucide-react";
 
 type Lang = "en" | "fr";
