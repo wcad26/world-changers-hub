@@ -15,6 +15,8 @@ import Media from "./pages/Media";
 import Store from "./pages/Store";
 import Blog from "./pages/Blog";
 import Counseling from "./pages/Counseling";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Fundraising from "./pages/Fundraising";
 import FundraisingDetails from "./pages/FundraisingDetails";
 import FundraisingPledge from "./pages/FundraisingPledge";
@@ -240,6 +242,8 @@ const App = () => {
             <Route path="/store" element={<Store />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/counseling" element={<Counseling />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/fundraising" element={<Fundraising />} />
             <Route path="/fundraising/:id" element={<FundraisingDetails />} />
             <Route path="/fundraising/:id/pledge" element={<FundraisingPledge />} />
