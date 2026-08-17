@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText, Star, Layers, Target } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText, Star, Layers, Target, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
@@ -1808,6 +1808,12 @@ const RegionalEvents: React.FC = () => {
       </div>
 
       {/* Create Event Dialog */}
+      <RecurringSeriesDialog
+        open={seriesDialogOpen}
+        onOpenChange={setSeriesDialogOpen}
+        regionId={userRegion?.id ?? null}
+      />
+
       <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
           <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
