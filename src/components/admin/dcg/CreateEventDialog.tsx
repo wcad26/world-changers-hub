@@ -42,6 +42,13 @@ import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
 import type { Event } from '@/hooks/useDcgEvents';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { supabase } from '@/integrations/supabase/client';
+import { RecurrenceSettings } from '@/components/admin/events/RecurrenceSettings';
+import {
+  useCreateRecurrenceRule,
+  DEFAULT_RECURRENCE,
+  type RecurrenceInput,
+} from '@/hooks/useRecurringEvents';
+import { useAuth } from '@/hooks/useAuth';
 
 const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
@@ -92,7 +99,11 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   duplicateFrom,
 }) => {
   const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
+  const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(false);
+  const [recurrence, setRecurrence] = React.useState<RecurrenceInput>(DEFAULT_RECURRENCE);
   const createEvent = useCreateDcgEvent();
+  const createRule = useCreateRecurrenceRule();
+  const { user, userDcg, userRegion } = useAuth();
   const { data: currencies } = useCurrencies();
 
   const form = useForm<EventFormData>({
@@ -187,7 +198,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         end_datetime = new Date(`${data.end_date}T${endTime}`).toISOString();
       }
       
-      await createEvent.mutateAsync({
+      const createdEvent = await createEvent.mutateAsync({
         name: data.name,
         description: data.description,
         category: data.category,
@@ -203,8 +214,24 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         is_featured: data.is_featured,
         image_url: eventCardImageUrl || null,
       });
+
+      if (recurrenceEnabled && createdEvent?.id) {
+        await createRule.mutateAsync({
+          templateEventId: createdEvent.id,
+          name: data.name,
+          regionId: userRegion?.id ?? null,
+          dcgId: userDcg?.id ?? null,
+          startDatetime: start_datetime,
+          endDatetime: end_datetime,
+          createdBy: user?.id ?? null,
+          recurrence,
+        });
+      }
+
       form.reset();
       setCardImagePreview('');
+      setRecurrenceEnabled(false);
+      setRecurrence(DEFAULT_RECURRENCE);
       onClose();
     } catch (error) {
       console.error('Error creating event:', error);
@@ -517,6 +544,15 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 </FormItem>
               )}
             />
+
+            <RecurrenceSettings
+              enabled={recurrenceEnabled}
+              onEnabledChange={setRecurrenceEnabled}
+              value={recurrence}
+              onChange={setRecurrence}
+            />
+
+
 
             <DialogFooter className="flex-shrink-0 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>

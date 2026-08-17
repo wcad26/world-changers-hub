@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useDcgEvents, useRegionalEventsForDcg, useDeleteDcgEvent } from "@/hooks/useDcgEvents";
 import { 
   Calendar, Plus, Search, MapPin, Users, CalendarDays, 
-  Clock, UserCheck, Copy, Trash2, AlertCircle, TrendingUp, TrendingDown, MoreHorizontal, Star 
+  Clock, UserCheck, Copy, Trash2, AlertCircle, TrendingUp, TrendingDown, MoreHorizontal, Star, Repeat 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import PeriodFilter, { type PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { CreateEventDialog } from "@/components/admin/dcg/CreateEventDialog";
+import { RecurringSeriesDialog } from "@/components/admin/events/RecurringSeriesDialog";
 import { EventAttendanceDialog } from "@/components/admin/dcg/EventAttendanceDialog";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { toast } from "sonner";
@@ -49,6 +50,7 @@ const DcgEvents = () => {
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showSeriesDialog, setShowSeriesDialog] = useState(false);
   const [duplicateSource, setDuplicateSource] = useState<any>(null);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<any>(null);
 
@@ -192,11 +194,15 @@ const DcgEvents = () => {
                 <SelectItem value="past">Past</SelectItem>
               </SelectContent>
             </Select>
-            <div className="w-full sm:w-auto sm:ml-auto">
+            <div className="w-full sm:w-auto sm:ml-auto flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setShowSeriesDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
+                <Repeat className="h-4 w-4" /> Recurring Series
+              </Button>
               <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
                 <Plus className="h-4 w-4" /> Create Event
               </Button>
             </div>
+
           </div>
         </div>
 
@@ -484,6 +490,12 @@ const DcgEvents = () => {
           onClose={() => setDuplicateSource(null)}
           duplicateFrom={duplicateSource}
         />
+        <RecurringSeriesDialog
+          open={showSeriesDialog}
+          onOpenChange={setShowSeriesDialog}
+          dcgId={userDcg.id}
+        />
+
         {selectedEventForAttendance && (
           <EventAttendanceDialog
             isOpen={!!selectedEventForAttendance}
