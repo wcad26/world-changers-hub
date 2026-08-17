@@ -198,7 +198,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         end_datetime = new Date(`${data.end_date}T${endTime}`).toISOString();
       }
       
-      await createEvent.mutateAsync({
+      const createdEvent = await createEvent.mutateAsync({
         name: data.name,
         description: data.description,
         category: data.category,
@@ -214,8 +214,24 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         is_featured: data.is_featured,
         image_url: eventCardImageUrl || null,
       });
+
+      if (recurrenceEnabled && createdEvent?.id) {
+        await createRule.mutateAsync({
+          templateEventId: createdEvent.id,
+          name: data.name,
+          regionId: userRegion?.id ?? null,
+          dcgId: userDcg?.id ?? null,
+          startDatetime: start_datetime,
+          endDatetime: end_datetime,
+          createdBy: user?.id ?? null,
+          recurrence,
+        });
+      }
+
       form.reset();
       setCardImagePreview('');
+      setRecurrenceEnabled(false);
+      setRecurrence(DEFAULT_RECURRENCE);
       onClose();
     } catch (error) {
       console.error('Error creating event:', error);
