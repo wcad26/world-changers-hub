@@ -1143,6 +1143,88 @@ export type Database = {
           },
         ]
       }
+      event_recurrence_rules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          days_of_week: number[]
+          dcg_id: string | null
+          duration_minutes: number
+          end_date: string | null
+          frequency: string
+          id: string
+          interval_count: number
+          is_active: boolean
+          last_generated_until: string | null
+          lead_time_days: number
+          name: string
+          region_id: string | null
+          start_time: string
+          template_event_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          days_of_week?: number[]
+          dcg_id?: string | null
+          duration_minutes?: number
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          interval_count?: number
+          is_active?: boolean
+          last_generated_until?: string | null
+          lead_time_days?: number
+          name: string
+          region_id?: string | null
+          start_time?: string
+          template_event_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          days_of_week?: number[]
+          dcg_id?: string | null
+          duration_minutes?: number
+          end_date?: string | null
+          frequency?: string
+          id?: string
+          interval_count?: number
+          is_active?: boolean
+          last_generated_until?: string | null
+          lead_time_days?: number
+          name?: string
+          region_id?: string | null
+          start_time?: string
+          template_event_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_recurrence_rules_dcg_id_fkey"
+            columns: ["dcg_id"]
+            isOneToOne: false
+            referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_recurrence_rules_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_recurrence_rules_template_event_id_fkey"
+            columns: ["template_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_slug_history: {
         Row: {
           changed_at: string | null
@@ -1323,12 +1405,14 @@ export type Database = {
           dcg_id: string | null
           description: string | null
           description_fr: string | null
+          detached_from_series: boolean
           end_datetime: string | null
           id: string
           image_url: string | null
           image_url_fr: string | null
           is_featured: boolean
           is_public: boolean
+          is_recurring_instance: boolean
           is_special: boolean | null
           linked_fundraising_campaign_id: string | null
           location_name: string | null
@@ -1338,6 +1422,7 @@ export type Database = {
           organizer_email: string | null
           organizer_name: string | null
           organizer_phone: string | null
+          recurrence_rule_id: string | null
           region_id: string | null
           registration_url: string | null
           requirements: string | null
@@ -1365,12 +1450,14 @@ export type Database = {
           dcg_id?: string | null
           description?: string | null
           description_fr?: string | null
+          detached_from_series?: boolean
           end_datetime?: string | null
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
+          is_recurring_instance?: boolean
           is_special?: boolean | null
           linked_fundraising_campaign_id?: string | null
           location_name?: string | null
@@ -1380,6 +1467,7 @@ export type Database = {
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
+          recurrence_rule_id?: string | null
           region_id?: string | null
           registration_url?: string | null
           requirements?: string | null
@@ -1407,12 +1495,14 @@ export type Database = {
           dcg_id?: string | null
           description?: string | null
           description_fr?: string | null
+          detached_from_series?: boolean
           end_datetime?: string | null
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
           is_featured?: boolean
           is_public?: boolean
+          is_recurring_instance?: boolean
           is_special?: boolean | null
           linked_fundraising_campaign_id?: string | null
           location_name?: string | null
@@ -1422,6 +1512,7 @@ export type Database = {
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
+          recurrence_rule_id?: string | null
           region_id?: string | null
           registration_url?: string | null
           requirements?: string | null
@@ -1453,6 +1544,13 @@ export type Database = {
             columns: ["linked_fundraising_campaign_id"]
             isOneToOne: false
             referencedRelation: "fundraising_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_recurrence_rule_id_fkey"
+            columns: ["recurrence_rule_id"]
+            isOneToOne: false
+            referencedRelation: "event_recurrence_rules"
             referencedColumns: ["id"]
           },
           {
