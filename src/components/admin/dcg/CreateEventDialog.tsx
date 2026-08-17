@@ -518,6 +518,15 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               )}
             />
 
+            <RecurrenceSettings
+              enabled={recurrenceEnabled}
+              onEnabledChange={setRecurrenceEnabled}
+              value={recurrence}
+              onChange={setRecurrence}
+            />
+
+
+
             <DialogFooter className="flex-shrink-0 pt-4">
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
