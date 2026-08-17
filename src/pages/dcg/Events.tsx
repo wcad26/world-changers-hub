@@ -488,6 +488,12 @@ const DcgEvents = () => {
           onClose={() => setDuplicateSource(null)}
           duplicateFrom={duplicateSource}
         />
+        <RecurringSeriesDialog
+          open={showSeriesDialog}
+          onOpenChange={setShowSeriesDialog}
+          dcgId={userDcg.id}
+        />
+
         {selectedEventForAttendance && (
           <EventAttendanceDialog
             isOpen={!!selectedEventForAttendance}
