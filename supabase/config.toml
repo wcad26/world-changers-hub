@@ -60,3 +60,6 @@ verify_jwt = true
 
 [functions.attendance-mark-present]
 verify_jwt = true
+
+[functions.generate-recurring-events]
+verify_jwt = false
