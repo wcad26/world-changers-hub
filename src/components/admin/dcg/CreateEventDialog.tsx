@@ -99,7 +99,11 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   duplicateFrom,
 }) => {
   const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
+  const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(false);
+  const [recurrence, setRecurrence] = React.useState<RecurrenceInput>(DEFAULT_RECURRENCE);
   const createEvent = useCreateDcgEvent();
+  const createRule = useCreateRecurrenceRule();
+  const { user, userDcg, userRegion } = useAuth();
   const { data: currencies } = useCurrencies();
 
   const form = useForm<EventFormData>({
