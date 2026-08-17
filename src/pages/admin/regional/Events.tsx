@@ -1696,10 +1696,15 @@ const RegionalEvents: React.FC = () => {
               <UserCheck className="h-4 w-4" />
               Record Attendance
             </Button>
+            <Button variant="outline" onClick={() => setSeriesDialogOpen(true)} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
+              <Repeat className="h-4 w-4" />
+              Recurring Series
+            </Button>
             <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
               <Plus className="h-4 w-4" />
               Add Event
             </Button>
+
           </div>
         </div>
 
