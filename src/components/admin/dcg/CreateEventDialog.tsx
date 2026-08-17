@@ -42,6 +42,13 @@ import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
 import type { Event } from '@/hooks/useDcgEvents';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { supabase } from '@/integrations/supabase/client';
+import { RecurrenceSettings } from '@/components/admin/events/RecurrenceSettings';
+import {
+  useCreateRecurrenceRule,
+  DEFAULT_RECURRENCE,
+  type RecurrenceInput,
+} from '@/hooks/useRecurringEvents';
+import { useAuth } from '@/hooks/useAuth';
 
 const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
