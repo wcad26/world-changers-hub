@@ -192,11 +192,15 @@ const DcgEvents = () => {
                 <SelectItem value="past">Past</SelectItem>
               </SelectContent>
             </Select>
-            <div className="w-full sm:w-auto sm:ml-auto">
+            <div className="w-full sm:w-auto sm:ml-auto flex flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setShowSeriesDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
+                <Repeat className="h-4 w-4" /> Recurring Series
+              </Button>
               <Button onClick={() => setShowCreateDialog(true)} className="gap-2 h-8 text-sm w-full sm:w-auto">
                 <Plus className="h-4 w-4" /> Create Event
               </Button>
             </div>
+
           </div>
         </div>
 
