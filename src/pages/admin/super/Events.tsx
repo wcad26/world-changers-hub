@@ -179,6 +179,9 @@ const SuperEvents: React.FC = () => {
   const { data: currencies } = useCurrencies();
   const createEvent = useCreateGlobalEvent();
   const updateEvent = useUpdateGlobalEvent();
+  const createRecurrenceRule = useCreateRecurrenceRule();
+  const { user } = useAuth();
+
   const deleteEvent = useDeleteGlobalEvent();
 
   // Fundraising campaigns for linking special events
