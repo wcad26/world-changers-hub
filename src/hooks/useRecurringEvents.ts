@@ -81,6 +81,9 @@ export const useCreateRecurrenceRule = () => {
       createdBy: string | null;
       recurrence: RecurrenceInput;
     }) => {
+      if (!params.templateEventId) {
+        throw new Error('Cannot create a recurring series without a saved event to repeat.');
+      }
       const start = new Date(params.startDatetime);
       const duration = params.endDatetime
         ? Math.max(30, Math.round((new Date(params.endDatetime).getTime() - start.getTime()) / 60000))
