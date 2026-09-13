@@ -22,7 +22,6 @@ Per your correction, Nimpa Nyutchem Christian Collins, Yurika Josephine and Tsi 
 - Tsafack Donkeng Raissa
 - Tsi Viola
 - Yurika Josephine
-- Nchadze Iris Bognyuy *(moved here? confirm — previously DCG but rarely attends)*
 
 ## Do NOT attend regional meetings AND NOT in a DCG (5)
 - Ekwalla Jules Dylane
