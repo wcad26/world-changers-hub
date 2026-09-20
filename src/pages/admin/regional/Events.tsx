@@ -2034,51 +2034,6 @@ const RegionalEvents: React.FC = () => {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="cost_currency_code"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Currency</FormLabel>
-                      <FormControl>
-                        <select
-                          {...field}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        >
-                          <option value="">Select currency</option>
-                          {currencies?.map((currency) => (
-                            <option key={currency.code} value={currency.code}>
-                              {currency.symbol} - {currency.name}
-                            </option>
-                          ))}
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="cost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Event Cost</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)}
-                          value={field.value || 0}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 
                 <FormField
                   control={form.control}
@@ -3161,6 +3116,15 @@ const RegionalEvents: React.FC = () => {
                     )}
                   />
                 )}
+              </div>
+              <div className="px-1 pb-2">
+                <SpecialEventSettings
+                  form={form}
+                  feeRows={feeRows}
+                  setFeeRows={setFeeRows}
+                  currencies={currencies as any}
+                  regionId={userRegion?.id}
+                />
               </div>
               <div className="px-1 pb-2">
                 <RecurrenceSettings
@@ -4433,6 +4397,13 @@ const RegionalEvents: React.FC = () => {
                 />
               )}
 
+              <SpecialEventSettings
+                form={form}
+                feeRows={feeRows}
+                setFeeRows={setFeeRows}
+                currencies={currencies as any}
+                regionId={userRegion?.id}
+              />
 
               <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
