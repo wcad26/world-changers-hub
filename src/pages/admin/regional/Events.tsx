@@ -56,6 +56,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AttendanceManagementDialog } from "@/components/admin/regional/events/AttendanceManagementDialog";
+import { SpecialEventSettings } from "@/components/admin/events/SpecialEventSettings";
+import { fetchEventRegistrationFees, saveEventRegistrationFees, type EventFeeRow } from "@/hooks/useEventRegistrationFees";
 
 const eventCategories = [
   'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop', 'Community Service', 'Bible Study', 'Retreat', 'Seminar', 'DCG Meeting', 'Other'
@@ -86,8 +88,10 @@ const eventSchema = z.object({
   address: z.string().min(10, { message: "Please provide a full address for map display." }),
   address_fr: z.string().optional(),
   capacity: z.coerce.number().positive().int().optional(),
-  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
-  cost_currency_code: z.string().optional(),
+  collect_lodging: z.boolean().default(false),
+  collect_meal_preferences: z.boolean().default(false),
+  collect_pledges: z.boolean().default(false),
+  linked_fundraising_campaign_id: z.string().uuid().optional().or(z.literal("")),
   event_card_image: z.instanceof(File).optional(),
   event_card_image_fr: z.instanceof(File).optional(),
   image_file: z.instanceof(File).optional(),
@@ -190,6 +194,7 @@ const RegionalEvents: React.FC = () => {
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceInput>(DEFAULT_RECURRENCE);
   const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
+  const [feeRows, setFeeRows] = useState<EventFeeRow[]>([]);
   const { toast } = useToast();
 
   const { userRegion, user } = useAuth();
@@ -500,12 +505,14 @@ const RegionalEvents: React.FC = () => {
         image_url_fr: eventCardImageUrlFr || uploadedImageUrlsFr[0] || null, // French card image or first French hero
         capacity: values.capacity || null,
         attendance_target: values.attendance_target || null,
-        cost: values.cost || 0,
-        cost_currency_code: values.cost_currency_code || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
         requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
+        collect_lodging: values.is_special ? !!values.collect_lodging : false,
+        collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
+        collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         status: 'Upcoming',
         dcg_id: null,
         registration_url: values.registration_url || null,
@@ -515,6 +522,9 @@ const RegionalEvents: React.FC = () => {
       };
 
       const createdEvent = await createEventMutation.mutateAsync(newEventData);
+      if (createdEvent?.id) {
+        await saveEventRegistrationFees(createdEvent.id, values.is_special ? feeRows : []);
+      }
       
       // Insert all images into event_images table
       if (uploadedImageUrls.length > 0 && createdEvent) {
@@ -1214,12 +1224,14 @@ const RegionalEvents: React.FC = () => {
         image_url_fr: eventCardImageUrlFr,
         capacity: values.capacity || null,
         attendance_target: values.attendance_target || null,
-        cost: values.cost || 0,
-        cost_currency_code: values.cost_currency_code || null,
         is_public: values.is_public,
         is_featured: values.is_featured,
         is_special: values.is_special,
         requires_pre_registration: values.is_special ? !!values.requires_pre_registration : false,
+        collect_lodging: values.is_special ? !!values.collect_lodging : false,
+        collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
+        collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
@@ -1227,6 +1239,7 @@ const RegionalEvents: React.FC = () => {
       };
 
       await updateEventMutation.mutateAsync(updateData);
+      await saveEventRegistrationFees(eventToEdit.id, values.is_special ? feeRows : []);
       
       // Update testimonials
       await supabase
@@ -1436,6 +1449,12 @@ const RegionalEvents: React.FC = () => {
     setHeroImagesFrToDelete([]);
     setGalleryImagesFrToDelete([]);
     
+    try {
+      setFeeRows(await fetchEventRegistrationFees(event.id));
+    } catch {
+      setFeeRows([]);
+    }
+
     // Fetch existing testimonials
     const { data: existingTestimonials } = await supabase
       .from('event_testimonials')
@@ -1501,6 +1520,10 @@ const RegionalEvents: React.FC = () => {
       is_featured: event.is_featured,
       is_special: event.is_special || false,
       requires_pre_registration: !!event.requires_pre_registration,
+      collect_lodging: !!event.collect_lodging,
+      collect_meal_preferences: !!event.collect_meal_preferences,
+      collect_pledges: !!event.collect_pledges,
+      linked_fundraising_campaign_id: event.linked_fundraising_campaign_id || "",
       attendance_target: event.attendance_target || undefined,
           testimonials: existingTestimonials?.map(t => ({
             name: t.name,
