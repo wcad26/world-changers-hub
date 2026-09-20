@@ -47,6 +47,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { GlobalAttendanceDialog } from "@/components/admin/super/events/GlobalAttendanceDialog";
+import { RegistrationFeesEditor } from "@/components/admin/events/RegistrationFeesEditor";
+import { fetchEventRegistrationFees, saveEventRegistrationFees, type EventFeeRow } from "@/hooks/useEventRegistrationFees";
 
 const eventCategories = [
   'Conference', 'Worship', 'Revival', 'Outreach', 'Training', 'Workshop',
@@ -194,6 +196,9 @@ const SuperEvents: React.FC = () => {
     },
   });
   const navigate = useNavigate();
+
+  const [feeRows, setFeeRows] = useState<EventFeeRow[]>([]);
+  const [editFeeRows, setEditFeeRows] = useState<EventFeeRow[]>([]);
 
   const defaultFormValues: any = {
     name: "", name_fr: "", description: "", description_fr: "",
@@ -531,6 +536,8 @@ const SuperEvents: React.FC = () => {
 
       if (created?.id) {
         await persistEventRelations(created.id, values, heroUrls, heroUrlsFr);
+        await saveEventRegistrationFees(created.id, values.is_special ? feeRows : []);
+        setFeeRows([]);
       }
 
       if (recurrenceEnabled && created?.id) {
@@ -624,6 +631,11 @@ const SuperEvents: React.FC = () => {
         display_order: s.display_order ?? idx,
       })),
     } as any);
+    try {
+      setEditFeeRows(await fetchEventRegistrationFees(event.id));
+    } catch {
+      setEditFeeRows([]);
+    }
     setEditDialogOpen(true);
   }
 
@@ -698,6 +710,7 @@ const SuperEvents: React.FC = () => {
         supabase.from('event_speakers').delete().eq('event_id', eventToEdit.id),
       ]);
       await persistEventRelations(eventToEdit.id, values, heroUrls, heroUrlsFr);
+      await saveEventRegistrationFees(eventToEdit.id, values.is_special ? editFeeRows : []);
 
       toast({ title: "Success", description: "Event updated successfully." });
       setEditDialogOpen(false);
@@ -875,21 +888,6 @@ const SuperEvents: React.FC = () => {
             <FormItem><FormLabel>Attendance Target</FormLabel><FormControl><Input type="number" placeholder="Target attendees" {...field} value={field.value ?? ''} /></FormControl><FormDescription>Target attendance for performance tracking.</FormDescription><FormMessage /></FormItem>
           )} />
 
-          <FormField control={formInstance.control} name="cost_currency_code" render={({ field }: any) => (
-            <FormItem>
-              <FormLabel>Currency</FormLabel>
-              <FormControl>
-                <select {...field} value={field.value || ''} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                  <option value="">Select currency</option>
-                  {currencies?.map((c) => (<option key={c.code} value={c.code}>{c.symbol} - {c.name}</option>))}
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-          <FormField control={formInstance.control} name="cost" render={({ field }: any) => (
-            <FormItem><FormLabel>Event Cost</FormLabel><FormControl><Input type="number" step="0.01" min="0" placeholder="0.00" {...field} value={field.value ?? 0} onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : 0)} /></FormControl><FormMessage /></FormItem>
-          )} />
         </div>
 
         {/* Card Image (EN) */}
@@ -1314,6 +1312,11 @@ const SuperEvents: React.FC = () => {
                 <FormMessage />
               </FormItem>
             )} />
+            <RegistrationFeesEditor
+              rows={isEdit ? editFeeRows : feeRows}
+              onChange={isEdit ? setEditFeeRows : setFeeRows}
+              currencies={currencies as any}
+            />
           </div>
         )}
 
