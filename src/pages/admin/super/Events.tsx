@@ -197,6 +197,9 @@ const SuperEvents: React.FC = () => {
   });
   const navigate = useNavigate();
 
+  const [feeRows, setFeeRows] = useState<EventFeeRow[]>([]);
+  const [editFeeRows, setEditFeeRows] = useState<EventFeeRow[]>([]);
+
   const defaultFormValues: any = {
     name: "", name_fr: "", description: "", description_fr: "",
     start_date: "", start_time: "", end_date: "", end_time: "",
@@ -533,6 +536,8 @@ const SuperEvents: React.FC = () => {
 
       if (created?.id) {
         await persistEventRelations(created.id, values, heroUrls, heroUrlsFr);
+        await saveEventRegistrationFees(created.id, values.is_special ? feeRows : []);
+        setFeeRows([]);
       }
 
       if (recurrenceEnabled && created?.id) {
@@ -626,6 +631,11 @@ const SuperEvents: React.FC = () => {
         display_order: s.display_order ?? idx,
       })),
     } as any);
+    try {
+      setEditFeeRows(await fetchEventRegistrationFees(event.id));
+    } catch {
+      setEditFeeRows([]);
+    }
     setEditDialogOpen(true);
   }
 
@@ -700,6 +710,7 @@ const SuperEvents: React.FC = () => {
         supabase.from('event_speakers').delete().eq('event_id', eventToEdit.id),
       ]);
       await persistEventRelations(eventToEdit.id, values, heroUrls, heroUrlsFr);
+      await saveEventRegistrationFees(eventToEdit.id, values.is_special ? editFeeRows : []);
 
       toast({ title: "Success", description: "Event updated successfully." });
       setEditDialogOpen(false);
