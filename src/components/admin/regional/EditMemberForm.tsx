@@ -189,11 +189,15 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
         membership_class_completed: data.has_completed_foundation_school === 'yes',
         baptism_date: data.is_baptized === 'yes' ? (data.baptism_date || null) : null,
       };
-      const { error: memberError } = await supabase
+      const { data: updatedMembers, error: memberError } = await supabase
         .from('members')
         .update(memberUpdate)
-        .eq('id', member.id);
+        .eq('id', member.id)
+        .select('id');
       if (memberError) throw memberError;
+      if (!updatedMembers || updatedMembers.length === 0) {
+        throw new Error('Membership details could not be saved — you may not have permission to edit this record.');
+      }
 
       // Handle DCG change
       if (selectedDcgId !== (memberDcg || '')) {
@@ -225,9 +229,13 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       }
       setTimeout(() => onSuccess(), 100);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Update member error:', error);
-      toast({ title: "Error", description: "Failed to update member.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update member.",
+        variant: "destructive",
+      });
     },
   });
 
