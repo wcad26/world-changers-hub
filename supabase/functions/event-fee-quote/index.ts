@@ -1,11 +1,13 @@
 // Returns the registration fee for each attendee of a special event.
-// Categories are resolved server-side; the browser cannot claim a cheaper one.
+// Categories and family eligibility are resolved server-side; the browser
+// cannot claim a cheaper category or a fake family.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   loadEventFees,
-  feeFor,
   resolveCategoriesForMembers,
   categoryForNewRegistrant,
+  resolveFamilyUnit,
+  priceGroup,
   type FeeCategory,
 } from "../_shared/eventFees.ts";
 
@@ -48,29 +50,43 @@ Deno.serve(async (req) => {
     const memberIds = attendees.map((a) => a.member_id).filter(Boolean) as string[];
     const resolved = await resolveCategoriesForMembers(admin, memberIds);
 
-    const lines = attendees.map((a) => {
-      const category: FeeCategory = a.member_id
-        ? resolved[a.member_id] || "member"
-        : categoryForNewRegistrant({
+    // Per-person categories (used when no family package applies).
+    const categories: Record<string, FeeCategory> = { ...resolved };
+    attendees.forEach((a) => {
+      if (a.member_id && !categories[a.member_id]) categories[a.member_id] = "member";
+    });
+
+    // Family unit: only the primary's spouse and their under-16 children.
+    const primary = attendees[0];
+    let covered = new Set<string>();
+    if (primary?.member_id && memberIds.length > 1) {
+      const unit = await resolveFamilyUnit(admin, primary.member_id, memberIds);
+      covered = unit.covered;
+    }
+
+    const groupAttendees = attendees.map((a) => ({
+      key: a.key,
+      name: a.name,
+      member_id: a.member_id ?? null,
+      family_covered: !a.member_id
+        ? categoryForNewRegistrant({
             date_of_birth: a.date_of_birth,
             is_child: a.is_child,
             hasFamily: a.has_family,
-          });
-      const fee = feeFor(fees, category);
-      return {
-        key: a.key,
-        name: a.name || "",
-        category,
-        label: fee?.label || null,
-        amount: fee?.amount ?? 0,
-        currency_code: fee?.currency_code || currency,
-      };
-    });
+          }) === "child"
+        : false,
+    }));
 
-    const total = lines.reduce((s, l) => s + (l.amount || 0), 0);
+    const priced = priceGroup(fees, groupAttendees, categories, covered);
 
     return new Response(
-      JSON.stringify({ has_fees: fees.length > 0, currency_code: currency, lines, total }),
+      JSON.stringify({
+        has_fees: fees.length > 0,
+        currency_code: currency,
+        pricing_mode: priced.mode,
+        lines: priced.lines,
+        total: priced.total,
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
