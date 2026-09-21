@@ -18,6 +18,9 @@ import { useCanManageRegionalAccess } from '@/hooks/useCanManageRegionalAccess';
 const AccessKpiCards: React.FC = () => {
   const { userRegion } = useAuth();
   const regionId = userRegion?.id;
+  const { data: canManageAccess, isLoading: checkingAccess } =
+    useCanManageRegionalAccess(regionId);
+
 
   const { data, isLoading } = useQuery({
     queryKey: ['access-management-kpis', regionId],
