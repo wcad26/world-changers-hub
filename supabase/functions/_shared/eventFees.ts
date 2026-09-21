@@ -133,3 +133,148 @@ export function categoryForNewRegistrant(args: { date_of_birth?: string | null; 
   if ((age !== null && age < 16 && args.hasFamily !== false) || args.is_child) return "child";
   return "member";
 }
+
+// ---------------------------------------------------------------------------
+// Family unit resolution + group pricing
+// ---------------------------------------------------------------------------
+
+export const CHILD_AGE_LIMIT = 16;
+
+export type FamilyUnit = { covered: Set<string>; separate: Set<string> };
+
+/**
+ * Decide which of the attending member ids genuinely belong to the primary
+ * registrant's family unit: the spouse, and under-16 children of the primary
+ * or of that spouse. Everyone else (adult friends/siblings, adult "children")
+ * is billed individually. Relationships are read from the database only.
+ */
+export async function resolveFamilyUnit(
+  admin: any,
+  primaryMemberId: string,
+  attendeeMemberIds: string[],
+): Promise<FamilyUnit> {
+  const others = Array.from(new Set(attendeeMemberIds.filter((id) => id && id !== primaryMemberId)));
+  const covered = new Set<string>([primaryMemberId]);
+  const separate = new Set<string>();
+  if (others.length === 0) return { covered, separate };
+
+  const all = [primaryMemberId, ...others];
+  const { data: members } = await admin
+    .from("members")
+    .select("id, profiles:profile_id(date_of_birth)")
+    .in("id", all);
+  const dob = new Map<string, string | null>();
+  (members || []).forEach((m: any) => dob.set(m.id, m.profiles?.date_of_birth ?? null));
+  const isMinor = (id: string) => {
+    const a = ageFrom(dob.get(id) ?? null);
+    return a !== null && a < CHILD_AGE_LIMIT;
+  };
+
+  const [a, b] = await Promise.all([
+    admin.from("member_relationships").select("member_id, related_member_id, relationship_type").in("member_id", all),
+    admin.from("member_relationships").select("member_id, related_member_id, relationship_type").in("related_member_id", all),
+  ]);
+  type Link = { a: string; b: string; type: string };
+  const links: Link[] = [];
+  const push = (r: any) => links.push({ a: r.member_id, b: r.related_member_id, type: String(r.relationship_type || "") });
+  (a.data || []).forEach(push);
+  (b.data || []).forEach(push);
+
+  const relatedTo = (x: string, y: string, types: string[]) =>
+    links.some((l) => types.includes(l.type) && ((l.a === x && l.b === y) || (l.a === y && l.b === x)));
+
+  // Spouse of the primary (at most one counted).
+  let spouseId: string | null = null;
+  for (const id of others) {
+    if (relatedTo(primaryMemberId, id, ["spouse"])) { spouseId = id; break; }
+  }
+  if (spouseId) covered.add(spouseId);
+
+  const PARENTAL = ["child", "parent", "guardian"];
+  for (const id of others) {
+    if (id === spouseId) continue;
+    const parentLink = relatedTo(primaryMemberId, id, PARENTAL) || (spouseId ? relatedTo(spouseId, id, PARENTAL) : false);
+    if (parentLink && isMinor(id)) covered.add(id);
+    else separate.add(id);
+  }
+
+  // A family package needs at least two qualifying people.
+  if (covered.size < 2) {
+    covered.forEach((id) => { if (id !== primaryMemberId) separate.add(id); });
+    covered.clear();
+  }
+  return { covered, separate };
+}
+
+export type PricedLine = {
+  key: string;
+  name: string;
+  category: FeeCategory;
+  label: string | null;
+  amount: number;
+  currency_code: string | null;
+  covered_by_family?: boolean;
+  is_family_line?: boolean;
+};
+
+export type GroupAttendee = {
+  key: string;
+  name?: string;
+  member_id?: string | null;
+  family_covered?: boolean; // for new registrants: submitted as an under-16 child
+};
+
+/**
+ * Price a whole group. When the event defines a family fee and the resolved
+ * family unit has 2+ people, those people share one flat family fee and
+ * everyone else is priced by their own category.
+ */
+export function priceGroup(
+  fees: FeeRow[],
+  attendees: GroupAttendee[],
+  categories: Record<string, FeeCategory>,
+  familyCovered: Set<string>,
+): { mode: "family" | "individual"; lines: PricedLine[]; total: number } {
+  const familyFee = feeFor(fees, "family");
+  const fallbackCurrency = fees[0]?.currency_code || null;
+
+  const covered = attendees.filter((a) =>
+    a.member_id ? familyCovered.has(a.member_id) : !!a.family_covered && familyCovered.size > 0
+  );
+  const useFamily = !!familyFee && covered.length >= 2;
+
+  const individualLine = (a: GroupAttendee): PricedLine => {
+    const category: FeeCategory = (a.member_id ? categories[a.member_id] : undefined) || "member";
+    const fee = feeFor(fees, category);
+    return {
+      key: a.key,
+      name: a.name || "",
+      category,
+      label: fee?.label ?? null,
+      amount: fee?.amount ?? 0,
+      currency_code: fee?.currency_code || fallbackCurrency,
+    };
+  };
+
+  if (!useFamily) {
+    const lines = attendees.map(individualLine);
+    return { mode: "individual", lines, total: lines.reduce((s, l) => s + (l.amount || 0), 0) };
+  }
+
+  const coveredKeys = new Set(covered.map((c) => c.key));
+  const lines: PricedLine[] = attendees.map((a, i) => {
+    if (!coveredKeys.has(a.key)) return individualLine(a);
+    const first = covered[0].key === a.key;
+    return {
+      key: a.key,
+      name: a.name || "",
+      category: "family" as FeeCategory,
+      label: familyFee!.label ?? null,
+      amount: first ? familyFee!.amount : 0,
+      currency_code: familyFee!.currency_code || fallbackCurrency,
+      covered_by_family: true,
+      is_family_line: first,
+    };
+  });
+  return { mode: "family", lines, total: lines.reduce((s, l) => s + (l.amount || 0), 0) };
+}
