@@ -178,7 +178,7 @@ export async function resolveFamilyUnit(
   ]);
   type Link = { a: string; b: string; type: string };
   const links: Link[] = [];
-  const push = (r: any) => links.push({ a: r.member_id, b: r.related_member_id, type: String(r.relationship_type || "") });
+  const push = (r: any) => links.push({ a: r.member_id, b: r.related_member_id, type: String(r.relationship_type || "").toLowerCase() });
   (a.data || []).forEach(push);
   (b.data || []).forEach(push);
 
@@ -186,24 +186,41 @@ export async function resolveFamilyUnit(
   const relatedTo = (x: string, y: string, types: string[]) =>
     links.some((l) => types.includes(l.type) && ((l.a === x && l.b === y) || (l.a === y && l.b === x)));
 
-  // Spouse of the primary (at most one counted).
-  let spouseId: string | null = null;
-  for (const id of others) {
-    if (relatedTo(primaryMemberId, id, ["spouse"]) || declaredType(id) === "spouse") { spouseId = id; break; }
-  }
-  if (spouseId) covered.add(spouseId);
-
   const PARENTAL = ["child", "parent", "guardian"];
-  for (const id of others) {
-    if (id === spouseId) continue;
-    const parentLink =
-      relatedTo(primaryMemberId, id, PARENTAL) ||
-      (spouseId ? relatedTo(spouseId, id, PARENTAL) : false) ||
-      PARENTAL.includes(declaredType(id));
-    if (parentLink && isMinor(id)) covered.add(id);
-    else separate.add(id);
+
+  // --- 1. The couple: primary + every recorded spouse (and spouse of a spouse).
+  const adults = new Set<string>([primaryMemberId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const id of others) {
+      if (adults.has(id)) continue;
+      const isSpouse =
+        Array.from(adults).some((ad) => relatedTo(ad, id, ["spouse"])) ||
+        (declaredType(id) === "spouse");
+      if (isSpouse) { adults.add(id); grew = true; }
+    }
   }
 
+  // --- 2/3. Minors with a parental link to any adult in the couple, then minors
+  // linked as siblings to an already covered minor. Repeat until stable.
+  const minors = new Set<string>();
+  grew = true;
+  while (grew) {
+    grew = false;
+    for (const id of others) {
+      if (adults.has(id) || minors.has(id) || !isMinor(id)) continue;
+      const parentLink =
+        Array.from(adults).some((ad) => relatedTo(ad, id, PARENTAL)) ||
+        PARENTAL.includes(declaredType(id));
+      const siblingLink = Array.from(minors).some((mi) => relatedTo(mi, id, ["sibling"]));
+      if (parentLink || siblingLink) { minors.add(id); grew = true; }
+    }
+  }
+
+  adults.forEach((id) => covered.add(id));
+  minors.forEach((id) => covered.add(id));
+  others.forEach((id) => { if (!covered.has(id)) separate.add(id); });
 
   // A family package needs at least two qualifying people.
   if (covered.size < 2) {
