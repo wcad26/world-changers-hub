@@ -82,7 +82,10 @@ const UsersWithAccessTable: React.FC = () => {
 
   const { data: roles } = useRegionalRoles(regionId);
 
-  const { data: rows, isLoading } = useQuery({
+  const { data: canManageAccess, isLoading: checkingAccess } =
+    useCanManageRegionalAccess(regionId);
+
+  const { data: rows, isLoading, error: rowsError } = useQuery({
     queryKey: ['users-with-access', regionId],
     queryFn: async (): Promise<AccessRow[]> => {
       if (!regionId) return [];
@@ -120,14 +123,15 @@ const UsersWithAccessTable: React.FC = () => {
 
       const grouped = new Map<string, AccessRow>();
       for (const a of assignments as any[]) {
-        const profile = profileMap.get(a.user_id);
-        if (!profile) continue;
+        // Keep the assignment visible even when the person's profile cannot be
+        // read — dropping it used to make a populated list look empty.
+        const profile = profileMap.get(a.user_id) ?? {};
 
         const row = grouped.get(a.user_id) ?? {
           user_id: a.user_id,
           email: profile.email ?? '',
           first_name: profile.first_name ?? '',
-          last_name: profile.last_name ?? '',
+          last_name: profile.last_name ?? 'Unknown member',
           photo_url: photoMap.get(a.user_id) ?? null,
           roles: [],
           lastUpdated: a.assigned_at,
