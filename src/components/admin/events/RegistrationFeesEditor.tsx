@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
-import { FEE_CATEGORIES, type EventFeeRow, type FeeCategory } from '@/hooks/useEventRegistrationFees';
+import { FEE_CATEGORIES, REQUIRED_FEE_CATEGORIES, type EventFeeRow, type FeeCategory } from '@/hooks/useEventRegistrationFees';
 
 interface Props {
   rows: EventFeeRow[];
@@ -25,7 +25,9 @@ export const RegistrationFeesEditor: React.FC<Props> = ({ rows, onChange, curren
     onChange([...rows, { category: next, label: '', amount: 0, currency_code: currency }]);
   };
 
-  const missing = FEE_CATEGORIES.filter((c) => !rows.some((r) => r.category === c.value));
+  const missing = FEE_CATEGORIES.filter(
+    (c) => REQUIRED_FEE_CATEGORIES.includes(c.value) && !rows.some((r) => r.category === c.value)
+  );
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
