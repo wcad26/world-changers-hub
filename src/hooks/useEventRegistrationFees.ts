@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export type FeeCategory = 'leader' | 'member' | 'child';
+export type FeeCategory = 'leader' | 'member' | 'child' | 'family';
 
 export interface EventFeeRow {
   id?: string;
@@ -17,7 +17,15 @@ export const FEE_CATEGORIES: { value: FeeCategory; label: string; hint: string }
   { value: 'leader', label: 'Leader', hint: 'Anyone with an admin role in the system' },
   { value: 'member', label: 'Member', hint: 'Members and visitors' },
   { value: 'child', label: 'Child', hint: 'Under 16 linked to an adult' },
+  {
+    value: 'family',
+    label: 'Family (per household)',
+    hint: 'Charged once per family registering together (spouse + under-16 children); replaces the individual fees for that group',
+  },
 ];
+
+/** Categories that must have a fee set; family is optional. */
+export const REQUIRED_FEE_CATEGORIES: FeeCategory[] = ['leader', 'member', 'child'];
 
 /** Load fee rows for an event (amounts converted to major units). */
 export const fetchEventRegistrationFees = async (eventId: string): Promise<EventFeeRow[]> => {

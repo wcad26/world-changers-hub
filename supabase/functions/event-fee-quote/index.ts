@@ -24,6 +24,7 @@ type Attendee = {
   date_of_birth?: string | null;
   is_child?: boolean;
   has_family?: boolean;
+  relationship_type?: string | null;
 };
 
 Deno.serve(async (req) => {
