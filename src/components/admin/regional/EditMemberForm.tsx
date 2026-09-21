@@ -156,7 +156,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
   const updateMember = useMutation({
     mutationFn: async (data: EditMemberFormData) => {
       // Update profile
-      const { error: profileError } = await supabase
+      if (!member.profile_id) {
+        throw new Error('This member has no linked profile record, so personal details cannot be updated.');
+      }
+      const { data: updatedProfiles, error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: data.first_name,
@@ -168,8 +171,14 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
           gender: data.gender ? data.gender.toLowerCase() : null,
           occupation: data.occupation || null,
         })
-        .eq('id', member.profile_id);
+        .eq('id', member.profile_id)
+        .select('id');
       if (profileError) throw profileError;
+      // A blocked update returns no error but changes nothing — treat that as a failure
+      // instead of showing a false success message.
+      if (!updatedProfiles || updatedProfiles.length === 0) {
+        throw new Error("Personal details could not be saved — you may not have permission to edit this person's record.");
+      }
 
       // Update member record
       const memberUpdate: Record<string, any> = {
