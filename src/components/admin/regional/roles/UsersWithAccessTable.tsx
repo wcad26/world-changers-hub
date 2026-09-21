@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useRegionalRoles } from '@/hooks/useRegionalRoles';
+import { useCanManageRegionalAccess } from '@/hooks/useCanManageRegionalAccess';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -241,8 +242,25 @@ const UsersWithAccessTable: React.FC = () => {
       </div>
 
       <div className="rounded-lg border bg-card">
-        {isLoading ? (
+        {isLoading || checkingAccess ? (
           <div className="p-8 text-center text-muted-foreground">Loading users…</div>
+        ) : rowsError || canManageAccess === false ? (
+          // An empty list and a list you are not allowed to read used to look the
+          // same. Say which one it is so missing people are never mistaken for
+          // deleted people.
+          <div className="flex flex-col items-center gap-3 p-12 text-center">
+            <div className="rounded-full bg-muted p-3">
+              <UsersIcon className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="font-medium">You don't have permission to view this list</p>
+              <p className="mt-1 max-w-md text-sm text-muted-foreground">
+                Existing access assignments for this branch are safe — your account
+                just isn't allowed to see them. Ask a Super Admin to give your
+                account the Access Management permission for this branch.
+              </p>
+            </div>
+          </div>
         ) : filteredRows.length === 0 ? (
           <div className="flex flex-col items-center gap-3 p-12 text-center">
             <div className="rounded-full bg-muted p-3">
