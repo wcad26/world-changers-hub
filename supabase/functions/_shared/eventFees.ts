@@ -1,7 +1,7 @@
 // Shared server-side resolution of event registration fee categories.
 // The browser never decides a category: leader/child status is computed here.
 
-export type FeeCategory = "leader" | "member" | "child";
+export type FeeCategory = "leader" | "member" | "child" | "family";
 
 export type FeeRow = {
   category: FeeCategory;
