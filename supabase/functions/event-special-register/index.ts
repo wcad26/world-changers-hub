@@ -262,13 +262,30 @@ Deno.serve(async (req) => {
       departure_date,
     };
 
-    // --- Registration fees: category resolved server-side, amount snapshotted.
+    // --- Registration fees: category + family eligibility resolved server-side.
     const allMemberIds = [primaryMember.id, ...familyResolved.map((f) => f.member.id)];
     const feeRows = await loadEventFees(admin, event_id);
-    const categories = feeRows.length ? await resolveCategoriesForMembers(admin, allMemberIds) : {};
+    const categories = feeRows.length
+      ? (await resolveCategoriesForMembers(admin, allMemberIds)) as Record<string, FeeCategory>
+      : ({} as Record<string, FeeCategory>);
+    let familyCovered = new Set<string>();
+    if (feeRows.length && allMemberIds.length > 1) {
+      const unit = await resolveFamilyUnit(admin, primaryMember.id, allMemberIds);
+      familyCovered = unit.covered;
+    }
+    const priced = feeRows.length
+      ? priceGroup(
+          feeRows,
+          allMemberIds.map((id) => ({ key: id, member_id: id })),
+          categories,
+          familyCovered,
+        )
+      : { mode: "individual" as const, lines: [], total: 0 };
+    const pricedByMember = new Map(priced.lines.map((l) => [l.key, l]));
+
     const { data: lockedRows } = await admin
       .from("event_pre_registrations")
-      .select("member_id, fee_status, registration_fee_category, registration_fee_amount")
+      .select("member_id, fee_status, registration_fee_category, registration_fee_amount, fee_is_group")
       .eq("event_id", event_id)
       .in("member_id", allMemberIds);
     const locked = new Map<string, any>();
@@ -281,13 +298,18 @@ Deno.serve(async (req) => {
         return {
           registration_fee_category: kept.registration_fee_category,
           registration_fee_amount: kept.registration_fee_amount,
+          fee_is_group: kept.fee_is_group ?? false,
         };
       }
-      if (!feeRows.length) return { registration_fee_category: null, registration_fee_amount: null };
-      const category = categories[memberId] || "member";
-      const fee = feeFor(feeRows, category);
-      return { registration_fee_category: category, registration_fee_amount: fee?.amount ?? 0 };
+      if (!feeRows.length) return { registration_fee_category: null, registration_fee_amount: null, fee_is_group: false };
+      const line = pricedByMember.get(memberId);
+      return {
+        registration_fee_category: line?.category ?? "member",
+        registration_fee_amount: line?.amount ?? 0,
+        fee_is_group: !!line?.covered_by_family,
+      };
     };
+
 
     const rows = [
       {
