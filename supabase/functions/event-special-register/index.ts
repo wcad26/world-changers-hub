@@ -3,6 +3,7 @@
 // plus optional family entries (existing or new), lodging/meals/pledge info.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ensureAuthUser } from "../_shared/ensureAuthUser.ts";
+import { loadEventFees, feeFor, resolveCategoriesForMembers } from "../_shared/eventFees.ts";
 
 
 const corsHeaders = {
