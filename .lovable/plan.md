@@ -4,17 +4,33 @@
 
 A fourth fee category — **Family** — alongside Leader, Member and Child in the event fee editor, available in every portal that creates or edits events (Super Admin and Regional).
 
-- If the event creator sets a **Family** fee, any group registering together (a person plus at least one family member) is billed **one flat family fee** instead of the sum of the individual fees.
+- If the event creator sets a **Family** fee, a genuine family unit registering together is billed **one flat family fee** instead of the sum of the individual fees.
 - If no Family fee is set, everything behaves exactly as today: each person is billed by their own category.
 - People registering alone always pay their individual category fee (Leader / Member / Child), even when a Family fee exists.
 
+## Who actually counts as a family (anti-abuse)
+
+The system never accepts the group as a family just because people registered together. It builds the family unit itself from the recorded relationships:
+
+- The family core is the **primary registrant plus their spouse** (a recorded `spouse` relationship between the two).
+- Also included: **children of the primary or the spouse** (recorded `child`/`parent`/`guardian` link) who are **under the child age limit (16)**.
+- **Excluded and billed individually:**
+  - any adult in the group who is neither the spouse nor a parent of the children in the group (friend, sibling, cousin, colleague);
+  - anyone recorded as a child of the primary but who is **16 or older** — they are an adult and pay their own Leader/Member rate;
+  - anyone with no recorded relationship to the primary at all.
+- A "family" needs at least two qualifying people (e.g. spouse, or primary + one under-16 child). A single adult with only excluded companions pays individual rates for everyone.
+- Relationships are read server-side from the stored family links — the browser cannot declare someone a spouse or child to unlock the discount.
+
 ## How it works for the person registering
 
-- The Registration Fees card shows either:
-  - **Family package** — one line, the family rate, listing who it covers; or
-  - the current per-person breakdown, when no family rate exists or the person registers alone.
-- Adding or removing family members during registration re-prices the group instantly.
+- The Registration Fees card shows, in one place:
+  - **Family package** — the family rate, listing exactly who it covers; and, when applicable
+  - **Billed separately** — a per-person line for each excluded adult or over-age child, with their own category badge and amount,
+  - plus a single group total combining both parts.
+- If nobody qualifies as a family, the card is the current per-person breakdown.
+- Adding or removing people during registration re-prices the group instantly.
 - Existing registrations that were already recorded (paid or waived) keep their stored amount; unpaid ones are re-priced on re-submission, as they are today.
+
 
 ## Where the option appears
 
