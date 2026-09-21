@@ -70,16 +70,27 @@ export async function resolveCategoriesForMembers(
   const leaderProfiles = new Set<string>();
   if (profileIds.length) {
     const [ur, rur, sur] = await Promise.all([
-      admin.from("user_roles").select("user_id, role, status").in("user_id", profileIds),
-      admin.from("regional_user_roles").select("user_id, is_active").in("user_id", profileIds),
-      admin.from("super_admin_user_roles").select("user_id, is_active").in("user_id", profileIds),
+      admin.from("user_roles").select("user_id, role, status, is_active").in("user_id", profileIds),
+      admin
+        .from("regional_user_roles")
+        .select("user_id, is_active, regional_roles:regional_role_id(is_active)")
+        .in("user_id", profileIds),
+      admin
+        .from("super_admin_user_roles")
+        .select("user_id, is_active, super_admin_roles:super_admin_role_id(is_active)")
+        .in("user_id", profileIds),
     ]);
+    // Revoked (is_active = false) or non-approved access must never count as leader.
     (ur.data || []).forEach((r: any) => {
-      const active = !r.status || r.status === "active";
+      const active = r.is_active !== false && (!r.status || r.status === "active");
       if (active && ADMIN_ROLES.includes(String(r.role))) leaderProfiles.add(r.user_id);
     });
-    (rur.data || []).forEach((r: any) => { if (r.is_active !== false) leaderProfiles.add(r.user_id); });
-    (sur.data || []).forEach((r: any) => { if (r.is_active !== false) leaderProfiles.add(r.user_id); });
+    (rur.data || []).forEach((r: any) => {
+      if (r.is_active !== false && r.regional_roles?.is_active !== false) leaderProfiles.add(r.user_id);
+    });
+    (sur.data || []).forEach((r: any) => {
+      if (r.is_active !== false && r.super_admin_roles?.is_active !== false) leaderProfiles.add(r.user_id);
+    });
   }
 
   // --- Child: under 16 AND linked to an adult family member.
