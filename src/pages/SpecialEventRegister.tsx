@@ -171,7 +171,70 @@ export default function SpecialEventRegister() {
   const eventName = (localizedField(ev?.name, ev?.name_fr) as string) || ev?.name || "";
   const eventLocation = (localizedField(ev?.location_name, ev?.location_name_fr) as string) || ev?.location_name || "";
 
-  const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
+  // --- Registration fees (categories resolved server-side) ---
+  const feeAttendees = useMemo(() => {
+    const list: any[] = [];
+    if (primaryMember) {
+      list.push({
+        key: "primary",
+        name: `${primaryMember.last_name || ""} ${primaryMember.first_name || ""}`.trim(),
+        member_id: primaryMember.id,
+      });
+    } else if (isOnboardValid(primaryOnboard)) {
+      list.push({
+        key: "primary",
+        name: `${primaryOnboard.last_name || ""} ${primaryOnboard.first_name || ""}`.trim(),
+        date_of_birth: primaryOnboard.date_of_birth || null,
+      });
+    }
+    if (registrationMode === "family") {
+      family.forEach((f, i) => {
+        const include = f.prefilled ? !!f.attending : !!f.existing_member_id || (f.onboard && isOnboardValid(f.onboard));
+        if (!include) return;
+        list.push({
+          key: `family-${i}`,
+          name: f.existing_member_id
+            ? `${f.last_name || ""} ${f.first_name || ""}`.trim()
+            : `${f.onboard?.last_name || ""} ${f.onboard?.first_name || ""}`.trim(),
+          member_id: f.existing_member_id || null,
+          date_of_birth: f.existing_member_id ? null : f.onboard?.date_of_birth || null,
+          is_child: !!f.is_child,
+          has_family: true,
+        });
+      });
+    }
+    return list;
+  }, [primaryMember, primaryOnboard, registrationMode, family]);
+
+  const feeKey = JSON.stringify(feeAttendees);
+  const { data: feeQuote } = useQuery({
+    queryKey: ["event-fee-quote", ev?.id, feeKey],
+    enabled: !!ev?.id && feeAttendees.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("event-fee-quote", {
+        body: { event_id: ev.id, attendees: feeAttendees },
+      });
+      if (error) throw error;
+      return data as {
+        has_fees: boolean;
+        currency_code: string | null;
+        lines: { key: string; name: string; category: string; label: string | null; amount: number; currency_code: string | null }[];
+        total: number;
+      };
+    },
+  });
+
+  const categoryLabel = (c: string) =>
+    language === "fr"
+      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : "Membre"
+      : c === "leader" ? "Leader" : c === "child" ? "Child" : "Member";
+
+  const hasExtras = !!(
+    ev?.collect_lodging ||
+    ev?.collect_meal_preferences ||
+    (ev?.collect_pledges && campaign) ||
+    feeQuote?.has_fees
+  );
 
   const eventDays = useMemo<string[]>(() => {
     if (!ev?.start_datetime) return [];
