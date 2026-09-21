@@ -302,3 +302,66 @@ export function priceGroup(
   });
   return { mode: "family", lines, total: lines.reduce((s, l) => s + (l.amount || 0), 0) };
 }
+
+/**
+ * Record the family links that were obviously missing: when one adult of a
+ * household is a parent of a covered minor, the other adult(s) of the same
+ * household get the same parent link saved. Best-effort, never throws.
+ */
+export async function healFamilyLinks(
+  admin: any,
+  coveredIds: string[],
+  createdBy?: string | null,
+): Promise<void> {
+  try {
+    const ids = Array.from(new Set(coveredIds.filter(Boolean)));
+    if (ids.length < 2) return;
+
+    const { data: members } = await admin
+      .from("members")
+      .select("id, profiles:profile_id(date_of_birth)")
+      .in("id", ids);
+    const dob = new Map<string, string | null>();
+    (members || []).forEach((m: any) => dob.set(m.id, m.profiles?.date_of_birth ?? null));
+    const minors = ids.filter((id) => {
+      const a = ageFrom(dob.get(id) ?? null);
+      return a !== null && a < CHILD_AGE_LIMIT;
+    });
+    const adults = ids.filter((id) => !minors.includes(id));
+    if (!minors.length || adults.length < 2) return;
+
+    const [ra, rb] = await Promise.all([
+      admin.from("member_relationships").select("member_id, related_member_id, relationship_type").in("member_id", ids),
+      admin.from("member_relationships").select("member_id, related_member_id, relationship_type").in("related_member_id", ids),
+    ]);
+    const pairs = new Set<string>();
+    const note = (r: any) => {
+      const t = String(r.relationship_type || "").toLowerCase();
+      pairs.add(`${r.member_id}|${r.related_member_id}|${t}`);
+      pairs.add(`${r.related_member_id}|${r.member_id}|${t}`);
+    };
+    (ra.data || []).forEach(note);
+    (rb.data || []).forEach(note);
+
+    const PARENTAL = ["child", "parent", "guardian"];
+    const hasParental = (x: string, y: string) => PARENTAL.some((t) => pairs.has(`${x}|${y}|${t}`));
+
+    const inserts: any[] = [];
+    for (const child of minors) {
+      for (const adult of adults) {
+        if (hasParental(adult, child)) continue;
+        inserts.push({
+          member_id: adult,
+          related_member_id: child,
+          relationship_type: "child",
+          created_by: createdBy || null,
+        });
+        pairs.add(`${adult}|${child}|child`);
+        pairs.add(`${child}|${adult}|child`);
+      }
+    }
+    if (inserts.length) await admin.from("member_relationships").insert(inserts);
+  } catch (_e) {
+    // healing is best-effort; never block a registration
+  }
+}
