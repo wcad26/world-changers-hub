@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { GlassKPICard } from '@/components/ui/GlassSection';
 import { RESERVED_ROLE_NAME } from '@/config/regionalPermissions';
+import { useCanManageRegionalAccess } from '@/hooks/useCanManageRegionalAccess';
 
 /**
  * 4 real-data KPI cards for the Access Management page.
@@ -83,9 +84,13 @@ const AccessKpiCards: React.FC = () => {
       <GlassKPICard
         icon={<Users className="h-5 w-5" />}
         label="Users With Access"
-        value={data?.distinctUsers ?? 0}
-        subtitle="People holding at least one role"
-        isLoading={isLoading}
+        value={canManageAccess === false ? '—' : data?.distinctUsers ?? 0}
+        subtitle={
+          canManageAccess === false
+            ? 'Hidden — you lack permission'
+            : 'People holding at least one role'
+        }
+        isLoading={isLoading || checkingAccess}
       />
       <GlassKPICard
         icon={<Clock className="h-5 w-5" />}
