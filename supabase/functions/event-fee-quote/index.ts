@@ -60,7 +60,11 @@ Deno.serve(async (req) => {
     const primary = attendees[0];
     let covered = new Set<string>();
     if (primary?.member_id && memberIds.length > 1) {
-      const unit = await resolveFamilyUnit(admin, primary.member_id, memberIds);
+      const declared: Record<string, string> = {};
+      attendees.forEach((a: any) => {
+        if (a.member_id && a.relationship_type) declared[a.member_id] = String(a.relationship_type).toLowerCase();
+      });
+      const unit = await resolveFamilyUnit(admin, primary.member_id, memberIds, declared);
       covered = unit.covered;
     }
 
