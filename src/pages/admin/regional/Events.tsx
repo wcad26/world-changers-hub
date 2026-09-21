@@ -1510,8 +1510,6 @@ const RegionalEvents: React.FC = () => {
       end_date: endDate ? format(endDate, 'yyyy-MM-dd') : "",
       end_time: endDate ? endDate.toTimeString().slice(0, 5) : "",
       capacity: event.capacity || undefined,
-      cost: event.cost || 0,
-      cost_currency_code: event.cost_currency_code || "",
       registration_url: event.registration_url || "",
       organizer_name: event.organizer_name || "",
       organizer_email: event.organizer_email || "",
