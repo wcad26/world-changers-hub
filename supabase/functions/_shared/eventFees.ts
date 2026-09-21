@@ -182,23 +182,28 @@ export async function resolveFamilyUnit(
   (a.data || []).forEach(push);
   (b.data || []).forEach(push);
 
+  const declaredType = (id: string) => String(declared[id] || "").toLowerCase();
   const relatedTo = (x: string, y: string, types: string[]) =>
     links.some((l) => types.includes(l.type) && ((l.a === x && l.b === y) || (l.a === y && l.b === x)));
 
   // Spouse of the primary (at most one counted).
   let spouseId: string | null = null;
   for (const id of others) {
-    if (relatedTo(primaryMemberId, id, ["spouse"])) { spouseId = id; break; }
+    if (relatedTo(primaryMemberId, id, ["spouse"]) || declaredType(id) === "spouse") { spouseId = id; break; }
   }
   if (spouseId) covered.add(spouseId);
 
   const PARENTAL = ["child", "parent", "guardian"];
   for (const id of others) {
     if (id === spouseId) continue;
-    const parentLink = relatedTo(primaryMemberId, id, PARENTAL) || (spouseId ? relatedTo(spouseId, id, PARENTAL) : false);
+    const parentLink =
+      relatedTo(primaryMemberId, id, PARENTAL) ||
+      (spouseId ? relatedTo(spouseId, id, PARENTAL) : false) ||
+      PARENTAL.includes(declaredType(id));
     if (parentLink && isMinor(id)) covered.add(id);
     else separate.add(id);
   }
+
 
   // A family package needs at least two qualifying people.
   if (covered.size < 2) {
