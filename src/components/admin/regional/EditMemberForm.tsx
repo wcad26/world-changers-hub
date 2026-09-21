@@ -156,7 +156,10 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
   const updateMember = useMutation({
     mutationFn: async (data: EditMemberFormData) => {
       // Update profile
-      const { error: profileError } = await supabase
+      if (!member.profile_id) {
+        throw new Error('This member has no linked profile record, so personal details cannot be updated.');
+      }
+      const { data: updatedProfiles, error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: data.first_name,
@@ -168,8 +171,14 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
           gender: data.gender ? data.gender.toLowerCase() : null,
           occupation: data.occupation || null,
         })
-        .eq('id', member.profile_id);
+        .eq('id', member.profile_id)
+        .select('id');
       if (profileError) throw profileError;
+      // A blocked update returns no error but changes nothing — treat that as a failure
+      // instead of showing a false success message.
+      if (!updatedProfiles || updatedProfiles.length === 0) {
+        throw new Error("Personal details could not be saved — you may not have permission to edit this person's record.");
+      }
 
       // Update member record
       const memberUpdate: Record<string, any> = {
@@ -180,11 +189,15 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
         membership_class_completed: data.has_completed_foundation_school === 'yes',
         baptism_date: data.is_baptized === 'yes' ? (data.baptism_date || null) : null,
       };
-      const { error: memberError } = await supabase
+      const { data: updatedMembers, error: memberError } = await supabase
         .from('members')
         .update(memberUpdate)
-        .eq('id', member.id);
+        .eq('id', member.id)
+        .select('id');
       if (memberError) throw memberError;
+      if (!updatedMembers || updatedMembers.length === 0) {
+        throw new Error('Membership details could not be saved — you may not have permission to edit this record.');
+      }
 
       // Handle DCG change
       if (selectedDcgId !== (memberDcg || '')) {
@@ -216,9 +229,13 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       }
       setTimeout(() => onSuccess(), 100);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Update member error:', error);
-      toast({ title: "Error", description: "Failed to update member.", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update member.",
+        variant: "destructive",
+      });
     },
   });
 

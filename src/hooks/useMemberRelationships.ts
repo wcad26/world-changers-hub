@@ -39,6 +39,8 @@ export const invalidateRelationshipDependentQueries = (
     'regional-dcgs',
     'dcg-dashboard',
     'dcg-members',
+    'dcg-member-profile',
+    'member-dcg',
     'special-event-ids',
   ];
   prefixes.forEach(prefix => {
