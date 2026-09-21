@@ -200,6 +200,7 @@ export default function SpecialEventRegister() {
           date_of_birth: f.existing_member_id ? null : f.onboard?.date_of_birth || null,
           is_child: !!f.is_child,
           has_family: true,
+          relationship_type: f.relationship_type || null,
         });
       });
     }
@@ -218,7 +219,17 @@ export default function SpecialEventRegister() {
       return data as {
         has_fees: boolean;
         currency_code: string | null;
-        lines: { key: string; name: string; category: string; label: string | null; amount: number; currency_code: string | null }[];
+        pricing_mode: "family" | "individual";
+        lines: {
+          key: string;
+          name: string;
+          category: string;
+          label: string | null;
+          amount: number;
+          currency_code: string | null;
+          covered_by_family?: boolean;
+          is_family_line?: boolean;
+        }[];
         total: number;
       };
     },
@@ -226,8 +237,9 @@ export default function SpecialEventRegister() {
 
   const categoryLabel = (c: string) =>
     language === "fr"
-      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : "Membre"
-      : c === "leader" ? "Leader" : c === "child" ? "Child" : "Member";
+      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : c === "family" ? "Famille" : "Membre"
+      : c === "leader" ? "Leader" : c === "child" ? "Child" : c === "family" ? "Family" : "Member";
+
 
   const hasExtras = !!(
     ev?.collect_lodging ||
