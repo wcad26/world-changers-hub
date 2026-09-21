@@ -152,6 +152,8 @@ export async function resolveFamilyUnit(
   admin: any,
   primaryMemberId: string,
   attendeeMemberIds: string[],
+  /** Relationships declared in this submission (recorded afterwards), keyed by member id. */
+  declared: Record<string, string> = {},
 ): Promise<FamilyUnit> {
   const others = Array.from(new Set(attendeeMemberIds.filter((id) => id && id !== primaryMemberId)));
   const covered = new Set<string>([primaryMemberId]);
