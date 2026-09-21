@@ -1068,6 +1068,7 @@ export type Database = {
           dietary_notes: string | null
           email: string
           event_id: string
+          fee_is_group: boolean
           fee_paid_at: string | null
           fee_status: string
           group_id: string | null
@@ -1094,6 +1095,7 @@ export type Database = {
           dietary_notes?: string | null
           email: string
           event_id: string
+          fee_is_group?: boolean
           fee_paid_at?: string | null
           fee_status?: string
           group_id?: string | null
@@ -1120,6 +1122,7 @@ export type Database = {
           dietary_notes?: string | null
           email?: string
           event_id?: string
+          fee_is_group?: boolean
           fee_paid_at?: string | null
           fee_status?: string
           group_id?: string | null
