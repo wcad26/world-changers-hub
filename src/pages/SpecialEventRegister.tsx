@@ -1223,6 +1223,51 @@ export default function SpecialEventRegister() {
                     </GlassSection>
                   )}
 
+                  {feeQuote?.has_fees && (
+                    <GlassSection
+                      icon={Receipt}
+                      title={language === "fr" ? "Frais d'inscription" : "Registration Fees"}
+                      description={
+                        language === "fr"
+                          ? "Le montant est calculé automatiquement pour chaque personne."
+                          : "The amount below is set automatically for each person."
+                      }
+                    >
+                      <div className="space-y-2">
+                        {feeQuote.lines.map((l) => (
+                          <div
+                            key={l.key}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-background/40 px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{l.name || "—"}</p>
+                              <Badge variant="secondary" className="mt-1 text-[10px]">
+                                {categoryLabel(l.category)}
+                                {l.label ? ` • ${l.label}` : ""}
+                              </Badge>
+                            </div>
+                            <span className="text-sm font-semibold whitespace-nowrap">
+                              {l.amount > 0
+                                ? `${l.currency_code || ""} ${(l.amount / 100).toLocaleString()}`
+                                : language === "fr" ? "Gratuit" : "Free"}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/30 px-3 py-2">
+                          <span className="text-sm font-semibold">{language === "fr" ? "Total" : "Total"}</span>
+                          <span className="text-sm font-bold">
+                            {feeQuote.currency_code || ""} {(feeQuote.total / 100).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {language === "fr"
+                            ? "Les frais sont réglés sur place lors de l'événement."
+                            : "Fees are paid at the event registration desk."}
+                        </p>
+                      </div>
+                    </GlassSection>
+                  )}
+
                   {ev.collect_pledges && campaign && (
                     <GlassSection icon={Heart} title={t("sr_pledge_title")} description={t("sr_pledge_desc")}>
                       <div className="rounded-xl bg-background/40 border border-border/40 p-3 text-xs text-muted-foreground">
