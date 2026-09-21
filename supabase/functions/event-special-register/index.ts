@@ -420,6 +420,13 @@ Deno.serve(async (req) => {
       group_id: groupId,
       primary_member_id: primaryMember.id,
       pre_registration_ids: (inserted ?? []).map((r: any) => r.id),
+      fees: rows.map((r: any) => ({
+        member_id: r.member_id,
+        category: r.registration_fee_category,
+        amount: r.registration_fee_amount ?? 0,
+      })),
+      fees_currency_code: feeRows[0]?.currency_code ?? null,
+      fees_total: rows.reduce((s: number, r: any) => s + (Number(r.registration_fee_amount) || 0), 0),
     });
   } catch (e: any) {
     if (e instanceof RegistrationError) {
