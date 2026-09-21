@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Loader2, CheckCircle2, Plus, Trash2, Search, Heart, Users, Bed, Utensils,
-  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check, User
+  ArrowRight, ArrowLeft, UserCheck, Calendar as CalendarIcon, MapPin, Mail, Phone, Check, User, Receipt
 } from "lucide-react";
 import { toast } from "sonner";
 import Navbar from "@/components/layout/Navbar";
@@ -171,7 +171,70 @@ export default function SpecialEventRegister() {
   const eventName = (localizedField(ev?.name, ev?.name_fr) as string) || ev?.name || "";
   const eventLocation = (localizedField(ev?.location_name, ev?.location_name_fr) as string) || ev?.location_name || "";
 
-  const hasExtras = !!(ev?.collect_lodging || ev?.collect_meal_preferences || (ev?.collect_pledges && campaign));
+  // --- Registration fees (categories resolved server-side) ---
+  const feeAttendees = useMemo(() => {
+    const list: any[] = [];
+    if (primaryMember) {
+      list.push({
+        key: "primary",
+        name: `${primaryMember.last_name || ""} ${primaryMember.first_name || ""}`.trim(),
+        member_id: primaryMember.id,
+      });
+    } else if (isOnboardValid(primaryOnboard)) {
+      list.push({
+        key: "primary",
+        name: `${primaryOnboard.last_name || ""} ${primaryOnboard.first_name || ""}`.trim(),
+        date_of_birth: primaryOnboard.date_of_birth || null,
+      });
+    }
+    if (registrationMode === "family") {
+      family.forEach((f, i) => {
+        const include = f.prefilled ? !!f.attending : !!f.existing_member_id || (f.onboard && isOnboardValid(f.onboard));
+        if (!include) return;
+        list.push({
+          key: `family-${i}`,
+          name: f.existing_member_id
+            ? `${f.last_name || ""} ${f.first_name || ""}`.trim()
+            : `${f.onboard?.last_name || ""} ${f.onboard?.first_name || ""}`.trim(),
+          member_id: f.existing_member_id || null,
+          date_of_birth: f.existing_member_id ? null : f.onboard?.date_of_birth || null,
+          is_child: !!f.is_child,
+          has_family: true,
+        });
+      });
+    }
+    return list;
+  }, [primaryMember, primaryOnboard, registrationMode, family]);
+
+  const feeKey = JSON.stringify(feeAttendees);
+  const { data: feeQuote } = useQuery({
+    queryKey: ["event-fee-quote", ev?.id, feeKey],
+    enabled: !!ev?.id && feeAttendees.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("event-fee-quote", {
+        body: { event_id: ev.id, attendees: feeAttendees },
+      });
+      if (error) throw error;
+      return data as {
+        has_fees: boolean;
+        currency_code: string | null;
+        lines: { key: string; name: string; category: string; label: string | null; amount: number; currency_code: string | null }[];
+        total: number;
+      };
+    },
+  });
+
+  const categoryLabel = (c: string) =>
+    language === "fr"
+      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : "Membre"
+      : c === "leader" ? "Leader" : c === "child" ? "Child" : "Member";
+
+  const hasExtras = !!(
+    ev?.collect_lodging ||
+    ev?.collect_meal_preferences ||
+    (ev?.collect_pledges && campaign) ||
+    feeQuote?.has_fees
+  );
 
   const eventDays = useMemo<string[]>(() => {
     if (!ev?.start_datetime) return [];
@@ -1157,6 +1220,51 @@ export default function SpecialEventRegister() {
                         value={dietaryNotes}
                         onChange={(e) => setDietaryNotes(e.target.value)}
                       />
+                    </GlassSection>
+                  )}
+
+                  {feeQuote?.has_fees && (
+                    <GlassSection
+                      icon={Receipt}
+                      title={language === "fr" ? "Frais d'inscription" : "Registration Fees"}
+                      description={
+                        language === "fr"
+                          ? "Le montant est calculé automatiquement pour chaque personne."
+                          : "The amount below is set automatically for each person."
+                      }
+                    >
+                      <div className="space-y-2">
+                        {feeQuote.lines.map((l) => (
+                          <div
+                            key={l.key}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-background/40 px-3 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{l.name || "—"}</p>
+                              <Badge variant="secondary" className="mt-1 text-[10px]">
+                                {categoryLabel(l.category)}
+                                {l.label ? ` • ${l.label}` : ""}
+                              </Badge>
+                            </div>
+                            <span className="text-sm font-semibold whitespace-nowrap">
+                              {l.amount > 0
+                                ? `${l.currency_code || ""} ${(l.amount / 100).toLocaleString()}`
+                                : language === "fr" ? "Gratuit" : "Free"}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/30 px-3 py-2">
+                          <span className="text-sm font-semibold">{language === "fr" ? "Total" : "Total"}</span>
+                          <span className="text-sm font-bold">
+                            {feeQuote.currency_code || ""} {(feeQuote.total / 100).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {language === "fr"
+                            ? "Les frais sont réglés sur place lors de l'événement."
+                            : "Fees are paid at the event registration desk."}
+                        </p>
+                      </div>
                     </GlassSection>
                   )}
 

@@ -3,6 +3,7 @@
 // plus optional family entries (existing or new), lodging/meals/pledge info.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ensureAuthUser } from "../_shared/ensureAuthUser.ts";
+import { loadEventFees, feeFor, resolveCategoriesForMembers } from "../_shared/eventFees.ts";
 
 
 const corsHeaders = {
@@ -261,6 +262,33 @@ Deno.serve(async (req) => {
       departure_date,
     };
 
+    // --- Registration fees: category resolved server-side, amount snapshotted.
+    const allMemberIds = [primaryMember.id, ...familyResolved.map((f) => f.member.id)];
+    const feeRows = await loadEventFees(admin, event_id);
+    const categories = feeRows.length ? await resolveCategoriesForMembers(admin, allMemberIds) : {};
+    const { data: lockedRows } = await admin
+      .from("event_pre_registrations")
+      .select("member_id, fee_status, registration_fee_category, registration_fee_amount")
+      .eq("event_id", event_id)
+      .in("member_id", allMemberIds);
+    const locked = new Map<string, any>();
+    (lockedRows || []).forEach((r: any) => {
+      if (r.fee_status === "paid" || r.fee_status === "waived") locked.set(r.member_id, r);
+    });
+    const feeFields = (memberId: string) => {
+      const kept = locked.get(memberId);
+      if (kept) {
+        return {
+          registration_fee_category: kept.registration_fee_category,
+          registration_fee_amount: kept.registration_fee_amount,
+        };
+      }
+      if (!feeRows.length) return { registration_fee_category: null, registration_fee_amount: null };
+      const category = categories[memberId] || "member";
+      const fee = feeFor(feeRows, category);
+      return { registration_fee_category: category, registration_fee_amount: fee?.amount ?? 0 };
+    };
+
     const rows = [
       {
         ...baseRow,
@@ -271,6 +299,7 @@ Deno.serve(async (req) => {
         pledge_amount,
         pledge_currency_code,
         pledge_status: pledge_amount ? "pledged" : null,
+        ...feeFields(primaryMember.id),
       },
       ...familyResolved.map(f => ({
         ...baseRow,
@@ -278,8 +307,10 @@ Deno.serve(async (req) => {
         is_primary: false,
         email: f.entry.submitted_email || f.member.email || null,
         phone: f.entry.submitted_phone || f.member.phone || null,
+        ...feeFields(f.member.id),
       })),
     ];
+
 
     const { error: insErr, data: inserted } = await admin
       .from("event_pre_registrations")
@@ -389,6 +420,13 @@ Deno.serve(async (req) => {
       group_id: groupId,
       primary_member_id: primaryMember.id,
       pre_registration_ids: (inserted ?? []).map((r: any) => r.id),
+      fees: rows.map((r: any) => ({
+        member_id: r.member_id,
+        category: r.registration_fee_category,
+        amount: r.registration_fee_amount ?? 0,
+      })),
+      fees_currency_code: feeRows[0]?.currency_code ?? null,
+      fees_total: rows.reduce((s: number, r: any) => s + (Number(r.registration_fee_amount) || 0), 0),
     });
   } catch (e: any) {
     if (e instanceof RegistrationError) {
