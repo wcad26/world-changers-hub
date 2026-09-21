@@ -3,7 +3,7 @@
 // plus optional family entries (existing or new), lodging/meals/pledge info.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ensureAuthUser } from "../_shared/ensureAuthUser.ts";
-import { loadEventFees, resolveCategoriesForMembers, resolveFamilyUnit, priceGroup, type FeeCategory } from "../_shared/eventFees.ts";
+import { loadEventFees, resolveCategoriesForMembers, resolveFamilyUnit, priceGroup, healFamilyLinks, type FeeCategory } from "../_shared/eventFees.ts";
 
 
 const corsHeaders = {
@@ -276,6 +276,8 @@ Deno.serve(async (req) => {
       });
       const unit = await resolveFamilyUnit(admin, primaryMember.id, allMemberIds, declared);
       familyCovered = unit.covered;
+      // Save the family links that were missing so the household is correct everywhere.
+      await healFamilyLinks(admin, Array.from(familyCovered), null);
     }
     const priced = feeRows.length
       ? priceGroup(
