@@ -270,7 +270,11 @@ Deno.serve(async (req) => {
       : ({} as Record<string, FeeCategory>);
     let familyCovered = new Set<string>();
     if (feeRows.length && allMemberIds.length > 1) {
-      const unit = await resolveFamilyUnit(admin, primaryMember.id, allMemberIds);
+      const declared: Record<string, string> = {};
+      familyResolved.forEach((f) => {
+        if (f.entry.relationship_type) declared[f.member.id] = String(f.entry.relationship_type).toLowerCase();
+      });
+      const unit = await resolveFamilyUnit(admin, primaryMember.id, allMemberIds, declared);
       familyCovered = unit.covered;
     }
     const priced = feeRows.length
