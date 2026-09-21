@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, AlertTriangle } from 'lucide-react';
-import { FEE_CATEGORIES, type EventFeeRow, type FeeCategory } from '@/hooks/useEventRegistrationFees';
+import { FEE_CATEGORIES, REQUIRED_FEE_CATEGORIES, type EventFeeRow, type FeeCategory } from '@/hooks/useEventRegistrationFees';
 
 interface Props {
   rows: EventFeeRow[];
@@ -25,7 +25,9 @@ export const RegistrationFeesEditor: React.FC<Props> = ({ rows, onChange, curren
     onChange([...rows, { category: next, label: '', amount: 0, currency_code: currency }]);
   };
 
-  const missing = FEE_CATEGORIES.filter((c) => !rows.some((r) => r.category === c.value));
+  const missing = FEE_CATEGORIES.filter(
+    (c) => REQUIRED_FEE_CATEGORIES.includes(c.value) && !rows.some((r) => r.category === c.value)
+  );
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
@@ -58,44 +60,53 @@ export const RegistrationFeesEditor: React.FC<Props> = ({ rows, onChange, curren
           </div>
 
           {rows.map((row, i) => (
-            <div key={i} className="grid grid-cols-1 md:grid-cols-[150px_1fr_130px_40px] gap-2 items-end">
-              <div>
-                <Label className="text-xs">Category</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                  value={row.category}
-                  onChange={(e) => update(i, { category: e.target.value as FeeCategory })}
-                >
-                  {FEE_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
+            <div key={i} className="space-y-1">
+              <div className="grid grid-cols-1 md:grid-cols-[150px_1fr_130px_40px] gap-2 items-end">
+                <div>
+                  <Label className="text-xs">Category</Label>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={row.category}
+                    onChange={(e) => update(i, { category: e.target.value as FeeCategory })}
+                  >
+                    {FEE_CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-xs">Label (optional)</Label>
+                  <Input
+                    className="h-9"
+                    placeholder="e.g. Leaders rate"
+                    value={row.label}
+                    onChange={(e) => update(i, { label: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Amount</Label>
+                  <Input
+                    className="h-9"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={row.amount ?? 0}
+                    onChange={(e) => update(i, { amount: e.target.value ? parseFloat(e.target.value) : 0 })}
+                  />
+                </div>
+                <Button type="button" variant="ghost" size="icon" onClick={() => onChange(rows.filter((_, idx) => idx !== i))}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <Label className="text-xs">Label (optional)</Label>
-                <Input
-                  className="h-9"
-                  placeholder="e.g. Leaders rate"
-                  value={row.label}
-                  onChange={(e) => update(i, { label: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Amount</Label>
-                <Input
-                  className="h-9"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={row.amount ?? 0}
-                  onChange={(e) => update(i, { amount: e.target.value ? parseFloat(e.target.value) : 0 })}
-                />
-              </div>
-              <Button type="button" variant="ghost" size="icon" onClick={() => onChange(rows.filter((_, idx) => idx !== i))}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                {FEE_CATEGORIES.find((c) => c.value === row.category)?.hint}
+                {row.category === 'family'
+                  ? '. Adults who are not the spouse, and children aged 16 or over, are billed on their own rate.'
+                  : ''}
+              </p>
             </div>
           ))}
+
 
           {!currency && (
             <p className="text-xs text-destructive">Select a currency so the fees can be saved.</p>

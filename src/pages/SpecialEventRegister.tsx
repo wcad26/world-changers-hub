@@ -200,6 +200,7 @@ export default function SpecialEventRegister() {
           date_of_birth: f.existing_member_id ? null : f.onboard?.date_of_birth || null,
           is_child: !!f.is_child,
           has_family: true,
+          relationship_type: f.relationship_type || null,
         });
       });
     }
@@ -218,7 +219,17 @@ export default function SpecialEventRegister() {
       return data as {
         has_fees: boolean;
         currency_code: string | null;
-        lines: { key: string; name: string; category: string; label: string | null; amount: number; currency_code: string | null }[];
+        pricing_mode: "family" | "individual";
+        lines: {
+          key: string;
+          name: string;
+          category: string;
+          label: string | null;
+          amount: number;
+          currency_code: string | null;
+          covered_by_family?: boolean;
+          is_family_line?: boolean;
+        }[];
         total: number;
       };
     },
@@ -226,8 +237,9 @@ export default function SpecialEventRegister() {
 
   const categoryLabel = (c: string) =>
     language === "fr"
-      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : "Membre"
-      : c === "leader" ? "Leader" : c === "child" ? "Child" : "Member";
+      ? c === "leader" ? "Responsable" : c === "child" ? "Enfant" : c === "family" ? "Famille" : "Membre"
+      : c === "leader" ? "Leader" : c === "child" ? "Child" : c === "family" ? "Family" : "Member";
+
 
   const hasExtras = !!(
     ev?.collect_lodging ||
@@ -1234,7 +1246,42 @@ export default function SpecialEventRegister() {
                       }
                     >
                       <div className="space-y-2">
-                        {feeQuote.lines.map((l) => (
+                        {feeQuote.pricing_mode === "family" && (
+                          <div className="rounded-xl border border-primary/30 bg-primary/5 px-3 py-2">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold">
+                                  {language === "fr" ? "Forfait famille" : "Family package"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {feeQuote.lines
+                                    .filter((l) => l.covered_by_family)
+                                    .map((l) => l.name || "—")
+                                    .join(" • ")}
+                                </p>
+                              </div>
+                              <span className="text-sm font-bold whitespace-nowrap">
+                                {feeQuote.currency_code || ""}{" "}
+                                {(
+                                  feeQuote.lines
+                                    .filter((l) => l.covered_by_family)
+                                    .reduce((s, l) => s + (l.amount || 0), 0) / 100
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {feeQuote.pricing_mode === "family" &&
+                          feeQuote.lines.some((l) => !l.covered_by_family) && (
+                            <p className="text-xs font-medium text-muted-foreground pt-1">
+                              {language === "fr" ? "Facturés séparément" : "Billed separately"}
+                            </p>
+                          )}
+
+                        {feeQuote.lines
+                          .filter((l) => !(feeQuote.pricing_mode === "family" && l.covered_by_family))
+                          .map((l) => (
                           <div
                             key={l.key}
                             className="flex items-center justify-between gap-3 rounded-xl border border-border/40 bg-background/40 px-3 py-2"
@@ -1253,6 +1300,7 @@ export default function SpecialEventRegister() {
                             </span>
                           </div>
                         ))}
+
                         <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/30 px-3 py-2">
                           <span className="text-sm font-semibold">{language === "fr" ? "Total" : "Total"}</span>
                           <span className="text-sm font-bold">

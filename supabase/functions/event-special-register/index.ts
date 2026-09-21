@@ -3,7 +3,7 @@
 // plus optional family entries (existing or new), lodging/meals/pledge info.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { ensureAuthUser } from "../_shared/ensureAuthUser.ts";
-import { loadEventFees, feeFor, resolveCategoriesForMembers } from "../_shared/eventFees.ts";
+import { loadEventFees, resolveCategoriesForMembers, resolveFamilyUnit, priceGroup, type FeeCategory } from "../_shared/eventFees.ts";
 
 
 const corsHeaders = {
@@ -262,13 +262,34 @@ Deno.serve(async (req) => {
       departure_date,
     };
 
-    // --- Registration fees: category resolved server-side, amount snapshotted.
+    // --- Registration fees: category + family eligibility resolved server-side.
     const allMemberIds = [primaryMember.id, ...familyResolved.map((f) => f.member.id)];
     const feeRows = await loadEventFees(admin, event_id);
-    const categories = feeRows.length ? await resolveCategoriesForMembers(admin, allMemberIds) : {};
+    const categories = feeRows.length
+      ? (await resolveCategoriesForMembers(admin, allMemberIds)) as Record<string, FeeCategory>
+      : ({} as Record<string, FeeCategory>);
+    let familyCovered = new Set<string>();
+    if (feeRows.length && allMemberIds.length > 1) {
+      const declared: Record<string, string> = {};
+      familyResolved.forEach((f) => {
+        if (f.entry.relationship_type) declared[f.member.id] = String(f.entry.relationship_type).toLowerCase();
+      });
+      const unit = await resolveFamilyUnit(admin, primaryMember.id, allMemberIds, declared);
+      familyCovered = unit.covered;
+    }
+    const priced = feeRows.length
+      ? priceGroup(
+          feeRows,
+          allMemberIds.map((id) => ({ key: id, member_id: id })),
+          categories,
+          familyCovered,
+        )
+      : { mode: "individual" as const, lines: [], total: 0 };
+    const pricedByMember = new Map(priced.lines.map((l) => [l.key, l]));
+
     const { data: lockedRows } = await admin
       .from("event_pre_registrations")
-      .select("member_id, fee_status, registration_fee_category, registration_fee_amount")
+      .select("member_id, fee_status, registration_fee_category, registration_fee_amount, fee_is_group")
       .eq("event_id", event_id)
       .in("member_id", allMemberIds);
     const locked = new Map<string, any>();
@@ -281,13 +302,18 @@ Deno.serve(async (req) => {
         return {
           registration_fee_category: kept.registration_fee_category,
           registration_fee_amount: kept.registration_fee_amount,
+          fee_is_group: kept.fee_is_group ?? false,
         };
       }
-      if (!feeRows.length) return { registration_fee_category: null, registration_fee_amount: null };
-      const category = categories[memberId] || "member";
-      const fee = feeFor(feeRows, category);
-      return { registration_fee_category: category, registration_fee_amount: fee?.amount ?? 0 };
+      if (!feeRows.length) return { registration_fee_category: null, registration_fee_amount: null, fee_is_group: false };
+      const line = pricedByMember.get(memberId);
+      return {
+        registration_fee_category: line?.category ?? "member",
+        registration_fee_amount: line?.amount ?? 0,
+        fee_is_group: !!line?.covered_by_family,
+      };
     };
+
 
     const rows = [
       {
