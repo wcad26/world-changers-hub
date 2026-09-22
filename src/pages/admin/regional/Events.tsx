@@ -1552,7 +1552,7 @@ const RegionalEvents: React.FC = () => {
             role_fr: t.role_fr || "",
             content: t.content,
             content_fr: t.content_fr || "",
-            rating: t.rating,
+            rating: t.rating ?? 5,
           })) || [],
           faqs: existingFaqs?.map(f => ({
             question: f.question,

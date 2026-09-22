@@ -65,6 +65,8 @@ export const useCreateMemberTarget = () => {
   return useMutation({
     mutationFn: async (targetData: Omit<NewMemberTarget, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'>) => {
       if (!userRegion?.id) throw new Error('User region not found');
+      const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+      if (!currentUserId) throw new Error('User not authenticated');
       
       const { data, error } = await supabase
         .from('member_targets')
