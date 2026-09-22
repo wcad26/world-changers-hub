@@ -1,18 +1,19 @@
 import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@/lib/router-compat";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { GlassCard } from "@/components/ui/GlassPanels";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, Target, Search, Heart, Info, PiggyBank } from "lucide-react";
-import { usePublicFundraisingCampaigns } from "@/hooks/useFundraisingCampaigns";
+import { publicFundraisingCampaignsQueryOptions } from "@/lib/public-site.functions";
 import { useLanguage } from "@/hooks/useLanguage";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { format } from "date-fns";
 
 const Fundraising = () => {
   const { t } = useLanguage();
-  const { data: campaigns = [], isLoading } = usePublicFundraisingCampaigns();
+  const { data: campaigns } = useSuspenseQuery(publicFundraisingCampaignsQueryOptions());
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "Active" | "Completed">("all");
 
@@ -71,9 +72,7 @@ const Fundraising = () => {
               </div>
             </div>
 
-            {isLoading ? (
-              <div className="text-center text-muted-foreground py-20">…</div>
-            ) : filtered.length === 0 ? (
+            {filtered.length === 0 ? (
               <div className="text-center text-muted-foreground py-20 flex flex-col items-center gap-3">
                 <PiggyBank className="h-10 w-10 opacity-50" />
                 <p>{t("fr_no_projects")}</p>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { AlertCircle, ArrowRight, Calendar, Clock, Filter, MapPin, Search } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -8,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "@/lib/router-compat";
-import { usePublicEvents, usePublicPastEvents, type Event } from "@/hooks/useEvents";
+import type { Event } from "@/hooks/useEvents";
+import { publicEventsQueryOptions } from "@/lib/public-site.functions";
 import { useLanguage } from "@/hooks/useLanguage";
 import { formatEventDuration } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
@@ -46,9 +48,11 @@ export default function Events() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
-  const { data: upcoming = [], isLoading, isError } = usePublicEvents();
-  const { data: past = [], isLoading: isPastLoading, isError: isPastError } = usePublicPastEvents();
+  const { data: allEvents } = useSuspenseQuery(publicEventsQueryOptions());
   const { language } = useLanguage();
+  const now = new Date().toISOString();
+  const upcoming = allEvents.filter((event) => event.start_datetime >= now);
+  const past = allEvents.filter((event) => event.start_datetime < now).reverse();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -96,14 +100,14 @@ export default function Events() {
         <section className="py-12 md:py-16">
           <div className="container-custom">
             <div className="mb-7 flex items-end justify-between gap-4"><div><p className="text-sm font-semibold uppercase text-secondary">{language === "fr" ? "À venir" : "Next gatherings"}</p><h2 className="mt-2 text-2xl font-bold">{language === "fr" ? "Prochains événements" : "Upcoming Events"}</h2></div><span className="text-sm text-muted-foreground">{filteredUpcoming.length} {language === "fr" ? "événements" : "events"}</span></div>
-            {renderList(filteredUpcoming, isLoading, isError, language === "fr" ? "Aucun événement à venir" : "No upcoming events found")}
+            {renderList(filteredUpcoming, false, false, language === "fr" ? "Aucun événement à venir" : "No upcoming events found")}
           </div>
         </section>
 
         <section className="border-y bg-muted/45 py-12 md:py-16">
           <div className="container-custom">
             <div className="mb-7"><p className="text-sm font-semibold uppercase text-secondary">{language === "fr" ? "Archives" : "Archive"}</p><h2 className="mt-2 text-2xl font-bold">{language === "fr" ? "Événements passés" : "Past Events"}</h2></div>
-            {renderList(filteredPast, isPastLoading, isPastError, language === "fr" ? "Aucun événement passé" : "No past events found", true)}
+            {renderList(filteredPast, false, false, language === "fr" ? "Aucun événement passé" : "No past events found", true)}
           </div>
         </section>
 

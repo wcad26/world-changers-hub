@@ -15,3 +15,11 @@
 - [x] Add richer WCA storytelling, locations, pathways, events, and connection sections
 - [x] Add lightweight floating, pointer, and scroll effects with reduced-motion safeguards
 - [x] Verify mobile, tablet, desktop, light, dark, content, links, and runtime health
+
+# Fast public pages + About and Locations rebuild
+
+- [x] Replace blocking About and Locations reads with route-preloaded cached data
+- [x] Rebuild About in the Heritage Modernism design language
+- [x] Rebuild Locations with a fast mobile-first finder and editorial cards
+- [x] Audit public routes for blocking loaders, request duplication, and missing error states
+- [x] Verify public pages across mobile, tablet, desktop, light, dark, English, and French
