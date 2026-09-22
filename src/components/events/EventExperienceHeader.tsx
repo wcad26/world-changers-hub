@@ -138,8 +138,8 @@ export function EventExperienceHeader({ event }: EventExperienceHeaderProps) {
                 <MessageCircle />{t("contactUs")}
               </Button>
             )}
-            <Button type="button" variant="outline" size="icon" onClick={shareEvent} aria-label={language === "fr" ? "Partager cet événement" : "Share this event"} className="h-12 w-12 border-event-border bg-event-surface/70 text-event-foreground backdrop-blur-md hover:bg-event-elevated hover:text-event-foreground">
-              <Share2 />
+            <Button type="button" variant="outline" size="lg" onClick={shareEvent} aria-label={language === "fr" ? "Partager cet événement" : "Share this event"} className="h-12 border-event-border bg-event-surface/70 px-5 text-event-foreground backdrop-blur-md hover:bg-event-elevated hover:text-event-foreground">
+              <Share2 />{language === "fr" ? "Partager" : "Share Event"}
             </Button>
           </div>
         </div>
