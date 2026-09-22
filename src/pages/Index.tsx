@@ -119,7 +119,7 @@ const Index = () => {
               {mission.missions.map((item: any, index: number) => (
                 <div key={item.title} className="relative border-b border-border py-7 md:border-b-0 md:px-7 md:py-4">
                   <div className="relative z-10 mb-6 grid h-12 w-12 place-items-center rounded-full border border-primary/25 bg-background text-primary shadow-sm">{renderIcon(item.icon, 'h-6 w-6')}</div>
-                  <p className="text-xs font-semibold text-secondary">0{index + 1}</p>
+                  <p className="text-2xl font-semibold text-secondary sm:text-3xl">0{index + 1}</p>
                   <h3 className="mt-2 text-xl font-semibold">{item.title}</h3>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.description}</p>
                   <ul className="mt-5 space-y-2">
