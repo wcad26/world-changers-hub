@@ -22,6 +22,8 @@ export default {
 			fontFamily: {
 				'inter': ['Inter', 'sans-serif'],
 				'crimson': ['Crimson Text', 'serif'],
+				'sora': ['Sora', 'sans-serif'],
+				'manrope': ['Manrope', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -68,10 +70,18 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				wca: {
-					purple: '#773b6e',
-					violet: '#542a8f',
-					teal: '#35adaf',
-					black: '#000000',
+					purple: 'hsl(var(--primary))',
+					violet: 'hsl(var(--secondary))',
+					teal: 'hsl(var(--accent))',
+					black: 'hsl(var(--event-background))',
+				},
+				event: {
+					background: 'hsl(var(--event-background))',
+					surface: 'hsl(var(--event-surface))',
+					'elevated': 'hsl(var(--event-elevated))',
+					foreground: 'hsl(var(--event-foreground))',
+					muted: 'hsl(var(--event-muted))',
+					border: 'hsl(var(--event-border))',
 				},
 			},
 			borderRadius: {

@@ -1,6 +1,4 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -54,6 +52,17 @@
     --glow-primary: 0 0 30px hsl(284 32% 35% / 0.3);
     --backdrop-blur: blur(20px);
     --border-soft: 1px solid hsl(240 5.9% 90% / 0.6);
+
+    /* Public event experience */
+    --event-background: 270 20% 5%;
+    --event-surface: 270 16% 9%;
+    --event-elevated: 270 14% 13%;
+    --event-foreground: 0 0% 98%;
+    --event-muted: 270 8% 68%;
+    --event-border: 270 18% 22%;
+    --event-gradient: linear-gradient(135deg, hsl(284 42% 32%), hsl(266 58% 33%) 52%, hsl(181 53% 36%));
+    --event-hero-overlay: linear-gradient(to top, hsl(270 20% 5%) 2%, hsl(270 20% 5% / 0.82) 28%, hsl(270 20% 5% / 0.12) 72%, hsl(270 20% 5% / 0.18));
+    --event-shadow: 0 24px 70px -28px hsl(284 42% 22% / 0.7);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 10% 3.9%;
@@ -111,6 +120,13 @@
     --glow-primary: 0 0 30px hsl(284 32% 45% / 0.5);
     --backdrop-blur: blur(20px);
     --border-soft: 1px solid hsl(240 3.7% 15.9% / 0.6);
+
+    --event-background: 270 20% 4%;
+    --event-surface: 270 16% 8%;
+    --event-elevated: 270 14% 12%;
+    --event-foreground: 0 0% 98%;
+    --event-muted: 270 8% 68%;
+    --event-border: 270 18% 22%;
     
     --sidebar-background: 240 10% 6%;
     --sidebar-foreground: 0 0% 98%;
@@ -289,6 +305,29 @@
     position: absolute;
     inset: 0;
     background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+  }
+
+  .event-gradient {
+    background: var(--event-gradient);
+  }
+
+  .event-hero-overlay {
+    background: var(--event-hero-overlay);
+  }
+
+  .event-shadow {
+    box-shadow: var(--event-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-experience *,
+  .event-experience *::before,
+  .event-experience *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
