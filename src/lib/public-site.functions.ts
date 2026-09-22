@@ -137,3 +137,57 @@ export const publicCampaignDonationsQueryOptions = (campaignId: string, limit = 
 });
 
 export type PublicLocation = Awaited<ReturnType<typeof getPublicLocations>>[number];
+const regionPageInput = z.object({ slug: z.string().min(1).max(120) });
+
+export const getPublicRegionPage = createServerFn({ method: "GET" })
+  .validator((input) => regionPageInput.parse(input))
+  .handler(async ({ data: input }) => {
+    const client = createPublicClient();
+    const { data: regions, error } = await client
+      .from("regions")
+      .select("id,name,code,description,address,contact_phone,contact_email,regional_president,regional_president_photo,established_date,hero_slide_images,hero_slide_images_mobile,hero_slide_images_tablet,currency_code")
+      .eq("is_active", true);
+    if (error) throw new Error("Unable to load this region right now.");
+
+    const slug = input.slug.toLowerCase();
+    const region = (regions ?? []).find((entry) => generateSlug(entry.name) === slug);
+    if (!region) return null;
+
+    const [locationsRes, dcgsRes, eventsRes] = await Promise.all([
+      client
+        .from("locations")
+        .select("id,name,type,address,city,state,latitude,longitude,contact_phone,contact_person,whatsapp_link,capacity,fellowship_times,image_url,is_featured")
+        .eq("region_id", region.id)
+        .eq("status", "Active")
+        .order("is_featured", { ascending: false })
+        .order("name"),
+      client.rpc("get_public_region_dcgs", { _region_id: region.id }),
+      client
+        .from("events")
+        .select("id,name,name_fr,category,start_datetime,end_datetime,location_name,location_name_fr,address,image_url,image_url_fr,slug,status")
+        .eq("region_id", region.id)
+        .eq("is_public", true)
+        .gte("start_datetime", new Date().toISOString())
+        .order("start_datetime", { ascending: true })
+        .limit(12),
+    ]);
+
+    return {
+      region,
+      locations: locationsRes.error ? [] : locationsRes.data ?? [],
+      dcgs: dcgsRes.error ? [] : dcgsRes.data ?? [],
+      events: eventsRes.error ? [] : eventsRes.data ?? [],
+    };
+  });
+
+export const publicRegionPageQueryOptions = (slug: string) => queryOptions({
+  queryKey: ["public-region-page", slug.toLowerCase()],
+  queryFn: () => getPublicRegionPage({ data: { slug } }),
+  staleTime: 5 * 60_000,
+  gcTime: 30 * 60_000,
+});
+
+export type PublicRegionPage = NonNullable<Awaited<ReturnType<typeof getPublicRegionPage>>>;
+export type PublicRegionDcg = PublicRegionPage["dcgs"][number];
+export type PublicRegionLocation = PublicRegionPage["locations"][number];
+export type PublicRegionEvent = PublicRegionPage["events"][number];
