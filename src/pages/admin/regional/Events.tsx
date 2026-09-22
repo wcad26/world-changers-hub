@@ -79,6 +79,10 @@ const eventSchema = z.object({
   category: z.enum(eventCategories),
   description: z.string().optional(),
   description_fr: z.string().optional(),
+  expectations: z.string().optional(),
+  expectations_fr: z.string().optional(),
+  requirements: z.string().optional(),
+  requirements_fr: z.string().optional(),
   start_date: z.string().min(1, { message: "Please select a start date." }),
   start_time: z.string().min(1, { message: "Please provide a start time." }),
   end_date: z.string().optional(),
@@ -213,6 +217,10 @@ const RegionalEvents: React.FC = () => {
       name_fr: "",
       description: "",
       description_fr: "",
+      expectations: "",
+      expectations_fr: "",
+      requirements: "",
+      requirements_fr: "",
       start_date: "",
       start_time: "",
       end_date: "",
@@ -494,6 +502,10 @@ const RegionalEvents: React.FC = () => {
         slug: finalSlug || null,
         description: values.description || null,
         description_fr: values.description_fr || null,
+        expectations: values.expectations || null,
+        expectations_fr: values.expectations_fr || null,
+        requirements: values.requirements || null,
+        requirements_fr: values.requirements_fr || null,
         category: values.category,
         start_datetime: start_datetime,
         end_datetime: end_datetime,
@@ -786,6 +798,8 @@ const RegionalEvents: React.FC = () => {
         slug: finalSlug,
         description: event.description,
         description_fr: event.description_fr,
+        expectations: event.expectations,
+        expectations_fr: event.expectations_fr,
         category: event.category,
         start_datetime: event.start_datetime,
         end_datetime: event.end_datetime,
@@ -1213,6 +1227,10 @@ const RegionalEvents: React.FC = () => {
         slug: newSlug || null,
         description: values.description || null,
         description_fr: values.description_fr || null,
+        expectations: values.expectations || null,
+        expectations_fr: values.expectations_fr || null,
+        requirements: values.requirements || null,
+        requirements_fr: values.requirements_fr || null,
         category: values.category,
         start_datetime: start_datetime,
         end_datetime: end_datetime,
@@ -1501,6 +1519,10 @@ const RegionalEvents: React.FC = () => {
         category: event.category,
       description: event.description || "",
       description_fr: event.description_fr || "",
+      expectations: event.expectations || "",
+      expectations_fr: event.expectations_fr || "",
+      requirements: event.requirements || "",
+      requirements_fr: event.requirements_fr || "",
       address: event.address || "",
       address_fr: event.address_fr || "",
       location_name: event.location_name || "",
@@ -2431,6 +2453,31 @@ const RegionalEvents: React.FC = () => {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="expectations"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>What to Expect</FormLabel>
+                      <FormControl><Textarea className="min-h-[110px]" placeholder={"Teaching sessions\nWorship and prayer\nNetworking with other members"} {...field} /></FormControl>
+                      <FormDescription>Enter one programme highlight or experience per line.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="requirements"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>What Attendees Should Prepare</FormLabel>
+                      <FormControl><Textarea className="min-h-[100px]" placeholder="Items, documents, clothing or eligibility requirements..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 {/* French Translations Section */}
                 <div className="md:col-span-2">
@@ -2474,6 +2521,31 @@ const RegionalEvents: React.FC = () => {
                                 {...field}
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="expectations_fr"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>What to Expect (French)</FormLabel>
+                            <FormControl><Textarea className="min-h-[100px]" placeholder={"Sessions d’enseignement\nLouange et prière\nÉchanges avec d’autres membres"} {...field} /></FormControl>
+                            <FormDescription>Un temps fort ou une expérience par ligne.</FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="requirements_fr"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>What Attendees Should Prepare (French)</FormLabel>
+                            <FormControl><Textarea className="min-h-[100px]" placeholder="Objets, documents, tenue ou conditions requises..." {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -3378,6 +3450,55 @@ const RegionalEvents: React.FC = () => {
                     <FormControl>
                       <Textarea placeholder="Description de l'événement..." className="min-h-[100px]" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expectations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What to Expect</FormLabel>
+                    <FormControl><Textarea placeholder={"Teaching sessions\nWorship and prayer\nNetworking with other members"} className="min-h-[100px]" {...field} /></FormControl>
+                    <FormDescription>Enter one programme highlight or experience per line.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="expectations_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What to Expect (French)</FormLabel>
+                    <FormControl><Textarea placeholder={"Sessions d’enseignement\nLouange et prière\nÉchanges avec d’autres membres"} className="min-h-[100px]" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="requirements"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What Attendees Should Prepare</FormLabel>
+                    <FormControl><Textarea placeholder="Items, documents, clothing or eligibility requirements..." className="min-h-[90px]" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="requirements_fr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What Attendees Should Prepare (French)</FormLabel>
+                    <FormControl><Textarea placeholder="Objets, documents, tenue ou conditions requises..." className="min-h-[90px]" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
