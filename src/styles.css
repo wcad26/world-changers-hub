@@ -149,6 +149,34 @@
 @utility btn-soft-outline { display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); padding: .75rem 1.25rem; border: 1px solid var(--border); background: var(--card); color: var(--primary); font-weight: 600; }
 @utility touch-target { min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; }
 
+@keyframes home-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -8px, 0); }
+}
+
+@utility home-float {
+  animation: home-float 5s ease-in-out infinite;
+}
+
+@utility home-tilt {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  transform: perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+@utility home-magnetic {
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  &:hover { transform: translateY(-2px); box-shadow: var(--shadow-regal); }
+}
+
+@media (pointer: coarse) {
+  .home-tilt { transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .home-tilt { transform: none !important; }
 }
