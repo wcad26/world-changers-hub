@@ -105,7 +105,7 @@ export function EventExperienceHeader({ event }: EventExperienceHeaderProps) {
           <div className="mt-6 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="flex min-w-0 items-center gap-3 border-l-2 border-accent pl-3 text-event-foreground">
               <CalendarDays className="h-5 w-5 shrink-0 text-accent" />
-              <span className="text-sm font-semibold">{format(new Date(event.start_datetime), "EEE, MMM d, yyyy")}</span>
+              <span className="text-sm font-semibold">{format(new Date(event.start_datetime), "dd/MM/yyyy")}</span>
             </div>
             <div className="flex min-w-0 items-center gap-3 border-l-2 border-primary pl-3 text-event-foreground">
               <Clock3 className="h-5 w-5 shrink-0 text-primary" />

@@ -1,4 +1,4 @@
-import { BedDouble, CalendarDays, Clock3, HeartHandshake, MapPin, Target, UtensilsCrossed, UsersRound } from "lucide-react";
+import { BedDouble, CalendarDays, Clock3, HeartHandshake, Mail, MapPin, Phone, Target, UserRound, UtensilsCrossed, UsersRound } from "lucide-react";
 import { format } from "date-fns";
 import type { Event } from "@/hooks/useEvents";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -16,7 +16,7 @@ export function EventInformation({ event }: { event: Event }) {
   ].filter(Boolean) as { icon: typeof BedDouble; title: string; copy: string }[];
 
   const details = [
-    { icon: CalendarDays, label: t("date"), value: event.end_datetime ? `${format(new Date(event.start_datetime), "MMM d")} – ${format(new Date(event.end_datetime), "MMM d, yyyy")}` : format(new Date(event.start_datetime), "MMM d, yyyy") },
+    { icon: CalendarDays, label: t("date"), value: event.end_datetime ? `${format(new Date(event.start_datetime), "dd/MM/yyyy")} – ${format(new Date(event.end_datetime), "dd/MM/yyyy")}` : format(new Date(event.start_datetime), "dd/MM/yyyy") },
     { icon: Clock3, label: t("time"), value: `${format(new Date(event.start_datetime), "h:mm a")}${event.end_datetime ? ` – ${format(new Date(event.end_datetime), "h:mm a")}` : ""}` },
     { icon: MapPin, label: t("location"), value: [location, address].filter(Boolean).join(" · ") || "TBA" },
     { icon: UsersRound, label: t("capacity"), value: event.capacity ? `${event.capacity} ${t("people")}` : t("unlimited") },
@@ -57,6 +57,23 @@ export function EventInformation({ event }: { event: Event }) {
                 <p className="mt-2 text-sm leading-6 text-event-muted">{copy}</p>
               </article>
             ))}
+          </div>
+        </section>
+      )}
+
+      {(event.organizer_name || event.organizer_email || event.organizer_phone) && (
+        <section className="p-0" aria-labelledby="event-organizer">
+          <h2 id="event-organizer" className="mb-6 font-sora text-2xl font-bold text-event-foreground md:text-3xl">{language === "fr" ? "Organisateur" : "Organizer"}</h2>
+          <div className="grid gap-4 rounded-lg border border-event-border bg-event-surface p-5 sm:grid-cols-2">
+            {event.organizer_name && (
+              <div className="flex items-center gap-3 text-event-foreground"><UserRound className="h-5 w-5 shrink-0 text-accent" /><span className="font-semibold">{event.organizer_name}</span></div>
+            )}
+            {event.organizer_email && (
+              <a href={`mailto:${event.organizer_email}`} className="flex min-w-0 items-center gap-3 text-event-muted hover:text-accent"><Mail className="h-5 w-5 shrink-0" /><span className="truncate">{event.organizer_email}</span></a>
+            )}
+            {event.organizer_phone && (
+              <a href={`tel:${event.organizer_phone}`} className="flex min-w-0 items-center gap-3 text-event-muted hover:text-accent"><Phone className="h-5 w-5 shrink-0" /><span>{event.organizer_phone}</span></a>
+            )}
           </div>
         </section>
       )}
