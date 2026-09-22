@@ -52,11 +52,17 @@ export const usePublicLocations = () => {
             meeting_day,
             meeting_time,
             region_id,
-            leader:profiles!dcgs_leader_id_fkey(*)
+            leader:members!dcgs_leader_id_fkey(
+              profiles:profiles!members_profile_id_fkey(*)
+            )
           `)
           .in('name', dcgLocationNames);
 
-        if (!dcgError && dcgs) {
+        if (dcgError) {
+          throw dcgError;
+        }
+
+        if (dcgs) {
           // Get member counts for each DCG
           const dcgIds = dcgs.map(dcg => dcg.id);
           const { data: memberCounts } = await supabase
@@ -68,10 +74,9 @@ export const usePublicLocations = () => {
           // Map member counts to DCGs
           dcgData = dcgs.map(dcg => ({
             ...dcg,
+            leader: dcg.leader?.profiles ?? undefined,
             member_count: memberCounts?.filter(m => m.dcg_id === dcg.id).length || 0
           }));
-        } else {
-          console.error('Error fetching DCG data:', dcgError);
         }
       }
 

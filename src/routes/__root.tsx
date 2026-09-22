@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from "react";
-import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
+import { HeadContent, Link, Outlet, Scripts, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
 import { QueryClientProvider, type QueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,7 +13,7 @@ type RouterContext = { queryClient: QueryClient };
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head><HeadContent /></head>
       <body>{children}<Scripts /></body>
     </html>
@@ -34,32 +34,32 @@ function RootComponent() {
   }, []);
 
   return (
-    <RootDocument>
-      <LanguageProvider>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AuthProvider><Outlet /></AuthProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </LanguageProvider>
-    </RootDocument>
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AuthProvider><Outlet /></AuthProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }
 
-function RootError({ error }: { error: unknown }) {
+function RootError({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
   useEffect(() => reportLovableError(error), [error]);
   return (
-    <RootDocument>
-      <main className="grid min-h-screen place-items-center bg-background p-6 text-foreground">
-        <div className="max-w-md text-center">
-          <h1 className="text-2xl font-semibold">This page didn't load</h1>
-          <p className="mt-3 text-muted-foreground">Something went wrong. Please refresh or return home.</p>
-          <a className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-primary-foreground" href="/">Go home</a>
+    <main className="grid min-h-screen place-items-center bg-background p-6 text-foreground">
+      <div className="max-w-md text-center" role="alert">
+        <h1 className="text-2xl font-semibold">This page didn't load</h1>
+        <p className="mt-3 text-muted-foreground">Something went wrong. Please refresh or return home.</p>
+        <div className="mt-6 flex justify-center gap-2">
+          <button className="rounded-md bg-primary px-4 py-2 text-primary-foreground" onClick={async () => { await router.invalidate(); reset(); }}>Try again</button>
+          <Link className="rounded-md border border-border bg-background px-4 py-2" to="/">Go home</Link>
         </div>
-      </main>
-    </RootDocument>
+      </div>
+    </main>
   );
 }
 
@@ -82,6 +82,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
     scripts: [{ src: "https://cdn.gpteng.co/gptengineer.js", type: "module" }],
   }),
+  shellComponent: RootDocument,
   component: RootComponent,
   errorComponent: RootError,
 });

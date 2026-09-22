@@ -1,12 +1,5 @@
-import { createFileRoute, useLocation } from "@tanstack/react-router";
-import Page from "@/pages/admin/super/Events";
-import SuperAdminSessionRoute from "@/components/auth/SuperAdminSessionRoute";
-import SuperAdminLayout from "@/components/admin/SuperAdminLayout";
-import SuperAdminErrorBoundary from "@/components/auth/SuperAdminErrorBoundary";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-function RoutePage() {
-  const location = useLocation();
-  return (<SuperAdminSessionRoute><SuperAdminLayout><SuperAdminErrorBoundary resetKey={location.pathname}><Page /></SuperAdminErrorBoundary></SuperAdminLayout></SuperAdminSessionRoute>);
-}
-
-export const Route = createFileRoute("/admin/super/events")({ component: RoutePage });
+export const Route = createFileRoute("/admin/super/events")({
+  component: Outlet,
+});
