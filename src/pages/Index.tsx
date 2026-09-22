@@ -1,7 +1,7 @@
 import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowRight, MapPin, Calendar, Clock, Compass, BookOpen, Heart, Film, Quote, Users, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Clock, Compass, BookOpen, Heart, Film, Quote, Users, ChevronRight } from 'lucide-react';
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,8 +77,7 @@ const Index = () => {
           <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--event-background)_0%,transparent_45%)] opacity-70" />
           <div className="container-custom relative z-10 flex min-h-[76svh] items-end pb-12 pt-24 sm:min-h-[82svh] sm:items-center sm:pb-16 sm:pt-20">
             <div className="max-w-3xl animate-fade-in">
-              <div className="mb-5 inline-flex items-center gap-2 border-l-2 border-secondary pl-3 text-xs font-semibold uppercase text-event-muted">
-                <Sparkles className="h-4 w-4 text-secondary" />
+              <div className="mb-5 inline-flex items-center rounded-full bg-secondary px-5 py-2 text-xs font-semibold uppercase text-white shadow-card">
                 {slide?.subtitle || 'JOIN A COMMUNITY OF PURPOSE-DRIVEN LEADERS'}
               </div>
               <h1 className="max-w-3xl text-balance font-heading text-4xl font-bold leading-[1.04] text-event-foreground sm:text-6xl lg:text-7xl">
