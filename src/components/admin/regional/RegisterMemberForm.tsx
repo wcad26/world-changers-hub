@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useOccupations } from '@/hooks/useOccupations';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Loader2, CalendarIcon, Search, User, BookOpen, Heart, Users, Church, Plus, X, Check, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -178,7 +179,7 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
           }
 
           // Handle spiritual fields via direct member update
-          const memberUpdates: Record<string, any> = {};
+          const memberUpdates: Database['public']['Tables']['members']['Update'] = {};
           if (values.has_completed_foundation_school === 'yes') {
             memberUpdates.membership_class_completed = true;
             if (values.foundation_school_date) memberUpdates.foundation_school_date = values.foundation_school_date;

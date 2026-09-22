@@ -33,6 +33,29 @@ export const getAboutContent = createServerFn({ method: "GET" }).handler(async (
   return data;
 });
 
+export const getHomepageContent = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await createPublicClient()
+    .from("global_content")
+    .select("id,page_type,content,updated_at")
+    .eq("page_type", "homepage")
+    .maybeSingle();
+  if (error) return null;
+  return data;
+});
+
+export const getFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
+  const { data, error } = await createPublicClient()
+    .from("events")
+    .select("*")
+    .eq("is_public", true)
+    .eq("is_featured", true)
+    .gte("start_datetime", new Date().toISOString())
+    .order("start_datetime", { ascending: true })
+    .limit(4);
+  if (error) return [];
+  return data ?? [];
+});
+
 export const getPublicLocations = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await createPublicClient()
     .from("locations")
@@ -99,6 +122,20 @@ export const aboutContentQueryOptions = () => queryOptions({
   queryFn: () => getAboutContent(),
   staleTime: 10 * 60_000,
   gcTime: 30 * 60_000,
+});
+
+export const homepageContentQueryOptions = () => queryOptions({
+  queryKey: ["global-content", "homepage"],
+  queryFn: () => getHomepageContent(),
+  staleTime: 10 * 60_000,
+  gcTime: 30 * 60_000,
+});
+
+export const featuredEventsQueryOptions = () => queryOptions({
+  queryKey: ["featuredEvents"],
+  queryFn: () => getFeaturedEvents(),
+  staleTime: 60_000,
+  gcTime: 10 * 60_000,
 });
 
 export const publicLocationsQueryOptions = () => queryOptions({

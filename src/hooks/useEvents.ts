@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Database } from '@/integrations/supabase/types';
-import { publicEventsQueryOptions } from '@/lib/public-site.functions';
+import { featuredEventsQueryOptions, publicEventsQueryOptions } from '@/lib/public-site.functions';
 
 export type Event = Database['public']['Tables']['events']['Row'];
 export type NewEvent = Database['public']['Tables']['events']['Insert'];
@@ -86,21 +86,7 @@ export const useEventById = (eventId: string | undefined) => {
 
 // Hook to get featured public events
 export const useFeaturedEvents = () => {
-    return useQuery({
-        queryKey: ['featuredEvents'],
-        queryFn: async () => {
-            const now = new Date().toISOString();
-            const { data, error } = await supabase
-                .from('events')
-                .select('*')
-                .eq('is_public', true)
-                .eq('is_featured', true)
-                .gte('start_datetime', now)
-                .order('start_datetime', { ascending: true });
-            if (error) throw error;
-            return data;
-        }
-    });
+    return useQuery(featuredEventsQueryOptions());
 };
 
 

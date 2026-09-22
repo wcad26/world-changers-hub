@@ -25,20 +25,15 @@ type Region = Database['public']['Tables']['regions']['Row'];
  * longer clear state or bounce the user to login.
  */
 export const RegionalSessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const initialBootstrap = useMemo(() => readRegionalBootstrap(), []);
-  const [user, setUser] = useState<RegionalSessionValue['user']>(
-    initialBootstrap ? { id: initialBootstrap.userId, email: initialBootstrap.email ?? undefined } : null,
-  );
+  const [user, setUser] = useState<RegionalSessionValue['user']>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [region, setRegion] = useState<Region | null>(
-    initialBootstrap ? createRegionStub(initialBootstrap.regionId) : null,
-  );
-  const [bootstrapAvailable, setBootstrapAvailable] = useState(!!initialBootstrap);
+  const [region, setRegion] = useState<Region | null>(null);
+  const [bootstrapAvailable, setBootstrapAvailable] = useState(false);
   const queryClient = useQueryClient();
 
   const signingOutRef = useRef(false);
   const loadedForUserRef = useRef<string | null>(null);
-  const userEmailRef = useRef(initialBootstrap?.email ?? null);
+  const userEmailRef = useRef<string | null>(null);
 
   const loadProfileAndRegion = useCallback(async (uid: string, preferredRegionId?: string | null) => {
     if (signingOutRef.current) return;

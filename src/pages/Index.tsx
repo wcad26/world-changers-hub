@@ -5,9 +5,8 @@ import { ArrowRight, MapPin, Calendar, Clock, BookOpen, Heart, Film, Quote, User
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useHomepageContent } from '@/hooks/useHomepageContent';
-import { useFeaturedEvents } from '@/hooks/useEvents';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { featuredEventsQueryOptions, homepageContentQueryOptions } from '@/lib/public-site.functions';
 import { formatEventDuration } from '@/utils/dateUtils';
 import { renderIcon } from '@/utils/iconMapping';
 import heroImage from '@/assets/wca-community-hero.jpg';
@@ -52,8 +51,8 @@ function TiltSurface({ children, className = '' }: { children: ReactNode; classN
 }
 
 const Index = () => {
-  const { data: contentData } = useHomepageContent();
-  const { data: featuredEvents, isLoading: isLoadingEvents } = useFeaturedEvents();
+  const { data: contentData } = useSuspenseQuery(homepageContentQueryOptions());
+  const { data: featuredEvents } = useSuspenseQuery(featuredEventsQueryOptions());
   const homepageData = contentData?.content as any;
   const slide = homepageData?.hero?.slides?.[0];
   const mission = homepageData?.mission || defaultMission;
@@ -189,8 +188,7 @@ const Index = () => {
               <Button asChild variant="outline"><Link to="/events">View all events<ArrowRight /></Link></Button>
             </div>
 
-            {isLoadingEvents ? <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]"><Skeleton className="aspect-[16/10] rounded-md" /><div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-md" />)}</div></div>
-            : leadEvent ? (
+            {leadEvent ? (
               <div className="grid gap-5 lg:grid-cols-[1.35fr_0.65fr]">
                 <TiltSurface>
                   <Link to={`/events/${leadEvent.slug || leadEvent.id}`} className="group relative block min-h-[420px] overflow-hidden rounded-md border border-border bg-event-background shadow-regal">

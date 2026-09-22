@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import type { MemberWithProfile } from '@/hooks/useMembers';
 import { useMembers } from '@/hooks/useMembers';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -70,7 +71,7 @@ const editMemberSchema = z.object({
   is_baptized: z.string().optional(),
   baptism_date: z.string().optional(),
   ministry_interests: z.array(z.string()).optional(),
-  status: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'new', 'transferred']).optional(),
 });
 
 type EditMemberFormData = z.infer<typeof editMemberSchema>;
@@ -181,7 +182,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       }
 
       // Update member record
-      const memberUpdate: Record<string, any> = {
+      const memberUpdate: Database['public']['Tables']['members']['Update'] = {
         member_type: data.member_type,
         status: data.status || 'active',
         preferred_service_areas: data.ministry_interests || [],
