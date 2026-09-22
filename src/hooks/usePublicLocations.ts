@@ -52,7 +52,9 @@ export const usePublicLocations = () => {
             meeting_day,
             meeting_time,
             region_id,
-            leader:profiles!dcgs_leader_id_fkey(*)
+            leader:members!dcgs_leader_id_fkey(
+              profiles:profiles!members_profile_id_fkey(*)
+            )
           `)
           .in('name', dcgLocationNames);
 

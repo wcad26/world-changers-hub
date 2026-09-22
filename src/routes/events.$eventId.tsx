@@ -1,7 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import Page from "@/pages/EventDetail";
-import { supabase } from "@/integrations/supabase/client";
-import { isUUID } from "@/utils/slugUtils";
+import { publicEventQueryOptions } from "@/lib/public-event.functions";
 
 const SITE_URL = "https://wcaglobal.org";
 
@@ -10,21 +9,12 @@ function plainText(value: string | null | undefined) {
 }
 
 export const Route = createFileRoute("/events/$eventId")({
-  loader: async ({ params }) => {
-    const query = supabase.from("events").select("id,slug,name,name_fr,description,description_fr,image_url,image_url_fr,is_public");
-    const { data } = isUUID(params.eventId)
-      ? await query.eq("id", params.eventId).eq("is_public", true).maybeSingle()
-      : await query.eq("slug", params.eventId).eq("is_public", true).maybeSingle();
-    if (!data) return null;
-
-    const { data: images } = await supabase
-      .from("event_images")
-      .select("image_url,image_url_fr,display_order")
-      .eq("event_id", data.id)
-      .eq("is_hero_image", true)
-      .order("display_order", { ascending: true })
-      .limit(1);
-    return { event: data, hero: images?.[0] ?? null };
+  loader: async ({ context, params }) => {
+    const result = await context.queryClient.ensureQueryData(publicEventQueryOptions(params.eventId));
+    if (result.redirectSlug && result.redirectSlug !== params.eventId) {
+      throw redirect({ to: "/events/$eventId", params: { eventId: result.redirectSlug }, replace: true });
+    }
+    return result;
   },
   head: ({ loaderData, params }) => {
     const event = loaderData?.event;
@@ -49,5 +39,22 @@ export const Route = createFileRoute("/events/$eventId")({
       links: [{ rel: "canonical", href: canonical }],
     };
   },
+  errorComponent: ({ error }) => (
+    <main className="grid min-h-screen place-items-center bg-event-background p-6 text-event-foreground">
+      <div className="max-w-md text-center" role="alert">
+        <h1 className="font-sora text-2xl font-semibold">Event unavailable</h1>
+        <p className="mt-3 text-event-muted">{error.message || "This event could not be loaded. Please try again."}</p>
+        <a className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-primary-foreground" href="/events">Back to events</a>
+      </div>
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main className="grid min-h-screen place-items-center bg-event-background p-6 text-event-foreground">
+      <div className="max-w-md text-center">
+        <h1 className="font-sora text-2xl font-semibold">Event not found</h1>
+        <a className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-primary-foreground" href="/events">Back to events</a>
+      </div>
+    </main>
+  ),
   component: Page,
 });
