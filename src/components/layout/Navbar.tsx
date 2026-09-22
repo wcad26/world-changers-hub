@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronDown, Languages, Mail, Menu, Phone } from "lucide-react";
 import { Link, useLocation } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export default function Navbar() {
   const label = (item: { en: string; fr: string }) => language === "fr" ? item.fr : item.en;
   const isActive = (to: string) => to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
   const resourcesActive = resourceLinks.some(({ to }) => isActive(to));
+  const [resourcesOpen, setResourcesOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/94 shadow-xs backdrop-blur-xl">
@@ -84,8 +86,23 @@ export default function Navbar() {
                 {mainLinks.map((item) => (
                   <Link key={item.to} to={item.to} className={cn("block rounded-md px-4 py-3 font-semibold", isActive(item.to) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent")}>{label(item)}</Link>
                 ))}
-                <p className="px-4 pb-1 pt-4 text-xs font-semibold uppercase text-muted-foreground">{language === "fr" ? "Ressources" : "Resources"}</p>
-                {resourceLinks.map((item) => <Link key={item.to} to={item.to} className="block rounded-md px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">{label(item)}</Link>)}
+                <button
+                  type="button"
+                  onClick={() => setResourcesOpen((open) => !open)}
+                  aria-expanded={resourcesOpen}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-md px-4 py-3 font-semibold",
+                    resourcesActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent",
+                  )}
+                >
+                  {language === "fr" ? "Ressources" : "Resources"}
+                  <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", resourcesOpen && "rotate-180")} />
+                </button>
+                {resourcesOpen && (
+                  <div className="space-y-1 pt-1">
+                    {resourceLinks.map((item) => <Link key={item.to} to={item.to} className="block rounded-md px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">{label(item)}</Link>)}
+                  </div>
+                )}
               </nav>
               <div className="mx-4 border-t px-4 pb-1 pt-4">
                 <p className="flex items-center gap-2 pb-2 text-xs font-semibold uppercase text-muted-foreground">
