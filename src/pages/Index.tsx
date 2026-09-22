@@ -79,13 +79,13 @@ const Index = () => {
             <div className="max-w-3xl animate-fade-in">
               <div className="mb-5 inline-flex items-center gap-2 border-l-2 border-secondary pl-3 text-xs font-semibold uppercase text-event-muted">
                 <Sparkles className="h-4 w-4 text-secondary" />
-                {slide?.subtitle || 'Building tomorrow’s leaders today'}
+                {slide?.subtitle || 'JOIN A COMMUNITY OF PURPOSE-DRIVEN LEADERS'}
               </div>
               <h1 className="max-w-3xl text-balance font-heading text-4xl font-bold leading-[1.04] text-event-foreground sm:text-6xl lg:text-7xl">
                 {slide?.title || 'Welcome to World Changers Association'}
               </h1>
               <p className="mt-5 max-w-2xl text-pretty text-base leading-7 text-event-muted sm:text-lg">
-                {slide?.description || 'Empowering communities through spiritual growth, leadership development, and transformative service worldwide.'}
+                {slide?.description || 'Rescuing the lost, transforming lives, training and empowering effective leaders who will bring positive change in their pheres of life.'}
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Button asChild size="lg" className="home-magnetic w-full sm:w-auto"><Link to={slide?.primaryButton?.link || '/about'}>{slide?.primaryButton?.text || 'Discover WCA'}<ArrowRight /></Link></Button>
