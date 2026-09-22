@@ -475,7 +475,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
   };
 
   const regionMissingNotice = !region ? (
-    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-4 flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border/70 bg-card/85 p-4 shadow-card backdrop-blur-xl">
       <div className="text-sm">
         <p className="font-medium">{missingRegionMessage || 'No region selected.'}</p>
       </div>
@@ -483,7 +483,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
   ) : null;
 
   const dataErrorNotice = dataErrors.length > 0 ? (
-    <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 flex items-start gap-3">
+    <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-4">
       <AlertCircle className="h-4 w-4 mt-0.5 text-destructive shrink-0" />
       <div className="text-sm min-w-0 flex-1">
         <p className="font-medium text-destructive">Some dashboard data could not load.</p>
@@ -506,7 +506,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
     <div className="h-full flex flex-col overflow-hidden">
       <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-          <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
+          <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 p-1">
             {periodOptions.map(opt => (
               <Button
                 key={opt.value}
@@ -603,7 +603,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
           </div>
         )}
 
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+        <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl">
           <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
           {trendChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={380}>
@@ -685,7 +685,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+          <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl lg:col-span-2">
             <h3 className="text-base font-semibold mb-4 text-foreground">Gender & Age Distribution</h3>
             {genderChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
@@ -715,7 +715,7 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
             )}
           </div>
 
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm overflow-hidden">
+          <div className="overflow-hidden rounded-md border border-border/70 bg-card/85 shadow-card backdrop-blur-xl">
             <div className="grid grid-cols-2 grid-rows-2 h-full">
               <div className="p-5 border-r border-b border-border/30 flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-2">

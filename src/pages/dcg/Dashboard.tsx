@@ -173,7 +173,7 @@ const DcgDashboard = () => {
         {/* ── FIXED FILTER BAR ── */}
         <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
           <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
+            <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 p-1">
               {periodOptions.map((opt) => (
                 <Button
                   key={opt.value}
@@ -263,7 +263,7 @@ const DcgDashboard = () => {
           </div>
 
           {/* ── ATTENDANCE TREND ── */}
-          <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
+          <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl">
             <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
             {trendChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={380}>
