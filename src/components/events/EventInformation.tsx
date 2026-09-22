@@ -1,4 +1,4 @@
-import { BedDouble, CalendarDays, Clock3, HeartHandshake, Mail, MapPin, Phone, Target, UserRound, UtensilsCrossed, UsersRound } from "lucide-react";
+import { CalendarDays, Check, Clock3, Mail, MapPin, Phone, Target, UserRound, UsersRound } from "lucide-react";
 import { format } from "date-fns";
 import type { Event } from "@/hooks/useEvents";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -8,12 +8,12 @@ export function EventInformation({ event }: { event: Event }) {
   const address = localizedField(event.address, event.address_fr);
   const location = localizedField(event.location_name, event.location_name_fr);
   const description = localizedField(event.description, event.description_fr);
+  const expectations = localizedField(event.expectations, event.expectations_fr);
   const requirements = localizedField(event.requirements, event.requirements_fr);
-  const features = [
-    event.collect_lodging && { icon: BedDouble, title: language === "fr" ? "Hébergement" : "Lodging", copy: language === "fr" ? "Les besoins d’hébergement sont recueillis lors de l’inscription." : "Lodging needs are collected during registration." },
-    event.collect_meal_preferences && { icon: UtensilsCrossed, title: language === "fr" ? "Repas et santé" : "Meals & health", copy: language === "fr" ? "Indiquez vos préférences alimentaires, allergies et besoins de santé." : "Share meal preferences, allergies and health needs." },
-    event.collect_pledges && { icon: HeartHandshake, title: language === "fr" ? "Promesse et soutien" : "Pledge & support", copy: language === "fr" ? "Vous pouvez soutenir la campagne liée pendant l’inscription." : "Support the linked campaign while registering." },
-  ].filter(Boolean) as { icon: typeof BedDouble; title: string; copy: string }[];
+  const expectationItems = (expectations || "")
+    .split(/\r?\n/)
+    .map((item) => item.trim().replace(/^[-•]\s*/, ""))
+    .filter(Boolean);
 
   const details = [
     { icon: CalendarDays, label: t("date"), value: event.end_datetime ? `${format(new Date(event.start_datetime), "dd/MM/yyyy")} – ${format(new Date(event.end_datetime), "dd/MM/yyyy")}` : format(new Date(event.start_datetime), "dd/MM/yyyy") },
@@ -46,15 +46,16 @@ export function EventInformation({ event }: { event: Event }) {
         </div>
       </section>
 
-      {features.length > 0 && (
+      {expectationItems.length > 0 && (
         <section className="p-0" aria-labelledby="event-expect">
           <h2 id="event-expect" className="mb-7 font-sora text-2xl font-bold text-event-foreground md:text-3xl">{language === "fr" ? "À quoi s’attendre" : "What to expect"}</h2>
           <div className="grid gap-4 md:grid-cols-3">
-            {features.map(({ icon: Icon, title, copy }) => (
-              <article key={title} className="rounded-lg border border-event-border bg-event-surface p-5">
-                <Icon className="mb-5 h-6 w-6 text-accent" />
-                <h3 className="font-sora text-base font-semibold text-event-foreground">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-event-muted">{copy}</p>
+            {expectationItems.map((item) => (
+              <article key={item} className="flex items-start gap-4 rounded-lg border border-event-border bg-event-surface p-5">
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent/15 text-accent">
+                  <Check className="h-4 w-4" />
+                </span>
+                <p className="font-manrope text-sm font-semibold leading-6 text-event-foreground">{item}</p>
               </article>
             ))}
           </div>
