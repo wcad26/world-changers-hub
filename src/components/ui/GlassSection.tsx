@@ -10,7 +10,7 @@ interface GlassSectionProps {
 export function GlassSection({ children, className }: GlassSectionProps) {
   return (
     <div className={cn(
-      'rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6',
+      'rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl',
       className
     )}>
       {children}
@@ -29,7 +29,7 @@ export function GlassSectionHeader({ icon, title, description, action }: GlassSe
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
           {icon}
         </div>
         <div>
@@ -54,9 +54,9 @@ interface GlassKPICardProps {
 
 export function GlassKPICard({ icon, label, value, subtitle, isLoading }: GlassKPICardProps) {
   return (
-    <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 transition-all duration-300 hover:shadow-md hover:border-border/60">
+    <div className="rounded-md border border-border/70 bg-card/85 p-5 shadow-xs backdrop-blur-xl transition-[box-shadow,border-color] duration-200 hover:border-primary/25 hover:shadow-card">
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
           {icon}
         </div>
         <span className="text-sm font-medium text-muted-foreground">{label}</span>

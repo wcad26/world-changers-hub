@@ -14,7 +14,7 @@ export default function Hero() {
   // Default slides if no content data
   const defaultSlides = [{
     id: '1',
-    image: '/public/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png',
+    image: '/lovable-uploads/366be6c2-b04b-4b05-a73a-cff2d9452c69.png',
     title: 'Welcome to World Christian Assembly',
     subtitle: 'Building Tomorrow\'s Leaders Today',
     description: 'Empowering communities through spiritual growth, leadership development, and transformative service worldwide.',
@@ -29,16 +29,14 @@ export default function Hero() {
   }];
   const slides = heroData?.hero?.slides || defaultSlides;
   const tagline = heroData?.hero?.tagline || 'Join our community of purpose-driven leaders';
-  return <section className="relative min-h-screen flex items-center overflow-hidden -mt-16">
+  return <section className="relative flex min-h-[calc(100svh-4.5rem)] items-center overflow-hidden border-b border-border/70 bg-background py-16 sm:py-20 lg:py-24">
       {/* Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-wca-purple/10 via-transparent to-wca-teal/10 opacity-50"></div>
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-wca-purple/20 rounded-full filter blur-3xl animate-pulse-slow"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-wca-teal/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-1000"></div>
-        <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-wca-violet/20 rounded-full filter blur-3xl animate-pulse-slow animation-delay-2000"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_34%),radial-gradient(circle_at_85%_70%,color-mix(in_oklab,var(--secondary)_14%,transparent),transparent_32%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       </div>
 
-      <div className="container-custom relative z-10 pt-20 md:pt-24 lg:pt-16 py-0">
+      <div className="container-custom relative z-10">
         <Carousel plugins={[Autoplay({
         delay: 5000
       })]} className="w-full" opts={{
@@ -47,28 +45,26 @@ export default function Hero() {
       }}>
           <CarouselContent>
             {slides.map((slide: any) => <CarouselItem key={slide.id}>
-                <div className="grid grid-cols-1 lg:grid-cols-10 gap-8 items-center">
-                  <div className="lg:col-span-6 space-y-6 text-center lg:text-left animate-fade-up">
-                    <div className="inline-block px-3 py-1 rounded-full bg-wca-purple/10 text-wca-purple font-medium text-sm">
+                <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-14">
+                  <div className="space-y-6 text-center lg:col-span-7 lg:text-left">
+                    <div className="inline-flex rounded-sm border border-primary/20 bg-primary/8 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                       {slide.subtitle}
                     </div>
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-                      <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                        {slide.title}
-                      </span>
+                    <h1 className="max-w-4xl text-balance font-heading text-4xl font-semibold leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
+                      {slide.title}
                     </h1>
-                    <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 leading-relaxed text-justify">
+                    <p className="mx-auto max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg lg:mx-0">
                       {slide.description}
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-6 justify-center lg:justify-start">
+                    <div className="flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                       <Link to={slide.primaryButton.link}>
-                        <Button size="lg" className="bg-gradient-to-r from-wca-purple to-wca-violet hover:from-wca-purple/90 hover:to-wca-violet/90 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                        <Button size="lg" className="w-full px-7 sm:w-auto">
                           {slide.primaryButton.text}
                           <ArrowRight size={20} className="ml-2" />
                         </Button>
                       </Link>
                       <Link to={slide.secondaryButton.link}>
-                        <Button variant="outline" size="lg" className="border-2 border-wca-purple/30 bg-white/10 backdrop-blur-sm text-wca-purple hover:bg-wca-purple hover:text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                        <Button variant="outline" size="lg" className="w-full px-7 sm:w-auto">
                           {slide.secondaryButton.text}
                           <MapPin size={20} className="ml-2" />
                         </Button>
@@ -76,18 +72,18 @@ export default function Hero() {
                     </div>
                   </div>
                   
-                  <div className="lg:col-span-4 flex justify-center lg:justify-end animate-fade-up animation-delay-300">
-                    <GlassPanel className="p-6 max-w-sm">
+                  <div className="flex justify-center lg:col-span-5 lg:justify-end">
+                    <GlassPanel className="w-full max-w-md p-3 sm:p-4">
                       <div className="text-center space-y-4">
-                        <div className="w-full h-48 bg-gradient-to-br from-wca-purple/20 to-wca-teal/20 rounded-lg overflow-hidden">
+                        <div className="h-56 w-full overflow-hidden rounded-sm bg-muted sm:h-72">
                           <img src={slide.image} alt="Community gathering" className="w-full h-full object-contain" loading="lazy" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg mb-2">{tagline}</h3>
-                          <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                          <p className="mb-4 text-sm text-muted-foreground">
                             Connect with like-minded individuals and grow together in faith and purpose.
                           </p>
-                          <Link to="/events" className="text-wca-purple hover:text-wca-violet font-medium text-sm">
+                          <Link to="/events" className="text-sm font-semibold text-primary hover:text-primary/75">
                             View Upcoming Events →
                           </Link>
                         </div>

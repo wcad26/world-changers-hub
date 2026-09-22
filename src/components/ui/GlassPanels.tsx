@@ -11,7 +11,8 @@ interface GlassPanelProps {
 export function GlassPanel({ children, className, isDark = false }: GlassPanelProps) {
   return (
     <div className={cn(
-      isDark ? 'glass-panel-dark' : 'glass-panel',
+      'rounded-md border shadow-card backdrop-blur-xl',
+      isDark ? 'border-event-border bg-event-surface/92 text-event-foreground' : 'border-border/80 bg-card/88 text-card-foreground',
       className
     )}>
       {children}
@@ -31,8 +32,9 @@ export function GlassCard({ children, className, isDark = false, hoverEffect = t
     <div 
       className={cn(
         'overflow-hidden',
-        isDark ? 'glass-panel-dark' : 'glass-panel',
-        hoverEffect && 'transition-all duration-300 hover:translate-y-[-5px] hover:shadow-xl',
+        'rounded-md border shadow-card backdrop-blur-xl',
+        isDark ? 'border-event-border bg-event-surface/92 text-event-foreground' : 'border-border/80 bg-card/88 text-card-foreground',
+        hoverEffect && 'transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-regal',
         className
       )}
     >
