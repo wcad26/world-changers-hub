@@ -1,7 +1,7 @@
 import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowRight, MapPin, Calendar, Clock, Compass, BookOpen, Heart, Film, Quote, Users, ChevronRight } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Clock, BookOpen, Heart, Film, Quote, Users, ChevronRight } from 'lucide-react';
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,7 +108,6 @@ const Index = () => {
                 <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">A connected community growing in faith, capability, integrity, and service.</p>
               </div>
               <div className="event-gradient relative flex min-h-80 flex-col justify-end overflow-hidden rounded-md border border-event-border p-7 text-event-foreground shadow-regal sm:p-10 lg:col-span-5">
-                <div className="home-float absolute right-8 top-8 grid h-16 w-16 place-items-center rounded-full border border-event-border bg-event-surface/70 backdrop-blur-md"><Compass className="h-7 w-7 text-secondary" /></div>
                 <span className="text-2xl font-semibold uppercase text-secondary sm:text-3xl">OUR SLOGAN</span>
                 <p className="mt-4 text-[1.35rem] font-bold leading-9 text-event-muted">See the Future - Take a Step - Change your World</p>
               </div>
