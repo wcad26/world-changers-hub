@@ -111,7 +111,6 @@ const Index = () => {
                 <div className="home-float absolute right-8 top-8 grid h-16 w-16 place-items-center rounded-full border border-event-border bg-event-surface/70 backdrop-blur-md"><Compass className="h-7 w-7 text-secondary" /></div>
                 <span className="text-2xl font-semibold uppercase text-secondary sm:text-3xl">OUR SLOGAN</span>
                 <p className="mt-4 text-lg leading-8 text-event-muted">See the Future, Take a Step &amp; Change your World ...</p>
-                <Button asChild variant="secondary" className="mt-7 w-fit"><Link to="/about">Our story<ArrowRight /></Link></Button>
               </div>
             </div>
 
