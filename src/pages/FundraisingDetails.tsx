@@ -1,13 +1,11 @@
 import { Link, useParams, useNavigate } from "@/lib/router-compat";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { GlassCard } from "@/components/ui/GlassPanels";
 import { ArrowLeft, Calendar, Heart, HandCoins, PiggyBank, Target, Users } from "lucide-react";
-import {
-  usePublicFundraisingCampaign,
-  usePublicCampaignDonations,
-} from "@/hooks/useFundraisingCampaigns";
+import { publicCampaignDonationsQueryOptions, publicFundraisingCampaignQueryOptions } from "@/lib/public-site.functions";
 import { useLanguage } from "@/hooks/useLanguage";
 import { formatCurrency } from "@/utils/currencyUtils";
 import { format } from "date-fns";
@@ -16,18 +14,8 @@ const FundraisingDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { data: campaign, isLoading } = usePublicFundraisingCampaign(id);
-  const { data: donations = [] } = usePublicCampaignDonations(id, 10);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center text-muted-foreground">Loading…</main>
-        <Footer />
-      </div>
-    );
-  }
+  const { data: campaign } = useSuspenseQuery(publicFundraisingCampaignQueryOptions(id));
+  const { data: donations } = useSuspenseQuery(publicCampaignDonationsQueryOptions(id, 10));
 
   if (!campaign) {
     return (
