@@ -1,7 +1,7 @@
 import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { ArrowRight, MapPin, Calendar, Clock, Compass, BookOpen, Heart, Film, Quote, Users, ChevronRight } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Clock, BookOpen, Heart, Film, Quote, Users, ChevronRight } from 'lucide-react';
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
