@@ -9,4 +9,4 @@ function RoutePage() {
   return (<SuperAdminSessionRoute><SuperAdminLayout><SuperAdminErrorBoundary resetKey={location.pathname}><Page /></SuperAdminErrorBoundary></SuperAdminLayout></SuperAdminSessionRoute>);
 }
 
-export const Route = createFileRoute("/admin/super/regions")({ component: RoutePage });
+export const Route = createFileRoute("/admin/super/regions/")({ component: RoutePage });
