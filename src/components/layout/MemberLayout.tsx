@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { LucideIcon } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 interface MemberLayoutProps {
   children?: React.ReactNode;
@@ -104,10 +105,10 @@ export default function MemberLayout({
     return <div className="min-h-screen bg-background flex">
         {/* Sidebar */}
         <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", isCollapsed ? "w-16" : "w-64")}>
-          <div className="p-6 border-b border-border flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border bg-primary p-6 text-primary-foreground">
             <div className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100")}>
-              <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
-              <p className="text-sm text-muted-foreground mt-1">
+              <h2 className="font-heading text-xl font-semibold">Member Portal</h2>
+              <p className="mt-1 text-sm text-primary-foreground/70">
                 Welcome, {profile?.first_name}
               </p>
             </div>
@@ -148,7 +149,8 @@ export default function MemberLayout({
         </div>
 
         {/* Main content */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex min-w-0 flex-1 flex-col overflow-auto">
+          <header className="sticky top-0 z-20 flex h-14 items-center justify-end border-b bg-card/90 px-5 shadow-xs backdrop-blur-xl"><ThemeToggle /></header>
           {content}
         </div>
       </div>;
@@ -176,16 +178,16 @@ export default function MemberLayout({
             </div>
           )}
         </div>
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button size="icon" className="text-white bg-primary">
+            <Button size="icon" className="bg-primary text-primary-foreground">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0 bg-card">
-              <div className="p-6 border-b border-border">
-                <h2 className="text-xl font-semibold text-foreground">Member Portal</h2>
-                <p className="text-sm text-muted-foreground mt-1">
+               <div className="border-b border-border bg-primary p-6 text-primary-foreground">
+                 <h2 className="font-heading text-xl font-semibold">Member Portal</h2>
+                 <p className="mt-1 text-sm text-primary-foreground/70">
                   Welcome, {profile?.first_name}
                 </p>
               </div>
@@ -223,7 +225,7 @@ export default function MemberLayout({
                 </div>
               </nav>
             </SheetContent>
-          </Sheet>
+          </Sheet></div>
       </header>
 
       {/* Main content - pt-14 for fixed header, pb-24 for fixed bottom nav */}
@@ -233,16 +235,16 @@ export default function MemberLayout({
 
       {/* Bottom navigation bar - Modern floating pill design */}
       <nav className="fixed bottom-4 left-4 right-4 z-50">
-        <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/10">
-          <div className="flex justify-around items-center py-2 px-2 bg-primary rounded-2xl">
+         <div className="rounded-md border border-border bg-card/95 shadow-regal backdrop-blur-xl">
+           <div className="flex items-center justify-around rounded-md bg-primary px-2 py-2">
             {navigation.map(item => {
             const isActive = location.pathname === item.href;
-            return <Link key={item.name} to={item.href} className={cn('relative flex flex-col items-center px-4 py-2 rounded-xl transition-all duration-300', isActive ? 'bg-white' : 'hover:bg-white/10')}>
+             return <Link key={item.name} to={item.href} className={cn('relative flex flex-col items-center rounded-md px-4 py-2 transition-colors', isActive ? 'bg-primary-foreground' : 'hover:bg-primary-foreground/10')}>
                   <div className={cn("relative transition-transform duration-300", isActive && "scale-110")}>
-                    <item.icon className={cn("h-5 w-5 transition-colors duration-300", isActive ? "text-primary" : "text-white")} />
+                     <item.icon className={cn("h-5 w-5 transition-colors", isActive ? "text-primary" : "text-primary-foreground")} />
                     {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />}
                   </div>
-                  <span className={cn("text-[10px] font-medium mt-1 transition-colors duration-300", isActive ? "text-primary" : "text-white")}>
+                   <span className={cn("mt-1 text-[10px] font-medium transition-colors", isActive ? "text-primary" : "text-primary-foreground")}>
                     {item.name}
                   </span>
                 </Link>;

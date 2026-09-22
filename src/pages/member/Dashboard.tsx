@@ -21,7 +21,7 @@ export default function MemberDashboard() {
   // Filter for upcoming events only
   const upcomingEvents = (events || []).filter(event => isFuture(parseISO(event.start_datetime))).slice(0, 3);
   const nextEvent = upcomingEvents[0];
-  return <div className="p-4 space-y-6">
+  return <div className="space-y-6 p-4 sm:p-6">
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4 my-0">
@@ -45,7 +45,7 @@ export default function MemberDashboard() {
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4">
               <div className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-500" />
+                <TrendingUp className="h-5 w-5 text-secondary" />
                 <div>
                   <p className="text-sm font-medium">Attendance</p>
                   <p className="text-xs text-muted-foreground">View Reports</p>
@@ -106,7 +106,7 @@ export default function MemberDashboard() {
         <Link to="/member/finances">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4 text-center">
-              <DollarSign className="h-8 w-8 mx-auto mb-2 text-green-500" />
+              <DollarSign className="mx-auto mb-2 h-8 w-8 text-secondary" />
               <p className="text-sm font-medium">Give</p>
               <p className="text-xs text-muted-foreground">Tithes & Offerings</p>
             </CardContent>
@@ -116,7 +116,7 @@ export default function MemberDashboard() {
         <Link to="/member/discipleship">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4 text-center">
-              <Users className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+              <Users className="mx-auto mb-2 h-8 w-8 text-primary" />
               <p className="text-sm font-medium">Discipleship</p>
               <p className="text-xs text-muted-foreground">Mentoring</p>
             </CardContent>
@@ -126,7 +126,7 @@ export default function MemberDashboard() {
         <Link to="/member/fundraising">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4 text-center">
-              <Heart className="h-8 w-8 mx-auto mb-2 text-red-500" />
+              <Heart className="mx-auto mb-2 h-8 w-8 text-secondary" />
               <p className="text-sm font-medium">Support</p>
               <p className="text-xs text-muted-foreground">Campaigns</p>
             </CardContent>
@@ -136,7 +136,7 @@ export default function MemberDashboard() {
         <Link to="/member/media">
           <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardContent className="p-4 text-center">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+              <BookOpen className="mx-auto mb-2 h-8 w-8 text-primary" />
               <p className="text-sm font-medium">Media</p>
               <p className="text-xs text-muted-foreground">Sermons & More</p>
             </CardContent>

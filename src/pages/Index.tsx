@@ -11,30 +11,6 @@ import { useHomepageContent } from '@/hooks/useHomepageContent';
 import { useFeaturedEvents } from '@/hooks/useEvents';
 import { formatEventDuration } from '@/utils/dateUtils';
 
-const upcomingEvents = [
-  {
-    id: 1,
-    title: "Leadership Conference 2023",
-    date: "December 15-17, 2023",
-    location: "Main Center, City",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-  },
-  {
-    id: 2,
-    title: "Youth Empowerment Workshop",
-    date: "January 5, 2024",
-    location: "East Branch, Downtown",
-    image: "https://images.unsplash.com/photo-1536337005238-94b997371b40?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80"
-  },
-  {
-    id: 3,
-    title: "Community Outreach Program",
-    date: "January 20, 2024",
-    location: "Various Locations",
-    image: "https://images.unsplash.com/photo-1593113598332-cd288d649433?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
-  }
-];
-
 const testimonials = [
   {
     id: 1,
@@ -75,40 +51,39 @@ const Index = () => {
         <Features />
         
         {/* Upcoming Events Section */}
-        <section className="py-20 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-gray-950 dark:via-black dark:to-gray-900">
+        <section className="py-16 sm:py-20">
           <div className="container-custom">
-            <div className="flex flex-col md:flex-row items-center justify-between mb-12">
+            <div className="mb-12 flex flex-col items-center justify-between gap-5 md:flex-row">
               <div>
-                <h2 className="font-bold text-center md:text-left">
-                  <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                    {homepageData?.events?.title || 'Upcoming Events'}
-                  </span>
+                <p className="mb-2 text-center text-xs font-semibold uppercase tracking-[0.18em] text-secondary md:text-left">Gather with us</p>
+                <h2 className="text-center font-heading font-semibold text-foreground md:text-left">
+                  {homepageData?.events?.title || 'Upcoming Events'}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-300 mt-2 text-center md:text-left">
+                <p className="mt-2 text-center text-muted-foreground md:text-left">
                   {homepageData?.events?.description || 'Join us at our upcoming events and be part of our growing community.'}
                 </p>
               </div>
-              <Link to="/events" className="button-outline mt-4 md:mt-0">
+              <Link to="/events" className="inline-flex min-h-10 items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-semibold text-primary shadow-xs transition-colors hover:bg-accent md:mt-0">
                 View All Events
                 <ArrowRight size={16} className="ml-2" />
               </Link>
             </div>
             
             {isLoadingEvents ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="h-48 bg-gray-300 dark:bg-gray-700 rounded-lg mb-4"></div>
+                    <div className="mb-4 h-48 rounded-md bg-muted"></div>
                     <div className="space-y-2 p-6">
-                      <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-full"></div>
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
+                      <div className="h-6 w-3/4 rounded bg-muted"></div>
+                      <div className="h-4 w-full rounded bg-muted"></div>
+                      <div className="h-4 w-1/2 rounded bg-muted"></div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : featuredEvents && featuredEvents.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                 {featuredEvents.slice(0, 6).map((event) => {
                   const { dateRange, timeRange, isMultiDay } = formatEventDuration(event.start_datetime, event.end_datetime);
                   
@@ -123,34 +98,34 @@ const Index = () => {
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-wca-purple to-wca-violet flex items-center justify-center">
-                            <Calendar size={48} className="text-white" />
+                          <div className="event-gradient flex h-full w-full items-center justify-center">
+                            <Calendar size={48} className="text-event-foreground" />
                           </div>
                         )}
                       </div>
                       <div className="p-6">
                         <h3 className="font-semibold text-xl mb-2">{event.name}</h3>
                         {event.description && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{event.description}</p>
+                          <p className="mb-3 line-clamp-2 text-sm text-muted-foreground">{event.description}</p>
                         )}
-                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
-                          <Calendar size={16} className="mr-2 text-wca-purple" />
+                        <div className="mb-2 flex items-center text-muted-foreground">
+                          <Calendar size={16} className="mr-2 text-primary" />
                           <span className="text-sm">{dateRange}</span>
-                          {isMultiDay && <span className="ml-2 text-xs bg-wca-teal/10 text-wca-teal px-2 py-1 rounded">Multi-day</span>}
+                          {isMultiDay && <span className="ml-2 rounded-sm bg-secondary/10 px-2 py-1 text-xs text-secondary">Multi-day</span>}
                         </div>
-                        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-2">
-                          <Clock size={16} className="mr-2 text-wca-purple" />
+                        <div className="mb-2 flex items-center text-muted-foreground">
+                          <Clock size={16} className="mr-2 text-primary" />
                           <span className="text-sm">{timeRange}</span>
                         </div>
                         {event.location_name && (
-                          <div className="flex items-center text-gray-600 dark:text-gray-300">
-                            <MapPin size={16} className="mr-2 text-wca-purple" />
+                          <div className="flex items-center text-muted-foreground">
+                            <MapPin size={16} className="mr-2 text-primary" />
                             <span className="text-sm">{event.location_name}</span>
                           </div>
                         )}
                         <Link 
                           to="/events" 
-                          className="block w-full text-center button-primary mt-4"
+                          className="mt-5 inline-flex min-h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
                         >
                           Learn More
                         </Link>
@@ -161,43 +136,41 @@ const Index = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <Calendar size={48} className="mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600 dark:text-gray-300">No featured events at the moment. Check back soon!</p>
+                <Calendar size={48} className="mx-auto mb-4 text-muted-foreground/60" />
+                <p className="text-muted-foreground">No featured events at the moment. Check back soon!</p>
               </div>
             )}
           </div>
         </section>
         
         {/* Testimonials Section */}
-        <section className="py-20">
+        <section className="border-y border-border/70 bg-muted/35 py-16 sm:py-20">
           <div className="container-custom">
             <div className="text-center max-w-3xl mx-auto mb-12">
-              <div className="inline-block px-3 py-1 rounded-full bg-wca-teal/10 text-wca-teal font-medium text-sm mb-4">
+              <div className="mb-4 inline-block rounded-sm bg-secondary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-secondary">
                 Testimonials
               </div>
-              <h2 className="font-bold">
-                <span className="text-gradient bg-gradient-to-r from-wca-purple to-wca-violet bg-clip-text text-transparent">
-                  {homepageData?.testimonials?.title || 'Stories of Transformation'}
-                </span>
+              <h2 className="font-heading font-semibold text-foreground">
+                {homepageData?.testimonials?.title || 'Stories of Transformation'}
               </h2>
-              <p className="text-gray-600 dark:text-gray-300 mt-4">
+              <p className="mt-4 text-muted-foreground">
                 {homepageData?.testimonials?.description || 'Hear from members of our community whose lives have been changed through our programs and fellowships.'}
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               {(homepageData?.testimonials?.testimonials || testimonials).map((testimonial: any) => (
                 <GlassCard key={testimonial.id} className="p-6">
                   <div className="flex justify-center mb-4">
-                    <div className="text-4xl text-wca-purple">"</div>
+                    <div className="font-heading text-4xl text-primary">“</div>
                   </div>
-                  <p className="text-center text-gray-600 dark:text-gray-300 italic mb-6">
+                  <p className="mb-6 text-center italic leading-6 text-muted-foreground">
                     {testimonial.quote}
                   </p>
                   <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-wca-purple to-wca-violet rounded-full mb-3"></div>
+                    <div className="event-gradient mb-3 h-12 w-12 rounded-full"></div>
                     <p className="font-medium">{testimonial.author}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{testimonial.role}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
                   </div>
                 </GlassCard>
               ))}
@@ -206,32 +179,32 @@ const Index = () => {
         </section>
         
         {/* Newsletter Section */}
-        <section className="py-20 bg-gradient-to-br from-wca-purple to-wca-violet">
+        <section className="event-gradient border-b border-event-border py-16 text-event-foreground sm:py-20">
           <div className="container-custom">
-            <div className="max-w-4xl mx-auto text-center text-white">
-              <Bell size={40} className="mx-auto mb-8 animate-float" />
+            <div className="mx-auto max-w-4xl text-center">
+              <Bell size={40} className="mx-auto mb-8 text-secondary" />
               <h2 className="font-bold mb-4">
                 {homepageData?.newsletter?.title || 'Stay Updated With WCA'}
               </h2>
-              <p className="text-white/90 mb-8 max-w-2xl mx-auto">
+              <p className="mx-auto mb-8 max-w-2xl text-event-muted">
                 {homepageData?.newsletter?.description || 'Subscribe to our newsletter to receive updates about events, resources, and opportunities to get involved.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 max-w-2xl mx-auto justify-center">
                 <input 
                   type="email" 
                   placeholder={homepageData?.newsletter?.placeholder || 'Enter your email'}
-                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-[5]"
+                  className="min-h-11 flex-[5] rounded-md border border-event-border bg-event-surface/80 px-4 py-3 text-event-foreground placeholder:text-event-muted focus:outline-none focus:ring-2 focus:ring-secondary"
                 />
                 <input 
                   type="tel" 
                   placeholder="Phone number"
-                  className="px-4 py-3 rounded-md bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/60 focus:outline-none focus:ring-2 focus:ring-white/50 flex-[3]"
+                  className="min-h-11 flex-[3] rounded-md border border-event-border bg-event-surface/80 px-4 py-3 text-event-foreground placeholder:text-event-muted focus:outline-none focus:ring-2 focus:ring-secondary"
                 />
-                <button className="bg-white text-wca-violet font-medium px-6 py-3 rounded-md hover:bg-gray-100 transition-colors whitespace-nowrap">
+                <button className="min-h-11 whitespace-nowrap rounded-md bg-primary-foreground px-6 py-3 font-semibold text-primary transition-colors hover:bg-primary-foreground/90">
                   {homepageData?.newsletter?.buttonText || 'Subscribe'}
                 </button>
               </div>
-              <p className="text-xs text-white/70 mt-4">
+              <p className="mt-4 text-xs text-event-muted">
                 {homepageData?.newsletter?.disclaimer || 'We respect your privacy. Unsubscribe at any time.'}
               </p>
             </div>

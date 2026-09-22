@@ -113,7 +113,7 @@ const About = () => {
                   {/* Hero slides carousel */}
                   {pageContent.hero?.slides && pageContent.hero.slides.length > 0 ? (
                     <Carousel 
-                      className="w-full max-w-2xl"
+                      className="w-full max-w-2xl overflow-hidden"
                       plugins={[
                         Autoplay({
                           delay: 3000,
@@ -123,7 +123,7 @@ const About = () => {
                       <CarouselContent>
                         {pageContent.hero.slides.map((slide, index) => (
                           <CarouselItem key={slide.id || index}>
-                            <div className="relative aspect-[16/9] rounded-2xl overflow-hidden">
+                            <div className="relative aspect-[16/9] overflow-hidden rounded-md">
                               <img 
                                 src={slide.image} 
                                 alt={slide.title || `Slide ${index + 1}`} 
@@ -149,14 +149,14 @@ const About = () => {
                       </CarouselContent>
                       {pageContent.hero.slides.length > 1 && (
                         <>
-                          <CarouselPrevious />
-                          <CarouselNext />
+                          <CarouselPrevious className="left-3" />
+                          <CarouselNext className="right-3" />
                         </>
                       )}
                     </Carousel>
                   ) : (
                     /* Fallback image when no slides are configured */
-                    <div className="aspect-[16/9] rounded-2xl overflow-hidden max-w-2xl">
+                    <div className="aspect-[16/9] max-w-2xl overflow-hidden rounded-md">
                       <img 
                         src="/lovable-uploads/5ade5f06-a3a8-4a1e-abfb-038125a75293.png" 
                         alt="World Changers Association Logo" 

@@ -16,6 +16,7 @@ import { useIsTablet } from '@/hooks/use-tablet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useRegionalSession } from '@/contexts/regionalSessionContextCore';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 interface RegionalAdminShellProps {
   children?: React.ReactNode;
@@ -75,13 +76,13 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
   const isDashboard = location.pathname === '/admin/regional/dashboard';
 
   return (
-    <div className="h-svh flex w-full overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <Sidebar collapsible="icon" className="border-r border-gray-200 dark:border-gray-800">
+    <div className="flex h-svh w-full overflow-hidden bg-muted/40">
+      <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar-background text-sidebar-foreground">
         <SidebarHeader className="p-4">
           <div className="flex items-center justify-between w-full">
             {!isCollapsed && (
               <Link to="/" className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
+                <span className="font-heading truncate text-lg font-bold text-primary">
                   {region?.name?.toUpperCase() || 'PORTAL'}
                 </span>
               </Link>
@@ -111,7 +112,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
                     } ${
                       isActive
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                         : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     }`}
                   >
                     <Icon size={18} className="shrink-0" />
@@ -146,16 +147,17 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
       </Sidebar>
 
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
-        <header className="shrink-0 bg-white dark:bg-gray-900 shadow z-20">
+        <header className="z-20 shrink-0 border-b bg-card/90 shadow-xs backdrop-blur-xl">
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h1 className="font-heading text-xl font-semibold text-foreground">
                 {pageTitle}
               </h1>
             </div>
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               {user?.email && (
-                <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
+                <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>
               )}
             </div>
           </div>
@@ -199,19 +201,19 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold text-foreground truncate">{pageTitle}</h1>
         </div>
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 bg-card flex flex-col">
-            <div className="p-6 border-b border-border">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
+            <div className="border-b border-border bg-primary p-6 text-primary-foreground">
+              <h2 className="font-heading truncate text-lg font-bold">
                 {region?.name?.toUpperCase() || 'PORTAL'}
               </h2>
               {user?.email && (
-                <p className="text-xs text-muted-foreground mt-1 truncate">{user.email}</p>
+                <p className="mt-1 truncate text-xs text-primary-foreground/70">{user.email}</p>
               )}
             </div>
 
@@ -252,7 +254,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
               </Button>
             </div>
           </SheetContent>
-        </Sheet>
+        </Sheet></div>
       </header>
 
       <main className={cn('flex-1 pt-14', isDashboard ? 'pb-24' : 'pb-24 px-4 py-4')}>
@@ -261,8 +263,8 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
 
       {bottomNav.length > 0 && (
         <nav className="fixed bottom-4 left-4 right-4 z-50">
-          <div className="bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/10">
-            <div className="flex justify-around items-center py-2 px-2 bg-primary rounded-2xl">
+          <div className="rounded-md border border-border bg-card/95 shadow-regal backdrop-blur-xl">
+            <div className="flex items-center justify-around rounded-md bg-primary px-2 py-2">
               {bottomNav.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
@@ -276,16 +278,16 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                     to={item.path}
                     className={cn(
                       'relative flex flex-col items-center px-2 py-2 rounded-xl transition-all duration-300 min-w-0 flex-1',
-                      isActive ? 'bg-white' : 'hover:bg-white/10',
+                       isActive ? 'bg-primary-foreground' : 'hover:bg-primary-foreground/10',
                     )}
                   >
                     <div className={cn('relative transition-transform duration-300', isActive && 'scale-110')}>
-                      <Icon className={cn('h-5 w-5 transition-colors duration-300', isActive ? 'text-primary' : 'text-white')} />
+                       <Icon className={cn('h-5 w-5 transition-colors', isActive ? 'text-primary' : 'text-primary-foreground')} />
                     </div>
                     <span
                       className={cn(
                         'text-[10px] font-medium mt-1 transition-colors duration-300 truncate max-w-full',
-                        isActive ? 'text-primary' : 'text-white',
+                         isActive ? 'text-primary' : 'text-primary-foreground',
                       )}
                     >
                       {shortLabel}
