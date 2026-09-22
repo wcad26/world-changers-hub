@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface DcgAdminLayoutProps {
   children: React.ReactNode;
@@ -73,17 +74,17 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
             isCollapsed ? "w-16" : "w-64"
           )}
         >
-          <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-border bg-primary p-4 text-primary-foreground">
             <div
               className={cn(
                 "transition-opacity duration-300 overflow-hidden",
                 isCollapsed ? "opacity-0 w-0" : "opacity-100"
               )}
             >
-              <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent truncate">
+              <h2 className="font-heading truncate text-lg font-bold">
                 {userDcg?.name || "DCG Portal"}
               </h2>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
+              <p className="mt-1 truncate text-xs text-primary-foreground/70">
                 Welcome, {profile?.first_name}
               </p>
             </div>
@@ -145,11 +146,11 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
 
         {/* Main content with margin for fixed sidebar */}
         <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-300", isCollapsed ? "ml-16" : "ml-64")}>
-          <header className="sticky top-0 z-20 bg-card/80 backdrop-blur-md border-b border-border px-6 py-3 flex items-center justify-between">
+          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card/90 px-6 py-3 shadow-xs backdrop-blur-xl">
             <h1 className="text-xl font-semibold text-foreground">
               {pageInfo[location.pathname]?.title || "DCG Portal"}
             </h1>
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
+            <div className="flex items-center gap-2"><ThemeToggle /><span className="text-sm text-muted-foreground">{user?.email}</span></div>
           </header>
           <main className="flex-1 overflow-auto p-6">{children}</main>
         </div>
@@ -182,11 +183,11 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 bg-card">
-            <div className="p-6 border-b border-border">
-              <h2 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+             <div className="border-b border-border bg-primary p-6 text-primary-foreground">
+               <h2 className="font-heading text-lg font-bold">
                 {userDcg?.name || "DCG Portal"}
               </h2>
-              <p className="text-sm text-muted-foreground mt-1">
+               <p className="mt-1 text-sm text-primary-foreground/70">
                 Welcome, {profile?.first_name}
               </p>
             </div>
@@ -235,7 +236,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
 
       {/* Bottom tab bar */}
       <nav className="fixed bottom-4 left-4 right-4 z-50">
-        <div className="bg-primary rounded-2xl shadow-lg shadow-black/10">
+         <div className="rounded-md bg-primary shadow-regal">
           <div className="flex justify-around items-center py-2 px-1">
             {bottomTabs.map((item) => {
               const isActive = location.pathname === item.path;
@@ -244,20 +245,20 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "relative flex flex-col items-center px-3 py-2 rounded-xl transition-all duration-300",
-                    isActive ? "bg-white" : "hover:bg-white/10"
+                     "relative flex flex-col items-center rounded-md px-3 py-2 transition-colors",
+                     isActive ? "bg-primary-foreground" : "hover:bg-primary-foreground/10"
                   )}
                 >
                   <item.icon
                     className={cn(
                       "h-5 w-5 transition-colors duration-300",
-                      isActive ? "text-primary" : "text-white"
+                       isActive ? "text-primary" : "text-primary-foreground"
                     )}
                   />
                   <span
                     className={cn(
                       "text-[10px] font-medium mt-0.5 transition-colors duration-300",
-                      isActive ? "text-primary" : "text-white"
+                       isActive ? "text-primary" : "text-primary-foreground"
                     )}
                   >
                     {item.title}
