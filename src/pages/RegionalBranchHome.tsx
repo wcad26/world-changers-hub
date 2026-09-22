@@ -361,7 +361,7 @@ export default function RegionalBranchHome() {
                 title={fr ? "Nos lieux de rencontre" : "Our meeting places"}
                 description={fr ? "Centres WCA et lieux de communion fraternelle dans la région." : "WCA Centers and fellowship venues across the region."}
               />
-              <div className="grid grid-cols-1 gap-5 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {locations.map((location) => <RegionalLocationCard key={location.id} location={location} fr={fr} />)}
               </div>
             </div>
