@@ -102,7 +102,7 @@ const Index = () => {
           <div className="container-custom">
             <div className="grid items-stretch gap-5 lg:grid-cols-12">
               <div className="relative overflow-hidden rounded-md border border-border bg-card p-7 shadow-card sm:p-10 lg:col-span-7 lg:p-12">
-                <span className="text-xs font-semibold uppercase text-secondary">Our Vision</span>
+                <span className="text-base font-bold uppercase text-secondary sm:text-lg">Our Vision</span>
                 <p className="mt-7 max-w-3xl font-heading text-2xl font-semibold leading-snug text-foreground sm:text-3xl">{mission.description}</p>
                 <div className="mt-10 h-px w-24 bg-primary" />
                 <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">A connected community growing in faith, capability, integrity, and service.</p>
