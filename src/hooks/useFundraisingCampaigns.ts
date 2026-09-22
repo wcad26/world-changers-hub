@@ -4,6 +4,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { useAuth } from './useAuth';
 import { useRegionCurrency } from './useCurrencies';
 import * as z from 'zod';
+import { publicCampaignDonationsQueryOptions, publicFundraisingCampaignQueryOptions, publicFundraisingCampaignsQueryOptions } from '@/lib/public-site.functions';
 
 export type FundraisingCampaign = Database['public']['Tables']['fundraising_campaigns']['Row'];
 export type FundraisingDonation = Database['public']['Tables']['fundraising_donations']['Row'];
@@ -336,53 +337,15 @@ export const useRegionDonations = (from: Date, to: Date) => {
 
 // Public: fetch all public fundraising campaigns (no auth)
 export const usePublicFundraisingCampaigns = () => {
-  return useQuery({
-    queryKey: ['public_fundraising_campaigns'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fundraising_campaigns')
-        .select('*, region:regions(id, name, code)')
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  return useQuery(publicFundraisingCampaignsQueryOptions());
 };
 
 // Public: fetch a single public campaign by id
 export const usePublicFundraisingCampaign = (id?: string) => {
-  return useQuery({
-    queryKey: ['public_fundraising_campaign', id],
-    enabled: !!id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fundraising_campaigns')
-        .select('*, region:regions(id, name, code)')
-        .eq('id', id!)
-        .eq('is_public', true)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-  });
+  return useQuery({ ...publicFundraisingCampaignQueryOptions(id ?? "00000000-0000-0000-0000-000000000000"), enabled: Boolean(id) });
 };
 
 // Public: recent donations for a campaign
 export const usePublicCampaignDonations = (campaignId?: string, limit = 10) => {
-  return useQuery({
-    queryKey: ['public_campaign_donations', campaignId, limit],
-    enabled: !!campaignId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('fundraising_donations')
-        .select('id, donor_name, amount, currency_code, anonymous, donation_date, status')
-        .eq('campaign_id', campaignId!)
-        .eq('status', 'completed')
-        .order('donation_date', { ascending: false })
-        .limit(limit);
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  return useQuery({ ...publicCampaignDonationsQueryOptions(campaignId ?? "00000000-0000-0000-0000-000000000000", limit), enabled: Boolean(campaignId) });
 };

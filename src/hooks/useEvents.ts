@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { Database } from '@/integrations/supabase/types';
+import { publicEventsQueryOptions } from '@/lib/public-site.functions';
 
 export type Event = Database['public']['Tables']['events']['Row'];
 export type NewEvent = Database['public']['Tables']['events']['Insert'];
@@ -33,38 +34,14 @@ export const useRegionalEvents = (regionIdOverride?: string) => {
 
 // Hook to get all public upcoming events
 export const usePublicEvents = () => {
-    return useQuery({
-        queryKey: ['publicEvents'],
-        queryFn: async () => {
-            const now = new Date().toISOString();
-            const { data, error } = await supabase
-                .from('events')
-                .select('*')
-                .eq('is_public', true)
-                .gte('start_datetime', now)
-                .order('start_datetime', { ascending: true });
-            if (error) throw error;
-            return data;
-        }
-    });
+    const now = new Date().toISOString();
+    return useQuery({ ...publicEventsQueryOptions(), select: (events) => events.filter((event) => event.start_datetime >= now) });
 };
 
 // Hook to get all public past events
 export const usePublicPastEvents = () => {
-    return useQuery({
-        queryKey: ['publicPastEvents'],
-        queryFn: async () => {
-            const now = new Date().toISOString();
-            const { data, error } = await supabase
-                .from('events')
-                .select('*')
-                .eq('is_public', true)
-                .lt('start_datetime', now)
-                .order('start_datetime', { ascending: false });
-            if (error) throw error;
-            return data;
-        }
-    });
+    const now = new Date().toISOString();
+    return useQuery({ ...publicEventsQueryOptions(), select: (events) => events.filter((event) => event.start_datetime < now).reverse() });
 };
 
 // Hook to get events for a member's region (both past and future)
