@@ -86,9 +86,9 @@ const Index = () => {
               <p className="mt-5 max-w-2xl text-pretty text-base leading-7 text-event-muted sm:text-lg">
                 {slide?.description || 'Rescuing the lost, transforming lives, training and empowering effective leaders who will bring positive change in their pheres of life.'}
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button asChild size="lg" className="home-magnetic w-full sm:w-auto"><Link to={slide?.primaryButton?.link || '/about'}>{slide?.primaryButton?.text || 'Discover WCA'}<ArrowRight /></Link></Button>
-                <Button asChild size="lg" variant="outline" className="w-full border-event-border bg-event-surface/70 text-event-foreground backdrop-blur-md hover:bg-event-elevated hover:text-event-foreground sm:w-auto"><Link to={slide?.secondaryButton?.link || '/locations'}>{slide?.secondaryButton?.text || 'Find a location'}<MapPin /></Link></Button>
+              <div className="mt-8 flex flex-row gap-3">
+                <Button asChild size="lg" className="home-magnetic flex-1 px-4 sm:flex-none sm:px-8"><Link to={slide?.primaryButton?.link || '/about'}>{slide?.primaryButton?.text || 'About Us'}</Link></Button>
+                <Button asChild size="lg" variant="outline" className="flex-1 border-event-border bg-event-surface/70 px-4 text-event-foreground backdrop-blur-md hover:bg-event-elevated hover:text-event-foreground sm:flex-none sm:px-8"><Link to={slide?.secondaryButton?.link || '/locations'}>{slide?.secondaryButton?.text || 'Find a location'}<MapPin /></Link></Button>
               </div>
             </div>
           </div>
