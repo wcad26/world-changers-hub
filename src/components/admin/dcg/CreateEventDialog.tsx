@@ -53,6 +53,8 @@ import { useAuth } from '@/hooks/useAuth';
 const eventFormSchema = z.object({
   name: z.string().min(1, 'Event name is required'),
   description: z.string().optional(),
+  expectations: z.string().optional(),
+  requirements: z.string().optional(),
   category: z.enum([
     'DCG Meeting',
     'Bible Study',
@@ -111,6 +113,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
     defaultValues: {
       name: '',
       description: '',
+      expectations: '',
+      requirements: '',
       category: 'DCG Meeting',
       start_date: '',
       start_time: '',
@@ -136,6 +140,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       form.reset({
         name: `${duplicateFrom.name} (Copy)`,
         description: duplicateFrom.description ?? '',
+        expectations: duplicateFrom.expectations ?? '',
+        requirements: duplicateFrom.requirements ?? '',
         category,
         start_date: '',
         start_time: '',
@@ -155,6 +161,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       form.reset({
         name: '',
         description: '',
+        expectations: '',
+        requirements: '',
         category: 'DCG Meeting',
         start_date: '',
         start_time: '',
@@ -201,6 +209,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       const createdEvent = await createEvent.mutateAsync({
         name: data.name,
         description: data.description,
+        expectations: data.expectations || null,
+        requirements: data.requirements || null,
         category: data.category,
         start_datetime: start_datetime,
         end_datetime: end_datetime,
@@ -309,6 +319,31 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="expectations"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What to Expect</FormLabel>
+                  <FormControl><Textarea placeholder={"Teaching sessions\nWorship and prayer\nNetworking with other members"} className="min-h-[100px] resize-none" {...field} /></FormControl>
+                  <FormDescription>Enter one programme highlight or experience per line.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="requirements"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>What Attendees Should Prepare</FormLabel>
+                  <FormControl><Textarea placeholder="Items, documents, clothing or eligibility requirements..." className="min-h-[90px] resize-none" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}

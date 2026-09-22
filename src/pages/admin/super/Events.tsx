@@ -60,6 +60,10 @@ const eventSchema = z.object({
   name_fr: z.string().optional(),
   description: z.string().optional(),
   description_fr: z.string().optional(),
+  expectations: z.string().optional(),
+  expectations_fr: z.string().optional(),
+  requirements: z.string().optional(),
+  requirements_fr: z.string().optional(),
   category: z.enum(eventCategories),
   start_date: z.string().min(1, "Please select a start date."),
   start_time: z.string().min(1, "Please provide a start time."),
@@ -201,7 +205,7 @@ const SuperEvents: React.FC = () => {
   const [editFeeRows, setEditFeeRows] = useState<EventFeeRow[]>([]);
 
   const defaultFormValues: any = {
-    name: "", name_fr: "", description: "", description_fr: "",
+    name: "", name_fr: "", description: "", description_fr: "", expectations: "", expectations_fr: "", requirements: "", requirements_fr: "",
     start_date: "", start_time: "", end_date: "", end_time: "",
     location_name: "", location_name_fr: "", address: "", address_fr: "",
     cost: 0, cost_currency_code: "",
@@ -504,6 +508,10 @@ const SuperEvents: React.FC = () => {
         slug: finalSlug,
         description: values.description || null,
         description_fr: values.description_fr || null,
+        expectations: values.expectations || null,
+        expectations_fr: values.expectations_fr || null,
+        requirements: values.requirements || null,
+        requirements_fr: values.requirements_fr || null,
         category: values.category as any,
         start_datetime,
         end_datetime,
@@ -585,6 +593,10 @@ const SuperEvents: React.FC = () => {
       name_fr: event.name_fr || "",
       description: event.description || "",
       description_fr: event.description_fr || "",
+      expectations: event.expectations || "",
+      expectations_fr: event.expectations_fr || "",
+      requirements: event.requirements || "",
+      requirements_fr: event.requirements_fr || "",
       category: event.category || "Other",
       start_date: format(startDate, 'yyyy-MM-dd'),
       start_time: format(startDate, 'HH:mm'),
@@ -676,6 +688,10 @@ const SuperEvents: React.FC = () => {
         slug: newSlug,
         description: values.description || null,
         description_fr: values.description_fr || null,
+        expectations: values.expectations || null,
+        expectations_fr: values.expectations_fr || null,
+        requirements: values.requirements || null,
+        requirements_fr: values.requirements_fr || null,
         category: values.category as any,
         start_datetime,
         end_datetime,
@@ -1053,6 +1069,14 @@ const SuperEvents: React.FC = () => {
           <FormItem><FormLabel>Event Description</FormLabel><FormControl><Textarea className="min-h-[120px]" placeholder="Provide details about the event..." {...field} /></FormControl><FormMessage /></FormItem>
         )} />
 
+        <FormField control={formInstance.control} name="expectations" render={({ field }: any) => (
+          <FormItem><FormLabel>What to Expect</FormLabel><FormControl><Textarea className="min-h-[110px]" placeholder={"Teaching sessions\nWorship and prayer\nNetworking with other members"} {...field} /></FormControl><FormDescription>Enter one programme highlight or experience per line.</FormDescription><FormMessage /></FormItem>
+        )} />
+
+        <FormField control={formInstance.control} name="requirements" render={({ field }: any) => (
+          <FormItem><FormLabel>What Attendees Should Prepare</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Items, documents, clothing or eligibility requirements..." {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+
         {/* French translations */}
         <Collapsible className="space-y-3 rounded-lg border p-4">
           <div className="flex items-center justify-between">
@@ -1068,6 +1092,12 @@ const SuperEvents: React.FC = () => {
             )} />
             <FormField control={formInstance.control} name="description_fr" render={({ field }: any) => (
               <FormItem><FormLabel>Description (French)</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Description de l'événement" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={formInstance.control} name="expectations_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>What to Expect (French)</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder={"Sessions d’enseignement\nLouange et prière\nÉchanges avec d’autres membres"} {...field} /></FormControl><FormDescription>Un temps fort ou une expérience par ligne.</FormDescription><FormMessage /></FormItem>
+            )} />
+            <FormField control={formInstance.control} name="requirements_fr" render={({ field }: any) => (
+              <FormItem><FormLabel>What Attendees Should Prepare (French)</FormLabel><FormControl><Textarea className="min-h-[100px]" placeholder="Objets, documents, tenue ou conditions requises..." {...field} /></FormControl><FormMessage /></FormItem>
             )} />
             <FormField control={formInstance.control} name="location_name_fr" render={({ field }: any) => (
               <FormItem><FormLabel>Location Name (French)</FormLabel><FormControl><Input placeholder="Nom du lieu" {...field} /></FormControl><FormMessage /></FormItem>

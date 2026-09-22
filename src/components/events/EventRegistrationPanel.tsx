@@ -19,9 +19,9 @@ export function EventRegistrationPanel({ event }: { event: Event }) {
   };
 
   const featureLabels = [
-    event.collect_lodging && (language === "fr" ? "Choix d’hébergement" : "Lodging selection"),
-    event.collect_meal_preferences && (language === "fr" ? "Préférences alimentaires et santé" : "Meal and health preferences"),
-    event.collect_pledges && (language === "fr" ? "Promesse et soutien" : "Pledge and support"),
+    event.collect_lodging && (language === "fr" ? "Besoins d’hébergement demandés" : "Accommodation needs requested"),
+    event.collect_meal_preferences && (language === "fr" ? "Repas, allergies et informations de santé demandés" : "Meal, allergy and health details requested"),
+    event.collect_pledges && event.linked_fundraising_campaign_id && (language === "fr" ? "Soutien facultatif à la campagne disponible" : "Optional campaign support available"),
   ].filter(Boolean) as string[];
 
   return (
@@ -65,7 +65,7 @@ export function EventRegistrationPanel({ event }: { event: Event }) {
 
       {featureLabels.length > 0 && (
         <div className="mt-6 border-t border-event-border pt-5">
-          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-event-muted">{language === "fr" ? "Inclus dans l’inscription" : "Included in registration"}</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-event-muted">{language === "fr" ? "Informations d’inscription" : "Registration information"}</p>
           <ul className="space-y-3">
             {featureLabels.map((label) => (
               <li key={label} className="flex items-start gap-3 text-sm text-event-foreground">
