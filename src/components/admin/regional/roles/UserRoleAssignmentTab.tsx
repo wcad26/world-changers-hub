@@ -163,7 +163,7 @@ const UserRoleAssignmentTab: React.FC = () => {
                       </TableCell>
                        <TableCell>
                          <div className="flex gap-1 flex-wrap">
-                           {getMemberRoles(member.profile_id).map((role) => (
+                           {getMemberRoles(member.profile_id ?? '').map((role) => (
                              <Badge key={role.id} variant="secondary">
                                {role.name}
                              </Badge>

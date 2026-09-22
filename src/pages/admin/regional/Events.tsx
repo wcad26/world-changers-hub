@@ -864,7 +864,7 @@ const RegionalEvents: React.FC = () => {
             role_fr: t.role_fr,
             content: t.content,
             content_fr: t.content_fr,
-            rating: t.rating,
+            rating: t.rating ?? 5,
             display_order: idx,
             status: 'approved',
           }))
@@ -1571,8 +1571,8 @@ const RegionalEvents: React.FC = () => {
             linkedin_url: s.linkedin_url || '',
             twitter_url: s.twitter_url || '',
             website_url: s.website_url || '',
-            display_order: s.display_order,
-            existing_photo_url: s.photo_url,
+            display_order: s.display_order ?? 0,
+            existing_photo_url: s.photo_url ?? undefined,
           })) || [],
     });
     

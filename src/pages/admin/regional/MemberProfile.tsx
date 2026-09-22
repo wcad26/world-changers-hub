@@ -145,12 +145,12 @@ const MemberProfile: React.FC = () => {
                     </div>
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary">
-                      {getInitials(member.profiles?.first_name, member.profiles?.last_name)}
+                      {getInitials(member.profiles?.first_name ?? undefined, member.profiles?.last_name ?? undefined)}
                     </div>
                   )}
                   <MemberPhotoUpload 
                     memberId={member.id}
-                    currentPhotoUrl={member.photo_url}
+                    currentPhotoUrl={member.photo_url ?? undefined}
                   />
                 </div>
                 <div>

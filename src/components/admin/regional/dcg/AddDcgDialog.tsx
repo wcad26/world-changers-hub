@@ -89,7 +89,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
         contact_person: selectedMember.profiles?.first_name && selectedMember.profiles?.last_name 
           ? `${selectedMember.profiles.first_name} ${selectedMember.profiles.last_name}`
           : undefined,
-        contact_phone: selectedMember.profiles?.phone || values.contact_phone,
+        contact_phone: selectedMember.profiles?.phone || values.contact_phone || undefined,
       };
 
       const location = await createLocationMutation.mutateAsync(locationData);

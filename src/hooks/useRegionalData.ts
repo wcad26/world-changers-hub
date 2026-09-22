@@ -74,7 +74,7 @@ export const useRegionalDCGs = (regionId: string | undefined) => {
         const { data: leaderData } = await supabase
           .from('profiles')
           .select('*')
-          .in('id', leaderIds);
+          .in('id', leaderIds.filter((id): id is string => Boolean(id)));
         
         leaders = (leaderData || []).reduce((acc, leader) => {
           acc[leader.id] = leader;

@@ -379,7 +379,7 @@ const Certificates = () => {
               issued_date: new Date().toISOString().split('T')[0],
               region_id: regionId,
               member_id: memberId,
-              issued_by: profile.id,
+               issued_by: profile!.id,
               qr_code_data: getVerificationUrl(verificationCode, baseUrl),
             });
 

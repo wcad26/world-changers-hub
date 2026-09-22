@@ -58,7 +58,7 @@ const PendingApprovalsList: React.FC = () => {
       const { data: regions, error: regionsError } = await supabase
         .from("regions")
         .select("id, name")
-        .in("id", regionIds);
+        .in("id", regionIds.filter((id): id is string => Boolean(id)));
 
       if (regionsError) throw regionsError;
 

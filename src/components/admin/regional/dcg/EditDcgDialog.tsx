@@ -121,7 +121,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
           address: values.address,
           city: values.city,
           state: values.state,
-          zip: values.zip,
+          zip: values.zip ?? '',
           latitude: values.latitude,
           longitude: values.longitude,
           contact_person: selectedMember?.profiles?.first_name && selectedMember?.profiles?.last_name 

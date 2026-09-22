@@ -102,7 +102,7 @@ export default function CurrenciesPanel() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Switch checked={c.is_active} onCheckedChange={() => handleToggleStatus(c)} disabled={toggleStatusMutation.isPending || isBase} />
+                             <Switch checked={c.is_active ?? false} onCheckedChange={() => handleToggleStatus(c)} disabled={toggleStatusMutation.isPending || isBase} />
                             <Badge variant={c.is_active ? "default" : "secondary"}>{c.is_active ? "Active" : "Inactive"}</Badge>
                           </div>
                         </TableCell>
