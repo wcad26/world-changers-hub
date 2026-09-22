@@ -1473,6 +1473,8 @@ export type Database = {
           description_fr: string | null
           detached_from_series: boolean
           end_datetime: string | null
+          expectations: string | null
+          expectations_fr: string | null
           id: string
           image_url: string | null
           image_url_fr: string | null
@@ -1518,6 +1520,8 @@ export type Database = {
           description_fr?: string | null
           detached_from_series?: boolean
           end_datetime?: string | null
+          expectations?: string | null
+          expectations_fr?: string | null
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
@@ -1563,6 +1567,8 @@ export type Database = {
           description_fr?: string | null
           detached_from_series?: boolean
           end_datetime?: string | null
+          expectations?: string | null
+          expectations_fr?: string | null
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
