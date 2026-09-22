@@ -34,7 +34,7 @@ export const getAboutContent = createServerFn({ method: "GET" }).handler(async (
 export const getPublicLocations = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await createPublicClient()
     .from("locations")
-    .select("id,name,type,address,city,state,country,latitude,longitude,contact_phone,contact_person,whatsapp_link,capacity,fellowship_times,image_url,is_featured,region_id,region:regions(id,name,slug)")
+    .select("id,name,type,address,city,state,latitude,longitude,contact_phone,contact_person,whatsapp_link,capacity,fellowship_times,image_url,is_featured,region_id,region:regions(id,name,slug)")
     .eq("status", "Active")
     .order("is_featured", { ascending: false })
     .order("name");

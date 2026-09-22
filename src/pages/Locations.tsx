@@ -42,7 +42,7 @@ function LocationCard({ location, fr }: { location: PublicLocation; fr: boolean 
     <div className="flex flex-1 flex-col p-5 sm:p-6">
       <h2 className="text-xl font-semibold">{location.name}</h2>
       <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-        <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-secondary" /><span>{[location.address, location.city, location.state || location.country].filter(Boolean).join(", ")}</span></p>
+        <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-secondary" /><span>{[location.address, location.city, location.state].filter(Boolean).join(", ")}</span></p>
         {location.contact_phone && <p className="flex items-center gap-2"><Phone className="h-4 w-4 shrink-0 text-secondary" />{location.contact_phone}</p>}
         {location.capacity && <p className="flex items-center gap-2"><Users className="h-4 w-4 shrink-0 text-secondary" />{fr ? `Capacité : ${location.capacity} personnes` : `Capacity: ${location.capacity} people`}</p>}
       </div>
