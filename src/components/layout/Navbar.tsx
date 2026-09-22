@@ -72,13 +72,6 @@ export default function Navbar() {
             <Button variant="ghost" size="icon" asChild><a href="tel:+237690634860" aria-label="Call World Changers Association"><Phone /></a></Button>
             <Button variant="ghost" size="icon" asChild><a href="mailto:info@wcaglobal.org" aria-label="Email World Changers Association"><Mail /></a></Button>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Change language"><Languages /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" ? "•" : ""}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>Français {language === "fr" ? "•" : ""}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <ThemeToggle />
           <Button size="sm" asChild className="hidden sm:inline-flex"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
           <Sheet>

@@ -4,22 +4,19 @@ export type SupportedLanguage = 'en' | 'fr';
 
 export function detectBrowserLanguage(): SupportedLanguage {
   if (typeof window === 'undefined') return 'en';
-  // Check localStorage first for cached preference
+  // A preference the visitor explicitly chose always wins
   const cached = localStorage.getItem(LANGUAGE_STORAGE_KEY);
   if (cached === 'fr' || cached === 'en') {
     return cached as SupportedLanguage;
   }
 
-  // Detect from browser
-  const browserLang = navigator.language || (navigator as any).userLanguage;
+  // Otherwise follow the device/browser language every visit.
+  // Do NOT cache this auto-detection, so a device set to French
+  // always gets French until the visitor explicitly switches.
+  const browserLang = navigator.language || (navigator as any).userLanguage || 'en';
   const langCode = browserLang.toLowerCase().split('-')[0];
-  
-  const language: SupportedLanguage = langCode === 'fr' ? 'fr' : 'en';
-  
-  // Cache the detected language
-  localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-  
-  return language;
+
+  return langCode === 'fr' ? 'fr' : 'en';
 }
 
 export function setLanguagePreference(language: SupportedLanguage) {
