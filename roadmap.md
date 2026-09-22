@@ -23,3 +23,8 @@
 - [x] Rebuild Locations with a fast mobile-first finder and editorial cards
 - [x] Audit public routes for blocking loaders, request duplication, and missing error states
 - [x] Verify public pages across mobile, tablet, desktop, light, dark, English, and French
+## Regional public pages rebuild
+- [x] One-trip server data for /locations/$slug (region, locations, DCGs, events)
+- [x] Route loader + region-specific social/search preview tags
+- [x] Heritage Modernism rebuild of RegionalBranchHome (hero carousel, stats, about, events, places, DCGs, contact, newsletter)
+- [x] Verified 390/1280, French, hero photos, 404 page, build + typecheck clean
