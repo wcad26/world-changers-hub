@@ -27,6 +27,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnauthorizedRouteImport } from './routes/unauthorized'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminRegionalRouteImport } from './routes/admin.regional'
 import { Route as AdminSuperRouteImport } from './routes/admin.super'
 import { Route as AttendEventIdRouteImport } from './routes/attend.$eventId'
@@ -37,14 +38,19 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-pas
 import { Route as AuthMemberRouteImport } from './routes/auth.member'
 import { Route as AuthRegionalRouteImport } from './routes/auth.regional'
 import { Route as AuthSuperRouteImport } from './routes/auth.super'
+import { Route as DcgIndexRouteImport } from './routes/dcg.index'
 import { Route as DcgCommunicationRouteImport } from './routes/dcg.communication'
 import { Route as DcgDashboardRouteImport } from './routes/dcg.dashboard'
 import { Route as DcgEventsRouteImport } from './routes/dcg.events'
 import { Route as DcgFinancesRouteImport } from './routes/dcg.finances'
 import { Route as DcgMembersRouteImport } from './routes/dcg.members'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as EventsEventIdRouteImport } from './routes/events.$eventId'
+import { Route as FundraisingIndexRouteImport } from './routes/fundraising.index'
 import { Route as FundraisingIdRouteImport } from './routes/fundraising.$id'
+import { Route as LocationsIndexRouteImport } from './routes/locations.index'
 import { Route as LocationsSlugRouteImport } from './routes/locations.$slug'
+import { Route as MemberIndexRouteImport } from './routes/member.index'
 import { Route as MemberAttendanceRouteImport } from './routes/member.attendance'
 import { Route as MemberAuthRouteImport } from './routes/member.auth'
 import { Route as MemberBibleRouteImport } from './routes/member.bible'
@@ -59,6 +65,7 @@ import { Route as MemberProfileRouteImport } from './routes/member.profile'
 import { Route as MemberStoreRouteImport } from './routes/member.store'
 import { Route as ProfileUpdateRouteImport } from './routes/profile.update'
 import { Route as VerifyVerificationCodeRouteImport } from './routes/verify.$verificationCode'
+import { Route as AdminRegionalIndexRouteImport } from './routes/admin.regional.index'
 import { Route as AdminRegionalBranchSettingsRouteImport } from './routes/admin.regional.branch-settings'
 import { Route as AdminRegionalCertificatesRouteImport } from './routes/admin.regional.certificates'
 import { Route as AdminRegionalCommunicationRouteImport } from './routes/admin.regional.communication'
@@ -72,6 +79,7 @@ import { Route as AdminRegionalPlanningRouteImport } from './routes/admin.region
 import { Route as AdminRegionalSettingsRouteImport } from './routes/admin.regional.settings'
 import { Route as AdminRegionalUserManagementRouteImport } from './routes/admin.regional.user-management'
 import { Route as AdminRegionalUserRolesRouteImport } from './routes/admin.regional.user-roles'
+import { Route as AdminSuperIndexRouteImport } from './routes/admin.super.index'
 import { Route as AdminSuperAboutSettingsRouteImport } from './routes/admin.super.about-settings'
 import { Route as AdminSuperCertificatesRouteImport } from './routes/admin.super.certificates'
 import { Route as AdminSuperCommunicationRouteImport } from './routes/admin.super.communication'
@@ -90,15 +98,24 @@ import { Route as AdminSuperUserManagementRouteImport } from './routes/admin.sup
 import { Route as DcgMemberMemberIdRouteImport } from './routes/dcg.member.$memberId'
 import { Route as EventsSlugFeedbackRouteImport } from './routes/events.$slug.feedback'
 import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.register'
+import { Route as FundraisingIdIndexRouteImport } from './routes/fundraising.$id.index'
 import { Route as FundraisingIdDonateRouteImport } from './routes/fundraising.$id.donate'
 import { Route as FundraisingIdPledgeRouteImport } from './routes/fundraising.$id.pledge'
 import { Route as MemberRegisterRegionCodeRouteImport } from './routes/member.register.$regionCode'
 import { Route as VisitorRegisterRegionCodeRouteImport } from './routes/visitor.register.$regionCode'
 import { Route as AdminRegionalAttendanceScanRouteImport } from './routes/admin.regional.attendance.scan'
+import { Route as AdminRegionalDcgIndexRouteImport } from './routes/admin.regional.dcg.index'
 import { Route as AdminRegionalDcgDcgIdRouteImport } from './routes/admin.regional.dcg.$dcgId'
+import { Route as AdminRegionalEventsIndexRouteImport } from './routes/admin.regional.events.index'
+import { Route as AdminRegionalFinancesIndexRouteImport } from './routes/admin.regional.finances.index'
+import { Route as AdminRegionalMembersIndexRouteImport } from './routes/admin.regional.members.index'
 import { Route as AdminRegionalMembersMemberIdRouteImport } from './routes/admin.regional.members.$memberId'
 import { Route as AdminSuperAttendanceScanRouteImport } from './routes/admin.super.attendance.scan'
+import { Route as AdminSuperEventsIndexRouteImport } from './routes/admin.super.events.index'
+import { Route as AdminSuperFinancesIndexRouteImport } from './routes/admin.super.finances.index'
+import { Route as AdminSuperMembersIndexRouteImport } from './routes/admin.super.members.index'
 import { Route as AdminSuperMembersMemberIdRouteImport } from './routes/admin.super.members.$memberId'
+import { Route as AdminSuperRegionsIndexRouteImport } from './routes/admin.super.regions.index'
 import { Route as AdminRegionalEventsEventIdReportRouteImport } from './routes/admin.regional.events.$eventId.report'
 import { Route as AdminRegionalFinancesFundraisingCampaignIdRouteImport } from './routes/admin.regional.finances.fundraising.$campaignId'
 import { Route as AdminSuperEventsEventIdReportRouteImport } from './routes/admin.super.events.$eventId.report'
@@ -196,6 +213,11 @@ const UnauthorizedRoute = UnauthorizedRouteImport.update({
   path: '/unauthorized',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRegionalRoute = AdminRegionalRouteImport.update({
   id: '/regional',
   path: '/regional',
@@ -246,6 +268,11 @@ const AuthSuperRoute = AuthSuperRouteImport.update({
   path: '/auth/super',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DcgIndexRoute = DcgIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DcgRoute,
+} as any)
 const DcgCommunicationRoute = DcgCommunicationRouteImport.update({
   id: '/communication',
   path: '/communication',
@@ -271,20 +298,40 @@ const DcgMembersRoute = DcgMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => DcgRoute,
 } as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => EventsRoute,
+} as any)
 const EventsEventIdRoute = EventsEventIdRouteImport.update({
   id: '/$eventId',
   path: '/$eventId',
   getParentRoute: () => EventsRoute,
+} as any)
+const FundraisingIndexRoute = FundraisingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FundraisingRoute,
 } as any)
 const FundraisingIdRoute = FundraisingIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => FundraisingRoute,
 } as any)
+const LocationsIndexRoute = LocationsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LocationsRoute,
+} as any)
 const LocationsSlugRoute = LocationsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => LocationsRoute,
+} as any)
+const MemberIndexRoute = MemberIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MemberRoute,
 } as any)
 const MemberAttendanceRoute = MemberAttendanceRouteImport.update({
   id: '/attendance',
@@ -356,6 +403,11 @@ const VerifyVerificationCodeRoute = VerifyVerificationCodeRouteImport.update({
   path: '/verify/$verificationCode',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRegionalIndexRoute = AdminRegionalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRegionalRoute,
+} as any)
 const AdminRegionalBranchSettingsRoute =
   AdminRegionalBranchSettingsRouteImport.update({
     id: '/branch-settings',
@@ -425,6 +477,11 @@ const AdminRegionalUserRolesRoute = AdminRegionalUserRolesRouteImport.update({
   id: '/user-roles',
   path: '/user-roles',
   getParentRoute: () => AdminRegionalRoute,
+} as any)
+const AdminSuperIndexRoute = AdminSuperIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSuperRoute,
 } as any)
 const AdminSuperAboutSettingsRoute = AdminSuperAboutSettingsRouteImport.update({
   id: '/about-settings',
@@ -518,6 +575,11 @@ const EventsSlugRegisterRoute = EventsSlugRegisterRouteImport.update({
   path: '/$slug/register',
   getParentRoute: () => EventsRoute,
 } as any)
+const FundraisingIdIndexRoute = FundraisingIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FundraisingIdRoute,
+} as any)
 const FundraisingIdDonateRoute = FundraisingIdDonateRouteImport.update({
   id: '/donate',
   path: '/donate',
@@ -546,11 +608,34 @@ const AdminRegionalAttendanceScanRoute =
     path: '/attendance/scan',
     getParentRoute: () => AdminRegionalRoute,
   } as any)
+const AdminRegionalDcgIndexRoute = AdminRegionalDcgIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRegionalDcgRoute,
+} as any)
 const AdminRegionalDcgDcgIdRoute = AdminRegionalDcgDcgIdRouteImport.update({
   id: '/$dcgId',
   path: '/$dcgId',
   getParentRoute: () => AdminRegionalDcgRoute,
 } as any)
+const AdminRegionalEventsIndexRoute =
+  AdminRegionalEventsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminRegionalEventsRoute,
+  } as any)
+const AdminRegionalFinancesIndexRoute =
+  AdminRegionalFinancesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminRegionalFinancesRoute,
+  } as any)
+const AdminRegionalMembersIndexRoute =
+  AdminRegionalMembersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminRegionalMembersRoute,
+  } as any)
 const AdminRegionalMembersMemberIdRoute =
   AdminRegionalMembersMemberIdRouteImport.update({
     id: '/$memberId',
@@ -563,12 +648,32 @@ const AdminSuperAttendanceScanRoute =
     path: '/attendance/scan',
     getParentRoute: () => AdminSuperRoute,
   } as any)
+const AdminSuperEventsIndexRoute = AdminSuperEventsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSuperEventsRoute,
+} as any)
+const AdminSuperFinancesIndexRoute = AdminSuperFinancesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSuperFinancesRoute,
+} as any)
+const AdminSuperMembersIndexRoute = AdminSuperMembersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSuperMembersRoute,
+} as any)
 const AdminSuperMembersMemberIdRoute =
   AdminSuperMembersMemberIdRouteImport.update({
     id: '/$memberId',
     path: '/$memberId',
     getParentRoute: () => AdminSuperMembersRoute,
   } as any)
+const AdminSuperRegionsIndexRoute = AdminSuperRegionsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminSuperRegionsRoute,
+} as any)
 const AdminRegionalEventsEventIdReportRoute =
   AdminRegionalEventsEventIdReportRouteImport.update({
     id: '/$eventId/report',
@@ -657,6 +762,12 @@ export interface FileRoutesByFullPath {
   '/member/store': typeof MemberStoreRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dcg/': typeof DcgIndexRoute
+  '/events/': typeof EventsIndexRoute
+  '/fundraising/': typeof FundraisingIndexRoute
+  '/locations/': typeof LocationsIndexRoute
+  '/member/': typeof MemberIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
@@ -692,11 +803,22 @@ export interface FileRoutesByFullPath {
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
+  '/admin/regional/': typeof AdminRegionalIndexRoute
+  '/admin/super/': typeof AdminSuperIndexRoute
+  '/fundraising/$id/': typeof FundraisingIdIndexRoute
   '/admin/regional/attendance/scan': typeof AdminRegionalAttendanceScanRoute
   '/admin/regional/dcg/$dcgId': typeof AdminRegionalDcgDcgIdRoute
   '/admin/regional/members/$memberId': typeof AdminRegionalMembersMemberIdRoute
   '/admin/super/attendance/scan': typeof AdminSuperAttendanceScanRoute
   '/admin/super/members/$memberId': typeof AdminSuperMembersMemberIdRoute
+  '/admin/regional/dcg/': typeof AdminRegionalDcgIndexRoute
+  '/admin/regional/events/': typeof AdminRegionalEventsIndexRoute
+  '/admin/regional/finances/': typeof AdminRegionalFinancesIndexRoute
+  '/admin/regional/members/': typeof AdminRegionalMembersIndexRoute
+  '/admin/super/events/': typeof AdminSuperEventsIndexRoute
+  '/admin/super/finances/': typeof AdminSuperFinancesIndexRoute
+  '/admin/super/members/': typeof AdminSuperMembersIndexRoute
+  '/admin/super/regions/': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
@@ -708,23 +830,15 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
-  '/admin': typeof AdminRouteWithChildren
   '/blog': typeof BlogRoute
   '/counseling': typeof CounselingRoute
-  '/dcg': typeof DcgRouteWithChildren
   '/dcg-auth': typeof DcgAuthRoute
-  '/events': typeof EventsRouteWithChildren
-  '/fundraising': typeof FundraisingRouteWithChildren
-  '/locations': typeof LocationsRouteWithChildren
   '/media': typeof MediaRoute
-  '/member': typeof MemberRouteWithChildren
   '/portal-selector': typeof PortalSelectorRoute
   '/privacy': typeof PrivacyRoute
   '/store': typeof StoreRoute
   '/terms': typeof TermsRoute
   '/unauthorized': typeof UnauthorizedRoute
-  '/admin/regional': typeof AdminRegionalRouteWithChildren
-  '/admin/super': typeof AdminSuperRouteWithChildren
   '/attend/$eventId': typeof AttendEventIdRoute
   '/attendance/login': typeof AttendanceLoginRoute
   '/attendance/scan': typeof AttendanceScanRoute
@@ -739,7 +853,6 @@ export interface FileRoutesByTo {
   '/dcg/finances': typeof DcgFinancesRoute
   '/dcg/members': typeof DcgMembersRoute
   '/events/$eventId': typeof EventsEventIdRoute
-  '/fundraising/$id': typeof FundraisingIdRouteWithChildren
   '/locations/$slug': typeof LocationsSlugRoute
   '/member/attendance': typeof MemberAttendanceRoute
   '/member/auth': typeof MemberAuthRoute
@@ -755,15 +868,17 @@ export interface FileRoutesByTo {
   '/member/store': typeof MemberStoreRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
+  '/admin': typeof AdminIndexRoute
+  '/dcg': typeof DcgIndexRoute
+  '/events': typeof EventsIndexRoute
+  '/fundraising': typeof FundraisingIndexRoute
+  '/locations': typeof LocationsIndexRoute
+  '/member': typeof MemberIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
   '/admin/regional/dashboard': typeof AdminRegionalDashboardRoute
-  '/admin/regional/dcg': typeof AdminRegionalDcgRouteWithChildren
   '/admin/regional/discipleship': typeof AdminRegionalDiscipleshipRoute
-  '/admin/regional/events': typeof AdminRegionalEventsRouteWithChildren
-  '/admin/regional/finances': typeof AdminRegionalFinancesRouteWithChildren
-  '/admin/regional/members': typeof AdminRegionalMembersRouteWithChildren
   '/admin/regional/planning': typeof AdminRegionalPlanningRoute
   '/admin/regional/settings': typeof AdminRegionalSettingsRoute
   '/admin/regional/user-management': typeof AdminRegionalUserManagementRoute
@@ -773,13 +888,9 @@ export interface FileRoutesByTo {
   '/admin/super/communication': typeof AdminSuperCommunicationRoute
   '/admin/super/currencies': typeof AdminSuperCurrenciesRoute
   '/admin/super/dashboard': typeof AdminSuperDashboardRoute
-  '/admin/super/events': typeof AdminSuperEventsRouteWithChildren
-  '/admin/super/finances': typeof AdminSuperFinancesRouteWithChildren
   '/admin/super/fundraising': typeof AdminSuperFundraisingRoute
   '/admin/super/homepage-settings': typeof AdminSuperHomepageSettingsRoute
   '/admin/super/locations': typeof AdminSuperLocationsRoute
-  '/admin/super/members': typeof AdminSuperMembersRouteWithChildren
-  '/admin/super/regions': typeof AdminSuperRegionsRouteWithChildren
   '/admin/super/reports': typeof AdminSuperReportsRoute
   '/admin/super/settings': typeof AdminSuperSettingsRoute
   '/admin/super/user-management': typeof AdminSuperUserManagementRoute
@@ -790,11 +901,22 @@ export interface FileRoutesByTo {
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
+  '/admin/regional': typeof AdminRegionalIndexRoute
+  '/admin/super': typeof AdminSuperIndexRoute
+  '/fundraising/$id': typeof FundraisingIdIndexRoute
   '/admin/regional/attendance/scan': typeof AdminRegionalAttendanceScanRoute
   '/admin/regional/dcg/$dcgId': typeof AdminRegionalDcgDcgIdRoute
   '/admin/regional/members/$memberId': typeof AdminRegionalMembersMemberIdRoute
   '/admin/super/attendance/scan': typeof AdminSuperAttendanceScanRoute
   '/admin/super/members/$memberId': typeof AdminSuperMembersMemberIdRoute
+  '/admin/regional/dcg': typeof AdminRegionalDcgIndexRoute
+  '/admin/regional/events': typeof AdminRegionalEventsIndexRoute
+  '/admin/regional/finances': typeof AdminRegionalFinancesIndexRoute
+  '/admin/regional/members': typeof AdminRegionalMembersIndexRoute
+  '/admin/super/events': typeof AdminSuperEventsIndexRoute
+  '/admin/super/finances': typeof AdminSuperFinancesIndexRoute
+  '/admin/super/members': typeof AdminSuperMembersIndexRoute
+  '/admin/super/regions': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
@@ -854,6 +976,12 @@ export interface FileRoutesById {
   '/member/store': typeof MemberStoreRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
+  '/admin/': typeof AdminIndexRoute
+  '/dcg/': typeof DcgIndexRoute
+  '/events/': typeof EventsIndexRoute
+  '/fundraising/': typeof FundraisingIndexRoute
+  '/locations/': typeof LocationsIndexRoute
+  '/member/': typeof MemberIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
@@ -889,11 +1017,22 @@ export interface FileRoutesById {
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
+  '/admin/regional/': typeof AdminRegionalIndexRoute
+  '/admin/super/': typeof AdminSuperIndexRoute
+  '/fundraising/$id/': typeof FundraisingIdIndexRoute
   '/admin/regional/attendance/scan': typeof AdminRegionalAttendanceScanRoute
   '/admin/regional/dcg/$dcgId': typeof AdminRegionalDcgDcgIdRoute
   '/admin/regional/members/$memberId': typeof AdminRegionalMembersMemberIdRoute
   '/admin/super/attendance/scan': typeof AdminSuperAttendanceScanRoute
   '/admin/super/members/$memberId': typeof AdminSuperMembersMemberIdRoute
+  '/admin/regional/dcg/': typeof AdminRegionalDcgIndexRoute
+  '/admin/regional/events/': typeof AdminRegionalEventsIndexRoute
+  '/admin/regional/finances/': typeof AdminRegionalFinancesIndexRoute
+  '/admin/regional/members/': typeof AdminRegionalMembersIndexRoute
+  '/admin/super/events/': typeof AdminSuperEventsIndexRoute
+  '/admin/super/finances/': typeof AdminSuperFinancesIndexRoute
+  '/admin/super/members/': typeof AdminSuperMembersIndexRoute
+  '/admin/super/regions/': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
@@ -954,6 +1093,12 @@ export interface FileRouteTypes {
     | '/member/store'
     | '/profile/update'
     | '/verify/$verificationCode'
+    | '/admin/'
+    | '/dcg/'
+    | '/events/'
+    | '/fundraising/'
+    | '/locations/'
+    | '/member/'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
@@ -989,11 +1134,22 @@ export interface FileRouteTypes {
     | '/fundraising/$id/pledge'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
+    | '/admin/regional/'
+    | '/admin/super/'
+    | '/fundraising/$id/'
     | '/admin/regional/attendance/scan'
     | '/admin/regional/dcg/$dcgId'
     | '/admin/regional/members/$memberId'
     | '/admin/super/attendance/scan'
     | '/admin/super/members/$memberId'
+    | '/admin/regional/dcg/'
+    | '/admin/regional/events/'
+    | '/admin/regional/finances/'
+    | '/admin/regional/members/'
+    | '/admin/super/events/'
+    | '/admin/super/finances/'
+    | '/admin/super/members/'
+    | '/admin/super/regions/'
     | '/admin/regional/events/$eventId/report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
@@ -1005,23 +1161,15 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
-    | '/admin'
     | '/blog'
     | '/counseling'
-    | '/dcg'
     | '/dcg-auth'
-    | '/events'
-    | '/fundraising'
-    | '/locations'
     | '/media'
-    | '/member'
     | '/portal-selector'
     | '/privacy'
     | '/store'
     | '/terms'
     | '/unauthorized'
-    | '/admin/regional'
-    | '/admin/super'
     | '/attend/$eventId'
     | '/attendance/login'
     | '/attendance/scan'
@@ -1036,7 +1184,6 @@ export interface FileRouteTypes {
     | '/dcg/finances'
     | '/dcg/members'
     | '/events/$eventId'
-    | '/fundraising/$id'
     | '/locations/$slug'
     | '/member/attendance'
     | '/member/auth'
@@ -1052,15 +1199,17 @@ export interface FileRouteTypes {
     | '/member/store'
     | '/profile/update'
     | '/verify/$verificationCode'
+    | '/admin'
+    | '/dcg'
+    | '/events'
+    | '/fundraising'
+    | '/locations'
+    | '/member'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
     | '/admin/regional/dashboard'
-    | '/admin/regional/dcg'
     | '/admin/regional/discipleship'
-    | '/admin/regional/events'
-    | '/admin/regional/finances'
-    | '/admin/regional/members'
     | '/admin/regional/planning'
     | '/admin/regional/settings'
     | '/admin/regional/user-management'
@@ -1070,13 +1219,9 @@ export interface FileRouteTypes {
     | '/admin/super/communication'
     | '/admin/super/currencies'
     | '/admin/super/dashboard'
-    | '/admin/super/events'
-    | '/admin/super/finances'
     | '/admin/super/fundraising'
     | '/admin/super/homepage-settings'
     | '/admin/super/locations'
-    | '/admin/super/members'
-    | '/admin/super/regions'
     | '/admin/super/reports'
     | '/admin/super/settings'
     | '/admin/super/user-management'
@@ -1087,11 +1232,22 @@ export interface FileRouteTypes {
     | '/fundraising/$id/pledge'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
+    | '/admin/regional'
+    | '/admin/super'
+    | '/fundraising/$id'
     | '/admin/regional/attendance/scan'
     | '/admin/regional/dcg/$dcgId'
     | '/admin/regional/members/$memberId'
     | '/admin/super/attendance/scan'
     | '/admin/super/members/$memberId'
+    | '/admin/regional/dcg'
+    | '/admin/regional/events'
+    | '/admin/regional/finances'
+    | '/admin/regional/members'
+    | '/admin/super/events'
+    | '/admin/super/finances'
+    | '/admin/super/members'
+    | '/admin/super/regions'
     | '/admin/regional/events/$eventId/report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
@@ -1150,6 +1306,12 @@ export interface FileRouteTypes {
     | '/member/store'
     | '/profile/update'
     | '/verify/$verificationCode'
+    | '/admin/'
+    | '/dcg/'
+    | '/events/'
+    | '/fundraising/'
+    | '/locations/'
+    | '/member/'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
@@ -1185,11 +1347,22 @@ export interface FileRouteTypes {
     | '/fundraising/$id/pledge'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
+    | '/admin/regional/'
+    | '/admin/super/'
+    | '/fundraising/$id/'
     | '/admin/regional/attendance/scan'
     | '/admin/regional/dcg/$dcgId'
     | '/admin/regional/members/$memberId'
     | '/admin/super/attendance/scan'
     | '/admin/super/members/$memberId'
+    | '/admin/regional/dcg/'
+    | '/admin/regional/events/'
+    | '/admin/regional/finances/'
+    | '/admin/regional/members/'
+    | '/admin/super/events/'
+    | '/admin/super/finances/'
+    | '/admin/super/members/'
+    | '/admin/super/regions/'
     | '/admin/regional/events/$eventId/report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
@@ -1358,6 +1531,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UnauthorizedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/regional': {
       id: '/admin/regional'
       path: '/regional'
@@ -1428,6 +1608,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSuperRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dcg/': {
+      id: '/dcg/'
+      path: '/'
+      fullPath: '/dcg/'
+      preLoaderRoute: typeof DcgIndexRouteImport
+      parentRoute: typeof DcgRoute
+    }
     '/dcg/communication': {
       id: '/dcg/communication'
       path: '/communication'
@@ -1463,12 +1650,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DcgMembersRouteImport
       parentRoute: typeof DcgRoute
     }
+    '/events/': {
+      id: '/events/'
+      path: '/'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof EventsRoute
+    }
     '/events/$eventId': {
       id: '/events/$eventId'
       path: '/$eventId'
       fullPath: '/events/$eventId'
       preLoaderRoute: typeof EventsEventIdRouteImport
       parentRoute: typeof EventsRoute
+    }
+    '/fundraising/': {
+      id: '/fundraising/'
+      path: '/'
+      fullPath: '/fundraising/'
+      preLoaderRoute: typeof FundraisingIndexRouteImport
+      parentRoute: typeof FundraisingRoute
     }
     '/fundraising/$id': {
       id: '/fundraising/$id'
@@ -1477,12 +1678,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FundraisingIdRouteImport
       parentRoute: typeof FundraisingRoute
     }
+    '/locations/': {
+      id: '/locations/'
+      path: '/'
+      fullPath: '/locations/'
+      preLoaderRoute: typeof LocationsIndexRouteImport
+      parentRoute: typeof LocationsRoute
+    }
     '/locations/$slug': {
       id: '/locations/$slug'
       path: '/$slug'
       fullPath: '/locations/$slug'
       preLoaderRoute: typeof LocationsSlugRouteImport
       parentRoute: typeof LocationsRoute
+    }
+    '/member/': {
+      id: '/member/'
+      path: '/'
+      fullPath: '/member/'
+      preLoaderRoute: typeof MemberIndexRouteImport
+      parentRoute: typeof MemberRoute
     }
     '/member/attendance': {
       id: '/member/attendance'
@@ -1582,6 +1797,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyVerificationCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/regional/': {
+      id: '/admin/regional/'
+      path: '/'
+      fullPath: '/admin/regional/'
+      preLoaderRoute: typeof AdminRegionalIndexRouteImport
+      parentRoute: typeof AdminRegionalRoute
+    }
     '/admin/regional/branch-settings': {
       id: '/admin/regional/branch-settings'
       path: '/branch-settings'
@@ -1672,6 +1894,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/regional/user-roles'
       preLoaderRoute: typeof AdminRegionalUserRolesRouteImport
       parentRoute: typeof AdminRegionalRoute
+    }
+    '/admin/super/': {
+      id: '/admin/super/'
+      path: '/'
+      fullPath: '/admin/super/'
+      preLoaderRoute: typeof AdminSuperIndexRouteImport
+      parentRoute: typeof AdminSuperRoute
     }
     '/admin/super/about-settings': {
       id: '/admin/super/about-settings'
@@ -1799,6 +2028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EventsSlugRegisterRouteImport
       parentRoute: typeof EventsRoute
     }
+    '/fundraising/$id/': {
+      id: '/fundraising/$id/'
+      path: '/'
+      fullPath: '/fundraising/$id/'
+      preLoaderRoute: typeof FundraisingIdIndexRouteImport
+      parentRoute: typeof FundraisingIdRoute
+    }
     '/fundraising/$id/donate': {
       id: '/fundraising/$id/donate'
       path: '/donate'
@@ -1834,12 +2070,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegionalAttendanceScanRouteImport
       parentRoute: typeof AdminRegionalRoute
     }
+    '/admin/regional/dcg/': {
+      id: '/admin/regional/dcg/'
+      path: '/'
+      fullPath: '/admin/regional/dcg/'
+      preLoaderRoute: typeof AdminRegionalDcgIndexRouteImport
+      parentRoute: typeof AdminRegionalDcgRoute
+    }
     '/admin/regional/dcg/$dcgId': {
       id: '/admin/regional/dcg/$dcgId'
       path: '/$dcgId'
       fullPath: '/admin/regional/dcg/$dcgId'
       preLoaderRoute: typeof AdminRegionalDcgDcgIdRouteImport
       parentRoute: typeof AdminRegionalDcgRoute
+    }
+    '/admin/regional/events/': {
+      id: '/admin/regional/events/'
+      path: '/'
+      fullPath: '/admin/regional/events/'
+      preLoaderRoute: typeof AdminRegionalEventsIndexRouteImport
+      parentRoute: typeof AdminRegionalEventsRoute
+    }
+    '/admin/regional/finances/': {
+      id: '/admin/regional/finances/'
+      path: '/'
+      fullPath: '/admin/regional/finances/'
+      preLoaderRoute: typeof AdminRegionalFinancesIndexRouteImport
+      parentRoute: typeof AdminRegionalFinancesRoute
+    }
+    '/admin/regional/members/': {
+      id: '/admin/regional/members/'
+      path: '/'
+      fullPath: '/admin/regional/members/'
+      preLoaderRoute: typeof AdminRegionalMembersIndexRouteImport
+      parentRoute: typeof AdminRegionalMembersRoute
     }
     '/admin/regional/members/$memberId': {
       id: '/admin/regional/members/$memberId'
@@ -1855,12 +2119,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSuperAttendanceScanRouteImport
       parentRoute: typeof AdminSuperRoute
     }
+    '/admin/super/events/': {
+      id: '/admin/super/events/'
+      path: '/'
+      fullPath: '/admin/super/events/'
+      preLoaderRoute: typeof AdminSuperEventsIndexRouteImport
+      parentRoute: typeof AdminSuperEventsRoute
+    }
+    '/admin/super/finances/': {
+      id: '/admin/super/finances/'
+      path: '/'
+      fullPath: '/admin/super/finances/'
+      preLoaderRoute: typeof AdminSuperFinancesIndexRouteImport
+      parentRoute: typeof AdminSuperFinancesRoute
+    }
+    '/admin/super/members/': {
+      id: '/admin/super/members/'
+      path: '/'
+      fullPath: '/admin/super/members/'
+      preLoaderRoute: typeof AdminSuperMembersIndexRouteImport
+      parentRoute: typeof AdminSuperMembersRoute
+    }
     '/admin/super/members/$memberId': {
       id: '/admin/super/members/$memberId'
       path: '/$memberId'
       fullPath: '/admin/super/members/$memberId'
       preLoaderRoute: typeof AdminSuperMembersMemberIdRouteImport
       parentRoute: typeof AdminSuperMembersRoute
+    }
+    '/admin/super/regions/': {
+      id: '/admin/super/regions/'
+      path: '/'
+      fullPath: '/admin/super/regions/'
+      preLoaderRoute: typeof AdminSuperRegionsIndexRouteImport
+      parentRoute: typeof AdminSuperRegionsRoute
     }
     '/admin/regional/events/$eventId/report': {
       id: '/admin/regional/events/$eventId/report'
@@ -1909,20 +2201,24 @@ declare module '@tanstack/react-router' {
 
 interface AdminRegionalDcgRouteChildren {
   AdminRegionalDcgDcgIdRoute: typeof AdminRegionalDcgDcgIdRoute
+  AdminRegionalDcgIndexRoute: typeof AdminRegionalDcgIndexRoute
 }
 
 const AdminRegionalDcgRouteChildren: AdminRegionalDcgRouteChildren = {
   AdminRegionalDcgDcgIdRoute: AdminRegionalDcgDcgIdRoute,
+  AdminRegionalDcgIndexRoute: AdminRegionalDcgIndexRoute,
 }
 
 const AdminRegionalDcgRouteWithChildren =
   AdminRegionalDcgRoute._addFileChildren(AdminRegionalDcgRouteChildren)
 
 interface AdminRegionalEventsRouteChildren {
+  AdminRegionalEventsIndexRoute: typeof AdminRegionalEventsIndexRoute
   AdminRegionalEventsEventIdReportRoute: typeof AdminRegionalEventsEventIdReportRoute
 }
 
 const AdminRegionalEventsRouteChildren: AdminRegionalEventsRouteChildren = {
+  AdminRegionalEventsIndexRoute: AdminRegionalEventsIndexRoute,
   AdminRegionalEventsEventIdReportRoute: AdminRegionalEventsEventIdReportRoute,
 }
 
@@ -1930,10 +2226,12 @@ const AdminRegionalEventsRouteWithChildren =
   AdminRegionalEventsRoute._addFileChildren(AdminRegionalEventsRouteChildren)
 
 interface AdminRegionalFinancesRouteChildren {
+  AdminRegionalFinancesIndexRoute: typeof AdminRegionalFinancesIndexRoute
   AdminRegionalFinancesFundraisingCampaignIdRoute: typeof AdminRegionalFinancesFundraisingCampaignIdRoute
 }
 
 const AdminRegionalFinancesRouteChildren: AdminRegionalFinancesRouteChildren = {
+  AdminRegionalFinancesIndexRoute: AdminRegionalFinancesIndexRoute,
   AdminRegionalFinancesFundraisingCampaignIdRoute:
     AdminRegionalFinancesFundraisingCampaignIdRoute,
 }
@@ -1945,10 +2243,12 @@ const AdminRegionalFinancesRouteWithChildren =
 
 interface AdminRegionalMembersRouteChildren {
   AdminRegionalMembersMemberIdRoute: typeof AdminRegionalMembersMemberIdRoute
+  AdminRegionalMembersIndexRoute: typeof AdminRegionalMembersIndexRoute
 }
 
 const AdminRegionalMembersRouteChildren: AdminRegionalMembersRouteChildren = {
   AdminRegionalMembersMemberIdRoute: AdminRegionalMembersMemberIdRoute,
+  AdminRegionalMembersIndexRoute: AdminRegionalMembersIndexRoute,
 }
 
 const AdminRegionalMembersRouteWithChildren =
@@ -1968,6 +2268,7 @@ interface AdminRegionalRouteChildren {
   AdminRegionalSettingsRoute: typeof AdminRegionalSettingsRoute
   AdminRegionalUserManagementRoute: typeof AdminRegionalUserManagementRoute
   AdminRegionalUserRolesRoute: typeof AdminRegionalUserRolesRoute
+  AdminRegionalIndexRoute: typeof AdminRegionalIndexRoute
   AdminRegionalAttendanceScanRoute: typeof AdminRegionalAttendanceScanRoute
 }
 
@@ -1985,6 +2286,7 @@ const AdminRegionalRouteChildren: AdminRegionalRouteChildren = {
   AdminRegionalSettingsRoute: AdminRegionalSettingsRoute,
   AdminRegionalUserManagementRoute: AdminRegionalUserManagementRoute,
   AdminRegionalUserRolesRoute: AdminRegionalUserRolesRoute,
+  AdminRegionalIndexRoute: AdminRegionalIndexRoute,
   AdminRegionalAttendanceScanRoute: AdminRegionalAttendanceScanRoute,
 }
 
@@ -1993,11 +2295,13 @@ const AdminRegionalRouteWithChildren = AdminRegionalRoute._addFileChildren(
 )
 
 interface AdminSuperEventsRouteChildren {
+  AdminSuperEventsIndexRoute: typeof AdminSuperEventsIndexRoute
   AdminSuperEventsEventIdReportRoute: typeof AdminSuperEventsEventIdReportRoute
   AdminSuperEventsEventIdSpecialReportRoute: typeof AdminSuperEventsEventIdSpecialReportRoute
 }
 
 const AdminSuperEventsRouteChildren: AdminSuperEventsRouteChildren = {
+  AdminSuperEventsIndexRoute: AdminSuperEventsIndexRoute,
   AdminSuperEventsEventIdReportRoute: AdminSuperEventsEventIdReportRoute,
   AdminSuperEventsEventIdSpecialReportRoute:
     AdminSuperEventsEventIdSpecialReportRoute,
@@ -2007,10 +2311,12 @@ const AdminSuperEventsRouteWithChildren =
   AdminSuperEventsRoute._addFileChildren(AdminSuperEventsRouteChildren)
 
 interface AdminSuperFinancesRouteChildren {
+  AdminSuperFinancesIndexRoute: typeof AdminSuperFinancesIndexRoute
   AdminSuperFinancesFundraisingCampaignIdRoute: typeof AdminSuperFinancesFundraisingCampaignIdRoute
 }
 
 const AdminSuperFinancesRouteChildren: AdminSuperFinancesRouteChildren = {
+  AdminSuperFinancesIndexRoute: AdminSuperFinancesIndexRoute,
   AdminSuperFinancesFundraisingCampaignIdRoute:
     AdminSuperFinancesFundraisingCampaignIdRoute,
 }
@@ -2020,20 +2326,24 @@ const AdminSuperFinancesRouteWithChildren =
 
 interface AdminSuperMembersRouteChildren {
   AdminSuperMembersMemberIdRoute: typeof AdminSuperMembersMemberIdRoute
+  AdminSuperMembersIndexRoute: typeof AdminSuperMembersIndexRoute
 }
 
 const AdminSuperMembersRouteChildren: AdminSuperMembersRouteChildren = {
   AdminSuperMembersMemberIdRoute: AdminSuperMembersMemberIdRoute,
+  AdminSuperMembersIndexRoute: AdminSuperMembersIndexRoute,
 }
 
 const AdminSuperMembersRouteWithChildren =
   AdminSuperMembersRoute._addFileChildren(AdminSuperMembersRouteChildren)
 
 interface AdminSuperRegionsRouteChildren {
+  AdminSuperRegionsIndexRoute: typeof AdminSuperRegionsIndexRoute
   AdminSuperRegionsRegionIdReportRoute: typeof AdminSuperRegionsRegionIdReportRoute
 }
 
 const AdminSuperRegionsRouteChildren: AdminSuperRegionsRouteChildren = {
+  AdminSuperRegionsIndexRoute: AdminSuperRegionsIndexRoute,
   AdminSuperRegionsRegionIdReportRoute: AdminSuperRegionsRegionIdReportRoute,
 }
 
@@ -2056,6 +2366,7 @@ interface AdminSuperRouteChildren {
   AdminSuperReportsRoute: typeof AdminSuperReportsRoute
   AdminSuperSettingsRoute: typeof AdminSuperSettingsRoute
   AdminSuperUserManagementRoute: typeof AdminSuperUserManagementRoute
+  AdminSuperIndexRoute: typeof AdminSuperIndexRoute
   AdminSuperAttendanceScanRoute: typeof AdminSuperAttendanceScanRoute
 }
 
@@ -2075,6 +2386,7 @@ const AdminSuperRouteChildren: AdminSuperRouteChildren = {
   AdminSuperReportsRoute: AdminSuperReportsRoute,
   AdminSuperSettingsRoute: AdminSuperSettingsRoute,
   AdminSuperUserManagementRoute: AdminSuperUserManagementRoute,
+  AdminSuperIndexRoute: AdminSuperIndexRoute,
   AdminSuperAttendanceScanRoute: AdminSuperAttendanceScanRoute,
 }
 
@@ -2085,11 +2397,13 @@ const AdminSuperRouteWithChildren = AdminSuperRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminRegionalRoute: typeof AdminRegionalRouteWithChildren
   AdminSuperRoute: typeof AdminSuperRouteWithChildren
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminRegionalRoute: AdminRegionalRouteWithChildren,
   AdminSuperRoute: AdminSuperRouteWithChildren,
+  AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -2100,6 +2414,7 @@ interface DcgRouteChildren {
   DcgEventsRoute: typeof DcgEventsRoute
   DcgFinancesRoute: typeof DcgFinancesRoute
   DcgMembersRoute: typeof DcgMembersRoute
+  DcgIndexRoute: typeof DcgIndexRoute
   DcgMemberMemberIdRoute: typeof DcgMemberMemberIdRoute
 }
 
@@ -2109,6 +2424,7 @@ const DcgRouteChildren: DcgRouteChildren = {
   DcgEventsRoute: DcgEventsRoute,
   DcgFinancesRoute: DcgFinancesRoute,
   DcgMembersRoute: DcgMembersRoute,
+  DcgIndexRoute: DcgIndexRoute,
   DcgMemberMemberIdRoute: DcgMemberMemberIdRoute,
 }
 
@@ -2116,12 +2432,14 @@ const DcgRouteWithChildren = DcgRoute._addFileChildren(DcgRouteChildren)
 
 interface EventsRouteChildren {
   EventsEventIdRoute: typeof EventsEventIdRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   EventsSlugFeedbackRoute: typeof EventsSlugFeedbackRoute
   EventsSlugRegisterRoute: typeof EventsSlugRegisterRoute
 }
 
 const EventsRouteChildren: EventsRouteChildren = {
   EventsEventIdRoute: EventsEventIdRoute,
+  EventsIndexRoute: EventsIndexRoute,
   EventsSlugFeedbackRoute: EventsSlugFeedbackRoute,
   EventsSlugRegisterRoute: EventsSlugRegisterRoute,
 }
@@ -2132,11 +2450,13 @@ const EventsRouteWithChildren =
 interface FundraisingIdRouteChildren {
   FundraisingIdDonateRoute: typeof FundraisingIdDonateRoute
   FundraisingIdPledgeRoute: typeof FundraisingIdPledgeRoute
+  FundraisingIdIndexRoute: typeof FundraisingIdIndexRoute
 }
 
 const FundraisingIdRouteChildren: FundraisingIdRouteChildren = {
   FundraisingIdDonateRoute: FundraisingIdDonateRoute,
   FundraisingIdPledgeRoute: FundraisingIdPledgeRoute,
+  FundraisingIdIndexRoute: FundraisingIdIndexRoute,
 }
 
 const FundraisingIdRouteWithChildren = FundraisingIdRoute._addFileChildren(
@@ -2145,10 +2465,12 @@ const FundraisingIdRouteWithChildren = FundraisingIdRoute._addFileChildren(
 
 interface FundraisingRouteChildren {
   FundraisingIdRoute: typeof FundraisingIdRouteWithChildren
+  FundraisingIndexRoute: typeof FundraisingIndexRoute
 }
 
 const FundraisingRouteChildren: FundraisingRouteChildren = {
   FundraisingIdRoute: FundraisingIdRouteWithChildren,
+  FundraisingIndexRoute: FundraisingIndexRoute,
 }
 
 const FundraisingRouteWithChildren = FundraisingRoute._addFileChildren(
@@ -2157,10 +2479,12 @@ const FundraisingRouteWithChildren = FundraisingRoute._addFileChildren(
 
 interface LocationsRouteChildren {
   LocationsSlugRoute: typeof LocationsSlugRoute
+  LocationsIndexRoute: typeof LocationsIndexRoute
 }
 
 const LocationsRouteChildren: LocationsRouteChildren = {
   LocationsSlugRoute: LocationsSlugRoute,
+  LocationsIndexRoute: LocationsIndexRoute,
 }
 
 const LocationsRouteWithChildren = LocationsRoute._addFileChildren(
@@ -2180,6 +2504,7 @@ interface MemberRouteChildren {
   MemberMediaRoute: typeof MemberMediaRoute
   MemberProfileRoute: typeof MemberProfileRoute
   MemberStoreRoute: typeof MemberStoreRoute
+  MemberIndexRoute: typeof MemberIndexRoute
   MemberRegisterRegionCodeRoute: typeof MemberRegisterRegionCodeRoute
 }
 
@@ -2196,6 +2521,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberMediaRoute: MemberMediaRoute,
   MemberProfileRoute: MemberProfileRoute,
   MemberStoreRoute: MemberStoreRoute,
+  MemberIndexRoute: MemberIndexRoute,
   MemberRegisterRegionCodeRoute: MemberRegisterRegionCodeRoute,
 }
 
