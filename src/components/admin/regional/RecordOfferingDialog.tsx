@@ -188,7 +188,7 @@ const RecordOfferingDialog: React.FC<RecordOfferingDialogProps> = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                           <Command className="max-h-80">
                             <CommandInput placeholder="Search events…" />
                             <CommandList

@@ -195,7 +195,7 @@ export const useSuperAdminReports = (timeFrame?: TimeFrameParams) => {
             .map(d => d.id);
           
           const memberEvents = (dcgAttendanceEvents || []).filter(
-            e => regionDcgIds.includes(e.dcg_id)
+            e => Boolean(e.dcg_id) && regionDcgIds.includes(e.dcg_id!)
           );
           
           // Count absences for this member

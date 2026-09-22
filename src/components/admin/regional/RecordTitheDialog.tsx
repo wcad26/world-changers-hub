@@ -228,7 +228,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                           <Command className="max-h-80">
                             <CommandInput placeholder="Search members…" />
                             <CommandList
@@ -297,7 +297,7 @@ export const RecordTitheDialog: React.FC<RecordTitheDialogProps> = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                           <Command className="max-h-80">
                             <CommandInput placeholder="Search events…" />
                             <CommandList

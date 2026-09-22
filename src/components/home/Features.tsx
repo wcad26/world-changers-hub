@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { GlassCard } from '../ui/GlassPanels';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
 import { renderIcon } from '@/utils/iconMapping';

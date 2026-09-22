@@ -41,8 +41,8 @@ export const EditCurrencyDialog = ({ currency, open, onOpenChange }: EditCurrenc
       code: currency.code,
       name: currency.name,
       symbol: currency.symbol,
-      decimal_places: currency.decimal_places,
-      is_active: currency.is_active,
+      decimal_places: currency.decimal_places ?? 0,
+      is_active: currency.is_active ?? true,
     },
   });
 
@@ -52,8 +52,8 @@ export const EditCurrencyDialog = ({ currency, open, onOpenChange }: EditCurrenc
         code: currency.code,
         name: currency.name,
         symbol: currency.symbol,
-        decimal_places: currency.decimal_places,
-        is_active: currency.is_active,
+        decimal_places: currency.decimal_places ?? 0,
+        is_active: currency.is_active ?? true,
       });
     }
   }, [open, currency, form]);

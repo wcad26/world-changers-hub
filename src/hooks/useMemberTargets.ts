@@ -15,7 +15,10 @@ export const useMemberTargets = () => {
     queryFn: async () => {
       if (!userRegion?.id) return [];
       
-      const { data, error } = await supabase
+       const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+       if (!currentUserId) throw new Error('User not authenticated');
+
+       const { data, error } = await supabase
         .from('member_targets')
         .select('*')
         .eq('region_id', userRegion.id)
@@ -62,13 +65,15 @@ export const useCreateMemberTarget = () => {
   return useMutation({
     mutationFn: async (targetData: Omit<NewMemberTarget, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'created_by'>) => {
       if (!userRegion?.id) throw new Error('User region not found');
+      const currentUserId = (await supabase.auth.getUser()).data.user?.id;
+      if (!currentUserId) throw new Error('User not authenticated');
       
       const { data, error } = await supabase
         .from('member_targets')
         .insert({
           ...targetData,
           region_id: userRegion.id,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
+          created_by: currentUserId,
         })
         .select()
         .single();

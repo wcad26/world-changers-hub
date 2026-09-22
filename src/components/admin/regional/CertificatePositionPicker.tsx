@@ -33,7 +33,7 @@ export const CertificatePositionPicker = ({
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [sampleText, setSampleText] = useState('Sample Name');
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     drawCanvas();

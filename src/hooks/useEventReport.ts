@@ -238,7 +238,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
             member_type: member.member_type,
             join_interest: member.join_interest,
             region_id: (member as any).region_id ?? null,
-            profile: member.profile as EventAttendeeWithDetails['member']['profile'],
+            profile: (member as any).profile as NonNullable<EventAttendeeWithDetails['member']>['profile'],
           } : null,
         };
       });

@@ -5,7 +5,7 @@ import Hero from '@/components/home/Hero';
 import Mission from '@/components/home/Mission';
 import Features from '@/components/home/Features';
 import { ArrowRight, MapPin, Calendar, Bell, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { useHomepageContent } from '@/hooks/useHomepageContent';
 import { useFeaturedEvents } from '@/hooks/useEvents';

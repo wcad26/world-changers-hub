@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { MapPin, Clock, ExternalLink, Phone, Users, User } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import type { PublicLocation } from '@/hooks/usePublicLocations';

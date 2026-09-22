@@ -128,7 +128,7 @@ const UsersWithAccessTable: React.FC = () => {
         // read — dropping it used to make a populated list look empty.
         const profile = profileMap.get(a.user_id) ?? {};
 
-        const row = grouped.get(a.user_id) ?? {
+        const row: AccessRow = grouped.get(a.user_id) ?? {
           user_id: a.user_id,
           email: profile.email ?? '',
           first_name: profile.first_name ?? '',

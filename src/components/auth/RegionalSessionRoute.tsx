@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation } from '@/lib/router-compat';
 import RegionalErrorBoundary from './RegionalErrorBoundary';
 
 /**

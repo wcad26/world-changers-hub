@@ -1,0 +1,12 @@
+{
+  "customizations": [
+    { "token": "WCA semantic palette and chart colors", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "soft glass gradients, shadows and borders", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "public event experience palette and overlays", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "sidebar semantic colors", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "Inter, Manrope, Sora and Crimson typography", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "glass panels, navigation, buttons and cards", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "fluid typography and motion utilities", "source": "src/index.css", "reappliedIn": "src/styles.css" },
+    { "token": "mobile utilities and reduced-motion rules", "source": "src/index.css", "reappliedIn": "src/styles.css" }
+  ]
+}

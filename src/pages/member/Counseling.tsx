@@ -23,7 +23,7 @@ export default function MemberCounseling() {
   // Mock available dates and times for each counselor
   const getAvailableDates = (counselorId: number) => {
     const today = new Date();
-    const availableDates = [];
+    const availableDates: Date[] = [];
     
     // Generate next 30 days, excluding weekends
     for (let i = 1; i <= 30; i++) {

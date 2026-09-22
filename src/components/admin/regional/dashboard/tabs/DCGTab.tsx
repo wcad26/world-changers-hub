@@ -11,7 +11,7 @@ import { useRegionalDcgReports } from '@/hooks/useRegionalDcgReports';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import PeriodFilter, { PeriodFilters } from '../PeriodFilter';
 

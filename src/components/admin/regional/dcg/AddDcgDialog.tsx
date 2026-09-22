@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@/lib/router-compat';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -82,13 +82,14 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
         address: values.address,
         city: values.city,
         state: values.state,
+        region_id: userRegion?.id ?? '',
         zip: values.zip,
         latitude: values.latitude,
         longitude: values.longitude,
         contact_person: selectedMember.profiles?.first_name && selectedMember.profiles?.last_name 
           ? `${selectedMember.profiles.first_name} ${selectedMember.profiles.last_name}`
           : undefined,
-        contact_phone: selectedMember.profiles?.phone || values.contact_phone,
+        contact_phone: selectedMember.profiles?.phone || values.contact_phone || undefined,
       };
 
       const location = await createLocationMutation.mutateAsync(locationData);
@@ -187,7 +188,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="A brief description of the DCG" {...field} />
+                         <Input placeholder="A brief description of the DCG" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -201,7 +202,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                     <FormItem>
                       <FormLabel>Location Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="E.g., Downtown Community Center" {...field} />
+                         <Input placeholder="E.g., Downtown Community Center" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -215,7 +216,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Meeting Day</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a day" />
@@ -236,7 +237,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                       <FormItem>
                         <FormLabel>Meeting Time</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                           <Input type="time" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -251,7 +252,7 @@ export const AddDcgDialog: React.FC<AddDcgDialogProps> = ({ open, setOpen }) => 
                     <FormItem>
                       <FormLabel>Contact Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Optional contact number" {...field} />
+                         <Input placeholder="Optional contact number" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

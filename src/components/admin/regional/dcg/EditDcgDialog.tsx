@@ -121,14 +121,14 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
           address: values.address,
           city: values.city,
           state: values.state,
-          zip: values.zip,
+          zip: values.zip ?? '',
           latitude: values.latitude,
           longitude: values.longitude,
           contact_person: selectedMember?.profiles?.first_name && selectedMember?.profiles?.last_name 
             ? `${selectedMember.profiles.first_name} ${selectedMember.profiles.last_name}`
             : undefined,
           contact_phone: selectedMember?.profiles?.phone || values.contact_phone,
-          region_id: userRegion?.id,
+          region_id: userRegion?.id ?? '',
         };
 
         const { error: locationError } = await supabase
@@ -230,7 +230,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="A brief description of the DCG" {...field} />
+                         <Input placeholder="A brief description of the DCG" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -244,7 +244,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                     <FormItem>
                       <FormLabel>Location Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="E.g., Downtown Community Center" {...field} />
+                         <Input placeholder="E.g., Downtown Community Center" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -258,7 +258,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Meeting Day</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         <Select onValueChange={field.onChange} defaultValue={field.value ?? undefined}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a day" />
@@ -279,7 +279,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                       <FormItem>
                         <FormLabel>Meeting Time</FormLabel>
                         <FormControl>
-                          <Input type="time" {...field} />
+                           <Input type="time" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -294,7 +294,7 @@ export const EditDcgDialog: React.FC<EditDcgDialogProps> = ({ open, setOpen, dcg
                     <FormItem>
                       <FormLabel>Contact Phone</FormLabel>
                       <FormControl>
-                        <Input placeholder="Optional contact number" {...field} />
+                         <Input placeholder="Optional contact number" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from '@/lib/router-compat';
 import { Calendar, MapPin, Users, Clock, Phone, Mail, ArrowRight, ChevronLeft, Home, Bell } from 'lucide-react';
 import { useRegionBySlug } from '@/hooks/useRegionBySlug';
 import { useRegionalLocations, useRegionalDCGs, useAllRegionalEvents } from '@/hooks/useRegionalData';
@@ -393,7 +393,7 @@ const RegionalBranchHome = () => {
                   return 6; // 3 columns × 2 rows (desktop)
                 };
                 const eventsPerSlide = getEventsPerSlide();
-                const slides = [];
+                const slides: React.ReactNode[] = [];
                 const totalSlides = Math.ceil(displayEvents.length / eventsPerSlide);
                 for (let i = 0; i < totalSlides; i++) {
                   const slideEvents = displayEvents.slice(i * eventsPerSlide, (i + 1) * eventsPerSlide);
@@ -505,7 +505,7 @@ const RegionalBranchHome = () => {
                   return 6; // 3 columns × 2 rows (desktop)
                 };
                 const dcgsPerSlide = getDcgsPerSlide();
-                const slides = [];
+                const slides: React.ReactNode[] = [];
                 const totalSlides = Math.ceil(displayDcgs.length / dcgsPerSlide);
                 for (let i = 0; i < totalSlides; i++) {
                   const slideDcgs = displayDcgs.slice(i * dcgsPerSlide, (i + 1) * dcgsPerSlide);
@@ -536,13 +536,13 @@ const RegionalBranchHome = () => {
                                       {/* Action Buttons */}
                                       <div className="flex space-x-2 pt-2">
                                         {/* Google Maps Button */}
-                                        {dcg.location && <Button size="sm" className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location)}`, '_blank')}>
+                                         {dcg.location && <Button size="sm" className="flex-1 text-xs bg-secondary text-secondary-foreground hover:bg-transparent hover:border-secondary hover:text-secondary border border-secondary" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dcg.location ?? '')}`, '_blank')}>
                                             <MapPin className="w-3 h-3 mr-1" />
                                             Map
                                           </Button>}
                                         
                                         {/* WhatsApp Button */}
-                                        {dcg.contact_phone && <Button size="sm" className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent" onClick={() => window.open(`https://wa.me/${dcg.contact_phone.replace(/[^0-9]/g, '')}`, '_blank')}>
+                                         {dcg.contact_phone && <Button size="sm" className="flex-1 text-xs bg-accent text-accent-foreground hover:bg-transparent hover:border-accent hover:text-accent border border-accent" onClick={() => window.open(`https://wa.me/${(dcg.contact_phone ?? '').replace(/[^0-9]/g, '')}`, '_blank')}>
                                             <Phone className="w-3 h-3 mr-1" />
                                             WhatsApp
                                           </Button>}

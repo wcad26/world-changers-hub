@@ -74,7 +74,7 @@ export const useCreateLocation = () => {
         address: newLocation.address,
         city: newLocation.city,
         state: newLocation.state,
-        zip: newLocation.zip,
+        zip: newLocation.zip ?? '',
         latitude: newLocation.latitude || null,
         longitude: newLocation.longitude || null,
         contact_person: newLocation.contact_person || null,

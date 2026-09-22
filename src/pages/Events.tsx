@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import { GlassCard } from '@/components/ui/GlassPanels';
 import { Calendar, Clock, MapPin, Search, Filter, ChevronDown, ArrowRight, AlertCircle, Eye } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '@/lib/router-compat';
 import { usePublicEvents, usePublicPastEvents, Event } from '@/hooks/useEvents';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';

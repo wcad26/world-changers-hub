@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin } from "lucide-react";
 import { format } from "date-fns";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { useFeaturedEvents } from "@/hooks/useEvents";
 
 interface RelatedEventsCarouselProps {
