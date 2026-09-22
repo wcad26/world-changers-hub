@@ -7,3 +7,11 @@
 - [x] Unify Member, DCG, Regional Admin, and Super Admin portal shells
 - [x] Restyle portal dashboards and shared work-area patterns
 - [x] Complete responsive, accessibility, metadata, and runtime verification
+
+# Home page rebuild — Heritage Modernism
+
+- [ ] Replace the current opening with an immersive, people-led experience
+- [ ] Preserve and elevate the exact database-driven vision and mission content
+- [ ] Add richer WCA storytelling, locations, pathways, events, and connection sections
+- [ ] Add lightweight floating, pointer, and scroll effects with reduced-motion safeguards
+- [ ] Verify mobile, tablet, desktop, light, dark, content, links, and runtime health
