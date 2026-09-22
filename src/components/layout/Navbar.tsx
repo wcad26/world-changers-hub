@@ -72,17 +72,10 @@ export default function Navbar() {
             <Button variant="ghost" size="icon" asChild><a href="tel:+237690634860" aria-label="Call World Changers Association"><Phone /></a></Button>
             <Button variant="ghost" size="icon" asChild><a href="mailto:info@wcaglobal.org" aria-label="Email World Changers Association"><Mail /></a></Button>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="Change language"><Languages /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setLanguage("en")}>English {language === "en" ? "•" : ""}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage("fr")}>Français {language === "fr" ? "•" : ""}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
           <ThemeToggle />
           <Button size="sm" asChild className="hidden sm:inline-flex"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
           <Sheet>
-            <SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Open navigation"><Menu /></Button></SheetTrigger>
+            <SheetTrigger asChild><Button variant="outline" size="icon" aria-label="Open navigation"><Menu /></Button></SheetTrigger>
             <SheetContent side="right" className="w-[min(22rem,90vw)] border-l-0 p-0">
               <div className="border-b bg-primary px-6 py-5 text-primary-foreground">
                 <img src="/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png" alt="World Changers Association" className="h-10 w-auto brightness-0 invert" />
@@ -94,6 +87,32 @@ export default function Navbar() {
                 <p className="px-4 pb-1 pt-4 text-xs font-semibold uppercase text-muted-foreground">{language === "fr" ? "Ressources" : "Resources"}</p>
                 {resourceLinks.map((item) => <Link key={item.to} to={item.to} className="block rounded-md px-4 py-2 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground">{label(item)}</Link>)}
               </nav>
+              <div className="mx-4 border-t px-4 pb-1 pt-4">
+                <p className="flex items-center gap-2 pb-2 text-xs font-semibold uppercase text-muted-foreground">
+                  <Languages className="h-4 w-4" />{language === "fr" ? "Langue" : "Language"}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant={language === "en" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setLanguage("en")}
+                    aria-pressed={language === "en"}
+                  >
+                    English
+                  </Button>
+                  <Button
+                    variant={language === "fr" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setLanguage("fr")}
+                    aria-pressed={language === "fr"}
+                  >
+                    Français
+                  </Button>
+                </div>
+                <p className="pt-2 text-xs text-muted-foreground">
+                  {language === "fr" ? "Choisissez la langue du site" : "Choose the website language"}
+                </p>
+              </div>
               <div className="mx-4 border-t p-4">
                 <Button asChild className="w-full"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
                 <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
