@@ -18,8 +18,8 @@
 
 # Fast public pages + About and Locations rebuild
 
-- [ ] Replace blocking About and Locations reads with route-preloaded cached data
-- [ ] Rebuild About in the Heritage Modernism design language
-- [ ] Rebuild Locations with a fast mobile-first finder and editorial cards
-- [ ] Audit public routes for blocking loaders, request duplication, and missing error states
-- [ ] Verify public pages across mobile, tablet, desktop, light, dark, English, and French
+- [x] Replace blocking About and Locations reads with route-preloaded cached data
+- [x] Rebuild About in the Heritage Modernism design language
+- [x] Rebuild Locations with a fast mobile-first finder and editorial cards
+- [x] Audit public routes for blocking loaders, request duplication, and missing error states
+- [x] Verify public pages across mobile, tablet, desktop, light, dark, English, and French

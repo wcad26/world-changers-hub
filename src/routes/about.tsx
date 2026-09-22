@@ -14,4 +14,5 @@ export const Route = createFileRoute("/about")({
   ] }),
   component: Page,
   errorComponent: () => <main className="grid min-h-[70vh] place-items-center bg-background p-6 text-center text-foreground"><div><h1 className="text-2xl font-semibold">About WCA</h1><p className="mt-3 text-muted-foreground">This page is temporarily unavailable. Please try again.</p><a href="/about" className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-primary-foreground">Try again</a></div></main>,
+  notFoundComponent: () => <main className="grid min-h-[70vh] place-items-center bg-background p-6 text-center text-foreground"><h1 className="text-2xl font-semibold">About WCA</h1></main>,
 });
