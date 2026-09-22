@@ -86,7 +86,6 @@ export default function Navbar() {
             <SheetContent side="right" className="w-[min(22rem,90vw)] p-0">
               <div className="border-b bg-primary px-6 py-5 text-primary-foreground">
                 <img src="/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png" alt="World Changers Association" className="h-10 w-auto brightness-0 invert" />
-                <p className="mt-3 text-sm text-primary-foreground/75">{language === "fr" ? "Connecter les leaders. Transformer les communautés." : "Connecting leaders. Transforming communities."}</p>
               </div>
               <nav className="space-y-1 p-4" aria-label="Mobile navigation">
                 {mainLinks.map((item) => (
