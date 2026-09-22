@@ -83,7 +83,7 @@ export default function Navbar() {
           <Button size="sm" asChild className="hidden sm:inline-flex"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
           <Sheet>
             <SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Open navigation"><Menu /></Button></SheetTrigger>
-            <SheetContent side="right" className="w-[min(22rem,90vw)] p-0">
+            <SheetContent side="right" className="w-[min(22rem,90vw)] border-l-0 p-0">
               <div className="border-b bg-primary px-6 py-5 text-primary-foreground">
                 <img src="/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png" alt="World Changers Association" className="h-10 w-auto brightness-0 invert" />
               </div>
