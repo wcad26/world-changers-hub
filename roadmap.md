@@ -35,4 +35,4 @@
 - [x] Upgrade Supabase to the Worker-compatible release
 - [x] Preload resilient homepage content and featured events
 - [x] Remove the regional portal's cached-state hydration mismatch
-- [ ] Verify public routes, responsive homepage rendering, and production publication
+- [x] Verify public routes, responsive homepage rendering, and request production publication
