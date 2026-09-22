@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "@/lib/router-compat";
 import {
   ArrowLeft, Users, Calendar as CalendarIcon2, MapPin, Phone, Clock, Edit,
   Wallet, TrendingUp, TrendingDown, Search, CalendarIcon, Download,

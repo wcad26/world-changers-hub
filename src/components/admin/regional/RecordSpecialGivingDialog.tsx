@@ -297,7 +297,7 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
                       <Command shouldFilter={false}>
                         <CommandInput placeholder="Search by name…" value={memberSearch} onValueChange={setMemberSearch} />
                         <CommandList className="max-h-64 overflow-y-auto overscroll-contain">
@@ -343,7 +343,7 @@ const RecordSpecialGivingDialog: React.FC<RecordSpecialGivingDialogProps> = ({
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 border-border/50 bg-card/95 backdrop-blur-xl" align="start">
                       <Command shouldFilter={false}>
                         <CommandInput placeholder="Search by name or email…" value={donorSearch} onValueChange={setDonorSearch} />
                         <CommandList className="max-h-64 overflow-y-auto overscroll-contain">

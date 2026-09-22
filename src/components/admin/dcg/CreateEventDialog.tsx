@@ -200,7 +200,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       }
 
       const start_datetime = new Date(`${data.start_date}T${data.start_time}`).toISOString();
-      let end_datetime = null;
+      let end_datetime: string | null = null;
       
       if (data.end_date) {
         const endTime = data.end_time || data.start_time; // Use start time if no end time specified

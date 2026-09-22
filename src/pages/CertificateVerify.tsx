@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from '@/lib/router-compat';
 import { Shield, CheckCircle, XCircle, Download, Printer, Calendar, Award } from 'lucide-react';
 import { useCertificateByCode } from '@/hooks/useCertificates';
 import { Button } from '@/components/ui/button';

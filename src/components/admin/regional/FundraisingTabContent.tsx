@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import FundraisingCampaignRowActions from "@/components/admin/regional/finances/FundraisingCampaignRowActions";
 import { Input } from "@/components/ui/input";

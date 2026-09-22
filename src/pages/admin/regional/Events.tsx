@@ -12,7 +12,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText, Star, Layers, Target, Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@/lib/router-compat";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { RecurrenceSettings } from "@/components/admin/events/RecurrenceSettings";
@@ -460,7 +460,7 @@ const RegionalEvents: React.FC = () => {
       }
 
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
-      let end_datetime = null;
+      let end_datetime: string | null = null;
       
       if (values.end_date) {
         const endTime = values.end_time || values.start_time;
@@ -678,7 +678,7 @@ const RegionalEvents: React.FC = () => {
       if (values.speakers && values.speakers.length > 0 && createdEvent) {
         for (let i = 0; i < values.speakers.length; i++) {
           const speaker = values.speakers[i];
-          let speakerPhotoUrl = null;
+          let speakerPhotoUrl: string | null = null;
 
           // Upload speaker photo if provided
           if (speaker.photo) {
@@ -1199,7 +1199,7 @@ const RegionalEvents: React.FC = () => {
       }
 
       const start_datetime = new Date(`${values.start_date}T${values.start_time}`).toISOString();
-      let end_datetime = null;
+      let end_datetime: string | null = null;
       
       if (values.end_date) {
         const endTime = values.end_time || values.start_time;
@@ -1275,7 +1275,7 @@ const RegionalEvents: React.FC = () => {
           role_fr: t.role_fr || null,
           content: t.content,
           content_fr: t.content_fr || null,
-          rating: t.rating,
+        rating: t.rating ?? 5,
           display_order: index,
           status: 'approved',
         }));
@@ -1823,7 +1823,7 @@ const RegionalEvents: React.FC = () => {
             <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error loading events</AlertTitle>
-              <AlertDescription>{error instanceof Error ? error.message : "An unknown error occurred."}</AlertDescription>
+               <AlertDescription>{String(error || "An unknown error occurred.")}</AlertDescription>
             </Alert>
           )}
           <div className="rounded-xl border border-border/40 overflow-hidden">

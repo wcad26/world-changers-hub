@@ -304,7 +304,7 @@ const RecordExpenseDialog: React.FC<RecordExpenseDialogProps> = ({
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-[--radix-popover-trigger-width] p-0"
+                          className="w-[var(--radix-popover-trigger-width)] p-0"
                           align="start"
                         >
                           <Command className="max-h-80">

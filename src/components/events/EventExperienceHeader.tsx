@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { format, isFuture, isToday } from "date-fns";
 import Autoplay from "embla-carousel-autoplay";
 import { CalendarDays, Clock3, MapPin, MessageCircle, Share2, Sparkles, UserPlus } from "lucide-react";
@@ -31,7 +31,7 @@ export function EventExperienceHeader({ event }: EventExperienceHeaderProps) {
   }, [event.image_url, event.image_url_fr, eventImages, language]);
 
   const shareEvent = async () => {
-    const payload = { title: eventName, url: window.location.href };
+    const payload: ShareData = { title: eventName ?? event.name ?? 'WCA Event', url: window.location.href };
     if (navigator.share) {
       await navigator.share(payload).catch(() => undefined);
       return;

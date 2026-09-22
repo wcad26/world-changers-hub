@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { Calendar, MessageCircle, Ticket, UserPlus } from "lucide-react";
 import { Event } from "@/hooks/useEvents";
@@ -72,7 +72,7 @@ export function EventRegistrationSection({ event }: EventRegistrationSectionProp
                 {event.registration_url && (
                   <Button 
                     className="w-full bg-[#542a8f] hover:bg-[#542a8f]/90 text-white py-7 text-lg font-semibold transition-all hover:scale-105"
-                    onClick={() => window.open(event.registration_url, '_blank')}
+                    onClick={() => window.open(event.registration_url ?? undefined, '_blank')}
                   >
                     <Calendar className="mr-2 h-5 w-5" />
                     {t('registerForEvent')}

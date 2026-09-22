@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@/lib/router-compat";
 import { isFuture } from "date-fns";
 import { ArrowRight, CalendarDays, Check, MessageCircle, ShieldCheck, UserPlus } from "lucide-react";
 import type { Event } from "@/hooks/useEvents";

@@ -113,7 +113,7 @@ const CampaignDetailsDialog: React.FC<CampaignDetailsDialogProps> = ({
                   {campaign.status}
                 </Badge>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(campaign.start_date).toLocaleDateString()} - {new Date(campaign.end_date).toLocaleDateString()}
+                  {campaign.start_date ? new Date(campaign.start_date).toLocaleDateString() : 'Not set'} - {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'Not set'}
                 </p>
               </CardContent>
             </Card>

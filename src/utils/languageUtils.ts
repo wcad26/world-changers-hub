@@ -3,6 +3,7 @@ const LANGUAGE_STORAGE_KEY = 'user-language-preference';
 export type SupportedLanguage = 'en' | 'fr';
 
 export function detectBrowserLanguage(): SupportedLanguage {
+  if (typeof window === 'undefined') return 'en';
   // Check localStorage first for cached preference
   const cached = localStorage.getItem(LANGUAGE_STORAGE_KEY);
   if (cached === 'fr' || cached === 'en') {
@@ -22,6 +23,7 @@ export function detectBrowserLanguage(): SupportedLanguage {
 }
 
 export function setLanguagePreference(language: SupportedLanguage) {
+  if (typeof window === 'undefined') return;
   localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
 }
 

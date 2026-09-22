@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
+import { Link, useLocation, Outlet, useNavigate } from '@/lib/router-compat';
 import { cn } from '@/lib/utils';
 import {
   SidebarProvider,

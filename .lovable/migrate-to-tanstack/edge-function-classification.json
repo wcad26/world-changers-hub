@@ -1,0 +1,33 @@
+{
+  "outcomes": [
+    { "name": "attendance-mark-present", "classification": "internal-only", "outcome": "stay", "reason": "Preserved on Supabase to avoid changing working privileged attendance logic during the framework migration." },
+    { "name": "attendance-scan-resolve", "classification": "internal-only", "outcome": "stay", "reason": "Preserved on Supabase to avoid changing working privileged attendance logic during the framework migration." },
+    { "name": "backfill-auth-users", "classification": "internal-only privileged", "outcome": "stay", "reason": "Uses service-role auth administration." },
+    { "name": "create-member-registration", "classification": "internal-only public write", "outcome": "stay", "reason": "Complex public registration and auth provisioning remains on Supabase." },
+    { "name": "create-member", "classification": "internal-only privileged", "outcome": "stay", "reason": "Uses service-role auth administration." },
+    { "name": "create-regional-admin", "classification": "internal-only privileged", "outcome": "stay", "reason": "Uses service-role auth administration." },
+    { "name": "create-visitor", "classification": "internal-only public write", "outcome": "stay", "reason": "Complex public registration and auth provisioning remains on Supabase." },
+    { "name": "delete-user", "classification": "internal-only privileged", "outcome": "stay", "reason": "Uses service-role auth administration." },
+    { "name": "event-fee-quote", "classification": "internal-only", "outcome": "stay", "reason": "Shares mature event pricing logic with registration." },
+    { "name": "event-feedback-submit", "classification": "internal-only public write", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "event-pre-register-lookup", "classification": "internal-only public lookup", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "event-pre-register", "classification": "internal-only public write", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "event-special-register", "classification": "internal-only privileged", "outcome": "stay", "reason": "Complex family and fee business logic remains on Supabase." },
+    { "name": "fundraising-lookup", "classification": "internal-only public lookup", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "fundraising-public-donate", "classification": "internal-only public write", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "fundraising-public-pledge", "classification": "internal-only public write", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "generate-certificates", "classification": "unknown Deno-only", "outcome": "stay", "reason": "Deno canvas dependency and no confirmed caller." },
+    { "name": "generate-recurring-events", "classification": "cron target", "outcome": "stay", "reason": "Scheduled daily generation must remain externally reachable." },
+    { "name": "get-bible-content", "classification": "internal-only", "outcome": "stay", "reason": "No backend move is required for event metadata." },
+    { "name": "get-maps-config", "classification": "internal-only", "outcome": "stay", "reason": "No backend move is required for event metadata." },
+    { "name": "profile-update-lookup", "classification": "internal-only privileged", "outcome": "stay", "reason": "Signed-token workflow remains on Supabase." },
+    { "name": "profile-update-submit", "classification": "internal-only privileged", "outcome": "stay", "reason": "Signed-token workflow remains on Supabase." },
+    { "name": "provision-auth-user", "classification": "internal-only privileged", "outcome": "stay", "reason": "Uses service-role auth administration." },
+    { "name": "request-password-reset", "classification": "internal-only public write", "outcome": "stay", "reason": "Email and service-role workflow remains on Supabase." },
+    { "name": "resend-webhook", "classification": "webhook receiver", "outcome": "stay", "reason": "External Resend callback must remain reachable." },
+    { "name": "self-attendance", "classification": "internal-only public write", "outcome": "stay", "reason": "Working public endpoint remains on Supabase." },
+    { "name": "send-admin-invitation", "classification": "internal-only", "outcome": "stay", "reason": "Called by another Supabase function." },
+    { "name": "send-certificate-emails", "classification": "internal-only privileged", "outcome": "stay", "reason": "Email workflow remains on Supabase." },
+    { "name": "verify-otp-and-reset-password", "classification": "internal-only public write", "outcome": "stay", "reason": "Password workflow remains on Supabase." }
+  ]
+}

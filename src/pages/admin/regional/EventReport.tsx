@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "@/lib/router-compat";
 import { useAuth } from "@/hooks/useAuth";
 import EventReportView from "@/components/admin/EventReportView";
 import { Skeleton } from "@/components/ui/skeleton";
