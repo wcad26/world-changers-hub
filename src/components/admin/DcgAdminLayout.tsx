@@ -176,7 +176,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
           </h1>
         </div>
 
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="bg-primary text-primary-foreground shrink-0">
               <Menu className="h-5 w-5" />
@@ -228,7 +228,7 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
               </div>
             </nav>
           </SheetContent>
-        </Sheet>
+        </Sheet></div>
       </header>
 
       {/* Main content */}

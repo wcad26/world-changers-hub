@@ -231,7 +231,7 @@ const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuIt
             {pageTitle}
           </h1>
         </div>
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
               <Menu className="h-5 w-5" />
@@ -281,7 +281,7 @@ const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuIt
               </Button>
             </div>
           </SheetContent>
-        </Sheet>
+        </Sheet></div>
       </header>
 
       {/* Main content — clears top bar (h-14) and bottom pill */}

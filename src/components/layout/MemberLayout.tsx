@@ -178,7 +178,7 @@ export default function MemberLayout({
             </div>
           )}
         </div>
-        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="bg-primary text-primary-foreground">
               <Menu className="h-5 w-5" />
@@ -225,7 +225,7 @@ export default function MemberLayout({
                 </div>
               </nav>
             </SheetContent>
-          </Sheet>
+          </Sheet></div>
       </header>
 
       {/* Main content - pt-14 for fixed header, pb-24 for fixed bottom nav */}

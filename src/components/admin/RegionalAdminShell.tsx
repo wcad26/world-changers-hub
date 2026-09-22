@@ -201,7 +201,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
         <div className="min-w-0 flex-1">
           <h1 className="text-base font-semibold text-foreground truncate">{pageTitle}</h1>
         </div>
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>
             <Button size="icon" className="shrink-0 bg-primary text-primary-foreground hover:bg-primary/90">
               <Menu className="h-5 w-5" />
@@ -254,7 +254,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
               </Button>
             </div>
           </SheetContent>
-        </Sheet>
+        </Sheet></div>
       </header>
 
       <main className={cn('flex-1 pt-14', isDashboard ? 'pb-24' : 'pb-24 px-4 py-4')}>
