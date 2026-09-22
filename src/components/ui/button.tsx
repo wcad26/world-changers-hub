@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 active:translate-y-px [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -18,9 +18,9 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        soft: "bg-gradient-to-r from-slate-50/90 to-blue-50/80 backdrop-blur-sm border border-slate-200/60 text-slate-700 shadow-lg hover:shadow-xl hover:from-blue-50/90 hover:to-indigo-50/80 hover:border-blue-200/70 hover:text-slate-800 transition-all duration-300 hover:scale-[1.02]",
-        modern: "bg-gradient-to-r from-violet-100/80 to-purple-100/60 border border-violet-200/50 text-violet-900 hover:from-violet-200/90 hover:to-purple-200/70 hover:border-violet-300/60 hover:text-violet-950 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5",
-        elegant: "bg-gradient-to-r from-gray-100/70 to-slate-100/50 backdrop-blur-md border border-gray-200/40 text-gray-700 hover:from-gray-200/80 hover:to-slate-200/60 hover:border-gray-300/50 hover:text-gray-900 shadow-lg hover:shadow-xl transition-all duration-300",
+        soft: "border border-primary/15 bg-primary/8 text-primary shadow-xs hover:bg-primary/14",
+        modern: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md",
+        elegant: "border border-border bg-card text-card-foreground shadow-sm hover:border-primary/30 hover:bg-accent",
       },
       size: {
         default: "h-10 px-4 py-2",
