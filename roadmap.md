@@ -28,3 +28,11 @@
 - [x] Route loader + region-specific social/search preview tags
 - [x] Heritage Modernism rebuild of RegionalBranchHome (hero carousel, stats, about, events, places, DCGs, contact, newsletter)
 - [x] Verified 390/1280, French, hero photos, 404 page, build + typecheck clean
+
+# Restore published public pages
+
+- [x] Identify the production-only Supabase realtime startup crash
+- [x] Upgrade Supabase to the Worker-compatible release
+- [x] Preload resilient homepage content and featured events
+- [x] Remove the regional portal's cached-state hydration mismatch
+- [ ] Verify public routes, responsive homepage rendering, and production publication

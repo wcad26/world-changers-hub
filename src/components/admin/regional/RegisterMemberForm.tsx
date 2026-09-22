@@ -178,7 +178,7 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
           }
 
           // Handle spiritual fields via direct member update
-          const memberUpdates: Record<string, any> = {};
+          const memberUpdates: Database['public']['Tables']['members']['Update'] = {};
           if (values.has_completed_foundation_school === 'yes') {
             memberUpdates.membership_class_completed = true;
             if (values.foundation_school_date) memberUpdates.foundation_school_date = values.foundation_school_date;

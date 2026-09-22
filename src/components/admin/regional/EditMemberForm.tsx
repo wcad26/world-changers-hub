@@ -181,7 +181,7 @@ const EditMemberForm: React.FC<EditMemberFormProps> = ({ member, onSuccess }) =>
       }
 
       // Update member record
-      const memberUpdate: Record<string, any> = {
+      const memberUpdate: Database['public']['Tables']['members']['Update'] = {
         member_type: data.member_type,
         status: data.status || 'active',
         preferred_service_areas: data.ministry_interests || [],
