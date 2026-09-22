@@ -71,7 +71,7 @@ const editMemberSchema = z.object({
   is_baptized: z.string().optional(),
   baptism_date: z.string().optional(),
   ministry_interests: z.array(z.string()).optional(),
-  status: z.string().optional(),
+  status: z.enum(['active', 'inactive', 'new', 'transferred']).optional(),
 });
 
 type EditMemberFormData = z.infer<typeof editMemberSchema>;
