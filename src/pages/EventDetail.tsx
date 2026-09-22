@@ -1,4 +1,4 @@
-import { Link } from "@/lib/router-compat";
+import { Link, useParams } from "@/lib/router-compat";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/useLanguage";
 import { publicEventQueryOptions } from "@/lib/public-event.functions";
@@ -15,7 +15,7 @@ import { EventFAQ } from "@/components/events/EventFAQ";
 import { ArrowLeft } from "lucide-react";
 
 export default function EventDetail() {
-  const { eventId } = Route.useParams();
+  const { eventId } = useParams<{ eventId: string }>();
   const { data } = useSuspenseQuery(publicEventQueryOptions(eventId));
   const event = data.event;
   const { t } = useLanguage();
@@ -60,5 +60,3 @@ export default function EventDetail() {
     </div>
   );
 }
-
-import { Route } from "@/routes/events.$eventId";

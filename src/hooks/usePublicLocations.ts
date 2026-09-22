@@ -58,7 +58,11 @@ export const usePublicLocations = () => {
           `)
           .in('name', dcgLocationNames);
 
-        if (!dcgError && dcgs) {
+        if (dcgError) {
+          throw dcgError;
+        }
+
+        if (dcgs) {
           // Get member counts for each DCG
           const dcgIds = dcgs.map(dcg => dcg.id);
           const { data: memberCounts } = await supabase
@@ -72,8 +76,6 @@ export const usePublicLocations = () => {
             ...dcg,
             member_count: memberCounts?.filter(m => m.dcg_id === dcg.id).length || 0
           }));
-        } else {
-          console.error('Error fetching DCG data:', dcgError);
         }
       }
 
