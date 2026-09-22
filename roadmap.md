@@ -36,3 +36,6 @@
 - [x] Preload resilient homepage content and featured events
 - [x] Remove the regional portal's cached-state hydration mismatch
 - [x] Verify public routes, responsive homepage rendering, and request production publication
+
+# DCG portal access
+- [x] Grant every DCG leader and assistant full DCG portal access (role, session, finances)
