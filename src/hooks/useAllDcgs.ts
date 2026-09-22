@@ -23,7 +23,7 @@ export const useAllDcgs = () => {
     queryFn: async () => {
       const { data: dcgsData, error } = await supabase
         .from('dcgs')
-        .select('*, leader:leader_id(profiles:profiles(first_name, last_name)), regions:region_id(id, name, code)')
+        .select('*, leader:members!dcgs_leader_id_fkey(profiles:profiles!members_profile_id_fkey(first_name, last_name)), regions:regions!dcgs_region_id_fkey(id, name, code)')
         .order('name', { ascending: true });
 
       if (error) throw error;

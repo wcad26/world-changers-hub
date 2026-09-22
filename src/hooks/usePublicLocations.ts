@@ -74,6 +74,7 @@ export const usePublicLocations = () => {
           // Map member counts to DCGs
           dcgData = dcgs.map(dcg => ({
             ...dcg,
+            leader: dcg.leader?.profiles ?? undefined,
             member_count: memberCounts?.filter(m => m.dcg_id === dcg.id).length || 0
           }));
         }

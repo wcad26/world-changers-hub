@@ -67,7 +67,7 @@ export const useRegionalDcgReports = (filters?: DcgReportFilters) => {
       // 1. Get DCGs
       let dcgQuery = supabase
         .from('dcgs')
-        .select('id, name, leader_id, leader:leader_id(profiles:profiles(first_name, last_name))')
+        .select('id, name, leader_id, leader:members!dcgs_leader_id_fkey(profiles:profiles!members_profile_id_fkey(first_name, last_name))')
         .eq('region_id', regionId);
       
       if (filters?.dcgId) {

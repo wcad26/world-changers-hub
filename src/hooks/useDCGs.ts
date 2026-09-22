@@ -42,7 +42,7 @@ export const useDcgs = () => {
       // Fetch DCGs with leader info
       const { data: dcgsData, error: dcgsError } = await supabase
         .from('dcgs')
-        .select('*, leader:leader_id(profiles:profiles(first_name, last_name))')
+        .select('*, leader:members!dcgs_leader_id_fkey(profiles:profiles!members_profile_id_fkey(first_name, last_name))')
         .eq('region_id', regionId)
         .order('name', { ascending: true });
 
