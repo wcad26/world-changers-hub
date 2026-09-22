@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useOccupations } from '@/hooks/useOccupations';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Loader2, CalendarIcon, Search, User, BookOpen, Heart, Users, Church, Plus, X, Check, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';

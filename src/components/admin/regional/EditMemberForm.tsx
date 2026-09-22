@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import type { MemberWithProfile } from '@/hooks/useMembers';
 import { useMembers } from '@/hooks/useMembers';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
