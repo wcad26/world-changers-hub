@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerFn } from "@tanstack/react-start";
 import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
+import { generateSlug } from "@/utils/slugUtils";
 
 function createPublicClient() {
   const url = process.env["SUPABASE_URL"];
