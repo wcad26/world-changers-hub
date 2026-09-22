@@ -236,7 +236,7 @@ export default function RegionalBranchHome() {
         {/* Editorial hero */}
         <section className="relative min-h-[74svh] border-b border-event-border bg-event-background text-event-foreground sm:min-h-[78svh]">
           {slides.length > 0 ? (
-            <Carousel className="absolute inset-0 h-full w-full" opts={{ align: "start", loop: slides.length > 1 }} plugins={slides.length > 1 ? [Autoplay({ delay: 6000 })] : []}>
+            <Carousel className="absolute inset-0 h-full w-full [&>div]:h-full" opts={{ align: "start", loop: slides.length > 1 }} plugins={slides.length > 1 ? [Autoplay({ delay: 6000 })] : []}>
               <CarouselContent className="-ml-0 h-full">
                 {slides.map((slide, index) => (
                   <CarouselItem key={index} className="relative h-full pl-0">
