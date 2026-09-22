@@ -14,11 +14,11 @@ export function EventSpeakers({ eventId }: EventSpeakersProps) {
 
   if (isLoading) {
     return (
-      <section className="py-10 bg-background">
+      <section className="border-t border-event-border bg-event-background py-16">
         <div className="container-custom">
           <div className="text-center mb-12">
-            <div className="h-10 w-48 bg-muted animate-pulse rounded mx-auto mb-4" />
-            <div className="h-6 w-96 bg-muted animate-pulse rounded mx-auto" />
+            <div className="h-10 w-48 bg-event-elevated animate-pulse rounded mx-auto mb-4" />
+            <div className="h-6 w-72 bg-event-elevated animate-pulse rounded mx-auto" />
           </div>
         </div>
       </section>
@@ -30,14 +30,14 @@ export function EventSpeakers({ eventId }: EventSpeakersProps) {
   }
 
   return (
-    <section className="py-10 bg-gradient-to-b from-background to-muted/20">
+    <section className="border-t border-event-border bg-event-surface py-16 md:py-20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
-          <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="font-sora text-3xl font-bold text-event-foreground md:text-4xl">
             {t('meetSpeakers')}
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Learn from industry experts and thought leaders
+          <p className="mt-3 text-event-muted max-w-2xl mx-auto">
+            {t('meetSpeakers')}
           </p>
         </div>
 
@@ -50,26 +50,26 @@ export function EventSpeakers({ eventId }: EventSpeakersProps) {
             return (
               <div
                 key={speaker.id}
-                className="glass-panel-soft p-6 hover:scale-105 transition-all duration-300 animate-fade-in-up"
+                className="rounded-lg border border-event-border bg-event-background p-6 transition-colors duration-300 hover:border-primary/60"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <div className="flex flex-col items-center mb-4">
-                  <Avatar className="w-32 h-32 mb-4 ring-4 ring-primary/20">
+                  <Avatar className="w-28 h-28 mb-4 ring-2 ring-primary/40">
                     <AvatarImage src={speaker.photo_url} alt={name as string} />
-                    <AvatarFallback className="text-2xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
+                    <AvatarFallback className="event-gradient text-2xl text-primary-foreground">
                       {(name as string).split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   
-                  <h3 className="text-xl font-bold text-center mb-2">{name}</h3>
-                  <Badge variant="outline" className="mb-3">
+                  <h3 className="font-sora text-xl font-bold text-center text-event-foreground mb-2">{name}</h3>
+                  <Badge variant="outline" className="mb-3 border-event-border text-event-muted">
                     <Users className="h-3 w-3 mr-1" />
                     {title}
                   </Badge>
                 </div>
 
                 {bio && (
-                  <p className="text-sm text-muted-foreground text-center mb-4 line-clamp-4">
+                  <p className="text-sm text-event-muted text-center mb-4 line-clamp-4">
                     {bio}
                   </p>
                 )}

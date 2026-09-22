@@ -19,7 +19,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
 
   if (isLoading) {
     return (
-      <section className="py-10 bg-gradient-to-b from-background to-muted/20">
+      <section className="border-t border-event-border bg-event-background py-16">
         <div className="container-custom">
           <div className="text-center mb-12">
             <Skeleton className="h-16 w-16 rounded-full mx-auto mb-6" />
@@ -28,7 +28,7 @@ export function EventFAQ({ eventId }: EventFAQProps) {
           </div>
           <div className="max-w-3xl mx-auto space-y-4">
             {[1, 2, 3, 4, 5].map((i) => (
-              <Skeleton key={i} className="h-16" />
+              <Skeleton key={i} className="h-16 bg-event-elevated" />
             ))}
           </div>
         </div>
@@ -42,16 +42,16 @@ export function EventFAQ({ eventId }: EventFAQProps) {
   }
 
   return (
-    <section className="py-10 bg-gradient-to-b from-background to-muted/20">
+    <section className="border-t border-event-border bg-event-background py-16 md:py-20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent mb-6">
-            <HelpCircle className="h-8 w-8 text-white" />
+          <div className="event-gradient inline-flex items-center justify-center w-12 h-12 rounded-md mb-5">
+            <HelpCircle className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="font-sora text-3xl font-bold text-event-foreground md:text-4xl">
             {t('faq')}
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-3 text-event-muted max-w-2xl mx-auto">
             {t('faqSubtitle')}
           </p>
         </div>
@@ -71,13 +71,13 @@ export function EventFAQ({ eventId }: EventFAQProps) {
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className="glass-panel-soft border-none animate-fade-in-up"
+                  className="rounded-lg border border-event-border bg-event-surface px-1"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
-                  <AccordionTrigger className="px-6 py-4 hover:no-underline hover:text-primary transition-colors">
+                  <AccordionTrigger className="px-5 py-4 text-event-foreground hover:no-underline hover:text-accent transition-colors">
                     <span className="text-left font-semibold text-base">{question}</span>
                   </AccordionTrigger>
-                  <AccordionContent className="px-6 pb-4 text-muted-foreground text-justify">
+                  <AccordionContent className="px-5 pb-5 leading-7 text-event-muted">
                     {answer}
                   </AccordionContent>
                 </AccordionItem>

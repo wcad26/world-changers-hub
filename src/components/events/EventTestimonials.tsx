@@ -12,44 +12,9 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
   const { data: testimonials, isLoading } = useEventTestimonials(eventId);
   const { t, localizedField } = useLanguage();
 
-  // Fallback testimonials if none exist for this event
-  const defaultTestimonials = [
-    {
-      name: "Sarah Johnson",
-      name_fr: "Sarah Johnson",
-      role: "Previous Attendee",
-      role_fr: "Ancienne participante",
-      content: "This event exceeded all my expectations. The organization was flawless, and I learned so much from the sessions!",
-      content_fr: "Cet événement a dépassé toutes mes attentes. L'organisation était impeccable et j'ai tellement appris des sessions !",
-      rating: 5,
-    },
-    {
-      name: "Michael Chen",
-      name_fr: "Michael Chen",
-      role: "Community Member",
-      role_fr: "Membre de la communauté",
-      content: "Amazing experience! Met wonderful people and gained valuable insights. Can't wait for the next one.",
-      content_fr: "Une expérience incroyable ! J'ai rencontré des personnes formidables et acquis des connaissances précieuses. J'attends le prochain avec impatience.",
-      rating: 5,
-    },
-    {
-      name: "Emily Rodriguez",
-      name_fr: "Emily Rodriguez",
-      role: "First-time Participant",
-      role_fr: "Participante pour la première fois",
-      content: "As a first-timer, I was warmly welcomed. The event was well-structured and incredibly enriching.",
-      content_fr: "En tant que nouvelle participante, j'ai été chaleureusement accueillie. L'événement était bien structuré et incroyablement enrichissant.",
-      rating: 5,
-    },
-  ];
-
-  const displayTestimonials = testimonials && testimonials.length > 0 
-    ? testimonials 
-    : defaultTestimonials;
-
   if (isLoading) {
     return (
-      <section className="py-10 bg-muted/20">
+      <section className="border-t border-event-border bg-event-surface py-16">
         <div className="container-custom">
           <div className="text-center mb-12">
             <Skeleton className="h-10 w-64 mx-auto mb-4" />
@@ -57,7 +22,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-64" />
+              <Skeleton key={i} className="h-64 bg-event-elevated" />
             ))}
           </div>
         </div>
@@ -65,20 +30,22 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
     );
   }
 
+  if (!testimonials || testimonials.length === 0) return null;
+
   return (
-    <section className="py-10 bg-muted/20">
+    <section className="border-t border-event-border bg-event-surface py-16 md:py-20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
-          <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="font-sora text-3xl font-bold text-event-foreground md:text-4xl">
             {t('testimonials')}
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-3 text-event-muted max-w-2xl mx-auto">
             {t('testimonialsDescription')}
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {displayTestimonials.map((testimonial, index) => {
+          {testimonials.map((testimonial, index) => {
             const name = 'name_fr' in testimonial
               ? (localizedField(testimonial.name, (testimonial as any).name_fr) as string)
               : testimonial.name;
@@ -92,7 +59,7 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
             return (
               <div
                 key={index}
-                className="glass-panel-soft p-8 hover:scale-105 transition-all duration-300 animate-fade-in-up"
+                className="rounded-lg border border-event-border bg-event-background p-7 transition-colors hover:border-primary/60"
                 style={{ animationDelay: `${index * 150}ms` }}
               >
                 <Quote className="h-10 w-10 text-primary/30 mb-4" />
@@ -103,19 +70,19 @@ export function EventTestimonials({ eventId }: EventTestimonialsProps) {
                   ))}
                 </div>
 
-                <p className="text-muted-foreground mb-6 italic leading-relaxed text-justify">
+                <p className="text-event-muted mb-6 italic leading-relaxed">
                   "{content}"
                 </p>
 
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border-2 border-primary/20">
-                    <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white">
+                    <AvatarFallback className="event-gradient text-primary-foreground">
                       {name.split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold">{name}</p>
-                    <p className="text-sm text-muted-foreground">{role}</p>
+                    <p className="font-semibold text-event-foreground">{name}</p>
+                    <p className="text-sm text-event-muted">{role}</p>
                   </div>
                 </div>
               </div>

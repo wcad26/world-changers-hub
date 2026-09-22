@@ -19,13 +19,13 @@ export function RelatedEventsCarousel({ currentEventId }: RelatedEventsCarouselP
   if (isLoading || relatedEvents.length === 0) return null;
 
   return (
-    <section className="py-20 bg-gradient-to-b from-muted/20 to-background">
+    <section className="border-t border-event-border bg-event-surface py-16 md:py-20">
       <div className="container-custom">
         <div className="text-center mb-12 animate-fade-in-up">
-          <h2 className="text-fluid-3xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 className="font-sora text-3xl font-bold text-event-foreground md:text-4xl">
             More Events You Might Like
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-3 text-event-muted max-w-2xl mx-auto">
             Discover other exciting events happening soon
           </p>
         </div>
@@ -41,7 +41,7 @@ export function RelatedEventsCarousel({ currentEventId }: RelatedEventsCarouselP
             {relatedEvents.map((event) => (
               <CarouselItem key={event.id} className="md:basis-1/2 lg:basis-1/3">
                 <Link to={`/events/${event.slug || event.id}`}>
-                  <Card className="card-soft h-full hover:scale-105 transition-all duration-300 overflow-hidden group">
+                  <Card className="h-full overflow-hidden rounded-lg border-event-border bg-event-background text-event-foreground transition-colors group hover:border-primary/60">
                     {event.image_url && (
                       <div className="overflow-hidden h-48">
                         <img
@@ -54,20 +54,20 @@ export function RelatedEventsCarousel({ currentEventId }: RelatedEventsCarouselP
                     <CardHeader>
                       <div className="flex items-center gap-2 mb-2">
                         {event.is_featured && (
-                          <Badge className="bg-gradient-to-r from-accent to-primary text-white">
+                          <Badge className="event-gradient text-primary-foreground">
                             Featured
                           </Badge>
                         )}
                         {event.category && (
-                          <Badge variant="outline">{event.category}</Badge>
+                          <Badge variant="outline" className="border-event-border text-event-muted">{event.category}</Badge>
                         )}
                       </div>
-                      <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
+                      <CardTitle className="font-sora line-clamp-2 group-hover:text-accent transition-colors">
                         {event.name}
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="space-y-2 text-sm text-event-muted">
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-primary" />
                           {format(new Date(event.start_datetime), "PPP")}
@@ -85,8 +85,8 @@ export function RelatedEventsCarousel({ currentEventId }: RelatedEventsCarouselP
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="hidden md:flex" />
-          <CarouselNext className="hidden md:flex" />
+          <CarouselPrevious className="hidden border-event-border bg-event-background text-event-foreground hover:bg-event-elevated md:flex" />
+          <CarouselNext className="hidden border-event-border bg-event-background text-event-foreground hover:bg-event-elevated md:flex" />
         </Carousel>
       </div>
     </section>
