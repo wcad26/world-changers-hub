@@ -16,7 +16,7 @@ const defaultMission = {
   title: 'Our Mission',
   description: 'We are committed to building a network of fellowships that are spiritually, intellectually, and economically empowered to bring positive change.',
   missions: [
-    { icon: 'Users', title: 'Win, Train, Transform', description: 'Win the lost at all cost, train them as ministers, transform and empower them into effective leaders.', points: ['Outreach programs to reach the unreached', 'Comprehensive leadership training', 'Spiritual and professional development'] },
+    { icon: 'Target', title: 'Win, Train, Transform', description: 'Win the lost at all cost, train them as ministers, transform and empower them into effective leaders.', points: ['Outreach programs to reach the unreached', 'Comprehensive leadership training', 'Spiritual and professional development'] },
     { icon: 'Brain', title: 'Capacity Building', description: 'Promote capacity building for all leaders through education, mentorship, and practical experiences.', points: ['Skill development workshops', 'Mentorship programs', 'Educational resources'] },
     { icon: 'Shield', title: 'Accountability & Integrity', description: 'Ensure strict accountability for leadership transparency and integrity in all aspects.', points: ['Financial transparency', 'Ethical leadership training', 'Accountability structures'] },
   ],
@@ -114,8 +114,9 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="relative mt-12 grid gap-0 md:grid-cols-3">
-              <div className="absolute left-[16.66%] right-[16.66%] top-6 hidden h-px bg-border md:block" />
+            <h2 className="mt-14 text-center font-heading text-2xl font-bold uppercase tracking-[0.2em] text-foreground sm:text-3xl">OUR MISSION</h2>
+            <div className="relative mt-10 grid gap-0 md:grid-cols-3">
+              <div className="absolute inset-x-0 top-10 hidden h-px bg-border md:block" />
               {mission.missions.map((item: any, index: number) => (
                 <div key={item.title} className="relative border-b border-border py-7 md:border-b-0 md:px-7 md:py-4">
                   <div className="relative z-10 mb-6 grid h-12 w-12 place-items-center rounded-full border border-primary/25 bg-background text-primary shadow-sm">{renderIcon(item.icon, 'h-6 w-6')}</div>

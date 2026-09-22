@@ -2,7 +2,7 @@ import {
   Users, Target, Shield, Award, Check, Heart, Star, Globe, 
   Zap, Book, Trophy, Lightbulb, Handshake, MapPin, Phone,
   Mail, Calendar, Clock, ArrowRight, MessageCircle, Laptop,
-  Coffee, Camera, Music, Palette, Code, Briefcase, GraduationCap
+  Coffee, Camera, Music, Palette, Code, Briefcase, GraduationCap, Brain
 } from 'lucide-react';
 
 export const iconMapping: Record<string, React.ComponentType<any>> = {
@@ -33,7 +33,8 @@ export const iconMapping: Record<string, React.ComponentType<any>> = {
   Palette,
   Code,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  Brain
 };
 
 export const renderIcon = (iconName: string, className?: string) => {
