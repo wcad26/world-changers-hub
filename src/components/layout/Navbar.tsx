@@ -34,7 +34,7 @@ export default function Navbar() {
   const label = (item: { en: string; fr: string }) => language === "fr" ? item.fr : item.en;
   const isActive = (to: string) => to === "/" ? location.pathname === "/" : location.pathname.startsWith(to);
   const resourcesActive = resourceLinks.some(({ to }) => isActive(to));
-  const [resourcesOpen, setResourcesOpen] = useState(resourcesActive);
+  const [resourcesOpen, setResourcesOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/94 shadow-xs backdrop-blur-xl">
