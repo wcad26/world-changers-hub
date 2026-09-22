@@ -144,7 +144,7 @@ const Index = () => {
 
             <div className="mt-10 grid auto-rows-[minmax(190px,auto)] gap-4 sm:grid-cols-2 lg:grid-cols-12">
               {features.map((feature: any, index: number) => {
-                const sizes = ['lg:col-span-7 lg:row-span-2', 'lg:col-span-5', 'lg:col-span-5', 'lg:col-span-4', 'lg:col-span-4', 'lg:col-span-4'];
+                const sizes = ['sm:col-span-2 lg:col-span-12', 'lg:col-span-6', 'lg:col-span-6', 'lg:col-span-4', 'lg:col-span-4', 'lg:col-span-4'];
                 return (
                   <TiltSurface key={feature.title} className={`${sizes[index] || 'lg:col-span-4'} group`}>
                     <Link to={feature.link} className={`flex h-full min-h-48 flex-col justify-between overflow-hidden rounded-md border border-border bg-card p-6 shadow-card transition-colors hover:border-primary/35 ${index === 0 ? 'event-gradient text-event-foreground' : ''}`}>
