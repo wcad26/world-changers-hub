@@ -117,7 +117,7 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
   </div>
 );
 
-const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, goal, range, fc }) => {
+const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, donationCount = 0, donorCount = 0, goal, range, fc, daysInfo }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
   const { toast } = useToast();
