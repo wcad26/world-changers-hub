@@ -328,6 +328,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           )}
         </CollapsibleContent>
       </Collapsible>
+      )}
     </div>
   );
 };
