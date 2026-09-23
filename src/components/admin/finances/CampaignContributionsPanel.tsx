@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Wallet } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Users, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
