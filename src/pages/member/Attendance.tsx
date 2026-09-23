@@ -63,7 +63,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <Calendar className="h-5 w-5 text-chart-6" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
@@ -78,7 +78,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-600" />
+                <Users className="h-5 w-5 text-chart-5" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
@@ -93,7 +93,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-purple-600" />
+                <Heart className="h-5 w-5 text-chart-7" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
@@ -108,7 +108,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-orange-500" />
+                <Flame className="h-5 w-5 text-chart-3" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : attendanceData?.streak || 0}
@@ -139,27 +139,27 @@ export default function MemberAttendance() {
               bottom: 5
             }}>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{
-                fill: 'hsl(var(--muted-foreground))',
+                fill: 'var(--muted-foreground)',
                 fontSize: 12
               }} />
                   <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{
-                fill: 'hsl(var(--muted-foreground))',
+                fill: 'var(--muted-foreground)',
                 fontSize: 12
               }} tickFormatter={value => `${value}%`} width={45} />
                   <Tooltip cursor={{
-                fill: 'hsl(var(--muted))',
+                fill: 'var(--muted)',
                 opacity: 0.3
               }} contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }} labelStyle={{
-                color: 'hsl(var(--foreground))',
+                color: 'var(--foreground)',
                 fontWeight: 600
               }} formatter={(value: number) => [`${value}%`, 'Attendance']} />
                   <Bar dataKey="rate" radius={[6, 6, 0, 0]} maxBarSize={50}>
-                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'hsl(var(--primary))' : entry.rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'} />)}
+                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'var(--chart-5)' : entry.rate >= 80 ? 'var(--chart-3)' : 'var(--chart-4)'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -168,15 +168,15 @@ export default function MemberAttendance() {
           </div>
           <div className="flex-col md:flex-row gap-2 md:gap-6 mt-4 text-sm flex items-start justify-center">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-primary" />
+              <div className="w-3 h-3 rounded-sm bg-chart-5" />
               <span className="text-muted-foreground">Excellent (90%+)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-primary/70" />
+              <div className="w-3 h-3 rounded-sm bg-chart-3" />
               <span className="text-muted-foreground">Good (80-89%)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-muted-foreground/50" />
+              <div className="w-3 h-3 rounded-sm bg-chart-4" />
               <span className="text-muted-foreground">Needs Improvement</span>
             </div>
           </div>

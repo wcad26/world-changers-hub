@@ -75,18 +75,21 @@ const DcgOverviewTab = () => {
           label="Total DCGs"
           value={totalDcgs}
           isLoading={dataLoading}
+          tone="violet"
         />
         <GlassKPICard
           icon={<Users className="h-5 w-5" />}
           label="Total Members"
           value={totalMembers}
           isLoading={dataLoading || statsLoading}
+          tone="primary"
         />
         <GlassKPICard
           icon={<BarChart3 className="h-5 w-5" />}
           label="Avg Attendance"
           value={avgAttendance > 0 ? `${avgAttendance}%` : 'N/A'}
           isLoading={dataLoading || statsLoading}
+          tone="blue"
         />
       </div>
 

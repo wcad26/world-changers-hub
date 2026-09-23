@@ -108,7 +108,7 @@ const LocationsTab: React.FC<LocationsTabProps> = ({ selectedPeriod }) => {
                 <XAxis dataKey="city" fontSize={10} />
                 <YAxis fontSize={10} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Locations" />
+                <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} name="Locations" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

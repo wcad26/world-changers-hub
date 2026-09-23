@@ -52,7 +52,7 @@ const FundraisingAnalyticsChart: React.FC = () => {
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip formatter={(value) => [fc(Number(value)), 'Amount Raised']} />
-              <Line type="monotone" dataKey="raised" stroke="#8884d8" strokeWidth={2} />
+              <Line type="monotone" dataKey="raised" stroke="var(--chart-5)" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -73,8 +73,8 @@ const FundraisingAnalyticsChart: React.FC = () => {
                 fc(Number(value)),
                 name === 'raised' ? 'Raised' : 'Goal'
               ]} />
-              <Bar dataKey="raised" fill="#8884d8" />
-              <Bar dataKey="goal" fill="#82ca9d" opacity={0.6} />
+              <Bar dataKey="raised" fill="var(--chart-5)" />
+              <Bar dataKey="goal" fill="var(--chart-3)" opacity={0.6} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

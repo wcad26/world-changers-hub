@@ -22,7 +22,7 @@ interface MembersTabProps {
   selectedPeriod: string;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)', 'var(--chart-7)', 'var(--chart-neutral)'];
 
 const GlassCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl shadow-sm p-5 hover:shadow-md transition-all duration-300">
@@ -337,12 +337,13 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
           </CardHeader>
           <CardContent>
             {genderData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={42} outerRadius={76} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
                     {genderData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }} formatter={(value: number, name: string) => [`${value} (${Math.round((value / Math.max(1, genderData.reduce((sum, item) => sum + item.value, 0))) * 100)}%)`, name]} />
+                  <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: '20px' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -364,8 +365,8 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
                 <YAxis fontSize={10} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="members" fill="hsl(var(--primary))" name="Members" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="visitors" fill="hsl(var(--secondary))" name="Visitors" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="members" fill="var(--chart-1)" name="Members" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="visitors" fill="var(--chart-2)" name="Visitors" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

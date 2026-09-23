@@ -37,7 +37,7 @@ const ageGroup = (age: number | null): AgeGroup => {
   return "child";
 };
 
-const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+const COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-6)", "var(--chart-5)", "var(--chart-7)", "var(--chart-8)", "var(--chart-4)"];
 const ALLERGEN_KEYWORDS = ["nut", "peanut", "gluten", "dairy", "milk", "lactose", "shellfish", "egg", "soy", "sesame", "fish", "wheat"];
 
 interface RegRow {
@@ -245,6 +245,22 @@ export default function SpecialEventReportView({
       totalNights,
     };
   }, [filtered]);
+
+  const ageChartData = [
+    { name: "Adults", value: stats.adults },
+    { name: "Youth", value: stats.youth },
+    { name: "Children", value: stats.children },
+    { name: "Unknown", value: stats.unknownAge },
+  ].filter((item) => item.value > 0);
+  const genderChartData = [
+    { name: "Male", value: stats.male },
+    { name: "Female", value: stats.female },
+    { name: "Other/—", value: stats.otherGender },
+  ].filter((item) => item.value > 0);
+  const donutTooltip = (value: number, name: string) => [
+    `${value} (${Math.round((value / Math.max(1, stats.total)) * 100)}%)`,
+    name,
+  ];
 
   // ---- Day rollups ----
   const dayRollup = useMemo(() => {
@@ -461,36 +477,31 @@ export default function SpecialEventReportView({
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <ChartCard title="Age groups">
-              <ResponsiveContainer width="100%" height={220}>
+               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie dataKey="value" data={[
-                    { name: "Adults", value: stats.adults },
-                    { name: "Youth", value: stats.youth },
-                    { name: "Children", value: stats.children },
-                    ...(stats.unknownAge > 0 ? [{ name: "Unknown", value: stats.unknownAge }] : []),
-                  ]} outerRadius={80} label>
-                    {[stats.adults, stats.youth, stats.children, stats.unknownAge].map((_, i) => (
+                   <Pie dataKey="value" nameKey="name" data={ageChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
+                     {ageChartData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
+                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
+                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
 
             <ChartCard title="Gender split">
-              <ResponsiveContainer width="100%" height={220}>
+               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie dataKey="value" data={[
-                    { name: "Male", value: stats.male },
-                    { name: "Female", value: stats.female },
-                    ...(stats.otherGender > 0 ? [{ name: "Other/—", value: stats.otherGender }] : []),
-                  ]} outerRadius={80} label>
-                    {[stats.male, stats.female, stats.otherGender].map((_, i) => (
+                   <Pie dataKey="value" nameKey="name" data={genderChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
+                     {genderChartData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
+                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
+                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
                 </PieChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -499,11 +510,11 @@ export default function SpecialEventReportView({
               <ChartCard title="By region">
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={regions.map((r) => ({ region: r, count: filtered.filter((a) => a.region === r).length }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                     <XAxis dataKey="region" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
@@ -516,13 +527,13 @@ export default function SpecialEventReportView({
             ) : (
               <ResponsiveContainer width="100%" height={280}>
                 <LineChart data={dayRollup}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="attendance" stroke="hsl(var(--chart-1))" strokeWidth={2.5} dot={{ r: 3 }} />
-                  <Line type="monotone" dataKey="lodging" stroke="hsl(var(--chart-4))" strokeWidth={2.5} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="attendance" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="lodging" stroke="var(--chart-4)" strokeWidth={2.5} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -690,11 +701,11 @@ export default function SpecialEventReportView({
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={mealOptions.map((m) => ({ meal: m, count: filtered.filter((a) => (a.meal_preferences || []).includes(m)).length }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                     <XAxis dataKey="meal" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip />
-                    <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -706,7 +717,7 @@ export default function SpecialEventReportView({
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={mealDayRollup}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip />
@@ -786,11 +797,11 @@ export default function SpecialEventReportView({
             <CardContent>
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={nightsHistogram(filtered)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                   <XAxis dataKey="nights" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="count" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

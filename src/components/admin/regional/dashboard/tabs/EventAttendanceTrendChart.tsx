@@ -72,11 +72,11 @@ const EventAttendanceTrendChart: React.FC = () => {
                 <YAxis tick={{ fontSize: 12 }} className="text-xs text-muted-foreground" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '12px'
                   }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  labelStyle={{ color: 'var(--foreground)' }}
                   formatter={(value, name) => [value, name]}
                   labelFormatter={(label, payload) =>
                     payload && payload[0] ? `${payload[0].payload.eventName} (${label})${payload[0].payload.isDcg ? ' [DCG]' : ''}` : label
@@ -86,19 +86,19 @@ const EventAttendanceTrendChart: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="Attendance"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--chart-6)"
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: 'var(--chart-6)', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
                 {chartData.some(d => 'Target' in d) && (
                   <Line
                     type="monotone"
                     dataKey="Target"
-                    stroke="hsl(220, 100%, 60%)"
+                    stroke="var(--chart-4)"
                     strokeWidth={2}
                     strokeDasharray="5 5"
-                    dot={{ fill: 'hsl(220, 100%, 60%)', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: 'var(--chart-4)', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 )}

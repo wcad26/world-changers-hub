@@ -9,10 +9,10 @@ import { Search, UserPlus, Users, TrendingUp, CheckCircle, Clock, Award } from '
 import { useDiscipleshipRelationships } from '@/hooks/useDiscipleship';
 import { useAuth } from '@/hooks/useAuth';
 import AssignDiscipleDialog from './AssignDiscipleDialog';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { format } from 'date-fns';
 
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['var(--chart-2)', 'var(--chart-5)', 'var(--chart-neutral)'];
 
 const DiscipleshipTab: React.FC = () => {
   const { userRegion } = useAuth();
@@ -117,12 +117,13 @@ const DiscipleshipTab: React.FC = () => {
           <CardHeader><CardTitle className="text-sm">Status Distribution</CardTitle></CardHeader>
           <CardContent>
             {statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="44%" innerRadius={40} outerRadius={72} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }} formatter={(value: number, name: string) => [`${value} (${Math.round((value / Math.max(1, stats.total)) * 100)}%)`, name]} />
+                  <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: '20px' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

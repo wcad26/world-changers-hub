@@ -445,13 +445,13 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
   const genderChartData = useMemo(() => {
     if (!kpis) return [];
     const data: { name: string; count: number; fill: string }[] = [
-      { name: "Adult Females", count: kpis.genderCounts.adultFemale, fill: "hsl(var(--chart-1))" },
-      { name: "Young Females", count: kpis.genderCounts.youngFemale, fill: "hsl(var(--chart-4))" },
-      { name: "Adult Males", count: kpis.genderCounts.adultMale, fill: "hsl(var(--chart-3))" },
-      { name: "Young Males", count: kpis.genderCounts.youngMale, fill: "hsl(var(--chart-2))" },
+      { name: "Adult Females", count: kpis.genderCounts.adultFemale, fill: "var(--chart-1)" },
+      { name: "Young Females", count: kpis.genderCounts.youngFemale, fill: "var(--chart-4)" },
+      { name: "Adult Males", count: kpis.genderCounts.adultMale, fill: "var(--chart-3)" },
+      { name: "Young Males", count: kpis.genderCounts.youngMale, fill: "var(--chart-2)" },
     ];
     if (kpis.genderCounts.unknown > 0) {
-      data.push({ name: "Unknown", count: kpis.genderCounts.unknown, fill: "hsl(var(--chart-5))" });
+      data.push({ name: "Unknown", count: kpis.genderCounts.unknown, fill: "var(--chart-5)" });
     }
     return data;
   }, [kpis]);
@@ -610,25 +610,25 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
               <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradMembers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gradVisitors" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gradChildren" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
+                    backgroundColor: "var(--card)",
+                    border: "1px solid var(--border)",
                     borderRadius: "12px",
                     fontSize: "12px",
                   }}
@@ -637,14 +637,14 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
                     const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
                     return (
                       <div style={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "var(--card)",
+                        border: "1px solid var(--border)",
                         borderRadius: "12px",
                         fontSize: "12px",
                         padding: "8px 12px",
-                        boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                        boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
                       }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4, color: "hsl(var(--foreground))" }}>{label}</div>
+                        <div style={{ fontWeight: 600, marginBottom: 4, color: "var(--foreground)" }}>{label}</div>
                         {payload.map((p: any) => (
                           <div key={p.dataKey} style={{ color: p.color }}>
                             {p.dataKey} : {p.value}
@@ -653,9 +653,9 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
                         <div style={{
                           marginTop: 6,
                           paddingTop: 6,
-                          borderTop: "1px solid hsl(var(--border))",
+                          borderTop: "1px solid var(--border)",
                           fontWeight: 600,
-                          color: "hsl(var(--foreground))",
+                          color: "var(--foreground)",
                         }}>
                           Total : {total}
                         </div>
@@ -666,14 +666,14 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
                 {kpis && kpis.targetMembers > 0 && (
                   <ReferenceLine
                     y={kpis.targetMembers}
-                    stroke="hsl(var(--destructive))"
+                    stroke="var(--destructive)"
                     strokeDasharray="6 4"
-                    label={{ value: `Target: ${kpis.targetMembers}`, position: "insideTopRight", fontSize: 11, fill: "hsl(var(--destructive))" }}
+                    label={{ value: `Target: ${kpis.targetMembers}`, position: "insideTopRight", fontSize: 11, fill: "var(--destructive)" }}
                   />
                 )}
-                <Area type="monotone" dataKey="Members" stroke="hsl(var(--chart-1))" fill="url(#gradMembers)" strokeWidth={2.5} dot={false} />
-                <Area type="monotone" dataKey="Regular Visitors" stroke="hsl(var(--chart-2))" fill="url(#gradVisitors)" strokeWidth={2.5} dot={false} />
-                <Area type="monotone" dataKey="Children" stroke="hsl(var(--chart-4))" fill="url(#gradChildren)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#gradMembers)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#gradVisitors)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#gradChildren)" strokeWidth={2.5} dot={false} />
                 <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -690,13 +690,13 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
             {genderChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={genderChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
+                      backgroundColor: "var(--card)",
+                      border: "1px solid var(--border)",
                       borderRadius: "12px",
                       fontSize: "12px",
                     }}

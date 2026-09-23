@@ -54,8 +54,8 @@ const DcgAttendanceTrendChart: React.FC<DcgAttendanceTrendChartProps> = ({ dcgId
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '6px',
                   }}
                   formatter={(value: number, name: string) =>
@@ -63,8 +63,8 @@ const DcgAttendanceTrendChart: React.FC<DcgAttendanceTrendChartProps> = ({ dcgId
                   }
                 />
                 <Legend />
-                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="hsl(220, 100%, 60%)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="var(--chart-6)" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>

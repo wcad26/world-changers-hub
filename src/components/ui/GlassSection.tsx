@@ -50,13 +50,24 @@ interface GlassKPICardProps {
   value: string | number;
   subtitle?: string;
   isLoading?: boolean;
+  tone?: 'primary' | 'teal' | 'amber' | 'coral' | 'emerald' | 'blue' | 'violet';
 }
 
-export function GlassKPICard({ icon, label, value, subtitle, isLoading }: GlassKPICardProps) {
+const toneClasses = {
+  primary: 'bg-primary/10 text-primary',
+  teal: 'bg-chart-2/10 text-chart-2',
+  amber: 'bg-chart-3/10 text-chart-3',
+  coral: 'bg-chart-4/10 text-chart-4',
+  emerald: 'bg-chart-5/10 text-chart-5',
+  blue: 'bg-chart-6/10 text-chart-6',
+  violet: 'bg-chart-7/10 text-chart-7',
+};
+
+export function GlassKPICard({ icon, label, value, subtitle, isLoading, tone = 'primary' }: GlassKPICardProps) {
   return (
     <div className="rounded-md border border-border/70 bg-card/85 p-5 shadow-xs backdrop-blur-xl transition-[box-shadow,border-color] duration-200 hover:border-primary/25 hover:shadow-card">
       <div className="flex items-center gap-3 mb-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className={cn('flex h-9 w-9 items-center justify-center rounded-md', toneClasses[tone])}>
           {icon}
         </div>
         <span className="text-sm font-medium text-muted-foreground">{label}</span>
