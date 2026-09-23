@@ -89,7 +89,7 @@ export function useCampaignContributions(campaignId?: string) {
           created_at: p.created_at,
           status: p.status as string,
         }));
-      return { rows, campaignPledges };
+      return { rows, campaignPledges, hasFeeConfig, linkedEventCount: ids.length };
     },
   });
 }
