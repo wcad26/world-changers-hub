@@ -79,8 +79,12 @@ export function useCampaignContributions(campaignId?: string) {
         };
       });
       const campaignPledges = (pledges || [])
-        .filter((p: any) => p.status === "active")
-        .map((p: any) => ({ amount: Number(p.amount || 0), created_at: p.created_at }));
+        .filter((p: any) => p.status !== "cancelled")
+        .map((p: any) => ({
+          amount: Number(p.amount || 0),
+          created_at: p.created_at,
+          status: p.status as string,
+        }));
       return { rows, campaignPledges };
     },
   });
