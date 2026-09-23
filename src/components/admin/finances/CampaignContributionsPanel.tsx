@@ -186,12 +186,22 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
 
   return (
     <div className="space-y-6">
+      {/* Donations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Collected" value={fc(s.collected)} sub="Donations + paid fees" />
-        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Awaiting cash" value={fc(s.pending)} sub="Unpaid fees + pledges" />
-        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-6" label="Total committed" value={fc(s.total)} sub={goal > 0 ? `${((s.total / goal) * 100).toFixed(1)}% of goal` : "No goal set"} />
-        <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Still needed" value={fc(Math.max(0, goal - s.total))} sub={`Goal ${fc(goal)}`} />
+        <Stat icon={<HandCoins className="h-4 w-4" />} tone="--chart-5" label="Donations collected" value={fc(donationsTotal)} sub={`${donationCount} donation${donationCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-7" label="Total pledges" value={fc(s.totalPledges)} sub={`${s.pledgeCount + s.cpCount} pledge${s.pledgeCount + s.cpCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Donations awaited" value={fc(s.pledgesAwaited)} sub="Pledges not yet deposited" />
+        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-6" label="No. donors" value={`${donorCount}`} sub="Unique donors in period" />
       </div>
+
+      {/* Event registration fees */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Fees collected" value={fc(s.feesPaid)} sub="Confirmed paid fees" />
+        <Stat icon={<Receipt className="h-4 w-4" />} tone="--chart-6" label="Fees expected" value={fc(s.feesExpected)} sub={`${s.feeCount} billed registration${s.feeCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting cash deposit" />
+        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-1" label="No. attendees" value={`${s.attendees}`} sub="Registered for linked events" />
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 p-6 space-y-4">
