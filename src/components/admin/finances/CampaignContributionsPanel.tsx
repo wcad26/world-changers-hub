@@ -41,7 +41,7 @@ export function useCampaignContributions(campaignId?: string) {
       ]);
       if (e2) throw e2;
       if (e3) throw e3;
-      const memberIds = Array.from(new Set((regs || []).map((r: any) => r.member_id).filter(Boolean)));
+      const memberIds: string[] = Array.from(new Set<string>((regs || []).map((r: any) => r.member_id).filter(Boolean)));
       const names = new Map<string, string>();
       for (let i = 0; i < memberIds.length; i += 200) {
         const { data } = await supabase
