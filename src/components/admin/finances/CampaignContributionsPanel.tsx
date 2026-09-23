@@ -121,6 +121,22 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
   </div>
 );
 
+const BigPct: React.FC<{ label: string; pct: number; sub?: string; tone: string }> = ({ label, pct, sub, tone }) => (
+  <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `color-mix(in oklab, var(${tone}) 18%, transparent)`, color: `var(${tone})` }}>
+        <Gauge className="h-4 w-4" />
+      </span>
+    </div>
+    <div className="font-bold tabular-nums text-foreground text-4xl leading-none">
+      {pct.toFixed(1)}
+      <span className="text-3xl">%</span>
+    </div>
+    {sub && <div className="mt-2 text-xs text-muted-foreground">{sub}</div>}
+  </div>
+);
+
 const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, donationCount = 0, donorCount = 0, goal, range, fc, daysInfo }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
