@@ -157,11 +157,17 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     const feesWaived = rows.filter((r) => r.fee_status === "waived").reduce((a, r) => a + r.fee, 0);
     const regPledges = rows.reduce((a, r) => a + r.pledge, 0);
     const campPledges = cps.reduce((a, p) => a + p.amount, 0);
+    const campPledgesAwaited = cps.filter((p) => p.status !== "fulfilled").reduce((a, p) => a + p.amount, 0);
+    const totalPledges = regPledges + campPledges;
+    const pledgesAwaited = regPledges + campPledgesAwaited;
+    const feesExpected = feesPaid + feesUnpaid;
     const collected = donationsTotal + feesPaid;
-    const pending = feesUnpaid + regPledges + campPledges;
+    const pending = feesUnpaid + pledgesAwaited;
     const total = collected + pending;
     return {
-      rows, feesPaid, feesUnpaid, feesWaived, regPledges, campPledges, collected, pending, total,
+      rows, feesPaid, feesUnpaid, feesWaived, feesExpected, regPledges, campPledges,
+      totalPledges, pledgesAwaited, collected, pending, total,
+      attendees: rows.length,
       feeCount: rows.filter((r) => r.fee > 0).length,
       pledgeCount: rows.filter((r) => r.pledge > 0).length,
       cpCount: cps.length,
