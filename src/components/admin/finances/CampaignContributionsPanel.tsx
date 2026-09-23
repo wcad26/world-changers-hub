@@ -37,7 +37,7 @@ export function useCampaignContributions(campaignId?: string) {
         .eq("linked_fundraising_campaign_id", campaignId!);
       if (e1) throw e1;
       const ids = (events || []).map((e: any) => e.id);
-      const [{ data: regs, error: e2 }, { data: pledges, error: e3 }] = await Promise.all([
+      const [{ data: regs, error: e2 }, { data: pledges, error: e3 }, { data: feeConfig }] = await Promise.all([
         ids.length
           ? supabase
               .from("event_pre_registrations")
@@ -45,9 +45,13 @@ export function useCampaignContributions(campaignId?: string) {
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
+        ids.length
+          ? supabase.from("event_registration_fees").select("id, amount").in("event_id", ids)
+          : Promise.resolve({ data: [], error: null } as any),
       ]);
       if (e2) throw e2;
       if (e3) throw e3;
+      const hasFeeConfig = (feeConfig || []).some((f: any) => Number(f.amount) > 0);
       const memberIds: string[] = Array.from(new Set<string>((regs || []).map((r: any) => r.member_id).filter(Boolean)));
       const names = new Map<string, string>();
       for (let i = 0; i < memberIds.length; i += 200) {
