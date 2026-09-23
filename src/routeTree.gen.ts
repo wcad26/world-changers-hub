@@ -117,6 +117,7 @@ import { Route as AdminSuperMembersIndexRouteImport } from './routes/admin.super
 import { Route as AdminSuperMembersMemberIdRouteImport } from './routes/admin.super.members.$memberId'
 import { Route as AdminSuperRegionsIndexRouteImport } from './routes/admin.super.regions.index'
 import { Route as AdminRegionalEventsEventIdReportRouteImport } from './routes/admin.regional.events.$eventId.report'
+import { Route as AdminRegionalEventsEventIdSpecialReportRouteImport } from './routes/admin.regional.events.$eventId.special-report'
 import { Route as AdminRegionalFinancesFundraisingCampaignIdRouteImport } from './routes/admin.regional.finances.fundraising.$campaignId'
 import { Route as AdminSuperEventsEventIdReportRouteImport } from './routes/admin.super.events.$eventId.report'
 import { Route as AdminSuperEventsEventIdSpecialReportRouteImport } from './routes/admin.super.events.$eventId.special-report'
@@ -680,6 +681,12 @@ const AdminRegionalEventsEventIdReportRoute =
     path: '/$eventId/report',
     getParentRoute: () => AdminRegionalEventsRoute,
   } as any)
+const AdminRegionalEventsEventIdSpecialReportRoute =
+  AdminRegionalEventsEventIdSpecialReportRouteImport.update({
+    id: '/$eventId/special-report',
+    path: '/$eventId/special-report',
+    getParentRoute: () => AdminRegionalEventsRoute,
+  } as any)
 const AdminRegionalFinancesFundraisingCampaignIdRoute =
   AdminRegionalFinancesFundraisingCampaignIdRouteImport.update({
     id: '/fundraising/$campaignId',
@@ -820,6 +827,7 @@ export interface FileRoutesByFullPath {
   '/admin/super/members/': typeof AdminSuperMembersIndexRoute
   '/admin/super/regions/': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
+  '/admin/regional/events/$eventId/special-report': typeof AdminRegionalEventsEventIdSpecialReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
   '/admin/super/events/$eventId/special-report': typeof AdminSuperEventsEventIdSpecialReportRoute
@@ -918,6 +926,7 @@ export interface FileRoutesByTo {
   '/admin/super/members': typeof AdminSuperMembersIndexRoute
   '/admin/super/regions': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
+  '/admin/regional/events/$eventId/special-report': typeof AdminRegionalEventsEventIdSpecialReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
   '/admin/super/events/$eventId/special-report': typeof AdminSuperEventsEventIdSpecialReportRoute
@@ -1034,6 +1043,7 @@ export interface FileRoutesById {
   '/admin/super/members/': typeof AdminSuperMembersIndexRoute
   '/admin/super/regions/': typeof AdminSuperRegionsIndexRoute
   '/admin/regional/events/$eventId/report': typeof AdminRegionalEventsEventIdReportRoute
+  '/admin/regional/events/$eventId/special-report': typeof AdminRegionalEventsEventIdSpecialReportRoute
   '/admin/regional/finances/fundraising/$campaignId': typeof AdminRegionalFinancesFundraisingCampaignIdRoute
   '/admin/super/events/$eventId/report': typeof AdminSuperEventsEventIdReportRoute
   '/admin/super/events/$eventId/special-report': typeof AdminSuperEventsEventIdSpecialReportRoute
@@ -1151,6 +1161,7 @@ export interface FileRouteTypes {
     | '/admin/super/members/'
     | '/admin/super/regions/'
     | '/admin/regional/events/$eventId/report'
+    | '/admin/regional/events/$eventId/special-report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
     | '/admin/super/events/$eventId/special-report'
@@ -1249,6 +1260,7 @@ export interface FileRouteTypes {
     | '/admin/super/members'
     | '/admin/super/regions'
     | '/admin/regional/events/$eventId/report'
+    | '/admin/regional/events/$eventId/special-report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
     | '/admin/super/events/$eventId/special-report'
@@ -1364,6 +1376,7 @@ export interface FileRouteTypes {
     | '/admin/super/members/'
     | '/admin/super/regions/'
     | '/admin/regional/events/$eventId/report'
+    | '/admin/regional/events/$eventId/special-report'
     | '/admin/regional/finances/fundraising/$campaignId'
     | '/admin/super/events/$eventId/report'
     | '/admin/super/events/$eventId/special-report'
@@ -2161,6 +2174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRegionalEventsEventIdReportRouteImport
       parentRoute: typeof AdminRegionalEventsRoute
     }
+    '/admin/regional/events/$eventId/special-report': {
+      id: '/admin/regional/events/$eventId/special-report'
+      path: '/$eventId/special-report'
+      fullPath: '/admin/regional/events/$eventId/special-report'
+      preLoaderRoute: typeof AdminRegionalEventsEventIdSpecialReportRouteImport
+      parentRoute: typeof AdminRegionalEventsRoute
+    }
     '/admin/regional/finances/fundraising/$campaignId': {
       id: '/admin/regional/finances/fundraising/$campaignId'
       path: '/fundraising/$campaignId'
@@ -2215,11 +2235,14 @@ const AdminRegionalDcgRouteWithChildren =
 interface AdminRegionalEventsRouteChildren {
   AdminRegionalEventsIndexRoute: typeof AdminRegionalEventsIndexRoute
   AdminRegionalEventsEventIdReportRoute: typeof AdminRegionalEventsEventIdReportRoute
+  AdminRegionalEventsEventIdSpecialReportRoute: typeof AdminRegionalEventsEventIdSpecialReportRoute
 }
 
 const AdminRegionalEventsRouteChildren: AdminRegionalEventsRouteChildren = {
   AdminRegionalEventsIndexRoute: AdminRegionalEventsIndexRoute,
   AdminRegionalEventsEventIdReportRoute: AdminRegionalEventsEventIdReportRoute,
+  AdminRegionalEventsEventIdSpecialReportRoute:
+    AdminRegionalEventsEventIdSpecialReportRoute,
 }
 
 const AdminRegionalEventsRouteWithChildren =
