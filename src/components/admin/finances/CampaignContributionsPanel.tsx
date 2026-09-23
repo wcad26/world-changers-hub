@@ -178,6 +178,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
       pctCollected: goal > 0 ? (collected / goal) * 100 : 0,
       pctPending: goal > 0 ? (pending / goal) * 100 : 0,
       pctTotal: goal > 0 ? (total / goal) * 100 : 0,
+      feesEnabled: !!data?.hasFeeConfig || rows.some((r) => r.fee > 0),
     };
   }, [data, range, donationsTotal, goal]);
 
