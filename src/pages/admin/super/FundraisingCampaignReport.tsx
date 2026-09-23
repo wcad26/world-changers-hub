@@ -24,6 +24,7 @@ import EditFundraisingCampaignDialog from "@/components/admin/regional/EditFundr
 import ViewDonationDialog from "@/components/admin/regional/finances/ViewDonationDialog";
 import FundraisingDonationRowActions from "@/components/admin/regional/finances/FundraisingDonationRowActions";
 import PeriodSelector, { resolvePeriod, type PeriodKey } from "@/components/admin/regional/finances/PeriodSelector";
+import CampaignContributionsPanel from "@/components/admin/finances/CampaignContributionsPanel";
 import PledgesCard from "@/components/admin/regional/finances/PledgesCard";
 import {
   ResponsiveContainer, ComposedChart, Bar, Area, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
@@ -223,26 +224,17 @@ const SuperFundraisingCampaignReport: React.FC = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Raised" value={fc(totals.raised)} sub={`of ${fc(totals.goal)}`} />
-        <KpiCard icon={<HeartHandshake className="h-4 w-4" />} label="Progress" value={`${totals.pct.toFixed(2)}%`} sub={totals.goal > 0 ? `${fc(Math.max(0, totals.goal - totals.raised))} to go` : "No goal set"} />
+        <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Donations" value={fc(totals.raised)} sub={`of ${fc(totals.goal)}`} />
+        <KpiCard icon={<HeartHandshake className="h-4 w-4" />} label="Donation progress" value={`${totals.pct.toFixed(2)}%`} sub={totals.goal > 0 ? `${fc(Math.max(0, totals.goal - totals.raised))} to go` : "No goal set"} />
         <KpiCard icon={<Target className="h-4 w-4" />} label="Goal" value={fc(totals.goal)} />
         <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Pledges" value={pledgeDisplay} sub={`${pledgeStats.count} pledge${pledgeStats.count === 1 ? "" : "s"}`} />
         <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${filteredDonations.length} donation${filteredDonations.length === 1 ? "" : "s"}`} />
         <KpiCard icon={<CalendarDays className="h-4 w-4" />} label={daysInfo.label} value={daysInfo.value} />
       </div>
 
-      {/* Progress + Description */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold">Goal progress</h3>
-            <span className="text-sm tabular-nums text-muted-foreground">
-              {fc(totals.raised)} <span className="text-foreground/60">/</span> {fc(totals.goal)}
-            </span>
-          </div>
-          <Progress value={Math.min(100, totals.pct)} className="h-3" />
-          <p className="text-xs text-muted-foreground">{totals.pct.toFixed(2)}% of goal achieved</p>
-        </div>
+      <CampaignContributionsPanel campaignId={campaignId || ""} donationsTotal={totals.raised} goal={totals.goal} range={range} fc={fc} />
+
+      <div>
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-2">
           <h3 className="text-base font-semibold">About this campaign</h3>
           <p className="text-sm text-muted-foreground whitespace-pre-wrap">{campaign.description || "No description provided."}</p>
