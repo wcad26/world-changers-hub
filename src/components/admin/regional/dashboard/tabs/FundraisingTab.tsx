@@ -99,8 +99,8 @@ const FundraisingTab: React.FC<FundraisingTabProps> = ({ selectedPeriod }) => {
                 <XAxis dataKey="name" fontSize={10} />
                 <YAxis fontSize={10} />
                 <Tooltip formatter={(value: number) => fc(value * 100)} />
-                <Bar dataKey="raised" fill="#22c55e" name="Raised" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="goal" fill="var(--muted-foreground)" name="Goal" radius={[4, 4, 0, 0]} opacity={0.3} />
+                <Bar dataKey="raised" fill="var(--chart-5)" name="Raised" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="goal" fill="var(--chart-3)" name="Goal" radius={[4, 4, 0, 0]} opacity={0.3} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

@@ -162,7 +162,7 @@ const DcgReportsTab = () => {
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={(v: number, n: string) => n === 'Attendance Rate' ? [`${v.toFixed(1)}%`, n] : [v, n]} />
                     <Legend />
-                    <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--primary)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--chart-1)" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -183,8 +183,8 @@ const DcgReportsTab = () => {
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={(v: number) => fmt(v)} />
                     <Legend />
-                    <Bar dataKey="income" name="Income" fill="hsl(142, 71%, 45%)" />
-                    <Bar dataKey="expenses" name="Expenses" fill="hsl(0, 84%, 60%)" />
+                    <Bar dataKey="income" name="Income" fill="var(--chart-5)" />
+                    <Bar dataKey="expenses" name="Expenses" fill="var(--chart-4)" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

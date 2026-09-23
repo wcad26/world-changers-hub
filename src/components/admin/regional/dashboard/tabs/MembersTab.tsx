@@ -22,7 +22,7 @@ interface MembersTabProps {
   selectedPeriod: string;
 }
 
-const COLORS = ['var(--primary)', 'var(--secondary)', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
+const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)', 'var(--chart-7)', 'var(--chart-neutral)'];
 
 const GlassCard: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-sm border border-border/30 rounded-2xl shadow-sm p-5 hover:shadow-md transition-all duration-300">
@@ -364,8 +364,8 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
                 <YAxis fontSize={10} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="members" fill="var(--primary)" name="Members" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="visitors" fill="var(--secondary)" name="Visitors" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="members" fill="var(--chart-1)" name="Members" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="visitors" fill="var(--chart-2)" name="Visitors" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

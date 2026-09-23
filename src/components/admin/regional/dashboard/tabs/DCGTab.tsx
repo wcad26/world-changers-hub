@@ -142,8 +142,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
                   }
                 />
                 <Legend />
-                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--primary)" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="var(--accent-foreground)" strokeWidth={2} strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--chart-1)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="var(--chart-6)" strokeWidth={2} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -172,8 +172,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
                   formatter={(value: number) => fmt(value)}
                 />
                 <Legend />
-                <Bar dataKey="income" name="Income" fill="hsl(142, 71%, 45%)" />
-                <Bar dataKey="expenses" name="Expenses" fill="hsl(0, 84%, 60%)" />
+                <Bar dataKey="income" name="Income" fill="var(--chart-5)" />
+                <Bar dataKey="expenses" name="Expenses" fill="var(--chart-4)" />
               </BarChart>
             </ResponsiveContainer>
           </div>

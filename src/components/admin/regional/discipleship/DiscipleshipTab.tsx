@@ -12,7 +12,7 @@ import AssignDiscipleDialog from './AssignDiscipleDialog';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+const COLORS = ['var(--chart-2)', 'var(--chart-5)', 'var(--chart-neutral)'];
 
 const DiscipleshipTab: React.FC = () => {
   const { userRegion } = useAuth();

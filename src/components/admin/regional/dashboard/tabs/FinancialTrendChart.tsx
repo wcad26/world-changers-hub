@@ -78,9 +78,9 @@ const FinancialTrendChart: React.FC<FinancialTrendChartProps> = ({ selectedPerio
               <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${currencySymbol}${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`} />
               <Tooltip formatter={(value, name) => [formatCurrency(Number(value)), name]} />
               <Legend />
-              <Line type="monotone" dataKey="income" stroke="#22c55e" strokeWidth={3} name="Income" dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }} />
-              <Line type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={3} name="Expenses" dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }} />
-              <Line type="monotone" dataKey="net" stroke="#3b82f6" strokeWidth={3} name="Net Balance" dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="income" stroke="var(--chart-5)" strokeWidth={3} name="Income" dot={{ fill: 'var(--chart-5)', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="expenses" stroke="var(--chart-4)" strokeWidth={3} name="Expenses" dot={{ fill: 'var(--chart-4)', strokeWidth: 2, r: 4 }} />
+              <Line type="monotone" dataKey="net" stroke="var(--chart-6)" strokeWidth={3} name="Net Balance" dot={{ fill: 'var(--chart-6)', strokeWidth: 2, r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

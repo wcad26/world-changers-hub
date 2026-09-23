@@ -100,34 +100,34 @@ const TrendChart: React.FC = () => {
               <Line 
                 type="monotone" 
                 dataKey="Members" 
-                stroke="var(--primary)" 
+                stroke="var(--chart-1)" 
                 strokeWidth={2}
-                dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4 }}
+                dot={{ fill: 'var(--chart-1)', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="Visitors" 
-                stroke="hsl(220, 100%, 60%)" 
+                stroke="var(--chart-2)" 
                 strokeWidth={2}
-                dot={{ fill: 'hsl(220, 100%, 60%)', strokeWidth: 2, r: 4 }}
+                dot={{ fill: 'var(--chart-2)', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="Children" 
-                stroke="hsl(330, 80%, 60%)" 
+                stroke="var(--chart-3)" 
                 strokeWidth={2}
-                dot={{ fill: 'hsl(330, 80%, 60%)', strokeWidth: 2, r: 4 }}
+                dot={{ fill: 'var(--chart-3)', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="Total" 
-                stroke="hsl(142, 76%, 36%)" 
+                stroke="var(--chart-6)" 
                 strokeWidth={2}
                 strokeDasharray="5 5"
-                dot={{ fill: 'hsl(142, 76%, 36%)', strokeWidth: 2, r: 4 }}
+                dot={{ fill: 'var(--chart-6)', strokeWidth: 2, r: 4 }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>

@@ -159,7 +159,7 @@ export default function MemberAttendance() {
                 fontWeight: 600
               }} formatter={(value: number) => [`${value}%`, 'Attendance']} />
                   <Bar dataKey="rate" radius={[6, 6, 0, 0]} maxBarSize={50}>
-                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'var(--primary)' : entry.rate >= 80 ? 'color-mix(in oklab, var(--primary) calc(0.7 * 100%), transparent)' : 'color-mix(in oklab, var(--muted-foreground) calc(0.5 * 100%), transparent)'} />)}
+                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'var(--chart-5)' : entry.rate >= 80 ? 'var(--chart-3)' : 'var(--chart-4)'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -168,15 +168,15 @@ export default function MemberAttendance() {
           </div>
           <div className="flex-col md:flex-row gap-2 md:gap-6 mt-4 text-sm flex items-start justify-center">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-primary" />
+              <div className="w-3 h-3 rounded-sm bg-chart-5" />
               <span className="text-muted-foreground">Excellent (90%+)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-primary/70" />
+              <div className="w-3 h-3 rounded-sm bg-chart-3" />
               <span className="text-muted-foreground">Good (80-89%)</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-muted-foreground/50" />
+              <div className="w-3 h-3 rounded-sm bg-chart-4" />
               <span className="text-muted-foreground">Needs Improvement</span>
             </div>
           </div>

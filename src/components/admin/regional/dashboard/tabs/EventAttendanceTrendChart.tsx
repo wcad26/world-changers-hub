@@ -86,19 +86,19 @@ const EventAttendanceTrendChart: React.FC = () => {
                 <Line
                   type="monotone"
                   dataKey="Attendance"
-                  stroke="var(--primary)"
+                  stroke="var(--chart-6)"
                   strokeWidth={2}
-                  dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4 }}
+                  dot={{ fill: 'var(--chart-6)', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6 }}
                 />
                 {chartData.some(d => 'Target' in d) && (
                   <Line
                     type="monotone"
                     dataKey="Target"
-                    stroke="hsl(220, 100%, 60%)"
+                    stroke="var(--chart-4)"
                     strokeWidth={2}
                     strokeDasharray="5 5"
-                    dot={{ fill: 'hsl(220, 100%, 60%)', strokeWidth: 2, r: 4 }}
+                    dot={{ fill: 'var(--chart-4)', strokeWidth: 2, r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 )}

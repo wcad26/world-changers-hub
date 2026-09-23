@@ -531,8 +531,8 @@ const SuperDashboard: React.FC = () => {
                     <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="superGradChildren" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-4)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--chart-4)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
@@ -569,7 +569,7 @@ const SuperDashboard: React.FC = () => {
                 )}
                 <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#superGradMembers)" strokeWidth={2.5} dot={false} />
                 <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#superGradVisitors)" strokeWidth={2.5} dot={false} />
-                <Area type="monotone" dataKey="Children" stroke="var(--chart-4)" fill="url(#superGradChildren)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#superGradChildren)" strokeWidth={2.5} dot={false} />
                 <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
               </AreaChart>
             </ResponsiveContainer>
