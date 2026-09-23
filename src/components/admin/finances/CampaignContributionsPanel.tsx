@@ -258,6 +258,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
         {isLoading && <p className="text-xs text-muted-foreground">Loading contributions…</p>}
       </div>
 
+      {(data?.linkedEventCount ?? 0) > 0 && (
       <Collapsible className="rounded-2xl border border-border/40 bg-card/60">
         <CollapsibleTrigger className="w-full flex items-center justify-between p-6 group">
           <div className="flex items-center gap-2">
