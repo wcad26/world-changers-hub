@@ -39,3 +39,8 @@
 
 # DCG portal access
 - [x] Grant every DCG leader and assistant full DCG portal access (role, session, finances)
+
+# Regional event actions and reports
+- [x] Match the Regional Admin event menu to the optimized Super Admin actions
+- [x] Add a region-scoped Special Event Report page
+- [x] Verify both regional report pages, copied links, responsive layout, and build health

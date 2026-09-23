@@ -10,7 +10,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Eye, EyeOff, Filter, X, ChevronDown, Languages, Copy, FileText, Star, Layers, Target, Repeat } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "@/lib/router-compat";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
@@ -948,6 +948,18 @@ const RegionalEvents: React.FC = () => {
     setAttendanceDialogOpen(true);
   };
 
+  const copyAttendanceLink = (event: any) => {
+    const identifier = event.slug || event.id;
+    navigator.clipboard.writeText(`${window.location.origin}/attend/${identifier}`);
+    toast({ title: "Link Copied", description: "Self-attendance link copied to clipboard." });
+  };
+
+  const copyRegistrationLink = (event: any) => {
+    const identifier = event.slug || event.id;
+    navigator.clipboard.writeText(`${window.location.origin}/events/${identifier}/register`);
+    toast({ title: "Link copied", description: "Special event registration link copied." });
+  };
+
   async function onEditSubmit(values: z.infer<typeof eventSchema>) {
     if (!eventToEdit) return;
     
@@ -1630,35 +1642,30 @@ const RegionalEvents: React.FC = () => {
                 <Edit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDuplicate(event)}
-                                disabled={isDuplicating}
-                              >
-                                <Copy className="mr-2 h-4 w-4" />
-                                {isDuplicating ? "Duplicating..." : "Duplicate"}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleTogglePublic(event)}>
-                                {event.is_public ? (
-                                  <>
-                                    <EyeOff className="mr-2 h-4 w-4" />
-                                    Make Private
-                                  </>
-                                ) : (
-                                  <>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Make Public
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleAttendance(event)}>
+              <DropdownMenuItem onClick={() => handleAttendance(event)}>
                 <UserCheck className="mr-2 h-4 w-4" />
-                Record Attendance
+                Mark Attendance
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate(`/admin/regional/events/${event.id}/report`)}>
-                <FileText className="mr-2 h-4 w-4" />
-                Event Report
+                <BarChart2 className="mr-2 h-4 w-4" />
+                View Report
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => copyAttendanceLink(event)}>
+                <Link2 className="mr-2 h-4 w-4" />
+                Copy Attendance Link
+              </DropdownMenuItem>
+              {event.is_special && (
+                <>
+                  <DropdownMenuItem onClick={() => copyRegistrationLink(event)}>
+                    <Link2 className="mr-2 h-4 w-4" />
+                    Copy Registration Link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/admin/regional/events/${event.id}/special-report`)}>
+                    <Star className="mr-2 h-4 w-4" />
+                    Special Event Report
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <AlertDialog>
                 <AlertDialogTrigger asChild>
