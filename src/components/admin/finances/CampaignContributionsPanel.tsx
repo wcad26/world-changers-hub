@@ -233,8 +233,9 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
                     <TableHead className="hidden md:table-cell">Event</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="text-right">Fee</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Pledge</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -243,10 +244,34 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{r.name}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{r.event_name}</TableCell>
-                      <TableCell className="capitalize">{r.category || "—"}</TableCell>
+                      <TableCell className="capitalize">{r.category || "—"}{r.fee > 0 && r.fee_is_group ? <span className="ml-1 text-xs text-muted-foreground">(family)</span> : null}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.fee > 0 ? fc(r.fee) : "—"}</TableCell>
-                      <TableCell>{r.fee > 0 ? <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">{r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status}</Badge> : "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.pledge > 0 ? fc(r.pledge) : "—"}</TableCell>
+                      <TableCell>{r.fee > 0 ? <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">{r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status}</Badge> : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        {r.fee > 0 ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={setFeeStatus.isPending}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Registration fee</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled={r.fee_status === "paid"} onClick={() => setFeeStatus.mutate({ row: r, status: "paid" })}>
+                                <Check className="h-4 w-4 mr-2" /> Confirm payment
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled={r.fee_status === "unpaid"} onClick={() => setFeeStatus.mutate({ row: r, status: "unpaid" })}>
+                                <Undo2 className="h-4 w-4 mr-2" /> Mark awaiting cash
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled={r.fee_status === "waived"} onClick={() => setFeeStatus.mutate({ row: r, status: "waived" })}>
+                                <HandCoins className="h-4 w-4 mr-2" /> Waive fee
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
