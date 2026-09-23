@@ -113,6 +113,34 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
 const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, goal, range, fc }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const setFeeStatus = useMutation({
+    mutationFn: async ({ row, status }: { row: RegContribution; status: "paid" | "unpaid" | "waived" }) => {
+      let qy = supabase.from("event_pre_registrations").update({ fee_status: status });
+      // family / group billing: keep every member of the group in the same state
+      qy = row.fee_is_group && row.group_id ? qy.eq("group_id", row.group_id) : qy.eq("id", row.id);
+      const { error } = await qy;
+      if (error) throw error;
+      return status;
+    },
+    onSuccess: (status) => {
+      toast({
+        title: status === "paid" ? "Payment confirmed" : status === "waived" ? "Fee waived" : "Marked as awaiting cash",
+      });
+      qc.invalidateQueries({ queryKey: ["campaign-contributions"] });
+      qc.invalidateQueries({ queryKey: ["campaign_pledges"] });
+      qc.invalidateQueries({ queryKey: ["campaign_pledges_detailed"] });
+      qc.invalidateQueries({ queryKey: ["campaign_donations"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_campaign"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_campaigns"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_analytics"] });
+      qc.invalidateQueries({ queryKey: ["global_fundraising_campaigns"] });
+    },
+    onError: (e: any) => toast({ title: "Update failed", description: e?.message, variant: "destructive" }),
+  });
+
 
   const s = useMemo(() => {
     const rows = (data?.rows || []).filter((r) => inRange(r.created_at, range));
