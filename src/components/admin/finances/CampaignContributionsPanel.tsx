@@ -217,6 +217,10 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
+            <Stat icon={<CalendarDays className="h-4 w-4" />} tone="--chart-8" label={daysInfo?.label || "Days remaining"} value={daysInfo?.value ?? "—"} sub="Campaign timeline" />
+          </div>
         </div>
         <div className="rounded-2xl border border-border/40 bg-card/60 p-6 space-y-3">
           <h3 className="text-base font-semibold">Contribution breakdown</h3>
