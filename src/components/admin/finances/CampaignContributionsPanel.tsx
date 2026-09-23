@@ -37,7 +37,7 @@ export function useCampaignContributions(campaignId?: string) {
         .eq("linked_fundraising_campaign_id", campaignId!);
       if (e1) throw e1;
       const ids = (events || []).map((e: any) => e.id);
-      const [{ data: regs, error: e2 }, { data: pledges, error: e3 }] = await Promise.all([
+      const [{ data: regs, error: e2 }, { data: pledges, error: e3 }, { data: feeConfig }] = await Promise.all([
         ids.length
           ? supabase
               .from("event_pre_registrations")
@@ -45,9 +45,13 @@ export function useCampaignContributions(campaignId?: string) {
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
+        ids.length
+          ? supabase.from("event_registration_fees").select("id, amount").in("event_id", ids)
+          : Promise.resolve({ data: [], error: null } as any),
       ]);
       if (e2) throw e2;
       if (e3) throw e3;
+      const hasFeeConfig = (feeConfig || []).some((f: any) => Number(f.amount) > 0);
       const memberIds: string[] = Array.from(new Set<string>((regs || []).map((r: any) => r.member_id).filter(Boolean)));
       const names = new Map<string, string>();
       for (let i = 0; i < memberIds.length; i += 200) {
@@ -85,7 +89,7 @@ export function useCampaignContributions(campaignId?: string) {
           created_at: p.created_at,
           status: p.status as string,
         }));
-      return { rows, campaignPledges };
+      return { rows, campaignPledges, hasFeeConfig, linkedEventCount: ids.length };
     },
   });
 }
@@ -114,6 +118,22 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
     </div>
     <div className="font-semibold tabular-nums text-foreground text-lg">{value}</div>
     {sub && <div className="mt-1 text-xs text-muted-foreground">{sub}</div>}
+  </div>
+);
+
+const BigPct: React.FC<{ label: string; pct: number; sub?: string; tone: string }> = ({ label, pct, sub, tone }) => (
+  <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
+    <div className="flex items-center justify-between mb-3">
+      <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `color-mix(in oklab, var(${tone}) 18%, transparent)`, color: `var(${tone})` }}>
+        <Gauge className="h-4 w-4" />
+      </span>
+    </div>
+    <div className="font-bold tabular-nums text-foreground text-4xl leading-none">
+      {pct.toFixed(1)}
+      <span className="text-3xl">%</span>
+    </div>
+    {sub && <div className="mt-2 text-xs text-muted-foreground">{sub}</div>}
   </div>
 );
 
@@ -174,6 +194,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
       pctCollected: goal > 0 ? (collected / goal) * 100 : 0,
       pctPending: goal > 0 ? (pending / goal) * 100 : 0,
       pctTotal: goal > 0 ? (total / goal) * 100 : 0,
+      feesEnabled: !!data?.hasFeeConfig || rows.some((r) => r.fee > 0),
     };
   }, [data, range, donationsTotal, goal]);
 
@@ -195,63 +216,49 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
         <Stat icon={<Users className="h-4 w-4" />} tone="--chart-6" label="No. pledgers" value={`${donorCount}`} sub="Unique pledgers in period" />
       </div>
 
-      {/* Event registration fees */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Fees collected" value={fc(s.feesPaid)} sub="Confirmed paid fees" />
-        <Stat icon={<Receipt className="h-4 w-4" />} tone="--chart-6" label="Fees expected" value={fc(s.feesExpected)} sub={`${s.feeCount} billed registration${s.feeCount === 1 ? "" : "s"}`} />
-        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting cash deposit" />
-        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-1" label="No. attendees" value={`${s.attendees}`} sub="Registered for linked events" />
+      {/* Event registration fees — only when a linked event collects fees */}
+      {s.feesEnabled && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Fees collected" value={fc(s.feesPaid)} sub="Confirmed paid fees" />
+          <Stat icon={<Receipt className="h-4 w-4" />} tone="--chart-6" label="Fees expected" value={fc(s.feesExpected)} sub={`${s.feeCount} billed registration${s.feeCount === 1 ? "" : "s"}`} />
+          <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting cash deposit" />
+          <Stat icon={<Users className="h-4 w-4" />} tone="--chart-1" label="No. attendees" value={`${s.attendees}`} sub="Registered for linked events" />
+        </div>
+      )}
+
+      <div className="rounded-2xl border border-border/40 bg-card/60 p-6 space-y-4">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="text-base font-semibold">Goal progress</h3>
+          <span className="text-sm tabular-nums text-muted-foreground">{fc(s.total)} / {fc(goal)}</span>
+        </div>
+        <div className="h-3 w-full rounded-full bg-muted overflow-hidden flex">
+          <div style={{ width: `${pc}%`, background: "var(--chart-5)" }} />
+          <div style={{ width: `${pp}%`, background: "color-mix(in oklab, var(--chart-3) 70%, transparent)" }} />
+        </div>
+        <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
+          <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
+          <BigPct
+            label="Funds expected status"
+            pct={goal > 0 ? s.pctTotal : 0}
+            tone="--chart-6"
+            sub={`${fc(s.total)} expected${s.feesEnabled ? " from pledges and fees" : " from pledges"}`}
+          />
+          <BigPct
+            label="Funds collected status"
+            pct={goal > 0 ? s.pctCollected : 0}
+            tone="--chart-5"
+            sub={`${fc(s.collected)} actually collected${s.feesEnabled ? " from pledges and fees" : " from pledges"}`}
+          />
+          <Stat icon={<CalendarDays className="h-4 w-4" />} tone="--chart-8" label={daysInfo?.label || "Days remaining"} value={daysInfo?.value ?? "—"} sub="Campaign timeline" />
+        </div>
+        {isLoading && <p className="text-xs text-muted-foreground">Loading contributions…</p>}
       </div>
 
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 p-6 space-y-4">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <h3 className="text-base font-semibold">Goal progress</h3>
-            <span className="text-sm tabular-nums text-muted-foreground">{fc(s.total)} / {fc(goal)}</span>
-          </div>
-          <div className="h-3 w-full rounded-full bg-muted overflow-hidden flex">
-            <div style={{ width: `${pc}%`, background: "var(--chart-5)" }} />
-            <div style={{ width: `${pp}%`, background: "color-mix(in oklab, var(--chart-3) 70%, transparent)" }} />
-          </div>
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
-            <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Goal status</span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `color-mix(in oklab, var(--chart-6) 18%, transparent)`, color: `var(--chart-6)` }}>
-                  <Gauge className="h-4 w-4" />
-                </span>
-              </div>
-              <div className="font-bold tabular-nums text-foreground text-4xl leading-none">
-                {goal > 0 ? s.pctTotal.toFixed(1) : "0.0"}
-                <span className="text-3xl">%</span>
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">Of {fc(goal)} campaign goal</div>
-            </div>
-            <Stat icon={<CalendarDays className="h-4 w-4" />} tone="--chart-8" label={daysInfo?.label || "Days remaining"} value={daysInfo?.value ?? "—"} sub="Campaign timeline" />
-          </div>
-        </div>
-        <div className="rounded-2xl border border-border/40 bg-card/60 p-6 space-y-3">
-          <h3 className="text-base font-semibold">Contribution breakdown</h3>
-          {isLoading ? <p className="text-sm text-muted-foreground">Loading…</p> : (
-            <ul className="space-y-2 text-sm">
-              <li className="flex justify-between"><span className="flex items-center gap-2"><HandCoins className="h-4 w-4" style={{ color: "var(--chart-5)" }} />Direct donations</span><span className="tabular-nums">{fc(donationsTotal)}</span></li>
-              <li className="flex justify-between"><span className="flex items-center gap-2"><Receipt className="h-4 w-4" style={{ color: "var(--chart-3)" }} />Registration fees ({s.feeCount})</span><span className="tabular-nums">{fc(s.feesPaid + s.feesUnpaid)}</span></li>
-              <li className="flex justify-between pl-6 text-xs text-muted-foreground"><span>Paid</span><span className="tabular-nums">{fc(s.feesPaid)}</span></li>
-              <li className="flex justify-between pl-6 text-xs text-muted-foreground"><span>Awaiting cash</span><span className="tabular-nums">{fc(s.feesUnpaid)}</span></li>
-              <li className="flex justify-between pl-6 text-xs text-muted-foreground"><span>Waived (not counted)</span><span className="tabular-nums">{fc(s.feesWaived)}</span></li>
-              <li className="flex justify-between"><span className="flex items-center gap-2"><Coins className="h-4 w-4" style={{ color: "var(--chart-7)" }} />Registration pledges ({s.pledgeCount})</span><span className="tabular-nums">{fc(s.regPledges)}</span></li>
-              <li className="flex justify-between"><span className="flex items-center gap-2"><Coins className="h-4 w-4" style={{ color: "var(--chart-8)" }} />Campaign pledges ({s.cpCount})</span><span className="tabular-nums">{fc(s.campPledges)}</span></li>
-            </ul>
-          )}
-        </div>
-      </div>
-
+      {(data?.linkedEventCount ?? 0) > 0 && (
       <Collapsible className="rounded-2xl border border-border/40 bg-card/60">
         <CollapsibleTrigger className="w-full flex items-center justify-between p-6 group">
           <div className="flex items-center gap-2">
@@ -321,6 +328,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           )}
         </CollapsibleContent>
       </Collapsible>
+      )}
     </div>
   );
 };
