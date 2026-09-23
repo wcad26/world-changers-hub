@@ -98,9 +98,12 @@ const inRange = (d: string, r: { from: Date; to: Date }) => {
 interface Props {
   campaignId: string;
   donationsTotal: number; // major units, already filtered by period
+  donationCount?: number;
+  donorCount?: number;
   goal: number;
   range: { from: Date; to: Date };
   fc: (n: number) => string;
+  daysInfo?: { label: string; value: string };
 }
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; tone: string }> = ({ icon, label, value, sub, tone }) => (
