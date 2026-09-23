@@ -79,12 +79,14 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
         throw new Error('Event ID is required');
       }
 
-      const { data: event, error: eventError } = await supabase
+      let eventQuery = supabase
         .from('events')
         .select('id, name, start_datetime, end_datetime, location_name, category, attendance_target')
-        .eq('id', eventId)
-        .single();
+        .eq('id', eventId);
+      if (regionId) eventQuery = eventQuery.eq('region_id', regionId);
+      const { data: event, error: eventError } = await eventQuery.maybeSingle();
       if (eventError) throw eventError;
+      if (!event) throw new Error('This event report is unavailable or does not belong to your region.');
 
       // All attendance_events linked to this source event
       let aeQuery = supabase

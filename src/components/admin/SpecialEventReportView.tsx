@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "@/lib/router-compat";
+import { useNavigate } from "@/lib/router-compat";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,32 +59,47 @@ interface RegRow {
   members?: any;
 }
 
-export default function SpecialEventReport() {
-  const { eventId } = useParams<{ eventId: string }>();
+interface SpecialEventReportViewProps {
+  eventId?: string;
+  regionId?: string | null;
+  backTo: string;
+  showRegionFilter?: boolean;
+}
 
-  const { data: event } = useQuery({
-    queryKey: ["special-event-report-event", eventId],
+export default function SpecialEventReportView({
+  eventId,
+  regionId,
+  backTo,
+  showRegionFilter = false,
+}: SpecialEventReportViewProps) {
+  const navigate = useNavigate();
+
+  const { data: event, isLoading: isEventLoading, error: eventError } = useQuery({
+    queryKey: ["special-event-report-event", eventId, regionId ?? "all"],
     enabled: !!eventId,
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("events")
         .select("*")
-        .eq("id", eventId!)
-        .maybeSingle();
+        .eq("id", eventId ?? "")
+        .eq("is_special", true);
+      if (regionId) query = query.eq("region_id", regionId);
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
       return data;
     },
   });
 
   const { data: registrations = [], isLoading } = useQuery({
-    queryKey: ["special-event-registrations", eventId],
-    enabled: !!eventId,
+    queryKey: ["special-event-registrations", eventId, regionId ?? "all"],
+    enabled: !!event?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("event_pre_registrations")
         .select(
           "*, members:member_id(id, member_id, member_type, region_id, profiles:profile_id(first_name, last_name, email, phone, date_of_birth, gender, address), region:regions(name))"
         )
-        .eq("event_id", eventId!);
+        .eq("event_id", event?.id ?? "");
       if (error) throw error;
       return (data || []) as RegRow[];
     },
@@ -155,7 +170,7 @@ export default function SpecialEventReport() {
     const q = search.trim().toLowerCase();
     return attendees.filter((a) => {
       if (q && !(a.name.toLowerCase().includes(q) || a.email?.toLowerCase().includes(q) || a.phone?.toLowerCase().includes(q))) return false;
-      if (regionFilter !== "all" && a.region !== regionFilter) return false;
+      if (showRegionFilter && regionFilter !== "all" && a.region !== regionFilter) return false;
       if (typeFilter !== "all" && a.type !== typeFilter) return false;
       if (ageFilter !== "all" && a.ageGroup !== ageFilter) return false;
       if (genderFilter !== "all" && a.gender !== genderFilter) return false;
@@ -166,7 +181,7 @@ export default function SpecialEventReport() {
       if (mealFilter !== "all" && !(a.meal_preferences || []).includes(mealFilter)) return false;
       return true;
     });
-  }, [attendees, search, regionFilter, typeFilter, ageFilter, genderFilter, lodgingFilter, allergyFilter, mealFilter]);
+  }, [attendees, search, regionFilter, typeFilter, ageFilter, genderFilter, lodgingFilter, allergyFilter, mealFilter, showRegionFilter]);
 
   // ---- KPIs ----
   // New Adult / Child buckets: adult = age >= 15 OR unknown; child = age < 15.
@@ -358,15 +373,30 @@ export default function SpecialEventReport() {
     URL.revokeObjectURL(url);
   };
 
-  if (!ev) return <div className="p-6"><Skeleton className="h-24 w-full" /></div>;
+  if (isEventLoading) return <div className="p-6"><Skeleton className="h-24 w-full" /></div>;
+
+  if (eventError || !ev) {
+    return (
+      <div className="space-y-4 p-4 md:p-6">
+        <Button variant="ghost" size="sm" onClick={() => navigate(backTo)}>
+          <ArrowLeft className="mr-1 h-4 w-4" />Back to events
+        </Button>
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            This special-event report is unavailable or does not belong to your region.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
-          <Button asChild variant="ghost" size="sm" className="mb-2 text-muted-foreground">
-            <Link to="/admin/super/events"><ArrowLeft className="h-4 w-4 mr-1" />Back to events</Link>
+          <Button variant="ghost" size="sm" className="mb-2 text-muted-foreground" onClick={() => navigate(backTo)}>
+            <ArrowLeft className="h-4 w-4 mr-1" />Back to events
           </Button>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">{ev.name}</h1>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
@@ -398,8 +428,10 @@ export default function SpecialEventReport() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search name, email, phone…" className="pl-9 bg-background/60 border-border/50" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <FilterSelect value={regionFilter} onChange={setRegionFilter} placeholder="Region"
-            options={[{ value: "all", label: "All regions" }, ...regions.map((r) => ({ value: r, label: r }))]} />
+          {showRegionFilter && (
+            <FilterSelect value={regionFilter} onChange={setRegionFilter} placeholder="Region"
+              options={[{ value: "all", label: "All regions" }, ...regions.map((r) => ({ value: r, label: r }))]} />
+          )}
           <FilterSelect value={typeFilter} onChange={setTypeFilter} placeholder="Type"
             options={[{ value: "all", label: "All types" }, { value: "member", label: "Members" }, { value: "visitor", label: "Visitors" }]} />
           <FilterSelect value={ageFilter} onChange={setAgeFilter} placeholder="Age"
@@ -463,17 +495,19 @@ export default function SpecialEventReport() {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="By region">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={regions.map((r) => ({ region: r, count: filtered.filter((a) => a.region === r).length }))}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-                  <XAxis dataKey="region" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            {showRegionFilter && (
+              <ChartCard title="By region">
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={regions.map((r) => ({ region: r, count: filtered.filter((a) => a.region === r).length }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
+                    <XAxis dataKey="region" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+            )}
           </div>
 
           <ChartCard title="Daily attendance & lodging need">
