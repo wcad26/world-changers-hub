@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarDays, Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Users, Wallet } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock, Coins, Gauge, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Users, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -173,6 +173,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
       cpCount: cps.length,
       pctCollected: goal > 0 ? (collected / goal) * 100 : 0,
       pctPending: goal > 0 ? (pending / goal) * 100 : 0,
+      pctTotal: goal > 0 ? (total / goal) * 100 : 0,
     };
   }, [data, range, donationsTotal, goal]);
 
@@ -188,10 +189,10 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     <div className="space-y-6">
       {/* Donations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<HandCoins className="h-4 w-4" />} tone="--chart-5" label="Donations collected" value={fc(donationsTotal)} sub={`${donationCount} donation${donationCount === 1 ? "" : "s"}`} />
-        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-7" label="Total pledges" value={fc(s.totalPledges)} sub={`${s.pledgeCount + s.cpCount} pledge${s.pledgeCount + s.cpCount === 1 ? "" : "s"}`} />
-        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Donations awaited" value={fc(s.pledgesAwaited)} sub="Pledges not yet deposited" />
-        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-6" label="No. donors" value={`${donorCount}`} sub="Unique donors in period" />
+        <Stat icon={<HandCoins className="h-4 w-4" />} tone="--chart-5" label="Pledges collected" value={fc(donationsTotal)} sub={`${donationCount} pledge${donationCount === 1 ? "" : "s"} received`} />
+        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-7" label="Total pledges" value={fc(s.totalPledges)} sub={`${s.pledgeCount + s.cpCount} pledge${s.pledgeCount + s.cpCount === 1 ? "" : "s"} made`} />
+        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Pledges awaited" value={fc(s.pledgesAwaited)} sub="Pledges not yet deposited" />
+        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-6" label="No. pledgers" value={`${donorCount}`} sub="Unique pledgers in period" />
       </div>
 
       {/* Event registration fees */}
@@ -217,8 +218,21 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
+            <div className="rounded-2xl border border-border/40 bg-card/60 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Goal status</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: `color-mix(in oklab, var(--chart-6) 18%, transparent)`, color: `var(--chart-6)` }}>
+                  <Gauge className="h-4 w-4" />
+                </span>
+              </div>
+              <div className="font-bold tabular-nums text-foreground text-4xl leading-none">
+                {goal > 0 ? s.pctTotal.toFixed(1) : "0.0"}
+                <span className="text-3xl">%</span>
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">Of {fc(goal)} campaign goal</div>
+            </div>
             <Stat icon={<CalendarDays className="h-4 w-4" />} tone="--chart-8" label={daysInfo?.label || "Days remaining"} value={daysInfo?.value ?? "—"} sub="Campaign timeline" />
           </div>
         </div>
