@@ -1,58 +1,54 @@
-# Fix the live site: every published page returns an error
+# Upgrade Regional Event Actions and Reports
 
-## What is happening
+## Goal
+Make each Regional Admin event action menu match the optimized Super Admin version, while keeping every action and report limited to the administrator’s own region.
 
-The preview version of the site works fine and loads fast. The **published** site
-(wcaglobal.org and world-changers-hub.lovable.app) returns an error for every page —
-home, About, Locations, Events, everything.
+## Regional event menu
+Replace the current regional menu with the same order, labels, icons, and grouping used in Super Admin:
 
-The cause is not the page code and not the database. One of the Supabase libraries the
-site depends on fails to start up inside the published hosting environment. Because that
-failure happens before any page can be prepared, every request dies immediately with a
-generic error. The preview runs in a different environment, which is why it never showed
-the problem.
+1. **Edit** — open the existing regional edit dialog.
+2. **Mark Attendance** — open the existing regional attendance workflow.
+3. **View Report** — open the standard regional event report.
+4. **Copy Attendance Link** — copy the public self-attendance URL using the event slug when available, otherwise its ID, and show confirmation.
+5. For special events only:
+   - **Copy Registration Link** — copy the public pre-registration URL and show confirmation.
+   - **Special Event Report** — open the new regional special-event report page.
+6. **Delete** — retain the confirmation step and destructive styling.
 
-## The fix
+As selected, remove the regional-only **Duplicate** and **Make Public/Private** entries from this dropdown so it is an exact match. Their underlying event data and creation/edit behavior will not be changed.
 
-1. **Repair the faulty library loading** so it starts correctly in the published
-   environment. This is a build-configuration change; no page or feature behaviour changes.
-2. **Make the public pages independent of that library on the server.** The prepared
-   server-side data for Home, About, Locations, Events, Fundraising and Regional pages will
-   read from the database over plain web requests instead of going through the realtime
-   Supabase library, which is only needed in the browser. This removes an entire class of
-   publishing failures and keeps the fast server delivery we built.
-3. **Load the browser-side Supabase connection only in the browser**, so the realtime part
-   is never started while a page is being prepared on the server.
-4. **Add a pre-publish check**: build the production version and request the main public
-   pages against it before publishing, so an error like this is caught before it reaches
-   visitors.
+## Regional report pages
+- Keep the existing standard report at `/admin/regional/events/:eventId/report`, including attendance overview, daily attendance, participants, feedback, filters, and export.
+- Add `/admin/regional/events/:eventId/special-report` for special-event registration reporting.
+- Refactor the existing Super Admin special report into a shared report view so both portals receive the same features and future fixes:
+  - registration and attendee totals
+  - family and individual breakdowns
+  - adult, youth, and child breakdowns
+  - lodging, nights, meals, allergies, and health information
+  - arrival/departure and daily summaries
+  - search and relevant filters
+  - downloadable report data
+- Preserve portal-specific navigation: Regional returns to Regional Events; Super Admin returns to Global Event Management.
+- Keep cross-region filtering available only in Super Admin. Regional Admin sees only its own region’s event and registrations.
 
-## Verification before handing back
+## Access and data safety
+- Continue using the existing database access rules that restrict regional event, attendance, feedback, fee, and pre-registration records by region.
+- Add an explicit page-level event ownership check before showing either regional report, so a manually entered event ID from another region cannot display a report.
+- Keep the existing pass-through regional session wrapper unchanged.
+- Use the existing `events_view` access model; no new permission or database table is required.
 
-- Production build succeeds.
-- Home, About, Locations, a regional page, Events, Fundraising and an event detail page all
-  return a real page (not an error) from the production build.
-- Preview still loads fast on phone, tablet and desktop, in English and French, light and dark.
-- Publish, then confirm the live addresses serve pages correctly.
+## Technical implementation
+- Extract the shared action-menu presentation or align it through a reusable configuration so Regional and Super Admin menus do not drift again.
+- Parameterize the special-event report with the event ID, allowed region, return destination, and whether cross-region filters are permitted.
+- Add the new TanStack regional special-report route with the existing Regional Admin shell and error boundary pattern.
+- Use router navigation for report pages and preserve slug-or-ID public links for copied attendance and registration URLs.
+- Add route-specific metadata for the new report page.
 
-## Technical detail
-
-- Published worker error (all routes, status 500):
-  `TypeError: Class extends value [object Module] is not a constructor or null` thrown at
-  module init inside `@supabase/realtime-js`, which extends a class from `@supabase/phoenix`.
-  `@supabase/phoenix` ships dual CJS/ESM (`priv/static/phoenix.cjs.js` / `phoenix.mjs`); the
-  worker bundle picks the CommonJS build, so the import resolves to a module namespace object
-  and the `extends` fails. h3 swallows it into `{"status":500,"unhandled":true,"message":"HTTPError"}`.
-- Step 1: add a `resolve.alias` in `vite.config.ts` mapping `@supabase/phoenix` to
-  `@supabase/phoenix/priv/static/phoenix.mjs` (passed through `defineConfig({ vite: { ... } })`).
-  No `ssr.external` / `resolve.external` changes.
-- Step 2: in `src/lib/public-site.functions.ts` and `src/lib/public-event.functions.ts`,
-  replace `createClient` from `@supabase/supabase-js` with a small internal PostgREST
-  `fetch` helper (`SUPABASE_URL` + `SUPABASE_PUBLISHABLE_KEY`, `apikey` header, 8s timeout,
-  same select/filter/order/limit strings, same return shapes and zod validation). Server
-  functions then pull in zero Supabase runtime code.
-- Step 3: keep `@/integrations/supabase/client` API-identical but defer client construction
-  (lazy getter / proxy) so `createClient` is not executed during SSR module evaluation.
-  `client.server.ts` and `auth-middleware.ts` keep current behaviour.
-- Step 4: run the production build and smoke-test the routes above against the built worker
-  output before publishing; keep the existing `src/server.ts` error wrapper and logging.
+## Verification
+- Test regular and special events in the Regional Admin menu.
+- Confirm regular events do not show registration or special-report actions.
+- Confirm copied attendance and registration links open the correct public pages.
+- Confirm both Regional report pages load, filter, export, and return correctly.
+- Confirm Regional Admin cannot display another region’s report by changing the URL.
+- Confirm the existing Super Admin menu and both Super Admin report pages still work.
+- Check phone, tablet, and desktop layouts, then confirm the preview builds without errors.
