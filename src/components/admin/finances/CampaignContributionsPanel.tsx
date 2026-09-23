@@ -44,7 +44,7 @@ export function useCampaignContributions(campaignId?: string) {
               .select("id, event_id, member_id, group_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
-        supabase.from("fundraising_pledges").select("id, amount, status, created_at, source_event_id").eq("campaign_id", campaignId!),
+        supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
       ]);
       if (e2) throw e2;
       if (e3) throw e3;
@@ -80,8 +80,6 @@ export function useCampaignContributions(campaignId?: string) {
       });
       const campaignPledges = (pledges || [])
         .filter((p: any) => p.status === "active")
-        // pledges created from event registrations are already counted through the rows above
-        .filter((p: any) => !p.source_event_id || !ids.includes(p.source_event_id))
         .map((p: any) => ({ amount: Number(p.amount || 0), created_at: p.created_at }));
       return { rows, campaignPledges };
     },
