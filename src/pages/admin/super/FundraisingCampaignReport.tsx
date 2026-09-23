@@ -222,17 +222,16 @@ const SuperFundraisingCampaignReport: React.FC = () => {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
-        <KpiCard icon={<TrendingUp className="h-4 w-4" />} label="Donations" value={fc(totals.raised)} sub={`of ${fc(totals.goal)}`} />
-        <KpiCard icon={<HeartHandshake className="h-4 w-4" />} label="Donation progress" value={`${totals.pct.toFixed(2)}%`} sub={totals.goal > 0 ? `${fc(Math.max(0, totals.goal - totals.raised))} to go` : "No goal set"} />
-        <KpiCard icon={<Target className="h-4 w-4" />} label="Goal" value={fc(totals.goal)} />
-        <KpiCard icon={<PiggyBank className="h-4 w-4" />} label="Pledges" value={pledgeDisplay} sub={`${pledgeStats.count} pledge${pledgeStats.count === 1 ? "" : "s"}`} />
-        <KpiCard icon={<Users className="h-4 w-4" />} label="Donors" value={totals.donorCount} sub={`${filteredDonations.length} donation${filteredDonations.length === 1 ? "" : "s"}`} />
-        <KpiCard icon={<CalendarDays className="h-4 w-4" />} label={daysInfo.label} value={daysInfo.value} />
-      </div>
-
-      <CampaignContributionsPanel campaignId={campaignId || ""} donationsTotal={totals.raised} goal={totals.goal} range={range} fc={fc} />
+      <CampaignContributionsPanel
+        campaignId={campaignId || ""}
+        donationsTotal={totals.raised}
+        donationCount={filteredDonations.length}
+        donorCount={totals.donorCount}
+        goal={totals.goal}
+        range={range}
+        fc={fc}
+        daysInfo={daysInfo}
+      />
 
       <div>
         <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6 space-y-2">

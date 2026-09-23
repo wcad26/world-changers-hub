@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Wallet } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Users, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -79,8 +79,12 @@ export function useCampaignContributions(campaignId?: string) {
         };
       });
       const campaignPledges = (pledges || [])
-        .filter((p: any) => p.status === "active")
-        .map((p: any) => ({ amount: Number(p.amount || 0), created_at: p.created_at }));
+        .filter((p: any) => p.status !== "cancelled")
+        .map((p: any) => ({
+          amount: Number(p.amount || 0),
+          created_at: p.created_at,
+          status: p.status as string,
+        }));
       return { rows, campaignPledges };
     },
   });
@@ -94,9 +98,12 @@ const inRange = (d: string, r: { from: Date; to: Date }) => {
 interface Props {
   campaignId: string;
   donationsTotal: number; // major units, already filtered by period
+  donationCount?: number;
+  donorCount?: number;
   goal: number;
   range: { from: Date; to: Date };
   fc: (n: number) => string;
+  daysInfo?: { label: string; value: string };
 }
 
 const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?: string; tone: string }> = ({ icon, label, value, sub, tone }) => (
@@ -110,7 +117,7 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
   </div>
 );
 
-const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, goal, range, fc }) => {
+const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, donationCount = 0, donorCount = 0, goal, range, fc, daysInfo }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
   const { toast } = useToast();
@@ -150,11 +157,17 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     const feesWaived = rows.filter((r) => r.fee_status === "waived").reduce((a, r) => a + r.fee, 0);
     const regPledges = rows.reduce((a, r) => a + r.pledge, 0);
     const campPledges = cps.reduce((a, p) => a + p.amount, 0);
+    const campPledgesAwaited = cps.filter((p) => p.status !== "fulfilled").reduce((a, p) => a + p.amount, 0);
+    const totalPledges = regPledges + campPledges;
+    const pledgesAwaited = regPledges + campPledgesAwaited;
+    const feesExpected = feesPaid + feesUnpaid;
     const collected = donationsTotal + feesPaid;
-    const pending = feesUnpaid + regPledges + campPledges;
+    const pending = feesUnpaid + pledgesAwaited;
     const total = collected + pending;
     return {
-      rows, feesPaid, feesUnpaid, feesWaived, regPledges, campPledges, collected, pending, total,
+      rows, feesPaid, feesUnpaid, feesWaived, feesExpected, regPledges, campPledges,
+      totalPledges, pledgesAwaited, collected, pending, total,
+      attendees: rows.length,
       feeCount: rows.filter((r) => r.fee > 0).length,
       pledgeCount: rows.filter((r) => r.pledge > 0).length,
       cpCount: cps.length,
@@ -173,12 +186,22 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
 
   return (
     <div className="space-y-6">
+      {/* Donations */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Collected" value={fc(s.collected)} sub="Donations + paid fees" />
-        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Awaiting cash" value={fc(s.pending)} sub="Unpaid fees + pledges" />
-        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-6" label="Total committed" value={fc(s.total)} sub={goal > 0 ? `${((s.total / goal) * 100).toFixed(1)}% of goal` : "No goal set"} />
-        <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Still needed" value={fc(Math.max(0, goal - s.total))} sub={`Goal ${fc(goal)}`} />
+        <Stat icon={<HandCoins className="h-4 w-4" />} tone="--chart-5" label="Donations collected" value={fc(donationsTotal)} sub={`${donationCount} donation${donationCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Coins className="h-4 w-4" />} tone="--chart-7" label="Total pledges" value={fc(s.totalPledges)} sub={`${s.pledgeCount + s.cpCount} pledge${s.pledgeCount + s.cpCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Donations awaited" value={fc(s.pledgesAwaited)} sub="Pledges not yet deposited" />
+        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-6" label="No. donors" value={`${donorCount}`} sub="Unique donors in period" />
       </div>
+
+      {/* Event registration fees */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Fees collected" value={fc(s.feesPaid)} sub="Confirmed paid fees" />
+        <Stat icon={<Receipt className="h-4 w-4" />} tone="--chart-6" label="Fees expected" value={fc(s.feesExpected)} sub={`${s.feeCount} billed registration${s.feeCount === 1 ? "" : "s"}`} />
+        <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting cash deposit" />
+        <Stat icon={<Users className="h-4 w-4" />} tone="--chart-1" label="No. attendees" value={`${s.attendees}`} sub="Registered for linked events" />
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-2xl border border-border/40 bg-card/60 p-6 space-y-4">
@@ -193,6 +216,10 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
             <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
+            <Stat icon={<CalendarDays className="h-4 w-4" />} tone="--chart-8" label={daysInfo?.label || "Days remaining"} value={daysInfo?.value ?? "—"} sub="Campaign timeline" />
           </div>
         </div>
         <div className="rounded-2xl border border-border/40 bg-card/60 p-6 space-y-3">
