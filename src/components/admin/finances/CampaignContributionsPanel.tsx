@@ -1,12 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ChevronDown, Clock, Coins, HandCoins, Receipt, Target, Wallet } from "lucide-react";
+import { Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 export interface RegContribution {
   id: string;
@@ -17,6 +22,8 @@ export interface RegContribution {
   fee: number; // major units, 0 if not billed on this row
   fee_status: string;
   pledge: number; // major units
+  group_id: string | null;
+  fee_is_group: boolean;
 }
 
 export function useCampaignContributions(campaignId?: string) {
@@ -34,10 +41,10 @@ export function useCampaignContributions(campaignId?: string) {
         ids.length
           ? supabase
               .from("event_pre_registrations")
-              .select("id, event_id, member_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
+              .select("id, event_id, member_id, group_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
-        supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
+        supabase.from("fundraising_pledges").select("id, amount, status, created_at, source_event_id").eq("campaign_id", campaignId!),
       ]);
       if (e2) throw e2;
       if (e3) throw e3;
@@ -62,14 +69,20 @@ export function useCampaignContributions(campaignId?: string) {
           name: (r.member_id && names.get(r.member_id)) || r.email || r.phone || "—",
           created_at: r.created_at,
           category: r.registration_fee_category,
+          // registration_fee_amount is stored in minor units
           fee: billed ? Number(r.registration_fee_amount) / 100 : 0,
           fee_status: r.fee_status || "unpaid",
-          pledge: r.pledge_status === "cancelled" ? 0 : Number(r.pledge_amount || 0) / 100,
+          // pledge_amount is stored in MAJOR units
+          pledge: r.pledge_status === "cancelled" ? 0 : Number(r.pledge_amount || 0),
+          group_id: r.group_id ?? null,
+          fee_is_group: !!r.fee_is_group,
         };
       });
       const campaignPledges = (pledges || [])
         .filter((p: any) => p.status === "active")
-        .map((p: any) => ({ amount: Number(p.amount || 0) / 100, created_at: p.created_at }));
+        // pledges created from event registrations are already counted through the rows above
+        .filter((p: any) => !p.source_event_id || !ids.includes(p.source_event_id))
+        .map((p: any) => ({ amount: Number(p.amount || 0), created_at: p.created_at }));
       return { rows, campaignPledges };
     },
   });
