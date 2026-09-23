@@ -63,7 +63,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <Calendar className="h-5 w-5 text-chart-6" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
@@ -78,7 +78,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-600" />
+                <Users className="h-5 w-5 text-chart-5" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
@@ -93,7 +93,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-purple-600" />
+                <Heart className="h-5 w-5 text-chart-7" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
@@ -108,7 +108,7 @@ export default function MemberAttendance() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-orange-500" />
+                <Flame className="h-5 w-5 text-chart-3" />
                 <div>
                   <p className="text-xl md:text-2xl font-bold text-foreground">
                     {isLoading ? '...' : attendanceData?.streak || 0}

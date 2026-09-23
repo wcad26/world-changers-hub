@@ -60,10 +60,10 @@ const FundraisingTab: React.FC<FundraisingTabProps> = ({ selectedPeriod }) => {
   }
 
   const kpis = [
-    { label: "Total Raised", value: fc((analytics?.totalRaised || 0) * 100), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-900/20' },
-    { label: "Active Campaigns", value: analytics?.activeCampaigns || 0, icon: Target, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-    { label: "Total Donors", value: analytics?.totalDonors || 0, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: "Success Rate", value: `${successRate}%`, icon: TrendingUp, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+    { label: "Total Raised", value: fc((analytics?.totalRaised || 0) * 100), icon: DollarSign, color: 'text-chart-5', bg: 'bg-chart-5/10' },
+    { label: "Active Campaigns", value: analytics?.activeCampaigns || 0, icon: Target, color: 'text-chart-3', bg: 'bg-chart-3/10' },
+    { label: "Total Donors", value: analytics?.totalDonors || 0, icon: Users, color: 'text-chart-7', bg: 'bg-chart-7/10' },
+    { label: "Success Rate", value: `${successRate}%`, icon: TrendingUp, color: 'text-chart-6', bg: 'bg-chart-6/10' },
   ];
 
   return (

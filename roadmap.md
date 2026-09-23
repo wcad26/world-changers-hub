@@ -1,3 +1,11 @@
+# Portal reporting colors and chart readability — Complete
+
+- Added a light/dark semantic reporting palette shared across all portals.
+- Corrected invalid chart color syntax that caused monochrome or black output.
+- Standardized attendance, finance, fundraising, target, and demographic series colors.
+- Improved key pie charts with donut spacing, non-zero slices, legends, percentages, themed tooltips, and totals.
+- Added semantic KPI icon tones while preserving all calculations, permissions, routes, and exports.
+
 # WCA brand revamp
 
 - [x] Establish WCA Heritage light/dark tokens, typography, theme persistence, and shared controls
