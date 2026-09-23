@@ -35,11 +35,15 @@
   --sidebar-accent-foreground: oklch(0.310 0.045 194);
   --sidebar-border: oklch(0.885 0.009 285);
   --sidebar-ring: oklch(0.543 0.055 192.4);
-  --chart-1: oklch(0.359 0.084 335.2);
-  --chart-2: oklch(0.543 0.055 192.4);
-  --chart-3: oklch(0.610 0.120 55);
-  --chart-4: oklch(0.570 0.130 300);
-  --chart-5: oklch(0.640 0.100 145);
+  --chart-1: oklch(0.430 0.115 335);
+  --chart-2: oklch(0.520 0.095 192);
+  --chart-3: oklch(0.700 0.150 82);
+  --chart-4: oklch(0.600 0.185 28);
+  --chart-5: oklch(0.565 0.145 152);
+  --chart-6: oklch(0.560 0.145 248);
+  --chart-7: oklch(0.570 0.155 302);
+  --chart-8: oklch(0.625 0.115 215);
+  --chart-neutral: oklch(0.590 0.015 285);
   --event-background: oklch(0.185 0.018 293);
   --event-surface: oklch(0.225 0.024 319);
   --event-elevated: oklch(0.275 0.030 319);
@@ -92,11 +96,15 @@
   --sidebar-accent-foreground: oklch(0.910 0.025 192);
   --sidebar-border: oklch(0.300 0.017 293);
   --sidebar-ring: oklch(0.650 0.070 192.4);
-  --chart-1: oklch(0.680 0.105 335.2);
-  --chart-2: oklch(0.700 0.075 192.4);
-  --chart-3: oklch(0.760 0.120 75);
-  --chart-4: oklch(0.700 0.120 300);
-  --chart-5: oklch(0.730 0.100 145);
+  --chart-1: oklch(0.720 0.125 335);
+  --chart-2: oklch(0.755 0.105 192);
+  --chart-3: oklch(0.820 0.145 82);
+  --chart-4: oklch(0.720 0.175 28);
+  --chart-5: oklch(0.765 0.135 152);
+  --chart-6: oklch(0.745 0.135 248);
+  --chart-7: oklch(0.755 0.145 302);
+  --chart-8: oklch(0.790 0.105 215);
+  --chart-neutral: oklch(0.690 0.018 285);
   --gradient-card: linear-gradient(145deg, color-mix(in oklab, var(--card) 93%, var(--primary)), var(--card));
 }
 
@@ -116,6 +124,7 @@
   --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
   --color-chart-1: var(--chart-1); --color-chart-2: var(--chart-2); --color-chart-3: var(--chart-3); --color-chart-4: var(--chart-4); --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6); --color-chart-7: var(--chart-7); --color-chart-8: var(--chart-8); --color-chart-neutral: var(--chart-neutral);
   --color-event-background: var(--event-background); --color-event-surface: var(--event-surface); --color-event-elevated: var(--event-elevated);
   --color-event-foreground: var(--event-foreground); --color-event-muted: var(--event-muted); --color-event-border: var(--event-border);
   --color-wca-purple: var(--primary); --color-wca-violet: var(--primary); --color-wca-teal: var(--secondary);

@@ -365,7 +365,7 @@ const BarChart = React.forwardRef<
     valueFormatter?: (value: number) => string
   }
 >(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
-  const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+  const defaultColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)', 'var(--chart-5)', 'var(--chart-7)', 'var(--chart-8)', 'var(--chart-4)']
   
   const config: ChartConfig = Object.fromEntries(
     categories.map((category, i) => [
@@ -382,13 +382,13 @@ const BarChart = React.forwardRef<
       <RechartsPrimitive.BarChart data={data}>
         <RechartsPrimitive.XAxis
           dataKey={index}
-          stroke="#888888"
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <RechartsPrimitive.YAxis
-          stroke="#888888"
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
@@ -425,7 +425,7 @@ const LineChart = React.forwardRef<
     valueFormatter?: (value: number) => string
   }
 >(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
-  const defaultColors = ['#8b5cf6', '#e11d48', '#2dd4bf', '#f97316', '#06b6d4']
+  const defaultColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)', 'var(--chart-5)', 'var(--chart-7)', 'var(--chart-8)', 'var(--chart-4)']
   
   const config: ChartConfig = Object.fromEntries(
     categories.map((category, i) => [
@@ -442,13 +442,13 @@ const LineChart = React.forwardRef<
       <RechartsPrimitive.LineChart data={data}>
         <RechartsPrimitive.XAxis
           dataKey={index}
-          stroke="#888888"
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
         />
         <RechartsPrimitive.YAxis
-          stroke="#888888"
+          stroke="var(--muted-foreground)"
           fontSize={12}
           tickLine={false}
           axisLine={false}
@@ -488,7 +488,7 @@ const PieChart = React.forwardRef<
     valueFormatter?: (value: number) => string
   }
 >(({ data, index, categories, colors, valueFormatter, ...props }, ref) => {
-  const defaultColors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe']
+  const defaultColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-6)', 'var(--chart-5)', 'var(--chart-7)', 'var(--chart-8)', 'var(--chart-4)']
   
   const config: ChartConfig = Object.fromEntries(
     data.map((item, i) => [
