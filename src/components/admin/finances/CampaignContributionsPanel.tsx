@@ -1,12 +1,17 @@
 import React, { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ChevronDown, Clock, Coins, HandCoins, Receipt, Target, Wallet } from "lucide-react";
+import { Check, ChevronDown, Clock, Coins, HandCoins, MoreHorizontal, Receipt, Target, Undo2, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 export interface RegContribution {
   id: string;
@@ -17,6 +22,8 @@ export interface RegContribution {
   fee: number; // major units, 0 if not billed on this row
   fee_status: string;
   pledge: number; // major units
+  group_id: string | null;
+  fee_is_group: boolean;
 }
 
 export function useCampaignContributions(campaignId?: string) {
@@ -34,7 +41,7 @@ export function useCampaignContributions(campaignId?: string) {
         ids.length
           ? supabase
               .from("event_pre_registrations")
-              .select("id, event_id, member_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
+              .select("id, event_id, member_id, group_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
@@ -62,14 +69,18 @@ export function useCampaignContributions(campaignId?: string) {
           name: (r.member_id && names.get(r.member_id)) || r.email || r.phone || "—",
           created_at: r.created_at,
           category: r.registration_fee_category,
+          // registration_fee_amount is stored in minor units
           fee: billed ? Number(r.registration_fee_amount) / 100 : 0,
           fee_status: r.fee_status || "unpaid",
-          pledge: r.pledge_status === "cancelled" ? 0 : Number(r.pledge_amount || 0) / 100,
+          // pledge_amount is stored in MAJOR units
+          pledge: r.pledge_status === "cancelled" ? 0 : Number(r.pledge_amount || 0),
+          group_id: r.group_id ?? null,
+          fee_is_group: !!r.fee_is_group,
         };
       });
       const campaignPledges = (pledges || [])
         .filter((p: any) => p.status === "active")
-        .map((p: any) => ({ amount: Number(p.amount || 0) / 100, created_at: p.created_at }));
+        .map((p: any) => ({ amount: Number(p.amount || 0), created_at: p.created_at }));
       return { rows, campaignPledges };
     },
   });
@@ -102,6 +113,34 @@ const Stat: React.FC<{ icon: React.ReactNode; label: string; value: string; sub?
 const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, goal, range, fc }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
+  const { toast } = useToast();
+  const qc = useQueryClient();
+
+  const setFeeStatus = useMutation({
+    mutationFn: async ({ row, status }: { row: RegContribution; status: "paid" | "unpaid" | "waived" }) => {
+      let qy = supabase.from("event_pre_registrations").update({ fee_status: status });
+      // family / group billing: keep every member of the group in the same state
+      qy = row.fee_is_group && row.group_id ? qy.eq("group_id", row.group_id) : qy.eq("id", row.id);
+      const { error } = await qy;
+      if (error) throw error;
+      return status;
+    },
+    onSuccess: (status) => {
+      toast({
+        title: status === "paid" ? "Payment confirmed" : status === "waived" ? "Fee waived" : "Marked as awaiting cash",
+      });
+      qc.invalidateQueries({ queryKey: ["campaign-contributions"] });
+      qc.invalidateQueries({ queryKey: ["campaign_pledges"] });
+      qc.invalidateQueries({ queryKey: ["campaign_pledges_detailed"] });
+      qc.invalidateQueries({ queryKey: ["campaign_donations"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_campaign"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_campaigns"] });
+      qc.invalidateQueries({ queryKey: ["fundraising_analytics"] });
+      qc.invalidateQueries({ queryKey: ["global_fundraising_campaigns"] });
+    },
+    onError: (e: any) => toast({ title: "Update failed", description: e?.message, variant: "destructive" }),
+  });
+
 
   const s = useMemo(() => {
     const rows = (data?.rows || []).filter((r) => inRange(r.created_at, range));
@@ -194,8 +233,9 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
                     <TableHead className="hidden md:table-cell">Event</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead className="text-right">Fee</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Pledge</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -204,10 +244,34 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
                       <TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(r.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{r.name}</TableCell>
                       <TableCell className="hidden md:table-cell text-muted-foreground">{r.event_name}</TableCell>
-                      <TableCell className="capitalize">{r.category || "—"}</TableCell>
+                      <TableCell className="capitalize">{r.category || "—"}{r.fee > 0 && r.fee_is_group ? <span className="ml-1 text-xs text-muted-foreground">(family)</span> : null}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.fee > 0 ? fc(r.fee) : "—"}</TableCell>
-                      <TableCell>{r.fee > 0 ? <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">{r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status}</Badge> : "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.pledge > 0 ? fc(r.pledge) : "—"}</TableCell>
+                      <TableCell>{r.fee > 0 ? <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">{r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status}</Badge> : "—"}</TableCell>
+                      <TableCell className="text-right">
+                        {r.fee > 0 ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" disabled={setFeeStatus.isPending}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Registration fee</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem disabled={r.fee_status === "paid"} onClick={() => setFeeStatus.mutate({ row: r, status: "paid" })}>
+                                <Check className="h-4 w-4 mr-2" /> Confirm payment
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled={r.fee_status === "unpaid"} onClick={() => setFeeStatus.mutate({ row: r, status: "unpaid" })}>
+                                <Undo2 className="h-4 w-4 mr-2" /> Mark awaiting cash
+                              </DropdownMenuItem>
+                              <DropdownMenuItem disabled={r.fee_status === "waived"} onClick={() => setFeeStatus.mutate({ row: r, status: "waived" })}>
+                                <HandCoins className="h-4 w-4 mr-2" /> Waive fee
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : "—"}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
