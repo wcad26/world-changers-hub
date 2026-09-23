@@ -337,12 +337,13 @@ const MembersTab: React.FC<MembersTabProps> = ({ selectedPeriod }) => {
           </CardHeader>
           <CardContent>
             {genderData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
-                  <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  <Pie data={genderData} dataKey="value" nameKey="name" cx="50%" cy="45%" innerRadius={42} outerRadius={76} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
                     {genderData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8 }} formatter={(value: number, name: string) => [`${value} (${Math.round((value / Math.max(1, genderData.reduce((sum, item) => sum + item.value, 0))) * 100)}%)`, name]} />
+                  <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: '20px' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (

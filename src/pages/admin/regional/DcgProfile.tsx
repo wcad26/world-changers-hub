@@ -327,10 +327,10 @@ const DcgProfile: React.FC = () => {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GlassKPICard icon={<Users className="h-4 w-4" />} label="Total Members" value={activeMembers.length} />
-        <GlassKPICard icon={<TrendingUp className="h-4 w-4" />} label="Total Income" value={fmt(totalIncome)} />
-        <GlassKPICard icon={<TrendingDown className="h-4 w-4" />} label="Total Expenses" value={fmt(totalExpenses)} />
-        <GlassKPICard icon={<Wallet className="h-4 w-4" />} label="Net Balance" value={fmt(netBalance)} subtitle={netBalance >= 0 ? "Positive balance" : "Deficit"} />
+        <GlassKPICard icon={<Users className="h-4 w-4" />} label="Total Members" value={activeMembers.length} tone="primary" />
+        <GlassKPICard icon={<TrendingUp className="h-4 w-4" />} label="Total Income" value={fmt(totalIncome)} tone="emerald" />
+        <GlassKPICard icon={<TrendingDown className="h-4 w-4" />} label="Total Expenses" value={fmt(totalExpenses)} tone="coral" />
+        <GlassKPICard icon={<Wallet className="h-4 w-4" />} label="Net Balance" value={fmt(netBalance)} subtitle={netBalance >= 0 ? "Positive balance" : "Deficit"} tone="blue" />
       </div>
 
       {/* Attendance Trend (DCG-scoped, dashboard look) */}
