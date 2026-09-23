@@ -294,7 +294,7 @@ const MemberProfile: React.FC = () => {
                           {/* Grid lines */}
                           <defs>
                             <pattern id="grid" width="50" height="36" patternUnits="userSpaceOnUse">
-                              <path d="M 50 0 L 0 0 0 36" fill="none" stroke="hsl(var(--muted-foreground))" strokeOpacity="0.1" strokeWidth="1"/>
+                              <path d="M 50 0 L 0 0 0 36" fill="none" stroke="var(--muted-foreground)" strokeOpacity="0.1" strokeWidth="1"/>
                             </pattern>
                           </defs>
                           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -335,7 +335,7 @@ const MemberProfile: React.FC = () => {
                                   <path
                                     d={pathData}
                                     fill="none"
-                                    stroke="hsl(var(--primary))"
+                                    stroke="var(--primary)"
                                     strokeWidth="2"
                                     className="animate-fade-in"
                                   />

@@ -162,7 +162,7 @@ const DcgReportsTab = () => {
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={(v: number, n: string) => n === 'Attendance Rate' ? [`${v.toFixed(1)}%`, n] : [v, n]} />
                     <Legend />
-                    <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="hsl(var(--primary))" strokeWidth={2} />
+                    <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--primary)" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

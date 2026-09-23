@@ -263,32 +263,32 @@ const FundraisingCampaignReport: React.FC = () => {
             <ComposedChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradCumulative" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--chart-4)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--chart-4)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-              <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} minTickGap={20} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+              <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} minTickGap={20} />
               <YAxis
-                tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
               />
               <Tooltip
-                cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
                 contentStyle={{
-                  backgroundColor: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  backgroundColor: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: "12px",
                   fontSize: "12px",
-                  boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                  boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
                 }}
                 formatter={(value, name) => [fc(Number(value)), name]}
               />
               <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-              <Bar dataKey="Donations" fill="hsl(var(--chart-1))" radius={[6, 6, 0, 0]} maxBarSize={32} />
-              <Area type="monotone" dataKey="Cumulative" stroke="hsl(var(--chart-4))" fill="url(#gradCumulative)" strokeWidth={2.5} dot={{ r: 3, fill: "hsl(var(--chart-4))" }} activeDot={{ r: 5 }} />
+              <Bar dataKey="Donations" fill="var(--chart-1)" radius={[6, 6, 0, 0]} maxBarSize={32} />
+              <Area type="monotone" dataKey="Cumulative" stroke="var(--chart-4)" fill="url(#gradCumulative)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--chart-4)" }} activeDot={{ r: 5 }} />
             </ComposedChart>
           </ResponsiveContainer>
         )}

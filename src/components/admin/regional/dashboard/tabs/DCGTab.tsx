@@ -133,8 +133,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '6px',
                   }}
                   formatter={(value: number, name: string) =>
@@ -142,8 +142,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
                   }
                 />
                 <Legend />
-                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="hsl(var(--accent-foreground))" strokeWidth={2} strokeDasharray="5 5" />
+                <Line type="monotone" dataKey="attendanceRate" name="Attendance Rate" stroke="var(--primary)" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="totalPresent" name="Present" stroke="var(--accent-foreground)" strokeWidth={2} strokeDasharray="5 5" />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -165,8 +165,8 @@ const DCGTab: React.FC<DCGTabProps> = ({ selectedPeriod }) => {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--card)',
+                    border: '1px solid var(--border)',
                     borderRadius: '6px',
                   }}
                   formatter={(value: number) => fmt(value)}

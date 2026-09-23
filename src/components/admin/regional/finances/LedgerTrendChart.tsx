@@ -82,41 +82,41 @@ const LedgerTrendChart: React.FC<Props> = ({ rows, regionCurrency, title = "Fina
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="gradIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="gradExpenses" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.35} />
+                <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--chart-4)" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="var(--chart-4)" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.4} />
-            <XAxis dataKey="week" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} minTickGap={20} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} minTickGap={20} />
             <YAxis
-              tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
               axisLine={false}
               tickLine={false}
               tickFormatter={(v) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
             />
             <Tooltip
-              cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+              cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
               contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "var(--card)",
+                border: "1px solid var(--border)",
                 borderRadius: "12px",
                 fontSize: "12px",
-                boxShadow: "0 4px 12px hsl(var(--foreground) / 0.08)",
+                boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
               }}
               formatter={(value, name) => [fc(Number(value)), name]}
             />
             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-            <Area type="monotone" dataKey="Income" stroke="hsl(var(--chart-1))" fill="url(#gradIncome)" strokeWidth={2.5} dot={false} />
-            <Area type="monotone" dataKey="Expenses" stroke="hsl(var(--chart-2))" fill="url(#gradExpenses)" strokeWidth={2.5} dot={false} />
-            <Area type="monotone" dataKey="Net" stroke="hsl(var(--chart-4))" fill="url(#gradNet)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="Income" stroke="var(--chart-1)" fill="url(#gradIncome)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="Expenses" stroke="var(--chart-2)" fill="url(#gradExpenses)" strokeWidth={2.5} dot={false} />
+            <Area type="monotone" dataKey="Net" stroke="var(--chart-4)" fill="url(#gradNet)" strokeWidth={2.5} dot={false} />
           </AreaChart>
         </ResponsiveContainer>
       )}

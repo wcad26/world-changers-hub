@@ -139,27 +139,27 @@ export default function MemberAttendance() {
               bottom: 5
             }}>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{
-                fill: 'hsl(var(--muted-foreground))',
+                fill: 'var(--muted-foreground)',
                 fontSize: 12
               }} />
                   <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{
-                fill: 'hsl(var(--muted-foreground))',
+                fill: 'var(--muted-foreground)',
                 fontSize: 12
               }} tickFormatter={value => `${value}%`} width={45} />
                   <Tooltip cursor={{
-                fill: 'hsl(var(--muted))',
+                fill: 'var(--muted)',
                 opacity: 0.3
               }} contentStyle={{
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
+                backgroundColor: 'var(--card)',
+                border: '1px solid var(--border)',
                 borderRadius: '8px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
               }} labelStyle={{
-                color: 'hsl(var(--foreground))',
+                color: 'var(--foreground)',
                 fontWeight: 600
               }} formatter={(value: number) => [`${value}%`, 'Attendance']} />
                   <Bar dataKey="rate" radius={[6, 6, 0, 0]} maxBarSize={50}>
-                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'hsl(var(--primary))' : entry.rate >= 80 ? 'hsl(var(--primary) / 0.7)' : 'hsl(var(--muted-foreground) / 0.5)'} />)}
+                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'var(--primary)' : entry.rate >= 80 ? 'color-mix(in oklab, var(--primary) calc(0.7 * 100%), transparent)' : 'color-mix(in oklab, var(--muted-foreground) calc(0.5 * 100%), transparent)'} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-muted-foreground">
