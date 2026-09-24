@@ -480,6 +480,14 @@ export default function SpecialEventReportView({
 
             <DonutCard title="Gender split" data={genderChartData} centerValue={stats.total} />
 
+            <DonutCard
+              title="Families vs individuals"
+              data={groupChartData}
+              centerValue={stats.families + stats.individuals}
+              centerLabel="Registration groups"
+            />
+
+
             {showRegionFilter && (
               <ChartCard title="By region">
                 <ResponsiveContainer width="100%" height={220}>
