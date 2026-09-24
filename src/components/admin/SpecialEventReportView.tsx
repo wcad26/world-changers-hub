@@ -257,10 +257,10 @@ export default function SpecialEventReportView({
     { name: "Female", value: stats.female },
     { name: "Other/—", value: stats.otherGender },
   ].filter((item) => item.value > 0);
-  const donutTooltip = (value: number, name: string) => [
-    `${value} (${Math.round((value / Math.max(1, stats.total)) * 100)}%)`,
-    name,
-  ];
+  const groupChartData = [
+    { name: "Individuals", value: stats.individuals, sub: "Registered alone" },
+    { name: "Families", value: stats.families, sub: `${stats.familyMemberTotal} people in families` },
+  ].filter((item) => item.value > 0);
 
   // ---- Day rollups ----
   const dayRollup = useMemo(() => {
@@ -427,16 +427,6 @@ export default function SpecialEventReportView({
         </Button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} Individuals · ${stats.families} Families${stats.families > 0 ? ` (${stats.familyMemberTotal} in families)` : ""}`} />
-        <KPI icon={Activity} label="Adults / Children" value={`${stats.adultsCombined} / ${stats.childrenCombined}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown (counted as adults)` : "≥15 / <15"} />
-        <KPI icon={UsersRound} label="Gender" value={`${stats.male} M · ${stats.female} F`} sub={stats.otherGender > 0 ? `${stats.otherGender} other/—` : "—"} />
-        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingIndividualsCount} Individuals / ${stats.lodgingFamilies} Families (${stats.familyChildrenLodging} children · ${stats.familyParentsLodging} parents w/ kids · ${stats.familyAdultsAloneLodging} adults)`} />
-        <KPI icon={CalendarDays} label="Peak Day Attendance" value={peakDay ? `${peakDay.adults} Adults / ${peakDay.children} Children` : "—"} sub={peakDay ? `Peak on ${peakDay.date} · night ${peakDay.index} of ${peakDay.totalNights}` : "No dated attendees"} />
-        <KPI icon={Utensils} label="With Dietary Notes" value={attendees.filter((a) => a.allergyFlag).length} sub="Allergies & preferences" />
-      </div>
-
       {/* Filter bar */}
       <Card className="bg-card/60 backdrop-blur-sm border-border/40">
         <CardContent className="p-4 grid gap-2 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
@@ -463,6 +453,16 @@ export default function SpecialEventReportView({
         </CardContent>
       </Card>
 
+      {/* KPIs */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+        <KPI icon={Users} label="Total Registered" value={stats.total} sub={`${stats.individuals} Individuals · ${stats.families} Families${stats.families > 0 ? ` (${stats.familyMemberTotal} in families)` : ""}`} />
+        <KPI icon={Activity} label="Adults / Children" value={`${stats.adultsCombined} / ${stats.childrenCombined}`} sub={stats.unknownAge > 0 ? `${stats.unknownAge} age unknown (counted as adults)` : "≥15 / <15"} />
+        <KPI icon={UsersRound} label="Gender" value={`${stats.male} M · ${stats.female} F`} sub={stats.otherGender > 0 ? `${stats.otherGender} other/—` : "—"} />
+        <KPI icon={Bed} label="Lodging Needed" value={stats.lodgingPeople} sub={`${stats.lodgingIndividualsCount} Individuals / ${stats.lodgingFamilies} Families (${stats.familyChildrenLodging} children · ${stats.familyParentsLodging} parents w/ kids · ${stats.familyAdultsAloneLodging} adults)`} />
+        <KPI icon={CalendarDays} label="Peak Day Attendance" value={peakDay ? `${peakDay.adults} Adults / ${peakDay.children} Children` : "—"} sub={peakDay ? `Peak on ${peakDay.date} · night ${peakDay.index} of ${peakDay.totalNights}` : "No dated attendees"} />
+        <KPI icon={Utensils} label="With Dietary Notes" value={attendees.filter((a) => a.allergyFlag).length} sub="Allergies & preferences" />
+      </div>
+
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="bg-card/60 backdrop-blur-sm border border-border/30">
@@ -476,35 +476,17 @@ export default function SpecialEventReportView({
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <ChartCard title="Age groups">
-               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                   <Pie dataKey="value" nameKey="name" data={ageChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
-                     {ageChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
-                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
-                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DonutCard title="Age groups" data={ageChartData} centerValue={stats.total} />
 
-            <ChartCard title="Gender split">
-               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                   <Pie dataKey="value" nameKey="name" data={genderChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
-                     {genderChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
-                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
-                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DonutCard title="Gender split" data={genderChartData} centerValue={stats.total} />
+
+            <DonutCard
+              title="Families vs individuals"
+              data={groupChartData}
+              centerValue={stats.families + stats.individuals}
+              centerLabel="Registration groups"
+            />
+
 
             {showRegionFilter && (
               <ChartCard title="By region">
@@ -833,6 +815,68 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
     <Card className="bg-card/60 backdrop-blur-sm border-border/40">
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
       <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function DonutCard({
+  title, data, centerValue, centerLabel,
+}: {
+  title: string;
+  data: Array<{ name: string; value: number; sub?: string }>;
+  centerValue: number;
+  centerLabel?: string;
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <Card className="bg-card/60 backdrop-blur-sm border-border/40">
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent>
+        {total === 0 ? (
+          <p className="text-sm text-muted-foreground py-10 text-center">No data yet.</p>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-full sm:w-1/2 min-w-0">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie dataKey="value" nameKey="name" data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
+                    {data.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{centerValue}</text>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
+                    formatter={(value: any, name: any) => [`${value} (${Math.round((Number(value) / Math.max(1, total)) * 100)}%)`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {centerLabel && (
+                <p className="text-center text-[11px] text-muted-foreground -mt-2">{centerLabel}</p>
+              )}
+            </div>
+            <ul className="w-full sm:w-1/2 space-y-2">
+              {data.map((d, i) => (
+                <li key={d.name} className="flex items-start gap-2 text-sm">
+                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-muted-foreground">{d.name}</span>
+                      <span className="font-semibold tabular-nums">
+                        {d.value}
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          ({Math.round((d.value / Math.max(1, total)) * 100)}%)
+                        </span>
+                      </span>
+                    </span>
+                    {d.sub && <span className="block text-[11px] text-muted-foreground">{d.sub}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
