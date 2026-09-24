@@ -257,6 +257,10 @@ export default function SpecialEventReportView({
     { name: "Female", value: stats.female },
     { name: "Other/—", value: stats.otherGender },
   ].filter((item) => item.value > 0);
+  const groupChartData = [
+    { name: "Individuals", value: stats.individuals, sub: "Registered alone" },
+    { name: "Families", value: stats.families, sub: `${stats.familyMemberTotal} people in families` },
+  ].filter((item) => item.value > 0);
   const donutTooltip = (value: number, name: string) => [
     `${value} (${Math.round((value / Math.max(1, stats.total)) * 100)}%)`,
     name,
