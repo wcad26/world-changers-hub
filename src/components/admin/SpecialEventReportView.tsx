@@ -837,6 +837,68 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   );
 }
 
+function DonutCard({
+  title, data, centerValue, centerLabel,
+}: {
+  title: string;
+  data: Array<{ name: string; value: number; sub?: string }>;
+  centerValue: number;
+  centerLabel?: string;
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <Card className="bg-card/60 backdrop-blur-sm border-border/40">
+      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardContent>
+        {total === 0 ? (
+          <p className="text-sm text-muted-foreground py-10 text-center">No data yet.</p>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="w-full sm:w-1/2 min-w-0">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie dataKey="value" nameKey="name" data={data} cx="50%" cy="50%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
+                    {data.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{centerValue}</text>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }}
+                    formatter={(value: any, name: any) => [`${value} (${Math.round((Number(value) / Math.max(1, total)) * 100)}%)`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {centerLabel && (
+                <p className="text-center text-[11px] text-muted-foreground -mt-2">{centerLabel}</p>
+              )}
+            </div>
+            <ul className="w-full sm:w-1/2 space-y-2">
+              {data.map((d, i) => (
+                <li key={d.name} className="flex items-start gap-2 text-sm">
+                  <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-muted-foreground">{d.name}</span>
+                      <span className="font-semibold tabular-nums">
+                        {d.value}
+                        <span className="ml-1 text-xs font-normal text-muted-foreground">
+                          ({Math.round((d.value / Math.max(1, total)) * 100)}%)
+                        </span>
+                      </span>
+                    </span>
+                    {d.sub && <span className="block text-[11px] text-muted-foreground">{d.sub}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function FilterSelect({
   value, onChange, placeholder, options,
 }: {
