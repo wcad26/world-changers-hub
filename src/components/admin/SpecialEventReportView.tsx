@@ -476,35 +476,9 @@ export default function SpecialEventReportView({
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <ChartCard title="Age groups">
-               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                   <Pie dataKey="value" nameKey="name" data={ageChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
-                     {ageChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
-                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
-                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DonutCard title="Age groups" data={ageChartData} centerValue={stats.total} />
 
-            <ChartCard title="Gender split">
-               <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                   <Pie dataKey="value" nameKey="name" data={genderChartData} cx="50%" cy="43%" innerRadius={45} outerRadius={78} paddingAngle={3} stroke="var(--card)" strokeWidth={2}>
-                     {genderChartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                   <text x="50%" y="43%" textAnchor="middle" dominantBaseline="middle" fill="var(--foreground)" fontSize="20" fontWeight="700">{stats.total}</text>
-                   <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} formatter={donutTooltip} />
-                   <Legend verticalAlign="bottom" iconType="circle" wrapperStyle={{ fontSize: 11, lineHeight: "20px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            <DonutCard title="Gender split" data={genderChartData} centerValue={stats.total} />
 
             {showRegionFilter && (
               <ChartCard title="By region">
