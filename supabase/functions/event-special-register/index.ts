@@ -124,8 +124,9 @@ Deno.serve(async (req) => {
         : `family member #${idx + 1}`;
       const emailRaw = f.submitted_email || nr?.email || "";
       const phoneRaw = f.submitted_phone || nr?.phone || "";
-      if (emailRaw) emailSlots.push({ value: normEmail(emailRaw), label });
-      if (phoneRaw) phoneSlots.push({ value: normPhone(phoneRaw), label });
+      // Family members (e.g. children) may share the primary contact's email/phone.
+      if (emailRaw && normEmail(emailRaw) !== normEmail(primaryEmailRaw)) emailSlots.push({ value: normEmail(emailRaw), label });
+      if (phoneRaw && normPhone(phoneRaw) !== normPhone(primaryPhoneRaw)) phoneSlots.push({ value: normPhone(phoneRaw), label });
     });
     const firstDup = (slots: { value: string; label: string }[]) => {
       const seen = new Map<string, string>();
@@ -177,11 +178,24 @@ Deno.serve(async (req) => {
       if (!VALID_RELS.includes((f.relationship_type || "").toLowerCase())) {
         return json({ error: `Invalid relationship_type: ${f.relationship_type}` }, 400);
       }
+      // Strip contact details shared with the primary so they don't resolve to
+      // (or overwrite) the primary's own profile.
+      const pE = normEmail(primaryEmailRaw);
+      const pP = normPhone(primaryPhoneRaw);
+      const sharedE = (v?: string | null) => !!v && !!pE && normEmail(v) === pE;
+      const sharedP = (v?: string | null) => !!v && !!pP && normPhone(v) === pP;
+      const nr = f.new_registrant
+        ? {
+            ...f.new_registrant,
+            email: sharedE(f.new_registrant.email) ? "" : f.new_registrant.email,
+            phone: sharedP(f.new_registrant.phone) ? "" : f.new_registrant.phone,
+          }
+        : null;
       const m = await resolveOrCreateMember(admin, {
         existing_member_id: f.existing_member_id || null,
-        new_registrant: f.new_registrant || null,
-        submitted_email: f.submitted_email || null,
-        submitted_phone: f.submitted_phone || null,
+        new_registrant: nr,
+        submitted_email: sharedE(f.submitted_email) ? null : (f.submitted_email || null),
+        submitted_phone: sharedP(f.submitted_phone) ? null : (f.submitted_phone || null),
         fallback_region_id: event.region_id,
         source_event_id: event_id,
       });

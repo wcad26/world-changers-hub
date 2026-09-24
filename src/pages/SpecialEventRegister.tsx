@@ -533,8 +533,9 @@ export default function SpecialEventRegister() {
     familyToSend.forEach((f) => {
       const em = f.existing_member_id ? normEmail(f.email) : normEmail(f.onboard?.email);
       const ph = f.existing_member_id ? normPhone(f.phone) : normPhone(f.onboard?.phone);
-      if (em) emailSlots.push(em);
-      if (ph) phoneSlots.push(ph);
+      // Family members (e.g. children) may share the primary contact's email/phone.
+      if (em && em !== normEmail(primaryEmailVal)) emailSlots.push(em);
+      if (ph && ph !== normPhone(primaryPhoneVal)) phoneSlots.push(ph);
     });
     const firstDup = (arr: string[]) => {
       const seen = new Set<string>();
