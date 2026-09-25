@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
@@ -140,6 +141,9 @@ const BigPct: React.FC<{ label: string; pct: number; sub?: string; tone: string 
 const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, donationCount = 0, donorCount = 0, goal, range, fc, daysInfo }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -198,10 +202,15 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     };
   }, [data, range, donationsTotal, goal]);
 
-  const list = s.rows
-    .filter((r) => r.fee > 0 || r.pledge > 0)
+  const base = s.rows.filter((r) => r.fee > 0 || r.pledge > 0);
+  const categories = Array.from(new Set(base.map((r) => r.category).filter(Boolean) as string[])).sort();
+  const list = base
     .filter((r) => !q || `${r.name} ${r.event_name}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => statusFilter === "all" || (r.fee > 0 ? r.fee_status === statusFilter : false))
+    .filter((r) => categoryFilter === "all" || (r.category || "") === categoryFilter)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const filtersActive = !!q || statusFilter !== "all" || categoryFilter !== "all";
+
 
   const pc = Math.min(100, s.pctCollected);
   const pp = Math.min(100 - pc, s.pctPending);
@@ -268,9 +277,35 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent className="px-6 pb-6 space-y-3">
-          <Input placeholder="Search name or event…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <Input placeholder="Search name or event…" value={q} onChange={(e) => setQ(e.target.value)} className="sm:max-w-xs" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Payment status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All payment statuses</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="unpaid">Awaiting cash</SelectItem>
+                <SelectItem value="waived">Waived</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filtersActive && (
+              <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStatusFilter("all"); setCategoryFilter("all"); }}>
+                Reset filters
+              </Button>
+            )}
+          </div>
+
           {list.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No registration fees or pledges in the selected period.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{filtersActive ? "No registrations match the selected filters." : "No registration fees or pledges in the selected period."}</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border/30">
               <Table>
