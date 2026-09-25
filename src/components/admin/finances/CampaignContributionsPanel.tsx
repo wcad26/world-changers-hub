@@ -140,6 +140,9 @@ const BigPct: React.FC<{ label: string; pct: number; sub?: string; tone: string 
 const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTotal, donationCount = 0, donorCount = 0, goal, range, fc, daysInfo }) => {
   const { data, isLoading } = useCampaignContributions(campaignId);
   const [q, setQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
   const { toast } = useToast();
   const qc = useQueryClient();
 
