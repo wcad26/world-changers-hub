@@ -198,10 +198,15 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     };
   }, [data, range, donationsTotal, goal]);
 
-  const list = s.rows
-    .filter((r) => r.fee > 0 || r.pledge > 0)
+  const base = s.rows.filter((r) => r.fee > 0 || r.pledge > 0);
+  const categories = Array.from(new Set(base.map((r) => r.category).filter(Boolean) as string[])).sort();
+  const list = base
     .filter((r) => !q || `${r.name} ${r.event_name}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => statusFilter === "all" || (r.fee > 0 ? r.fee_status === statusFilter : false))
+    .filter((r) => categoryFilter === "all" || (r.category || "") === categoryFilter)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const filtersActive = !!q || statusFilter !== "all" || categoryFilter !== "all";
+
 
   const pc = Math.min(100, s.pctCollected);
   const pp = Math.min(100 - pc, s.pctPending);
