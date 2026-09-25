@@ -305,7 +305,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           </div>
 
           {list.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No registration fees or pledges in the selected period.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{filtersActive ? "No registrations match the selected filters." : "No registration fees or pledges in the selected period."}</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border/30">
               <Table>
