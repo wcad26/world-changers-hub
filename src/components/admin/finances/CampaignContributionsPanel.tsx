@@ -276,7 +276,33 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
           <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
         </CollapsibleTrigger>
         <CollapsibleContent className="px-6 pb-6 space-y-3">
-          <Input placeholder="Search name or event…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <Input placeholder="Search name or event…" value={q} onChange={(e) => setQ(e.target.value)} className="sm:max-w-xs" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Payment status" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All payment statuses</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="unpaid">Awaiting cash</SelectItem>
+                <SelectItem value="waived">Waived</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="sm:w-48"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All categories</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c} value={c} className="capitalize">{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filtersActive && (
+              <Button variant="ghost" size="sm" onClick={() => { setQ(""); setStatusFilter("all"); setCategoryFilter("all"); }}>
+                Reset filters
+              </Button>
+            )}
+          </div>
+
           {list.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No registration fees or pledges in the selected period.</p>
           ) : (
