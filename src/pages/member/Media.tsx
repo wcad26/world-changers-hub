@@ -85,7 +85,7 @@ export default function MemberMedia() {
       {/* Filters */}
       <div className="space-y-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <Segmented value={kind} onChange={setKind} options={[
+          <Segmented<'all' | MediaKind | 'saved'> value={kind} onChange={setKind} options={[
             { value: 'all', label: 'All' }, { value: 'video', label: 'Video' }, { value: 'audio', label: 'Audio' },
             { value: 'notes', label: 'Notes' }, { value: 'saved', label: `Saved (${saved.length})` }]} />
           <div className="relative lg:w-72">

@@ -46,7 +46,7 @@ export default function MemberStore() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Segmented value={view} onChange={setView} options={[{ value: 'shop', label: 'Shop' }, { value: 'orders', label: 'My orders' }]} />
+        <Segmented<'shop' | 'orders'> value={view} onChange={setView} options={[{ value: 'shop', label: 'Shop' }, { value: 'orders', label: 'My orders' }]} />
         <Button variant="outline" className="relative w-fit" onClick={() => setCartOpen(true)}>
           <ShoppingCart className="mr-2 h-4 w-4" />Cart
           {count > 0 && <span className="ml-2 grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1 text-[11px] text-primary-foreground">{count}</span>}

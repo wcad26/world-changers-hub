@@ -63,7 +63,7 @@ export default function MemberCounseling() {
         <Button variant="outline" className="w-fit" onClick={() => toast('Prayer line number will appear here (demo)')}><Phone className="mr-2 h-4 w-4" />Call prayer line</Button>
       </section>
 
-      <Segmented value={tab} onChange={setTab} options={[
+      <Segmented<"book" | "mine" | "help"> value={tab} onChange={setTab} options={[
         { value: 'book', label: 'Book a session' }, { value: 'mine', label: `My appointments (${appts.filter((a) => a.status === 'Confirmed').length})` }, { value: 'help', label: 'Questions' }]} />
 
       {tab === 'book' && (<>
