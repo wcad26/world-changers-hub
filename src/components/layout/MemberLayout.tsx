@@ -1,256 +1,226 @@
 import React, { useState } from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useIsTablet } from '@/hooks/use-tablet';
 import { Link, useLocation, Outlet, useNavigate } from '@/lib/router-compat';
-import { Home, User, Calendar, BarChart3, Users, DollarSign, Heart, Play, MessageCircle, ShoppingBag, LogOut, PanelLeftClose, PanelLeftOpen, Menu, BookOpen } from 'lucide-react';
+import {
+  Home, User, Calendar, BarChart3, Users, Wallet, Heart, Play, MessageCircle, ShoppingBag,
+  LogOut, PanelLeftClose, PanelLeftOpen, LayoutGrid, Book, MapPin, type LucideIcon,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
-interface MemberLayoutProps {
-  children?: React.ReactNode;
-}
+const LOGO = '/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png';
 
-// Page info with custom titles and icons for header
-import { Book } from 'lucide-react';
+type NavItem = { name: string; href: string; icon: LucideIcon; desc?: string };
 
-const pageInfo: Record<string, { title: string; icon: LucideIcon }> = {
-  '/member/dashboard': { title: 'Member Portal', icon: Home },
-  '/member/events': { title: 'My Events', icon: Calendar },
-  '/member/finances': { title: 'My Giving', icon: DollarSign },
-  '/member/discipleship': { title: 'My Discipleship Journey', icon: BookOpen },
-  '/member/bible': { title: 'Bible', icon: Book },
-  '/member/attendance': { title: 'My Attendance', icon: BarChart3 },
-  '/member/fundraising': { title: 'Fundraising', icon: Heart },
-  '/member/media': { title: 'Media', icon: Play },
-  '/member/counseling': { title: 'Counseling', icon: MessageCircle },
-  '/member/store': { title: 'Store', icon: ShoppingBag },
-  '/member/profile': { title: 'My Profile', icon: User },
+const primaryNav: NavItem[] = [
+  { name: 'Home', href: '/member/dashboard', icon: Home },
+  { name: 'Events', href: '/member/events', icon: Calendar },
+  { name: 'Giving', href: '/member/finances', icon: Wallet },
+  { name: 'Discipleship', href: '/member/discipleship', icon: Users },
+];
+
+const secondaryNav: NavItem[] = [
+  { name: 'Bible', href: '/member/bible', icon: Book, desc: 'Read the Word' },
+  { name: 'Attendance', href: '/member/attendance', icon: BarChart3, desc: 'Your record' },
+  { name: 'Fundraising', href: '/member/fundraising', icon: Heart, desc: 'Campaigns' },
+  { name: 'Media', href: '/member/media', icon: Play, desc: 'Sermons & videos' },
+  { name: 'Counseling', href: '/member/counseling', icon: MessageCircle, desc: 'Book a session' },
+  { name: 'Store', href: '/member/store', icon: ShoppingBag, desc: 'Books & resources' },
+  { name: 'Profile', href: '/member/profile', icon: User, desc: 'Your details' },
+];
+
+const titles: Record<string, string> = {
+  '/member/dashboard': 'Home',
+  '/member/events': 'My Events',
+  '/member/finances': 'My Giving',
+  '/member/discipleship': 'Discipleship',
+  '/member/bible': 'Bible',
+  '/member/attendance': 'My Attendance',
+  '/member/fundraising': 'Fundraising',
+  '/member/media': 'Media',
+  '/member/counseling': 'Counseling',
+  '/member/store': 'Store',
+  '/member/profile': 'My Profile',
 };
 
-const navigation = [{
-  name: 'Dashboard',
-  href: '/member/dashboard',
-  icon: Home
-}, {
-  name: 'Events',
-  href: '/member/events',
-  icon: Calendar
-}, {
-  name: 'Finances',
-  href: '/member/finances',
-  icon: DollarSign
-}, {
-  name: 'Discipleship',
-  href: '/member/discipleship',
-  icon: Users
-}];
-const secondaryNavigation = [{
-  name: 'Bible',
-  href: '/member/bible',
-  icon: Book
-}, {
-  name: 'Attendance',
-  href: '/member/attendance',
-  icon: BarChart3
-}, {
-  name: 'Fundraising',
-  href: '/member/fundraising',
-  icon: Heart
-}, {
-  name: 'Media',
-  href: '/member/media',
-  icon: Play
-}, {
-  name: 'Counseling',
-  href: '/member/counseling',
-  icon: MessageCircle
-}, {
-  name: 'Store',
-  href: '/member/store',
-  icon: ShoppingBag
-}, {
-  name: 'Profile',
-  href: '/member/profile',
-  icon: User
-}];
-export default function MemberLayout({
-  children
-}: MemberLayoutProps) {
-  const isMobile = useIsMobile();
-  const isTablet = useIsTablet();
+function initials(first?: string | null, last?: string | null) {
+  return `${(last || '').charAt(0)}${(first || '').charAt(0)}`.toUpperCase() || 'M';
+}
+
+export default function MemberLayout({ children }: { children?: React.ReactNode }) {
+  const isCompact = useIsTablet(); // < 1024px: mobile + tablet
   const location = useLocation();
   const navigate = useNavigate();
-  const {
-    signOut,
-    profile
-  } = useAuth();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  // Use mobile layout for both mobile and tablet views
-  const useMobileLayout = isMobile || isTablet;
+  const { signOut, profile, userRegion } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const content = children || <Outlet />;
+  const path = location.pathname;
+  const isActive = (href: string) => path === href || path.startsWith(href + '/');
+  const moreActive = secondaryNav.some((i) => isActive(i.href));
+  const fullName = [profile?.last_name, profile?.first_name].filter(Boolean).join(' ');
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth/member', { replace: true });
   };
-  
-  if (!useMobileLayout) {
-    // Desktop layout with sidebar
-    return <div className="min-h-screen bg-background flex">
-        {/* Sidebar */}
-        <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", isCollapsed ? "w-16" : "w-64")}>
-          <div className="flex items-center justify-between border-b border-border bg-primary p-6 text-primary-foreground">
-            <div className={cn("transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100")}>
-              <h2 className="font-heading text-xl font-semibold">Member Portal</h2>
-              <p className="mt-1 text-sm text-primary-foreground/70">
-                Welcome, {profile?.first_name}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)} className="shrink-0">
-              {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+
+  const Avatar = ({ size = 'h-9 w-9' }: { size?: string }) => (
+    profile?.avatar_url ? (
+      <img src={profile.avatar_url} alt="" className={cn(size, 'shrink-0 rounded-full object-cover ring-2 ring-primary/30')} />
+    ) : (
+      <div className={cn(size, 'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-bold text-primary-foreground')}>
+        {initials(profile?.first_name, profile?.last_name)}
+      </div>
+    )
+  );
+
+  if (!isCompact) {
+    return (
+      <div className="flex min-h-screen w-full bg-background">
+        <aside className={cn('sticky top-0 flex h-screen shrink-0 flex-col border-r border-border bg-card transition-[width] duration-300', collapsed ? 'w-[76px]' : 'w-64')}>
+          <div className={cn('flex h-16 items-center border-b border-border px-4', collapsed ? 'justify-center' : 'justify-between')}>
+            {!collapsed && <img src={LOGO} alt="WCA" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />}
+            <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>
           </div>
-          
-          <nav className="flex-1 p-4 space-y-2">
-            <div className="space-y-1">
-              {navigation.map(item => {
-              const isActive = location.pathname === item.href;
-              return <Link key={item.name} to={item.href} className={cn('flex items-center rounded-lg text-sm font-medium transition-colors', isCollapsed ? 'justify-center p-3' : 'px-3 py-2', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
-                    <item.icon className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
-                    {!isCollapsed && item.name}
-                  </Link>;
-            })}
-            </div>
-            
-            <div className="pt-4 border-t border-border">
-              {!isCollapsed && <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>}
-              {secondaryNavigation.map(item => {
-              const isActive = location.pathname === item.href;
-              return <Link key={item.name} to={item.href} className={cn('flex items-center rounded-lg text-sm font-medium transition-colors', isCollapsed ? 'justify-center p-3' : 'px-3 py-2', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
-                    <item.icon className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
-                    {!isCollapsed && item.name}
-                  </Link>;
-            })}
-            </div>
+
+          <Link to="/member/profile" className={cn('m-3 flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-2.5 transition-colors hover:bg-muted', collapsed && 'justify-center')}>
+            <Avatar />
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{fullName || 'Member'}</p>
+                <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{userRegion?.name || 'WCA'}</p>
+              </div>
+            )}
+          </Link>
+
+          <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
+            {[{ label: 'Main', items: primaryNav }, { label: 'More', items: secondaryNav }].map((g) => (
+              <div key={g.label} className="space-y-1">
+                {!collapsed && <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</p>}
+                {g.items.map((item) => {
+                  const active = isActive(item.href);
+                  return (
+                    <Link key={item.href} to={item.href} title={collapsed ? item.name : undefined}
+                      className={cn('group relative flex items-center gap-3 rounded-lg py-2.5 text-sm font-medium transition-colors',
+                        collapsed ? 'justify-center px-0' : 'px-3',
+                        active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>
+                      {active && <span className="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-primary" />}
+                      <item.icon className="h-5 w-5 shrink-0" />
+                      {!collapsed && item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
 
-          <div className="p-4 border-t border-border space-y-2">
-            <Button variant="ghost" onClick={handleSignOut} className={cn("w-full text-muted-foreground hover:text-foreground", isCollapsed ? "justify-center p-3" : "justify-start")}>
-              <LogOut className={cn(isCollapsed ? "h-10 w-10" : "h-5 w-5 mr-3")} />
-              {!isCollapsed && "Sign Out"}
+          <div className="border-t border-border p-3">
+            <Button variant="ghost" onClick={handleSignOut} className={cn('w-full text-muted-foreground hover:text-foreground', collapsed ? 'justify-center px-0' : 'justify-start')}>
+              <LogOut className={cn('h-5 w-5', !collapsed && 'mr-3')} />
+              {!collapsed && 'Sign Out'}
             </Button>
           </div>
-        </div>
+        </aside>
 
-        {/* Main content */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-auto">
-          <header className="sticky top-0 z-20 flex h-14 items-center justify-end border-b bg-card/90 px-5 shadow-xs backdrop-blur-xl"><ThemeToggle /></header>
-          {content}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur-xl">
+            <h1 className="truncate font-heading text-lg font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
+            <ThemeToggle />
+          </header>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">{content}</main>
         </div>
-      </div>;
+      </div>
+    );
   }
 
-  // Get page info based on current route
-  const currentPageInfo = pageInfo[location.pathname] || { title: 'Member Portal', icon: Home };
-  const isDashboard = location.pathname === '/member/dashboard';
-  const PageIcon = currentPageInfo.icon;
-
-  // Mobile layout with slide-out menu
-  return <div className="min-h-screen bg-background flex flex-col">
-      {/* Top header - fixed */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-card border-b border-border px-4 py-3 flex items-center justify-between">
-        <div>
-          {isDashboard ? (
-            <div className="flex items-center gap-2">
-              <PageIcon className="h-5 w-5 text-primary" />
-              <h1 className="text-base font-semibold text-foreground">Welcome back, {profile?.first_name}!</h1>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <PageIcon className="h-5 w-5 text-primary" />
-              <h1 className="text-base font-semibold text-foreground">{currentPageInfo.title}</h1>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-1"><ThemeToggle /><Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button size="icon" className="bg-primary text-primary-foreground">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0 bg-card">
-               <div className="border-b border-border bg-primary p-6 text-primary-foreground">
-                 <h2 className="font-heading text-xl font-semibold">Member Portal</h2>
-                 <p className="mt-1 text-sm text-primary-foreground/70">
-                  Welcome, {profile?.first_name}
-                </p>
-              </div>
-              
-              <nav className="flex-1 p-4 space-y-2">
-                <div className="space-y-1">
-                  {navigation.map(item => {
-                const isActive = location.pathname === item.href;
-                return <Link key={item.name} to={item.href} onClick={() => setMobileMenuOpen(false)} className={cn('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
-                        <item.icon className="h-5 w-5 mr-3" />
-                        {item.name}
-                      </Link>;
-              })}
-                </div>
-                
-                <div className="pt-4 border-t border-border">
-                  <p className="text-xs font-medium text-muted-foreground px-3 pb-2">More</p>
-                  {secondaryNavigation.map(item => {
-                const isActive = location.pathname === item.href;
-                return <Link key={item.name} to={item.href} onClick={() => setMobileMenuOpen(false)} className={cn('flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors', isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground')}>
-                        <item.icon className="h-5 w-5 mr-3" />
-                        {item.name}
-                      </Link>;
-              })}
-                </div>
-
-                <div className="pt-4 border-t border-border space-y-1">
-                  <Button variant="ghost" onClick={() => {
-                setMobileMenuOpen(false);
-                void handleSignOut();
-              }} className="w-full justify-start px-3 py-2 text-muted-foreground hover:text-foreground mt-2">
-                    <LogOut className="h-5 w-5 mr-3" />
-                    Sign Out
-                  </Button>
-                </div>
-              </nav>
-            </SheetContent>
-          </Sheet></div>
-      </header>
-
-      {/* Main content - pt-14 for fixed header, pb-24 for fixed bottom nav */}
-      <main className="flex-1 overflow-auto pt-14 pb-24">
-        {content}
-      </main>
-
-      {/* Bottom navigation bar - Modern floating pill design */}
-      <nav className="fixed bottom-4 left-4 right-4 z-50">
-         <div className="rounded-md border border-border bg-card/95 shadow-regal backdrop-blur-xl">
-           <div className="flex items-center justify-around rounded-md bg-primary px-2 py-2">
-            {navigation.map(item => {
-            const isActive = location.pathname === item.href;
-             return <Link key={item.name} to={item.href} className={cn('relative flex flex-col items-center rounded-md px-4 py-2 transition-colors', isActive ? 'bg-primary-foreground' : 'hover:bg-primary-foreground/10')}>
-                  <div className={cn("relative transition-transform duration-300", isActive && "scale-110")}>
-                     <item.icon className={cn("h-5 w-5 transition-colors", isActive ? "text-primary" : "text-primary-foreground")} />
-                    {isActive && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />}
-                  </div>
-                   <span className={cn("mt-1 text-[10px] font-medium transition-colors", isActive ? "text-primary" : "text-primary-foreground")}>
-                    {item.name}
-                  </span>
-                </Link>;
-          })}
+  return (
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <header className="sticky top-0 z-40 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+        <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <img src={LOGO} alt="WCA" className="h-7 w-auto shrink-0 object-contain dark:brightness-0 dark:invert" />
+            <span className="h-5 w-px shrink-0 bg-border" />
+            <h1 className="truncate font-heading text-base font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
+          </div>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <Link to="/member/profile" aria-label="Profile"><Avatar size="h-8 w-8" /></Link>
           </div>
         </div>
+      </header>
+
+      <main className="w-full flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6">
+        <div className="mx-auto w-full max-w-4xl">{content}</div>
+      </main>
+
+      <nav aria-label="Member navigation" className="fixed inset-x-0 bottom-0 z-50 w-full border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-12px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur-xl">
+        <div className="grid h-16 w-full grid-cols-5 sm:h-[68px]">
+          {primaryNav.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link key={item.href} to={item.href} aria-current={active ? 'page' : undefined}
+                className={cn('relative flex min-w-0 flex-col items-center justify-center gap-1 transition-colors sm:flex-row sm:gap-2',
+                  active ? 'text-primary' : 'text-muted-foreground hover:text-foreground')}>
+                {active && <span className="absolute inset-x-[22%] top-0 h-[3px] rounded-b-full bg-primary" />}
+                <span className={cn('grid h-8 w-12 place-items-center rounded-full transition-colors sm:w-auto sm:px-0', active && 'bg-primary/12 sm:bg-transparent')}>
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <span className="truncate text-[11px] font-semibold sm:text-sm">{item.name}</span>
+              </Link>
+            );
+          })}
+          <button type="button" onClick={() => setMoreOpen(true)} aria-label="More pages"
+            className={cn('relative flex min-w-0 flex-col items-center justify-center gap-1 transition-colors sm:flex-row sm:gap-2',
+              moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground')}>
+            {moreActive && <span className="absolute inset-x-[22%] top-0 h-[3px] rounded-b-full bg-primary" />}
+            <span className={cn('grid h-8 w-12 place-items-center rounded-full sm:w-auto', moreActive && 'bg-primary/12 sm:bg-transparent')}>
+              <LayoutGrid className="h-5 w-5" />
+            </span>
+            <span className="text-[11px] font-semibold sm:text-sm">More</span>
+          </button>
+        </div>
       </nav>
-    </div>;
+
+      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-card px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-6">
+          <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
+          <SheetHeader className="mb-4 text-left">
+            <SheetTitle className="flex items-center gap-3">
+              <Avatar size="h-10 w-10" />
+              <span className="min-w-0">
+                <span className="block truncate text-base">{fullName || 'Member'}</span>
+                <span className="block truncate text-xs font-normal text-muted-foreground">{userRegion?.name || 'World Changers Assembly'}</span>
+              </span>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {secondaryNav.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link key={item.href} to={item.href} onClick={() => setMoreOpen(false)}
+                  className={cn('flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition-colors',
+                    active ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-muted/30 text-foreground hover:bg-muted')}>
+                  <span className={cn('grid h-11 w-11 place-items-center rounded-full', active ? 'bg-primary text-primary-foreground' : 'bg-background text-primary')}>
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <span className="text-xs font-semibold">{item.name}</span>
+                  <span className="hidden text-[11px] text-muted-foreground sm:block">{item.desc}</span>
+                </Link>
+              );
+            })}
+          </div>
+          <Button variant="outline" onClick={() => { setMoreOpen(false); void handleSignOut(); }} className="mt-5 w-full">
+            <LogOut className="mr-2 h-4 w-4" /> Sign Out
+          </Button>
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
 }
