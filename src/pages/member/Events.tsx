@@ -44,7 +44,7 @@ export default function MemberEvents() {
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Segmented value={tab} onChange={setTab} options={[
+        <Segmented<Tab> value={tab} onChange={setTab} options={[
           { value: 'upcoming', label: `Upcoming (${groups.upcoming.length})` },
           { value: 'today', label: `Today (${groups.today.length})` },
           { value: 'past', label: `Past (${groups.past.length})` },
