@@ -3,8 +3,8 @@
 - [x] Dashboard
 - [x] Events
 - [x] Giving (Finances)
-- [ ] Discipleship
-- [ ] Attendance
+- [x] Discipleship
+- [x] Attendance
 - [ ] Fundraising
 - [ ] Bible
 - [ ] Media

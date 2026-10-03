@@ -6,6 +6,8 @@ import { Calendar, TrendingUp, Users, Flame, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
 import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
+import { StatTile } from '@/components/member/MemberUI';
+import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 export default function MemberAttendance() {
   const {
@@ -39,90 +41,30 @@ export default function MemberAttendance() {
       {/* Period Filter */}
       <PeriodFilter filters={filters} onFiltersChange={handleFiltersChange} />
 
-      {/* Stats Overview - KPI Cards */}
-      <div className="space-y-4 mb-6">
-        {/* Overall Attendance Rate - Full Width */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <div className="flex-1">
-                <p className="text-2xl font-bold text-foreground">
-                  {isLoading ? '...' : `${attendanceData?.overall.rate || 0}%`}
-                </p>
-                <p className="text-sm text-muted-foreground">Overall Attendance Rate</p>
-              </div>
-            </div>
-            <Progress value={attendanceData?.overall.rate || 0} className="mt-2" />
-          </CardContent>
-        </Card>
-
-        {/* Other KPIs - 2x2 grid on mobile, 4 cols on desktop */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Regional Events */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-chart-6" />
-                <div>
-                  <p className="text-xl md:text-2xl font-bold text-foreground">
-                    {isLoading ? '...' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Regional Events</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* DCG */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-chart-5" />
-                <div>
-                  <p className="text-xl md:text-2xl font-bold text-foreground">
-                    {isLoading ? '...' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">DCG</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Prayer Meeting */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Heart className="h-5 w-5 text-chart-7" />
-                <div>
-                  <p className="text-xl md:text-2xl font-bold text-foreground">
-                    {isLoading ? '...' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Prayer Meeting</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Streaks */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2">
-                <Flame className="h-5 w-5 text-chart-3" />
-                <div>
-                  <p className="text-xl md:text-2xl font-bold text-foreground">
-                    {isLoading ? '...' : attendanceData?.streak || 0}
-                  </p>
-                  <p className="text-xs md:text-sm text-muted-foreground">Streaks</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        <section className="flex items-center gap-5 rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
+          <div className="relative h-24 w-24 shrink-0">
+            <svg viewBox="0 0 36 36" className="h-24 w-24 -rotate-90">
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3.5" />
+              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${(attendanceData?.overall.rate || 0) / 100 * 97.4} 97.4`} />
+            </svg>
+            <span className="absolute inset-0 grid place-items-center font-heading text-xl font-bold">{isLoading ? '…' : `${attendanceData?.overall.rate || 0}%`}</span>
+          </div>
+          <div>
+            <p className="text-sm text-primary-foreground/75">Overall attendance</p>
+            <p className="font-heading text-lg font-semibold">{attendanceData?.overall.attended || 0} of {attendanceData?.overall.total || 0} events</p>
+          </div>
+        </section>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+          <StatTile label="Regional" value={isLoading ? '…' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`} icon={Calendar} tone="var(--chart-6)" />
+          <StatTile label="DCG" value={isLoading ? '…' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`} icon={Users} tone="var(--chart-5)" />
+          <StatTile label="Prayer" value={isLoading ? '…' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`} icon={Heart} tone="var(--chart-7)" />
+          <StatTile label="Streak" value={isLoading ? '…' : attendanceData?.streak || 0} sub="in a row" icon={Flame} tone="var(--chart-3)" />
         </div>
       </div>
 
       {/* Monthly Trend */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Attendance Trend</CardTitle>
           <CardDescription>Your attendance pattern over the selected period</CardDescription>
@@ -184,21 +126,21 @@ export default function MemberAttendance() {
       </Card>
 
       {/* Recent Attendance */}
-      <Card>
+      <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle>Recent Events</CardTitle>
           <CardDescription>Your attendance history for the selected period</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? <div className="text-muted-foreground">Loading...</div> : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? <div className="space-y-4">
-              {attendanceData.recentEvents.map(event => <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-semibold text-foreground">{event.name}</h4>
+          {isLoading ? <div className="text-muted-foreground">Loading...</div> : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? <div className="space-y-2">
+              {attendanceData.recentEvents.map(event => <div key={event.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
+                  <div className="min-w-0">
+                    <h4 className="truncate text-sm font-semibold text-foreground">{event.name}</h4>
                     <p className="text-sm text-muted-foreground">
-                      {new Date(event.date).toLocaleDateString()}
+                      {format(new Date(event.date), 'dd/MM/yyyy')}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <Badge variant={event.type === 'regional' ? 'default' : event.type === 'dcg' ? 'secondary' : 'outline'}>
                       {event.type === 'prayer' ? 'PRAYER' : event.type.toUpperCase()}
                     </Badge>
