@@ -61,14 +61,6 @@ export default function MemberAuth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
-        <Link
-          to="/"
-          className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
-        </Link>
-
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl font-bold">WCA Member Portal</CardTitle>
@@ -138,6 +130,16 @@ export default function MemberAuth() {
             </div>
           </CardContent>
         </Card>
+
+        <div className="flex justify-center">
+          <Link
+            to="/"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );
