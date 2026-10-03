@@ -100,7 +100,6 @@ export default function MemberStore() {
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <Book className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Church Store & Library</h1>
       </div>
 
       <Tabs defaultValue="browse" className="w-full">

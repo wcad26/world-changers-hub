@@ -49,11 +49,6 @@ export default function MemberDiscipleship() {
   };
   return <>
       <div className="space-y-6">
-        {/* Page heading - hidden on mobile as it shows in layout header */}
-        <div className="hidden md:flex items-center gap-2 mb-6">
-          <BookOpen className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">My Discipleship Journey</h1>
-        </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-0">
