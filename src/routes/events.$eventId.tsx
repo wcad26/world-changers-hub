@@ -39,11 +39,11 @@ export const Route = createFileRoute("/events/$eventId")({
       links: [{ rel: "canonical", href: canonical }],
     };
   },
-  errorComponent: ({ error }) => (
+  errorComponent: ({ error }: { error: unknown }) => (
     <main className="grid min-h-screen place-items-center bg-event-background p-6 text-event-foreground">
       <div className="max-w-md text-center" role="alert">
         <h1 className="font-sora text-2xl font-semibold">Event unavailable</h1>
-        <p className="mt-3 text-event-muted">{error.message || "This event could not be loaded. Please try again."}</p>
+        <p className="mt-3 text-event-muted">{error instanceof Error && error.message ? error.message : "This event could not be loaded. Please try again."}</p>
         <a className="mt-6 inline-flex rounded-md bg-primary px-4 py-2 text-primary-foreground" href="/events">Back to events</a>
       </div>
     </main>
