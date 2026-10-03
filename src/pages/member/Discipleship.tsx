@@ -10,6 +10,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { AddProgressDialog } from '@/components/member/discipleship/AddProgressDialog';
 import { ScheduleMeetingDialog } from '@/components/member/discipleship/ScheduleMeetingDialog';
 import { ProgressSummaryDialog } from '@/components/member/discipleship/ProgressSummaryDialog';
+import { StatTile, EmptyState, pillTabsList, pillTabsTrigger } from '@/components/member/MemberUI';
+import { format } from 'date-fns';
 export default function MemberDiscipleship() {
   const {
     memberId
@@ -47,156 +49,59 @@ export default function MemberDiscipleship() {
     completed_disciples: 0,
     success_rate: 0
   };
-  return <>
-      <div className="space-y-6">
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 py-0 my-0">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{displayStats.total_disciples}</p>
-                <p className="text-sm text-muted-foreground">Disciples</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-green-600" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{displayStats.active_disciples}</p>
-                <p className="text-sm text-muted-foreground">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{displayStats.completed_disciples}</p>
-                <p className="text-sm text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-2xl font-bold text-foreground">{Math.round(displayStats.success_rate)}%</p>
-              <p className="text-sm text-muted-foreground">Success Rate</p>
-              <Progress value={displayStats.success_rate} className="mt-2" />
-            </div>
-          </CardContent>
-        </Card>
+  const name = (p: any) => `${p?.profiles?.last_name || ''} ${p?.profiles?.first_name || ''}`.trim();
+  const ini = (p: any) => `${(p?.profiles?.last_name || '').charAt(0)}${(p?.profiles?.first_name || '').charAt(0)}`.toUpperCase() || '?';
+  const RelCard = ({ r, mentor }: { r: any; mentor: boolean }) => {
+    const person = mentor ? r.disciple : r.mentor;
+    return <article className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-sm font-bold text-primary-foreground">{ini(person)}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-semibold text-foreground">{name(person) || 'Unknown'}</p>
+            <p className="text-xs text-muted-foreground">{mentor ? 'Disciple' : 'Mentor'} · since {r.start_date ? format(new Date(r.start_date), 'dd/MM/yyyy') : 'N/A'}</p>
+          </div>
+          <Badge variant={r.status === 'active' ? 'default' : 'secondary'} className="capitalize">{r.status}</Badge>
+        </div>
+        {r.notes && <p className="rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">{r.notes}</p>}
+        <div className="flex flex-wrap gap-2">
+          {mentor ? <>
+              <AddProgressDialog relationshipId={r.id} discipleName={name(person)}><Button size="sm">+ Progress</Button></AddProgressDialog>
+              <ScheduleMeetingDialog discipleName={name(person)}><Button size="sm" variant="outline"><Calendar className="mr-1 h-4 w-4" />Schedule</Button></ScheduleMeetingDialog>
+              <ProgressSummaryDialog relationshipId={r.id} discipleName={name(person)}><Button size="sm" variant="outline"><TrendingUp className="mr-1 h-4 w-4" />Summary</Button></ProgressSummaryDialog>
+            </> : <>
+              <ProgressSummaryDialog relationshipId={r.id} discipleName="My"><Button size="sm"><TrendingUp className="mr-1 h-4 w-4" />My progress</Button></ProgressSummaryDialog>
+              <ScheduleMeetingDialog discipleName={name(person)}><Button size="sm" variant="outline"><Calendar className="mr-1 h-4 w-4" />Schedule meeting</Button></ScheduleMeetingDialog>
+            </>}
+        </div>
+      </article>;
+  };
+  return <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile label="Disciples" value={displayStats.total_disciples} icon={Users} tone="var(--chart-1)" />
+        <StatTile label="Active" value={displayStats.active_disciples} icon={Target} tone="var(--chart-5)" />
+        <StatTile label="Completed" value={displayStats.completed_disciples} icon={Calendar} tone="var(--chart-6)" />
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs font-medium text-muted-foreground">Success rate</p>
+          <p className="mt-2 font-heading text-2xl font-bold text-foreground">{Math.round(displayStats.success_rate)}%</p>
+          <Progress value={displayStats.success_rate} className="mt-2 h-2" />
+        </div>
       </div>
 
-      <Tabs defaultValue="mentoring" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="mentoring">I'm Mentoring</TabsTrigger>
-          <TabsTrigger value="being-mentored">I'm Being Mentored</TabsTrigger>
+      <Tabs defaultValue="mentoring" className="space-y-4">
+        <TabsList className={pillTabsList}>
+          <TabsTrigger value="mentoring" className={pillTabsTrigger}>I'm mentoring ({relationships?.asMentor?.length || 0})</TabsTrigger>
+          <TabsTrigger value="being-mentored" className={pillTabsTrigger}>My mentor ({relationships?.asDisciple?.length || 0})</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="mentoring" className="space-y-4">
-          {!relationships?.asMentor?.length ? <Card>
-              <CardContent className="p-8 text-center">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Disciples Yet</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't been assigned any disciples to mentor yet.
-                </p>
-                <Button variant="outline">Contact Leadership</Button>
-              </CardContent>
-            </Card> : <div className="grid gap-4">
-              {relationships.asMentor.map(relationship => <Card key={relationship.id} className="px-0">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-sm">
-                          {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
-                        </CardTitle>
-                        <CardDescription>
-                          Started: {relationship.start_date ? new Date(relationship.start_date).toLocaleDateString() : 'N/A'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={relationship.status === 'active' ? 'default' : 'secondary'}>
-                        {relationship.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="px-0">
-                    {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
-                    <div className="gap-2 flex items-center justify-start px-4 pb-4">
-                      <AddProgressDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
-                        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-accent hover:text-white transition-colors">+ Progress</Button>
-                      </AddProgressDialog>
-                      
-                      <ScheduleMeetingDialog discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
-                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          Schedule
-                        </Button>
-                      </ScheduleMeetingDialog>
-                      
-                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName={`${relationship.disciple?.profiles?.last_name || ''} ${relationship.disciple?.profiles?.first_name || ''}`}>
-                        <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-accent hover:text-white hover:border-accent transition-colors">
-                          <TrendingUp className="h-4 w-4 mr-1" />
-                          Summary
-                        </Button>
-                      </ProgressSummaryDialog>
-                    </div>
-                  </CardContent>
-                </Card>)}
+        <TabsContent value="mentoring">
+          {!relationships?.asMentor?.length ? <EmptyState icon={Users} title="No disciples yet" hint="You haven't been assigned anyone to mentor yet." /> : <div className="grid gap-4 md:grid-cols-2">
+              {relationships.asMentor.map((r: any) => <RelCard key={r.id} r={r} mentor />)}
             </div>}
         </TabsContent>
-
-        <TabsContent value="being-mentored" className="space-y-4">
-          {!relationships?.asDisciple?.length ? <Card>
-              <CardContent className="p-8 text-center">
-                <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">No Mentor Assigned</h3>
-                <p className="text-muted-foreground mb-4">
-                  You haven't been assigned a mentor yet. Contact leadership to get started.
-                </p>
-                <Button variant="outline">Request Mentor</Button>
-              </CardContent>
-            </Card> : <div className="grid gap-4">
-              {relationships.asDisciple.map(relationship => <Card key={relationship.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
-                        </CardTitle>
-                        <CardDescription>
-                          Started: {relationship.start_date ? new Date(relationship.start_date).toLocaleDateString() : 'N/A'}
-                        </CardDescription>
-                      </div>
-                      <Badge variant={relationship.status === 'active' ? 'default' : 'secondary'}>
-                        {relationship.status}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {relationship.notes && <p className="text-sm text-muted-foreground mb-4">{relationship.notes}</p>}
-                    <div className="flex gap-2">
-                      <ProgressSummaryDialog relationshipId={relationship.id} discipleName="My">
-                        <Button size="sm" variant="outline">View My Progress</Button>
-                      </ProgressSummaryDialog>
-                      <ScheduleMeetingDialog discipleName={`${relationship.mentor?.profiles?.last_name || ''} ${relationship.mentor?.profiles?.first_name || ''}`}>
-                        <Button size="sm" variant="outline">Schedule Meeting</Button>
-                      </ScheduleMeetingDialog>
-                    </div>
-                  </CardContent>
-                </Card>)}
+        <TabsContent value="being-mentored">
+          {!relationships?.asDisciple?.length ? <EmptyState icon={BookOpen} title="No mentor assigned" hint="Speak with your branch leadership to be paired with a mentor." /> : <div className="grid gap-4 md:grid-cols-2">
+              {relationships.asDisciple.map((r: any) => <RelCard key={r.id} r={r} mentor={false} />)}
             </div>}
         </TabsContent>
       </Tabs>
-      </div>
-    </>;
+    </div>;
 }

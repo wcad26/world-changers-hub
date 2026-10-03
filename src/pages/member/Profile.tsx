@@ -1,224 +1,145 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar,
-  Edit,
-  Camera,
-  Save,
-  X
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Briefcase, IdCard, Building2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { Panel } from '@/components/member/MemberUI';
 
 export default function MemberProfile() {
-  const { profile, user, userRegion } = useAuth();
+  const { profile, user, userRegion, memberRecord } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState<Record<string, string>>({});
+  const empty = { first_name: '', last_name: '', phone: '', address: '', occupation: '' };
+  const [form, setForm] = useState(empty);
 
-  // Form state
-  const [formData, setFormData] = useState({
-    first_name: profile?.first_name || '',
-    last_name: profile?.last_name || '',
-    phone: profile?.phone || '',
-    address: profile?.address || '',
+  const current = { ...(profile || {}), ...saved } as any;
+  const reset = () => setForm({
+    first_name: current.first_name || '', last_name: current.last_name || '', phone: current.phone || '',
+    address: current.address || '', occupation: current.occupation || '',
   });
+  useEffect(() => { reset(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [profile?.id]);
 
   const handleSave = async () => {
-    setLoading(true);
-    try {
-      // Here you would implement the profile update logic
-      // For now, just show success toast
-      toast({
-        title: "Profile updated",
-        description: "Your profile has been successfully updated.",
-      });
-      setIsEditing(false);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (!profile) return;
+    if (!form.first_name.trim() || !form.last_name.trim()) {
+      toast({ title: 'Name required', description: 'First and last name cannot be empty.', variant: 'destructive' });
+      return;
     }
-  };
-
-  const handleCancel = () => {
-    setFormData({
-      first_name: profile?.first_name || '',
-      last_name: profile?.last_name || '',
-      phone: profile?.phone || '',
-      address: profile?.address || '',
-    });
+    if (form.phone && form.phone.replace(/\D/g, '').length < 9) {
+      toast({ title: 'Invalid phone', description: 'Phone number needs at least 9 digits.', variant: 'destructive' });
+      return;
+    }
+    setLoading(true);
+    const payload = {
+      first_name: form.first_name.trim(), last_name: form.last_name.trim(), phone: form.phone.trim() || null,
+      address: form.address.trim() || null, occupation: form.occupation.trim() || null,
+    };
+    const { data, error } = await supabase.from('profiles').update(payload).eq('id', profile.id).select('id');
+    setLoading(false);
+    if (error || !data?.length) {
+      toast({ title: 'Could not save', description: error?.message || 'You do not have permission to update this profile.', variant: 'destructive' });
+      return;
+    }
+    setSaved(Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, v ?? ''])));
     setIsEditing(false);
+    toast({ title: 'Profile updated', description: 'Your details have been saved.' });
   };
 
   if (!profile) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
+    return <div className="space-y-4"><Skeleton className="h-36 w-full rounded-2xl" /><Skeleton className="h-72 w-full rounded-2xl" /></div>;
   }
+
+  const m = memberRecord as any;
+  const fullName = [current.last_name, current.first_name].filter(Boolean).join(' ');
+  const initials = `${(current.last_name || '').charAt(0)}${(current.first_name || '').charAt(0)}`.toUpperCase();
+  const dob = current.date_of_birth ? format(new Date(current.date_of_birth), 'dd/MM/yyyy') : 'Not provided';
+
+  const Field = ({ id, label, icon: Icon, value, multiline, readOnly }: { id?: keyof typeof form; label: string; icon: any; value: string; multiline?: boolean; readOnly?: boolean }) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-xs text-muted-foreground">{label}</Label>
+      {isEditing && id && !readOnly ? (
+        multiline
+          ? <Textarea id={id} rows={3} value={form[id]} onChange={(e) => setForm({ ...form, [id]: e.target.value })} />
+          : <Input id={id} value={form[id]} onChange={(e) => setForm({ ...form, [id]: e.target.value })} />
+      ) : (
+        <p className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2.5 text-sm text-foreground">
+          <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><span className="min-w-0 break-words">{value || 'Not provided'}</span>
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <span />
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-2xl" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+          <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-primary-foreground/20 font-heading text-2xl font-bold ring-4 ring-primary-foreground/25">{initials || 'M'}</span>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate font-heading text-2xl font-bold">{fullName}</h2>
+            <p className="text-sm text-primary-foreground/80">{userRegion?.name || 'World Changers Assembly'}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {m?.member_code && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 font-mono font-semibold">{m.member_code}</span>}
+              <span className="rounded-full bg-primary-foreground px-3 py-1 font-semibold capitalize text-primary">{m?.member_type || 'member'}</span>
+              {m?.status && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 capitalize">{m.status}</span>}
+            </div>
+          </div>
           {!isEditing ? (
-            <Button onClick={() => setIsEditing(true)} variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
+            <Button variant="secondary" onClick={() => { reset(); setIsEditing(true); }} className="self-start sm:self-center"><Edit className="mr-2 h-4 w-4" />Edit profile</Button>
           ) : (
-            <div className="flex space-x-2">
-              <Button onClick={handleSave} disabled={loading}>
-                <Save className="h-4 w-4 mr-2" />
-                Save
-              </Button>
-              <Button onClick={handleCancel} variant="outline" disabled={loading}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
+            <div className="flex gap-2 self-start sm:self-center">
+              <Button variant="secondary" onClick={handleSave} disabled={loading}><Save className="mr-2 h-4 w-4" />{loading ? 'Saving…' : 'Save'}</Button>
+              <Button variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setIsEditing(false)} disabled={loading}><X className="mr-2 h-4 w-4" />Cancel</Button>
             </div>
           )}
         </div>
+      </section>
 
-        {/* Profile Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Avatar className="h-20 w-20">
-                  <AvatarFallback className="text-lg">
-                    {profile.first_name?.[0]}{profile.last_name?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                {isEditing && (
-                  <Button 
-                    size="sm" 
-                    className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
-                )}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <Panel title={<span className="flex items-center gap-2"><User className="h-4 w-4 text-primary" />Personal information</span>}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="last_name" label="Last name" icon={User} value={current.last_name} />
+            <Field id="first_name" label="First name" icon={User} value={current.first_name} />
+            <Field label="Email" icon={Mail} value={current.email || user?.email || ''} readOnly />
+            <Field id="phone" label="Phone number" icon={Phone} value={current.phone} />
+            <Field id="occupation" label="Occupation" icon={Briefcase} value={current.occupation} />
+            <Field label="Date of birth" icon={Calendar} value={dob} readOnly />
+            <div className="sm:col-span-2"><Field id="address" label="Address" icon={MapPin} value={current.address} multiline /></div>
+          </div>
+          {isEditing && <p className="mt-4 text-xs text-muted-foreground">To change your email or date of birth, please contact your branch admin.</p>}
+        </Panel>
+
+        <Panel title={<span className="flex items-center gap-2"><IdCard className="h-4 w-4 text-primary" />Membership</span>}>
+          <dl className="space-y-3 text-sm">
+            {[
+              ['Member code', m?.member_code || '—'],
+              ['Branch', userRegion?.name || '—'],
+              ['Type', m?.member_type || '—'],
+              ['Status', m?.status || '—'],
+              ['Foundation school', m?.membership_class_completed ? 'Completed' : 'Not yet'],
+              ['Joined', m?.created_at ? format(new Date(m.created_at), 'dd/MM/yyyy') : '—'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="truncate text-right font-medium capitalize text-foreground">{v}</dd>
               </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-semibold text-foreground">
-                  {profile.first_name} {profile.last_name}
-                </h2>
-                <p className="text-muted-foreground">{userRegion?.name} Branch</p>
-                <div className="flex items-center space-x-2 mt-2">
-                  <Badge variant="secondary">Member</Badge>
-                  <Badge variant="outline">Active</Badge>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Personal Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span>Personal Information</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name</Label>
-                {isEditing ? (
-                  <Input
-                    id="first_name"
-                    value={formData.first_name}
-                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  />
-                ) : (
-                  <div className="flex items-center space-x-2 py-2">
-                    <span>{profile.first_name || 'Not provided'}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name</Label>
-                {isEditing ? (
-                  <Input
-                    id="last_name"
-                    value={formData.last_name}
-                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  />
-                ) : (
-                  <div className="flex items-center space-x-2 py-2">
-                    <span>{profile.last_name || 'Not provided'}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <div className="flex items-center space-x-2 py-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{profile.email || user?.email || 'Not provided'}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              {isEditing ? (
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Enter your phone number"
-                />
-              ) : (
-                <div className="flex items-center space-x-2 py-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.phone || 'Not provided'}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              {isEditing ? (
-                <Textarea
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Enter your address"
-                  rows={3}
-                />
-              ) : (
-                <div className="flex items-start space-x-2 py-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground mt-1" />
-                  <span>{profile.address || 'Not provided'}</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
+            ))}
+          </dl>
+          <div className="mt-4 flex items-center gap-2 rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground">
+            <Building2 className="h-4 w-4 shrink-0" />Need a transfer or correction? Contact your branch admin.
+          </div>
+          <Badge variant="outline" className="sr-only">profile</Badge>
+        </Panel>
       </div>
+    </div>
   );
 }

@@ -1,0 +1,1 @@
+- Member portal pages share primitives from src/components/member/MemberUI.tsx and the MemberLayout shell (sidebar for pointer devices >=768px, bottom bar for phones/touch tablets); page titles live in the shell, not pages. Why: one consistent look across all member pages.
