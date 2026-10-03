@@ -5,9 +5,9 @@
 - [x] Giving (Finances)
 - [x] Discipleship
 - [x] Attendance
-- [ ] Fundraising
+- [x] Fundraising
 - [ ] Bible
-- [ ] Media
-- [ ] Counseling
-- [ ] Store
+- [x] Media
+- [x] Counseling
+- [x] Store
 - [ ] Profile

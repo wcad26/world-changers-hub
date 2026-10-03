@@ -70,3 +70,27 @@ export function Segmented<T extends string>({ value, onChange, options }: {
 /** Restyles shadcn TabsList into the pill look. */
 export const pillTabsList = 'h-auto w-full justify-start gap-1 overflow-x-auto rounded-full border border-border bg-muted/50 p-1 sm:w-auto';
 export const pillTabsTrigger = 'rounded-full px-4 py-1.5 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground';
+
+/** Honest placeholder for portal sections that don't have live content yet. */
+export function ComingSoonPanel({ icon: Icon, title, text, features }: { icon: LucideIcon; title: string; text: string; features: { icon: LucideIcon; label: string }[] }) {
+  return (
+    <section className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-10">
+      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-secondary/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
+      <div className="relative mx-auto max-w-2xl text-center">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-regal"><Icon className="h-8 w-8" /></span>
+        <span className="mt-5 inline-block rounded-full bg-secondary px-3 py-1 text-xs font-semibold uppercase tracking-wider text-secondary-foreground">Coming soon</span>
+        <h2 className="mt-3 font-heading text-2xl font-bold text-foreground sm:text-3xl">{title}</h2>
+        <p className="mt-2 text-muted-foreground">{text}</p>
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {features.map((f) => (
+            <div key={f.label} className="rounded-xl border border-border bg-background/60 p-4">
+              <f.icon className="mx-auto h-5 w-5 text-primary" />
+              <p className="mt-2 text-xs font-medium text-foreground">{f.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
