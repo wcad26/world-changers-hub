@@ -70,13 +70,9 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
   };
 
   const Avatar = ({ size = 'h-9 w-9' }: { size?: string }) => (
-    profile?.avatar_url ? (
-      <img src={profile.avatar_url} alt="" className={cn(size, 'shrink-0 rounded-full object-cover ring-2 ring-primary/30')} />
-    ) : (
-      <div className={cn(size, 'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-bold text-primary-foreground')}>
-        {initials(profile?.first_name, profile?.last_name)}
-      </div>
-    )
+    <div className={cn(size, 'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-bold text-primary-foreground')}>
+      {initials(profile?.first_name, profile?.last_name)}
+    </div>
   );
 
   if (!isCompact) {
