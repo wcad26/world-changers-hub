@@ -150,7 +150,7 @@ export default function BiblePage() {
   if (versionsLoading || booksLoading) {
     return (
       <>
-        <div className="p-4 md:p-6 space-y-4">
+        <div className="space-y-4">
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-10 w-full" />
           <Skeleton className="h-[60vh] w-full" />
@@ -161,7 +161,7 @@ export default function BiblePage() {
 
   return (
     <>
-      <div className="p-4 md:p-6 space-y-4">
+      <div className="space-y-4">
         {/* Version and Book Selection */}
         <div className="grid grid-cols-2 gap-2">
           <Select

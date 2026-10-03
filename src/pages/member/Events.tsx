@@ -100,7 +100,7 @@ export default function MemberEvents() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-4">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-10 w-full" />
         <div className="space-y-4">
@@ -113,7 +113,7 @@ export default function MemberEvents() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6">
       {/* Search */}
       <div className="space-y-4">
         <div className="relative">
