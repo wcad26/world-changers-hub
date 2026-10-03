@@ -61,6 +61,13 @@ export default function MemberAuth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
+        <div className="flex justify-center">
+          <img
+            src="/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png"
+            alt="World Changers Association"
+            className="h-14 w-auto max-w-[200px] object-contain dark:brightness-0 dark:invert"
+          />
+        </div>
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl font-bold">WCA Member Portal</CardTitle>
