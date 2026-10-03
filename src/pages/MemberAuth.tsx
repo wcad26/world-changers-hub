@@ -71,7 +71,7 @@ export default function MemberAuth() {
 
         <Card className="bg-card/50 backdrop-blur-sm border-border/50">
           <CardHeader className="space-y-2 text-center">
-            <CardTitle className="text-2xl font-bold">Member Portal</CardTitle>
+            <CardTitle className="text-2xl font-bold">WCA Member Portal</CardTitle>
             <CardDescription>Sign in to access your member dashboard</CardDescription>
           </CardHeader>
           <CardContent>
