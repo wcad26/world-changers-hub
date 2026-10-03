@@ -204,8 +204,9 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={() => setMoreOpen(true)} aria-label="More pages" aria-expanded={moreOpen} aria-haspopup="dialog" className={cn(moreActive && 'text-primary')}>
-              <LayoutGrid className="h-5 w-5" />
+            <Button variant="ghost" size="sm" onClick={() => setMoreOpen(true)} aria-label="More pages" aria-expanded={moreOpen} aria-haspopup="dialog" className={cn('gap-1 px-2', moreActive && 'text-primary')}>
+              <LayoutGrid className="h-4 w-4" />
+              <span className="text-xs">More</span>
             </Button>
             <Link to="/member/profile" aria-label="Profile"><Avatar size="h-8 w-8" /></Link>
           </div>
