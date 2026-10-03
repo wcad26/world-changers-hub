@@ -6,8 +6,8 @@
 - [x] Discipleship
 - [x] Attendance
 - [x] Fundraising
-- [ ] Bible
+- [x] Bible
 - [x] Media
 - [x] Counseling
 - [x] Store
-- [ ] Profile
+- [x] Profile
