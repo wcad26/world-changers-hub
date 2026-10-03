@@ -1,147 +1,149 @@
-import React from 'react';
+import { useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Users, DollarSign, TrendingUp, Clock, MapPin, ChevronRight, Heart, BookOpen } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Calendar, Clock, MapPin, ChevronRight, Heart, Wallet, Users, Play, Book, BarChart3, Flame, MessageCircle,
+} from 'lucide-react';
 import { Link } from '@/lib/router-compat';
 import { useMemberRegionEvents } from '@/hooks/useEvents';
-import { format, parseISO, isFuture } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
+import { format, parseISO, isFuture, differenceInCalendarDays } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
+
+const actions = [
+  { label: 'Give', sub: 'Tithes & offerings', href: '/member/finances', icon: Wallet, tone: 'var(--chart-5)' },
+  { label: 'Attendance', sub: 'Your record', href: '/member/attendance', icon: BarChart3, tone: 'var(--chart-6)' },
+  { label: 'Bible', sub: 'Read today', href: '/member/bible', icon: Book, tone: 'var(--chart-1)' },
+  { label: 'Campaigns', sub: 'Support a cause', href: '/member/fundraising', icon: Heart, tone: 'var(--chart-4)' },
+  { label: 'Media', sub: 'Sermons & more', href: '/member/media', icon: Play, tone: 'var(--chart-7)' },
+  { label: 'Counseling', sub: 'Talk to someone', href: '/member/counseling', icon: MessageCircle, tone: 'var(--chart-2)' },
+];
+
 export default function MemberDashboard() {
-  const {
-    profile,
-    userRegion
-  } = useAuth();
-  const {
-    data: events,
-    isLoading
-  } = useMemberRegionEvents();
+  const { profile, userRegion, memberRecord } = useAuth();
+  const { data: events, isLoading } = useMemberRegionEvents();
+  const range = useMemo(() => {
+    const to = new Date();
+    const from = new Date(); from.setMonth(from.getMonth() - 3);
+    return { from, to };
+  }, []);
+  const { data: att, isLoading: attLoading } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, range);
 
-  // Filter for upcoming events only
-  const upcomingEvents = (events || []).filter(event => isFuture(parseISO(event.start_datetime))).slice(0, 3);
-  const nextEvent = upcomingEvents[0];
-  return <div className="space-y-6 p-4 sm:p-6">
+  const upcoming = (events || []).filter((e) => isFuture(parseISO(e.start_datetime))).slice(0, 4);
+  const next = upcoming[0];
+  const daysToNext = next ? differenceInCalendarDays(parseISO(next.start_datetime), new Date()) : null;
+  const rate = Math.round(att?.overall?.rate ?? 0);
+  const m = memberRecord as any;
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 gap-4 my-0">
-        <Link to="/member/events">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm font-medium">Next Event</p>
-                  <p className="text-xs text-muted-foreground">
-                    {isLoading ? <Skeleton className="h-3 w-16" /> : nextEvent ? format(parseISO(nextEvent.start_datetime), 'MMM dd') : 'None scheduled'}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/member/attendance">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-secondary" />
-                <div>
-                  <p className="text-sm font-medium">Attendance</p>
-                  <p className="text-xs text-muted-foreground">View Reports</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Upcoming Events */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Upcoming Events</CardTitle>
-            <Link to="/member/events">
-              <Button variant="ghost" size="sm">
-                View All
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
+  return (
+    <div className="space-y-6">
+      {/* Welcome */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-7">
+        <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-secondary/40 blur-3xl" />
+        <div className="relative">
+          <p className="text-sm text-primary-foreground/75">{greeting()},</p>
+          <h2 className="mt-0.5 font-heading text-2xl font-bold sm:text-3xl">{profile?.first_name || 'Friend'}</h2>
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+            {m?.member_code && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 font-mono font-semibold">{m.member_code}</span>}
+            {userRegion?.name && <span className="flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1"><MapPin className="h-3 w-3" />{userRegion.name}</span>}
+            {m?.member_type && <span className="rounded-full bg-primary-foreground px-3 py-1 font-semibold capitalize text-primary">{m.member_type}</span>}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-3 px-0 mx-0">
-          {isLoading ? <div className="space-y-3">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-            </div> : upcomingEvents.length > 0 ? upcomingEvents.map(event => <div key={event.id} className="space-x-3 p-3 rounded-lg bg-accent/50 px-[12px] items-center justify-center flex flex-row my-0 mx-[8px]">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Calendar className="h-6 w-6 text-primary" />
+        </div>
+      </section>
+
+      {/* Metrics */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Link to="/member/attendance" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+          <div className="flex items-center gap-3">
+            <div className="relative h-12 w-12 shrink-0">
+              <svg viewBox="0 0 36 36" className="h-12 w-12 -rotate-90">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="4" />
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--chart-6)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(rate / 100) * 97.4} 97.4`} />
+              </svg>
+              <span className="absolute inset-0 grid place-items-center text-[11px] font-bold text-foreground">{attLoading ? '…' : `${rate}%`}</span>
+            </div>
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Attendance</p><p className="truncate text-sm font-semibold text-foreground">Last 3 months</p></div>
+          </div>
+        </Link>
+        <Link to="/member/events" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+          <p className="text-xs text-muted-foreground">Next gathering</p>
+          {isLoading ? <Skeleton className="mt-2 h-6 w-20" /> : (
+            <p className="mt-1 font-heading text-2xl font-bold text-foreground">
+              {daysToNext === null ? '—' : daysToNext === 0 ? 'Today' : `${daysToNext}d`}
+            </p>
+          )}
+          <p className="truncate text-xs text-muted-foreground">{next ? format(parseISO(next.start_datetime), 'EEE dd/MM') : 'None scheduled'}</p>
+        </Link>
+        <Link to="/member/attendance" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" style={{ color: 'var(--chart-3)' }} />Streak</p>
+          <p className="mt-1 font-heading text-2xl font-bold text-foreground">{attLoading ? '…' : att?.streak ?? 0}</p>
+          <p className="text-xs text-muted-foreground">in a row</p>
+        </Link>
+        <Link to="/member/discipleship" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+          <p className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" style={{ color: 'var(--chart-2)' }} />DCG meetings</p>
+          <p className="mt-1 font-heading text-2xl font-bold text-foreground">{attLoading ? '…' : att?.dcg?.attended ?? 0}</p>
+          <p className="text-xs text-muted-foreground">attended</p>
+        </Link>
+      </section>
+
+      {/* Upcoming events */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="font-heading text-lg font-semibold text-foreground">Upcoming events</h3>
+          <Button asChild variant="ghost" size="sm"><Link to="/member/events">View all <ChevronRight className="ml-1 h-4 w-4" /></Link></Button>
+        </div>
+        {isLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2">{[1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+        ) : upcoming.length ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {upcoming.map((e) => {
+              const d = parseISO(e.start_datetime);
+              return (
+                <Link key={e.id} to={`/events/${(e as any).slug || e.id}`} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-muted/50">
+                  <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="text-[10px] font-semibold uppercase">{format(d, 'MMM')}</span>
+                    <span className="font-heading text-xl font-bold leading-none">{format(d, 'dd')}</span>
                   </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {event.name}
-                  </p>
-                  <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{format(parseISO(event.start_datetime), 'MMM dd, h:mm a')}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{e.name}</p>
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-3 w-3 shrink-0" />{format(d, 'EEE, h:mm a')}</p>
+                    {e.location_name && <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{e.location_name}</span></p>}
                   </div>
-                  {event.location_name && <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>{event.location_name}</span>
-                    </div>}
-                </div>
-                {event.category && <Badge variant="secondary" className="text-xs">
-                    {event.category}
-                  </Badge>}
-              </div>) : <div className="text-center py-6 text-muted-foreground">
-              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No upcoming events</p>
-            </div>}
-        </CardContent>
-      </Card>
+                  {e.category && <Badge variant="secondary" className="hidden shrink-0 text-[10px] sm:inline-flex">{e.category}</Badge>}
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border py-10 text-center text-muted-foreground">
+            <Calendar className="mx-auto mb-2 h-8 w-8 opacity-50" /><p className="text-sm">No upcoming events</p>
+          </div>
+        )}
+      </section>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link to="/member/finances">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4 text-center">
-              <DollarSign className="mx-auto mb-2 h-8 w-8 text-secondary" />
-              <p className="text-sm font-medium">Give</p>
-              <p className="text-xs text-muted-foreground">Tithes & Offerings</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/member/discipleship">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4 text-center">
-              <Users className="mx-auto mb-2 h-8 w-8 text-primary" />
-              <p className="text-sm font-medium">Discipleship</p>
-              <p className="text-xs text-muted-foreground">Mentoring</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/member/fundraising">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4 text-center">
-              <Heart className="mx-auto mb-2 h-8 w-8 text-secondary" />
-              <p className="text-sm font-medium">Support</p>
-              <p className="text-xs text-muted-foreground">Campaigns</p>
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link to="/member/media">
-          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
-            <CardContent className="p-4 text-center">
-              <BookOpen className="mx-auto mb-2 h-8 w-8 text-primary" />
-              <p className="text-sm font-medium">Media</p>
-              <p className="text-xs text-muted-foreground">Sermons & More</p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-    </div>;
+      {/* Quick actions */}
+      <section>
+        <h3 className="mb-3 font-heading text-lg font-semibold text-foreground">Quick actions</h3>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {actions.map((a) => (
+            <Link key={a.href} to={a.href} className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <span className="grid h-11 w-11 place-items-center rounded-full" style={{ background: `color-mix(in oklab, ${a.tone} 15%, transparent)`, color: a.tone }}>
+                <a.icon className="h-5 w-5" />
+              </span>
+              <span className="text-xs font-semibold text-foreground">{a.label}</span>
+              <span className={cn('hidden text-[11px] text-muted-foreground md:block')}>{a.sub}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 }

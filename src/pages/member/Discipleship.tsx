@@ -25,7 +25,7 @@ export default function MemberDiscipleship() {
   const isLoading = isLoadingRelationships || isLoadingStats;
   if (isLoading) {
     return <>
-        <div className="container mx-auto p-6 pb-24 space-y-6">
+        <div className="space-y-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-muted rounded w-1/3"></div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -48,7 +48,7 @@ export default function MemberDiscipleship() {
     success_rate: 0
   };
   return <>
-      <div className="container mx-auto p-6 pb-24 space-y-6 py-[10px] px-[5px]">
+      <div className="space-y-6">
         {/* Page heading - hidden on mobile as it shows in layout header */}
         <div className="hidden md:flex items-center gap-2 mb-6">
           <BookOpen className="h-6 w-6 text-primary" />

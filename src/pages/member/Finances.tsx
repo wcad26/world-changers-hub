@@ -94,7 +94,7 @@ export default function MemberFinances() {
     isLoading: summaryLoading
   } = useFinancialSummary(dateRange);
   if (transactionsLoading || summaryLoading) {
-    return <div className="space-y-6 p-4">
+    return <div className="space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-4 w-96" />
@@ -105,7 +105,7 @@ export default function MemberFinances() {
         <Skeleton className="h-96" />
       </div>;
   }
-  return <div className="space-y-6 p-4 max-w-4xl mx-auto px-[13px]">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
         

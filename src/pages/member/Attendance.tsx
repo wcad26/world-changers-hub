@@ -33,7 +33,7 @@ export default function MemberAttendance() {
     data: attendanceData,
     isLoading
   } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, filters.dateRange);
-  return <div className="container mx-auto p-6 space-y-6 px-[15px]">
+  return <div className="space-y-6">
       
 
       {/* Period Filter */}

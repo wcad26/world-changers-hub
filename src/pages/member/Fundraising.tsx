@@ -136,7 +136,7 @@ export default function MemberFundraising() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3"></div>
           <div className="h-32 bg-muted rounded"></div>
@@ -147,7 +147,7 @@ export default function MemberFundraising() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <Heart className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">Fundraising & Giving</h1>

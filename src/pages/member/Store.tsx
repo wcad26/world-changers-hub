@@ -97,7 +97,7 @@ export default function MemberStore() {
   const categories = ["All", "Books", "Audio", "Video", "Study Materials"];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
         <Book className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">Church Store & Library</h1>
