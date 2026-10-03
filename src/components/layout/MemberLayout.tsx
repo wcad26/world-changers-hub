@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { useIsTablet } from '@/hooks/use-tablet';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from '@/lib/router-compat';
 import {
   Home, User, Calendar, BarChart3, Users, Wallet, Heart, Play, MessageCircle, ShoppingBag,
@@ -32,6 +31,38 @@ const secondaryNav: NavItem[] = [
   { name: 'Profile', href: '/member/profile', icon: User, desc: 'Your details' },
 ];
 
+const subtitles: Record<string, string> = {
+  '/member/events': 'Gatherings, retreats and DCG meetings in your branch',
+  '/member/finances': 'Track your tithes, offerings and contributions',
+  '/member/discipleship': 'Your mentoring relationships and growth',
+  '/member/bible': 'Read and reflect on the Word',
+  '/member/attendance': 'Your presence across services and DCG meetings',
+  '/member/fundraising': 'Support campaigns that change our world',
+  '/member/media': 'Sermons, teachings and videos',
+  '/member/counseling': 'Book time with a counselor or pastor',
+  '/member/store': 'Books, resources and the church library',
+  '/member/profile': 'Your personal details and family',
+};
+
+const allNav = [...primaryNav, ...secondaryNav];
+
+// Compact (bottom bar) for phones, and for touch tablets below 1024px.
+// Laptops/desktops with a mouse always get the sidebar layout, even on narrow windows.
+function useCompactLayout() {
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      const touch = window.matchMedia('(pointer: coarse)').matches;
+      setCompact(w < 768 || (touch && w < 1024));
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return compact;
+}
+
 const titles: Record<string, string> = {
   '/member/dashboard': 'Home',
   '/member/events': 'My Events',
@@ -51,7 +82,7 @@ function initials(first?: string | null, last?: string | null) {
 }
 
 export default function MemberLayout({ children }: { children?: React.ReactNode }) {
-  const isCompact = useIsTablet(); // < 1024px: mobile + tablet
+  const isCompact = useCompactLayout();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, profile, userRegion } = useAuth();
@@ -63,6 +94,27 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
   const isActive = (href: string) => path === href || path.startsWith(href + '/');
   const moreActive = secondaryNav.some((i) => isActive(i.href));
   const fullName = [profile?.last_name, profile?.first_name].filter(Boolean).join(' ');
+
+  const current = allNav.find((i) => isActive(i.href));
+  const isHome = path === '/member/dashboard';
+  const PageHero = ({ desktop }: { desktop?: boolean }) => {
+    if (isHome || !current) return null;
+    const Icon = current.icon;
+    return (
+      <section className={cn('relative mb-6 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/12 via-card to-secondary/12', desktop ? 'p-7' : 'p-4')}>
+        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-secondary/20 blur-3xl" />
+        <div className="relative flex items-center gap-4">
+          <span className={cn('grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-regal', desktop ? 'h-14 w-14' : 'h-11 w-11')}>
+            <Icon className={desktop ? 'h-7 w-7' : 'h-5 w-5'} />
+          </span>
+          <div className="min-w-0">
+            <h2 className={cn('font-heading font-bold text-foreground', desktop ? 'text-3xl' : 'text-xl')}>{titles[path]}</h2>
+            <p className="text-sm text-muted-foreground">{subtitles[path]}</p>
+          </div>
+        </div>
+      </section>
+    );
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -127,10 +179,18 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur-xl">
-            <h1 className="truncate font-heading text-lg font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
-            <ThemeToggle />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Member Portal</p>
+              <h1 className="truncate font-heading text-lg font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button asChild size="sm" variant="outline"><Link to="/member/events"><Calendar className="mr-2 h-4 w-4" />Events</Link></Button>
+              <Button asChild size="sm"><Link to="/member/finances"><Wallet className="mr-2 h-4 w-4" />Give</Link></Button>
+              <ThemeToggle />
+              <Link to="/member/profile" aria-label="Profile"><Avatar size="h-9 w-9" /></Link>
+            </div>
           </header>
-          <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-6">{content}</main>
+          <main className="mx-auto w-full max-w-7xl flex-1 px-8 py-8"><PageHero desktop />{content}</main>
         </div>
       </div>
     );
@@ -153,7 +213,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
       </header>
 
       <main className="w-full flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6">
-        <div className="mx-auto w-full max-w-4xl">{content}</div>
+        <div className="mx-auto w-full max-w-4xl"><PageHero />{content}</div>
       </main>
 
       <nav aria-label="Member navigation" className="fixed inset-x-0 bottom-0 z-50 w-full border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-12px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur-xl">
