@@ -1,8 +1,8 @@
 # Member portal rebuild
 - [x] Shell (desktop sidebar, mobile/tablet full-width bottom bar, page hero)
 - [x] Dashboard
-- [ ] Events
-- [ ] Giving (Finances)
+- [x] Events
+- [x] Giving (Finances)
 - [ ] Discipleship
 - [ ] Attendance
 - [ ] Fundraising
