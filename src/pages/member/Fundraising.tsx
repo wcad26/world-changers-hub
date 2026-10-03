@@ -148,10 +148,6 @@ export default function MemberFundraising() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Heart className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold text-foreground">Fundraising & Giving</h1>
-      </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
