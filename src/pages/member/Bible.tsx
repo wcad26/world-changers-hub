@@ -20,6 +20,8 @@ interface ReadingPosition {
 
 export default function BiblePage() {
   const { language } = useLanguage();
+  const [serif, setSerif] = useState(true);
+  const [fontSize, setFontSize] = useState(17);
   const { data: versions, isLoading: versionsLoading } = useBibleVersions();
   const { data: books, isLoading: booksLoading } = useBibleBooks(language);
   
@@ -161,9 +163,11 @@ export default function BiblePage() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+        <aside className="space-y-3 rounded-2xl border border-border bg-card p-4 lg:sticky lg:top-24">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{language === 'fr' ? 'Passage' : 'Passage'}</p>
         {/* Version and Book Selection */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
           <Select
             value={selectedVersion?.id || ''}
             onValueChange={(value) => {
@@ -266,8 +270,20 @@ export default function BiblePage() {
           </Select>
         </div>
 
+        <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
+          <span className="text-xs text-muted-foreground">{language === 'fr' ? 'Lecture' : 'Reading'}</span>
+          <div className="flex gap-1">
+            <Button size="sm" variant={serif ? 'default' : 'outline'} className="h-8 px-2 font-serif" onClick={() => setSerif(true)}>Aa</Button>
+            <Button size="sm" variant={!serif ? 'default' : 'outline'} className="h-8 px-2" onClick={() => setSerif(false)}>Aa</Button>
+            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setFontSize(f => Math.max(14, f - 2))}>A-</Button>
+            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setFontSize(f => Math.min(26, f + 2))}>A+</Button>
+          </div>
+        </div>
+        </aside>
+
+        <div className="min-w-0 space-y-4">
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -296,8 +312,8 @@ export default function BiblePage() {
         </div>
 
         {/* Verses Content */}
-        <Card>
-          <CardContent className="p-4">
+        <Card className="rounded-2xl">
+          <CardContent className="p-5 sm:p-8">
             {versesLoading ? (
               <div className="space-y-3">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -317,7 +333,7 @@ export default function BiblePage() {
                 )}
               </div>
             ) : verses && verses.length > 0 ? (
-              <div className="space-y-3" style={{ fontSize: '16px', lineHeight: 1.8 }}>
+              <div className={cn("mx-auto max-w-2xl space-y-3", serif && "font-serif")} style={{ fontSize: `${fontSize}px`, lineHeight: 1.85 }}>
                 {verses.map((verse) => (
                   <p 
                     key={verse.verse}
@@ -370,6 +386,7 @@ export default function BiblePage() {
             {selectedVersion.copyright_info}
           </p>
         )}
+        </div>
       </div>
     </>
   );
