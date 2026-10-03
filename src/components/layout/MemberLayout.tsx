@@ -46,15 +46,12 @@ const subtitles: Record<string, string> = {
 
 const allNav = [...primaryNav, ...secondaryNav];
 
-// Compact (bottom bar) for phones, and for touch tablets below 1024px.
-// Laptops/desktops with a mouse always get the sidebar layout, even on narrow windows.
+// Phones and tablets share the compact navigation, regardless of pointer type.
 function useCompactLayout() {
   const [compact, setCompact] = useState(false);
   useEffect(() => {
     const check = () => {
-      const w = window.innerWidth;
-      const touch = window.matchMedia('(pointer: coarse)').matches;
-      setCompact(w < 768 || (touch && w < 1024));
+      setCompact(window.innerWidth <= 1024);
     };
     check();
     window.addEventListener('resize', check);
@@ -207,6 +204,9 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => setMoreOpen(true)} aria-label="More pages" aria-expanded={moreOpen} aria-haspopup="dialog" className={cn(moreActive && 'text-primary')}>
+              <LayoutGrid className="h-5 w-5" />
+            </Button>
             <Link to="/member/profile" aria-label="Profile"><Avatar size="h-8 w-8" /></Link>
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
       </main>
 
       <nav aria-label="Member navigation" className="fixed inset-x-0 bottom-0 z-50 w-full border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-12px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur-xl">
-        <div className="grid h-16 w-full grid-cols-5 sm:h-[68px]">
+        <div className="grid h-16 w-full grid-cols-4 sm:h-[68px]">
           {primaryNav.map((item) => {
             const active = isActive(item.href);
             return (
@@ -232,20 +232,11 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
               </Link>
             );
           })}
-          <button type="button" onClick={() => setMoreOpen(true)} aria-label="More pages"
-            className={cn('relative flex min-w-0 flex-col items-center justify-center gap-1 transition-colors sm:flex-row sm:gap-2',
-              moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground')}>
-            {moreActive && <span className="absolute inset-x-[22%] top-0 h-[3px] rounded-b-full bg-primary" />}
-            <span className={cn('grid h-8 w-12 place-items-center rounded-full sm:w-auto', moreActive && 'bg-primary/12 sm:bg-transparent')}>
-              <LayoutGrid className="h-5 w-5" />
-            </span>
-            <span className="text-[11px] font-semibold sm:text-sm">More</span>
-          </button>
         </div>
       </nav>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-card px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-6">
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-card px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 motion-reduce:!animate-none">
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
           <SheetHeader className="mb-4 text-left">
             <SheetTitle className="flex items-center gap-3">
