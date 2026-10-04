@@ -94,6 +94,22 @@ export default function MemberDashboard() {
         </Link>
       </section>
 
+      {/* Quick actions */}
+      <section>
+        <h3 className="mb-3 font-heading text-lg font-semibold text-foreground">Quick actions</h3>
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
+          {actions.map((a) => (
+            <Link key={a.href} to={a.href} className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
+              <span className="grid h-11 w-11 place-items-center rounded-full" style={{ background: `color-mix(in oklab, ${a.tone} 15%, transparent)`, color: a.tone }}>
+                <a.icon className="h-5 w-5" />
+              </span>
+              <span className="text-xs font-semibold text-foreground">{a.label}</span>
+              <span className={cn('hidden text-[11px] text-muted-foreground md:block')}>{a.sub}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Upcoming events */}
       <section>
         <div className="mb-3 flex items-center justify-between">
@@ -127,22 +143,6 @@ export default function MemberDashboard() {
             <Calendar className="mx-auto mb-2 h-8 w-8 opacity-50" /><p className="text-sm">No upcoming events</p>
           </div>
         )}
-      </section>
-
-      {/* Quick actions */}
-      <section>
-        <h3 className="mb-3 font-heading text-lg font-semibold text-foreground">Quick actions</h3>
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-          {actions.map((a) => (
-            <Link key={a.href} to={a.href} className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all hover:-translate-y-0.5 hover:shadow-md">
-              <span className="grid h-11 w-11 place-items-center rounded-full" style={{ background: `color-mix(in oklab, ${a.tone} 15%, transparent)`, color: a.tone }}>
-                <a.icon className="h-5 w-5" />
-              </span>
-              <span className="text-xs font-semibold text-foreground">{a.label}</span>
-              <span className={cn('hidden text-[11px] text-muted-foreground md:block')}>{a.sub}</span>
-            </Link>
-          ))}
-        </div>
       </section>
     </div>
   );
