@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from '@/lib/router-compat';
 import {
   Home, User, Calendar, BarChart3, Users, Wallet, Heart, Play, MessageCircle, ShoppingBag,
-  LogOut, PanelLeftClose, PanelLeftOpen, LayoutGrid, Book, MapPin, type LucideIcon,
+  LogOut, PanelLeftClose, PanelLeftOpen, LayoutGrid, Book, type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -118,16 +118,6 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
               {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>
           </div>
-
-          <Link to="/member/profile" className={cn('m-3 flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-2.5 transition-colors hover:bg-muted', collapsed && 'justify-center')}>
-            <Avatar />
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-foreground">{fullName || 'Member'}</p>
-                <p className="flex items-center gap-1 truncate text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" />{userRegion?.name || 'WCA'}</p>
-              </div>
-            )}
-          </Link>
 
           <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
             {[{ label: 'Main', items: primaryNav }, { label: 'More', items: secondaryNav }].map((g) => (
