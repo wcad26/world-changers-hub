@@ -80,19 +80,19 @@ export default function MemberAuth() {
         <AuthSubmit loading={loading}>Sign In</AuthSubmit>
       </form>
       <Dialog open={signupOpen} onOpenChange={setSignupOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto rounded-3xl sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] overflow-y-auto overflow-x-hidden rounded-3xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Choose your region</DialogTitle>
             <DialogDescription>Select the WCA region you attend to start your registration.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
             {regionsLoading && <div className="col-span-full flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>}
             {regions.map((r) => (
               <button
                 key={r.id}
                 type="button"
                 onClick={() => { setSignupOpen(false); navigate(`/visitor/register/${generateSlug(r.name)}`); }}
-                className="group flex items-center gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+                className="group flex w-full min-w-0 items-center gap-3 rounded-2xl border border-border/60 bg-card/70 p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground"><MapPin className="h-5 w-5" /></span>
                 <span className="min-w-0 flex-1">
