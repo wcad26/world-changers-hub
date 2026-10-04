@@ -70,7 +70,7 @@ export default function MemberAuth() {
       icon={UserRound}
       badge="Member Portal"
       title="Welcome back"
-      subtitle="Sign in to your WCA member dashboard"
+      subtitle="Sign in to your WCA member account"
       footer={<p>Don't have an account?{' '}<button type="button" onClick={() => setSignupOpen(true)} className="font-semibold text-primary hover:underline">Sign up</button></p>}
     >
       <form onSubmit={handleSignIn} className="space-y-3">

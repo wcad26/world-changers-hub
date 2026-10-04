@@ -86,7 +86,7 @@ const RegionalAuth = () => {
   };
 
   return (
-    <AuthShell icon={Building2} badge="Regional Portal" title="Regional Administration" subtitle="Sign in to manage your region">
+    <AuthShell icon={Building2} badge="Regional Portal" title="Welcome back" subtitle="Sign in to manage your WCA region">
       <form onSubmit={handleLogin} className="space-y-3">
         <AuthError message={error} />
         <AuthField id="email" label="Email" icon={Mail} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required disabled={loading} />
