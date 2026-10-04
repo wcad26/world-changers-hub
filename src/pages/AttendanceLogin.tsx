@@ -92,7 +92,7 @@ export default function AttendanceLogin() {
   }
 
   return (
-    <AuthShell icon={ScanLine} badge="Attendance" title="Attendance Sign In" subtitle="Use your admin credentials to record attendance" footer={<p className="text-xs">Access requires an active Super Admin or Regional Admin role.</p>}>
+    <AuthShell icon={ScanLine} badge="Attendance" title="Welcome back" subtitle="Use your admin credentials to record attendance" footer={<p className="text-xs">Access requires an active Super Admin or Regional Admin role.</p>}>
       <form onSubmit={handleSubmit} className="space-y-3">
         <AuthError message={error} />
         <AuthField id="email" label="Email" icon={Mail} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
