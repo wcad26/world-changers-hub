@@ -89,22 +89,20 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
 
   const current = allNav.find((i) => isActive(i.href));
   const isHome = path === '/member/dashboard';
-  const PageHero = () => {
-    if (isHome || !current) return null;
-    const Icon = current.icon;
+  // Page icon + title + one-line description, shown in the header on every viewport.
+  const HeaderTitle = ({ compact }: { compact?: boolean }) => {
+    const Icon = isHome ? Home : current?.icon ?? Home;
+    const subtitle = isHome ? `Welcome to your ${userRegion?.name || 'WCA'} member portal` : subtitles[path];
     return (
-      <section className={'relative mb-6 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/12 via-card to-secondary/12 p-4 min-[1025px]:p-7'}>
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-secondary/20 blur-3xl" />
-        <div className="relative flex items-center gap-4">
-          <span className={'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-regal min-[1025px]:h-14 min-[1025px]:w-14'}>
-            <Icon className="h-5 w-5 min-[1025px]:h-7 min-[1025px]:w-7" />
-          </span>
-          <div className="min-w-0">
-            <h2 className={'font-heading text-xl font-bold text-foreground min-[1025px]:text-3xl'}>{titles[path]}</h2>
-            <p className="text-sm text-muted-foreground">{subtitles[path]}</p>
-          </div>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span className={cn('grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm', compact ? 'h-8 w-8' : 'h-10 w-10')}>
+          <Icon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
+        </span>
+        <div className="min-w-0">
+          <h1 className={cn('truncate font-heading font-semibold leading-tight text-foreground', compact ? 'text-base' : 'text-lg')}>{titles[path] || 'Member Portal'}</h1>
+          {subtitle && <p className={cn('truncate leading-tight text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}>{subtitle}</p>}
         </div>
-      </section>
+      </div>
     );
   };
 
@@ -162,10 +160,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 hidden h-16 min-[1025px]:flex items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur-xl">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Member Portal</p>
-              <h1 className="truncate font-heading text-lg font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
-            </div>
+            <HeaderTitle />
             <div className="flex items-center gap-3">
               <Button asChild size="sm" variant="outline"><Link to="/member/events"><Calendar className="mr-2 h-4 w-4" />Events</Link></Button>
               <Button asChild size="sm"><Link to="/member/finances"><Wallet className="mr-2 h-4 w-4" />Give</Link></Button>
@@ -174,11 +169,11 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
             </div>
           </header>
       <header className="sticky top-0 z-40 min-[1025px]:hidden border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="grid h-16 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2.5">
             <img src={LOGO} alt="WCA" className="h-7 w-auto shrink-0 object-contain dark:brightness-0 dark:invert" />
-            <span className="h-5 w-px shrink-0 bg-border" />
-            <h1 className="truncate font-heading text-base font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
+            <span className="h-6 w-px shrink-0 bg-border" />
+            <HeaderTitle compact />
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
