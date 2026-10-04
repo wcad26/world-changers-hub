@@ -7,16 +7,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Briefcase, IdCard, Building2 } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Calendar, Edit, Save, X, Briefcase, IdCard, Building2, Camera, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Panel } from '@/components/member/MemberUI';
+import { MemberAvatar } from '@/components/member/MemberAvatar';
 
 export default function MemberProfile() {
-  const { profile, user, userRegion, memberRecord } = useAuth();
+  const { profile, user, userRegion, memberRecord, refetchUserData } = useAuth() as any;
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [saved, setSaved] = useState<Record<string, string>>({});
   const empty = { first_name: '', last_name: '', phone: '', address: '', occupation: '' };
   const [form, setForm] = useState(empty);
@@ -54,6 +56,25 @@ export default function MemberProfile() {
     toast({ title: 'Profile updated', description: 'Your details have been saved.' });
   };
 
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !profile || !user) return;
+    if (!file.type.startsWith('image/')) { toast({ title: 'Not an image', description: 'Please choose a photo file.', variant: 'destructive' }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: 'Photo too large', description: 'Please choose a photo under 5 MB.', variant: 'destructive' }); return; }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) { setUploading(false); toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' }); return; }
+    const { data, error } = await supabase.from('profiles').update({ avatar_url: path } as any).eq('id', profile.id).select('id');
+    setUploading(false);
+    if (error || !data?.length) { toast({ title: 'Could not save photo', description: error?.message || 'Permission denied.', variant: 'destructive' }); return; }
+    setSaved((s) => ({ ...s, avatar_url: path }));
+    await refetchUserData?.();
+    toast({ title: 'Photo updated', description: 'Your new profile photo is saved.' });
+  };
+
   if (!profile) {
     return <div className="space-y-4"><Skeleton className="h-36 w-full rounded-2xl" /><Skeleton className="h-72 w-full rounded-2xl" /></div>;
   }
@@ -83,7 +104,14 @@ export default function MemberProfile() {
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-7">
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-2xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-          <span className="grid h-20 w-20 shrink-0 place-items-center rounded-full bg-primary-foreground/20 font-heading text-2xl font-bold ring-4 ring-primary-foreground/25">{initials || 'M'}</span>
+          <label className="group relative h-20 w-20 shrink-0 cursor-pointer rounded-full ring-4 ring-primary-foreground/25" title="Change profile photo">
+            <MemberAvatar path={current.avatar_url} className="h-20 w-20" />
+            <span className="absolute inset-0 grid place-items-center rounded-full bg-foreground/50 text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100">
+              {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
+            </span>
+            <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-primary-foreground text-primary shadow"><Camera className="h-3.5 w-3.5" /></span>
+            <input type="file" accept="image/*" className="sr-only" onChange={handlePhoto} disabled={uploading} />
+          </label>
           <div className="min-w-0 flex-1">
             <h2 className="truncate font-heading text-2xl font-bold">{fullName}</h2>
             <p className="text-sm text-primary-foreground/80">{userRegion?.name || 'World Changers Assembly'}</p>

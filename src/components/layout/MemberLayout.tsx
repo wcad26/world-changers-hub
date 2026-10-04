@@ -2,13 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, Outlet, useNavigate } from '@/lib/router-compat';
 import {
   Home, User, Calendar, BarChart3, Users, Wallet, Heart, Play, MessageCircle, ShoppingBag,
-  LogOut, PanelLeftClose, PanelLeftOpen, LayoutGrid, Book, type LucideIcon,
+  LogOut, PanelLeftClose, PanelLeftOpen, LayoutGrid, Book, GraduationCap, Languages, ChevronRight, type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { MemberAvatar } from '@/components/member/MemberAvatar';
 
 const LOGO = '/lovable-uploads/49a70c29-0080-4568-ad27-30a1d70295e5.png';
 
@@ -22,14 +23,19 @@ const primaryNav: NavItem[] = [
 ];
 
 const secondaryNav: NavItem[] = [
-  { name: 'Bible', href: '/member/bible', icon: Book, desc: 'Read the Word' },
-  { name: 'Attendance', href: '/member/attendance', icon: BarChart3, desc: 'Your record' },
-  { name: 'Fundraising', href: '/member/fundraising', icon: Heart, desc: 'Campaigns' },
-  { name: 'Media', href: '/member/media', icon: Play, desc: 'Sermons & videos' },
-  { name: 'Counseling', href: '/member/counseling', icon: MessageCircle, desc: 'Book a session' },
-  { name: 'Store', href: '/member/store', icon: ShoppingBag, desc: 'Books & resources' },
   { name: 'Profile', href: '/member/profile', icon: User, desc: 'Your details' },
+  { name: 'Bible', href: '/member/bible', icon: Book, desc: 'Read the Word' },
+  { name: 'Counseling', href: '/member/counseling', icon: MessageCircle, desc: 'Book a session' },
+  { name: 'Media', href: '/member/media', icon: Play, desc: 'Sermons & videos' },
+  { name: 'Give', href: '/member/finances', icon: Wallet, desc: 'Tithes & offerings' },
+  { name: 'Fundraising', href: '/member/fundraising', icon: Heart, desc: 'Campaigns' },
+  { name: 'Store', href: '/member/store', icon: ShoppingBag, desc: 'Books & resources' },
+  { name: 'Attendance', href: '/member/attendance', icon: BarChart3, desc: 'Your record' },
+  { name: 'Education', href: '/member/education', icon: GraduationCap, desc: 'Courses & school' },
+  { name: 'Translation', href: '/member/translation', icon: Languages, desc: 'Live in your language' },
 ];
+// Desktop sidebar "More" group: everything not already in the main group.
+const sidebarMore = secondaryNav.filter((i) => !primaryNav.some((p) => p.href === i.href));
 
 const subtitles: Record<string, string> = {
   '/member/events': 'Gatherings, retreats and DCG meetings in your branch',
@@ -42,9 +48,11 @@ const subtitles: Record<string, string> = {
   '/member/counseling': 'Book time with a counselor or pastor',
   '/member/store': 'Books, resources and the church library',
   '/member/profile': 'Your personal details and family',
+  '/member/education': 'Enroll in courses and grow in knowledge',
+  '/member/translation': 'Follow every message in your own language',
 };
 
-const allNav = [...primaryNav, ...secondaryNav];
+const allNav = [...primaryNav, ...sidebarMore];
 
 const titles: Record<string, string> = {
   '/member/dashboard': 'Home',
@@ -58,6 +66,8 @@ const titles: Record<string, string> = {
   '/member/counseling': 'Counseling',
   '/member/store': 'Store',
   '/member/profile': 'My Profile',
+  '/member/education': 'Education',
+  '/member/translation': 'Translation',
 };
 
 function initials(first?: string | null, last?: string | null) {
@@ -104,9 +114,11 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
   };
 
   const Avatar = ({ size = 'h-9 w-9' }: { size?: string }) => (
-    <div className={cn(size, 'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-bold text-primary-foreground')}>
-      {initials(profile?.first_name, profile?.last_name)}
-    </div>
+    (profile as any)?.avatar_url
+      ? <MemberAvatar path={(profile as any).avatar_url} className={size} />
+      : <div className={cn(size, 'grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-secondary text-xs font-bold text-primary-foreground')}>
+          {initials(profile?.first_name, profile?.last_name)}
+        </div>
   );
 
   return (
@@ -120,7 +132,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
           </div>
 
           <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-4">
-            {[{ label: 'Main', items: primaryNav }, { label: 'More', items: secondaryNav }].map((g) => (
+            {[{ label: 'Main', items: primaryNav }, { label: 'More', items: sidebarMore }].map((g) => (
               <div key={g.label} className="space-y-1">
                 {!collapsed && <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</p>}
                 {g.items.map((item) => {
@@ -229,9 +241,16 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
               );
             })}
           </div>
-          <Button variant="outline" onClick={() => { setMoreOpen(false); void handleSignOut(); }} className="mt-5 w-full">
-            <LogOut className="mr-2 h-4 w-4" /> Sign Out
-          </Button>
+          <button type="button" onClick={() => { setMoreOpen(false); void handleSignOut(); }}
+            className="group relative mt-5 flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-secondary p-3 text-left text-primary-foreground shadow-regal transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0">
+            <span className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary-foreground/10 blur-2xl" />
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-foreground/15"><LogOut className="h-5 w-5" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">Sign out</span>
+              <span className="block truncate text-xs text-primary-foreground/75">See you soon, {profile?.first_name || 'friend'}</span>
+            </span>
+            <ChevronRight className="h-5 w-5 opacity-80 transition-transform group-hover:translate-x-0.5" />
+          </button>
         </SheetContent>
       </Sheet>
     </div>

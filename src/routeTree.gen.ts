@@ -57,12 +57,14 @@ import { Route as MemberBibleRouteImport } from './routes/member.bible'
 import { Route as MemberCounselingRouteImport } from './routes/member.counseling'
 import { Route as MemberDashboardRouteImport } from './routes/member.dashboard'
 import { Route as MemberDiscipleshipRouteImport } from './routes/member.discipleship'
+import { Route as MemberEducationRouteImport } from './routes/member.education'
 import { Route as MemberEventsRouteImport } from './routes/member.events'
 import { Route as MemberFinancesRouteImport } from './routes/member.finances'
 import { Route as MemberFundraisingRouteImport } from './routes/member.fundraising'
 import { Route as MemberMediaRouteImport } from './routes/member.media'
 import { Route as MemberProfileRouteImport } from './routes/member.profile'
 import { Route as MemberStoreRouteImport } from './routes/member.store'
+import { Route as MemberTranslationRouteImport } from './routes/member.translation'
 import { Route as ProfileUpdateRouteImport } from './routes/profile.update'
 import { Route as VerifyVerificationCodeRouteImport } from './routes/verify.$verificationCode'
 import { Route as AdminRegionalIndexRouteImport } from './routes/admin.regional.index'
@@ -364,6 +366,11 @@ const MemberDiscipleshipRoute = MemberDiscipleshipRouteImport.update({
   path: '/discipleship',
   getParentRoute: () => MemberRoute,
 } as any)
+const MemberEducationRoute = MemberEducationRouteImport.update({
+  id: '/education',
+  path: '/education',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberEventsRoute = MemberEventsRouteImport.update({
   id: '/events',
   path: '/events',
@@ -392,6 +399,11 @@ const MemberProfileRoute = MemberProfileRouteImport.update({
 const MemberStoreRoute = MemberStoreRouteImport.update({
   id: '/store',
   path: '/store',
+  getParentRoute: () => MemberRoute,
+} as any)
+const MemberTranslationRoute = MemberTranslationRouteImport.update({
+  id: '/translation',
+  path: '/translation',
   getParentRoute: () => MemberRoute,
 } as any)
 const ProfileUpdateRoute = ProfileUpdateRouteImport.update({
@@ -761,12 +773,14 @@ export interface FileRoutesByFullPath {
   '/member/counseling': typeof MemberCounselingRoute
   '/member/dashboard': typeof MemberDashboardRoute
   '/member/discipleship': typeof MemberDiscipleshipRoute
+  '/member/education': typeof MemberEducationRoute
   '/member/events': typeof MemberEventsRoute
   '/member/finances': typeof MemberFinancesRoute
   '/member/fundraising': typeof MemberFundraisingRoute
   '/member/media': typeof MemberMediaRoute
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
+  '/member/translation': typeof MemberTranslationRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -868,12 +882,14 @@ export interface FileRoutesByTo {
   '/member/counseling': typeof MemberCounselingRoute
   '/member/dashboard': typeof MemberDashboardRoute
   '/member/discipleship': typeof MemberDiscipleshipRoute
+  '/member/education': typeof MemberEducationRoute
   '/member/events': typeof MemberEventsRoute
   '/member/finances': typeof MemberFinancesRoute
   '/member/fundraising': typeof MemberFundraisingRoute
   '/member/media': typeof MemberMediaRoute
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
+  '/member/translation': typeof MemberTranslationRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -977,12 +993,14 @@ export interface FileRoutesById {
   '/member/counseling': typeof MemberCounselingRoute
   '/member/dashboard': typeof MemberDashboardRoute
   '/member/discipleship': typeof MemberDiscipleshipRoute
+  '/member/education': typeof MemberEducationRoute
   '/member/events': typeof MemberEventsRoute
   '/member/finances': typeof MemberFinancesRoute
   '/member/fundraising': typeof MemberFundraisingRoute
   '/member/media': typeof MemberMediaRoute
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
+  '/member/translation': typeof MemberTranslationRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -1095,12 +1113,14 @@ export interface FileRouteTypes {
     | '/member/counseling'
     | '/member/dashboard'
     | '/member/discipleship'
+    | '/member/education'
     | '/member/events'
     | '/member/finances'
     | '/member/fundraising'
     | '/member/media'
     | '/member/profile'
     | '/member/store'
+    | '/member/translation'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin/'
@@ -1202,12 +1222,14 @@ export interface FileRouteTypes {
     | '/member/counseling'
     | '/member/dashboard'
     | '/member/discipleship'
+    | '/member/education'
     | '/member/events'
     | '/member/finances'
     | '/member/fundraising'
     | '/member/media'
     | '/member/profile'
     | '/member/store'
+    | '/member/translation'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin'
@@ -1310,12 +1332,14 @@ export interface FileRouteTypes {
     | '/member/counseling'
     | '/member/dashboard'
     | '/member/discipleship'
+    | '/member/education'
     | '/member/events'
     | '/member/finances'
     | '/member/fundraising'
     | '/member/media'
     | '/member/profile'
     | '/member/store'
+    | '/member/translation'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin/'
@@ -1754,6 +1778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberDiscipleshipRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/member/education': {
+      id: '/member/education'
+      path: '/education'
+      fullPath: '/member/education'
+      preLoaderRoute: typeof MemberEducationRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/member/events': {
       id: '/member/events'
       path: '/events'
@@ -1794,6 +1825,13 @@ declare module '@tanstack/react-router' {
       path: '/store'
       fullPath: '/member/store'
       preLoaderRoute: typeof MemberStoreRouteImport
+      parentRoute: typeof MemberRoute
+    }
+    '/member/translation': {
+      id: '/member/translation'
+      path: '/translation'
+      fullPath: '/member/translation'
+      preLoaderRoute: typeof MemberTranslationRouteImport
       parentRoute: typeof MemberRoute
     }
     '/profile/update': {
@@ -2521,12 +2559,14 @@ interface MemberRouteChildren {
   MemberCounselingRoute: typeof MemberCounselingRoute
   MemberDashboardRoute: typeof MemberDashboardRoute
   MemberDiscipleshipRoute: typeof MemberDiscipleshipRoute
+  MemberEducationRoute: typeof MemberEducationRoute
   MemberEventsRoute: typeof MemberEventsRoute
   MemberFinancesRoute: typeof MemberFinancesRoute
   MemberFundraisingRoute: typeof MemberFundraisingRoute
   MemberMediaRoute: typeof MemberMediaRoute
   MemberProfileRoute: typeof MemberProfileRoute
   MemberStoreRoute: typeof MemberStoreRoute
+  MemberTranslationRoute: typeof MemberTranslationRoute
   MemberIndexRoute: typeof MemberIndexRoute
   MemberRegisterRegionCodeRoute: typeof MemberRegisterRegionCodeRoute
 }
@@ -2538,12 +2578,14 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberCounselingRoute: MemberCounselingRoute,
   MemberDashboardRoute: MemberDashboardRoute,
   MemberDiscipleshipRoute: MemberDiscipleshipRoute,
+  MemberEducationRoute: MemberEducationRoute,
   MemberEventsRoute: MemberEventsRoute,
   MemberFinancesRoute: MemberFinancesRoute,
   MemberFundraisingRoute: MemberFundraisingRoute,
   MemberMediaRoute: MemberMediaRoute,
   MemberProfileRoute: MemberProfileRoute,
   MemberStoreRoute: MemberStoreRoute,
+  MemberTranslationRoute: MemberTranslationRoute,
   MemberIndexRoute: MemberIndexRoute,
   MemberRegisterRegionCodeRoute: MemberRegisterRegionCodeRoute,
 }
