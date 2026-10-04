@@ -46,20 +46,6 @@ const subtitles: Record<string, string> = {
 
 const allNav = [...primaryNav, ...secondaryNav];
 
-// Phones and tablets share the compact navigation, regardless of pointer type.
-function useCompactLayout() {
-  const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    const check = () => {
-      setCompact(window.innerWidth <= 1024);
-    };
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-  return compact;
-}
-
 const titles: Record<string, string> = {
   '/member/dashboard': 'Home',
   '/member/events': 'My Events',
@@ -79,7 +65,6 @@ function initials(first?: string | null, last?: string | null) {
 }
 
 export default function MemberLayout({ children }: { children?: React.ReactNode }) {
-  const isCompact = useCompactLayout();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, profile, userRegion } = useAuth();
@@ -94,18 +79,18 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
 
   const current = allNav.find((i) => isActive(i.href));
   const isHome = path === '/member/dashboard';
-  const PageHero = ({ desktop }: { desktop?: boolean }) => {
+  const PageHero = () => {
     if (isHome || !current) return null;
     const Icon = current.icon;
     return (
-      <section className={cn('relative mb-6 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/12 via-card to-secondary/12', desktop ? 'p-7' : 'p-4')}>
+      <section className={'relative mb-6 overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/12 via-card to-secondary/12 p-4 min-[1025px]:p-7'}>
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-secondary/20 blur-3xl" />
         <div className="relative flex items-center gap-4">
-          <span className={cn('grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-regal', desktop ? 'h-14 w-14' : 'h-11 w-11')}>
-            <Icon className={desktop ? 'h-7 w-7' : 'h-5 w-5'} />
+          <span className={'grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-regal min-[1025px]:h-14 min-[1025px]:w-14'}>
+            <Icon className="h-5 w-5 min-[1025px]:h-7 min-[1025px]:w-7" />
           </span>
           <div className="min-w-0">
-            <h2 className={cn('font-heading font-bold text-foreground', desktop ? 'text-3xl' : 'text-xl')}>{titles[path]}</h2>
+            <h2 className={'font-heading text-xl font-bold text-foreground min-[1025px]:text-3xl'}>{titles[path]}</h2>
             <p className="text-sm text-muted-foreground">{subtitles[path]}</p>
           </div>
         </div>
@@ -124,10 +109,9 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
     </div>
   );
 
-  if (!isCompact) {
-    return (
+  return (
       <div className="flex min-h-screen w-full bg-background">
-        <aside className={cn('sticky top-0 flex h-screen shrink-0 flex-col border-r border-border bg-card transition-[width] duration-300', collapsed ? 'w-[76px]' : 'w-64')}>
+        <aside className={cn('sticky top-0 hidden min-[1025px]:flex h-screen shrink-0 flex-col border-r border-border bg-card transition-[width] duration-300', collapsed ? 'w-[76px]' : 'w-64')}>
           <div className={cn('flex h-16 items-center border-b border-border px-4', collapsed ? 'justify-center' : 'justify-between')}>
             {!collapsed && <img src={LOGO} alt="WCA" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />}
             <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
@@ -175,7 +159,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur-xl">
+          <header className="sticky top-0 z-30 hidden h-16 min-[1025px]:flex items-center justify-between border-b border-border bg-background/85 px-6 backdrop-blur-xl">
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Member Portal</p>
               <h1 className="truncate font-heading text-lg font-semibold text-foreground">{titles[path] || 'Member Portal'}</h1>
@@ -187,15 +171,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
               <Link to="/member/profile" aria-label="Profile"><Avatar size="h-9 w-9" /></Link>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-7xl flex-1 px-8 py-8"><PageHero desktop />{content}</main>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+      <header className="sticky top-0 z-40 min-[1025px]:hidden border-b border-border bg-background/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <img src={LOGO} alt="WCA" className="h-7 w-auto shrink-0 object-contain dark:brightness-0 dark:invert" />
@@ -204,20 +180,19 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
           </div>
           <div className="flex items-center gap-1">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" onClick={() => setMoreOpen(true)} aria-label="More pages" aria-expanded={moreOpen} aria-haspopup="dialog" className={cn('gap-1 px-2', moreActive && 'text-primary')}>
-              <LayoutGrid className="h-4 w-4" />
-              <span className="text-xs">More</span>
+            <Button size="icon" onClick={() => setMoreOpen(true)} aria-label="More pages" aria-expanded={moreOpen} aria-haspopup="dialog" className={cn('h-9 w-9 rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90', moreActive && 'ring-2 ring-primary/30 ring-offset-2 ring-offset-background')}>
+              <LayoutGrid className="h-5 w-5" />
             </Button>
-            <Link to="/member/profile" aria-label="Profile"><Avatar size="h-8 w-8" /></Link>
           </div>
         </div>
       </header>
 
-      <main className="w-full flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6">
-        <div className="mx-auto w-full max-w-4xl"><PageHero />{content}</div>
-      </main>
+          <main className="w-full flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6 min-[1025px]:px-8 min-[1025px]:py-8">
+            <div className="mx-auto w-full max-w-4xl min-[1025px]:max-w-7xl"><PageHero />{content}</div>
+          </main>
+        </div>
 
-      <nav aria-label="Member navigation" className="fixed inset-x-0 bottom-0 z-50 w-full border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-12px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur-xl">
+      <nav aria-label="Member navigation" className="min-[1025px]:hidden fixed inset-x-0 bottom-0 z-50 w-full border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-12px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur-xl">
         <div className="grid h-16 w-full grid-cols-4 sm:h-[68px]">
           {primaryNav.map((item) => {
             const active = isActive(item.href);
@@ -237,7 +212,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
       </nav>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-card px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 motion-reduce:!animate-none">
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl border-border bg-card px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 sm:px-6 data-[state=open]:duration-300 data-[state=closed]:duration-200 ease-out motion-reduce:!animate-none">
           <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
           <SheetHeader className="mb-4 text-left">
             <SheetTitle className="flex items-center gap-3">
