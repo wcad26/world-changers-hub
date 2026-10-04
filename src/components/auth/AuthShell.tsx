@@ -18,7 +18,7 @@ interface AuthShellProps {
 /** Shared modern glass shell used by every portal login page. */
 export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer }: AuthShellProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background">
       {/* Ambient glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -left-32 -top-32 h-[28rem] w-[28rem] rounded-full bg-primary/25 blur-3xl motion-safe:animate-[auth-float_14s_ease-in-out_infinite]" />
@@ -27,7 +27,7 @@ export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer
         <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-8">
+      <header className="relative z-10 flex items-center justify-between px-4 py-3 sm:px-8 sm:py-4">
         <Link
           to="/"
           className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-4 py-2 text-sm text-muted-foreground backdrop-blur-md transition-colors hover:text-foreground"
@@ -39,29 +39,31 @@ export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer
         <ThemeToggle />
       </header>
 
-      <main className="relative z-10 flex min-h-[calc(100vh-5rem)] items-center justify-center px-4 pb-10">
+      <main className="relative z-10 flex flex-1 items-center justify-center px-4 pb-4">
         <div className="w-full max-w-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-500">
-          <div className="mb-6 flex justify-center">
-            <img src={LOGO} alt="World Changers Association" className="h-14 w-auto max-w-[210px] object-contain dark:brightness-0 dark:invert" />
+          <div className="mb-4 flex justify-center">
+            <img src={LOGO} alt="World Changers Association" className="h-10 w-auto max-w-[180px] sm:h-12 object-contain dark:brightness-0 dark:invert" />
           </div>
 
-          <div className="relative rounded-3xl border border-border/60 bg-card/70 p-6 shadow-2xl shadow-primary/10 backdrop-blur-xl sm:p-8">
+          <div className="relative rounded-3xl border border-border/60 bg-card/70 p-5 shadow-2xl shadow-primary/10 backdrop-blur-xl sm:p-7">
             <div aria-hidden className="absolute inset-x-10 -top-px h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
-            <div className="mb-7 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30">
-                <Icon className="h-7 w-7" />
+            <div className="mb-5 flex items-center gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-lg shadow-primary/30">
+                <Icon className="h-6 w-6" />
               </div>
-              <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                {badge}
-              </span>
-              <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-              <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
+              <div className="min-w-0">
+                <span className="inline-flex items-center rounded-full border border-primary/25 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+                  {badge}
+                </span>
+                <h1 className="mt-1 text-xl font-bold leading-tight tracking-tight sm:text-2xl">{title}</h1>
+              </div>
             </div>
+            <p className="-mt-2 mb-4 text-sm text-muted-foreground">{subtitle}</p>
             {children}
           </div>
 
-          {footer && <div className="mt-6 text-center text-sm text-muted-foreground">{footer}</div>}
-          <p className="mt-8 text-center text-xs text-muted-foreground/70">
+          {footer && <div className="mt-4 text-center text-sm text-muted-foreground">{footer}</div>}
+          <p className="mt-4 text-center text-xs text-muted-foreground/70">
             See the Future · Take a Step · Change your World
           </p>
         </div>
@@ -80,7 +82,7 @@ export function AuthField({ label, icon: Icon, action, id, type, className, ...r
   const [show, setShow] = useState(false);
   const isPassword = type === 'password';
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <label htmlFor={id} className="text-sm font-medium">{label}</label>
         {action}
@@ -91,7 +93,7 @@ export function AuthField({ label, icon: Icon, action, id, type, className, ...r
           id={id}
           type={isPassword && show ? 'text' : type}
           className={cn(
-            'h-12 w-full rounded-xl border border-input bg-background/60 pl-11 pr-11 text-sm outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 disabled:opacity-60',
+            'h-11 w-full rounded-xl border border-input bg-background/60 pl-11 pr-11 text-sm outline-none transition-all placeholder:text-muted-foreground/70 focus:border-primary focus:bg-background focus:ring-4 focus:ring-primary/15 disabled:opacity-60',
             className,
           )}
           {...rest}
@@ -116,7 +118,7 @@ export function AuthSubmit({ loading, children, loadingText = 'Signing in…' }:
     <button
       type="submit"
       disabled={loading}
-      className="group relative mt-2 flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 disabled:pointer-events-none disabled:opacity-70"
+      className="group relative mt-1 flex h-11 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-primary to-secondary text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-primary/30 active:translate-y-0 disabled:pointer-events-none disabled:opacity-70"
     >
       <span aria-hidden className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary-foreground/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
       {loading ? (<><Loader2 className="h-4 w-4 animate-spin" />{loadingText}</>) : children}

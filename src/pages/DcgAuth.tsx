@@ -53,7 +53,7 @@ const DcgAuth = () => {
 
   return (
     <AuthShell icon={UsersRound} badge="DCG Portal" title="DCG Leadership" subtitle="Sign in to manage your Deeper Christian Group">
-      <form onSubmit={handleLogin} className="space-y-4">
+      <form onSubmit={handleLogin} className="space-y-3">
         <AuthError message={error} />
         <AuthField id="email" label="Email" icon={Mail} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required disabled={loading} />
         <AuthField id="password" label="Password" icon={Lock} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required disabled={loading} action={<ForgotLink to="/auth/forgot-password?portal=dcg" />} />
