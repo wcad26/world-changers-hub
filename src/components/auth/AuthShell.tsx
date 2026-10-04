@@ -58,6 +58,14 @@ export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer
           <p className="mt-4 text-center text-xs text-muted-foreground/70">
             See the Future · Take a Step · Change your World
           </p>
+          <div className="mt-3 text-center">
+            <Link
+              to="/"
+              className="text-sm font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+            >
+              Visit Our Website
+            </Link>
+          </div>
         </div>
       </main>
     </div>
