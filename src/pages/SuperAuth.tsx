@@ -83,7 +83,7 @@ const SuperAuth = () => {
 
   return (
     <AuthShell icon={Shield} badge="Super Admin" title="Global Administration" subtitle="Restricted access for authorised administrators">
-      <form onSubmit={handleSignIn} className="space-y-4">
+      <form onSubmit={handleSignIn} className="space-y-3">
         <AuthField id="email" label="Email" icon={Mail} type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required disabled={isLoading} />
         <AuthField id="password" label="Password" icon={Lock} type="password" autoComplete="current-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required disabled={isLoading} action={<ForgotLink to="/auth/forgot-password?portal=super" />} />
         <AuthSubmit loading={isLoading}>Sign In</AuthSubmit>
