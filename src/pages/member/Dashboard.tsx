@@ -90,7 +90,7 @@ export default function MemberDashboard() {
             </div>
           </div>
         </Link>
-        <Link to="/member/events" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+        <Link to="/member/events" className="hidden min-[1025px]:block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
           <p className="text-xs text-muted-foreground">Next gathering</p>
           {isLoading ? <Skeleton className="mt-2 h-6 w-20" /> : (
             <p className="mt-1 font-heading text-2xl font-bold text-foreground">
@@ -99,12 +99,12 @@ export default function MemberDashboard() {
           )}
           <p className="truncate text-xs text-muted-foreground">{next ? format(parseISO(next.start_datetime), 'EEE dd/MM') : 'None scheduled'}</p>
         </Link>
-        <Link to="/member/attendance" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+        <Link to="/member/attendance" className="hidden min-[1025px]:block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
           <p className="flex items-center gap-1 text-xs text-muted-foreground"><Flame className="h-3.5 w-3.5" style={{ color: 'var(--chart-3)' }} />Streak</p>
           <p className="mt-1 font-heading text-2xl font-bold text-foreground">{attLoading ? '…' : att?.streak ?? 0}</p>
           <p className="text-xs text-muted-foreground">in a row</p>
         </Link>
-        <Link to="/member/discipleship" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
+        <Link to="/member/discipleship" className="hidden min-[1025px]:block rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
           <p className="flex items-center gap-1 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" style={{ color: 'var(--chart-2)' }} />DCG meetings</p>
           <p className="mt-1 font-heading text-2xl font-bold text-foreground">{attLoading ? '…' : att?.dcg?.attended ?? 0}</p>
           <p className="text-xs text-muted-foreground">attended</p>
