@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Calendar, Clock, MapPin, ChevronRight, Heart, Wallet, Users, Play, Book, BarChart3, Flame, MessageCircle,
+  Calendar, Clock, MapPin, ChevronRight, Heart, Wallet, Users, Play, Book, Flame, MessageCircle, ShoppingBag,
 } from 'lucide-react';
+import { MemberAvatar } from '@/components/member/MemberAvatar';
 import { Link } from '@/lib/router-compat';
 import { useMemberRegionEvents } from '@/hooks/useEvents';
 import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
@@ -18,12 +19,12 @@ function greeting() {
 }
 
 const actions = [
-  { label: 'Give', sub: 'Tithes & offerings', href: '/member/finances', icon: Wallet, tone: 'var(--chart-5)' },
-  { label: 'Attendance', sub: 'Your record', href: '/member/attendance', icon: BarChart3, tone: 'var(--chart-6)' },
   { label: 'Bible', sub: 'Read today', href: '/member/bible', icon: Book, tone: 'var(--chart-1)' },
-  { label: 'Campaigns', sub: 'Support a cause', href: '/member/fundraising', icon: Heart, tone: 'var(--chart-4)' },
-  { label: 'Media', sub: 'Sermons & more', href: '/member/media', icon: Play, tone: 'var(--chart-7)' },
   { label: 'Counseling', sub: 'Talk to someone', href: '/member/counseling', icon: MessageCircle, tone: 'var(--chart-2)' },
+  { label: 'Media', sub: 'Sermons & more', href: '/member/media', icon: Play, tone: 'var(--chart-7)' },
+  { label: 'Give', sub: 'Tithes & offerings', href: '/member/finances', icon: Wallet, tone: 'var(--chart-5)' },
+  { label: 'Fundraising', sub: 'Support a cause', href: '/member/fundraising', icon: Heart, tone: 'var(--chart-4)' },
+  { label: 'Store', sub: 'Books & resources', href: '/member/store', icon: ShoppingBag, tone: 'var(--chart-6)' },
 ];
 
 export default function MemberDashboard() {
@@ -48,29 +49,45 @@ export default function MemberDashboard() {
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-7">
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-foreground/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-secondary/40 blur-3xl" />
-        <div className="relative">
-          <p className="text-sm text-primary-foreground/75">{greeting()},</p>
-          <h2 className="mt-0.5 font-heading text-2xl font-bold sm:text-3xl">{profile?.first_name || 'Friend'}</h2>
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            {m?.member_code && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 font-mono font-semibold">{m.member_code}</span>}
-            {userRegion?.name && <span className="flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1"><MapPin className="h-3 w-3" />{userRegion.name}</span>}
-            {m?.member_type && <span className="rounded-full bg-primary-foreground px-3 py-1 font-semibold capitalize text-primary">{m.member_type}</span>}
+        <div className="relative flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-primary-foreground/75">{greeting()},</p>
+            <h2 className="mt-0.5 truncate font-heading text-2xl font-bold sm:text-3xl">{profile?.first_name || 'Friend'}</h2>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+              {m?.member_code && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 font-mono font-semibold">{m.member_code}</span>}
+              {userRegion?.name && <span className="flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1"><MapPin className="h-3 w-3" />{userRegion.name}</span>}
+              {m?.member_type && <span className="rounded-full bg-primary-foreground px-3 py-1 font-semibold capitalize text-primary">{m.member_type}</span>}
+            </div>
           </div>
+          <Link to="/member/profile" aria-label="Your profile photo" className="shrink-0 rounded-full ring-4 ring-primary-foreground/25 shadow-lg transition-transform hover:scale-105">
+            <MemberAvatar path={(profile as any)?.avatar_url} className="h-20 w-20 sm:h-24 sm:w-24" />
+          </Link>
         </div>
       </section>
 
       {/* Metrics */}
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Link to="/member/attendance" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
-          <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 shrink-0">
-              <svg viewBox="0 0 36 36" className="h-12 w-12 -rotate-90">
+      <section className="grid grid-cols-1 gap-3 min-[1025px]:grid-cols-4">
+        <Link to="/member/attendance" className="group rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50 min-[1025px]:col-span-1">
+          <div className="flex items-center gap-4">
+            <div className="relative h-14 w-14 shrink-0">
+              <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
                 <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="4" />
                 <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--chart-6)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(rate / 100) * 97.4} 97.4`} />
               </svg>
-              <span className="absolute inset-0 grid place-items-center text-[11px] font-bold text-foreground">{attLoading ? '…' : `${rate}%`}</span>
+              <span className="absolute inset-0 grid place-items-center text-xs font-bold text-foreground">{attLoading ? '…' : `${rate}%`}</span>
             </div>
-            <div className="min-w-0"><p className="text-xs text-muted-foreground">Attendance</p><p className="truncate text-sm font-semibold text-foreground">Last 3 months</p></div>
+            <div className="relative h-14 w-14 shrink-0">
+              <svg viewBox="0 0 36 36" className="h-14 w-14 -rotate-90">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--muted)" strokeWidth="4" />
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--chart-2)" strokeWidth="4" strokeLinecap="round" strokeDasharray={`${(att?.overall?.total ? (att.overall.attended / att.overall.total) : 0) * 97.4} 97.4`} />
+              </svg>
+              <span className="absolute inset-0 grid place-items-center text-xs font-bold text-foreground">{attLoading ? '…' : att?.overall?.attended ?? 0}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-muted-foreground">Attendance · last 3 months</p>
+              <p className="text-sm font-semibold text-foreground">{attLoading ? '…' : `${att?.overall?.attended ?? 0} of ${att?.overall?.total ?? 0} meetings`}</p>
+              <p className="mt-1 flex items-center text-xs font-semibold text-primary">Tap to see your full report <ChevronRight className="ml-0.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" /></p>
+            </div>
           </div>
         </Link>
         <Link to="/member/events" className="rounded-xl border border-border bg-card p-4 transition-colors hover:bg-muted/50">
