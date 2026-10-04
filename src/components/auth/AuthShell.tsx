@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from '@/lib/router-compat';
-import { ArrowLeft, Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
+import { Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { cn } from '@/lib/utils';
 
