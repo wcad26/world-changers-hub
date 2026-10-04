@@ -185,7 +185,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
       </header>
 
           <main className="w-full flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6 min-[1025px]:px-8 min-[1025px]:py-8">
-            <div className="mx-auto w-full max-w-4xl min-[1025px]:max-w-7xl"><PageHero />{content}</div>
+            <div className="mx-auto w-full max-w-4xl min-[1025px]:max-w-7xl">{content}</div>
           </main>
         </div>
 
