@@ -80,7 +80,7 @@ export default function MemberAuth() {
         <AuthSubmit loading={loading}>Sign In</AuthSubmit>
       </form>
       <Dialog open={signupOpen} onOpenChange={setSignupOpen}>
-        <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] overflow-y-auto overflow-x-hidden rounded-3xl sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] grid-cols-[minmax(0,1fr)] overflow-y-auto overflow-x-hidden rounded-3xl sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Choose your region</DialogTitle>
             <DialogDescription>Select the WCA region you attend to start your registration.</DialogDescription>
