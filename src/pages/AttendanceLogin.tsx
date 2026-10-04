@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ScanLine } from "lucide-react";
+import { Loader2, ScanLine, Mail, Lock } from "lucide-react";
+import { AuthShell, AuthField, AuthSubmit, AuthError, ForgotLink } from '@/components/auth/AuthShell';
+
 
 async function userHasAttendanceAccess(userId: string): Promise<boolean> {
   const [{ data: superRoles }, { data: regionalRoles }] = await Promise.all([
@@ -90,59 +92,13 @@ export default function AttendanceLogin() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="text-center space-y-2">
-          <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-            <ScanLine className="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle>Attendance Sign In</CardTitle>
-          <CardDescription>
-            Sign in with your admin credentials to record attendance.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                inputMode="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
-              />
-            </div>
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <Button type="submit" className="w-full h-11" disabled={submitting}>
-              {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Sign in to scan
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Access requires an active Super Admin or Regional Admin role.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <AuthShell icon={ScanLine} badge="Attendance" title="Attendance Sign In" subtitle="Use your admin credentials to record attendance" footer={<p className="text-xs">Access requires an active Super Admin or Regional Admin role.</p>}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthError message={error} />
+        <AuthField id="email" label="Email" icon={Mail} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
+        <AuthField id="password" label="Password" icon={Lock} type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required />
+        <AuthSubmit loading={submitting}>Sign in to scan</AuthSubmit>
+      </form>
+    </AuthShell>
   );
 }
