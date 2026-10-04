@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from '@/lib/router-compat';
-import { ArrowLeft, Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
+import { Eye, EyeOff, Loader2, type LucideIcon } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { cn } from '@/lib/utils';
 
@@ -27,15 +27,7 @@ export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer
         <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(var(--foreground)_1px,transparent_1px),linear-gradient(90deg,var(--foreground)_1px,transparent_1px)] [background-size:44px_44px]" />
       </div>
 
-      <header className="relative z-10 flex items-center justify-between px-4 py-3 sm:px-8 sm:py-4">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-4 py-2 text-sm text-muted-foreground backdrop-blur-md transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">Back to Home</span>
-          <span className="sm:hidden">Home</span>
-        </Link>
+      <header className="relative z-10 flex items-center justify-end px-4 py-3 sm:px-8 sm:py-4">
         <ThemeToggle />
       </header>
 
@@ -66,6 +58,14 @@ export function AuthShell({ icon: Icon, badge, title, subtitle, children, footer
           <p className="mt-4 text-center text-xs text-muted-foreground/70">
             See the Future · Take a Step · Change your World
           </p>
+          <div className="mt-3 text-center">
+            <Link
+              to="/"
+              className="text-sm font-semibold text-primary underline-offset-4 transition-colors hover:underline"
+            >
+              Visit Our Website
+            </Link>
+          </div>
         </div>
       </main>
     </div>
