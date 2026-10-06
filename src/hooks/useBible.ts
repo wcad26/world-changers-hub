@@ -60,7 +60,9 @@ export function useBibleBooks(language: string = 'en') {
   });
 }
 
-// Fetch chapter content - handles both stored and API versions
+import { fetchChapterVerses } from '@/services/bibleService';
+
+// Fetch chapter content - handles stored database, bundled local dataset, and edge functions
 export function useBibleChapter(
   versionId: string | null,
   bookNumber: number | null,
@@ -68,55 +70,10 @@ export function useBibleChapter(
   version?: BibleVersion | null
 ) {
   return useQuery({
-    queryKey: ['bible-chapter', versionId, bookNumber, chapter],
+    queryKey: ['bible-chapter', versionId, version?.code, bookNumber, chapter],
     queryFn: async () => {
-      if (!versionId || !bookNumber || !chapter || !version) {
-        return [];
-      }
-
-      // If version is stored in database, fetch from there
-      if (version.is_stored) {
-        const { data, error } = await supabase
-          .from('bible_verses')
-          .select('verse, text')
-          .eq('version_id', versionId)
-          .eq('book_number', bookNumber)
-          .eq('chapter', chapter)
-          .order('verse');
-        
-        if (error) throw error;
-        return data as BibleVerse[];
-      }
-
-      // Otherwise, fetch from API.Bible via edge function
-      if (!version.api_id) {
-        throw new Error('API version missing api_id');
-      }
-
-      // Get the book abbreviation for API call
-      const { data: bookData } = await supabase
-        .from('bible_books')
-        .select('abbreviation')
-        .eq('book_number', bookNumber)
-        .single();
-
-      if (!bookData) {
-        throw new Error('Book not found');
-      }
-
-      const { data, error } = await supabase.functions.invoke('get-bible-content', {
-        body: {
-          bibleId: version.api_id,
-          bookId: bookData.abbreviation,
-          chapter,
-        },
-      });
-
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-      
-      return data.verses as BibleVerse[];
+      return fetchChapterVerses(version || null, bookNumber, chapter);
     },
-    enabled: !!versionId && !!bookNumber && !!chapter && !!version,
+    enabled: !!version && !!bookNumber && !!chapter,
   });
 }

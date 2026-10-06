@@ -1,13 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useBibleVersions, useBibleBooks, useBibleChapter, BibleVersion, BibleBook } from '@/hooks/useBible';
+import React, { useState, useEffect } from 'react';
+import {
+  useBibleVersions,
+  useBibleBooks,
+  useBibleChapter,
+  BibleVersion,
+  BibleBook,
+  BibleVerse,
+} from '@/hooks/useBible';
 import { useLanguage } from '@/hooks/useLanguage';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { useBiblePreferences } from '@/hooks/useBiblePreferences';
+import { BibleHeader } from '@/components/bible/BibleHeader';
+import { BibleReaderView } from '@/components/bible/BibleReaderView';
+import { BiblePickerModal } from '@/components/bible/BiblePickerModal';
+import { BibleVersionModal } from '@/components/bible/BibleVersionModal';
+import { BibleVerseActionBar } from '@/components/bible/BibleVerseActionBar';
+import { BibleBottomNav } from '@/components/bible/BibleBottomNav';
+import { BibleCompareModal } from '@/components/bible/BibleCompareModal';
+import { BibleVerseImageModal } from '@/components/bible/BibleVerseImageModal';
+import { BibleBookmarksModal } from '@/components/bible/BibleBookmarksModal';
+import { MemberMoreSheet } from '@/components/layout/MemberMoreSheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight, Book, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 const STORAGE_KEY = 'bible_reading_position';
 
@@ -20,28 +33,42 @@ interface ReadingPosition {
 
 export default function BiblePage() {
   const { language } = useLanguage();
-  const [serif, setSerif] = useState(true);
-  const [fontSize, setFontSize] = useState(17);
+  const {
+    preferences,
+    updatePreference,
+    addOrUpdateHighlight,
+    removeHighlight,
+    getVerseHighlight,
+    bookmarks,
+    toggleBookmark,
+    isBookmarked,
+  } = useBiblePreferences();
+
   const { data: versions, isLoading: versionsLoading } = useBibleVersions();
   const { data: books, isLoading: booksLoading } = useBibleBooks(language);
-  
+
   const [selectedVersion, setSelectedVersion] = useState<BibleVersion | null>(null);
   const [selectedBook, setSelectedBook] = useState<BibleBook | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
-  const [selectedVerse, setSelectedVerse] = useState<number | null>(null);
-  const [copiedVerse, setCopiedVerse] = useState<number | null>(null);
-  
-  const verseRefs = useRef<Map<number, HTMLParagraphElement>>(new Map());
+  const [selectedVerses, setSelectedVerses] = useState<BibleVerse[]>([]);
 
-  // Load saved position on mount
+  // Modals state
+  const [isBookPickerOpen, setIsBookPickerOpen] = useState(false);
+  const [isVersionPickerOpen, setIsVersionPickerOpen] = useState(false);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isBookmarksModalOpen, setIsBookmarksModalOpen] = useState(false);
+  const [isMorePagesOpen, setIsMorePagesOpen] = useState(false);
+
+  // Restore saved reading position on mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const position: ReadingPosition = JSON.parse(saved);
         if (versions && books) {
-          const version = versions.find(v => v.id === position.versionId);
-          const book = books.find(b => b.book_number === position.bookNumber);
+          const version = versions.find((v) => v.id === position.versionId);
+          const book = books.find((b) => b.book_number === position.bookNumber);
           if (version) setSelectedVersion(version);
           if (book) {
             setSelectedBook(book);
@@ -54,59 +81,54 @@ export default function BiblePage() {
     }
   }, [versions, books]);
 
-  // Set defaults when data loads
+  // Set default version & book
   useEffect(() => {
     if (versions && versions.length > 0 && !selectedVersion) {
-      // Default to KJV for English, Louis Segond for French
-      const defaultVersion = language === 'fr' 
-        ? versions.find(v => v.code === 'LSG') || versions[0]
-        : versions.find(v => v.code === 'KJV') || versions[0];
+      const defaultVersion =
+        language === 'fr'
+          ? versions.find((v) => v.code === 'LSG') || versions[0]
+          : versions.find((v) => v.code === 'KJV') || versions[0];
       setSelectedVersion(defaultVersion);
     }
   }, [versions, language, selectedVersion]);
 
   useEffect(() => {
     if (books && books.length > 0 && !selectedBook) {
-      setSelectedBook(books[0]); // Default to Genesis
+      setSelectedBook(books[0]); // Genesis
     }
   }, [books, selectedBook]);
 
-  // Save position when it changes
+  // Save position when changed
   useEffect(() => {
     if (selectedVersion && selectedBook) {
       const position: ReadingPosition = {
         versionId: selectedVersion.id,
         bookNumber: selectedBook.book_number,
         chapter: selectedChapter,
-        verse: selectedVerse || undefined,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(position));
     }
-  }, [selectedVersion, selectedBook, selectedChapter, selectedVerse]);
+  }, [selectedVersion, selectedBook, selectedChapter]);
 
-  // Auto-scroll to selected verse
-  useEffect(() => {
-    if (selectedVerse) {
-      const verseEl = verseRefs.current.get(selectedVerse);
-      if (verseEl) {
-        verseEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  }, [selectedVerse]);
-
-  const { data: verses, isLoading: versesLoading, error: versesError } = useBibleChapter(
+  // Fetch chapter verses
+  const {
+    data: verses,
+    isLoading: versesLoading,
+    error: versesError,
+  } = useBibleChapter(
     selectedVersion?.id || null,
     selectedBook?.book_number || null,
     selectedChapter,
     selectedVersion
   );
 
+  // Chapter navigation helpers
   const handlePrevChapter = () => {
+    setSelectedVerses([]);
     if (selectedChapter > 1) {
       setSelectedChapter(selectedChapter - 1);
     } else if (selectedBook && books) {
-      // Go to previous book's last chapter
-      const currentIndex = books.findIndex(b => b.book_number === selectedBook.book_number);
+      const currentIndex = books.findIndex((b) => b.book_number === selectedBook.book_number);
       if (currentIndex > 0) {
         const prevBook = books[currentIndex - 1];
         setSelectedBook(prevBook);
@@ -116,11 +138,11 @@ export default function BiblePage() {
   };
 
   const handleNextChapter = () => {
+    setSelectedVerses([]);
     if (selectedBook && selectedChapter < selectedBook.chapters_count) {
       setSelectedChapter(selectedChapter + 1);
     } else if (selectedBook && books) {
-      // Go to next book's first chapter
-      const currentIndex = books.findIndex(b => b.book_number === selectedBook.book_number);
+      const currentIndex = books.findIndex((b) => b.book_number === selectedBook.book_number);
       if (currentIndex < books.length - 1) {
         const nextBook = books[currentIndex + 1];
         setSelectedBook(nextBook);
@@ -129,265 +151,245 @@ export default function BiblePage() {
     }
   };
 
-  const copyVerse = async (verseNum: number, text: string) => {
-    const bookName = language === 'fr' && selectedBook?.name_fr 
-      ? selectedBook.name_fr 
-      : selectedBook?.name;
-    const reference = `${bookName} ${selectedChapter}:${verseNum}`;
-    const fullText = `"${text}" - ${reference} (${selectedVersion?.code})`;
-    
-    await navigator.clipboard.writeText(fullText);
-    setCopiedVerse(verseNum);
-    toast.success('Verse copied to clipboard');
-    setTimeout(() => setCopiedVerse(null), 2000);
+  const isFirstChapter = selectedBook?.book_number === 1 && selectedChapter === 1;
+  const isLastChapter =
+    selectedBook?.book_number === 66 && selectedChapter === selectedBook?.chapters_count;
+
+  // Verse multi-select toggle
+  const handleToggleVerseSelect = (verse: BibleVerse) => {
+    setSelectedVerses((prev) => {
+      const exists = prev.some((v) => v.verse === verse.verse);
+      if (exists) {
+        return prev.filter((v) => v.verse !== verse.verse);
+      } else {
+        return [...prev, verse];
+      }
+    });
   };
 
-  const getBookName = (book: BibleBook) => {
-    return language === 'fr' && book.name_fr ? book.name_fr : book.name;
+  // Highlight actions
+  const handleHighlight = (color: Parameters<typeof addOrUpdateHighlight>[4]) => {
+    if (!selectedVersion || !selectedBook) return;
+    selectedVerses.forEach((v) => {
+      addOrUpdateHighlight(
+        selectedVersion.id,
+        selectedBook.book_number,
+        selectedChapter,
+        v.verse,
+        color
+      );
+    });
+    toast.success('Highlighted');
+    setSelectedVerses([]);
   };
 
-  const oldTestamentBooks = books?.filter(b => b.testament === 'OT') || [];
-  const newTestamentBooks = books?.filter(b => b.testament === 'NT') || [];
+  const handleRemoveHighlight = () => {
+    if (!selectedBook) return;
+    selectedVerses.forEach((v) => {
+      removeHighlight(selectedBook.book_number, selectedChapter, v.verse);
+    });
+    toast.success('Highlight removed');
+    setSelectedVerses([]);
+  };
+
+  // Bookmark action
+  const handleToggleBookmark = () => {
+    if (!selectedVersion || !selectedBook || selectedVerses.length === 0) return;
+    const firstVerse = selectedVerses[0];
+    const bookName =
+      language === 'fr' && selectedBook.name_fr ? selectedBook.name_fr : selectedBook.name;
+    const added = toggleBookmark(
+      selectedVersion.id,
+      selectedBook.book_number,
+      selectedChapter,
+      firstVerse.verse,
+      bookName,
+      firstVerse.text
+    );
+    toast.success(added ? 'Bookmark added' : 'Bookmark removed');
+  };
+
+  const isCurrentSelectionBookmarked =
+    selectedBook && selectedVerses.length > 0
+      ? isBookmarked(selectedBook.book_number, selectedChapter, selectedVerses[0].verse)
+      : false;
+
+  // Jump from bookmark modal
+  const handleNavigateToBookmark = (book: BibleBook, chapter: number, verse: number) => {
+    setSelectedBook(book);
+    setSelectedChapter(chapter);
+    setSelectedVerses([]);
+    // Once loaded, verse will scroll into view or can be inspected
+  };
 
   if (versionsLoading || booksLoading) {
     return (
-      <>
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-[60vh] w-full" />
+      <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-44 rounded-full" />
+          <Skeleton className="h-10 w-24 rounded-full" />
         </div>
-      </>
+        <Skeleton className="h-12 w-full rounded-2xl" />
+        <Skeleton className="h-[60vh] w-full rounded-3xl" />
+      </div>
     );
   }
 
   return (
-    <>
-      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-        <aside className="space-y-3 rounded-2xl border border-border bg-card p-4 lg:sticky lg:top-24">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{language === 'fr' ? 'Passage' : 'Passage'}</p>
-        {/* Version and Book Selection */}
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1">
-          <Select
-            value={selectedVersion?.id || ''}
-            onValueChange={(value) => {
-              const version = versions?.find(v => v.id === value);
-              if (version) setSelectedVersion(version);
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select version" />
-            </SelectTrigger>
-            <SelectContent>
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">English</div>
-              {versions?.filter(v => v.language === 'en').map(version => (
-                <SelectItem key={version.id} value={version.id}>
-                  {version.code} - {version.name}
-                </SelectItem>
-              ))}
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">Français</div>
-              {versions?.filter(v => v.language === 'fr').map(version => (
-                <SelectItem key={version.id} value={version.id}>
-                  {version.code} - {version.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="relative min-h-screen flex flex-col bg-background selection:bg-primary/20">
+      {/* YouVersion Top Navigation Header */}
+      <BibleHeader
+        currentBook={selectedBook}
+        currentChapter={selectedChapter}
+        currentVersion={selectedVersion}
+        language={language}
+        theme={preferences.theme}
+        fontSize={preferences.fontSize}
+        serif={preferences.serif}
+        showVerseNumbers={preferences.showVerseNumbers}
+        lineHeight={preferences.lineHeight}
+        onOpenBookPicker={() => setIsBookPickerOpen(true)}
+        onOpenVersionPicker={() => setIsVersionPickerOpen(true)}
+        onOpenBookmarks={() => setIsBookmarksModalOpen(true)}
+        onOpenMorePages={() => setIsMorePagesOpen(true)}
+        onThemeChange={(th) => updatePreference('theme', th)}
+        onFontSizeChange={(sz) => updatePreference('fontSize', sz)}
+        onSerifChange={(sr) => updatePreference('serif', sr)}
+        onShowVerseNumbersChange={(sn) => updatePreference('showVerseNumbers', sn)}
+        onLineHeightChange={(lh) => updatePreference('lineHeight', lh)}
+      />
 
-          <Select
-            value={selectedBook?.book_number.toString() || ''}
-            onValueChange={(value) => {
-              const book = books?.find(b => b.book_number === parseInt(value));
-              if (book) {
-                setSelectedBook(book);
-                setSelectedChapter(1);
-                setSelectedVerse(null);
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select book" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-                {language === 'fr' ? 'Ancien Testament' : 'Old Testament'}
-              </div>
-              {oldTestamentBooks.map(book => (
-                <SelectItem key={book.id} value={book.book_number.toString()}>
-                  {getBookName(book)}
-                </SelectItem>
-              ))}
-              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
-                {language === 'fr' ? 'Nouveau Testament' : 'New Testament'}
-              </div>
-              {newTestamentBooks.map(book => (
-                <SelectItem key={book.id} value={book.book_number.toString()}>
-                  {getBookName(book)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Main Reading View with swipe gestures & responsive layout */}
+      <main className="flex-1 w-full">
+        <BibleReaderView
+          verses={verses}
+          isLoading={versesLoading}
+          error={versesError as Error | null}
+          currentBook={selectedBook}
+          currentChapter={selectedChapter}
+          currentVersion={selectedVersion}
+          selectedVerses={selectedVerses}
+          theme={preferences.theme}
+          fontSize={preferences.fontSize}
+          serif={preferences.serif}
+          showVerseNumbers={preferences.showVerseNumbers}
+          lineHeight={preferences.lineHeight}
+          language={language}
+          onToggleVerseSelect={handleToggleVerseSelect}
+          getHighlight={(verseNum) =>
+            selectedBook
+              ? getVerseHighlight(selectedBook.book_number, selectedChapter, verseNum)
+              : undefined
+          }
+          onPrevChapter={handlePrevChapter}
+          onNextChapter={handleNextChapter}
+          isFirstChapter={isFirstChapter}
+          isLastChapter={isLastChapter}
+        />
+      </main>
 
-        {/* Chapter and Verse Selection */}
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedChapter.toString()}
-            onValueChange={(value) => {
-              setSelectedChapter(parseInt(value));
-              setSelectedVerse(null);
-            }}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {selectedBook && Array.from({ length: selectedBook.chapters_count }, (_, i) => i + 1).map(ch => (
-                <SelectItem key={ch} value={ch.toString()}>
-                  {language === 'fr' ? 'Chapitre' : 'Chapter'} {ch}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Mobile/Tablet Sticky Bottom Chapter Nav */}
+      <BibleBottomNav
+        currentBook={selectedBook}
+        currentChapter={selectedChapter}
+        totalChapters={selectedBook?.chapters_count || 1}
+        isFirstChapter={isFirstChapter}
+        isLastChapter={isLastChapter}
+        language={language}
+        onPrevChapter={handlePrevChapter}
+        onNextChapter={handleNextChapter}
+        onOpenBookPicker={() => setIsBookPickerOpen(true)}
+      />
 
-          <Select
-            value={selectedVerse?.toString() || 'all'}
-            onValueChange={(value) => setSelectedVerse(value === 'all' ? null : parseInt(value))}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {language === 'fr' ? 'Tous les versets' : 'All Verses'}
-              </SelectItem>
-              {verses && verses.map(v => (
-                <SelectItem key={v.verse} value={v.verse.toString()}>
-                  {language === 'fr' ? 'Verset' : 'Verse'} {v.verse}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* YouVersion Floating Verse Action Bar (Shown when verses are selected) */}
+      <BibleVerseActionBar
+        selectedVerses={selectedVerses}
+        currentBook={selectedBook}
+        currentChapter={selectedChapter}
+        currentVersion={selectedVersion}
+        isBookmarked={isCurrentSelectionBookmarked}
+        onClearSelection={() => setSelectedVerses([])}
+        onHighlight={handleHighlight}
+        onRemoveHighlight={handleRemoveHighlight}
+        onToggleBookmark={handleToggleBookmark}
+        onOpenCompare={() => setIsCompareModalOpen(true)}
+        onOpenShareModal={() => setIsShareModalOpen(true)}
+        language={language}
+      />
 
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-          <span className="text-xs text-muted-foreground">{language === 'fr' ? 'Lecture' : 'Reading'}</span>
-          <div className="flex gap-1">
-            <Button size="sm" variant={serif ? 'default' : 'outline'} className="h-8 px-2 font-serif" onClick={() => setSerif(true)}>Aa</Button>
-            <Button size="sm" variant={!serif ? 'default' : 'outline'} className="h-8 px-2" onClick={() => setSerif(false)}>Aa</Button>
-            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setFontSize(f => Math.max(14, f - 2))}>A-</Button>
-            <Button size="sm" variant="outline" className="h-8 px-2" onClick={() => setFontSize(f => Math.min(26, f + 2))}>A+</Button>
-          </div>
-        </div>
-        </aside>
+      {/* Book & Chapter Selection Modal / Drawer */}
+      <BiblePickerModal
+        open={isBookPickerOpen}
+        onOpenChange={setIsBookPickerOpen}
+        books={books || []}
+        currentBook={selectedBook}
+        currentChapter={selectedChapter}
+        language={language}
+        onSelect={(b, ch) => {
+          setSelectedBook(b);
+          setSelectedChapter(ch);
+          setSelectedVerses([]);
+        }}
+      />
 
-        <div className="min-w-0 space-y-4">
-        {/* Navigation */}
-        <div className="flex items-center justify-between gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrevChapter}
-            disabled={selectedBook?.book_number === 1 && selectedChapter === 1}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {language === 'fr' ? 'Précédent' : 'Previous'}
-          </Button>
-          
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Book className="h-4 w-4 text-primary" />
-            {selectedBook && getBookName(selectedBook)} {selectedChapter}
-            {selectedVerse && `:${selectedVerse}`}
-          </div>
+      {/* Translation Version Selection Modal / Drawer */}
+      <BibleVersionModal
+        open={isVersionPickerOpen}
+        onOpenChange={setIsVersionPickerOpen}
+        versions={versions || []}
+        currentVersion={selectedVersion}
+        language={language}
+        onSelect={(v) => {
+          setSelectedVersion(v);
+          setSelectedVerses([]);
+        }}
+      />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNextChapter}
-            disabled={selectedBook?.book_number === 66 && selectedChapter === selectedBook?.chapters_count}
-          >
-            {language === 'fr' ? 'Suivant' : 'Next'}
-            <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
+      {/* Compare Translations Modal */}
+      <BibleCompareModal
+        open={isCompareModalOpen}
+        onOpenChange={setIsCompareModalOpen}
+        verse={selectedVerses[0] || null}
+        book={selectedBook}
+        chapter={selectedChapter}
+        language={language}
+      />
 
-        {/* Verses Content */}
-        <Card className="rounded-2xl">
-          <CardContent className="p-5 sm:p-8">
-            {versesLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <Skeleton key={i} className="h-6 w-full" />
-                ))}
-              </div>
-            ) : versesError ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>{language === 'fr' ? 'Erreur lors du chargement' : 'Error loading content'}</p>
-                <p className="text-sm mt-1">{(versesError as Error).message}</p>
-                {!selectedVersion?.is_stored && (
-                  <p className="text-xs mt-2 text-amber-600">
-                    {language === 'fr' 
-                      ? 'Cette version nécessite une clé API. Veuillez contacter l\'administrateur.'
-                      : 'This version requires an API key. Please contact administrator.'}
-                  </p>
-                )}
-              </div>
-            ) : verses && verses.length > 0 ? (
-              <div className={cn("mx-auto max-w-2xl space-y-3", serif && "font-serif")} style={{ fontSize: `${fontSize}px`, lineHeight: 1.85 }}>
-                {verses.map((verse) => (
-                  <p 
-                    key={verse.verse}
-                    ref={(el) => {
-                      if (el) verseRefs.current.set(verse.verse, el);
-                    }}
-                    className={cn(
-                      "group cursor-pointer rounded px-2 py-1 -mx-2 transition-colors",
-                      selectedVerse === verse.verse 
-                        ? "bg-primary/20 ring-2 ring-primary/50" 
-                        : "hover:bg-accent/50"
-                    )}
-                    onClick={() => copyVerse(verse.verse, verse.text)}
-                  >
-                    <sup className="text-primary font-semibold mr-1 text-xs">
-                      {verse.verse}
-                    </sup>
-                    <span className="text-foreground">{verse.text}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 ml-1 opacity-0 group-hover:opacity-100 transition-opacity inline-flex"
-                    >
-                      {copiedVerse === verse.verse ? (
-                        <Check className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                    </Button>
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Book className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>{language === 'fr' ? 'Aucun contenu disponible' : 'No content available'}</p>
-                <p className="text-sm mt-1">
-                  {language === 'fr' 
-                    ? 'Sélectionnez un livre et un chapitre pour commencer à lire.'
-                    : 'Select a book and chapter to start reading.'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Share / Social Verse Card Modal */}
+      <BibleVerseImageModal
+        open={isShareModalOpen}
+        onOpenChange={setIsShareModalOpen}
+        selectedVerses={selectedVerses}
+        currentBook={selectedBook}
+        currentChapter={selectedChapter}
+        currentVersion={selectedVersion}
+        language={language}
+      />
 
-        {/* Copyright notice for API versions */}
-        {selectedVersion && !selectedVersion.is_stored && selectedVersion.copyright_info && (
-          <p className="text-xs text-muted-foreground text-center">
-            {selectedVersion.copyright_info}
-          </p>
-        )}
-        </div>
-      </div>
-    </>
+      {/* Bookmarks Modal */}
+      <BibleBookmarksModal
+        open={isBookmarksModalOpen}
+        onOpenChange={setIsBookmarksModalOpen}
+        bookmarks={bookmarks}
+        books={books || []}
+        onNavigateToBookmark={handleNavigateToBookmark}
+        onRemoveBookmark={(bm) => {
+          if (selectedVersion) {
+            toggleBookmark(
+              bm.versionId,
+              bm.bookNumber,
+              bm.chapter,
+              bm.verse,
+              bm.bookName,
+              bm.verseText
+            );
+            toast.success('Bookmark removed');
+          }
+        }}
+      />
+
+      {/* Member Portal More Navigation Drawer */}
+      <MemberMoreSheet open={isMorePagesOpen} onOpenChange={setIsMorePagesOpen} />
+    </div>
   );
 }
