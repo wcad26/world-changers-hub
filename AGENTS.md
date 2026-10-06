@@ -1,1 +1,2 @@
 - Member portal pages share primitives from src/components/member/MemberUI.tsx and the MemberLayout shell (sidebar above 1024px, four-destination bottom bar and header More menu at 1024px or below); page titles live in the shell, not pages. Why: one consistent look across all member pages and tablet input types.
+- Homepage/News stories live in the news_articles table, managed from the News & Blog tab of the admin Communication pages (shared NewsManager); public reads go through public-site.functions. Why: one source for regional and global stories.
