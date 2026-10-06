@@ -260,7 +260,7 @@ export default function BiblePage() {
       />
 
       {/* Main Reading View with swipe gestures & responsive layout */}
-      <main className="flex-1 w-full">
+      <main className="flex-1 w-full max-w-full pt-14 sm:pt-16 pb-20 sm:pb-24">
         <BibleReaderView
           verses={verses}
           isLoading={versesLoading}

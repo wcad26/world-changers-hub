@@ -54,7 +54,7 @@ export const BibleHeader: React.FC<BibleHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full max-w-full overflow-hidden backdrop-blur-md bg-background/90 border-b border-border/70 transition-colors">
+    <header className="fixed top-0 inset-x-0 z-30 w-full max-w-full overflow-hidden backdrop-blur-md bg-background/95 border-b border-border/70 transition-colors shadow-xs">
       <div className="w-full max-w-full px-2 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-2">
         {/* Left: Book & Chapter Selector Pill + Version */}
         <div className="flex items-center gap-1 sm:gap-2 min-w-0 shrink">

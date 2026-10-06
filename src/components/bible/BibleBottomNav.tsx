@@ -33,7 +33,7 @@ export const BibleBottomNav: React.FC<BibleBottomNavProps> = ({
   };
 
   return (
-    <nav className="sticky bottom-0 z-20 w-full max-w-full overflow-hidden backdrop-blur-md bg-background/95 border-t border-border/70 py-2 px-2 sm:px-6 safe-area-pb box-border">
+    <nav className="fixed bottom-0 inset-x-0 z-20 w-full max-w-full overflow-hidden backdrop-blur-md bg-background/95 border-t border-border/70 py-2 px-2 sm:px-6 safe-area-pb box-border shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
       <div className="max-w-xl mx-auto flex items-center justify-between gap-1 sm:gap-2 min-w-0">
         {/* Previous Chapter Button */}
         <Button

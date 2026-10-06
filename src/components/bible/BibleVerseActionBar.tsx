@@ -80,7 +80,7 @@ export const BibleVerseActionBar: React.FC<BibleVerseActionBarProps> = ({
   };
 
   return (
-    <div className="fixed bottom-14 sm:bottom-6 left-0 right-0 z-40 px-3 sm:px-6 pointer-events-none animate-in slide-in-from-bottom-5 duration-200">
+    <div className="fixed bottom-16 sm:bottom-20 left-0 right-0 z-40 px-3 sm:px-6 pointer-events-none animate-in slide-in-from-bottom-5 duration-200">
       <div className="max-w-xl mx-auto pointer-events-auto bg-card/95 backdrop-blur-xl border border-border shadow-2xl rounded-2xl sm:rounded-3xl p-3 sm:p-4 space-y-3">
         {/* Top Info Bar */}
         <div className="flex items-center justify-between border-b border-border/50 pb-2">
