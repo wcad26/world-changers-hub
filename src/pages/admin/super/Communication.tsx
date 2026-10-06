@@ -178,18 +178,34 @@ const SuperCommunication: React.FC = () => {
   const { data: communications, isLoading, isError, error } = useSuperAdminCommunications();
   const { data: regions, isLoading: isLoadingRegions } = useRegions();
 
+  const sent = communications?.filter((c: any) => c.status === 'sent').length ?? 0;
+  const scheduled = communications?.filter((c: any) => c.status === 'scheduled').length ?? 0;
+
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-start">
-            <p className="text-muted-foreground">Manage organization-wide communication and announcements.</p>
-            <Button onClick={() => setCreateDialogOpen(true)} disabled={isLoadingRegions || !regions}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Announcement
-            </Button>
-        </div>
-        
-        <Card>
+        <CommsHero
+          title="Global Communication"
+          subtitle="Send organisation-wide announcements and publish news & stories across every region."
+          stats={[
+            { label: 'Messages', value: communications?.length ?? 0 },
+            { label: 'Sent', value: sent },
+            { label: 'Scheduled', value: scheduled },
+            { label: 'Regions', value: regions?.length ?? 0 },
+          ]}
+          action={<Button onClick={() => setCreateDialogOpen(true)} disabled={isLoadingRegions || !regions} className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"><PlusCircle className="mr-2 h-4 w-4" />New Announcement</Button>}
+        />
+
+        <Tabs defaultValue="messages">
+          <TabsList className={commsTabsList}>
+            <TabsTrigger value="messages" className={commsTabsTrigger}>Messages</TabsTrigger>
+            <TabsTrigger value="news" className={commsTabsTrigger}>News & Blog</TabsTrigger>
+          </TabsList>
+          <TabsContent value="news" className="mt-5">
+            <NewsManager scope="all" regions={regions?.map((r) => ({ id: r.id, name: r.name }))} />
+          </TabsContent>
+          <TabsContent value="messages" className="mt-5">
+        <Card className="rounded-2xl border-border bg-card/70 backdrop-blur">
           <CardHeader>
             <CardTitle>Sent Communications</CardTitle>
             <CardDescription>A log of all communications sent across all regions.</CardDescription>

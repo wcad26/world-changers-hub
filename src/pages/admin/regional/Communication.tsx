@@ -14,6 +14,9 @@ import { useCommunications, useCreateCommunication, useCommunicationTemplates, C
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { NewsManager } from "@/components/admin/news/NewsManager";
+import { CommsHero, commsTabsList, commsTabsTrigger } from "@/components/admin/news/CommsHero";
+import { useAuth } from "@/hooks/useAuth";
 
 const mockMessages = [
   { id: 1, title: "Sunday Service Reminder", type: "Announcement", sentTo: "All Members", sentVia: "Email, SMS", date: "2023-10-25", status: "Sent", opens: 145, clicks: 87 },
@@ -35,6 +38,7 @@ const messageSchema = z.object({
 
 const RegionalCommunication: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const { userRegion } = useAuth();
   const [selectedChannels, setSelectedChannels] = useState<string[]>(["email"]);
   const [messagePreview, setMessagePreview] = useState(false);
   
@@ -84,19 +88,32 @@ const RegionalCommunication: React.FC = () => {
     });
   }
 
+  const sentCount = communications?.filter((c) => c.status === 'sent').length ?? 0;
+  const scheduledCount = communications?.filter((c) => c.status === 'scheduled').length ?? 0;
+
   return (
     <>
       <div className="space-y-6">
-        
+        <CommsHero
+          title="Communication"
+          subtitle={`Send messages and publish news & stories for ${userRegion?.name ?? 'your region'}.`}
+          stats={[
+            { label: 'Messages', value: communications?.length ?? 0 },
+            { label: 'Sent', value: sentCount },
+            { label: 'Scheduled', value: scheduledCount },
+            { label: 'Templates', value: templates?.length ?? 0 },
+          ]}
+        />
+
         <Tabs defaultValue="compose">
-          <TabsList className="grid grid-cols-1 md:grid-cols-4 w-full max-w-3xl">
-            <TabsTrigger value="compose">Compose</TabsTrigger>
-            <TabsTrigger value="history">Message History</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="announcements">Announcements</TabsTrigger>
+          <TabsList className={commsTabsList}>
+            <TabsTrigger value="compose" className={commsTabsTrigger}>Compose</TabsTrigger>
+            <TabsTrigger value="history" className={commsTabsTrigger}>Message History</TabsTrigger>
+            <TabsTrigger value="templates" className={commsTabsTrigger}>Templates</TabsTrigger>
+            <TabsTrigger value="news" className={commsTabsTrigger}>News & Blog</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="compose">
+          <TabsContent value="compose" className="mt-5">
             <Card>
               <CardHeader>
                 <CardTitle>Compose Message</CardTitle>
@@ -508,85 +525,8 @@ const RegionalCommunication: React.FC = () => {
             </Card>
           </TabsContent>
           
-          <TabsContent value="announcements">
-            <Card>
-              <CardHeader>
-                <CardTitle>Announcements</CardTitle>
-                <CardDescription>
-                  Manage public announcements for your region.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>Upcoming Events This Week</CardTitle>
-                          <CardDescription>Visible on website and app</CardDescription>
-                        </div>
-                        <div>
-                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                            Active
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="list-disc list-inside space-y-1 pl-2">
-                        <li>Sunday Service - 10:00 AM</li>
-                        <li>Prayer Meeting - Wednesday, 6:30 PM</li>
-                        <li>Youth Group - Friday, 7:00 PM</li>
-                      </ul>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <div className="text-xs text-muted-foreground">
-                        Posted: Oct 23, 2023 | Expires: Oct 30, 2023
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Edit</Button>
-                        <Button variant="outline" size="sm">Remove</Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>Building Fund Campaign</CardTitle>
-                          <CardDescription>Visible on website and app</CardDescription>
-                        </div>
-                        <div>
-                          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                            Active
-                          </span>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p>We're excited to announce that our building fund campaign has reached 65% of its goal! Thank you for your continued support and generosity.</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between">
-                      <div className="text-xs text-muted-foreground">
-                        Posted: Oct 15, 2023 | Expires: Nov 15, 2023
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Edit</Button>
-                        <Button variant="outline" size="sm">Remove</Button>
-                      </div>
-                    </CardFooter>
-                  </Card>
-                  
-                  <div className="flex justify-end mt-6">
-                    <Button>
-                      <Bell className="mr-2 h-4 w-4" />
-                      New Announcement
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="news" className="mt-5">
+            <NewsManager scope={userRegion?.id} />
           </TabsContent>
         </Tabs>
       </div>
