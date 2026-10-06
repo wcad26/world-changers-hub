@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import Page from "@/pages/Index";
-import { featuredEventsQueryOptions, homepageContentQueryOptions } from "@/lib/public-site.functions";
+import { featuredEventsQueryOptions, homepageContentQueryOptions, latestNewsQueryOptions } from "@/lib/public-site.functions";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
     await Promise.allSettled([
       context.queryClient.ensureQueryData(homepageContentQueryOptions()),
       context.queryClient.ensureQueryData(featuredEventsQueryOptions()),
+      context.queryClient.ensureQueryData(latestNewsQueryOptions(4)),
     ]);
   },
   head: () => ({ meta: [
