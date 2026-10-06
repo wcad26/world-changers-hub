@@ -2369,6 +2369,71 @@ export type Database = {
           },
         ]
       }
+      news_articles: {
+        Row: {
+          author_name: string | null
+          category: string
+          content: string | null
+          created_at: string
+          created_by: string | null
+          external_url: string | null
+          id: string
+          image_url: string | null
+          is_featured: boolean
+          is_published: boolean
+          published_at: string
+          region_id: string | null
+          slug: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_name?: string | null
+          category?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          published_at?: string
+          region_id?: string | null
+          slug: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string | null
+          category?: string
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_featured?: boolean
+          is_published?: boolean
+          published_at?: string
+          region_id?: string | null
+          slug?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "news_articles_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       occupations: {
         Row: {
           created_at: string

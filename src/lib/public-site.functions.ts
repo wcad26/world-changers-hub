@@ -228,3 +228,51 @@ export type PublicRegionPage = NonNullable<Awaited<ReturnType<typeof getPublicRe
 export type PublicRegionDcg = PublicRegionPage["dcgs"][number];
 export type PublicRegionLocation = PublicRegionPage["locations"][number];
 export type PublicRegionEvent = PublicRegionPage["events"][number];
+
+const NEWS_COLUMNS = "id,title,slug,summary,image_url,external_url,category,author_name,is_featured,published_at,region_id,regions(name)";
+
+export const getLatestNews = createServerFn({ method: "GET" })
+  .inputValidator((data: { limit?: number } | undefined) => z.object({ limit: z.number().int().min(1).max(60).optional() }).parse(data ?? {}))
+  .handler(async ({ data }) => {
+    const { data: rows, error } = await createPublicClient()
+      .from("news_articles")
+      .select(NEWS_COLUMNS)
+      .eq("is_published", true)
+      .lte("published_at", new Date().toISOString())
+      .order("is_featured", { ascending: false })
+      .order("published_at", { ascending: false })
+      .limit(data.limit ?? 6);
+    if (error) return [];
+    return (rows ?? []) as unknown as PublicNewsItem[];
+  });
+
+export const getNewsArticle = createServerFn({ method: "GET" })
+  .inputValidator((data: { slug: string }) => z.object({ slug: z.string().min(1).max(200) }).parse(data))
+  .handler(async ({ data }) => {
+    const { data: row, error } = await createPublicClient()
+      .from("news_articles")
+      .select(`${NEWS_COLUMNS},content`)
+      .eq("is_published", true)
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (error || !row) return null;
+    return row as unknown as PublicNewsItem & { content: string | null };
+  });
+
+export type PublicNewsItem = {
+  id: string; title: string; slug: string; summary: string; image_url: string | null; external_url: string | null;
+  category: string; author_name: string | null; is_featured: boolean; published_at: string; region_id: string | null;
+  regions: { name: string } | null;
+};
+
+export const latestNewsQueryOptions = (limit = 6) => queryOptions({
+  queryKey: ["public-news", limit],
+  queryFn: () => getLatestNews({ data: { limit } }),
+  staleTime: 2 * 60_000,
+});
+
+export const newsArticleQueryOptions = (slug: string) => queryOptions({
+  queryKey: ["public-news-article", slug],
+  queryFn: () => getNewsArticle({ data: { slug } }),
+  staleTime: 2 * 60_000,
+});

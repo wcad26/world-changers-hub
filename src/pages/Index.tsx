@@ -5,8 +5,31 @@ import { ArrowRight, MapPin, Calendar, Clock, BookOpen, Heart, Film, Quote, User
 import { Link } from '@/lib/router-compat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { featuredEventsQueryOptions, homepageContentQueryOptions } from '@/lib/public-site.functions';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { featuredEventsQueryOptions, homepageContentQueryOptions, latestNewsQueryOptions, type PublicNewsItem } from '@/lib/public-site.functions';
+import { NewsCard } from '@/components/news/NewsCard';
+import { Link as RouterLink } from '@tanstack/react-router';
+import { format } from 'date-fns';
+
+function NewsRow({ item }: { item: PublicNewsItem }) {
+  const inner = (
+    <>
+      <div className="h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-28 sm:w-32">
+        {item.image_url && <img src={item.image_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-semibold uppercase text-secondary">{item.category} · {item.regions?.name ?? 'Global'}</p>
+        <p className="mt-1 line-clamp-2 font-heading font-semibold leading-snug group-hover:text-primary">{item.title}</p>
+        <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.summary}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{format(new Date(item.published_at), 'dd/MM/yyyy')}{item.external_url ? ' · External' : ''}</p>
+      </div>
+    </>
+  );
+  const cls = 'group flex items-center gap-4 rounded-2xl border border-border bg-card p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-regal';
+  return item.external_url
+    ? <a href={item.external_url} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>
+    : <RouterLink to="/news/$slug" params={{ slug: item.slug }} className={cls}>{inner}</RouterLink>;
+}
 import { formatEventDuration } from '@/utils/dateUtils';
 import { renderIcon } from '@/utils/iconMapping';
 import heroImage from '@/assets/wca-community-hero.jpg';
@@ -53,6 +76,7 @@ function TiltSurface({ children, className = '' }: { children: ReactNode; classN
 const Index = () => {
   const { data: contentData } = useSuspenseQuery(homepageContentQueryOptions());
   const { data: featuredEvents } = useSuspenseQuery(featuredEventsQueryOptions());
+  const { data: news = [] } = useQuery(latestNewsQueryOptions(4));
   const homepageData = contentData?.content as any;
   const slide = homepageData?.hero?.slides?.[0];
   const mission = homepageData?.mission || defaultMission;
@@ -208,6 +232,22 @@ const Index = () => {
             ) : <div className="border-y border-border py-14 text-center"><Calendar className="mx-auto h-9 w-9 text-muted-foreground" /><p className="mt-4 text-muted-foreground">No featured events at the moment. Check back soon.</p></div>}
           </div>
         </section>
+
+        {news.length > 0 && <section className="relative overflow-hidden border-t border-border py-16 sm:py-24">
+          <div className="pointer-events-none absolute -right-24 top-10 h-80 w-80 rounded-full bg-secondary/10 blur-3xl home-float" />
+          <div className="container-custom relative">
+            <div className="mb-10 grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+              <div><p className="text-xs font-semibold uppercase text-secondary">News & stories</p><h2 className="mt-3 font-semibold">What's happening across WCA</h2><p className="mt-3 max-w-2xl text-muted-foreground">Updates, testimonies and announcements from our regions around the world.</p></div>
+              <Button asChild variant="outline"><Link to="/news">All news<ArrowRight /></Link></Button>
+            </div>
+            <div className={news.length > 1 ? 'grid gap-5 lg:grid-cols-[1.25fr_1fr]' : 'grid'}>
+              <TiltSurface><NewsCard item={news[0]} variant="lead" className="h-full" /></TiltSurface>
+              {news.length > 1 && <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
+                {news.slice(1, 4).map((item) => <NewsRow key={item.id} item={item} />)}
+              </div>}
+            </div>
+          </div>
+        </section>}
 
         {testimonials.length > 0 && <section className="border-y border-border bg-muted/35 py-16 sm:py-24">
           <div className="container-custom grid gap-10 lg:grid-cols-[0.55fr_1.45fr]">
