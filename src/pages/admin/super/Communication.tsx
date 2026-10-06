@@ -19,6 +19,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NewsManager } from '@/components/admin/news/NewsManager';
+import { CommsHero, commsTabsList, commsTabsTrigger } from '@/components/admin/news/CommsHero';
 
 interface CreateCommunicationDialogProps {
   open: boolean;
