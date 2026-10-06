@@ -65,6 +65,8 @@ import { Route as MemberMediaRouteImport } from './routes/member.media'
 import { Route as MemberProfileRouteImport } from './routes/member.profile'
 import { Route as MemberStoreRouteImport } from './routes/member.store'
 import { Route as MemberTranslationRouteImport } from './routes/member.translation'
+import { Route as NewsIndexRouteImport } from './routes/news.index'
+import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as ProfileUpdateRouteImport } from './routes/profile.update'
 import { Route as VerifyVerificationCodeRouteImport } from './routes/verify.$verificationCode'
 import { Route as AdminRegionalIndexRouteImport } from './routes/admin.regional.index'
@@ -405,6 +407,16 @@ const MemberTranslationRoute = MemberTranslationRouteImport.update({
   id: '/translation',
   path: '/translation',
   getParentRoute: () => MemberRoute,
+} as any)
+const NewsIndexRoute = NewsIndexRouteImport.update({
+  id: '/news/',
+  path: '/news/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsSlugRoute = NewsSlugRouteImport.update({
+  id: '/news/$slug',
+  path: '/news/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileUpdateRoute = ProfileUpdateRouteImport.update({
   id: '/profile/update',
@@ -781,6 +793,7 @@ export interface FileRoutesByFullPath {
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
   '/member/translation': typeof MemberTranslationRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -789,6 +802,7 @@ export interface FileRoutesByFullPath {
   '/fundraising/': typeof FundraisingIndexRoute
   '/locations/': typeof LocationsIndexRoute
   '/member/': typeof MemberIndexRoute
+  '/news/': typeof NewsIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
@@ -890,6 +904,7 @@ export interface FileRoutesByTo {
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
   '/member/translation': typeof MemberTranslationRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -898,6 +913,7 @@ export interface FileRoutesByTo {
   '/fundraising': typeof FundraisingIndexRoute
   '/locations': typeof LocationsIndexRoute
   '/member': typeof MemberIndexRoute
+  '/news': typeof NewsIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
@@ -1001,6 +1017,7 @@ export interface FileRoutesById {
   '/member/profile': typeof MemberProfileRoute
   '/member/store': typeof MemberStoreRoute
   '/member/translation': typeof MemberTranslationRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/profile/update': typeof ProfileUpdateRoute
   '/verify/$verificationCode': typeof VerifyVerificationCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -1009,6 +1026,7 @@ export interface FileRoutesById {
   '/fundraising/': typeof FundraisingIndexRoute
   '/locations/': typeof LocationsIndexRoute
   '/member/': typeof MemberIndexRoute
+  '/news/': typeof NewsIndexRoute
   '/admin/regional/branch-settings': typeof AdminRegionalBranchSettingsRoute
   '/admin/regional/certificates': typeof AdminRegionalCertificatesRoute
   '/admin/regional/communication': typeof AdminRegionalCommunicationRoute
@@ -1121,6 +1139,7 @@ export interface FileRouteTypes {
     | '/member/profile'
     | '/member/store'
     | '/member/translation'
+    | '/news/$slug'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin/'
@@ -1129,6 +1148,7 @@ export interface FileRouteTypes {
     | '/fundraising/'
     | '/locations/'
     | '/member/'
+    | '/news/'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
@@ -1230,6 +1250,7 @@ export interface FileRouteTypes {
     | '/member/profile'
     | '/member/store'
     | '/member/translation'
+    | '/news/$slug'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin'
@@ -1238,6 +1259,7 @@ export interface FileRouteTypes {
     | '/fundraising'
     | '/locations'
     | '/member'
+    | '/news'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
@@ -1340,6 +1362,7 @@ export interface FileRouteTypes {
     | '/member/profile'
     | '/member/store'
     | '/member/translation'
+    | '/news/$slug'
     | '/profile/update'
     | '/verify/$verificationCode'
     | '/admin/'
@@ -1348,6 +1371,7 @@ export interface FileRouteTypes {
     | '/fundraising/'
     | '/locations/'
     | '/member/'
+    | '/news/'
     | '/admin/regional/branch-settings'
     | '/admin/regional/certificates'
     | '/admin/regional/communication'
@@ -1435,8 +1459,10 @@ export interface RootRouteChildren {
   AuthMemberRoute: typeof AuthMemberRoute
   AuthRegionalRoute: typeof AuthRegionalRoute
   AuthSuperRoute: typeof AuthSuperRoute
+  NewsSlugRoute: typeof NewsSlugRoute
   ProfileUpdateRoute: typeof ProfileUpdateRoute
   VerifyVerificationCodeRoute: typeof VerifyVerificationCodeRoute
+  NewsIndexRoute: typeof NewsIndexRoute
   VisitorRegisterRegionCodeRoute: typeof VisitorRegisterRegionCodeRoute
 }
 
@@ -1833,6 +1859,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/member/translation'
       preLoaderRoute: typeof MemberTranslationRouteImport
       parentRoute: typeof MemberRoute
+    }
+    '/news/': {
+      id: '/news/'
+      path: '/news'
+      fullPath: '/news/'
+      preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news/$slug': {
+      id: '/news/$slug'
+      path: '/news/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof NewsSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/profile/update': {
       id: '/profile/update'
@@ -2620,8 +2660,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthMemberRoute: AuthMemberRoute,
   AuthRegionalRoute: AuthRegionalRoute,
   AuthSuperRoute: AuthSuperRoute,
+  NewsSlugRoute: NewsSlugRoute,
   ProfileUpdateRoute: ProfileUpdateRoute,
   VerifyVerificationCodeRoute: VerifyVerificationCodeRoute,
+  NewsIndexRoute: NewsIndexRoute,
   VisitorRegisterRegionCodeRoute: VisitorRegisterRegionCodeRoute,
 }
 export const routeTree = rootRouteImport
