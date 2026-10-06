@@ -258,6 +258,8 @@ const SuperCommunication: React.FC = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       {regions && (
         <CreateCommunicationDialog 
