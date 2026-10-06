@@ -196,7 +196,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
         {/* Main Content Area */}
         <main
           className={cn(
-            'w-full flex-1',
+            'w-full max-w-full flex-1 overflow-x-hidden',
             isBiblePage
               ? 'p-0 pb-0' // Flush full-bleed for Bible page
               : 'px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-6 min-[1025px]:px-8 min-[1025px]:py-8'

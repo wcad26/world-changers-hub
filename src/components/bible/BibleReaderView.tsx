@@ -121,7 +121,7 @@ export const BibleReaderView: React.FC<BibleReaderViewProps> = ({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className={cn(
-        'relative min-h-[calc(100vh-140px)] w-full transition-colors duration-200 select-text',
+        'relative min-h-[calc(100vh-140px)] w-full max-w-full overflow-x-hidden transition-colors duration-200 select-text',
         themeClasses
       )}
     >

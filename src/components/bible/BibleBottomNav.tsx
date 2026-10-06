@@ -33,15 +33,15 @@ export const BibleBottomNav: React.FC<BibleBottomNavProps> = ({
   };
 
   return (
-    <nav className="sticky bottom-0 z-20 w-full backdrop-blur-md bg-background/95 border-t border-border/70 py-2 px-3 sm:px-6 safe-area-pb">
-      <div className="max-w-xl mx-auto flex items-center justify-between gap-2">
+    <nav className="sticky bottom-0 z-20 w-full max-w-full overflow-hidden backdrop-blur-md bg-background/95 border-t border-border/70 py-2 px-2 sm:px-6 safe-area-pb box-border">
+      <div className="max-w-xl mx-auto flex items-center justify-between gap-1 sm:gap-2 min-w-0">
         {/* Previous Chapter Button */}
         <Button
           variant="outline"
           size="sm"
           onClick={onPrevChapter}
           disabled={isFirstChapter}
-          className="h-10 px-3 sm:px-4 rounded-xl font-medium gap-1 text-xs sm:text-sm border-border/80 hover:bg-accent active:scale-95 transition-all shadow-xs"
+          className="h-9 sm:h-10 px-2.5 sm:px-4 rounded-xl font-medium gap-1 text-xs sm:text-sm border-border/80 hover:bg-accent active:scale-95 transition-all shadow-xs shrink-0"
         >
           <ChevronLeft className="h-4 w-4" />
           <span className="hidden xs:inline">{language === 'fr' ? 'Précédent' : 'Prev'}</span>
@@ -51,13 +51,13 @@ export const BibleBottomNav: React.FC<BibleBottomNavProps> = ({
         <button
           type="button"
           onClick={onOpenBookPicker}
-          className="px-3 py-1.5 rounded-xl hover:bg-accent/60 transition-colors flex flex-col items-center justify-center text-center"
+          className="px-2 py-1 rounded-xl hover:bg-accent/60 transition-colors flex flex-col items-center justify-center text-center min-w-0 shrink"
         >
-          <span className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1">
-            <BookOpen className="h-3.5 w-3.5 text-primary" />
-            {getBookName(currentBook)} {currentChapter}
+          <span className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1 truncate max-w-[150px] xs:max-w-none">
+            <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="truncate">{getBookName(currentBook)} {currentChapter}</span>
           </span>
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-[10px] text-muted-foreground font-mono truncate">
             Chapter {currentChapter} of {totalChapters}
           </span>
         </button>

@@ -236,7 +236,7 @@ export default function BiblePage() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-background selection:bg-primary/20">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-background selection:bg-primary/20">
       {/* YouVersion Top Navigation Header */}
       <BibleHeader
         currentBook={selectedBook}

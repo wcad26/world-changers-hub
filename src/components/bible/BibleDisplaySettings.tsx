@@ -43,11 +43,11 @@ export const BibleDisplaySettings: React.FC<BibleDisplaySettingsProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="h-9 px-3 gap-1.5 font-medium rounded-full border-border/80 shadow-xs hover:bg-accent"
+          className="h-8 w-8 sm:w-auto sm:h-9 px-1.5 sm:px-3 gap-0.5 sm:gap-1.5 font-medium rounded-full border-border/80 shadow-xs hover:bg-accent shrink-0"
           aria-label="Reader Appearance Settings"
         >
-          <span className="font-serif font-bold text-sm">A</span>
-          <span className="font-sans text-xs">A</span>
+          <span className="font-serif font-bold text-xs sm:text-sm">A</span>
+          <span className="font-sans text-[10px] sm:text-xs">A</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
