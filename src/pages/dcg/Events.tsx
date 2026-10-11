@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import PeriodFilter, { type PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
 import { CreateEventDialog } from "@/components/admin/dcg/CreateEventDialog";
 import { RecurringSeriesDialog } from "@/components/admin/events/RecurringSeriesDialog";
+import { MakeRecurringDialog } from "@/components/admin/events/MakeRecurringDialog";
 import { EventAttendanceDialog } from "@/components/admin/dcg/EventAttendanceDialog";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { toast } from "sonner";
@@ -53,6 +54,7 @@ const DcgEvents = () => {
   const [showSeriesDialog, setShowSeriesDialog] = useState(false);
   const [duplicateSource, setDuplicateSource] = useState<any>(null);
   const [selectedEventForAttendance, setSelectedEventForAttendance] = useState<any>(null);
+  const [eventForRecurrence, setEventForRecurrence] = useState<any | null>(null);
 
   const { data: dcgEvents, isLoading: loadingDcg, error: dcgError } = useDcgEvents(userDcg?.id);
   const { data: regionalEvents, isLoading: loadingRegional } = useRegionalEventsForDcg(userDcg?.region_id);
@@ -393,7 +395,14 @@ const DcgEvents = () => {
                       <TableRow key={event.id} className="hover:bg-primary/5 border-border/40 group transition-colors">
                         <TableCell className="font-medium text-foreground">
                           <div>
-                            <p>{event.name || '—'}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p>{event.name || '—'}</p>
+                              {event.recurrence_rule_id && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary bg-primary/5">
+                                  <Repeat className="h-2.5 w-2.5" /> Recurring
+                                </Badge>
+                              )}
+                            </div>
                             {event.description && (
                               <p className="text-xs text-muted-foreground font-normal line-clamp-1">{event.description}</p>
                             )}
@@ -440,6 +449,15 @@ const DcgEvents = () => {
                                   <DropdownMenuItem onClick={() => setDuplicateSource(event)}>
                                     <Copy className="h-4 w-4 mr-2" /> Duplicate Event
                                   </DropdownMenuItem>
+                                  {!event.recurrence_rule_id ? (
+                                    <DropdownMenuItem onClick={() => setEventForRecurrence(event)}>
+                                      <Repeat className="h-4 w-4 mr-2" /> Make Recurrent
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => setShowSeriesDialog(true)}>
+                                      <Repeat className="h-4 w-4 mr-2" /> Recurring Series
+                                    </DropdownMenuItem>
+                                  )}
                                   <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                       <DropdownMenuItem 
@@ -494,6 +512,14 @@ const DcgEvents = () => {
           open={showSeriesDialog}
           onOpenChange={setShowSeriesDialog}
           dcgId={userDcg.id}
+        />
+        <MakeRecurringDialog
+          open={!!eventForRecurrence}
+          onOpenChange={(open) => !open && setEventForRecurrence(null)}
+          event={eventForRecurrence}
+          regionId={userRegion?.id ?? null}
+          dcgId={userDcg?.id ?? null}
+          onOpenSeriesDialog={() => setShowSeriesDialog(true)}
         />
 
         {selectedEventForAttendance && (

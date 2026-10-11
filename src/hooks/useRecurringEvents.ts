@@ -119,7 +119,11 @@ export const useCreateRecurrenceRule = () => {
         .update({ recurrence_rule_id: data.id })
         .eq('id', params.templateEventId);
 
-      await invokeGenerator(data.id);
+      try {
+        await invokeGenerator(data.id);
+      } catch (genErr) {
+        console.warn('generate-recurring-events edge function error:', genErr);
+      }
       return data as unknown as RecurrenceRule;
     },
     onSuccess: () => {

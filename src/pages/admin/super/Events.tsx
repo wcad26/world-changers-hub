@@ -21,6 +21,7 @@ import { useGlobalEvents, useCreateGlobalEvent, useDeleteGlobalEvent, useUpdateG
 import { useAllRegions } from "@/hooks/useAllRegions";
 import { RecurrenceSettings } from "@/components/admin/events/RecurrenceSettings";
 import { RecurringSeriesDialog } from "@/components/admin/events/RecurringSeriesDialog";
+import { MakeRecurringDialog } from "@/components/admin/events/MakeRecurringDialog";
 import { useCreateRecurrenceRule, DEFAULT_RECURRENCE, type RecurrenceInput } from "@/hooks/useRecurringEvents";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrencies } from "@/hooks/useCurrencies";
@@ -154,6 +155,9 @@ const SuperEvents: React.FC = () => {
   const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceInput>(DEFAULT_RECURRENCE);
+  const [editRecurrenceEnabled, setEditRecurrenceEnabled] = useState(false);
+  const [editRecurrence, setEditRecurrence] = useState<RecurrenceInput>(DEFAULT_RECURRENCE);
+  const [eventForRecurrence, setEventForRecurrence] = useState<any | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<any>(null);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
@@ -577,6 +581,8 @@ const SuperEvents: React.FC = () => {
 
   async function openEditDialog(event: any) {
     setEventToEdit(event);
+    setEditRecurrenceEnabled(false);
+    setEditRecurrence(DEFAULT_RECURRENCE);
     const startDate = new Date(event.start_datetime);
     const endDate = event.end_datetime ? new Date(event.end_datetime) : null;
     setSlugManuallyEdited(true);
@@ -729,9 +735,25 @@ const SuperEvents: React.FC = () => {
       await persistEventRelations(eventToEdit.id, values, heroUrls, heroUrlsFr);
       await saveEventRegistrationFees(eventToEdit.id, values.is_special ? editFeeRows : []);
 
+      if (editRecurrenceEnabled && !eventToEdit.recurrence_rule_id) {
+        await createRecurrenceRule.mutateAsync({
+          templateEventId: eventToEdit.id,
+          name: values.name,
+          regionId: eventToEdit.region_id ?? null,
+          dcgId: null,
+          startDatetime: start_datetime,
+          endDatetime: end_datetime,
+          createdBy: user?.id ?? null,
+          recurrence: editRecurrence,
+        });
+        setEditRecurrenceEnabled(false);
+      }
+
       toast({ title: "Success", description: "Event updated successfully." });
       setEditDialogOpen(false);
       setEventToEdit(null);
+      setEditRecurrenceEnabled(false);
+      setEditRecurrence(DEFAULT_RECURRENCE);
       setSlugManuallyEdited(false);
       resetEditImagePreviews();
     } catch (err: any) {
@@ -1518,13 +1540,39 @@ const SuperEvents: React.FC = () => {
           </div>
         )}
 
-        {!isEdit && (
+        {!isEdit ? (
           <RecurrenceSettings
             enabled={recurrenceEnabled}
             onEnabledChange={setRecurrenceEnabled}
             value={recurrence}
             onChange={setRecurrence}
           />
+        ) : !eventToEdit?.recurrence_rule_id ? (
+          <RecurrenceSettings
+            enabled={editRecurrenceEnabled}
+            onEnabledChange={setEditRecurrenceEnabled}
+            value={editRecurrence}
+            onChange={setEditRecurrence}
+          />
+        ) : (
+          <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+            <div className="flex items-center gap-2">
+              <Repeat className="h-4 w-4 text-primary" />
+              <span>This event is part of a recurring series.</span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                setEditDialogOpen(false);
+                setSeriesDialogOpen(true);
+              }}
+            >
+              Manage Series
+            </Button>
+          </div>
         )}
 
         <DialogFooter className="pt-2">
@@ -1628,7 +1676,14 @@ const SuperEvents: React.FC = () => {
                 ) : filteredEvents.map((event: any) => (
                   <TableRow key={event.id}>
                     <TableCell>
-                      <div className="font-medium">{event.name}</div>
+                      <div className="font-medium flex items-center gap-1.5 flex-wrap">
+                        <span>{event.name}</span>
+                        {event.recurrence_rule_id && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary bg-primary/5">
+                            <Repeat className="h-2.5 w-2.5" /> Recurring
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1 mt-1">
                         {event.is_public ? <Eye className="h-3 w-3 text-muted-foreground" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                         <span className="text-xs text-muted-foreground">{event.is_public ? 'Public' : 'Private'}</span>
@@ -1655,6 +1710,17 @@ const SuperEvents: React.FC = () => {
                             <Copy className="mr-2 h-4 w-4" />
                             {duplicatingEventId === event.id ? "Duplicating..." : "Duplicate Event"}
                           </DropdownMenuItem>
+                          {!event.recurrence_rule_id ? (
+                            <DropdownMenuItem onClick={() => setEventForRecurrence(event)}>
+                              <Repeat className="mr-2 h-4 w-4" />
+                              Make Recurrent
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => setSeriesDialogOpen(true)}>
+                              <Repeat className="mr-2 h-4 w-4" />
+                              Recurring Series
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/admin/super/events/${event.id}/report`)}><BarChart2 className="mr-2 h-4 w-4" />View Report</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyAttendanceLink(event)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
@@ -1686,6 +1752,13 @@ const SuperEvents: React.FC = () => {
 
       {/* Create Event Dialog */}
       <RecurringSeriesDialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen} />
+
+      <MakeRecurringDialog
+        open={!!eventForRecurrence}
+        onOpenChange={(open) => !open && setEventForRecurrence(null)}
+        event={eventForRecurrence}
+        onOpenSeriesDialog={() => setSeriesDialogOpen(true)}
+      />
 
       <Dialog open={createDialogOpen} onOpenChange={(open) => {
         setCreateDialogOpen(open);

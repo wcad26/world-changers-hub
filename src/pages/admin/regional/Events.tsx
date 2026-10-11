@@ -17,6 +17,7 @@ import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { RecurrenceSettings } from "@/components/admin/events/RecurrenceSettings";
 import { RecurringSeriesDialog } from "@/components/admin/events/RecurringSeriesDialog";
+import { MakeRecurringDialog } from "@/components/admin/events/MakeRecurringDialog";
 import { useCreateRecurrenceRule, DEFAULT_RECURRENCE, type RecurrenceInput } from "@/hooks/useRecurringEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
@@ -198,6 +199,9 @@ const RegionalEvents: React.FC = () => {
   const [duplicatingEventId, setDuplicatingEventId] = useState<string | null>(null);
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceInput>(DEFAULT_RECURRENCE);
+  const [editRecurrenceEnabled, setEditRecurrenceEnabled] = useState(false);
+  const [editRecurrence, setEditRecurrence] = useState<RecurrenceInput>(DEFAULT_RECURRENCE);
+  const [eventForRecurrence, setEventForRecurrence] = useState<any | null>(null);
   const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
   const [feeRows, setFeeRows] = useState<EventFeeRow[]>([]);
   const { toast } = useToast();
@@ -1410,8 +1414,24 @@ const RegionalEvents: React.FC = () => {
         }
       }
 
+      if (editRecurrenceEnabled && !eventToEdit.recurrence_rule_id) {
+        await createRecurrenceRule.mutateAsync({
+          templateEventId: eventToEdit.id,
+          name: values.name,
+          regionId: userRegion?.id ?? null,
+          dcgId: eventToEdit.dcg_id ?? null,
+          startDatetime: start_datetime,
+          endDatetime: end_datetime,
+          createdBy: user?.id ?? null,
+          recurrence: editRecurrence,
+        });
+        setEditRecurrenceEnabled(false);
+      }
+
       toast({ title: "Success", description: "Event updated successfully." });
       form.reset();
+      setEditRecurrenceEnabled(false);
+      setEditRecurrence(DEFAULT_RECURRENCE);
       setEditCardImagePreview('');
       setEditCardImagePreviewFr('');
       setEditImagePreviews([]);
@@ -1434,6 +1454,8 @@ const RegionalEvents: React.FC = () => {
 
   const handleEdit = async (event: any) => {
     setEventToEdit(event);
+    setEditRecurrenceEnabled(false);
+    setEditRecurrence(DEFAULT_RECURRENCE);
     
     // Set card image preview if exists
     if (event.image_url) {
@@ -1635,7 +1657,16 @@ const RegionalEvents: React.FC = () => {
       const attendance = getEventAttendance(event.id);
       return (
       <TableRow key={event.id}>
-        <TableCell className="font-medium">{event.name ?? '—'}</TableCell>
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span>{event.name ?? '—'}</span>
+            {event.recurrence_rule_id && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary bg-primary/5">
+                <Repeat className="h-2.5 w-2.5" /> Recurring
+              </Badge>
+            )}
+          </div>
+        </TableCell>
         <TableCell>
           <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
             {eventType}
@@ -1666,6 +1697,17 @@ const RegionalEvents: React.FC = () => {
                 <Copy className="mr-2 h-4 w-4" />
                 {duplicatingEventId === event.id ? "Duplicating..." : "Duplicate Event"}
               </DropdownMenuItem>
+              {!event.recurrence_rule_id ? (
+                <DropdownMenuItem onClick={() => setEventForRecurrence(event)}>
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Make Recurrent
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => setSeriesDialogOpen(true)}>
+                  <Repeat className="mr-2 h-4 w-4" />
+                  Recurring Series
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => handleAttendance(event)}>
                 <UserCheck className="mr-2 h-4 w-4" />
                 Mark Attendance
@@ -1886,6 +1928,14 @@ const RegionalEvents: React.FC = () => {
         open={seriesDialogOpen}
         onOpenChange={setSeriesDialogOpen}
         regionId={userRegion?.id ?? null}
+      />
+
+      <MakeRecurringDialog
+        open={!!eventForRecurrence}
+        onOpenChange={(open) => !open && setEventForRecurrence(null)}
+        event={eventForRecurrence}
+        regionId={userRegion?.id ?? null}
+        onOpenSeriesDialog={() => setSeriesDialogOpen(true)}
       />
 
       <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
@@ -4577,6 +4627,36 @@ const RegionalEvents: React.FC = () => {
                 currencies={currencies as any}
                 regionId={userRegion?.id}
               />
+
+              {!eventToEdit?.recurrence_rule_id ? (
+                <div className="px-1 pb-2">
+                  <RecurrenceSettings
+                    enabled={editRecurrenceEnabled}
+                    onEnabledChange={setEditRecurrenceEnabled}
+                    value={editRecurrence}
+                    onChange={setEditRecurrence}
+                  />
+                </div>
+              ) : (
+                <div className="mx-1 mb-3 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="h-4 w-4 text-primary" />
+                    <span>This event is part of a recurring series.</span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setEditEventDialogOpen(false);
+                      setSeriesDialogOpen(true);
+                    }}
+                  >
+                    Manage Series
+                  </Button>
+                </div>
+              )}
 
               <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
