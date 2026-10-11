@@ -178,6 +178,7 @@ const SuperEvents: React.FC = () => {
   const [editGalleryPreviewsFr, setEditGalleryPreviewsFr] = useState<string[]>([]);
   const [editSpeakerPhotoPreviews, setEditSpeakerPhotoPreviews] = useState<{[k: number]: string}>({});
   const { toast } = useToast();
+  const [duplicatingEventId, setDuplicatingEventId] = useState<string | null>(null);
 
   const { data: events, isLoading } = useGlobalEvents();
   const { data: attendanceData } = useGlobalAttendanceHistoryWithMemberTypes();
@@ -743,6 +744,173 @@ const SuperEvents: React.FC = () => {
       onSuccess: () => { toast({ title: "Success", description: "Event deleted." }); setEventToDelete(null); },
       onError: (err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }),
     });
+  };
+
+  const handleDuplicate = async (event: any) => {
+    setDuplicatingEventId(event.id);
+    try {
+      // 1. Fetch all related data
+      const [testimonialsRes, faqsRes, speakersRes, heroImagesRes, galleryImagesRes, feeRows] = await Promise.all([
+        supabase.from('event_testimonials').select('*').eq('event_id', event.id).order('display_order'),
+        supabase.from('event_faqs').select('*').eq('event_id', event.id).order('display_order'),
+        supabase.from('event_speakers').select('*').eq('event_id', event.id).order('display_order'),
+        supabase.from('event_images').select('*').eq('event_id', event.id).eq('is_hero_image', true).order('display_order'),
+        supabase.from('event_images').select('*').eq('event_id', event.id).eq('is_hero_image', false).order('display_order'),
+        fetchEventRegistrationFees(event.id).catch(() => []),
+      ]);
+
+      // 2. Generate unique slug for the copy
+      const baseSlug = generateSlug(`${event.name || 'Event'} copy`) || 'event-copy';
+      let finalSlug = baseSlug;
+      let counter = 2;
+      while (true) {
+        const { data: existing } = await supabase.from('events').select('id').eq('slug', finalSlug).maybeSingle();
+        if (!existing) break;
+        finalSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+
+      // 3. Create the duplicated event
+      const newEventData = {
+        name: `${event.name} (Copy)`,
+        name_fr: event.name_fr ? `${event.name_fr} (Copie)` : null,
+        slug: finalSlug,
+        description: event.description,
+        description_fr: event.description_fr,
+        expectations: event.expectations,
+        expectations_fr: event.expectations_fr,
+        requirements: event.requirements,
+        requirements_fr: event.requirements_fr,
+        category: event.category,
+        start_datetime: event.start_datetime,
+        end_datetime: event.end_datetime,
+        location_name: event.location_name,
+        location_name_fr: event.location_name_fr,
+        address: event.address,
+        address_fr: event.address_fr,
+        image_url: event.image_url,
+        image_url_fr: event.image_url_fr,
+        capacity: event.capacity,
+        cost: event.cost,
+        cost_currency_code: event.cost_currency_code,
+        is_public: false,
+        is_featured: false,
+        is_special: event.is_special ?? false,
+        requires_pre_registration: event.requires_pre_registration ?? false,
+        collect_lodging: event.collect_lodging ?? false,
+        collect_meal_preferences: event.collect_meal_preferences ?? false,
+        collect_pledges: event.collect_pledges ?? false,
+        linked_fundraising_campaign_id: event.linked_fundraising_campaign_id ?? null,
+        attendance_target: event.attendance_target ?? null,
+        status: 'Upcoming' as const,
+        registration_url: event.registration_url,
+        organizer_name: event.organizer_name,
+        organizer_email: event.organizer_email,
+        organizer_phone: event.organizer_phone,
+        whatsapp_contact: event.whatsapp_contact,
+        region_id: event.region_id ?? null,
+      };
+
+      const createdEvent = await createEvent.mutateAsync(newEventData as any);
+      if (!createdEvent) throw new Error('Failed to create duplicated event');
+
+      // 4. Copy hero images
+      if (heroImagesRes.data?.length) {
+        await supabase.from('event_images').insert(
+          heroImagesRes.data.map((img, idx) => ({
+            event_id: createdEvent.id,
+            image_url: img.image_url,
+            image_url_fr: img.image_url_fr,
+            display_order: idx,
+            is_hero_image: true,
+          }))
+        );
+      }
+
+      // 5. Copy gallery images
+      if (galleryImagesRes.data?.length) {
+        await supabase.from('event_images').insert(
+          galleryImagesRes.data.map((img, idx) => ({
+            event_id: createdEvent.id,
+            image_url: img.image_url,
+            image_url_fr: img.image_url_fr,
+            display_order: idx,
+            is_hero_image: false,
+          }))
+        );
+      }
+
+      // 6. Copy testimonials
+      if (testimonialsRes.data?.length) {
+        await supabase.from('event_testimonials').insert(
+          testimonialsRes.data.map((t, idx) => ({
+            event_id: createdEvent.id,
+            name: t.name,
+            name_fr: t.name_fr,
+            role: t.role,
+            role_fr: t.role_fr,
+            content: t.content,
+            content_fr: t.content_fr,
+            rating: t.rating ?? 5,
+            display_order: idx,
+            status: 'approved',
+          }))
+        );
+      }
+
+      // 7. Copy FAQs
+      if (faqsRes.data?.length) {
+        await supabase.from('event_faqs').insert(
+          faqsRes.data.map((f, idx) => ({
+            event_id: createdEvent.id,
+            question: f.question,
+            question_fr: f.question_fr,
+            answer: f.answer,
+            answer_fr: f.answer_fr,
+            display_order: idx,
+          }))
+        );
+      }
+
+      // 8. Copy speakers
+      if (speakersRes.data?.length) {
+        await supabase.from('event_speakers').insert(
+          speakersRes.data.map((s, idx) => ({
+            event_id: createdEvent.id,
+            name: s.name,
+            name_fr: s.name_fr,
+            title: s.title,
+            title_fr: s.title_fr,
+            bio: s.bio,
+            bio_fr: s.bio_fr,
+            photo_url: s.photo_url,
+            linkedin_url: s.linkedin_url,
+            twitter_url: s.twitter_url,
+            website_url: s.website_url,
+            display_order: idx,
+          }))
+        );
+      }
+
+      // 9. Copy registration fees if any
+      if (feeRows && feeRows.length > 0) {
+        await saveEventRegistrationFees(createdEvent.id, feeRows);
+      }
+
+      toast({
+        title: "Event Duplicated",
+        description: `"${event.name}" has been duplicated. The copy is set to private - please review and update the dates before publishing.`,
+      });
+
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to duplicate event.",
+        variant: "destructive",
+      });
+    } finally {
+      setDuplicatingEventId(null);
+    }
   };
 
 
@@ -1480,6 +1648,13 @@ const SuperEvents: React.FC = () => {
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEditDialog(event)}><Edit className="mr-2 h-4 w-4" />Edit</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDuplicate(event)}
+                            disabled={duplicatingEventId === event.id}
+                          >
+                            <Copy className="mr-2 h-4 w-4" />
+                            {duplicatingEventId === event.id ? "Duplicating..." : "Duplicate Event"}
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setSelectedEvent(event); setAttendanceDialogOpen(true); }}><UserCheck className="mr-2 h-4 w-4" />Mark Attendance</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => navigate(`/admin/super/events/${event.id}/report`)}><BarChart2 className="mr-2 h-4 w-4" />View Report</DropdownMenuItem>
                           <DropdownMenuItem onClick={() => copyAttendanceLink(event)}><Link2 className="mr-2 h-4 w-4" />Copy Attendance Link</DropdownMenuItem>
