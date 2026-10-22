@@ -93,7 +93,7 @@ export default function MemberLayout({ children }: { children?: React.ReactNode 
 
   const HeaderTitle = ({ compact }: { compact?: boolean }) => {
     const Icon = isHome ? Home : current?.icon ?? Home;
-    const subtitle = isHome ? `Welcome to your ${userRegion?.name || 'WCA'} member portal` : subtitles[path];
+    const subtitle = isHome ? `Welcome to your ${userRegion?.name || 'WCA'} member portal` : subtitles[path] ?? (current ? subtitles[current.href] : undefined);
     return (
       <div className="flex min-w-0 items-center gap-2.5">
         <span className={cn('grid shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm', compact ? 'h-8 w-8' : 'h-10 w-10')}>
