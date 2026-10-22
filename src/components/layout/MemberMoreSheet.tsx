@@ -22,7 +22,6 @@ export const secondaryNav: NavItem[] = [
   { name: 'Media', href: '/member/media', icon: Play, desc: 'Sermons & videos' },
   { name: 'Fundraising', href: '/member/fundraising', icon: Heart, desc: 'Campaigns' },
   { name: 'Store', href: '/member/store', icon: ShoppingBag, desc: 'Books & resources' },
-  { name: 'Attendance', href: '/member/attendance', icon: BarChart3, desc: 'Your record' },
   { name: 'Education', href: '/member/education', icon: GraduationCap, desc: 'Courses & school' },
   { name: 'Translation', href: '/member/translation', icon: Languages, desc: 'Live in your language' },
 ];
