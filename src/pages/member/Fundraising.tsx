@@ -117,8 +117,8 @@ export default function MemberFundraising() {
         <div className="relative flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-xs font-medium opacity-80">My campaign giving</p>
-            <p className="mt-1 truncate font-heading text-2xl font-bold sm:text-3xl">{formatCurrency(pledgedTotal, cur)}</p>
-            <p className="mt-1 text-xs opacity-80">Pledged across {myPledges.length} campaign{myPledges.length === 1 ? '' : 's'}</p>
+            <p className="mt-1 truncate font-heading text-2xl font-bold sm:text-3xl">{formatCurrency(givenTotal, cur)}</p>
+            <p className="mt-1 text-xs opacity-80">{formatCurrency(pledgedTotal, cur)} pledged across {myPledges.length} campaign{myPledges.length === 1 ? '' : 's'}</p>
           </div>
           <div className="relative grid shrink-0 place-items-center">
             <Ring pct={fulfilled} />
