@@ -1,185 +1,93 @@
 import { useMemo, useState } from 'react';
-import { Play, Pause, Headphones, Video, FileText, Bookmark, BookmarkCheck, Search, X, RotateCcw, RotateCw, Clock, Download } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { useServerFn } from '@tanstack/react-start';
+import { Play, Search, Youtube, Clock, Eye, Bookmark } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Panel, Segmented, EmptyState } from '@/components/member/MemberUI';
-import { mediaItems, mediaCategories, toneVar, type MediaItem, type MediaKind } from '@/data/memberDemo';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { Link } from '@/lib/router-compat';
+import { EmptyState, Segmented } from '@/components/member/MemberUI';
+import { getMediaFeed, type MediaVideo } from '@/lib/media.functions';
+import { useSavedVideos } from '@/components/member/useSavedVideos';
+import { format } from 'date-fns';
 
-const kindIcon = { video: Video, audio: Headphones, notes: FileText } as const;
-const kindLabel = { video: 'Video', audio: 'Audio', notes: 'Notes' } as const;
+export const mediaFeedKey = ['member-media-feed'] as const;
 
-function Cover({ item, className }: { item: MediaItem; className?: string }) {
-  const Icon = kindIcon[item.kind];
+export function useMediaFeed() {
+  const fetchFeed = useServerFn(getMediaFeed);
+  return useQuery({ queryKey: mediaFeedKey, queryFn: () => fetchFeed(), staleTime: 10 * 60_000 });
+}
+
+const views = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k views` : `${n} views`;
+
+export function VideoRow({ v }: { v: MediaVideo }) {
   return (
-    <div className={cn('relative overflow-hidden rounded-xl', className)}
-      style={{ background: `linear-gradient(135deg, ${toneVar(item.tone)}, color-mix(in oklab, ${toneVar(item.tone)} 35%, var(--background)))` }}>
-      <Icon className="absolute -bottom-3 -right-3 h-20 w-20 text-primary-foreground/20" />
-      <span className="absolute left-3 top-3 rounded-full bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground backdrop-blur">{item.series}</span>
-    </div>
+    <Link to={`/member/media/${v.id}`} className="group flex gap-3 rounded-2xl p-2 transition-colors hover:bg-muted/60">
+      <span className="relative aspect-video w-36 shrink-0 overflow-hidden rounded-xl bg-muted sm:w-44">
+        <img src={v.thumbnail} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        <span className="absolute inset-0 grid place-items-center bg-foreground/0 transition-colors group-hover:bg-foreground/20">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-background/90 opacity-0 shadow transition-opacity group-hover:opacity-100"><Play className="h-4 w-4 fill-primary text-primary" /></span>
+        </span>
+      </span>
+      <span className="min-w-0 flex-1 py-0.5">
+        <span className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{v.title}</span>
+        <span className="mt-1 block text-[11px] text-muted-foreground">{format(new Date(v.published), 'dd/MM/yyyy')}</span>
+        {v.views > 0 && <span className="block text-[11px] text-muted-foreground">{views(v.views)}</span>}
+      </span>
+    </Link>
   );
 }
 
 export default function MemberMedia() {
-  const [kind, setKind] = useState<'all' | MediaKind | 'saved'>('all');
-  const [cat, setCat] = useState<string>('all');
+  const { data, isLoading, error } = useMediaFeed();
+  const { saved } = useSavedVideos();
+  const [tab, setTab] = useState<'latest' | 'saved'>('latest');
   const [q, setQ] = useState('');
-  const [saved, setSaved] = useState<string[]>(['m4']);
-  const [open, setOpen] = useState<MediaItem | null>(null);
-  const [playing, setPlaying] = useState<MediaItem | null>(null);
-  const [paused, setPaused] = useState(false);
-  const [progress, setProgress] = useState(18);
-  const [speed, setSpeed] = useState(1);
 
-  const featured = mediaItems.find((m) => m.featured)!;
-  const series = useMemo(() => {
-    const map = new Map<string, MediaItem[]>();
-    mediaItems.forEach((m) => map.set(m.series, [...(map.get(m.series) ?? []), m]));
-    return [...map.entries()];
-  }, []);
+  const videos = data?.videos ?? [];
+  const list = useMemo(() => {
+    const base = tab === 'saved' ? videos.filter((v) => saved.includes(v.id)) : videos;
+    const t = q.trim().toLowerCase();
+    return t ? base.filter((v) => v.title.toLowerCase().includes(t) || v.description.toLowerCase().includes(t)) : base;
+  }, [videos, saved, tab, q]);
+  const featured = !q && tab === 'latest' ? list[0] : undefined;
+  const rest = featured ? list.slice(1) : list;
 
-  const list = mediaItems.filter((m) =>
-    (kind === 'all' || (kind === 'saved' ? saved.includes(m.id) : m.kind === kind)) &&
-    (cat === 'all' || m.category === cat) &&
-    (!q || `${m.title} ${m.speaker} ${m.series}`.toLowerCase().includes(q.toLowerCase())));
-
-  const toggleSave = (id: string) => setSaved((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
-  const play = (m: MediaItem) => { setPlaying(m); setPaused(false); setProgress(0); setOpen(null); };
+  if (isLoading) return <div className="space-y-4 pb-24"><Skeleton className="aspect-video w-full rounded-2xl" /><Skeleton className="h-10 rounded-full" />{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>;
+  if (error) return <EmptyState icon={Youtube} title="Videos could not load" hint="Please check your connection and try again." />;
+  if (data && !data.configured) return <EmptyState icon={Youtube} title="Media is coming soon" hint="Our YouTube sermons and teachings will appear here." />;
 
   return (
-    <div className={cn('space-y-6', playing && 'pb-24 md:pb-20')}>
-      {/* Featured */}
-      <section className="grid overflow-hidden rounded-2xl border border-border bg-card md:grid-cols-[1.2fr_1fr]">
-        <Cover item={featured} className="min-h-48 rounded-none md:min-h-64" />
-        <div className="flex flex-col justify-center gap-3 p-5 sm:p-7">
-          <Badge variant="secondary" className="w-fit">Latest message</Badge>
-          <h2 className="font-heading text-xl font-bold text-foreground sm:text-2xl">{featured.title}</h2>
-          <p className="text-sm text-muted-foreground">{featured.summary}</p>
-          <p className="flex items-center gap-2 text-xs text-muted-foreground"><span>{featured.speaker}</span>·<span>{featured.date}</span>·<Clock className="h-3 w-3" />{featured.minutes} min</p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Button onClick={() => play(featured)}><Play className="mr-1 h-4 w-4" />Watch now</Button>
-            <Button variant="outline" onClick={() => toggleSave(featured.id)}>
-              {saved.includes(featured.id) ? <BookmarkCheck className="mr-1 h-4 w-4" /> : <Bookmark className="mr-1 h-4 w-4" />}Save
-            </Button>
+    <div className="space-y-5 pb-24 lg:pb-6">
+      {featured && (
+        <Link to={`/member/media/${featured.id}`} className="group relative block overflow-hidden rounded-2xl bg-muted shadow-regal">
+          <img src={featured.thumbnail.replace('hqdefault', 'maxresdefault')} onError={(e) => { e.currentTarget.src = featured.thumbnail; }} alt="" className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/85 via-foreground/20 to-transparent" />
+          <span className="absolute left-3 top-3 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground">Latest message</span>
+          <span className="absolute left-1/2 top-1/2 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-background/90 shadow-lg transition-transform group-hover:scale-110"><Play className="ml-1 h-7 w-7 fill-primary text-primary" /></span>
+          <div className="absolute inset-x-0 bottom-0 p-4">
+            <h2 className="line-clamp-2 font-heading text-lg font-bold text-background sm:text-2xl">{featured.title}</h2>
+            <p className="mt-1 flex items-center gap-3 text-xs text-background/80">
+              <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{format(new Date(featured.published), 'dd/MM/yyyy')}</span>
+              {featured.views > 0 && <span className="flex items-center gap-1"><Eye className="h-3.5 w-3.5" />{views(featured.views)}</span>}
+            </p>
           </div>
-        </div>
-      </section>
+        </Link>
+      )}
 
-      {/* Series */}
-      <Panel title="Teaching series">
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
-          {series.map(([name, items]) => (
-            <button key={name} onClick={() => { setQ(name); setKind('all'); setCat('all'); }}
-              className="w-44 shrink-0 text-left transition-transform hover:-translate-y-0.5">
-              <Cover item={items[0]} className="h-24" />
-              <p className="mt-2 truncate text-sm font-medium text-foreground">{name}</p>
-              <p className="text-xs text-muted-foreground">{items.length} {items.length > 1 ? 'episodes' : 'episode'}</p>
-            </button>
-          ))}
-        </div>
-      </Panel>
-
-      {/* Filters */}
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <Segmented<'all' | MediaKind | 'saved'> value={kind} onChange={setKind} options={[
-            { value: 'all', label: 'All' }, { value: 'video', label: 'Video' }, { value: 'audio', label: 'Audio' },
-            { value: 'notes', label: 'Notes' }, { value: 'saved', label: `Saved (${saved.length})` }]} />
-          <div className="relative lg:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search messages, speakers…" className="rounded-full pl-9" />
-          </div>
-        </div>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1">
-          {['all', ...mediaCategories].map((c) => (
-            <button key={c} onClick={() => setCat(c)}
-              className={cn('whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-colors',
-                cat === c ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground')}>
-              {c === 'all' ? 'All categories' : c}
-            </button>
-          ))}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Segmented<'latest' | 'saved'> value={tab} onChange={setTab} options={[{ value: 'latest', label: 'Latest' }, { value: 'saved', label: `Saved${saved.length ? ` (${saved.length})` : ''}` }]} />
+        <div className="relative sm:w-72">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search messages" className="h-11 rounded-full pl-9" />
         </div>
       </div>
 
-      {/* Grid */}
-      {list.length === 0 ? (
-        <EmptyState icon={Search} title="No messages found" hint="Try another filter or search term."
-          action={<Button variant="outline" size="sm" onClick={() => { setQ(''); setCat('all'); setKind('all'); }}>Reset filters</Button>} />
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((m) => {
-            const Icon = kindIcon[m.kind];
-            return (
-              <article key={m.id} className="group overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg">
-                <button className="relative block w-full" onClick={() => setOpen(m)}>
-                  <Cover item={m} className="h-36 rounded-none" />
-                  <span className="absolute inset-0 grid place-items-center opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="grid h-12 w-12 place-items-center rounded-full bg-background/90 text-primary shadow"><Play className="h-5 w-5" /></span>
-                  </span>
-                  <span className="absolute bottom-2 right-2 rounded-md bg-background/85 px-1.5 py-0.5 text-[11px] text-foreground">{m.minutes} min</span>
-                </button>
-                <div className="space-y-2 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <button onClick={() => setOpen(m)} className="line-clamp-2 text-left font-medium text-foreground hover:text-primary">{m.title}</button>
-                    <button aria-label="Save" onClick={() => toggleSave(m.id)} className="shrink-0 text-muted-foreground hover:text-primary">
-                      {saved.includes(m.id) ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{m.speaker} · {m.date}</p>
-                  <Badge variant="outline" className="gap-1 text-[11px]"><Icon className="h-3 w-3" />{kindLabel[m.kind]}</Badge>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Details */}
-      <Dialog open={!!open} onOpenChange={(o) => !o && setOpen(null)}>
-        <DialogContent className="max-h-[88vh] overflow-y-auto sm:max-w-lg">
-          {open && (<>
-            <Cover item={open} className="h-40" />
-            <DialogHeader>
-              <DialogTitle>{open.title}</DialogTitle>
-              <DialogDescription>{open.speaker} · {open.date} · {open.minutes} min</DialogDescription>
-            </DialogHeader>
-            <p className="text-sm text-muted-foreground">{open.summary}</p>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => play(open)}><Play className="mr-1 h-4 w-4" />{open.kind === 'notes' ? 'Open notes' : 'Play'}</Button>
-              <Button variant="outline" onClick={() => toast.success('Study notes download will be available soon')}><Download className="mr-1 h-4 w-4" />Notes</Button>
-              <Button variant="ghost" onClick={() => toggleSave(open.id)}>{saved.includes(open.id) ? 'Saved' : 'Save'}</Button>
-            </div>
-          </>)}
-        </DialogContent>
-      </Dialog>
-
-      {/* Mini player */}
-      {playing && (
-        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 px-3 md:bottom-4 md:left-auto md:right-6 md:w-[26rem] md:px-0">
-          <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur">
-            <div className="flex items-center gap-3">
-              <Cover item={playing} className="h-11 w-11 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">{playing.title}</p>
-                <p className="truncate text-xs text-muted-foreground">{playing.speaker}</p>
-              </div>
-              <button aria-label="Close player" onClick={() => setPlaying(null)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
-            </div>
-            <input type="range" min={0} max={100} value={progress} onChange={(e) => setProgress(+e.target.value)} className="mt-2 w-full accent-[var(--primary)]" aria-label="Progress" />
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">{Math.round(playing.minutes * progress / 100)}:00 / {playing.minutes}:00</span>
-              <div className="flex items-center gap-1">
-                <Button size="icon" variant="ghost" onClick={() => setProgress((p) => Math.max(0, p - 3))}><RotateCcw className="h-4 w-4" /></Button>
-                <Button size="icon" className="rounded-full" onClick={() => setPaused((p) => !p)}>{paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}</Button>
-                <Button size="icon" variant="ghost" onClick={() => setProgress((p) => Math.min(100, p + 3))}><RotateCw className="h-4 w-4" /></Button>
-              </div>
-              <button onClick={() => setSpeed((s) => s >= 2 ? 1 : s + 0.5)} className="rounded-md border border-border px-2 py-0.5 text-[11px] font-medium text-foreground">{speed}x</button>
-            </div>
-          </div>
-        </div>
+      {rest.length ? (
+        <div className="grid gap-1 lg:grid-cols-2">{rest.map((v) => <VideoRow key={v.id} v={v} />)}</div>
+      ) : !featured && (
+        <EmptyState icon={tab === 'saved' ? Bookmark : Search} title={tab === 'saved' ? 'No saved videos yet' : 'No videos found'} hint={tab === 'saved' ? 'Tap Save on any video to keep it here.' : undefined}
+          action={tab === 'saved' ? <Button size="sm" onClick={() => setTab('latest')}>Browse videos</Button> : undefined} />
       )}
     </div>
   );
