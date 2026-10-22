@@ -101,20 +101,20 @@ export default function MemberCounseling() {
         { value: 'book', label: 'Book' }, { value: 'mine', label: `My sessions${upcoming.length ? ` (${upcoming.length})` : ''}` }, { value: 'help', label: 'FAQ' }]} />
 
       {tab === 'book' && (<>
-        <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">
+        <div className="no-scrollbar flex max-w-full gap-2 overflow-x-auto">
           {[{ key: 'all', label: 'All areas' }, ...counselingAreas].map((a) => (
             <button key={a.key} type="button" onClick={() => setArea(a.key)} className={cn('whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors',
               area === a.key ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:text-foreground')}>{a.label}</button>
           ))}
         </div>
-        <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {list.map((c) => (
-            <li key={c.id}>
-              <button type="button" onClick={() => start(c)} className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full font-heading text-lg font-bold text-primary-foreground" style={{ background: toneVar(c.tone) }}>{c.initials}</span>
+            <li key={c.id} className="min-w-0">
+              <button type="button" onClick={() => start(c)} className="flex w-full min-w-0 max-w-full items-center gap-3 overflow-hidden whitespace-normal rounded-2xl border border-border bg-card p-3.5 text-left sm:p-4 transition-all hover:-translate-y-0.5 hover:shadow-lg">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full font-heading text-base sm:h-14 sm:w-14 sm:text-lg font-bold text-primary-foreground" style={{ background: toneVar(c.tone) }}>{c.initials}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-semibold text-foreground">{c.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{c.title} · {c.specialties.map(areaLabel).join(', ')}</span>
+                  <span className="block text-xs text-muted-foreground">{c.title}</span><span className="mt-0.5 block text-xs leading-snug text-muted-foreground">{c.specialties.map(areaLabel).join(' · ')}</span>
                   <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                     <span className="flex items-center gap-1"><Languages className="h-3 w-3" />{c.languages}</span>
                     <span className="flex items-center gap-1 font-medium text-success"><CalendarClock className="h-3 w-3" />{c.next}</span>
