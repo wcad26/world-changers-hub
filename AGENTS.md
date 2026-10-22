@@ -3,3 +3,5 @@
 - Legacy certificate email delivery uses native npm Supabase imports and HTTP calls to the existing email provider, not esm.sh or the provider SDK. Why: avoid incompatible WebSocket dependencies crashing the Deno runtime before requests execute.
 
 - Giving card payments use Flutterwave direct charge: card data is 3DES-encrypted server-side per request with the gateway encryption key and never stored or logged. Why: owner chose in-app card entry over the slower hosted page.
+- Member media comes from the WCA YouTube channel feed (channel ID in system_settings `media_youtube_channel`, fallback in media.functions) and plays in-app via the nocookie embed at /member/media/$videoId. Why: all media is hosted on YouTube; no API key needed.
+- Member campaign gifts reuse startGiving with campaignId: a pending fundraising_donations row (message = payment reference) is completed/failed when the gateway confirms. Why: one payment flow; only confirmed gifts count toward campaign totals.

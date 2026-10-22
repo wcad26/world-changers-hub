@@ -5,6 +5,12 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 const FLW = 'https://api.flutterwave.com/v3';
 
 const CATEGORY_NAMES = { tithe: 'Tithes', offering: 'Offerings', special: 'Special Giving' } as const;
+const CAMPAIGN_TAG = 'campaign:';
+
+/** Mirrors a gift's final status onto its linked campaign donation (matched by payment reference). */
+async function syncCampaignDonation(admin: any, txRef: string, status: 'completed' | 'failed') {
+  await admin.from('fundraising_donations').update({ status }).eq('message', txRef).eq('status', 'pending');
+}
 
 /** Normalises a Cameroon mobile money number and detects MTN or Orange. */
 export function detectMomo(raw: string) {
@@ -94,6 +100,7 @@ export const startGiving = createServerFn({ method: 'POST' })
     amount: z.number().positive().max(100_000_000),
     method: z.enum(['mobile_money', 'card', 'bank_transfer']),
     regionId: z.string().uuid().optional(),
+    campaignId: z.string().uuid().optional(),
     phone: z.string().max(20).optional(),
     card: z.lazy(() => cardSchema).optional(),
     cardAuth: z.lazy(() => cardAuthSchema),
@@ -105,7 +112,14 @@ export const startGiving = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
     const { data: member } = await supabaseAdmin.from('members').select('id, region_id').eq('id', memberId).single();
-    const regionId = data.regionId || member?.region_id;
+    let campaign: { id: string; name: string; region_id: string | null } | null = null;
+    if (data.campaignId) {
+      const { data: c } = await supabaseAdmin.from('fundraising_campaigns').select('id, name, region_id, status').eq('id', data.campaignId).maybeSingle();
+      if (!c || c.status !== 'active') throw new Error('This campaign is no longer accepting gifts.');
+      campaign = c as any;
+    }
+    // Campaign gifts go to the campaign's region; global campaigns use the member's chosen/home region.
+    const regionId = campaign?.region_id || data.regionId || member?.region_id;
     if (!regionId) throw new Error('Your member record has no region.');
     const { data: region } = await supabaseAdmin.from('regions').select('name, currency_code').eq('id', regionId).single();
     if (!region) throw new Error('That region was not found.');
@@ -120,12 +134,13 @@ export const startGiving = createServerFn({ method: 'POST' })
       if (data.method === 'card' && !gw.card) throw new Error('Card payments are not available for this region.');
     }
 
-    const { data: category } = await supabaseAdmin.from('financial_transaction_categories').select('id').eq('name', CATEGORY_NAMES[data.kind]).eq('is_active', true).maybeSingle();
+    const kind = campaign ? 'special' : data.kind;
+    const { data: category } = await supabaseAdmin.from('financial_transaction_categories').select('id').eq('name', CATEGORY_NAMES[kind]).eq('is_active', true).maybeSingle();
     if (!category) throw new Error('Giving category is not set up.');
     const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email, phone').eq('id', userId).maybeSingle();
 
     const amount = currency === 'XAF' || currency === 'XOF' ? Math.round(data.amount) : Math.round(data.amount * 100) / 100;
-    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : 'WCA-GIVE';
+    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : campaign ? 'WCA-FUND' : 'WCA-GIVE';
     const txRef = `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const name = [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member';
     const email = profile?.email || 'giving@wcaglobal.org';
@@ -134,10 +149,18 @@ export const startGiving = createServerFn({ method: 'POST' })
       category_id: category.id, amount, currency_code: currency, region_id: regionId,
       member_id: memberId, recorded_by: userId, scope: 'regional',
       transaction_date: new Date().toISOString().slice(0, 10),
-      description: null,
+      description: campaign ? `${CAMPAIGN_TAG}${campaign.id}` : null,
       payment_method: data.method, payment_reference: txRef, payment_status: 'pending',
     } as any);
     if (insErr) throw new Error('Could not start your gift. Please try again.');
+    if (campaign) {
+      // Pending until the gateway (or the region, for bank deposits) confirms; only completed gifts count toward the goal.
+      await supabaseAdmin.from('fundraising_donations').insert({
+        campaign_id: campaign.id, member_id: memberId, amount: Math.round(amount * 100), currency_code: currency,
+        donor_name: name, donor_email: profile?.email ?? null, status: 'pending', message: txRef,
+        donation_date: new Date().toISOString().slice(0, 10),
+      } as any);
+    }
 
     if (data.method === 'bank_transfer') {
       return { txRef, link: null, network: null, bank: gw.bank, regionName: region.name as string };
@@ -157,7 +180,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       });
       const body = (await res.json().catch(() => ({}))) as any;
       if (!res.ok || body.status !== 'success') {
-        await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef);
+        await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef); await syncCampaignDonation(supabaseAdmin, txRef, 'failed');
         throw new Error(body.message || 'Could not send the payment request to your phone.');
       }
       const auth = body.meta?.authorization;
@@ -165,12 +188,12 @@ export const startGiving = createServerFn({ method: 'POST' })
     }
 
     if (!gw.encryptionKey) {
-      await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef);
+      await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef); await syncCampaignDonation(supabaseAdmin, txRef, 'failed');
       throw new Error('Card payments are not fully configured for this region yet.');
     }
     if (!data.card) throw new Error('Please enter your card details.');
-    const step = await flwCardCharge({ secret, encryptionKey: gw.encryptionKey, card: data.card, txRef, amount, currency, email, name, redirect: `${data.origin}/member/finances`, auth: data.cardAuth });
-    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef);
+    const step = await flwCardCharge({ secret, encryptionKey: gw.encryptionKey, card: data.card, txRef, amount, currency, email, name, redirect: `${data.origin}${campaign ? '/member/fundraising' : '/member/finances'}`, auth: data.cardAuth });
+    if (step.next === 'failed') { await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef); await syncCampaignDonation(supabaseAdmin, txRef, 'failed'); }
     return { txRef, link: step.link ?? null, network: null, bank: null, regionName: region.name as string, card: step };
   });
 
@@ -212,13 +235,13 @@ export const continueCardGift = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const { ids } = await myMemberId(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const { data: row } = await supabaseAdmin.from('financial_transactions').select('amount, currency_code, member_id, region_id, payment_status' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
+    const { data: row } = await supabaseAdmin.from('financial_transactions').select('amount, currency_code, member_id, region_id, payment_status, description' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
     if (!row || !ids.includes(row.member_id) || row.payment_status !== 'pending') throw new Error('Gift not found.');
     const gw = await resolveGateway(row.region_id);
     if (!gw.secret || !gw.encryptionKey) throw new Error('Card payments are not available right now.');
     const { data: profile } = await context.supabase.from('profiles').select('first_name, last_name, email').eq('id', context.userId).maybeSingle();
-    const step = await flwCardCharge({ secret: gw.secret, encryptionKey: gw.encryptionKey, card: data.card, txRef: data.txRef, amount: Number(row.amount), currency: row.currency_code, email: profile?.email || 'giving@wcaglobal.org', name: [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member', redirect: `${data.origin}/member/finances`, auth: data.cardAuth });
-    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', data.txRef);
+    const step = await flwCardCharge({ secret: gw.secret, encryptionKey: gw.encryptionKey, card: data.card, txRef: data.txRef, amount: Number(row.amount), currency: row.currency_code, email: profile?.email || 'giving@wcaglobal.org', name: [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member', redirect: `${data.origin}${String(row.description || '').startsWith(CAMPAIGN_TAG) ? '/member/fundraising' : '/member/finances'}`, auth: data.cardAuth });
+    if (step.next === 'failed') { await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', data.txRef); await syncCampaignDonation(supabaseAdmin, data.txRef, 'failed'); }
     return step;
   });
 
@@ -259,10 +282,12 @@ export const checkGiving = createServerFn({ method: 'POST' })
     if (!tx) return { status: 'pending' as const };
     if (tx.status === 'successful' && Number(tx.amount) >= Number(row.amount) && tx.currency === row.currency_code) {
       await supabaseAdmin.from('financial_transactions').update({ payment_status: 'completed', payment_method: tx.payment_type === 'card' ? 'card' : 'mobile_money' } as any).eq('id', row.id);
+      await syncCampaignDonation(supabaseAdmin, data.txRef, 'completed');
       return { status: 'successful' as const };
     }
     if (tx.status === 'failed' || tx.status === 'cancelled') {
       await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('id', row.id);
+      await syncCampaignDonation(supabaseAdmin, data.txRef, 'failed');
       return { status: 'failed' as const };
     }
     return { status: 'pending' as const };
