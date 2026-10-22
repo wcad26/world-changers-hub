@@ -193,7 +193,7 @@ export const startGiving = createServerFn({ method: 'POST' })
     }
     if (!data.card) throw new Error('Please enter your card details.');
     const step = await flwCardCharge({ secret, encryptionKey: gw.encryptionKey, card: data.card, txRef, amount, currency, email, name, redirect: `${data.origin}${campaign ? '/member/fundraising' : '/member/finances'}`, auth: data.cardAuth });
-    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef); await syncCampaignDonation(supabaseAdmin, txRef, 'failed');
+    if (step.next === 'failed') { await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef); await syncCampaignDonation(supabaseAdmin, txRef, 'failed'); }
     return { txRef, link: step.link ?? null, network: null, bank: null, regionName: region.name as string, card: step };
   });
 
@@ -235,13 +235,13 @@ export const continueCardGift = createServerFn({ method: 'POST' })
   .handler(async ({ data, context }) => {
     const { ids } = await myMemberId(context.supabase, context.userId);
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-    const { data: row } = await supabaseAdmin.from('financial_transactions').select('amount, currency_code, member_id, region_id, payment_status' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
+    const { data: row } = await supabaseAdmin.from('financial_transactions').select('amount, currency_code, member_id, region_id, payment_status, description' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
     if (!row || !ids.includes(row.member_id) || row.payment_status !== 'pending') throw new Error('Gift not found.');
     const gw = await resolveGateway(row.region_id);
     if (!gw.secret || !gw.encryptionKey) throw new Error('Card payments are not available right now.');
     const { data: profile } = await context.supabase.from('profiles').select('first_name, last_name, email').eq('id', context.userId).maybeSingle();
-    const step = await flwCardCharge({ secret: gw.secret, encryptionKey: gw.encryptionKey, card: data.card, txRef: data.txRef, amount: Number(row.amount), currency: row.currency_code, email: profile?.email || 'giving@wcaglobal.org', name: [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member', redirect: `${data.origin}${campaign ? '/member/fundraising' : '/member/finances'}`, auth: data.cardAuth });
-    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', data.txRef); await syncCampaignDonation(supabaseAdmin, data.txRef, 'failed');
+    const step = await flwCardCharge({ secret: gw.secret, encryptionKey: gw.encryptionKey, card: data.card, txRef: data.txRef, amount: Number(row.amount), currency: row.currency_code, email: profile?.email || 'giving@wcaglobal.org', name: [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member', redirect: `${data.origin}${String(row.description || '').startsWith(CAMPAIGN_TAG) ? '/member/fundraising' : '/member/finances'}`, auth: data.cardAuth });
+    if (step.next === 'failed') { await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', data.txRef); await syncCampaignDonation(supabaseAdmin, data.txRef, 'failed'); }
     return step;
   });
 
