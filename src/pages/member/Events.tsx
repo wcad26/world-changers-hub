@@ -41,70 +41,92 @@ export default function MemberEvents() {
     );
   }
 
+  const next = groups.today[0] || groups.upcoming[0];
+  const rest = list.filter((e) => !(tab !== 'past' && next && e.id === next.id && tab === (groups.today[0] ? 'today' : 'upcoming')));
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <Segmented<Tab> value={tab} onChange={setTab} options={[
-          { value: 'upcoming', label: `Upcoming (${groups.upcoming.length})` },
-          { value: 'today', label: `Today (${groups.today.length})` },
-          { value: 'past', label: `Past (${groups.past.length})` },
-        ]} />
-        <div className="relative lg:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search events or places…" value={q} onChange={(e) => setQ(e.target.value)} className="h-10 rounded-full pl-10" />
-        </div>
+    <div className="space-y-4">
+      {/* Featured next event */}
+      {tab !== 'past' && next && list.some((e) => e.id === next.id) && (() => {
+        const d = parseISO(next.start_datetime);
+        return (
+          <Link to={`/events/${next.slug || next.id}`} className="group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
+            {next.image_url && <img src={next.image_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 transition-transform duration-500 group-hover:scale-105" />}
+            <div className="relative flex items-start gap-4">
+              <div className="flex w-14 shrink-0 flex-col items-center rounded-2xl bg-primary-foreground py-2 text-primary">
+                <span className="text-[10px] font-bold uppercase">{format(d, 'MMM')}</span>
+                <span className="font-heading text-2xl font-bold leading-none">{format(d, 'dd')}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">{isToday(d) ? 'Happening today' : 'Next up'}</p>
+                <h3 className="mt-0.5 line-clamp-2 font-heading text-lg font-bold">{next.name}</h3>
+                <p className="mt-1 flex items-center gap-1.5 text-xs text-primary-foreground/80"><Clock className="h-3.5 w-3.5" />{format(d, 'EEE · h:mm a')}</p>
+                {next.location_name && <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-primary-foreground/80"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{next.location_name}</span></p>}
+              </div>
+              <ArrowUpRight className="h-5 w-5 shrink-0" />
+            </div>
+          </Link>
+        );
+      })()}
+
+      {/* Tabs */}
+      <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-muted/50 p-1 sm:inline-grid sm:w-auto">
+        {(['upcoming', 'today', 'past'] as Tab[]).map((v) => (
+          <button key={v} type="button" onClick={() => setTab(v)}
+            className={cn('flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold capitalize transition-all',
+              tab === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+            {v}
+            <span className={cn('grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px]', tab === v ? 'bg-primary-foreground/20' : 'bg-background')}>{groups[v].length}</span>
+          </button>
+        ))}
       </div>
 
-      {categories.length > 0 && (
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-          {['all', ...categories].map((c) => (
-            <button key={c} onClick={() => setCategory(c)}
-              className={cn('whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors',
-                category === c ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>
-              {c === 'all' ? 'All categories' : c}
-            </button>
-          ))}
+      {/* Search + categories */}
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Search events…" value={q} onChange={(e) => setQ(e.target.value)} className="h-10 rounded-full border-border bg-card pl-10" />
         </div>
-      )}
+        {categories.length > 0 && (
+          <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            {['all', ...categories].map((c) => (
+              <button key={c} onClick={() => setCategory(c)}
+                className={cn('whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                  category === c ? 'bg-secondary text-secondary-foreground' : 'bg-muted/60 text-muted-foreground hover:text-foreground')}>
+                {c === 'all' ? 'All' : c}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      {list.length === 0 ? (
-        <EmptyState icon={Calendar} title={tab === 'today' ? 'No events today' : tab === 'past' ? 'No past events' : 'No upcoming events'} hint="Check back soon for new gatherings." />
+      {rest.length === 0 ? (
+        list.length === 0 && <EmptyState icon={Calendar} title={tab === 'today' ? 'No events today' : tab === 'past' ? 'No past events' : 'No upcoming events'} hint="Check back soon for new gatherings." />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((e) => {
+        <ul className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border md:grid md:grid-cols-2 md:gap-3 md:divide-y-0 md:overflow-visible md:border-0 md:bg-transparent xl:grid-cols-3">
+          {rest.map((e) => {
             const d = parseISO(e.start_datetime);
             return (
-              <article key={e.id} className={cn('group flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-shadow hover:shadow-lg', tab === 'past' && 'opacity-90')}>
-                <div className="relative h-36 bg-gradient-to-br from-primary to-secondary">
-                  {e.image_url && <img src={e.image_url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />}
-                  <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
-                  <div className="absolute left-3 top-3 flex flex-col items-center rounded-lg bg-card px-2.5 py-1 text-center shadow">
-                    <span className="text-[10px] font-semibold uppercase text-primary">{format(d, 'MMM')}</span>
-                    <span className="font-heading text-lg font-bold leading-none text-foreground">{format(d, 'dd')}</span>
+              <li key={e.id} className="md:rounded-2xl md:border md:border-border md:bg-card">
+                <Link to={`/events/${e.slug || e.id}`} className={cn('flex items-center gap-3 p-3 transition-colors hover:bg-muted/40 md:rounded-2xl', tab === 'past' && 'opacity-80')}>
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary">
+                    {e.image_url && <img src={e.image_url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-foreground/35 text-background">
+                      <span className="text-[9px] font-bold uppercase leading-none">{format(d, 'MMM')}</span>
+                      <span className="font-heading text-lg font-bold leading-none">{format(d, 'dd')}</span>
+                    </div>
                   </div>
-                  <div className="absolute right-3 top-3 flex gap-1">
-                    {e.is_featured && <Badge className="bg-primary text-primary-foreground">Featured</Badge>}
-                    {e.category && <Badge variant="secondary">{e.category}</Badge>}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{e.name}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">{format(d, 'EEE · h:mm a')}{e.location_name ? ` · ${e.location_name}` : ''}</p>
+                    {e.category && <span className="mt-1 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{e.category}</span>}
                   </div>
-                </div>
-                <div className="flex flex-1 flex-col gap-3 p-4">
-                  <div>
-                    <h3 className="line-clamp-2 font-heading font-semibold text-foreground">{e.name}</h3>
-                    {e.description && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{e.description}</p>}
-                  </div>
-                  <div className="space-y-1.5 text-xs text-muted-foreground">
-                    <p className="flex items-center gap-2"><Clock className="h-3.5 w-3.5 shrink-0" />{format(d, 'EEE dd/MM/yyyy · h:mm a')}{e.end_datetime && ` – ${format(parseISO(e.end_datetime), 'h:mm a')}`}</p>
-                    {e.location_name && <p className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{e.location_name}</span></p>}
-                    {e.capacity && <p className="flex items-center gap-2"><Users className="h-3.5 w-3.5 shrink-0" />Capacity {e.capacity}</p>}
-                  </div>
-                  <Button asChild variant={tab === 'past' ? 'outline' : 'default'} size="sm" className="mt-auto w-full">
-                    <Link to={`/events/${e.slug || e.id}`}>View details <ArrowUpRight className="ml-1 h-4 w-4" /></Link>
-                  </Button>
-                </div>
-              </article>
+                  <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
     </div>
   );
