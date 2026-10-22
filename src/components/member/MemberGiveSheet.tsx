@@ -68,7 +68,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const [amountText, setAmountText] = useState('');
   const [method, setMethod] = useState<Method>('mobile_money');
   const [phone, setPhone] = useState('');
-  const [note, setNote] = useState('');
+
   const [stage, setStage] = useState<Stage>('form');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -85,7 +85,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const fmt = (n: number) => `${new Intl.NumberFormat('en-US').format(n)} ${currency}`;
   const isHome = !dest || regionId === dest.homeRegionId;
 
-  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setNote(''); setBank(null); };
+  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); };
   const close = (o: boolean) => { if (!o) { alive.current = false; setTimeout(reset, 300); } else alive.current = true; onOpenChange(o); };
 
   const poll = async (txRef: string) => {
@@ -112,7 +112,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     setBusy(true);
     alive.current = true;
     try {
-      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, note: note || undefined, origin: window.location.origin } });
+      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
         setStage('bank');
