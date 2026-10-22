@@ -2569,6 +2569,68 @@ export type Database = {
           },
         ]
       }
+      region_payment_settings: {
+        Row: {
+          bank_accounts: Json
+          bank_instructions: string | null
+          bank_transfer_enabled: boolean
+          card_enabled: boolean
+          created_at: string
+          flutterwave_enabled: boolean
+          flutterwave_encryption_key: string | null
+          flutterwave_mode: string
+          flutterwave_public_key: string | null
+          flutterwave_secret_key: string | null
+          id: string
+          mobile_money_enabled: boolean
+          region_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          bank_accounts?: Json
+          bank_instructions?: string | null
+          bank_transfer_enabled?: boolean
+          card_enabled?: boolean
+          created_at?: string
+          flutterwave_enabled?: boolean
+          flutterwave_encryption_key?: string | null
+          flutterwave_mode?: string
+          flutterwave_public_key?: string | null
+          flutterwave_secret_key?: string | null
+          id?: string
+          mobile_money_enabled?: boolean
+          region_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          bank_accounts?: Json
+          bank_instructions?: string | null
+          bank_transfer_enabled?: boolean
+          card_enabled?: boolean
+          created_at?: string
+          flutterwave_enabled?: boolean
+          flutterwave_encryption_key?: string | null
+          flutterwave_mode?: string
+          flutterwave_public_key?: string | null
+          flutterwave_secret_key?: string | null
+          id?: string
+          mobile_money_enabled?: boolean
+          region_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "region_payment_settings_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regional_plan_initiatives: {
         Row: {
           created_at: string

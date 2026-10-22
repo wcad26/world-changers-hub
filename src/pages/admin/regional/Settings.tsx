@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import RegionalAccessTab from "@/components/admin/regional/access/AccessTab";
 import { useSearchParams } from "@/lib/router-compat";
 import { GlassSection, GlassSectionHeader } from "@/components/ui/GlassSection";
+import PaymentSettingsPanel from "@/components/admin/payments/PaymentSettingsPanel";
 
 const Settings = () => {
   const { userRegion } = useAuth();
@@ -76,14 +77,19 @@ const Settings = () => {
           onValueChange={(v) => setParams({ tab: v })}
           className="space-y-6"
         >
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto">
             <TabsTrigger value="regional">Regional Portal</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
             <TabsTrigger value="branch">Branch Details</TabsTrigger>
             <TabsTrigger value="access">Access</TabsTrigger>
             <TabsTrigger value="dcg">DCG Management</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="system">System</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="payments" className="space-y-6">
+            {userRegion?.id ? <PaymentSettingsPanel scope={userRegion.id} label={userRegion.name ?? "Region"} /> : null}
+          </TabsContent>
 
           <TabsContent value="regional" className="space-y-6">
             <GlassSection>
