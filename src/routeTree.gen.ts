@@ -105,6 +105,7 @@ import { Route as EventsSlugRegisterRouteImport } from './routes/events.$slug.re
 import { Route as FundraisingIdIndexRouteImport } from './routes/fundraising.$id.index'
 import { Route as FundraisingIdDonateRouteImport } from './routes/fundraising.$id.donate'
 import { Route as FundraisingIdPledgeRouteImport } from './routes/fundraising.$id.pledge'
+import { Route as MemberMediaVideoIdRouteImport } from './routes/member.media_.$videoId'
 import { Route as MemberRegisterRegionCodeRouteImport } from './routes/member.register.$regionCode'
 import { Route as VisitorRegisterRegionCodeRouteImport } from './routes/visitor.register.$regionCode'
 import { Route as AdminRegionalAttendanceScanRouteImport } from './routes/admin.regional.attendance.scan'
@@ -615,6 +616,11 @@ const FundraisingIdPledgeRoute = FundraisingIdPledgeRouteImport.update({
   path: '/pledge',
   getParentRoute: () => FundraisingIdRoute,
 } as any)
+const MemberMediaVideoIdRoute = MemberMediaVideoIdRouteImport.update({
+  id: '/media_/$videoId',
+  path: '/media/$videoId',
+  getParentRoute: () => MemberRoute,
+} as any)
 const MemberRegisterRegionCodeRoute =
   MemberRegisterRegionCodeRouteImport.update({
     id: '/register/$regionCode',
@@ -836,6 +842,7 @@ export interface FileRoutesByFullPath {
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/fundraising/$id/donate': typeof FundraisingIdDonateRoute
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
+  '/member/media/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional/': typeof AdminRegionalIndexRoute
@@ -939,6 +946,7 @@ export interface FileRoutesByTo {
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/fundraising/$id/donate': typeof FundraisingIdDonateRoute
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
+  '/member/media/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional': typeof AdminRegionalIndexRoute
@@ -1060,6 +1068,7 @@ export interface FileRoutesById {
   '/events/$slug/register': typeof EventsSlugRegisterRoute
   '/fundraising/$id/donate': typeof FundraisingIdDonateRoute
   '/fundraising/$id/pledge': typeof FundraisingIdPledgeRoute
+  '/member/media_/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional/': typeof AdminRegionalIndexRoute
@@ -1182,6 +1191,7 @@ export interface FileRouteTypes {
     | '/events/$slug/register'
     | '/fundraising/$id/donate'
     | '/fundraising/$id/pledge'
+    | '/member/media/$videoId'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
     | '/admin/regional/'
@@ -1285,6 +1295,7 @@ export interface FileRouteTypes {
     | '/events/$slug/register'
     | '/fundraising/$id/donate'
     | '/fundraising/$id/pledge'
+    | '/member/media/$videoId'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
     | '/admin/regional'
@@ -1405,6 +1416,7 @@ export interface FileRouteTypes {
     | '/events/$slug/register'
     | '/fundraising/$id/donate'
     | '/fundraising/$id/pledge'
+    | '/member/media_/$videoId'
     | '/member/register/$regionCode'
     | '/visitor/register/$regionCode'
     | '/admin/regional/'
@@ -2140,6 +2152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FundraisingIdPledgeRouteImport
       parentRoute: typeof FundraisingIdRoute
     }
+    '/member/media_/$videoId': {
+      id: '/member/media_/$videoId'
+      path: '/media/$videoId'
+      fullPath: '/member/media/$videoId'
+      preLoaderRoute: typeof MemberMediaVideoIdRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/member/register/$regionCode': {
       id: '/member/register/$regionCode'
       path: '/register/$regionCode'
@@ -2608,6 +2627,7 @@ interface MemberRouteChildren {
   MemberStoreRoute: typeof MemberStoreRoute
   MemberTranslationRoute: typeof MemberTranslationRoute
   MemberIndexRoute: typeof MemberIndexRoute
+  MemberMediaVideoIdRoute: typeof MemberMediaVideoIdRoute
   MemberRegisterRegionCodeRoute: typeof MemberRegisterRegionCodeRoute
 }
 
@@ -2627,6 +2647,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberStoreRoute: MemberStoreRoute,
   MemberTranslationRoute: MemberTranslationRoute,
   MemberIndexRoute: MemberIndexRoute,
+  MemberMediaVideoIdRoute: MemberMediaVideoIdRoute,
   MemberRegisterRegionCodeRoute: MemberRegisterRegionCodeRoute,
 }
 
