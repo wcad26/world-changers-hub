@@ -359,9 +359,10 @@ export const useSendCertificateEmails = () => {
       queryClient.invalidateQueries({ queryKey: ['certificates'] });
       
       if (data.totalFailed > 0) {
+        const firstError = data.results.find((r: any) => r?.success === false || r?.error)?.error;
         toast({
           title: 'Emails sent with some failures',
-          description: `Successfully sent ${data.totalSent} emails. ${data.totalFailed} failed. Check logs for details.`,
+          description: `Successfully sent ${data.totalSent} emails. ${data.totalFailed} failed.${firstError ? ` Reason: ${String(firstError).slice(0, 220)}` : ''}`,
           variant: 'default',
         });
       } else {
