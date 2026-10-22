@@ -42,7 +42,8 @@ export const useFinancialTransactions = (filters?: { from?: string, to?: string 
       let query = supabase
         .from('financial_transactions')
         .select('*, category:financial_transaction_categories(name, type), dcg:dcgs(name)')
-        .eq('region_id', regionId);
+        .eq('region_id', regionId)
+        .eq('payment_status', 'completed');
       
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
@@ -55,6 +56,26 @@ export const useFinancialTransactions = (filters?: { from?: string, to?: string 
     enabled: !!regionId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+  });
+};
+
+// Member's own confirmed gifts only (never other members' transactions)
+export const useMemberGiving = (memberId: string | null | undefined, filters?: { from?: string, to?: string }) => {
+  return useQuery({
+    queryKey: ['member_giving', memberId, filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('financial_transactions')
+        .select('*, category:financial_transaction_categories(name, type)')
+        .eq('member_id', memberId!)
+        .eq('payment_status', 'completed');
+      if (filters?.from) query = query.gte('transaction_date', filters.from);
+      if (filters?.to) query = query.lte('transaction_date', filters.to);
+      const { data, error } = await query.order('transaction_date', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!memberId,
   });
 };
 
@@ -97,7 +118,8 @@ export const useFinancialSummary = (filters?: { from?: string, to?: string }, re
       let query = supabase
         .from('financial_transactions')
         .select('amount, category:financial_transaction_categories(name, type)')
-        .eq('region_id', regionId);
+        .eq('region_id', regionId)
+        .eq('payment_status', 'completed');
       
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);

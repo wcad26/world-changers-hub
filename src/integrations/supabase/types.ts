@@ -1724,6 +1724,10 @@ export type Database = {
           dcg_id: string | null
           description: string | null
           id: string
+          member_id: string | null
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
           recorded_by: string | null
           region_id: string | null
           scope: string
@@ -1738,6 +1742,10 @@ export type Database = {
           dcg_id?: string | null
           description?: string | null
           id?: string
+          member_id?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           recorded_by?: string | null
           region_id?: string | null
           scope?: string
@@ -1752,6 +1760,10 @@ export type Database = {
           dcg_id?: string | null
           description?: string | null
           id?: string
+          member_id?: string | null
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
           recorded_by?: string | null
           region_id?: string | null
           scope?: string
@@ -1778,6 +1790,13 @@ export type Database = {
             columns: ["dcg_id"]
             isOneToOne: false
             referencedRelation: "dcgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
