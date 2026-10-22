@@ -134,7 +134,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       category_id: category.id, amount, currency_code: currency, region_id: regionId,
       member_id: memberId, recorded_by: userId, scope: 'regional',
       transaction_date: new Date().toISOString().slice(0, 10),
-      description: data.note?.trim() || null,
+      description: null,
       payment_method: data.method, payment_reference: txRef, payment_status: 'pending',
     } as any);
     if (insErr) throw new Error('Could not start your gift. Please try again.');
