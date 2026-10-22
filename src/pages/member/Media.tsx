@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Play, Search, Youtube, Clock, Eye, Bookmark } from 'lucide-react';
+import { Play, Search, Youtube, Clock, Eye, Bookmark, FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Link } from '@/lib/router-compat';
 import { EmptyState, Segmented } from '@/components/member/MemberUI';
 import { getMediaFeed, type MediaVideo } from '@/lib/media.functions';
 import { useSavedVideos } from '@/components/member/useSavedVideos';
+import { demoMediaVideos } from '@/data/memberDemo';
 import { format } from 'date-fns';
 
 export const mediaFeedKey = ['member-media-feed'] as const;
@@ -44,7 +45,8 @@ export default function MemberMedia() {
   const [tab, setTab] = useState<'latest' | 'saved'>('latest');
   const [q, setQ] = useState('');
 
-  const videos = data?.videos ?? [];
+  const isDemo = !!data && !data.configured;
+  const videos = data?.configured ? data.videos : demoMediaVideos;
   const list = useMemo(() => {
     const base = tab === 'saved' ? videos.filter((v) => saved.includes(v.id)) : videos;
     const t = q.trim().toLowerCase();
@@ -55,10 +57,14 @@ export default function MemberMedia() {
 
   if (isLoading) return <div className="space-y-4 pb-24"><Skeleton className="aspect-video w-full rounded-2xl" /><Skeleton className="h-10 rounded-full" />{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}</div>;
   if (error) return <EmptyState icon={Youtube} title="Videos could not load" hint="Please check your connection and try again." />;
-  if (data && !data.configured) return <EmptyState icon={Youtube} title="Media is coming soon" hint="Our YouTube sermons and teachings will appear here." />;
 
   return (
-    <div className="space-y-5 pb-24 lg:pb-6">
+    <div className="space-y-5 overflow-x-clip pb-24 lg:pb-6">
+      {isDemo && (
+        <p className="flex items-center gap-2 rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-2.5 text-xs text-muted-foreground">
+          <FlaskConical className="h-4 w-4 shrink-0 text-primary" />Previewing with demo videos — the YouTube channel is not linked yet.
+        </p>
+      )}
       {featured && (
         <Link to={`/member/media/${featured.id}`} className="group relative block overflow-hidden rounded-2xl bg-muted shadow-regal">
           <img src={featured.thumbnail.replace('hqdefault', 'maxresdefault')} onError={(e) => { e.currentTarget.src = featured.thumbnail; }} alt="" className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
