@@ -289,7 +289,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
 
             <Button variant="ghost" type="button" disabled={busy || !methods.length || (method === 'bank_transfer' && (!region?.bank || !region.bankInfo?.accounts.length))} onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-secondary font-semibold text-primary-foreground shadow-regal transition-transform active:scale-[0.98] disabled:opacity-60">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : method === 'bank_transfer' ? <Building2 className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
-              {method === 'bank_transfer' ? 'Get deposit reference' : method === 'card' ? 'Continue to secure card entry' : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
+              {method === 'bank_transfer' ? 'Get deposit reference' : method === 'card' ? (cardStep ? 'Confirm payment' : amount > 0 ? `Pay ${fmt(amount)}` : 'Pay') : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
             </Button>
           </div>
         )}
@@ -323,7 +323,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="mt-4 font-heading text-lg font-semibold">{method === 'mobile_money' ? 'Approve on your phone' : 'Complete payment'}</p>
             <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-              {method === 'mobile_money' ? `A request for ${fmt(amount)} was sent to ${network === 'ORANGE' ? 'Orange' : 'MTN'} ${phone}. Enter your PIN to approve.` : 'Finish paying in the window that opened. This updates automatically.'}
+              {method === 'mobile_money' ? `A request for ${fmt(amount)} was sent to ${network === 'ORANGE' ? 'Orange' : 'MTN'} ${phone}. Enter your PIN to approve.` : 'Confirming your card payment. This updates automatically.'}
             </p>
           </div>
         )}
