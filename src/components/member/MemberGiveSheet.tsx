@@ -216,29 +216,25 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
                 <p className="mt-1.5 text-[11px] text-muted-foreground">You'll get a prompt on this phone to approve with your PIN.</p>
               </div>
             )}
-            {method === 'card' && (
-              <div className="space-y-3">
-                <div className="relative aspect-[1.7/1] w-full max-w-xs overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-accent p-4 text-primary-foreground shadow-lg">
-                  <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary-foreground/10" />
-                  <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-primary-foreground/10" />
-                  <div className="relative flex h-full flex-col justify-between">
-                    <div className="flex items-center justify-between"><div className="h-7 w-10 rounded-md bg-primary-foreground/30" /><CreditCard className="h-5 w-5 opacity-80" /></div>
-                    <p className="font-mono text-base tracking-[0.2em]">•••• •••• •••• ••••</p>
-                    <div className="flex items-end justify-between text-[10px] uppercase opacity-80"><span>Card holder</span><span>MM/YY</span></div>
+            {method === 'card' && !cardStep && <CardEntry value={card} onChange={setCard} />}
+            {method === 'card' && cardStep && (
+              <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold"><LockKeyhole className="h-4 w-4 text-primary" />
+                  {cardStep.next === 'pin' ? 'Enter your card PIN' : cardStep.next === 'otp' ? 'Enter the verification code' : 'Confirm your billing address'}</p>
+                {cardStep.next === 'otp' && <p className="text-xs text-muted-foreground">{cardStep.message}</p>}
+                {(cardStep.next === 'pin' || cardStep.next === 'otp') && (
+                  <Input inputMode="numeric" type={cardStep.next === 'pin' ? 'password' : 'text'} autoComplete="one-time-code" value={authCode} onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, '').slice(0, cardStep.next === 'pin' ? 6 : 8))} placeholder={cardStep.next === 'pin' ? '••••' : '123456'} className="h-12 rounded-2xl text-center font-mono text-xl tracking-[0.4em]" />
+                )}
+                {cardStep.next === 'avs' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input className="col-span-2 h-11 rounded-xl" placeholder="Street address" value={avs.address} onChange={(e) => setAvs({ ...avs, address: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="City" value={avs.city} onChange={(e) => setAvs({ ...avs, city: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="State" value={avs.state} onChange={(e) => setAvs({ ...avs, state: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="Country (e.g. US)" maxLength={2} value={avs.country} onChange={(e) => setAvs({ ...avs, country: e.target.value.toUpperCase() })} />
+                    <Input className="h-11 rounded-xl" placeholder="Postal code" value={avs.zipcode} onChange={(e) => setAvs({ ...avs, zipcode: e.target.value })} />
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2" aria-label="Supported cards">
-                  {['VISA', 'Mastercard', 'Verve', 'AmEx'].map((b) => (
-                    <span key={b} className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-bold tracking-wide text-foreground">{b}</span>
-                  ))}
-                </div>
-                <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><LockKeyhole className="h-4 w-4" /></span>
-                  <div className="text-xs text-muted-foreground">
-                    <p className="text-sm font-semibold text-foreground">256-bit encrypted · 3D Secure</p>
-                    You'll enter your card on Flutterwave's PCI-certified secure page. Your card details are never stored by WCA.
-                  </div>
-                </div>
+                )}
+                <button type="button" className="text-xs font-semibold text-primary" onClick={() => { setCardStep(null); setCardRef(null); setAuthCode(''); }}>Use a different card</button>
               </div>
             )}
             {method === 'bank_transfer' && (
