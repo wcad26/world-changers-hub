@@ -101,6 +101,7 @@ export const startGiving = createServerFn({ method: 'POST' })
     method: z.enum(['mobile_money', 'card', 'bank_transfer']),
     regionId: z.string().uuid().optional(),
     campaignId: z.string().uuid().optional(),
+    purpose: z.string().max(160).optional(),
     phone: z.string().max(20).optional(),
     card: z.lazy(() => cardSchema).optional(),
     cardAuth: z.lazy(() => cardAuthSchema),
@@ -140,7 +141,7 @@ export const startGiving = createServerFn({ method: 'POST' })
     const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email, phone').eq('id', userId).maybeSingle();
 
     const amount = currency === 'XAF' || currency === 'XOF' ? Math.round(data.amount) : Math.round(data.amount * 100) / 100;
-    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : campaign ? 'WCA-FUND' : 'WCA-GIVE';
+    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : campaign ? 'WCA-FUND' : data.purpose ? 'WCA-SHOP' : 'WCA-GIVE';
     const txRef = `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const name = [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member';
     const email = profile?.email || 'giving@wcaglobal.org';
@@ -149,7 +150,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       category_id: category.id, amount, currency_code: currency, region_id: regionId,
       member_id: memberId, recorded_by: userId, scope: 'regional',
       transaction_date: new Date().toISOString().slice(0, 10),
-      description: campaign ? `${CAMPAIGN_TAG}${campaign.id}` : null,
+      description: campaign ? `${CAMPAIGN_TAG}${campaign.id}` : data.purpose ? `store:${data.purpose}` : null,
       payment_method: data.method, payment_reference: txRef, payment_status: 'pending',
     } as any);
     if (insErr) throw new Error('Could not start your gift. Please try again.');

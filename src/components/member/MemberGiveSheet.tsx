@@ -45,7 +45,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, campaign }: { open: boolean; onOpenChange: (o: boolean) => void; currency: string; campaign?: { id: string; name: string; regionId: string | null } | null }) {
+export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, campaign, purchase }: { open: boolean; onOpenChange: (o: boolean) => void; currency: string; campaign?: { id: string; name: string; regionId: string | null } | null; purchase?: { title: string; amount: number } | null }) {
   const { profile } = useAuth();
   const qc = useQueryClient();
   const start = useServerFn(startGiving);
@@ -71,6 +71,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
 
   const [kind, setKind] = useState<Kind>('tithe');
   const [amountText, setAmountText] = useState('');
+  useEffect(() => { if (open && purchase) { setAmountText(String(purchase.amount)); setKind('special'); } }, [open, purchase?.amount]);
   const [method, setMethod] = useState<Method>('mobile_money');
   const [phone, setPhone] = useState('');
 
@@ -136,7 +137,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
       handleCardStep(cardRef, step as CardStep);
       return;
     }
-    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, card: toCardPayload(card), origin: window.location.origin } });
+    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, purpose: purchase?.title, card: toCardPayload(card), origin: window.location.origin } });
     handleCardStep(res.txRef, (res as any).card as CardStep);
   };
 
@@ -151,7 +152,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
     alive.current = true;
     try {
       if (method === 'card') { await submitCard(); return; }
-      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, phone, origin: window.location.origin } });
+      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, purpose: purchase?.title, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
         setStage('bank');
@@ -188,7 +189,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
         <SheetHeader className="mb-4 text-left">
           <SheetTitle className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm"><Heart className="h-5 w-5" /></span>
-            <span><span className="block text-base">{campaign ? 'Support campaign' : 'Give'}</span><span className="block text-xs font-normal text-muted-foreground">Secure giving</span></span>
+            <span><span className="block text-base">{purchase ? 'Checkout' : campaign ? 'Support campaign' : 'Give'}</span><span className="block text-xs font-normal text-muted-foreground">Secure giving</span></span>
           </SheetTitle>
           <SheetDescription className="sr-only">Choose what to give, how much and how to pay.</SheetDescription>
         </SheetHeader>
@@ -208,7 +209,9 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
               </div>
             )}
 
-            {campaign ? (
+            {purchase ? (
+              <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3"><div className="min-w-0"><p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Your order</p><p className="truncate font-heading font-semibold">{purchase.title}</p></div><p className="shrink-0 font-heading text-lg font-bold">{new Intl.NumberFormat('fr-FR').format(purchase.amount)} {currency}</p></div>
+            ) : campaign ? (
               <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Supporting</p><p className="font-heading font-semibold leading-tight">{campaign.name}</p></div>
             ) : (
             <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
@@ -220,7 +223,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
             </div>
             )}
 
-            <div>
+            {!purchase && <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
               <div className="relative">
                 <Input inputMode="numeric" value={amountText} onChange={(e) => setAmountText(e.target.value.replace(/[^\d.]/g, ''))} placeholder="0" className="h-14 rounded-2xl pr-16 font-heading text-2xl font-bold" />
@@ -233,7 +236,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, ca
                   </Button>
                 ))}
               </div>
-            </div>
+            </div>}
 
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pay with</p>
