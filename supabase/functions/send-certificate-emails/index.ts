@@ -1,8 +1,25 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "npm:@supabase/supabase-js@2.50.0";
+import { encodeBase64 } from "jsr:@std/encoding@1/base64";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+const resend = {
+  emails: {
+    async send(payload: Record<string, unknown>) {
+      const apiKey = Deno.env.get("RESEND_API_KEY");
+      if (!apiKey) return { data: null, error: new Error("RESEND_API_KEY is not configured") };
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        console.error(`Resend failed [${res.status}]: ${text}`);
+        return { data: null, error: new Error(`Email provider error [${res.status}]: ${text}`) };
+      }
+      return { data: JSON.parse(text) as { id?: string }, error: null };
+    },
+  },
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +30,7 @@ interface SendEmailsRequest {
   certificate_ids: string[];
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,7 +41,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get authorization token
-    const authHeader = req.headers.get('Authorization')!;
+    const authHeader = req.headers.get('Authorization') ?? '';
     const token = authHeader.replace('Bearer ', '');
     const { data: { user } } = await supabase.auth.getUser(token);
 
@@ -33,6 +50,9 @@ serve(async (req) => {
     }
 
     const { certificate_ids }: SendEmailsRequest = await req.json();
+    if (!Array.isArray(certificate_ids) || certificate_ids.length === 0 || certificate_ids.length > 50) {
+      throw new Error('Provide between 1 and 50 certificate IDs');
+    }
 
     console.log('Sending emails for', certificate_ids.length, 'certificates');
 
@@ -60,18 +80,10 @@ serve(async (req) => {
 
         // Download certificate file
         const certificateUrl = certificate.certificate_url;
+        if (!certificateUrl) throw new Error('Certificate file is missing');
         const response = await fetch(certificateUrl);
-        const certificateBlob = await response.arrayBuffer();
-        
-        // Convert array buffer to base64 in chunks to avoid stack overflow
-        const bytes = new Uint8Array(certificateBlob);
-        let binary = '';
-        const chunkSize = 0x8000; // 32KB chunks
-        for (let i = 0; i < bytes.length; i += chunkSize) {
-          const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
-          binary += String.fromCharCode.apply(null, Array.from(chunk));
-        }
-        const certificateBase64 = btoa(binary);
+        if (!response.ok) throw new Error(`Could not download certificate file [${response.status}]`);
+        const certificateBase64 = encodeBase64(new Uint8Array(await response.arrayBuffer()));
 
         const isBadge = (certificate as any).output_type === 'badge';
         const outputLabel = isBadge ? 'Badge' : 'Certificate';
