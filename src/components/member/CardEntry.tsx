@@ -112,6 +112,13 @@ export function CardEntry({ value, onChange }: { value: CardValue; onChange: (v:
           className="h-12 rounded-none border-0 border-t border-border shadow-none focus-visible:ring-0" />
       </div>
 
+      <div className="flex items-center justify-center gap-2" aria-label="Supported cards">
+        <span className="text-xs text-muted-foreground">Supports</span>
+        {BRANDS.map((b) => (
+          <BrandLogo key={b.id} brand={b.id} className={cn('transition-opacity', brand && brand !== b.id && 'opacity-40')} />
+        ))}
+      </div>
+
       <div className="flex items-center gap-3 rounded-xl border border-success/30 bg-success/10 p-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-success text-primary-foreground"><LockKeyhole className="h-4 w-4" /></span>
         <div className="text-xs text-muted-foreground">
