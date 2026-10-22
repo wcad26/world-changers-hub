@@ -67,7 +67,7 @@ export default function MemberCounseling() {
   const canNext = step === 1 ? !!format : step === 2 ? !!date && !!time : agree;
 
   return (
-    <div className="space-y-5 pb-24 lg:pb-6">
+    <div className="space-y-5 overflow-x-clip pb-24 lg:pb-6">
       {next ? (
         <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
           <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary-foreground/10 blur-2xl" />
@@ -97,8 +97,8 @@ export default function MemberCounseling() {
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><Phone className="h-4 w-4" /></span>
       </a>
 
-      <Segmented<'book' | 'mine' | 'help'> value={tab} onChange={setTab} options={[
-        { value: 'book', label: 'Book' }, { value: 'mine', label: `My sessions${upcoming.length ? ` (${upcoming.length})` : ''}` }, { value: 'help', label: 'Questions' }]} />
+      <Segmented<'book' | 'mine' | 'help'> full value={tab} onChange={setTab} options={[
+        { value: 'book', label: 'Book' }, { value: 'mine', label: `My sessions${upcoming.length ? ` (${upcoming.length})` : ''}` }, { value: 'help', label: 'FAQ' }]} />
 
       {tab === 'book' && (<>
         <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1">

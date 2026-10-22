@@ -48,16 +48,17 @@ export function EmptyState({ icon: Icon, title, hint, action }: { icon: LucideIc
   );
 }
 
-/** Pill-style segmented control, scrolls horizontally on small screens. */
-export function Segmented<T extends string>({ value, onChange, options }: {
-  value: T; onChange: (v: T) => void; options: { value: T; label: React.ReactNode }[];
+/** Pill-style segmented control, scrolls horizontally on small screens. `full` stretches options equally across the row. */
+export function Segmented<T extends string>({ value, onChange, options, full }: {
+  value: T; onChange: (v: T) => void; options: { value: T; label: React.ReactNode }[]; full?: boolean;
 }) {
   return (
-    <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
-      <div className="inline-flex gap-1 rounded-full border border-border bg-muted/50 p-1">
+    <div className={cn('no-scrollbar', full ? 'w-full' : '-mx-1 overflow-x-auto px-1')}>
+      <div className={cn('gap-1 rounded-full border border-border bg-muted/50 p-1', full ? 'grid auto-cols-fr grid-flow-col' : 'inline-flex')}>
         {options.map((o) => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
-            className={cn('whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+            className={cn('min-w-0 truncate whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+              full && 'px-2',
               value === o.value ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
             {o.label}
           </button>

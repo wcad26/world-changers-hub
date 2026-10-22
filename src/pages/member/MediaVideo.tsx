@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/lib/router-compat';
 import { useMediaFeed, VideoRow } from './Media';
 import { useSavedVideos } from '@/components/member/useSavedVideos';
+import { demoMediaVideos } from '@/data/memberDemo';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -13,8 +14,9 @@ export default function MemberMediaVideo({ videoId }: { videoId: string }) {
   const { data, isLoading } = useMediaFeed();
   const { saved, toggle } = useSavedVideos();
   const [more, setMore] = useState(false);
-  const video = data?.videos.find((v) => v.id === videoId);
-  const upNext = (data?.videos ?? []).filter((v) => v.id !== videoId).slice(0, 8);
+  const all = !data || data.configured ? (data?.videos ?? []) : demoMediaVideos;
+  const video = all.find((v) => v.id === videoId);
+  const upNext = all.filter((v) => v.id !== videoId).slice(0, 8);
   const isSaved = saved.includes(videoId);
 
   const share = async () => {
