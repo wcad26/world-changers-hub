@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useFinancialTransactions, useFinancialSummary } from '@/hooks/useFinancials';
+import { useMemberGiving } from '@/hooks/useFinancials';
+import { MemberGiveSheet } from '@/components/member/MemberGiveSheet';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { DollarSign, TrendingUp, Gift, Heart, CalendarIcon } from 'lucide-react';
@@ -12,12 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { cn } from '@/lib/utils';
-import { Link } from '@/lib/router-compat';
 import { EmptyState } from '@/components/member/MemberUI';
 export default function MemberFinances() {
   const {
-    userRegion
+    userRegion,
+    memberRecord
   } = useAuth();
+  const [giveOpen, setGiveOpen] = useState(false);
   const {
     data: regionCurrency
   } = useRegionCurrency(userRegion?.id);
@@ -42,16 +44,17 @@ export default function MemberFinances() {
     value: '1-year',
     label: '1Y'
   }, {
-    value: 'custom',
-    label: 'Custom'
+    value: 'all',
+    label: 'All'
   }];
   const handleQuickDateChange = (value: string) => {
     setDateFilter(value);
   };
 
   // Calculate date range based on filter
-  const getDateRange = () => {
+  const getDateRange = (): { from?: string; to?: string } => {
     const now = new Date();
+    if (dateFilter === 'all') return {};
     if (dateFilter === 'custom' && customDateRange.from) {
       return {
         from: customDateRange.from.toISOString().split('T')[0],
@@ -90,12 +93,18 @@ export default function MemberFinances() {
   const {
     data: transactions,
     isLoading: transactionsLoading
-  } = useFinancialTransactions(dateRange);
-  const {
-    data: summary,
-    isLoading: summaryLoading
-  } = useFinancialSummary(dateRange);
-  if (transactionsLoading || summaryLoading) {
+  } = useMemberGiving(memberRecord?.id, dateRange);
+  const summary = (transactions || []).reduce((acc, t: any) => {
+    const amt = Number(t.amount) || 0;
+    const name: string = t.category?.name || '';
+    if (t.category?.type?.toLowerCase() !== 'income') return acc;
+    acc.total_income += amt;
+    if (name === 'Tithes') acc.total_tithes += amt;
+    else if (name.includes('Offering')) acc.total_offerings += amt;
+    else acc.total_special_giving += amt;
+    return acc;
+  }, { total_income: 0, total_tithes: 0, total_offerings: 0, total_special_giving: 0 });
+  if (transactionsLoading && !!memberRecord?.id) {
     return <div className="space-y-6">
         <div className="space-y-2">
           <Skeleton className="h-8 w-64" />
@@ -123,14 +132,11 @@ export default function MemberFinances() {
             <p className="mt-1 truncate font-heading text-3xl font-bold sm:text-4xl">{formatWithCurrency(total, regionCurrency)}</p>
             <p className="mt-1 text-xs text-primary-foreground/75">{transactions?.length || 0} contributions · {userRegion?.name}</p>
           </div>
-          <Link to="/fundraising" className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-foreground px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-transform active:scale-95">
+          <button type="button" onClick={() => setGiveOpen(true)} className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-foreground px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-transform active:scale-95">
             <DollarSign className="h-4 w-4" />Give
-          </Link>
+          </button>
         </div>
-        <div className="relative mt-5 flex h-2 overflow-hidden rounded-full bg-primary-foreground/20">
-          {total > 0 && parts.map(p => <div key={p.label} style={{ width: `${p.value / total * 100}%`, background: p.tone }} />)}
-        </div>
-        <div className="relative mt-4 grid grid-cols-5 gap-1 rounded-full bg-primary-foreground/15 p-1">
+        <div className="relative mt-5 grid grid-cols-5 gap-1 rounded-full bg-primary-foreground/15 p-1">
           {quickDateOptions.map(option => <button key={option.value} type="button" onClick={() => handleQuickDateChange(option.value)} className={cn('rounded-full py-1.5 text-xs font-semibold transition-colors', dateFilter === option.value ? 'bg-primary-foreground text-primary' : 'text-primary-foreground/80')}>
               {option.label}
             </button>)}
@@ -179,5 +185,6 @@ export default function MemberFinances() {
               </li>)}
           </ul> : <EmptyState icon={Heart} title="No giving in this period" hint="Try a longer period or give online." />}
       </section>
+      <MemberGiveSheet open={giveOpen} onOpenChange={setGiveOpen} currency={(regionCurrency as any)?.code || userRegion?.currency_code || 'XAF'} />
     </div>;
 }
