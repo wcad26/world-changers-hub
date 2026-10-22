@@ -94,6 +94,7 @@ export const startGiving = createServerFn({ method: 'POST' })
     amount: z.number().positive().max(100_000_000),
     method: z.enum(['mobile_money', 'card', 'bank_transfer']),
     regionId: z.string().uuid().optional(),
+    campaignId: z.string().uuid().optional(),
     phone: z.string().max(20).optional(),
     card: z.lazy(() => cardSchema).optional(),
     cardAuth: z.lazy(() => cardAuthSchema),
@@ -105,7 +106,14 @@ export const startGiving = createServerFn({ method: 'POST' })
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
     const { data: member } = await supabaseAdmin.from('members').select('id, region_id').eq('id', memberId).single();
-    const regionId = data.regionId || member?.region_id;
+    let campaign: { id: string; name: string; region_id: string | null } | null = null;
+    if (data.campaignId) {
+      const { data: c } = await supabaseAdmin.from('fundraising_campaigns').select('id, name, region_id, status').eq('id', data.campaignId).maybeSingle();
+      if (!c || c.status !== 'active') throw new Error('This campaign is no longer accepting gifts.');
+      campaign = c as any;
+    }
+    // Campaign gifts go to the campaign's region; global campaigns use the member's chosen/home region.
+    const regionId = campaign?.region_id || data.regionId || member?.region_id;
     if (!regionId) throw new Error('Your member record has no region.');
     const { data: region } = await supabaseAdmin.from('regions').select('name, currency_code').eq('id', regionId).single();
     if (!region) throw new Error('That region was not found.');
@@ -120,12 +128,13 @@ export const startGiving = createServerFn({ method: 'POST' })
       if (data.method === 'card' && !gw.card) throw new Error('Card payments are not available for this region.');
     }
 
-    const { data: category } = await supabaseAdmin.from('financial_transaction_categories').select('id').eq('name', CATEGORY_NAMES[data.kind]).eq('is_active', true).maybeSingle();
+    const kind = campaign ? 'special' : data.kind;
+    const { data: category } = await supabaseAdmin.from('financial_transaction_categories').select('id').eq('name', CATEGORY_NAMES[kind]).eq('is_active', true).maybeSingle();
     if (!category) throw new Error('Giving category is not set up.');
     const { data: profile } = await supabase.from('profiles').select('first_name, last_name, email, phone').eq('id', userId).maybeSingle();
 
     const amount = currency === 'XAF' || currency === 'XOF' ? Math.round(data.amount) : Math.round(data.amount * 100) / 100;
-    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : 'WCA-GIVE';
+    const prefix = data.method === 'bank_transfer' ? 'WCA-BANK' : campaign ? 'WCA-FUND' : 'WCA-GIVE';
     const txRef = `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const name = [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member';
     const email = profile?.email || 'giving@wcaglobal.org';
@@ -134,10 +143,18 @@ export const startGiving = createServerFn({ method: 'POST' })
       category_id: category.id, amount, currency_code: currency, region_id: regionId,
       member_id: memberId, recorded_by: userId, scope: 'regional',
       transaction_date: new Date().toISOString().slice(0, 10),
-      description: null,
+      description: campaign ? `${CAMPAIGN_TAG}${campaign.id}` : null,
       payment_method: data.method, payment_reference: txRef, payment_status: 'pending',
     } as any);
     if (insErr) throw new Error('Could not start your gift. Please try again.');
+    if (campaign) {
+      // Pending until the gateway (or the region, for bank deposits) confirms; only completed gifts count toward the goal.
+      await supabaseAdmin.from('fundraising_donations').insert({
+        campaign_id: campaign.id, member_id: memberId, amount: Math.round(amount * 100), currency_code: currency,
+        donor_name: name, donor_email: profile?.email ?? null, status: 'pending', message: txRef,
+        donation_date: new Date().toISOString().slice(0, 10),
+      } as any);
+    }
 
     if (data.method === 'bank_transfer') {
       return { txRef, link: null, network: null, bank: gw.bank, regionName: region.name as string };
