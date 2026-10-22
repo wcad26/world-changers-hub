@@ -56,10 +56,10 @@ export default function MemberEvents() {
       </div>
 
       {categories.length > 0 && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
           {['all', ...categories].map((c) => (
             <button key={c} onClick={() => setCategory(c)}
-              className={cn('whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+              className={cn('whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors',
                 category === c ? 'border-secondary bg-secondary text-secondary-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>
               {c === 'all' ? 'All categories' : c}
             </button>

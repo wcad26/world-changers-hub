@@ -53,7 +53,7 @@ export function Segmented<T extends string>({ value, onChange, options }: {
   value: T; onChange: (v: T) => void; options: { value: T; label: React.ReactNode }[];
 }) {
   return (
-    <div className="-mx-1 overflow-x-auto px-1">
+    <div className="no-scrollbar -mx-1 overflow-x-auto px-1">
       <div className="inline-flex gap-1 rounded-full border border-border bg-muted/50 p-1">
         {options.map((o) => (
           <button key={o.value} type="button" onClick={() => onChange(o.value)}
