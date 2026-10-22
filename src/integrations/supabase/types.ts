@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.3"
   }
   public: {
     Tables: {
@@ -3000,7 +3000,9 @@ export type Database = {
           jobs_created: number
           next_objectives: string | null
           people_trained: number
+          review_feedback: string | null
           review_year: number
+          reviewed_at: string | null
           reviewed_by: string | null
           sdg_evidence: Json
           status: string
@@ -3019,7 +3021,9 @@ export type Database = {
           jobs_created?: number
           next_objectives?: string | null
           people_trained?: number
+          review_feedback?: string | null
           review_year: number
+          reviewed_at?: string | null
           reviewed_by?: string | null
           sdg_evidence?: Json
           status?: string
@@ -3038,7 +3042,9 @@ export type Database = {
           jobs_created?: number
           next_objectives?: string | null
           people_trained?: number
+          review_feedback?: string | null
           review_year?: number
+          reviewed_at?: string | null
           reviewed_by?: string | null
           sdg_evidence?: Json
           status?: string
@@ -3542,9 +3548,12 @@ export type Database = {
           created_by: string | null
           description: string | null
           end_datetime: string | null
+          event_format: string
           id: string
           image_url: string | null
           is_featured: boolean
+          meeting_id: string | null
+          meeting_passcode: string | null
           organizer_email: string | null
           organizer_name: string | null
           organizer_phone: string | null
@@ -3556,6 +3565,7 @@ export type Database = {
           title: string
           updated_at: string
           venue_name: string | null
+          virtual_url: string | null
         }
         Insert: {
           address?: string | null
@@ -3570,9 +3580,12 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           end_datetime?: string | null
+          event_format?: string
           id?: string
           image_url?: string | null
           is_featured?: boolean
+          meeting_id?: string | null
+          meeting_passcode?: string | null
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
@@ -3584,6 +3597,7 @@ export type Database = {
           title: string
           updated_at?: string
           venue_name?: string | null
+          virtual_url?: string | null
         }
         Update: {
           address?: string | null
@@ -3598,9 +3612,12 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           end_datetime?: string | null
+          event_format?: string
           id?: string
           image_url?: string | null
           is_featured?: boolean
+          meeting_id?: string | null
+          meeting_passcode?: string | null
           organizer_email?: string | null
           organizer_name?: string | null
           organizer_phone?: string | null
@@ -3612,6 +3629,7 @@ export type Database = {
           title?: string
           updated_at?: string
           venue_name?: string | null
+          virtual_url?: string | null
         }
         Relationships: []
       }
@@ -3662,13 +3680,19 @@ export type Database = {
       wcbn_invoices: {
         Row: {
           amount: number
+          application_id: string | null
+          billing_cycle: string
+          category_id: string | null
           created_at: string
           currency_code: string
           due_date: string
           dues_plan_id: string | null
           id: string
+          installment_number: number
+          installments_total: number
           invoice_number: string
           paid_amount: number
+          payment_method: string | null
           period_end: string
           period_start: string
           status: string
@@ -3677,13 +3701,19 @@ export type Database = {
         }
         Insert: {
           amount: number
+          application_id?: string | null
+          billing_cycle?: string
+          category_id?: string | null
           created_at?: string
           currency_code: string
           due_date: string
           dues_plan_id?: string | null
           id?: string
+          installment_number?: number
+          installments_total?: number
           invoice_number: string
           paid_amount?: number
+          payment_method?: string | null
           period_end: string
           period_start: string
           status?: string
@@ -3692,13 +3722,19 @@ export type Database = {
         }
         Update: {
           amount?: number
+          application_id?: string | null
+          billing_cycle?: string
+          category_id?: string | null
           created_at?: string
           currency_code?: string
           due_date?: string
           dues_plan_id?: string | null
           id?: string
+          installment_number?: number
+          installments_total?: number
           invoice_number?: string
           paid_amount?: number
+          payment_method?: string | null
           period_end?: string
           period_start?: string
           status?: string
@@ -3706,6 +3742,20 @@ export type Database = {
           wcbn_member_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wcbn_invoices_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "wcbn_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wcbn_invoices_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "wcbn_membership_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wcbn_invoices_currency_code_fkey"
             columns: ["currency_code"]
@@ -3722,6 +3772,99 @@ export type Database = {
           },
           {
             foreignKeyName: "wcbn_invoices_wcbn_member_id_fkey"
+            columns: ["wcbn_member_id"]
+            isOneToOne: false
+            referencedRelation: "wcbn_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wcbn_jobs: {
+        Row: {
+          application_email: string | null
+          application_url: string | null
+          benefits: string | null
+          business_id: string
+          city: string | null
+          country: string
+          created_at: string
+          currency_code: string
+          deadline: string | null
+          department: string | null
+          description: string
+          employment_type: string
+          id: string
+          location_type: string
+          requirements: string | null
+          salary_max: number | null
+          salary_min: number | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+          views_count: number
+          wcbn_member_id: string
+        }
+        Insert: {
+          application_email?: string | null
+          application_url?: string | null
+          benefits?: string | null
+          business_id: string
+          city?: string | null
+          country?: string
+          created_at?: string
+          currency_code?: string
+          deadline?: string | null
+          department?: string | null
+          description: string
+          employment_type?: string
+          id?: string
+          location_type?: string
+          requirements?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+          views_count?: number
+          wcbn_member_id: string
+        }
+        Update: {
+          application_email?: string | null
+          application_url?: string | null
+          benefits?: string | null
+          business_id?: string
+          city?: string | null
+          country?: string
+          created_at?: string
+          currency_code?: string
+          deadline?: string | null
+          department?: string | null
+          description?: string
+          employment_type?: string
+          id?: string
+          location_type?: string
+          requirements?: string | null
+          salary_max?: number | null
+          salary_min?: number | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          views_count?: number
+          wcbn_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wcbn_jobs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "wcbn_businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wcbn_jobs_wcbn_member_id_fkey"
             columns: ["wcbn_member_id"]
             isOneToOne: false
             referencedRelation: "wcbn_members"
@@ -3773,6 +3916,7 @@ export type Database = {
       wcbn_members: {
         Row: {
           category: string
+          category_id: string | null
           covenant_accepted_at: string | null
           created_at: string
           id: string
@@ -3786,6 +3930,7 @@ export type Database = {
         }
         Insert: {
           category?: string
+          category_id?: string | null
           covenant_accepted_at?: string | null
           created_at?: string
           id?: string
@@ -3799,6 +3944,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          category_id?: string | null
           covenant_accepted_at?: string | null
           created_at?: string
           id?: string
@@ -3811,6 +3957,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wcbn_members_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "wcbn_membership_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wcbn_members_member_id_fkey"
             columns: ["member_id"]
@@ -3826,6 +3979,117 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wcbn_membership_categories: {
+        Row: {
+          allow_installments: boolean
+          applicant_type: string
+          benefits: Json
+          code: string
+          created_at: string
+          description: string | null
+          display_order: number
+          fees: Json
+          id: string
+          is_active: boolean
+          name: string
+          target_audience: string | null
+          updated_at: string
+        }
+        Insert: {
+          allow_installments?: boolean
+          applicant_type?: string
+          benefits?: Json
+          code: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fees?: Json
+          id?: string
+          is_active?: boolean
+          name: string
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allow_installments?: boolean
+          applicant_type?: string
+          benefits?: Json
+          code?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fees?: Json
+          id?: string
+          is_active?: boolean
+          name?: string
+          target_audience?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wcbn_payment_credentials: {
+        Row: {
+          encryption_key: string | null
+          mode: string
+          public_key: string | null
+          secret_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          encryption_key?: string | null
+          mode: string
+          public_key?: string | null
+          secret_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          encryption_key?: string | null
+          mode?: string
+          public_key?: string | null
+          secret_key?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      wcbn_payment_settings: {
+        Row: {
+          bank_accounts: Json
+          bank_transfer_enabled: boolean
+          card_enabled: boolean
+          flutterwave_enabled: boolean
+          flutterwave_mode: string
+          flutterwave_public_key: string | null
+          id: number
+          invoice_note: string | null
+          mobile_money_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          bank_accounts?: Json
+          bank_transfer_enabled?: boolean
+          card_enabled?: boolean
+          flutterwave_enabled?: boolean
+          flutterwave_mode?: string
+          flutterwave_public_key?: string | null
+          id?: number
+          invoice_note?: string | null
+          mobile_money_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          bank_accounts?: Json
+          bank_transfer_enabled?: boolean
+          card_enabled?: boolean
+          flutterwave_enabled?: boolean
+          flutterwave_mode?: string
+          flutterwave_public_key?: string | null
+          id?: number
+          invoice_note?: string | null
+          mobile_money_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       wcbn_payments: {
         Row: {
@@ -4238,6 +4502,25 @@ export type Database = {
         Returns: boolean
       }
       wcbn_accept_covenant: { Args: never; Returns: string }
+      wcbn_confirm_payment: {
+        Args: {
+          _amount?: number
+          _invoice_id: string
+          _method: string
+          _provider: string
+          _reference: string
+        }
+        Returns: string
+      }
+      wcbn_create_onboarding_invoices: {
+        Args: {
+          _application_id: string
+          _category_id: string
+          _cycle: string
+          _method: string
+        }
+        Returns: string
+      }
       wcbn_has_permission: {
         Args: { _permission: string; _user_id: string }
         Returns: boolean
