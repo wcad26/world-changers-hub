@@ -45,7 +45,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: { open: boolean; onOpenChange: (o: boolean) => void; currency: string }) {
+export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency, campaign }: { open: boolean; onOpenChange: (o: boolean) => void; currency: string; campaign?: { id: string; name: string; regionId: string | null } | null }) {
   const { profile } = useAuth();
   const qc = useQueryClient();
   const start = useServerFn(startGiving);
@@ -57,6 +57,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
 
   const [regionId, setRegionId] = useState<string>('');
   useEffect(() => { if (dest && !regionId) setRegionId(dest.homeRegionId || dest.regions[0]?.id || ''); }, [dest, regionId]);
+  useEffect(() => { if (open && campaign?.regionId) setRegionId(campaign.regionId); }, [open, campaign?.regionId]);
   const region = useMemo(() => dest?.regions.find((r) => r.id === regionId), [dest, regionId]);
   const currency = region?.currency || homeCurrency;
   const presets = PRESETS[currency] ?? PRESETS.USD;
@@ -103,7 +104,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
       await new Promise((r) => setTimeout(r, 5000));
       try {
         const r = await check({ data: { txRef } });
-        if (r.status === 'successful') { setStage('success'); qc.invalidateQueries({ queryKey: ['member_giving'] }); return; }
+        if (r.status === 'successful') { setStage('success'); qc.invalidateQueries({ queryKey: ['member_giving'] }); qc.invalidateQueries({ queryKey: ['member-giving'] }); qc.invalidateQueries({ queryKey: ['member-campaigns'] }); return; }
         if (r.status === 'failed') { setError('The payment was declined or cancelled.'); setStage('failed'); return; }
       } catch { /* keep waiting */ }
     }
@@ -135,7 +136,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
       handleCardStep(cardRef, step as CardStep);
       return;
     }
-    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, card: toCardPayload(card), origin: window.location.origin } });
+    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, card: toCardPayload(card), origin: window.location.origin } });
     handleCardStep(res.txRef, (res as any).card as CardStep);
   };
 
@@ -150,7 +151,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     alive.current = true;
     try {
       if (method === 'card') { await submitCard(); return; }
-      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, origin: window.location.origin } });
+      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, campaignId: campaign?.id, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
         setStage('bank');
@@ -187,14 +188,14 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
         <SheetHeader className="mb-4 text-left">
           <SheetTitle className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground shadow-sm"><Heart className="h-5 w-5" /></span>
-            <span><span className="block text-base">Give</span><span className="block text-xs font-normal text-muted-foreground">Secure giving</span></span>
+            <span><span className="block text-base">{campaign ? 'Support campaign' : 'Give'}</span><span className="block text-xs font-normal text-muted-foreground">Secure giving</span></span>
           </SheetTitle>
           <SheetDescription className="sr-only">Choose what to give, how much and how to pay.</SheetDescription>
         </SheetHeader>
 
         {stage === 'form' && (
           <div className="space-y-5">
-            {dest && dest.regions.length > 1 && (
+            {dest && dest.regions.length > 1 && !campaign?.regionId && (
               <div>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Giving to</p>
                 <Select value={regionId} onValueChange={(v) => { setRegionId(v); setAmountText(''); }}>
@@ -207,6 +208,9 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
               </div>
             )}
 
+            {campaign ? (
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-primary">Supporting</p><p className="font-heading font-semibold leading-tight">{campaign.name}</p></div>
+            ) : (
             <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
               {KINDS.map((k) => (
                 <Button variant="ghost" key={k.value} type="button" onClick={() => setKind(k.value)} className={cn('flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold transition-colors', kind === k.value ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-sm' : 'text-muted-foreground')}>
@@ -214,6 +218,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
                 </Button>
               ))}
             </div>
+            )}
 
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</p>
