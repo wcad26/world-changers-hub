@@ -78,3 +78,12 @@ export const counselingFaqs = [
 
 export const fcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 export const toneVar = (t: number) => `var(--chart-${t})`;
+
+/** Demo videos shown on the Media page until the YouTube channel is linked. */
+import type { MediaVideo } from '@/lib/media.functions';
+export const demoMediaVideos: MediaVideo[] = [
+  { id: 'aqz-KE-bpKQ', title: 'Walking in Dominion — Sunday Celebration Service', description: 'A powerful message on walking in the dominion God has given every believer.\n\nRecorded live at WCA Douala during the Sunday Celebration Service.', published: '2026-10-18T09:00:00Z', thumbnail: 'https://i.ytimg.com/vi/aqz-KE-bpKQ/hqdefault.jpg', views: 12400, channel: 'WCA Media' },
+  { id: 'LXb3EKWsInQ', title: 'Grace School: The Finished Work of Christ (Part 3)', description: 'Part 3 of our Grace School series on the finished work of Christ and what it means for your daily life.', published: '2026-10-11T09:00:00Z', thumbnail: 'https://i.ytimg.com/vi/LXb3EKWsInQ/hqdefault.jpg', views: 8300, channel: 'WCA Media' },
+  { id: 'eRsGyueVLvQ', title: 'IGNITE Youth: Bold Faith for a New Generation', description: 'Highlights and message from the IGNITE Campus Revolution youth gathering.', published: '2026-10-04T09:00:00Z', thumbnail: 'https://i.ytimg.com/vi/eRsGyueVLvQ/hqdefault.jpg', views: 5100, channel: 'WCA Media' },
+  { id: 'YE7VzlLtp-4', title: 'Worship Night: Sounds of Heaven (Full Session)', description: 'An evening of worship and prayer with the WCA worship team.', published: '2026-09-27T18:00:00Z', thumbnail: 'https://i.ytimg.com/vi/YE7VzlLtp-4/hqdefault.jpg', views: 15600, channel: 'WCA Media' },
+];
