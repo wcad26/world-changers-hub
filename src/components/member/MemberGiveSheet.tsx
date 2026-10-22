@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
-import { startGiving, checkGiving, detectMomo, listGivingDestinations } from '@/lib/giving.functions';
+import { startGiving, checkGiving, detectMomo, listGivingDestinations, continueCardGift, validateCardOtp } from '@/lib/giving.functions';
+import { CardEntry, emptyCard, toCardPayload, validateCard, type CardValue } from './CardEntry';
+type CardStep = { next: 'done' | 'pin' | 'avs' | 'otp' | 'redirect' | 'failed'; flwRef?: string; link?: string; message?: string };
 import { cn } from '@/lib/utils';
 
 type Kind = 'tithe' | 'offering' | 'special';
@@ -48,6 +50,8 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const qc = useQueryClient();
   const start = useServerFn(startGiving);
   const check = useServerFn(checkGiving);
+  const continueCard = useServerFn(continueCardGift);
+  const validateOtp = useServerFn(validateCardOtp);
   const listDest = useServerFn(listGivingDestinations);
   const { data: dest } = useQuery({ queryKey: ['giving_destinations'], queryFn: () => listDest(), enabled: open, staleTime: 5 * 60_000 });
 
@@ -74,6 +78,11 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const [error, setError] = useState('');
   const [network, setNetwork] = useState<string | null>(null);
   const [bank, setBank] = useState<{ ref: string; info: BankInfo; regionName: string } | null>(null);
+  const [card, setCard] = useState<CardValue>(emptyCard);
+  const [cardStep, setCardStep] = useState<CardStep | null>(null);
+  const [cardRef, setCardRef] = useState<string | null>(null);
+  const [authCode, setAuthCode] = useState('');
+  const [avs, setAvs] = useState({ address: '', city: '', state: '', country: '', zipcode: '' });
   const alive = useRef(true);
 
   useEffect(() => { if (open) { setPhone((p) => p || (profile as any)?.phone || ''); } }, [open, profile]);
@@ -85,7 +94,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const fmt = (n: number) => `${new Intl.NumberFormat('en-US').format(n)} ${currency}`;
   const isHome = !dest || regionId === dest.homeRegionId;
 
-  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); };
+  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); setCard(emptyCard); setCardStep(null); setCardRef(null); setAuthCode(''); };
   const close = (o: boolean) => { if (!o) { alive.current = false; setTimeout(reset, 300); } else alive.current = true; onOpenChange(o); };
 
   const poll = async (txRef: string) => {
@@ -101,17 +110,46 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     if (alive.current) { setError('We did not receive a confirmation in time. If you approved it, it will appear shortly.'); setStage('failed'); }
   };
 
+  const handleCardStep = (txRef: string, step: CardStep) => {
+    if (step.next === 'failed') { setError(step.message || 'Your card was declined.'); setCardStep(null); setCardRef(null); return; }
+    if (step.next === 'pin' || step.next === 'otp' || step.next === 'avs') { setCardRef(txRef); setCardStep(step); setAuthCode(''); return; }
+    setCard(emptyCard); setCardStep(null); setCardRef(null);
+    if (step.next === 'redirect' && step.link) window.location.assign(step.link);
+    setStage('waiting');
+    poll(txRef);
+  };
+
+  const submitCard = async () => {
+    if (cardRef && cardStep) {
+      if (cardStep.next === 'otp') {
+        if (authCode.length < 4) return setError('Enter the code you received.');
+        await validateOtp({ data: { txRef: cardRef, flwRef: cardStep.flwRef || '', otp: authCode } });
+        handleCardStep(cardRef, { next: 'done' });
+        return;
+      }
+      const cardAuth = cardStep.next === 'pin'
+        ? { mode: 'pin' as const, pin: authCode }
+        : { mode: 'avs_noauth' as const, ...avs };
+      if (cardStep.next === 'pin' && authCode.length < 4) return setError('Enter your card PIN.');
+      const step = await continueCard({ data: { txRef: cardRef, card: toCardPayload(card), cardAuth, origin: window.location.origin } });
+      handleCardStep(cardRef, step as CardStep);
+      return;
+    }
+    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, card: toCardPayload(card), origin: window.location.origin } });
+    handleCardStep(res.txRef, (res as any).card as CardStep);
+  };
+
   const submit = async () => {
     setError('');
     if (amount <= 0) return setError('Please enter an amount.');
     if (!methods.length) return setError('This region is not accepting online gifts yet.');
     if (method === 'mobile_money' && !detected) return setError('Enter a valid MTN or Orange number.');
     if (method === 'bank_transfer' && !region?.bank) return setError('Bank deposits are not configured for this region yet.');
-    const checkoutWindow = method === 'card' ? window.open('about:blank', '_blank') : null;
-    if (checkoutWindow) checkoutWindow.opener = null;
+    if (method === 'card' && !cardStep) { const msg = validateCard(card); if (msg) return setError(msg); }
     setBusy(true);
     alive.current = true;
     try {
+      if (method === 'card') { await submitCard(); return; }
       const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
@@ -119,15 +157,10 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
         return;
       }
       setNetwork(res.network);
-      if (res.link) {
-        if (checkoutWindow) checkoutWindow.location.href = res.link;
-        else if (method === 'card') window.location.assign(res.link);
-        else window.open(res.link, '_blank', 'noopener');
-      }
+      if (res.link) window.open(res.link, '_blank', 'noopener');
       setStage('waiting');
       poll(res.txRef);
     } catch (e) {
-      checkoutWindow?.close();
       setError((e as Error).message || 'Something went wrong.');
     } finally { setBusy(false); }
   };
@@ -216,29 +249,25 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
                 <p className="mt-1.5 text-[11px] text-muted-foreground">You'll get a prompt on this phone to approve with your PIN.</p>
               </div>
             )}
-            {method === 'card' && (
-              <div className="space-y-3">
-                <div className="relative aspect-[1.7/1] w-full max-w-xs overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-accent p-4 text-primary-foreground shadow-lg">
-                  <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary-foreground/10" />
-                  <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-primary-foreground/10" />
-                  <div className="relative flex h-full flex-col justify-between">
-                    <div className="flex items-center justify-between"><div className="h-7 w-10 rounded-md bg-primary-foreground/30" /><CreditCard className="h-5 w-5 opacity-80" /></div>
-                    <p className="font-mono text-base tracking-[0.2em]">•••• •••• •••• ••••</p>
-                    <div className="flex items-end justify-between text-[10px] uppercase opacity-80"><span>Card holder</span><span>MM/YY</span></div>
+            {method === 'card' && !cardStep && <CardEntry value={card} onChange={setCard} />}
+            {method === 'card' && cardStep && (
+              <div className="space-y-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold"><LockKeyhole className="h-4 w-4 text-primary" />
+                  {cardStep.next === 'pin' ? 'Enter your card PIN' : cardStep.next === 'otp' ? 'Enter the verification code' : 'Confirm your billing address'}</p>
+                {cardStep.next === 'otp' && <p className="text-xs text-muted-foreground">{cardStep.message}</p>}
+                {(cardStep.next === 'pin' || cardStep.next === 'otp') && (
+                  <Input inputMode="numeric" type={cardStep.next === 'pin' ? 'password' : 'text'} autoComplete="one-time-code" value={authCode} onChange={(e) => setAuthCode(e.target.value.replace(/\D/g, '').slice(0, cardStep.next === 'pin' ? 6 : 8))} placeholder={cardStep.next === 'pin' ? '••••' : '123456'} className="h-12 rounded-2xl text-center font-mono text-xl tracking-[0.4em]" />
+                )}
+                {cardStep.next === 'avs' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input className="col-span-2 h-11 rounded-xl" placeholder="Street address" value={avs.address} onChange={(e) => setAvs({ ...avs, address: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="City" value={avs.city} onChange={(e) => setAvs({ ...avs, city: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="State" value={avs.state} onChange={(e) => setAvs({ ...avs, state: e.target.value })} />
+                    <Input className="h-11 rounded-xl" placeholder="Country (e.g. US)" maxLength={2} value={avs.country} onChange={(e) => setAvs({ ...avs, country: e.target.value.toUpperCase() })} />
+                    <Input className="h-11 rounded-xl" placeholder="Postal code" value={avs.zipcode} onChange={(e) => setAvs({ ...avs, zipcode: e.target.value })} />
                   </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2" aria-label="Supported cards">
-                  {['VISA', 'Mastercard', 'Verve', 'AmEx'].map((b) => (
-                    <span key={b} className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-bold tracking-wide text-foreground">{b}</span>
-                  ))}
-                </div>
-                <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
-                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><LockKeyhole className="h-4 w-4" /></span>
-                  <div className="text-xs text-muted-foreground">
-                    <p className="text-sm font-semibold text-foreground">256-bit encrypted · 3D Secure</p>
-                    You'll enter your card on Flutterwave's PCI-certified secure page. Your card details are never stored by WCA.
-                  </div>
-                </div>
+                )}
+                <button type="button" className="text-xs font-semibold text-primary" onClick={() => { setCardStep(null); setCardRef(null); setAuthCode(''); }}>Use a different card</button>
               </div>
             )}
             {method === 'bank_transfer' && (
@@ -260,7 +289,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
 
             <Button variant="ghost" type="button" disabled={busy || !methods.length || (method === 'bank_transfer' && (!region?.bank || !region.bankInfo?.accounts.length))} onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-secondary font-semibold text-primary-foreground shadow-regal transition-transform active:scale-[0.98] disabled:opacity-60">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : method === 'bank_transfer' ? <Building2 className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
-              {method === 'bank_transfer' ? 'Get deposit reference' : method === 'card' ? 'Continue to secure card entry' : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
+              {method === 'bank_transfer' ? 'Get deposit reference' : method === 'card' ? (cardStep ? 'Confirm payment' : amount > 0 ? `Pay ${fmt(amount)}` : 'Pay') : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
             </Button>
           </div>
         )}
@@ -294,7 +323,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="mt-4 font-heading text-lg font-semibold">{method === 'mobile_money' ? 'Approve on your phone' : 'Complete payment'}</p>
             <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-              {method === 'mobile_money' ? `A request for ${fmt(amount)} was sent to ${network === 'ORANGE' ? 'Orange' : 'MTN'} ${phone}. Enter your PIN to approve.` : 'Finish paying in the window that opened. This updates automatically.'}
+              {method === 'mobile_money' ? `A request for ${fmt(amount)} was sent to ${network === 'ORANGE' ? 'Orange' : 'MTN'} ${phone}. Enter your PIN to approve.` : 'Confirming your card payment. This updates automatically.'}
             </p>
           </div>
         )}

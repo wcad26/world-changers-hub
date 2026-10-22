@@ -34,6 +34,7 @@ async function resolveGateway(regionId: string) {
   return {
     supabaseAdmin,
     secret: (gw?.flutterwave_secret_key as string | undefined)?.trim() || null,
+    encryptionKey: (gw?.flutterwave_encryption_key as string | undefined)?.trim() || null,
     source: gw ? (ownReady ? 'region' : 'global') : null,
     mobileMoney: !!gw?.mobile_money_enabled,
     card: !!gw?.card_enabled,
@@ -94,7 +95,8 @@ export const startGiving = createServerFn({ method: 'POST' })
     method: z.enum(['mobile_money', 'card', 'bank_transfer']),
     regionId: z.string().uuid().optional(),
     phone: z.string().max(20).optional(),
-    note: z.string().max(200).optional(),
+    card: z.lazy(() => cardSchema).optional(),
+    cardAuth: z.lazy(() => cardAuthSchema),
     origin: z.string().url(),
   }).parse(d))
   .handler(async ({ data, context }) => {
@@ -132,7 +134,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       category_id: category.id, amount, currency_code: currency, region_id: regionId,
       member_id: memberId, recorded_by: userId, scope: 'regional',
       transaction_date: new Date().toISOString().slice(0, 10),
-      description: data.note?.trim() || null,
+      description: null,
       payment_method: data.method, payment_reference: txRef, payment_status: 'pending',
     } as any);
     if (insErr) throw new Error('Could not start your gift. Please try again.');
@@ -162,22 +164,79 @@ export const startGiving = createServerFn({ method: 'POST' })
       return { txRef, link: auth?.mode === 'redirect' ? (auth.redirect as string) : null, network: phone.network, bank: null, regionName: region.name as string };
     }
 
-    const res = await fetch(`${FLW}/payments`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        tx_ref: txRef, amount, currency, payment_options: 'card',
-        redirect_url: `${data.origin}/member/finances`,
-        customer: { email, name, phonenumber: profile?.phone || undefined },
-        customizations: { title: `World Changers Association · ${region.name}`, description: `${CATEGORY_NAMES[data.kind]} gift` },
-      }),
-    });
-    const body = (await res.json().catch(() => ({}))) as any;
-    if (!res.ok || body.status !== 'success' || !body.data?.link) {
+    if (!gw.encryptionKey) {
       await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef);
-      throw new Error(body.message || 'Could not open card checkout.');
+      throw new Error('Card payments are not fully configured for this region yet.');
     }
-    return { txRef, link: body.data.link as string, network: null, bank: null, regionName: region.name as string };
+    if (!data.card) throw new Error('Please enter your card details.');
+    const step = await flwCardCharge({ secret, encryptionKey: gw.encryptionKey, card: data.card, txRef, amount, currency, email, name, redirect: `${data.origin}/member/finances`, auth: data.cardAuth });
+    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', txRef);
+    return { txRef, link: step.link ?? null, network: null, bank: null, regionName: region.name as string, card: step };
+  });
+
+const cardSchema = z.object({
+  number: z.string().regex(/^\d{12,19}$/),
+  cvv: z.string().regex(/^\d{3,4}$/),
+  expiry_month: z.string().regex(/^(0[1-9]|1[0-2])$/),
+  expiry_year: z.string().regex(/^\d{2}$/),
+});
+const cardAuthSchema = z.union([
+  z.object({ mode: z.literal('pin'), pin: z.string().regex(/^\d{4,6}$/) }),
+  z.object({ mode: z.literal('avs_noauth'), city: z.string().max(80), address: z.string().max(200), state: z.string().max(80), country: z.string().max(2), zipcode: z.string().max(20) }),
+]).optional();
+type CardStep = { next: 'done' | 'pin' | 'avs' | 'otp' | 'redirect' | 'failed'; flwRef?: string; link?: string; message?: string };
+
+/** Encrypts card details with the gateway's 3DES key and sends them straight to Flutterwave. Nothing is stored. */
+async function flwCardCharge(o: { secret: string; encryptionKey: string; card: z.infer<typeof cardSchema>; txRef: string; amount: number; currency: string; email: string; name: string; redirect: string; auth?: z.infer<typeof cardAuthSchema> }): Promise<CardStep> {
+  const CryptoJS = (await import('crypto-js')).default;
+  const payload = { card_number: o.card.number, cvv: o.card.cvv, expiry_month: o.card.expiry_month, expiry_year: o.card.expiry_year, currency: o.currency, amount: String(o.amount), email: o.email, fullname: o.name, tx_ref: o.txRef, redirect_url: o.redirect, ...(o.auth ? { authorization: o.auth } : {}) };
+  const key = CryptoJS.enc.Utf8.parse(o.encryptionKey);
+  const client = CryptoJS.TripleDES.encrypt(JSON.stringify(payload), key, { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }).toString();
+  const res = await fetch(`${FLW}/charges?type=card`, { method: 'POST', headers: { Authorization: `Bearer ${o.secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ client }) });
+  const body = (await res.json().catch(() => ({}))) as any;
+  if (body.status !== 'success') return { next: 'failed', message: body.message || 'Your card was declined.' };
+  const auth = body.meta?.authorization;
+  if (auth?.mode === 'pin') return { next: 'pin' };
+  if (auth?.mode === 'avs_noauth') return { next: 'avs' };
+  if (auth?.mode === 'redirect') return { next: 'redirect', link: auth.redirect };
+  if (auth?.mode === 'otp') return { next: 'otp', flwRef: body.data?.flw_ref, message: body.data?.processor_response || 'Enter the code sent to your phone.' };
+  if (body.data?.status === 'successful') return { next: 'done' };
+  if (body.data?.status === 'failed') return { next: 'failed', message: body.data?.processor_response || 'Your card was declined.' };
+  return { next: 'done' };
+}
+
+/** Continues a direct card charge (PIN or billing address) for a gift the member already started. */
+export const continueCardGift = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ txRef: z.string().min(5).max(80), card: cardSchema, cardAuth: cardAuthSchema, origin: z.string().url() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { ids } = await myMemberId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: row } = await supabaseAdmin.from('financial_transactions').select('amount, currency_code, member_id, region_id, payment_status' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
+    if (!row || !ids.includes(row.member_id) || row.payment_status !== 'pending') throw new Error('Gift not found.');
+    const gw = await resolveGateway(row.region_id);
+    if (!gw.secret || !gw.encryptionKey) throw new Error('Card payments are not available right now.');
+    const { data: profile } = await context.supabase.from('profiles').select('first_name, last_name, email').eq('id', context.userId).maybeSingle();
+    const step = await flwCardCharge({ secret: gw.secret, encryptionKey: gw.encryptionKey, card: data.card, txRef: data.txRef, amount: Number(row.amount), currency: row.currency_code, email: profile?.email || 'giving@wcaglobal.org', name: [profile?.last_name, profile?.first_name].filter(Boolean).join(' ') || 'WCA member', redirect: `${data.origin}/member/finances`, auth: data.cardAuth });
+    if (step.next === 'failed') await supabaseAdmin.from('financial_transactions').update({ payment_status: 'failed' } as any).eq('payment_reference', data.txRef);
+    return step;
+  });
+
+/** Submits the one-time code the card issuer sent to the member. */
+export const validateCardOtp = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ txRef: z.string().min(5).max(80), flwRef: z.string().min(3).max(120), otp: z.string().regex(/^\d{4,8}$/) }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { ids } = await myMemberId(context.supabase, context.userId);
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { data: row } = await supabaseAdmin.from('financial_transactions').select('member_id, region_id' as any).eq('payment_reference', data.txRef).maybeSingle() as any;
+    if (!row || !ids.includes(row.member_id)) throw new Error('Gift not found.');
+    const gw = await resolveGateway(row.region_id);
+    if (!gw.secret) throw new Error('Card payments are not available right now.');
+    const res = await fetch(`${FLW}/validate-charge`, { method: 'POST', headers: { Authorization: `Bearer ${gw.secret}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ otp: data.otp, flw_ref: data.flwRef, type: 'card' }) });
+    const body = (await res.json().catch(() => ({}))) as any;
+    if (body.status !== 'success') throw new Error(body.message || 'That code was not accepted.');
+    return { ok: true };
   });
 
 /** Checks a pending online gift with the destination region's gateway and confirms it once paid. */
