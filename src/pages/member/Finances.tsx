@@ -113,66 +113,71 @@ export default function MemberFinances() {
     { label: 'Offerings', value: summary?.total_offerings || 0, tone: 'var(--chart-2)', icon: Gift },
     { label: 'Special giving', value: summary?.total_special_giving || 0, tone: 'var(--chart-3)', icon: TrendingUp },
   ];
-  return <div className="space-y-6">
-      {/* Period filter */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex gap-1 rounded-full border border-border bg-muted/50 p-1">
-            {quickDateOptions.map(option => <button key={option.value} type="button" onClick={() => handleQuickDateChange(option.value)} className={cn('rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors', dateFilter === option.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}>
-                {option.label}
-              </button>)}
+  return <div className="space-y-5">
+      {/* Hero: total + inline period + give */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-6">
+        <div className="pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full bg-primary-foreground/10 blur-2xl" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-medium uppercase tracking-wide text-primary-foreground/70">Total given</p>
+            <p className="mt-1 truncate font-heading text-3xl font-bold sm:text-4xl">{formatWithCurrency(total, regionCurrency)}</p>
+            <p className="mt-1 text-xs text-primary-foreground/75">{transactions?.length || 0} contributions · {userRegion?.name}</p>
           </div>
-          {dateFilter === 'custom' && <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={cn("h-9 justify-start rounded-full font-normal", !customDateRange.from && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customDateRange.from ? customDateRange.to ? <>{format(customDateRange.from, "dd/MM/yyyy")} – {format(customDateRange.to, "dd/MM/yyyy")}</> : format(customDateRange.from, "dd/MM/yyyy") : <span>Pick dates</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="z-50 w-auto bg-popover p-0" align="start">
-                <Calendar initialFocus mode="range" defaultMonth={customDateRange.from} selected={{ from: customDateRange.from, to: customDateRange.to }} onSelect={range => setCustomDateRange({ from: range?.from, to: range?.to })} numberOfMonths={2} className="pointer-events-auto" />
-              </PopoverContent>
-            </Popover>}
+          <Link to="/fundraising" className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary-foreground px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-transform active:scale-95">
+            <DollarSign className="h-4 w-4" />Give
+          </Link>
         </div>
-        <Button asChild className="w-full rounded-full sm:w-auto"><Link to="/fundraising"><DollarSign className="mr-2 h-4 w-4" />Give now</Link></Button>
-      </div>
+        <div className="relative mt-5 flex h-2 overflow-hidden rounded-full bg-primary-foreground/20">
+          {total > 0 && parts.map(p => <div key={p.label} style={{ width: `${p.value / total * 100}%`, background: p.tone }} />)}
+        </div>
+        <div className="relative mt-4 grid grid-cols-5 gap-1 rounded-full bg-primary-foreground/15 p-1">
+          {quickDateOptions.map(option => <button key={option.value} type="button" onClick={() => handleQuickDateChange(option.value)} className={cn('rounded-full py-1.5 text-xs font-semibold transition-colors', dateFilter === option.value ? 'bg-primary-foreground text-primary' : 'text-primary-foreground/80')}>
+              {option.label}
+            </button>)}
+        </div>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        {/* Total + breakdown */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-6">
-          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary-foreground/10 blur-2xl" />
-          <p className="text-sm text-primary-foreground/75">Total given · {userRegion?.name}</p>
-          <p className="mt-1 font-heading text-3xl font-bold sm:text-4xl">{formatWithCurrency(total, regionCurrency)}</p>
-          <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-primary-foreground/20">
-            {total > 0 && parts.map(p => <div key={p.label} style={{ width: `${p.value / total * 100}%`, background: p.tone }} />)}
-          </div>
-          <p className="mt-2 text-xs text-primary-foreground/75">{transactions?.length || 0} contributions in this period</p>
-        </section>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-1">
-          {parts.map(p => <div key={p.label} className="flex items-center gap-3 rounded-xl border border-border bg-card p-4">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg" style={{ background: `color-mix(in oklab, ${p.tone} 15%, transparent)`, color: p.tone }}><p.icon className="h-5 w-5" /></span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground">{p.label}</p>
-                <p className="truncate font-heading text-lg font-bold text-foreground">{formatWithCurrency(p.value, regionCurrency)}</p>
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground">{total > 0 ? Math.round(p.value / total * 100) : 0}%</span>
-            </div>)}
-        </div>
-      </div>
+      {dateFilter === 'custom' && <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className={cn("h-10 w-full justify-start rounded-full font-normal sm:w-auto", !customDateRange.from && "text-muted-foreground")}>
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {customDateRange.from ? customDateRange.to ? <>{format(customDateRange.from, "dd/MM/yyyy")} – {format(customDateRange.to, "dd/MM/yyyy")}</> : format(customDateRange.from, "dd/MM/yyyy") : <span>Pick dates</span>}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="z-50 w-auto bg-popover p-0" align="start">
+            <Calendar initialFocus mode="range" defaultMonth={customDateRange.from} selected={{ from: customDateRange.from, to: customDateRange.to }} onSelect={range => setCustomDateRange({ from: range?.from, to: range?.to })} numberOfMonths={1} className="pointer-events-auto" />
+          </PopoverContent>
+        </Popover>}
+
+      {/* Compact breakdown */}
+      <section className="grid grid-cols-3 gap-2 sm:gap-3">
+        {parts.map(p => <div key={p.label} className="relative overflow-hidden rounded-2xl border border-border bg-card p-3 sm:p-4">
+            <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full blur-xl" style={{ background: `color-mix(in oklab, ${p.tone} 20%, transparent)` }} />
+            <div className="relative flex items-center justify-between">
+              <span className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: `color-mix(in oklab, ${p.tone} 15%, transparent)`, color: p.tone }}><p.icon className="h-4 w-4" /></span>
+              <span className="text-[11px] font-semibold text-muted-foreground">{total > 0 ? Math.round(p.value / total * 100) : 0}%</span>
+            </div>
+            <p className="relative mt-3 truncate font-heading text-sm font-bold text-foreground sm:text-lg">{formatWithCurrency(p.value, regionCurrency)}</p>
+            <p className="relative truncate text-[11px] text-muted-foreground sm:text-xs">{p.label}</p>
+          </div>)}
+      </section>
 
       {/* History */}
-      <section className="rounded-2xl border border-border bg-card">
-        <div className="border-b border-border px-4 py-3 sm:px-5"><h3 className="font-heading text-base font-semibold text-foreground">Giving history</h3></div>
-        {transactions && transactions.length > 0 ? <ul className="divide-y divide-border">
-            {transactions.map((t: any) => <li key={t.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary/10 text-primary"><Heart className="h-4 w-4" /></span>
+      <section>
+        <div className="mb-2 flex items-center justify-between px-1">
+          <h3 className="font-heading text-base font-semibold text-foreground">Recent giving</h3>
+          <span className="text-xs text-muted-foreground">{transactions?.length || 0}</span>
+        </div>
+        {transactions && transactions.length > 0 ? <ul className="overflow-hidden rounded-2xl border border-border bg-card divide-y divide-border">
+            {transactions.map((t: any) => <li key={t.id} className="flex items-center gap-3 px-4 py-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><Heart className="h-4 w-4" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">{t.category?.name || 'Contribution'}</p>
                   <p className="truncate text-xs text-muted-foreground">{format(new Date(t.transaction_date), 'dd/MM/yyyy')}{t.description ? ` · ${t.description}` : ''}</p>
                 </div>
-                <p className="shrink-0 font-semibold" style={{ color: 'var(--chart-5)' }}>+{formatWithCurrency(Number(t.amount), regionCurrency)}</p>
+                <p className="shrink-0 text-sm font-semibold" style={{ color: 'var(--chart-5)' }}>+{formatWithCurrency(Number(t.amount), regionCurrency)}</p>
               </li>)}
-          </ul> : <div className="p-5"><EmptyState icon={Heart} title="No giving recorded in this period" hint="Try a longer period or give online." /></div>}
+          </ul> : <EmptyState icon={Heart} title="No giving in this period" hint="Try a longer period or give online." />}
       </section>
     </div>;
 }
