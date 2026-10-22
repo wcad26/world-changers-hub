@@ -323,8 +323,7 @@ const Certificates = () => {
             .single();
 
           if (!member?.profiles) {
-            failCount++;
-            continue;
+            throw new Error('This person has no linked profile (name/email missing)');
           }
 
           recipientName = `${member.profiles.last_name} ${member.profiles.first_name}`;
@@ -389,7 +388,8 @@ const Certificates = () => {
           setGenerationProgress({ current: i + 1, total: selectedMembers.length });
         } catch (error) {
           console.error(`Failed to generate certificate for member ${memberId}:`, error);
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          const errorMessage =
+            (error as any)?.message || (typeof error === 'string' ? error : 'Unknown error');
           failedMembers.push({
             memberId,
             name: recipientName,
@@ -414,11 +414,15 @@ const Certificates = () => {
       }
       if (failCount > 0) {
         console.error('Certificate generation errors:', failedMembers);
+        const first = failedMembers[0];
         toast({
-          title: 'Partial failure',
-          description: `Failed to generate ${failCount} certificate(s). Check console for details.`,
+          title: successCount > 0 ? 'Partial failure' : 'Generation failed',
+          description: `Failed to generate ${failCount} certificate(s).${first ? ` ${first.name || 'A recipient'}: ${first.error}` : ''} Failed recipients stay selected so you can retry.`,
           variant: 'destructive',
         });
+        // Keep failed members selected (and the form) so the admin can retry in one click
+        setSelectedMembers(failedMembers.map((f) => f.memberId));
+        return;
       }
 
       // Reset form
