@@ -68,7 +68,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const [amountText, setAmountText] = useState('');
   const [method, setMethod] = useState<Method>('mobile_money');
   const [phone, setPhone] = useState('');
-  const [note, setNote] = useState('');
+
   const [stage, setStage] = useState<Stage>('form');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -85,7 +85,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const fmt = (n: number) => `${new Intl.NumberFormat('en-US').format(n)} ${currency}`;
   const isHome = !dest || regionId === dest.homeRegionId;
 
-  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setNote(''); setBank(null); };
+  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); };
   const close = (o: boolean) => { if (!o) { alive.current = false; setTimeout(reset, 300); } else alive.current = true; onOpenChange(o); };
 
   const poll = async (txRef: string) => {
@@ -112,7 +112,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     setBusy(true);
     alive.current = true;
     try {
-      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, note: note || undefined, origin: window.location.origin } });
+      const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
         setStage('bank');
@@ -217,13 +217,28 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
               </div>
             )}
             {method === 'card' && (
-              <div className="space-y-3 rounded-xl border border-border bg-background/60 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="flex items-center gap-2 text-sm font-semibold"><CreditCard className="h-4 w-4 text-primary" />Card details</span>
-                  <LockKeyhole className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-3">
+                <div className="relative aspect-[1.7/1] w-full max-w-xs overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-accent p-4 text-primary-foreground shadow-lg">
+                  <div className="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-primary-foreground/10" />
+                  <div className="absolute -bottom-10 -left-6 h-28 w-28 rounded-full bg-primary-foreground/10" />
+                  <div className="relative flex h-full flex-col justify-between">
+                    <div className="flex items-center justify-between"><div className="h-7 w-10 rounded-md bg-primary-foreground/30" /><CreditCard className="h-5 w-5 opacity-80" /></div>
+                    <p className="font-mono text-base tracking-[0.2em]">•••• •••• •••• ••••</p>
+                    <div className="flex items-end justify-between text-[10px] uppercase opacity-80"><span>Card holder</span><span>MM/YY</span></div>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Enter your card number, expiry date and security code in Flutterwave’s secure checkout.</p>
-                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground"><span>Visa · Mastercard</span><span>Secured by Flutterwave</span></div>
+                <div className="flex flex-wrap items-center gap-2" aria-label="Supported cards">
+                  {['VISA', 'Mastercard', 'Verve', 'AmEx'].map((b) => (
+                    <span key={b} className="rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-bold tracking-wide text-foreground">{b}</span>
+                  ))}
+                </div>
+                <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"><LockKeyhole className="h-4 w-4" /></span>
+                  <div className="text-xs text-muted-foreground">
+                    <p className="text-sm font-semibold text-foreground">256-bit encrypted · 3D Secure</p>
+                    You'll enter your card on Flutterwave's PCI-certified secure page. Your card details are never stored by WCA.
+                  </div>
+                </div>
               </div>
             )}
             {method === 'bank_transfer' && (
@@ -240,8 +255,6 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
                 {region?.bankInfo?.instructions && <p className="whitespace-pre-line text-sm text-muted-foreground">{region.bankInfo.instructions}</p>}
               </div>
             )}
-
-            <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="Note (optional)" className="h-11 rounded-2xl" />
 
             {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
