@@ -87,3 +87,23 @@ export const demoMediaVideos: MediaVideo[] = [
   { id: 'eRsGyueVLvQ', title: 'IGNITE Youth: Bold Faith for a New Generation', description: 'Highlights and message from the IGNITE Campus Revolution youth gathering.', published: '2026-10-04T09:00:00Z', thumbnail: 'https://i.ytimg.com/vi/eRsGyueVLvQ/hqdefault.jpg', views: 5100, channel: 'WCA Media' },
   { id: 'YE7VzlLtp-4', title: 'Worship Night: Sounds of Heaven (Full Session)', description: 'An evening of worship and prayer with the WCA worship team.', published: '2026-09-27T18:00:00Z', thumbnail: 'https://i.ytimg.com/vi/YE7VzlLtp-4/hqdefault.jpg', views: 15600, channel: 'WCA Media' },
 ];
+
+export interface LibraryBook {
+  id: string; title: string; author: string; genre: string; pages: number; tone: number;
+  price: number; rentPerWeek: number; copies: number; available: number; description: string;
+}
+
+export const libraryGenres = ['Christian living', 'Prayer', 'Leadership', 'Bible study', 'Family'];
+
+export const libraryBooks: LibraryBook[] = [
+  { id: 'b1', title: 'The Anointed Vessel', author: 'Pastor Whitson Tim', genre: 'Christian living', pages: 212, tone: 1, price: 7500, rentPerWeek: 500, copies: 6, available: 4, description: 'Living a consecrated life that carries God’s presence.' },
+  { id: 'b2', title: 'Prayer That Moves Mountains', author: 'Rev. Grace Ekane', genre: 'Prayer', pages: 180, tone: 2, price: 6000, rentPerWeek: 500, copies: 4, available: 0, description: 'A practical school of prayer for every believer.' },
+  { id: 'b3', title: 'Servant Leadership', author: 'WCA Publications', genre: 'Leadership', pages: 240, tone: 3, price: 8000, rentPerWeek: 700, copies: 5, available: 2, description: 'Leading DCGs and teams with the heart of Christ.' },
+  { id: 'b4', title: 'Through the Gospels', author: 'Ngambe Carine', genre: 'Bible study', pages: 320, tone: 4, price: 9500, rentPerWeek: 700, copies: 3, available: 3, description: 'A 90-day guided study through Matthew, Mark, Luke and John.' },
+  { id: 'b5', title: 'Building a Godly Home', author: 'Pastor Whitson Tim', genre: 'Family', pages: 198, tone: 5, price: 7000, rentPerWeek: 500, copies: 4, available: 1, description: 'Marriage, parenting and faith at home.' },
+  { id: 'b6', title: 'Grace for Today', author: 'WCA Publications', genre: 'Christian living', pages: 150, tone: 6, price: 5000, rentPerWeek: 400, copies: 8, available: 6, description: 'Short readings to strengthen your walk with God.' },
+];
+
+export const demoRentals = [
+  { id: 'r1', bookId: 'b3', borrowed: '01/10/2026', due: '15/10/2026', status: 'Active' },
+];
