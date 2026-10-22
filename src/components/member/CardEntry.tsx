@@ -6,9 +6,34 @@ export type CardValue = { number: string; expiry: string; cvv: string; holder: s
 export const emptyCard: CardValue = { number: '', expiry: '', cvv: '', holder: '' };
 
 type Brand = 'visa' | 'mastercard' | 'verve' | 'amex' | null;
-const BRANDS: { id: Exclude<Brand, null>; label: string }[] = [
-  { id: 'visa', label: 'VISA' }, { id: 'mastercard', label: 'Mastercard' }, { id: 'verve', label: 'Verve' }, { id: 'amex', label: 'AmEx' },
+type BrandId = Exclude<Brand, null>;
+const BRANDS: { id: BrandId; label: string }[] = [
+  { id: 'visa', label: 'Visa' }, { id: 'mastercard', label: 'Mastercard' }, { id: 'verve', label: 'Verve' }, { id: 'amex', label: 'American Express' },
 ];
+
+/** Standard card-network marks (brand colours are intrinsic to the logos). */
+export function BrandLogo({ brand, className }: { brand: BrandId; className?: string }) {
+  const label = BRANDS.find((b) => b.id === brand)!.label;
+  const box = cn('h-6 w-9 shrink-0 overflow-hidden rounded-[4px] border border-border', className);
+  if (brand === 'visa') return (
+    <svg viewBox="0 0 36 24" className={box} role="img" aria-label={label}><rect width="36" height="24" fill="#fff" />
+      <text x="18" y="16.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontStyle="italic" fontSize="11" fill="#1A1F71">VISA</text></svg>
+  );
+  if (brand === 'mastercard') return (
+    <svg viewBox="0 0 36 24" className={box} role="img" aria-label={label}><rect width="36" height="24" fill="#fff" />
+      <circle cx="14.5" cy="12" r="7" fill="#EB001B" /><circle cx="21.5" cy="12" r="7" fill="#F79E1B" />
+      <path d="M18 5.94a7 7 0 0 1 0 12.12a7 7 0 0 1 0-12.12z" fill="#FF5F00" /></svg>
+  );
+  if (brand === 'amex') return (
+    <svg viewBox="0 0 36 24" className={box} role="img" aria-label={label}><rect width="36" height="24" fill="#2E77BC" />
+      <text x="18" y="15.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="8" fill="#fff">AMEX</text></svg>
+  );
+  return (
+    <svg viewBox="0 0 36 24" className={box} role="img" aria-label={label}><rect width="36" height="24" fill="#fff" />
+      <circle cx="8" cy="12" r="4.5" fill="#E2231A" /><path d="M6 10.5l2 3 2-3" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <text x="22.5" y="15" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="8" fill="#00425F">Verve</text></svg>
+  );
+}
 
 export function detectBrand(n: string): Brand {
   if (/^3[47]/.test(n)) return 'amex';
@@ -66,34 +91,15 @@ export function CardEntry({ value, onChange }: { value: CardValue; onChange: (v:
 
   return (
     <div className="space-y-3">
-      <div className="relative mx-auto aspect-[1.7/1] w-full max-w-[300px] overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-4 text-primary-foreground shadow-regal">
-        <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-foreground/10" />
-        <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full bg-primary-foreground/10" />
-        <div className="relative flex h-full flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <div className="h-7 w-10 rounded-md bg-gradient-to-br from-warning/80 to-warning/40" />
-            <span className="text-sm font-black italic tracking-wide">{brand ? BRANDS.find((b) => b.id === brand)!.label : <CreditCard className="h-5 w-5 opacity-80" />}</span>
-          </div>
-          <p className="font-mono text-[17px] tracking-[0.14em]">{shown}</p>
-          <div className="flex items-end justify-between gap-3 text-[11px] uppercase">
-            <span className="truncate opacity-90">{value.holder || 'Card holder'}</span>
-            <span className="shrink-0 font-mono opacity-90">{value.expiry || 'MM/YY'}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-1.5" aria-label="Supported cards">
-        {BRANDS.map((b) => (
-          <span key={b.id} className={cn('rounded-md border px-2 py-0.5 text-[10px] font-bold tracking-wide transition-all', brand === b.id ? 'border-primary bg-primary text-primary-foreground' : brand ? 'border-border text-muted-foreground opacity-50' : 'border-border bg-background text-foreground')}>{b.label}</span>
-        ))}
-      </div>
-
       <div className="overflow-hidden rounded-2xl border border-border bg-background focus-within:border-primary">
         <div className="relative border-b border-border">
           <Input inputMode="numeric" autoComplete="cc-number" aria-label="Card number" placeholder="1234 1234 1234 1234" value={pretty}
             onChange={(e) => set('number', e.target.value.replace(/\D/g, '').slice(0, max))}
-            className="h-12 rounded-none border-0 pr-10 font-mono text-base shadow-none focus-visible:ring-0" />
-          {numberOk && <ShieldCheck className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-success" />}
+            className="h-12 rounded-none border-0 pr-20 font-mono text-base shadow-none focus-visible:ring-0" />
+          <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+            {numberOk && <ShieldCheck className="h-4 w-4 text-success" />}
+            {brand ? <BrandLogo brand={brand} /> : <CreditCard className="h-5 w-5 text-muted-foreground" />}
+          </div>
         </div>
         <div className="grid grid-cols-2">
           <Input inputMode="numeric" autoComplete="cc-exp" aria-label="Expiry date" placeholder="MM/YY" value={value.expiry} onChange={(e) => onExpiry(e.target.value)}
