@@ -108,6 +108,7 @@ import { Route as FundraisingIdPledgeRouteImport } from './routes/fundraising.$i
 import { Route as MemberFundraisingCampaignIdRouteImport } from './routes/member.fundraising_.$campaignId'
 import { Route as MemberMediaVideoIdRouteImport } from './routes/member.media_.$videoId'
 import { Route as MemberRegisterRegionCodeRouteImport } from './routes/member.register.$regionCode'
+import { Route as MemberStoreProductIdRouteImport } from './routes/member.store_.$productId'
 import { Route as VisitorRegisterRegionCodeRouteImport } from './routes/visitor.register.$regionCode'
 import { Route as AdminRegionalAttendanceScanRouteImport } from './routes/admin.regional.attendance.scan'
 import { Route as AdminRegionalDcgIndexRouteImport } from './routes/admin.regional.dcg.index'
@@ -634,6 +635,11 @@ const MemberRegisterRegionCodeRoute =
     path: '/register/$regionCode',
     getParentRoute: () => MemberRoute,
   } as any)
+const MemberStoreProductIdRoute = MemberStoreProductIdRouteImport.update({
+  id: '/store_/$productId',
+  path: '/store/$productId',
+  getParentRoute: () => MemberRoute,
+} as any)
 const VisitorRegisterRegionCodeRoute =
   VisitorRegisterRegionCodeRouteImport.update({
     id: '/visitor/register/$regionCode',
@@ -852,6 +858,7 @@ export interface FileRoutesByFullPath {
   '/member/fundraising/$campaignId': typeof MemberFundraisingCampaignIdRoute
   '/member/media/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
+  '/member/store/$productId': typeof MemberStoreProductIdRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional/': typeof AdminRegionalIndexRoute
   '/admin/super/': typeof AdminSuperIndexRoute
@@ -957,6 +964,7 @@ export interface FileRoutesByTo {
   '/member/fundraising/$campaignId': typeof MemberFundraisingCampaignIdRoute
   '/member/media/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
+  '/member/store/$productId': typeof MemberStoreProductIdRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional': typeof AdminRegionalIndexRoute
   '/admin/super': typeof AdminSuperIndexRoute
@@ -1080,6 +1088,7 @@ export interface FileRoutesById {
   '/member/fundraising_/$campaignId': typeof MemberFundraisingCampaignIdRoute
   '/member/media_/$videoId': typeof MemberMediaVideoIdRoute
   '/member/register/$regionCode': typeof MemberRegisterRegionCodeRoute
+  '/member/store_/$productId': typeof MemberStoreProductIdRoute
   '/visitor/register/$regionCode': typeof VisitorRegisterRegionCodeRoute
   '/admin/regional/': typeof AdminRegionalIndexRoute
   '/admin/super/': typeof AdminSuperIndexRoute
@@ -1204,6 +1213,7 @@ export interface FileRouteTypes {
     | '/member/fundraising/$campaignId'
     | '/member/media/$videoId'
     | '/member/register/$regionCode'
+    | '/member/store/$productId'
     | '/visitor/register/$regionCode'
     | '/admin/regional/'
     | '/admin/super/'
@@ -1309,6 +1319,7 @@ export interface FileRouteTypes {
     | '/member/fundraising/$campaignId'
     | '/member/media/$videoId'
     | '/member/register/$regionCode'
+    | '/member/store/$productId'
     | '/visitor/register/$regionCode'
     | '/admin/regional'
     | '/admin/super'
@@ -1431,6 +1442,7 @@ export interface FileRouteTypes {
     | '/member/fundraising_/$campaignId'
     | '/member/media_/$videoId'
     | '/member/register/$regionCode'
+    | '/member/store_/$productId'
     | '/visitor/register/$regionCode'
     | '/admin/regional/'
     | '/admin/super/'
@@ -2186,6 +2198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberRegisterRegionCodeRouteImport
       parentRoute: typeof MemberRoute
     }
+    '/member/store_/$productId': {
+      id: '/member/store_/$productId'
+      path: '/store/$productId'
+      fullPath: '/member/store/$productId'
+      preLoaderRoute: typeof MemberStoreProductIdRouteImport
+      parentRoute: typeof MemberRoute
+    }
     '/visitor/register/$regionCode': {
       id: '/visitor/register/$regionCode'
       path: '/visitor/register/$regionCode'
@@ -2650,6 +2669,7 @@ interface MemberRouteChildren {
   MemberFundraisingCampaignIdRoute: typeof MemberFundraisingCampaignIdRoute
   MemberMediaVideoIdRoute: typeof MemberMediaVideoIdRoute
   MemberRegisterRegionCodeRoute: typeof MemberRegisterRegionCodeRoute
+  MemberStoreProductIdRoute: typeof MemberStoreProductIdRoute
 }
 
 const MemberRouteChildren: MemberRouteChildren = {
@@ -2671,6 +2691,7 @@ const MemberRouteChildren: MemberRouteChildren = {
   MemberFundraisingCampaignIdRoute: MemberFundraisingCampaignIdRoute,
   MemberMediaVideoIdRoute: MemberMediaVideoIdRoute,
   MemberRegisterRegionCodeRoute: MemberRegisterRegionCodeRoute,
+  MemberStoreProductIdRoute: MemberStoreProductIdRoute,
 }
 
 const MemberRouteWithChildren =
