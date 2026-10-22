@@ -13,7 +13,8 @@
 - [x] Profile
 
 # Giving
-- [ ] Improve light-mode payment contrast and horizontal method selection
-- [ ] Show configured bank details and secure provider card entry
+- [x] Improve light-mode payment contrast and horizontal method selection
+- [x] Show configured bank details and continue to secure provider card entry
+- [ ] Verify configured bank details and a real card payment (requires an authenticated account and configured destination)
 - [x] Remove green line, Custom → All, member-only transactions
 - [x] Give bottom sheet with Flutterwave (shared WCBN Connect gateway): MTN/Orange mobile money + card
