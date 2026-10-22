@@ -11,3 +11,7 @@
 - [x] Counseling
 - [x] Store
 - [x] Profile
+
+# Giving
+- [x] Remove green line, Custom → All, member-only transactions
+- [x] Give bottom sheet with Flutterwave (shared WCBN Connect gateway): MTN/Orange mobile money + card
