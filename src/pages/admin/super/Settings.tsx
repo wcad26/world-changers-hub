@@ -11,6 +11,7 @@ import { GlassSection, GlassSectionHeader } from "@/components/ui/GlassSection";
 import GeneralTab from "@/components/admin/super/settings/GeneralTab";
 import CurrencyTab from "@/components/admin/super/settings/CurrencyTab";
 import SuperAccessTab from "@/components/admin/super/access/AccessTab";
+import SuperPaymentsTab from "@/components/admin/payments/SuperPaymentsTab";
 
 export default function SuperSettings() {
   const [params, setParams] = useSearchParams();
@@ -20,10 +21,11 @@ export default function SuperSettings() {
     <div className="space-y-6">
       <p className="text-muted-foreground">Global preferences that control the super admin portal.</p>
       <Tabs value={tab} onValueChange={(v) => setParams({ tab: v })} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 h-auto">
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="access">Access</TabsTrigger>
           <TabsTrigger value="currency">Currency</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="communication">Communication</TabsTrigger>
           <TabsTrigger value="system">System</TabsTrigger>
@@ -39,6 +41,10 @@ export default function SuperSettings() {
 
         <TabsContent value="currency" className="space-y-6">
           <CurrencyTab />
+        </TabsContent>
+
+        <TabsContent value="payments" className="space-y-6">
+          <SuperPaymentsTab />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
