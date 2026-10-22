@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Calendar, Clock, MapPin, Search, Users, ArrowUpRight } from 'lucide-react';
 import { useMemberRegionEvents } from '@/hooks/useEvents';
 import { format, parseISO, isFuture, isPast, isToday } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from '@/lib/router-compat';
-import { EmptyState, Segmented } from '@/components/member/MemberUI';
+import { EmptyState } from '@/components/member/MemberUI';
 import { cn } from '@/lib/utils';
 
 type Tab = 'upcoming' | 'today' | 'past';
@@ -42,12 +40,13 @@ export default function MemberEvents() {
   }
 
   const next = groups.today[0] || groups.upcoming[0];
-  const rest = list.filter((e) => !(tab !== 'past' && next && e.id === next.id && tab === (groups.today[0] ? 'today' : 'upcoming')));
+  const showFeatured = tab !== 'past' && !!next && list.some((e) => e.id === next.id);
+  const rest = showFeatured ? list.filter((e) => e.id !== next.id) : list;
 
   return (
     <div className="space-y-4">
       {/* Featured next event */}
-      {tab !== 'past' && next && list.some((e) => e.id === next.id) && (() => {
+      {showFeatured && (() => {
         const d = parseISO(next.start_datetime);
         return (
           <Link to={`/events/${next.slug || next.id}`} className="group relative block overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
