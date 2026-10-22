@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
-import { startGiving, checkGiving, detectMomo, listGivingDestinations } from '@/lib/giving.functions';
+import { startGiving, checkGiving, detectMomo, listGivingDestinations, continueCardGift, validateCardOtp } from '@/lib/giving.functions';
+import { CardEntry, emptyCard, toCardPayload, validateCard, type CardValue } from './CardEntry';
+type CardStep = { next: 'done' | 'pin' | 'avs' | 'otp' | 'redirect' | 'failed'; flwRef?: string; link?: string; message?: string };
 import { cn } from '@/lib/utils';
 
 type Kind = 'tithe' | 'offering' | 'special';
@@ -48,6 +50,8 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const qc = useQueryClient();
   const start = useServerFn(startGiving);
   const check = useServerFn(checkGiving);
+  const continueCard = useServerFn(continueCardGift);
+  const validateOtp = useServerFn(validateCardOtp);
   const listDest = useServerFn(listGivingDestinations);
   const { data: dest } = useQuery({ queryKey: ['giving_destinations'], queryFn: () => listDest(), enabled: open, staleTime: 5 * 60_000 });
 
@@ -74,6 +78,11 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const [error, setError] = useState('');
   const [network, setNetwork] = useState<string | null>(null);
   const [bank, setBank] = useState<{ ref: string; info: BankInfo; regionName: string } | null>(null);
+  const [card, setCard] = useState<CardValue>(emptyCard);
+  const [cardStep, setCardStep] = useState<CardStep | null>(null);
+  const [cardRef, setCardRef] = useState<string | null>(null);
+  const [authCode, setAuthCode] = useState('');
+  const [avs, setAvs] = useState({ address: '', city: '', state: '', country: '', zipcode: '' });
   const alive = useRef(true);
 
   useEffect(() => { if (open) { setPhone((p) => p || (profile as any)?.phone || ''); } }, [open, profile]);
@@ -85,7 +94,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
   const fmt = (n: number) => `${new Intl.NumberFormat('en-US').format(n)} ${currency}`;
   const isHome = !dest || regionId === dest.homeRegionId;
 
-  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); };
+  const reset = () => { setStage('form'); setError(''); setBusy(false); setAmountText(''); setBank(null); setCard(emptyCard); setCardStep(null); setCardRef(null); setAuthCode(''); };
   const close = (o: boolean) => { if (!o) { alive.current = false; setTimeout(reset, 300); } else alive.current = true; onOpenChange(o); };
 
   const poll = async (txRef: string) => {
@@ -101,17 +110,46 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     if (alive.current) { setError('We did not receive a confirmation in time. If you approved it, it will appear shortly.'); setStage('failed'); }
   };
 
+  const handleCardStep = (txRef: string, step: CardStep) => {
+    if (step.next === 'failed') { setError(step.message || 'Your card was declined.'); setCardStep(null); setCardRef(null); return; }
+    if (step.next === 'pin' || step.next === 'otp' || step.next === 'avs') { setCardRef(txRef); setCardStep(step); setAuthCode(''); return; }
+    setCard(emptyCard); setCardStep(null); setCardRef(null);
+    if (step.next === 'redirect' && step.link) window.location.assign(step.link);
+    setStage('waiting');
+    poll(txRef);
+  };
+
+  const submitCard = async () => {
+    if (cardRef && cardStep) {
+      if (cardStep.next === 'otp') {
+        if (authCode.length < 4) return setError('Enter the code you received.');
+        await validateOtp({ data: { txRef: cardRef, flwRef: cardStep.flwRef || '', otp: authCode } });
+        handleCardStep(cardRef, { next: 'done' });
+        return;
+      }
+      const cardAuth = cardStep.next === 'pin'
+        ? { mode: 'pin' as const, pin: authCode }
+        : { mode: 'avs_noauth' as const, ...avs };
+      if (cardStep.next === 'pin' && authCode.length < 4) return setError('Enter your card PIN.');
+      const step = await continueCard({ data: { txRef: cardRef, card: toCardPayload(card), cardAuth, origin: window.location.origin } });
+      handleCardStep(cardRef, step as CardStep);
+      return;
+    }
+    const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, card: toCardPayload(card), origin: window.location.origin } });
+    handleCardStep(res.txRef, (res as any).card as CardStep);
+  };
+
   const submit = async () => {
     setError('');
     if (amount <= 0) return setError('Please enter an amount.');
     if (!methods.length) return setError('This region is not accepting online gifts yet.');
     if (method === 'mobile_money' && !detected) return setError('Enter a valid MTN or Orange number.');
     if (method === 'bank_transfer' && !region?.bank) return setError('Bank deposits are not configured for this region yet.');
-    const checkoutWindow = method === 'card' ? window.open('about:blank', '_blank') : null;
-    if (checkoutWindow) checkoutWindow.opener = null;
+    if (method === 'card' && !cardStep) { const msg = validateCard(card); if (msg) return setError(msg); }
     setBusy(true);
     alive.current = true;
     try {
+      if (method === 'card') { await submitCard(); return; }
       const res = await start({ data: { kind, amount, method, regionId: regionId || undefined, phone, origin: window.location.origin } });
       if (method === 'bank_transfer' && res.bank) {
         setBank({ ref: res.txRef, info: res.bank as BankInfo, regionName: res.regionName });
@@ -119,15 +157,10 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
         return;
       }
       setNetwork(res.network);
-      if (res.link) {
-        if (checkoutWindow) checkoutWindow.location.href = res.link;
-        else if (method === 'card') window.location.assign(res.link);
-        else window.open(res.link, '_blank', 'noopener');
-      }
+      if (res.link) window.open(res.link, '_blank', 'noopener');
       setStage('waiting');
       poll(res.txRef);
     } catch (e) {
-      checkoutWindow?.close();
       setError((e as Error).message || 'Something went wrong.');
     } finally { setBusy(false); }
   };
