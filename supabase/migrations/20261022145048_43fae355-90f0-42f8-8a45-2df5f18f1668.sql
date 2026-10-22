@@ -1,0 +1,1 @@
+CREATE POLICY certs_bucket_auth_select ON storage.objects FOR SELECT TO authenticated USING (bucket_id = ANY (ARRAY['certificates'::text, 'certificate-templates'::text]));
