@@ -57,7 +57,7 @@ export const listGivingDestinations = createServerFn({ method: 'GET' })
     const [{ data: member }, { data: regions }, { data: rows }] = await Promise.all([
       supabaseAdmin.from('members').select('region_id').eq('id', memberId).single(),
       supabaseAdmin.from('regions').select('id, name, currency_code').order('name'),
-      (supabaseAdmin as any).from('region_payment_settings').select('region_id, flutterwave_enabled, flutterwave_secret_key, mobile_money_enabled, card_enabled, bank_transfer_enabled'),
+      (supabaseAdmin as any).from('region_payment_settings').select('region_id, flutterwave_enabled, flutterwave_secret_key, mobile_money_enabled, card_enabled, bank_transfer_enabled, bank_accounts, bank_instructions'),
     ]);
     const by = new Map<string | null, any>((rows ?? []).map((r: any) => [r.region_id, r]));
     const g = by.get(null);
@@ -67,11 +67,19 @@ export const listGivingDestinations = createServerFn({ method: 'GET' })
         const own = by.get(r.id);
         const gw = own?.flutterwave_enabled && own?.flutterwave_secret_key ? own : g?.flutterwave_enabled && g?.flutterwave_secret_key ? g : null;
         const currency = r.currency_code || 'XAF';
+        const bankSource = own?.bank_transfer_enabled ? own : g?.bank_transfer_enabled ? g : null;
         return {
           id: r.id as string, name: r.name as string, currency,
           mobileMoney: !!gw?.mobile_money_enabled && currency === 'XAF',
           card: !!gw?.card_enabled,
           bank: !!(own?.bank_transfer_enabled || g?.bank_transfer_enabled),
+          bankInfo: bankSource ? {
+            accounts: (Array.isArray(bankSource.bank_accounts) ? bankSource.bank_accounts : []).map((a: any) => ({
+              bank_name: String(a.bank_name || ''), account_name: String(a.account_name || ''),
+              account_number: String(a.account_number || ''), swift: String(a.swift || ''), branch: String(a.branch || ''),
+            })),
+            instructions: String(bankSource.bank_instructions || ''),
+          } : null,
         };
       }),
     };
@@ -133,7 +141,8 @@ export const startGiving = createServerFn({ method: 'POST' })
       return { txRef, link: null, network: null, bank: gw.bank, regionName: region.name as string };
     }
 
-    const secret = gw.secret!;
+    const secret = gw.secret;
+    if (!secret) throw new Error('Online giving is not available for this region.');
     if (data.method === 'mobile_money') {
       if (currency !== 'XAF') throw new Error('Mobile money is only available for XAF regions. Please use card.');
       const phone = detectMomo(data.phone || profile?.phone || '');

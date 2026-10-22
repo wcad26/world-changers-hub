@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Building2, Check, CheckCircle2, Copy, CreditCard, Gift, Heart, Landmark, Loader2, MapPin, Smartphone, Sparkles, XCircle } from 'lucide-react';
+import { Building2, Check, CheckCircle2, Copy, CreditCard, Gift, Heart, Landmark, Loader2, LockKeyhole, MapPin, Smartphone, Sparkles, XCircle } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,9 +36,9 @@ function CopyRow({ label, value }: { label: string; value: string }) {
         <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
         <p className="truncate font-semibold">{value}</p>
       </div>
-      <button type="button" onClick={() => { navigator.clipboard?.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500); }} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-foreground" aria-label={`Copy ${label}`}>
+      <Button variant="ghost" type="button" onClick={() => { navigator.clipboard?.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500); }} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-foreground" aria-label={`Copy ${label}`}>
         {done ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -59,7 +60,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     const m: Method[] = [];
     if (!region || region.mobileMoney) { if (currency === 'XAF') m.push('mobile_money'); }
     if (!region || region.card) m.push('card');
-    if (region?.bank) m.push('bank_transfer');
+    m.push('bank_transfer');
     return m;
   }, [region, currency]);
 
@@ -105,6 +106,9 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     if (amount <= 0) return setError('Please enter an amount.');
     if (!methods.length) return setError('This region is not accepting online gifts yet.');
     if (method === 'mobile_money' && !detected) return setError('Enter a valid MTN or Orange number.');
+    if (method === 'bank_transfer' && !region?.bank) return setError('Bank deposits are not configured for this region yet.');
+    const checkoutWindow = method === 'card' ? window.open('about:blank', '_blank') : null;
+    if (checkoutWindow) checkoutWindow.opener = null;
     setBusy(true);
     alive.current = true;
     try {
@@ -115,10 +119,15 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
         return;
       }
       setNetwork(res.network);
-      if (res.link) window.open(res.link, '_blank', 'noopener');
+      if (res.link) {
+        if (checkoutWindow) checkoutWindow.location.href = res.link;
+        else if (method === 'card') window.location.assign(res.link);
+        else window.open(res.link, '_blank', 'noopener');
+      }
       setStage('waiting');
       poll(res.txRef);
     } catch (e) {
+      checkoutWindow?.close();
       setError((e as Error).message || 'Something went wrong.');
     } finally { setBusy(false); }
   };
@@ -127,14 +136,14 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
     const meta = {
       mobile_money: { icon: Smartphone, title: 'Mobile Money', sub: 'MTN · Orange' },
       card: { icon: CreditCard, title: 'Card', sub: 'Visa · Mastercard' },
-      bank_transfer: { icon: Landmark, title: 'Bank', sub: 'Transfer' },
+      bank_transfer: { icon: Landmark, title: 'Bank deposit', sub: 'Transfer · Deposit' },
     }[m];
     return (
-      <button key={m} type="button" onClick={() => setMethod(m)} className={cn('flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition-colors', method === m ? 'border-primary bg-primary/5' : 'border-border')}>
-        <meta.icon className="h-5 w-5 text-primary" />
+      <Button key={m} type="button" variant="outline" aria-pressed={method === m} onClick={() => { setMethod(m); setError(''); }} className={cn('h-20 basis-[42%] shrink-0 snap-start flex-col items-start gap-1 whitespace-normal rounded-xl p-3 text-left transition-colors', method === m ? 'border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground' : 'border-border bg-background text-foreground')}>
+        <span className="flex w-full items-center justify-between"><meta.icon className="h-4 w-4" />{method === m && <Check className="h-3.5 w-3.5" />}</span>
         <span className="block text-sm font-semibold leading-tight">{meta.title}</span>
-        <span className="block text-[11px] text-muted-foreground">{meta.sub}</span>
-      </button>
+        <span className={cn('block text-[11px] font-normal', method === m ? 'text-primary-foreground' : 'text-muted-foreground')}>{meta.sub}</span>
+      </Button>
     );
   };
 
@@ -167,9 +176,9 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
 
             <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
               {KINDS.map((k) => (
-                <button key={k.value} type="button" onClick={() => setKind(k.value)} className={cn('flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold transition-colors', kind === k.value ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground')}>
+                <Button variant="ghost" key={k.value} type="button" onClick={() => setKind(k.value)} className={cn('flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-semibold transition-colors', kind === k.value ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-sm' : 'text-muted-foreground')}>
                   <k.icon className="h-4 w-4" />{k.label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -181,9 +190,9 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
               </div>
               <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
                 {presets.map((p) => (
-                  <button key={p} type="button" onClick={() => setAmountText(String(p))} className={cn('shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors', amount === p ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground')}>
+                  <Button variant="ghost" key={p} type="button" onClick={() => setAmountText(String(p))} className={cn('shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors', amount === p ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background text-foreground')}>
                     {new Intl.NumberFormat('en-US').format(p)}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -191,7 +200,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Pay with</p>
               {methods.length ? (
-                <div className={cn('grid gap-2', methods.length === 3 ? 'grid-cols-3' : methods.length === 2 ? 'grid-cols-2' : 'grid-cols-1')}>{methods.map(methodCard)}</div>
+                <div role="group" aria-label="Payment method" className="no-scrollbar flex snap-x snap-mandatory gap-2 overflow-x-auto pb-1">{methods.map(methodCard)}</div>
               ) : (
                 <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">This region is not accepting online gifts yet.</p>
               )}
@@ -207,18 +216,39 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
                 <p className="mt-1.5 text-[11px] text-muted-foreground">You'll get a prompt on this phone to approve with your PIN.</p>
               </div>
             )}
+            {method === 'card' && (
+              <div className="space-y-3 rounded-xl border border-border bg-background/60 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 text-sm font-semibold"><CreditCard className="h-4 w-4 text-primary" />Card details</span>
+                  <LockKeyhole className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">Enter your card number, expiry date and security code in Flutterwave’s secure checkout.</p>
+                <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground"><span>Visa · Mastercard</span><span>Secured by Flutterwave</span></div>
+              </div>
+            )}
             {method === 'bank_transfer' && (
-              <p className="rounded-xl bg-muted px-3 py-2 text-[12px] text-muted-foreground">We'll show the bank details and a reference to add to your transfer. Your gift is confirmed once the region receives it.</p>
+              <div className="space-y-3">
+                {region?.bankInfo?.accounts.length ? region.bankInfo.accounts.map((a, i) => (
+                  <div key={i} className="divide-y divide-border rounded-xl border border-border px-4">
+                    <CopyRow label="Bank" value={a.bank_name} />
+                    <CopyRow label="Account name" value={a.account_name} />
+                    <CopyRow label="Account number / RIB" value={a.account_number} />
+                    <CopyRow label="SWIFT / BIC" value={a.swift || ''} />
+                    <CopyRow label="Branch" value={a.branch || ''} />
+                  </div>
+                )) : <p className="rounded-xl bg-muted px-3 py-3 text-sm text-muted-foreground">Bank details have not been added for this region yet.</p>}
+                {region?.bankInfo?.instructions && <p className="whitespace-pre-line text-sm text-muted-foreground">{region.bankInfo.instructions}</p>}
+              </div>
             )}
 
             <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="Note (optional)" className="h-11 rounded-2xl" />
 
             {error && <p className="rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-            <button type="button" disabled={busy || !methods.length} onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-secondary font-semibold text-primary-foreground shadow-regal transition-transform active:scale-[0.98] disabled:opacity-60">
+            <Button variant="ghost" type="button" disabled={busy || !methods.length || (method === 'bank_transfer' && (!region?.bank || !region.bankInfo?.accounts.length))} onClick={submit} className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary to-secondary font-semibold text-primary-foreground shadow-regal transition-transform active:scale-[0.98] disabled:opacity-60">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : method === 'bank_transfer' ? <Building2 className="h-4 w-4" /> : <Heart className="h-4 w-4" />}
-              {method === 'bank_transfer' ? 'Get bank details' : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
-            </button>
+              {method === 'bank_transfer' ? 'Get deposit reference' : method === 'card' ? 'Continue to secure card entry' : amount > 0 ? `Give ${fmt(amount)}` : 'Give'}
+            </Button>
           </div>
         )}
 
@@ -242,7 +272,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             )) : <p className="rounded-xl bg-muted px-3 py-2 text-sm text-muted-foreground">Bank details will be shared by your region shortly. Keep your reference.</p>}
             {bank.info.instructions && <p className="whitespace-pre-line text-sm text-muted-foreground">{bank.info.instructions}</p>}
             <p className="text-[12px] text-muted-foreground">Add the reference to your transfer. Your gift appears in your history once the region confirms it.</p>
-            <button type="button" onClick={() => close(false)} className="h-12 w-full rounded-full bg-primary font-semibold text-primary-foreground">I've made the transfer</button>
+            <Button variant="ghost" type="button" onClick={() => close(false)} className="h-12 w-full rounded-full bg-primary font-semibold text-primary-foreground">I've made the transfer</Button>
           </div>
         )}
 
@@ -261,7 +291,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             <CheckCircle2 className="h-14 w-14 text-success" />
             <p className="mt-4 font-heading text-lg font-semibold">Thank you!</p>
             <p className="mt-1 text-sm text-muted-foreground">Your gift of {fmt(amount)} was received.</p>
-            <button type="button" onClick={() => close(false)} className="mt-6 h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground">Done</button>
+            <Button variant="ghost" type="button" onClick={() => close(false)} className="mt-6 h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground">Done</Button>
           </div>
         )}
 
@@ -270,7 +300,7 @@ export function MemberGiveSheet({ open, onOpenChange, currency: homeCurrency }: 
             <XCircle className="h-14 w-14 text-destructive" />
             <p className="mt-4 font-heading text-lg font-semibold">Payment not completed</p>
             <p className="mt-1 max-w-xs text-sm text-muted-foreground">{error}</p>
-            <button type="button" onClick={() => { setStage('form'); setError(''); }} className="mt-6 h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground">Try again</button>
+            <Button variant="ghost" type="button" onClick={() => { setStage('form'); setError(''); }} className="mt-6 h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground">Try again</Button>
           </div>
         )}
       </SheetContent>

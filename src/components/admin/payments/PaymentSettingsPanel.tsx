@@ -41,6 +41,7 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
       toast.success(`Payment settings saved for ${label}`);
       qc.invalidateQueries({ queryKey: ['payment_settings'] });
       qc.invalidateQueries({ queryKey: ['payment_gateway_status'] });
+      qc.invalidateQueries({ queryKey: ['giving_destinations'] });
     } catch (e) {
       toast.error((e as Error).message || 'Could not save');
     } finally { setSaving(false); }
@@ -81,9 +82,9 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
       </GlassSection>
 
       <GlassSection>
-        <GlassSectionHeader icon={<Landmark className="h-5 w-5" />} title="Bank transfer" description="Members see these details with a unique reference. Confirm received transfers in Finances." />
+        <GlassSectionHeader icon={<Landmark className="h-5 w-5" />} title="Bank deposit / transfer" description="Members see these account details when they select Bank deposit. Deposits remain pending until receipt is confirmed." />
         <div className="space-y-5">
-          <div className="flex items-center justify-between"><Label>Offer bank transfer</Label><Switch checked={form.bank_transfer_enabled} onCheckedChange={(v) => set('bank_transfer_enabled', v)} /></div>
+          <div className="flex items-center justify-between"><Label>Accept bank deposits / transfers</Label><Switch checked={form.bank_transfer_enabled} onCheckedChange={(v) => set('bank_transfer_enabled', v)} /></div>
           {banks.map((b, i) => (
             <div key={i} className="grid gap-3 rounded-2xl border border-border p-4 md:grid-cols-2">
               {(['bank_name', 'account_name', 'account_number', 'swift', 'branch'] as const).map((k) => (
