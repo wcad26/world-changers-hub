@@ -1,156 +1,133 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Calendar, TrendingUp, Users, Flame, Heart } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Calendar, Users, Flame, Heart, CheckCircle2, XCircle, TrendingUp, CalendarCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMemberDetailedAttendance } from '@/hooks/useAttendance';
-import PeriodFilter, { PeriodFilters } from '@/components/admin/regional/dashboard/PeriodFilter';
-import { StatTile } from '@/components/member/MemberUI';
+import { Segmented, EmptyState } from '@/components/member/MemberUI';
 import { format } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
+import { cn } from '@/lib/utils';
+
+type Period = '1m' | '3m' | '6m' | '1y';
+type TypeFilter = 'all' | 'regional' | 'dcg' | 'prayer';
+const MONTHS: Record<Period, number> = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 };
+
+function Ring({ value, size = 88 }: { value: number; size?: number }) {
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
+        <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3.5" />
+        <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${(value / 100) * 97.4} 97.4`} />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center font-heading text-lg font-bold">{value}%</span>
+    </div>
+  );
+}
+
 export default function MemberAttendance() {
-  const {
-    memberRecord,
-    userRegion
-  } = useAuth();
+  const { memberRecord, userRegion } = useAuth();
+  const [period, setPeriod] = useState<Period>('3m');
+  const [type, setType] = useState<TypeFilter>('all');
 
-  // Period filter state
-  const [filters, setFilters] = useState<PeriodFilters>({
-    quickDateRange: '3-months',
-    dateRange: {
-      from: new Date(new Date().setMonth(new Date().getMonth() - 3)),
-      to: new Date()
-    }
-  });
-  const handleFiltersChange = (newFilters: Partial<PeriodFilters>) => {
-    setFilters(prev => ({
-      ...prev,
-      ...newFilters
-    }));
-  };
+  const range = useMemo(() => {
+    const to = new Date();
+    const from = new Date();
+    from.setMonth(from.getMonth() - MONTHS[period]);
+    return { from, to };
+  }, [period]);
 
-  // Fetch attendance data with date filter
-  const {
-    data: attendanceData,
-    isLoading
-  } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, filters.dateRange);
-  return <div className="space-y-6">
-      
+  const { data, isLoading } = useMemberDetailedAttendance(memberRecord?.id, userRegion?.id, range);
+  const rate = data?.overall.rate || 0;
+  const dots = isLoading ? '…' : null;
 
-      {/* Period Filter */}
-      <PeriodFilter filters={filters} onFiltersChange={handleFiltersChange} />
+  const groups = [
+    { key: 'regional' as const, label: 'Services', icon: Calendar, tone: 'var(--chart-6)', v: data?.regional },
+    { key: 'dcg' as const, label: 'DCG', icon: Users, tone: 'var(--chart-5)', v: data?.dcg },
+    { key: 'prayer' as const, label: 'Prayer', icon: Heart, tone: 'var(--chart-7)', v: data?.prayerMeeting },
+  ];
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <section className="flex items-center gap-5 rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
-          <div className="relative h-24 w-24 shrink-0">
-            <svg viewBox="0 0 36 36" className="h-24 w-24 -rotate-90">
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="3.5" />
-              <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${(attendanceData?.overall.rate || 0) / 100 * 97.4} 97.4`} />
-            </svg>
-            <span className="absolute inset-0 grid place-items-center font-heading text-xl font-bold">{isLoading ? '…' : `${attendanceData?.overall.rate || 0}%`}</span>
+  const events = (data?.recentEvents ?? []).filter((e) => type === 'all' || e.type === type);
+  const trend = data?.monthlyTrend ?? [];
+
+  return (
+    <div className="space-y-5 overflow-x-clip pb-24 lg:pb-6">
+      <Segmented<Period> full value={period} onChange={setPeriod} options={[
+        { value: '1m', label: '1M' }, { value: '3m', label: '3M' }, { value: '6m', label: '6M' }, { value: '1y', label: '1Y' }]} />
+
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
+        <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary-foreground/10 blur-2xl" />
+        <div className="relative flex items-center gap-4">
+          {isLoading ? <div className="grid h-[88px] w-[88px] shrink-0 place-items-center rounded-full border-4 border-primary-foreground/20 font-heading text-lg">…</div> : <Ring value={rate} />}
+          <div className="min-w-0">
+            <p className="text-xs font-medium opacity-80">Overall attendance</p>
+            <p className="font-heading text-2xl font-bold leading-tight">{dots ?? data?.overall.attended ?? 0}<span className="text-base font-medium opacity-80"> of {dots ?? data?.overall.total ?? 0}</span></p>
+            <p className="mt-1 flex items-center gap-1 text-xs opacity-85"><Flame className="h-3.5 w-3.5" />{dots ?? data?.streak ?? 0} in a row</p>
           </div>
-          <div>
-            <p className="text-sm text-primary-foreground/75">Overall attendance</p>
-            <p className="font-heading text-lg font-semibold">{attendanceData?.overall.attended || 0} of {attendanceData?.overall.total || 0} events</p>
-          </div>
-        </section>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-          <StatTile label="Regional" value={isLoading ? '…' : `${attendanceData?.regional.attended || 0}/${attendanceData?.regional.total || 0}`} icon={Calendar} tone="var(--chart-6)" />
-          <StatTile label="DCG" value={isLoading ? '…' : `${attendanceData?.dcg.attended || 0}/${attendanceData?.dcg.total || 0}`} icon={Users} tone="var(--chart-5)" />
-          <StatTile label="Prayer" value={isLoading ? '…' : `${attendanceData?.prayerMeeting.attended || 0}/${attendanceData?.prayerMeeting.total || 0}`} icon={Heart} tone="var(--chart-7)" />
-          <StatTile label="Streak" value={isLoading ? '…' : attendanceData?.streak || 0} sub="in a row" icon={Flame} tone="var(--chart-3)" />
         </div>
+      </section>
+
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {groups.map((g) => {
+          const pct = g.v?.total ? Math.round((g.v.attended / g.v.total) * 100) : 0;
+          return (
+            <button key={g.key} type="button" onClick={() => setType(type === g.key ? 'all' : g.key)}
+              className={cn('min-w-0 rounded-2xl border bg-card p-3 text-left transition-colors sm:p-4', type === g.key ? 'border-primary ring-1 ring-primary' : 'border-border hover:bg-muted/50')}>
+              <span className="grid h-8 w-8 place-items-center rounded-lg" style={{ background: `color-mix(in oklab, ${g.tone} 15%, transparent)`, color: g.tone }}><g.icon className="h-4 w-4" /></span>
+              <p className="mt-2 truncate text-[11px] font-medium text-muted-foreground">{g.label}</p>
+              <p className="font-heading text-lg font-bold text-foreground">{dots ?? `${g.v?.attended ?? 0}/${g.v?.total ?? 0}`}</p>
+              <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: g.tone }} /></div>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Monthly Trend */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Attendance Trend</CardTitle>
-          <CardDescription>Your attendance pattern over the selected period</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            {isLoading ? <div className="flex items-center justify-center h-full text-muted-foreground">
-                Loading...
-              </div> : attendanceData?.monthlyTrend && attendanceData.monthlyTrend.length > 0 ? <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={attendanceData.monthlyTrend} margin={{
-              top: 20,
-              right: 20,
-              left: 0,
-              bottom: 5
-            }}>
-                  <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{
-                fill: 'var(--muted-foreground)',
-                fontSize: 12
-              }} />
-                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{
-                fill: 'var(--muted-foreground)',
-                fontSize: 12
-              }} tickFormatter={value => `${value}%`} width={45} />
-                  <Tooltip cursor={{
-                fill: 'var(--muted)',
-                opacity: 0.3
-              }} contentStyle={{
-                backgroundColor: 'var(--card)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-              }} labelStyle={{
-                color: 'var(--foreground)',
-                fontWeight: 600
-              }} formatter={(value: number) => [`${value}%`, 'Attendance']} />
-                  <Bar dataKey="rate" radius={[6, 6, 0, 0]} maxBarSize={50}>
-                    {attendanceData.monthlyTrend.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.rate >= 90 ? 'var(--chart-5)' : entry.rate >= 80 ? 'var(--chart-3)' : 'var(--chart-4)'} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer> : <div className="flex items-center justify-center h-full text-muted-foreground">
-                No attendance data for the selected period
-              </div>}
+      {trend.length > 0 && (
+        <section className="rounded-2xl border border-border bg-card p-4">
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground"><TrendingUp className="h-4 w-4 text-primary" />Monthly rhythm</p>
+          <div className="flex h-28 items-end gap-2">
+            {trend.map((m) => (
+              <div key={m.month} className="flex min-w-0 flex-1 flex-col items-center gap-1">
+                <span className="text-[10px] font-semibold text-muted-foreground">{m.rate}%</span>
+                <div className="flex h-20 w-full items-end rounded-md bg-muted/60">
+                  <div className="w-full rounded-md bg-primary" style={{ height: `${Math.max(m.rate, 3)}%` }} />
+                </div>
+                <span className="truncate text-[10px] text-muted-foreground">{m.month}</span>
+              </div>
+            ))}
           </div>
-          <div className="flex-col md:flex-row gap-2 md:gap-6 mt-4 text-sm flex items-start justify-center">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-chart-5" />
-              <span className="text-muted-foreground">Excellent (90%+)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-chart-3" />
-              <span className="text-muted-foreground">Good (80-89%)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-chart-4" />
-              <span className="text-muted-foreground">Needs Improvement</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </section>
+      )}
 
-      {/* Recent Attendance */}
-      <Card className="rounded-2xl">
-        <CardHeader>
-          <CardTitle>Recent Events</CardTitle>
-          <CardDescription>Your attendance history for the selected period</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? <div className="text-muted-foreground">Loading...</div> : attendanceData?.recentEvents && attendanceData.recentEvents.length > 0 ? <div className="space-y-2">
-              {attendanceData.recentEvents.map(event => <div key={event.id} className="flex items-center justify-between gap-3 rounded-xl border border-border p-3">
-                  <div className="min-w-0">
-                    <h4 className="truncate text-sm font-semibold text-foreground">{event.name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(event.date), 'dd/MM/yyyy')}
-                    </p>
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="font-heading text-base font-semibold text-foreground">History</p>
+          {type !== 'all' && <button type="button" onClick={() => setType('all')} className="text-xs font-semibold text-primary">Show all</button>}
+        </div>
+        {isLoading ? (
+          <div className="space-y-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />)}</div>
+        ) : events.length === 0 ? (
+          <EmptyState icon={CalendarCheck} title="No meetings in this period" hint="Try a longer period above." />
+        ) : (
+          <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+            {events.map((e) => {
+              const d = new Date(e.date);
+              return (
+                <li key={e.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-center text-primary">
+                    <span className="font-heading text-base font-bold leading-none">{format(d, 'dd')}</span>
+                    <span className="text-[10px] leading-none">{format(d, 'MM/yy')}</span>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <Badge variant={event.type === 'regional' ? 'default' : event.type === 'dcg' ? 'secondary' : 'outline'}>
-                      {event.type === 'prayer' ? 'PRAYER' : event.type.toUpperCase()}
-                    </Badge>
-                    <Badge variant={event.attended ? 'default' : 'destructive'}>
-                      {event.attended ? 'Present' : 'Absent'}
-                    </Badge>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{e.name}</p>
+                    <p className="text-xs text-muted-foreground">{format(d, 'dd/MM/yyyy')} · {e.type === 'regional' ? 'Service' : e.type === 'dcg' ? 'DCG' : 'Prayer'}</p>
                   </div>
-                </div>)}
-            </div> : <div className="text-muted-foreground">No events found for the selected period</div>}
-        </CardContent>
-      </Card>
-    </div>;
+                  {e.attended
+                    ? <span className="flex shrink-0 items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success"><CheckCircle2 className="h-3.5 w-3.5" />Present</span>
+                    : <span className="flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive"><XCircle className="h-3.5 w-3.5" />Absent</span>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
 }
