@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Download, Search, Pen, MoreVertical, Eye, Trash2, Star, Baby } from 'lucide-react';
+import { PlusCircle, Download, Search, Pen, MoreVertical, Eye, Trash2, Star, Baby, Phone, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMembers, MemberWithProfile, useDeleteMember } from '@/hooks/useMembers';
 import {
@@ -26,6 +26,7 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
+  DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { 
@@ -48,6 +49,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { buildChildrenSet } from '@/utils/childUtils';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import MemberKPICards from '@/components/admin/regional/MemberKPICards';
+import { SearchBar, RoundButton, ChipRow, Initials, StatusPill, TypePill, SheetHeader } from '@/components/admin/regional/RegionalUI';
+import { EmptyState } from '@/components/member/MemberUI';
+import { format } from 'date-fns';
 
 const Members: React.FC = () => {
   const navigate = useNavigate();
@@ -214,219 +218,199 @@ const Members: React.FC = () => {
 
 
 
+  const typeLabel = (m: MemberWithProfile) => {
+    if (childrenSet.has(m.id)) return { label: 'Child', tone: 'var(--chart-5)' };
+    if (m.member_type === 'visitor') {
+      return m.rated_event_id && specialEventIds.has(m.rated_event_id)
+        ? { label: 'Special visitor', tone: 'var(--chart-4)' }
+        : { label: 'Visitor', tone: 'var(--chart-3)' };
+    }
+    return { label: 'Member', tone: 'var(--chart-2)' };
+  };
+
+  const rowMenu = (member: MemberWithProfile) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" onClick={(e) => e.stopPropagation()} aria-label="Member actions"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground">
+          <MoreVertical className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
+          <Eye className="h-4 w-4 mr-2" /> View profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setEditMember(member)}>
+          <Pen className="h-4 w-4 mr-2" /> Edit
+        </DropdownMenuItem>
+        {member.profiles?.phone && (
+          <DropdownMenuItem onClick={() => { window.location.href = `tel:${member.profiles?.phone}`; }}>
+            <Phone className="h-4 w-4 mr-2" /> Call
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => setMemberToDelete(member)} className="text-destructive focus:text-destructive">
+          <Trash2 className="h-4 w-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <>
-      <div className="space-y-6">
-
+      <div className="space-y-5 pb-24 lg:pb-0">
         {/* Edit Member Dialog */}
         <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
-          <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
-            <DialogHeader>
+          <DialogContent className="lg:max-w-3xl">
+            <SheetHeader icon={Pen} title="Edit member" description="Update personal, spiritual and family details." />
+            <DialogHeader className="sr-only">
               <DialogTitle>Edit Member</DialogTitle>
-              <DialogDescription>
-                Update member information and details.
-              </DialogDescription>
+              <DialogDescription>Update member information and details.</DialogDescription>
             </DialogHeader>
-            {editMember && (
-              <EditMemberForm 
-                member={editMember} 
-                onSuccess={() => setEditMember(null)} 
-              />
-            )}
+            {editMember && <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />}
           </DialogContent>
         </Dialog>
-        
-        {/* KPI Cards */}
-        <MemberKPICards 
-          members={members} 
-          isLoading={isLoadingMembers} 
-          memberRelationships={memberRelationships} 
-          specialEventIds={specialEventIds} 
+
+        {/* Register Member Dialog */}
+        <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
+          <DialogContent className="lg:max-w-3xl">
+            <SheetHeader icon={UserPlus} title="Register member" description="Add a new member or visitor to your region." />
+            <DialogHeader className="sr-only">
+              <DialogTitle>Register New Member</DialogTitle>
+              <DialogDescription>Fill out the form below to register a new member.</DialogDescription>
+            </DialogHeader>
+            <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
+
+        <MemberKPICards
+          members={members}
+          isLoading={isLoadingMembers}
+          memberRelationships={memberRelationships}
+          specialEventIds={specialEventIds}
           regionId={userRegion?.id}
+          selected={memberTypeFilter}
+          onSelect={setMemberTypeFilter}
         />
-        
-        <div className="space-y-4">
-            <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-foreground">Member Directory</h2>
-                    <p className="text-sm text-muted-foreground">A list of all members in your region</p>
-                  </div>
-                </div>
-                <Dialog open={isRegisterDialogOpen} onOpenChange={setRegisterDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2 shrink-0">
-                      <PlusCircle className="h-4 w-4" /> Register Member
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
-                    <DialogHeader>
-                      <DialogTitle>Register New Member</DialogTitle>
-                      <DialogDescription>
-                        Fill out the form below to register a new member.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <RegisterMemberForm onSuccess={() => setRegisterDialogOpen(false)} />
-                  </DialogContent>
-                </Dialog>
-              </div>
-              
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
-                <div className="relative flex-1 sm:min-w-[250px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Search by name, email, or phone..." 
-                    className="pl-9 bg-background/60" 
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                
-                <Select value={memberStatusFilter} onValueChange={setMemberStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                    <SelectValue placeholder="Filter by Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="transferred">Transferred</SelectItem>
-                  </SelectContent>
-                </Select>
 
-                <Select value={memberTypeFilter} onValueChange={setMemberTypeFilter}>
-                  <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-                    <SelectValue placeholder="Filter by Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
-                    <SelectItem value="visitor_special">Special Event Visitors</SelectItem>
-                    <SelectItem value="visitor_regular">Regular Visitors</SelectItem>
-                    <SelectItem value="children">Children</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Button variant="outline" onClick={handleExportMembers} className="w-full sm:w-auto">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export ({filteredMembers.length})
-                </Button>
-              </div>
-
-              <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="w-[20%]">Name</TableHead>
-                      <TableHead className="hidden md:table-cell w-[20%]">Address</TableHead>
-                      <TableHead className="hidden sm:table-cell">Phone</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden lg:table-cell">Join Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingMembers || !userRegion ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          {Array.from({ length: 7 }).map((_, j) => (
-                            <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    ) : membersError ? (
-                       <TableRow><TableCell colSpan={7} className="text-center text-destructive">Error loading members.</TableCell></TableRow>
-                     ) : filteredMembers.length > 0 ? (
-                      filteredMembers.map(member => (
-                        <TableRow 
-                          key={member.id} 
-                          className="cursor-pointer hover:bg-muted/20 transition-colors"
-                          onClick={() => navigate(`/admin/regional/members/${member.id}`)}
-                        >
-                          <TableCell className="font-medium">
-                            {member.profiles?.last_name} {member.profiles?.first_name}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell max-w-xs truncate">{member.profiles?.address || 'N/A'}</TableCell>
-                          <TableCell className="hidden sm:table-cell">{member.profiles?.phone || 'N/A'}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
-                              className={member.member_type === 'visitor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}
-                            >
-                              <Users className="w-3 h-3 mr-1" />
-                              {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(member.status || 'new')}>
-                              {member.status || 'new'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">{member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}</TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setEditMember(member)}>
-                                  <Pen className="h-4 w-4 mr-2" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => setMemberToDelete(member)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow><TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                        {searchTerm ? 'No members match your search.' : 'No members found.'}
-                      </TableCell></TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                </div>
-              </div>
-            </div>
+        {/* Search + actions */}
+        <div className="flex items-center gap-2">
+          <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search name, email or phone" />
+          <RoundButton icon={Download} label={`Export ${filteredMembers.length} to CSV`} onClick={handleExportMembers} />
+          <RoundButton icon={UserPlus} label="Register member" primary onClick={() => setRegisterDialogOpen(true)} />
         </div>
+
+        <div className="space-y-2">
+          <ChipRow value={memberTypeFilter} onChange={setMemberTypeFilter} options={[
+            { value: 'all', label: 'Everyone' },
+            { value: 'member', label: 'Members' },
+            { value: 'visitor_regular', label: 'Visitors' },
+            { value: 'visitor_special', label: 'Special visitors' },
+            { value: 'children', label: 'Children' },
+          ]} />
+          <ChipRow value={memberStatusFilter} onChange={setMemberStatusFilter} options={[
+            { value: 'all', label: 'Any status' },
+            { value: 'new', label: 'New' },
+            { value: 'active', label: 'Active' },
+            { value: 'inactive', label: 'Inactive' },
+            { value: 'transferred', label: 'Transferred' },
+          ]} />
+        </div>
+
+        <p className="px-1 text-xs font-medium text-muted-foreground">
+          Showing {filteredMembers.length} of {members?.length ?? 0}
+        </p>
+
+        {isLoadingMembers || !userRegion ? (
+          <div className="space-y-2">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />)}</div>
+        ) : membersError ? (
+          <EmptyState icon={Users} title="Couldn't load members" hint="Please refresh and try again." />
+        ) : filteredMembers.length === 0 ? (
+          <EmptyState icon={Users} title={searchTerm ? 'No one matches your search' : 'No members found'} hint="Try another search or filter." />
+        ) : (
+          <>
+            {/* Mobile / tablet list */}
+            <ul className="grid gap-2 md:grid-cols-2 lg:hidden">
+              {filteredMembers.map((member) => {
+                const t = typeLabel(member);
+                return (
+                  <li key={member.id} className="min-w-0">
+                    <div role="button" tabIndex={0}
+                      onClick={() => navigate(`/admin/regional/members/${member.id}`)}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/admin/regional/members/${member.id}`)}
+                      className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card p-3 transition active:scale-[0.99]">
+                      <Initials first={member.profiles?.first_name} last={member.profiles?.last_name} photo={member.photo_url} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-foreground">{member.profiles?.last_name} {member.profiles?.first_name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{member.profiles?.phone || member.profiles?.email || 'No contact'}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <TypePill label={t.label} tone={t.tone} />
+                          <StatusPill status={member.status} />
+                        </div>
+                      </div>
+                      {rowMenu(member)}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Desktop table */}
+            <div className="hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead className="hidden xl:table-cell">Address</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMembers.map((member) => {
+                    const t = typeLabel(member);
+                    return (
+                      <TableRow key={member.id} className="cursor-pointer" onClick={() => navigate(`/admin/regional/members/${member.id}`)}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Initials size="sm" first={member.profiles?.first_name} last={member.profiles?.last_name} photo={member.photo_url} />
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">{member.profiles?.last_name} {member.profiles?.first_name}</p>
+                              <p className="truncate text-xs text-muted-foreground">{member.profiles?.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{member.profiles?.phone || '—'}</TableCell>
+                        <TableCell className="hidden max-w-[220px] truncate xl:table-cell">{member.profiles?.address || '—'}</TableCell>
+                        <TableCell><TypePill label={t.label} tone={t.tone} /></TableCell>
+                        <TableCell><StatusPill status={member.status} /></TableCell>
+                        <TableCell className="text-muted-foreground">{member.join_date ? format(new Date(member.join_date), 'dd/MM/yyyy') : '—'}</TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>{rowMenu(member)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!memberToDelete} onOpenChange={(open) => !open && setMemberToDelete(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete {memberToDelete?.profiles?.last_name} {memberToDelete?.profiles?.first_name}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {memberToDelete?.profiles?.last_name} {memberToDelete?.profiles?.first_name} 
-              and all associated data. This action cannot be undone.
+              This permanently deletes this person and all their personal data. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteMember}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMember} className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
