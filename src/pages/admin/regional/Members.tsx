@@ -159,6 +159,13 @@ const Members: React.FC = () => {
     });
   }, [members, searchTerm, memberStatusFilter, memberTypeFilter, joinedPeriod, childrenSet, specialEventIds]);
 
+  const periodMembers = React.useMemo(() => {
+    const months = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 }[joinedPeriod as '1m'];
+    if (!months || !members) return members;
+    const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+    return members.filter((m: any) => !!m.created_at && new Date(m.created_at) >= cutoff);
+  }, [members, joinedPeriod]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800 border-green-200';
@@ -290,8 +297,16 @@ const Members: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        <ChipRow value={joinedPeriod} onChange={setJoinedPeriod} options={[
+          { value: 'all', label: 'All time' },
+          { value: '1m', label: '1 month' },
+          { value: '3m', label: '3 months' },
+          { value: '6m', label: '6 months' },
+          { value: '1y', label: '1 year' },
+        ]} />
+
         <MemberKPICards
-          members={members}
+          members={periodMembers}
           isLoading={isLoadingMembers}
           memberRelationships={memberRelationships}
           specialEventIds={specialEventIds}
@@ -321,13 +336,6 @@ const Members: React.FC = () => {
             { value: 'active', label: 'Active' },
             { value: 'inactive', label: 'Inactive' },
             { value: 'transferred', label: 'Transferred' },
-          ]} />
-          <ChipRow value={joinedPeriod} onChange={setJoinedPeriod} options={[
-            { value: 'all', label: 'Joined: any time' },
-            { value: '1m', label: 'Last month' },
-            { value: '3m', label: 'Last 3 months' },
-            { value: '6m', label: 'Last 6 months' },
-            { value: '1y', label: 'Last year' },
           ]} />
         </div>
 
