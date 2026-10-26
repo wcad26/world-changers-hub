@@ -175,6 +175,27 @@ const RegionalEvents: React.FC = () => {
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     return { dateRange: { from, to: undefined }, quickDateRange: '1-year' };
   });
+  const periodOptions = [
+    { value: '1-month', label: '1 month' },
+    { value: '3-months', label: '3 months' },
+    { value: '6-months', label: '6 months' },
+    { value: '1-year', label: '1 year' },
+    { value: 'custom', label: 'Custom' },
+  ];
+  const handlePeriodChange = (value: string) => {
+    if (value === 'custom') {
+      setPeriodFilters(prev => ({ ...prev, quickDateRange: 'custom' }));
+      return;
+    }
+    const now = new Date();
+    let from: Date | undefined;
+    if (value === '1-month') from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    else if (value === '3-months') from = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    else if (value === '6-months') from = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    else if (value === '1-year') from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    else return;
+    setPeriodFilters({ quickDateRange: value, dateRange: { from, to: now } });
+  };
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
