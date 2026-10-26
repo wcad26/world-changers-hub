@@ -1,175 +1,108 @@
-
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { ensureAuthUser } from '../_shared/ensureAuthUser.ts'
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status,
+  })
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    console.log('create-member: Function invoked')
-    
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { auth: { autoRefreshToken: false, persistSession: false } }
+      { auth: { autoRefreshToken: false, persistSession: false } },
     )
 
-    const { record } = await req.json()
-    console.log('create-member: Received record:', record)
-    
-    const { 
-      email, 
-      first_name, 
-      last_name, 
-      phone, 
-      address, 
-      date_of_birth, 
-      gender, 
-      occupation,
-      region_id 
+    const body = await req.json().catch(() => ({}))
+    const record = body?.record ?? body ?? {}
+    const {
+      first_name, last_name, phone, address, date_of_birth, gender, occupation, region_id,
     } = record
+    const email = String(record.email ?? '').trim().toLowerCase()
+    const member_type = record.member_type === 'visitor' ? 'visitor' : 'member'
 
-    // Validate required fields
     if (!email || !first_name || !last_name || !region_id) {
-      console.error('create-member: Missing required fields')
-      throw new Error('Email, first name, last name, and region ID are required.')
+      return json({ success: false, error: 'Email, first name, last name and region are required.' })
     }
 
-    console.log('create-member: Starting user invitation...')
-    
-    // 1. Create user with default password - no email invitation required
-    const { data: { user }, error: createError } = await supabaseAdmin.auth.admin.createUser({
+    // Already registered in this region? Tell the admin clearly instead of crashing.
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles').select('id').ilike('email', email).maybeSingle()
+    if (existingProfile) {
+      const { data: existingMember } = await supabaseAdmin
+        .from('members').select('id, member_id, member_type, region_id')
+        .eq('profile_id', existingProfile.id).maybeSingle()
+      if (existingMember) {
+        const sameRegion = existingMember.region_id === region_id
+        return json({
+          success: false,
+          is_duplicate: true,
+          error: sameRegion
+            ? `This email is already registered in this region as a ${existingMember.member_type} (${existingMember.member_id}).`
+            : `This email is already registered in another region (${existingMember.member_id}). Use Member Transfer instead.`,
+        })
+      }
+    }
+
+    // Reuse or provision the sign-in account (handles existing emails safely).
+    const auth = await ensureAuthUser(supabaseAdmin, {
+      email, firstName: first_name, lastName: last_name, metadata: { region_id, phone, address },
+    })
+    const profileId = auth.id
+
+    const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+      id: profileId,
       email,
-      password: '123456',
-      email_confirm: true, // Skip email confirmation
-      user_metadata: {
-        first_name,
-        last_name,
-      },
-    })
+      first_name,
+      last_name,
+      phone: phone || null,
+      address: address || null,
+      date_of_birth: date_of_birth || null,
+      gender: gender ? String(gender).toLowerCase() : null,
+      occupation: occupation || null,
+      region_id,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
+    if (profileError) throw profileError
 
-    if (createError) {
-      console.error('create-member: User creation failed:', createError)
-      throw createError
-    }
-    
-    if (!user) {
-      console.error('create-member: No user data received after invitation')
-      throw new Error('User could not be created.')
-    }
+    const { data: memberId, error: memberIdError } = await supabaseAdmin.rpc('generate_member_id', { _region_id: region_id })
+    if (memberIdError || !memberId) throw memberIdError ?? new Error('Could not generate member ID.')
 
-    console.log('create-member: User created successfully:', user.id)
-
-    // 2. Update the profile with complete information including region_id
-    console.log('create-member: Updating profile with complete data...')
-    const { error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        email: email,
-        first_name,
-        last_name,
-        phone: phone || null,
-        address: address || null,
-        date_of_birth: date_of_birth || null,
-        gender: gender || null,
-        occupation: occupation || null,
-        region_id: region_id, // This is crucial - ensure profile has region_id
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id)
-
-    if (profileError) {
-      console.error('create-member: Profile update failed:', profileError)
-      // Don't throw here, but log the error
-      console.error('create-member: Continuing despite profile update error')
-    } else {
-      console.log('create-member: Profile updated successfully')
-    }
-
-    // 3. Generate member ID
-    console.log('create-member: Generating member ID...')
-    const { data: memberId, error: memberIdError } = await supabaseAdmin.rpc('generate_member_id', {
-      _region_id: region_id,
-    })
-
-    if (memberIdError) {
-      console.error('create-member: Member ID generation failed:', memberIdError)
-      throw memberIdError
-    }
-    
-    if (!memberId) {
-      console.error('create-member: No member ID generated')
-      throw new Error('Could not generate member ID.')
-    }
-
-    console.log('create-member: Member ID generated:', memberId)
-
-    // 4. Create the member record
-    console.log('create-member: Creating member record...')
     const { data: newMember, error: memberError } = await supabaseAdmin
       .from('members')
       .insert({
-        profile_id: user.id,
-        region_id: region_id,
+        profile_id: profileId,
+        region_id,
         member_id: memberId,
+        member_type,
         status: 'new',
-        join_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        join_date: new Date().toISOString().split('T')[0],
       })
       .select('*, profiles(*)')
       .single()
+    if (memberError) throw memberError
 
-    if (memberError) {
-      console.error('create-member: Member creation failed:', memberError)
-      throw memberError
-    }
-
-    console.log('create-member: Member created successfully:', newMember)
-
-    // 5. Assign member role to the user
-    console.log('create-member: Assigning member role...')
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: user.id,
-        role: 'member',
-        region_id: region_id,
-        is_active: true,
-        assigned_at: new Date().toISOString()
+    if (member_type === 'member') {
+      const { error: roleError } = await supabaseAdmin.from('user_roles').insert({
+        user_id: profileId, role: 'member', region_id, is_active: true, status: 'active',
       })
-
-    if (roleError) {
-      console.error('create-member: Role assignment failed:', roleError)
-      // Don't throw here, just log the error as member is already created
-      console.error('create-member: Member created but role assignment failed')
-    } else {
-      console.log('create-member: Member role assigned successfully')
+      if (roleError) console.error('create-member: role assignment failed', roleError)
     }
 
-    console.log('create-member: Process completed successfully')
-    
-    return new Response(JSON.stringify({ 
+    return json({
       success: true,
+      id: newMember.id,
       member: newMember,
-      message: `Member ${first_name} ${last_name} created successfully with ID ${memberId}`
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+      message: `${first_name} ${last_name} registered with ID ${memberId}`,
     })
-    
   } catch (error) {
     console.error('create-member: Fatal error:', error)
-    return new Response(JSON.stringify({ 
-      success: false,
-      error: error.message,
-      details: 'Check function logs for more information'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    return json({ success: false, error: (error as Error)?.message ?? 'Registration failed' })
   }
 })

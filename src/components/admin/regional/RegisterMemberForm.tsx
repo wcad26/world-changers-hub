@@ -160,7 +160,8 @@ const RegisterMemberForm: React.FC<RegisterMemberFormProps> = ({ onSuccess, cust
     }
 
     createMember.mutate(memberData, {
-      onSuccess: (data) => {
+      onSuccess: (result: any) => {
+        const data = { id: result?.id ?? result?.member?.id };
         // Create relationships
         if (data?.id) {
           relationships.forEach(rel => {

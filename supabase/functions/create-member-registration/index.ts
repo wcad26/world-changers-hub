@@ -42,9 +42,16 @@ serve(async (req) => {
       throw new Error('All fields are required: first name, last name, email, phone, address, and region.')
     }
 
-    // Check for existing user with same email
-    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers()
-    const userExists = existingUser.users.some(user => user.email === email)
+    // Check for existing user with same email (all pages, case-insensitive)
+    const wanted = String(email).trim().toLowerCase()
+    let userExists = false
+    for (let page = 1; page <= 20 && !userExists; page++) {
+      const { data: pageData, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 })
+      if (listErr) break
+      const users = pageData?.users ?? []
+      userExists = users.some((u: any) => (u.email ?? '').toLowerCase() === wanted)
+      if (users.length < 1000) break
+    }
 
     if (userExists) {
       // Check if this user has a member record in this region
