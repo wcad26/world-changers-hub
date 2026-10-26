@@ -1630,60 +1630,15 @@ const RegionalEvents: React.FC = () => {
     setEditEventDialogOpen(true);
   };
 
-  const renderTableBody = (eventList: typeof events) => {
-    if (isLoading || !userRegion) {
-      return Array.from({ length: 4 }).map((_, i) => (
-        <TableRow key={i}>
-          {Array.from({ length: 8 }).map((_, j) => (
-            <TableCell key={j}><Skeleton className="h-6 w-full rounded-lg" /></TableCell>
-          ))}
-        </TableRow>
-      ));
-    }
-    if (!eventList || eventList.length === 0) {
-      return (
-        <TableRow>
-          <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
-            {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
-          </TableCell>
-        </TableRow>
-      );
-    }
-    return eventList.map((event) => {
-      const now = new Date();
-      const start = event.start_datetime ? new Date(event.start_datetime) : null;
-      const isFutureEvent = !!(start && !isNaN(start.getTime()) && start >= now);
-      const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
-      const attendance = getEventAttendance(event.id);
-      return (
-      <TableRow key={event.id}>
-        <TableCell className="font-medium">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span>{event.name ?? '—'}</span>
-            {event.recurrence_rule_id && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary bg-primary/5">
-                <Repeat className="h-2.5 w-2.5" /> Recurring
-              </Badge>
-            )}
-          </div>
-        </TableCell>
-        <TableCell>
-          <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
-            {eventType}
-          </Badge>
-        </TableCell>
-        <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
-        <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
-        <TableCell>{event.location_name ?? '—'}</TableCell>
-        <TableCell className="text-center">{event.capacity ?? 'N/A'}</TableCell>
-        <TableCell className="text-center">{isFutureEvent ? '-' : attendance}</TableCell>
-        <TableCell>
+  const renderActions = (event: any, trigger?: React.ReactNode) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+              {trigger ?? (
               <Button variant="ghost" size="sm">
                 <MoreHorizontal className="h-4 w-4" />
                 <span className="sr-only">Actions</span>
               </Button>
+              )}
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEdit(event)}>
@@ -1758,6 +1713,57 @@ const RegionalEvents: React.FC = () => {
               </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
+  );
+
+  const renderTableBody = (eventList: typeof events) => {
+    if (isLoading || !userRegion) {
+      return Array.from({ length: 4 }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: 8 }).map((_, j) => (
+            <TableCell key={j}><Skeleton className="h-6 w-full rounded-lg" /></TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    if (!eventList || eventList.length === 0) {
+      return (
+        <TableRow>
+          <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+            {searchTerm ? 'No events match your search.' : 'No events found. Create your first one!'}
+          </TableCell>
+        </TableRow>
+      );
+    }
+    return eventList.map((event) => {
+      const now = new Date();
+      const start = event.start_datetime ? new Date(event.start_datetime) : null;
+      const isFutureEvent = !!(start && !isNaN(start.getTime()) && start >= now);
+      const eventType = event.is_special ? 'Special' : event.dcg_id ? 'DCG' : 'Regional';
+      const attendance = getEventAttendance(event.id);
+      return (
+      <TableRow key={event.id}>
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span>{event.name ?? '—'}</span>
+            {event.recurrence_rule_id && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1 border-primary/30 text-primary bg-primary/5">
+                <Repeat className="h-2.5 w-2.5" /> Recurring
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+        <TableCell>
+          <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
+            {eventType}
+          </Badge>
+        </TableCell>
+        <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
+        <TableCell>{formatTimeRange(event.start_datetime, event.end_datetime)}</TableCell>
+        <TableCell>{event.location_name ?? '—'}</TableCell>
+        <TableCell className="text-center">{event.capacity ?? 'N/A'}</TableCell>
+        <TableCell className="text-center">{isFutureEvent ? '-' : attendance}</TableCell>
+        <TableCell>
+          {renderActions(event)}
         </TableCell>
       </TableRow>
       );
@@ -1939,7 +1945,7 @@ const RegionalEvents: React.FC = () => {
       />
 
       <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
           <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
@@ -3308,7 +3314,7 @@ const RegionalEvents: React.FC = () => {
                   onChange={setRecurrence}
                 />
               </div>
-              <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+              <DialogFooter className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-border/30 bg-card/95 backdrop-blur-xl sm:rounded-b-2xl gap-2 flex-row [&>button]:flex-1 sm:[&>button]:flex-none">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
                   setCreateEventDialogOpen(false);
                   form.reset();
@@ -3335,7 +3341,7 @@ const RegionalEvents: React.FC = () => {
 
       {/* Edit Event Dialog */}
       <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-2xl">
+        <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
           <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
@@ -4658,7 +4664,7 @@ const RegionalEvents: React.FC = () => {
                 </div>
               )}
 
-              <DialogFooter className="-mx-6 px-6 py-4 border-t border-border/30 bg-card/40 backdrop-blur-sm rounded-b-2xl gap-2">
+              <DialogFooter className="sticky bottom-0 z-10 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t border-border/30 bg-card/95 backdrop-blur-xl sm:rounded-b-2xl gap-2 flex-row [&>button]:flex-1 sm:[&>button]:flex-none">
                 <Button type="button" variant="outline" className="bg-background/60 border-border/50" onClick={() => {
                   setEditEventDialogOpen(false);
                   setEventToEdit(null);
