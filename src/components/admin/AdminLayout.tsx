@@ -287,16 +287,16 @@ const AdminLayoutMobile: React.FC<AdminLayoutProps> = ({ children, title, menuIt
       {/* Main content — clears top bar (h-14) and bottom pill */}
       <main className={cn(
         "flex-1 pt-14",
-        isDashboard ? "pb-24" : "pb-24 px-4 py-4"
+        isDashboard ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(5.5rem+env(safe-area-inset-bottom))] px-4 pt-[4.5rem]"
       )}>
         {children || <Outlet />}
       </main>
 
       {/* Bottom navigation pill */}
       {bottomNav.length > 0 && (
-        <nav className="fixed bottom-4 left-4 right-4 z-50">
-          <div className="rounded-md border border-border bg-card/95 shadow-regal backdrop-blur-xl">
-            <div className="flex items-center justify-around rounded-md bg-primary px-2 py-2">
+        <nav className="fixed inset-x-0 bottom-0 z-50 w-full">
+          <div className="border-t border-border bg-primary pb-[env(safe-area-inset-bottom)] shadow-regal">
+            <div className="flex items-center justify-around bg-primary px-2 py-1.5">
               {bottomNav.map(item => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
