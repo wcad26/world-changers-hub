@@ -1889,8 +1889,26 @@ const RegionalEvents: React.FC = () => {
         </div>
 
         {/* Period */}
-        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} className="mb-0" />
+        <div className="space-y-2">
+          <ChipRow value={periodFilters.quickDateRange} onChange={handlePeriodChange} options={periodOptions} />
+          {periodFilters.quickDateRange === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                  <CalendarIcon className="h-4 w-4" />
+                  {periodFilters.dateRange.from
+                    ? `${format(periodFilters.dateRange.from, "dd/MM/yyyy")}${periodFilters.dateRange.to ? ` – ${format(periodFilters.dateRange.to, "dd/MM/yyyy")}` : ''}`
+                    : 'Pick dates'}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarPicker mode="range" initialFocus numberOfMonths={1}
+                  selected={{ from: periodFilters.dateRange.from, to: periodFilters.dateRange.to }}
+                  onSelect={(range) => setPeriodFilters(prev => ({ ...prev, dateRange: { from: range?.from, to: range?.to } }))}
+                  className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Time tabs */}
