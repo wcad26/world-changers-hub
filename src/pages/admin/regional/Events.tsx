@@ -1784,150 +1784,7 @@ const RegionalEvents: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Period Filter + Search + Filters + Add Event */}
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2">
-          <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} className="mb-0" />
-          <div className="relative w-full sm:w-auto">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search events..." className="pl-9 bg-background/60 h-8 w-full sm:w-[200px] text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-          </div>
-          <Select value={eventTypeFilter} onValueChange={setEventTypeFilter}>
-            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
-              <SelectValue placeholder="Event Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="regional">Regional</SelectItem>
-              <SelectItem value="dcg">DCG</SelectItem>
-              <SelectItem value="special">Special</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={timeFilter} onValueChange={setTimeFilter}>
-            <SelectTrigger className="w-full sm:w-[130px] bg-background/60 h-8 text-sm">
-              <SelectValue placeholder="Time" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="past">Past</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="sm:ml-auto flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => navigate('/admin/regional/attendance/scan')} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
-              <UserCheck className="h-4 w-4" />
-              Record Attendance
-            </Button>
-            <Button variant="outline" onClick={() => setSeriesDialogOpen(true)} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
-              <Repeat className="h-4 w-4" />
-              Recurring Series
-            </Button>
-            <Button onClick={() => setCreateEventDialogOpen(true)} className="gap-2 h-8 text-sm flex-1 sm:flex-none">
-              <Plus className="h-4 w-4" />
-              Add Event
-            </Button>
-
-          </div>
-        </div>
-
-        {/* KPI Cards */}
-        <div className="grid gap-4 md:grid-cols-5">
-          {(() => {
-            // Calculate attendance target %
-            const regionalEventsForTarget = periodFilteredEvents.filter(e => !e.dcg_id && !e.is_special);
-            const totalCapacity = regionalEventsForTarget.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
-            const regionalAtt = (attendanceData || []).filter(a => {
-              const d = new Date(a.event_date);
-              if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
-              if (periodFilters.dateRange.to) {
-                const endOfDay = new Date(periodFilters.dateRange.to);
-                endOfDay.setHours(23, 59, 59, 999);
-                if (d > endOfDay) return false;
-              }
-              return !a.dcg_id;
-            });
-            const totalActual = regionalAtt.reduce((s, a) => s + a.total_present, 0);
-            const attendanceTargetPct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;
-
-            return [
-              { label: 'Total Events', data: analyticsData.total, icon: CalendarDays, color: 'text-primary', bg: 'bg-primary/10' },
-              { label: 'Regional Events', data: analyticsData.regional, icon: MapPin, color: 'text-primary', bg: 'bg-primary/10' },
-              { label: 'DCG Events', data: analyticsData.dcg, icon: Users, color: 'text-accent', bg: 'bg-accent/10' },
-              { label: 'Special Events', data: analyticsData.special, icon: Star, color: 'text-secondary', bg: 'bg-secondary/10' },
-              { label: 'Attendance Target', data: { count: `${attendanceTargetPct}%`, avgAttendance: totalActual, growth: 0 }, icon: Target, color: 'text-primary', bg: 'bg-primary/10', isTarget: true },
-            ].map(({ label, data, icon: Icon, color, bg, isTarget }) => (
-              <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <span className="text-sm font-medium text-muted-foreground">{label}</span>
-                </div>
-                <p className="font-bold text-foreground text-lg">{isTarget ? data.count : data.count}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {isTarget ? `${data.avgAttendance} total attendees` : `Avg: ${data.avgAttendance} attendees`}
-                </p>
-                {!isTarget && (
-                  <div className="mt-2">
-                    {data.growth !== 0 ? (
-                      <div className={`flex items-center gap-1 ${data.growth > 0 ? 'text-green-600' : 'text-destructive'}`}>
-                        {data.growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                        <span className="text-xs font-medium">{data.growth > 0 ? '+' : ''}{data.growth}% avg attendance</span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">0% growth</span>
-                    )}
-                  </div>
-                )}
-                {isTarget && (
-                  <p className="text-xs text-muted-foreground mt-2">Of regional event capacity</p>
-                )}
-              </div>
-            ));
-          })()}
-        </div>
-
-        {/* Events Table */}
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-              <Calendar className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Events</h2>
-              <p className="text-sm text-muted-foreground">View and manage all events in your region</p>
-            </div>
-          </div>
-          {isError && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error loading events</AlertTitle>
-               <AlertDescription>{String(error || "An unknown error occurred.")}</AlertDescription>
-            </Alert>
-          )}
-          <div className="rounded-xl border border-border/40 overflow-hidden">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead>Event Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Time</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="text-center">Capacity</TableHead>
-                    <TableHead className="text-center">Attendance</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {renderTableBody(filteredEvents)}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </div>
-      </div>
+__BODY__
 
       {/* Create Event Dialog */}
       <RecurringSeriesDialog
@@ -1970,7 +1827,7 @@ const RegionalEvents: React.FC = () => {
                 description: `Please fix the following fields: ${Object.keys(errors).join(', ')}`,
                 variant: "destructive",
               });
-            })} className="px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
+            })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -3366,7 +3223,7 @@ const RegionalEvents: React.FC = () => {
                 description: `Please fix the following fields: ${Object.keys(errors).join(', ')}`,
                 variant: "destructive",
               });
-            })} className="px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
+            })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
               {/* Event details form fields - same structure as create dialog */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
