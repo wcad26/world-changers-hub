@@ -18,5 +18,5 @@
 - [ ] Verify configured bank details and a real card payment (requires an authenticated account and configured destination)
 - [x] Remove green line, Custom → All, member-only transactions
 - [x] Give bottom sheet with Flutterwave (shared WCBN Connect gateway): MTN/Orange mobile money + card
-- [ ] Regional dashboard modern rebuild + period filter
-- [ ] Regional Members page period filter
+- [x] Regional dashboard modern rebuild + period filter
+- [x] Regional Members page period filter
