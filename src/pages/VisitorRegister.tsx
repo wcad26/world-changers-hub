@@ -1,4 +1,4 @@
-import { generateSlug } from "@/lib/slugUtils";
+import { generateSlug } from "@/utils/slugUtils";
 import { useParams, useNavigate } from '@/lib/router-compat';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
