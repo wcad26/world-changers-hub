@@ -79,8 +79,9 @@ const AssignDiscipleDialog: React.FC<AssignDiscipleDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="lg:max-w-[520px]">
+        <SheetHeader icon={UserPlus} title="Assign relationship" description="Pair a mentor with a disciple to start their journey." />
+        <DialogHeader className="sr-only">
           <DialogTitle>Assign Discipleship Relationship</DialogTitle>
           <DialogDescription>
             Create a new discipleship relationship between a mentor and disciple.
