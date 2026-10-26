@@ -320,6 +320,7 @@ const MemberProfile: React.FC = () => {
                       </div>
                     </div>
                   )}
+                </div>
             </Panel>
             <FamilyRelationshipsSection memberId={member.id} />
           </div>
