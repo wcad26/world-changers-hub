@@ -17,11 +17,11 @@ export const useRegionBySlug = (slug: string | undefined) => {
 
       if (error) throw error;
       
-      // Find region by matching the generated slug from the region name
+      // Prefer the short region code (e.g. WCANA), then fall back to the name slug
       const normalizedSlug = slug.toLowerCase();
-      const matchedRegion = regions?.find(
-        (region) => generateSlug(region.name) === normalizedSlug
-      );
+      const matchedRegion =
+        regions?.find((region: any) => (region.code ?? '').toLowerCase() === normalizedSlug) ??
+        regions?.find((region) => generateSlug(region.name) === normalizedSlug);
       
       if (!matchedRegion) {
         throw new Error(`Region not found for slug: ${slug}`);
