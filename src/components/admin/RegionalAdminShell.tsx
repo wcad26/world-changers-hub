@@ -189,11 +189,12 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
     '/admin/regional/members',
     '/admin/regional/events',
     '/admin/regional/dcg',
+    '/admin/regional/discipleship',
   ];
   const itemByPath = new Map(menuItems.map((i) => [i.path, i]));
   const preferred = preferredOrder.map((p) => itemByPath.get(p)).filter(Boolean) as typeof menuItems;
   const remaining = menuItems.filter((i) => !preferred.includes(i));
-  const bottomNav = [...preferred, ...remaining].slice(0, 4);
+  const bottomNav = [...preferred, ...remaining].slice(0, 5);
 
   return (
     <div className="min-h-svh bg-background flex flex-col">
@@ -264,7 +265,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
       {bottomNav.length > 0 && (
         <nav className="fixed inset-x-0 bottom-0 z-50 w-full">
           <div className="w-full border-t border-border bg-primary pb-[env(safe-area-inset-bottom)] shadow-regal">
-            <div className="flex w-full items-center justify-around bg-primary px-2 py-1.5">
+            <div className="flex w-full items-center justify-around gap-0.5 bg-primary px-1 py-1.5">
               {bottomNav.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
@@ -277,7 +278,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                     key={item.path}
                     to={item.path}
                     className={cn(
-                      'relative flex flex-col items-center px-2 py-2 rounded-xl transition-all duration-300 min-w-0 flex-1',
+                      'relative flex flex-col items-center px-1 py-2 rounded-xl transition-all duration-300 min-w-0 flex-1',
                        isActive ? 'bg-primary-foreground' : 'hover:bg-primary-foreground/10',
                     )}
                   >
