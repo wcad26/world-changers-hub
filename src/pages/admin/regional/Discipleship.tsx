@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Heart, UserPlus, Users, TrendingUp, TrendingDown, CheckCircle, Clock, Search, Target, Trash2, MoreHorizontal, Settings2 } from 'lucide-react';
+import { Heart, UserPlus, Users, TrendingUp, TrendingDown, CheckCircle, Clock, Search, Target, Trash2, MoreHorizontal, Settings2, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDiscipleshipRelationships, useDeleteDiscipleshipRelationship, type DiscipleshipRelationshipWithMembers } from '@/hooks/useDiscipleship';
 import AssignDiscipleDialog from '@/components/admin/regional/discipleship/AssignDiscipleDialog';
@@ -12,7 +12,9 @@ import ManageDiscipleshipDialog from '@/components/admin/regional/discipleship/M
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { GlassSection, GlassSectionHeader } from '@/components/ui/GlassSection';
+import { HeroCard, RingTile, SearchBar, RoundButton, ChipRow, Initials, StatusPill } from '@/components/admin/regional/RegionalUI';
+import { EmptyState } from '@/components/member/MemberUI';
+import { format } from 'date-fns';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -94,209 +96,143 @@ const Discipleship: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+  const name = (p?: { last_name?: string | null; first_name?: string | null } | null) =>
+    `${p?.last_name || ''} ${p?.first_name || ''}`.trim() || 'Unknown';
 
-  const kpiCards = [
-    {
-      label: 'Total Relationships',
-      value: stats.total,
-      icon: Users,
-      color: 'text-primary',
-      bg: 'bg-primary/10',
-    },
-    {
-      label: 'Active',
-      value: stats.active,
-      icon: Clock,
-      color: 'text-green-600',
-      bg: 'bg-green-100 dark:bg-green-900/20',
-      growth: stats.growthRate,
-    },
-    {
-      label: 'Completed',
-      value: stats.completed,
-      icon: CheckCircle,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100 dark:bg-blue-900/20',
-    },
-    {
-      label: 'Success Rate',
-      value: `${stats.successRate}%`,
-      icon: Target,
-      color: 'text-amber-600',
-      bg: 'bg-amber-100 dark:bg-amber-900/20',
-      subtitle: 'Reached membership milestone',
-    },
-  ];
+  const activeRate = stats.total ? Math.round((stats.active / stats.total) * 100) : 0;
+  const completedRate = stats.total ? Math.round((stats.completed / stats.total) * 100) : 0;
+  const countBy = (s: string) => relationships?.filter(r => (r.status || 'active') === s).length || 0;
+
+  const rowMenu = (relationship: DiscipleshipRelationshipWithMembers) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" onClick={(e) => e.stopPropagation()} aria-label="Relationship actions"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground">
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => setSelectedRelationship(relationship)}>
+          <Settings2 className="h-4 w-4 mr-2" /> Manage
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => setDeleteTarget(relationship)}>
+          <Trash2 className="h-4 w-4 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpiCards.map((kpi, i) => (
-          <div
-            key={i}
-            className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 transition-all duration-300 hover:shadow-md hover:border-border/60"
-          >
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${kpi.bg}`}>
-                <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">{kpi.label}</span>
-            </div>
-            {isLoading ? (
-              <div className="animate-pulse h-8 w-20 bg-muted rounded" />
-            ) : (
-              <>
-                <p className="font-bold text-foreground text-lg">{kpi.value}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  {kpi.growth !== undefined && (
-                    <span className={`flex items-center text-xs font-medium ${kpi.growth >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                      {kpi.growth >= 0 ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
-                      {kpi.growth >= 0 ? '+' : ''}{kpi.growth}% (30d)
-                    </span>
-                  )}
-                  {kpi.subtitle && (
-                    <span className="text-xs text-muted-foreground">{kpi.subtitle}</span>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+    <div className="space-y-5 pb-24 lg:pb-0">
+      {/* Hero + KPI tiles */}
+      <div className="grid gap-3 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <HeroCard eyebrow="Discipleship relationships" value={isLoading ? '…' : stats.total}
+            sub={<>+{stats.recentCount} in the last 30 days · {stats.growthRate >= 0 ? '+' : ''}{stats.growthRate}% growth</>}
+            ring={stats.successRate} ringLabel="Success" />
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+          <RingTile icon={Clock} label="Active" value={stats.active} ring={activeRate} ringLabel="of all" tone="var(--chart-2)"
+            active={statusFilter === 'active'} onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')} />
+          <RingTile icon={CheckCircle} label="Completed" value={stats.completed} ring={completedRate} ringLabel="of all" tone="var(--chart-3)"
+            active={statusFilter === 'completed'} onClick={() => setStatusFilter(statusFilter === 'completed' ? 'all' : 'completed')} />
+        </div>
       </div>
 
-      {/* Main Content */}
-      <GlassSection>
-        <GlassSectionHeader
-          icon={<Heart className="h-5 w-5" />}
-          title="Discipleship Relationships"
-          description="Manage mentor-disciple relationships and track progress"
-          action={
-            <Button onClick={() => setIsAssignDialogOpen(true)} className="gap-2 shrink-0">
-              <UserPlus className="h-4 w-4" />
-              Assign Relationship
-            </Button>
-          }
-        />
+      {/* Search + actions */}
+      <div className="flex items-center gap-2">
+        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search mentors or disciples" />
+        <RoundButton icon={UserPlus} label="Assign relationship" primary onClick={() => setIsAssignDialogOpen(true)} />
+      </div>
 
-        <div className="flex gap-4 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search mentors or disciples..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 bg-background/60"
-            />
+      <ChipRow value={statusFilter} onChange={setStatusFilter} options={[
+        { value: 'all', label: 'All', count: stats.total },
+        { value: 'active', label: 'Active', count: countBy('active') },
+        { value: 'completed', label: 'Completed', count: countBy('completed') },
+        { value: 'transferred', label: 'Transferred', count: countBy('transferred') },
+        { value: 'inactive', label: 'Inactive', count: countBy('inactive') },
+      ]} />
+
+      {isLoading || !userRegion ? (
+        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-2xl bg-muted" />)}</div>
+      ) : error ? (
+        <EmptyState icon={Heart} title="Couldn't load relationships" hint="Please refresh and try again." />
+      ) : filteredRelationships.length === 0 ? (
+        <EmptyState icon={Heart}
+          title={searchTerm || statusFilter !== 'all' ? 'No relationships match your filters' : 'No discipleship relationships yet'}
+          hint={searchTerm || statusFilter !== 'all' ? 'Try another search or filter.' : 'Pair a mentor with a disciple to get started.'}
+          action={!searchTerm && statusFilter === 'all' ? (
+            <Button onClick={() => setIsAssignDialogOpen(true)} className="gap-2 rounded-full"><UserPlus className="h-4 w-4" /> Assign relationship</Button>
+          ) : undefined} />
+      ) : (
+        <>
+          {/* Mobile / tablet cards */}
+          <ul className="space-y-2 lg:hidden">
+            {filteredRelationships.map((r) => (
+              <li key={r.id}>
+                <div role="button" tabIndex={0} onClick={() => setSelectedRelationship(r)}
+                  onKeyDown={(e) => e.key === 'Enter' && setSelectedRelationship(r)}
+                  className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card p-3 transition active:scale-[0.99]">
+                  <div className="relative shrink-0">
+                    <Initials first={r.disciple?.profiles?.first_name} last={r.disciple?.profiles?.last_name} />
+                    <span className="absolute -bottom-1 -right-1 rounded-full border-2 border-card">
+                      <Initials size="sm" first={r.mentor?.profiles?.first_name} last={r.mentor?.profiles?.last_name} />
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1 pl-1">
+                    <p className="truncate font-semibold text-foreground">{name(r.disciple?.profiles)}</p>
+                    <p className="flex min-w-0 items-center gap-1 truncate text-xs text-muted-foreground">
+                      <span className="shrink-0">Mentor</span><ArrowRight className="h-3 w-3 shrink-0" /><span className="truncate">{name(r.mentor?.profiles)}</span>
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <StatusPill status={r.status || 'active'} />
+                      {r.start_date && <span className="text-[11px] text-muted-foreground">Since {format(new Date(r.start_date), 'dd/MM/yyyy')}</span>}
+                    </div>
+                  </div>
+                  {rowMenu(r)}
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          {/* Desktop table */}
+          <div className="hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead>Disciple</TableHead>
+                  <TableHead>Mentor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Start date</TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRelationships.map((r) => (
+                  <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelectedRelationship(r)}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Initials size="sm" first={r.disciple?.profiles?.first_name} last={r.disciple?.profiles?.last_name} />
+                        <span className="font-medium">{name(r.disciple?.profiles)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Initials size="sm" first={r.mentor?.profiles?.first_name} last={r.mentor?.profiles?.last_name} />
+                        <span>{name(r.mentor?.profiles)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell><StatusPill status={r.status || 'active'} /></TableCell>
+                    <TableCell className="text-muted-foreground">{r.start_date ? format(new Date(r.start_date), 'dd/MM/yyyy') : '—'}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>{rowMenu(r)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40 bg-background/60">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="transferred">Transferred</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="rounded-xl border border-border/40 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead>Mentor</TableHead>
-                <TableHead>Disciple</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading || !userRegion ? (
-                Array.from({ length: 3 }).map((_, i) => (
-                  <TableRow key={i}>
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : error ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-destructive">Error loading relationships</TableCell>
-                </TableRow>
-              ) : filteredRelationships.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                    {searchTerm || statusFilter !== 'all'
-                      ? 'No relationships match your filters'
-                      : 'No discipleship relationships found. Create your first one!'
-                    }
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRelationships.map((relationship) => (
-                  <TableRow key={relationship.id} className="hover:bg-muted/20 transition-colors">
-                    <TableCell>
-                      <p className="font-medium">
-                        {relationship.mentor?.profiles?.last_name} {relationship.mentor?.profiles?.first_name}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">
-                        {relationship.disciple?.profiles?.last_name} {relationship.disciple?.profiles?.first_name}
-                      </p>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(relationship.status || 'active')}>
-                        {relationship.status || 'active'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {relationship.start_date
-                        ? new Date(relationship.start_date).toLocaleDateString()
-                        : 'N/A'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label="Row actions"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onSelect={() => setSelectedRelationship(relationship)}
-                          >
-                            <Settings2 className="h-4 w-4 mr-2" />
-                            Manage
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onSelect={() => setDeleteTarget(relationship)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </GlassSection>
+        </>
+      )}
 
       <AssignDiscipleDialog
         isOpen={isAssignDialogOpen}
@@ -310,7 +246,7 @@ const Discipleship: React.FC = () => {
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this discipleship relationship?</AlertDialogTitle>
             <AlertDialogDescription>

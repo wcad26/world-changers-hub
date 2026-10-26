@@ -1,4 +1,6 @@
 import React from 'react';
+import { SheetHeader } from "@/components/admin/regional/RegionalUI";
+import { Settings2 } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -98,8 +100,9 @@ const ManageDiscipleshipDialog: React.FC<ManageDiscipleshipDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="lg:max-w-[520px]">
+        <SheetHeader icon={Settings2} title="Manage relationship" description="Update status, mentor and progress details." />
+        <DialogHeader className="sr-only">
           <DialogTitle>Manage Discipleship Relationship</DialogTitle>
           <DialogDescription>
             Update the status and details of this discipleship relationship.
