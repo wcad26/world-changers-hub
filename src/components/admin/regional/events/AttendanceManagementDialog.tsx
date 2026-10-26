@@ -229,7 +229,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="flex h-[94dvh] max-h-[94dvh] flex-col gap-0 overflow-hidden bg-background p-0 pb-0 lg:pb-0 lg:h-[88vh] lg:max-h-[88vh] lg:max-w-3xl lg:rounded-3xl">
         {/* Header */}
-        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary to-secondary px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground sm:px-6 sm:pt-5">
+        <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary to-secondary rounded-t-3xl px-4 pb-4 pt-6 text-primary-foreground sm:px-6 lg:pt-5">
           <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary-foreground/10 blur-2xl" />
           <DialogHeader className="relative space-y-0 pr-10 text-left">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">Mark attendance</p>
