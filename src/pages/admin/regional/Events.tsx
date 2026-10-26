@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from "react";
-import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { ChipRow } from "@/components/admin/regional/RegionalUI";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2, Copy } from "lucide-react";
+import { Calendar, CalendarIcon, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
