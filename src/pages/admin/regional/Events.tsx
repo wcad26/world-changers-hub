@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "@/lib/router-compat";
+import { cn } from "@/lib/utils";
 import { generateSlug, isValidSlug } from "@/utils/slugUtils";
 import { useRegionalEvents, useCreateEvent, useDeleteEvent, useUpdateEvent, NewEvent, UpdateEvent } from "@/hooks/useEvents";
 import { RecurrenceSettings } from "@/components/admin/events/RecurrenceSettings";
@@ -165,7 +166,7 @@ const RegionalEvents: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("upcoming");
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
     const now = new Date();
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
@@ -1784,7 +1785,197 @@ const RegionalEvents: React.FC = () => {
 
   return (
     <>
-__BODY__
+      <div className="mx-auto w-full max-w-7xl space-y-4 pb-4">
+        {/* Search + quick actions */}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+          <div className="relative min-w-0">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input type="search" placeholder="Search events…" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="h-11 rounded-full border-border bg-card pl-10" />
+          </div>
+          <Button onClick={() => setCreateEventDialogOpen(true)} size="icon" className="h-11 w-11 shrink-0 rounded-full shadow-regal sm:w-auto sm:px-5" aria-label="Add event">
+            <Plus className="h-5 w-5" /><span className="hidden sm:inline sm:ml-1.5">Add Event</span>
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => navigate('/admin/regional/attendance/scan')} className="flex min-w-0 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted/50">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><UserCheck className="h-4 w-4" /></span>
+            <span className="min-w-0"><span className="block truncate text-sm font-semibold text-foreground">Attendance</span><span className="block truncate text-[11px] text-muted-foreground">Scan & record</span></span>
+          </button>
+          <button type="button" onClick={() => setSeriesDialogOpen(true)} className="flex min-w-0 items-center gap-2.5 rounded-2xl border border-border bg-card p-3 text-left transition-colors hover:bg-muted/50">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-secondary/15 text-secondary"><Repeat className="h-4 w-4" /></span>
+            <span className="min-w-0"><span className="block truncate text-sm font-semibold text-foreground">Recurring</span><span className="block truncate text-[11px] text-muted-foreground">Manage series</span></span>
+          </button>
+        </div>
+
+        {/* Hero KPI */}
+        {(() => {
+          const regionalEventsForTarget = periodFilteredEvents.filter(e => !e.dcg_id && !e.is_special);
+          const totalCapacity = regionalEventsForTarget.reduce((s, e) => s + (e.attendance_target || e.capacity || 0), 0);
+          const totalActual = (attendanceData || []).filter(a => {
+            const d = new Date(a.event_date);
+            if (periodFilters.dateRange.from && d < periodFilters.dateRange.from) return false;
+            if (periodFilters.dateRange.to) { const end = new Date(periodFilters.dateRange.to); end.setHours(23, 59, 59, 999); if (d > end) return false; }
+            return !a.dcg_id;
+          }).reduce((s, a) => s + a.total_present, 0);
+          const pct = totalCapacity > 0 ? Math.round((totalActual / totalCapacity) * 100) : 0;
+          const ring = Math.min(pct, 100);
+          const g = analyticsData.total.growth;
+          return (
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-primary-foreground/10 blur-2xl" />
+              <div className="relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">Events this period</p>
+                  <p className="mt-1 font-heading text-4xl font-bold leading-none">{analyticsData.total.count}</p>
+                  <p className="mt-2 text-xs text-primary-foreground/85">Avg {analyticsData.total.avgAttendance} attendees per event</p>
+                  {g !== 0 && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[11px] font-semibold">
+                      {g > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}{g > 0 ? '+' : ''}{g}% attendance
+                    </span>
+                  )}
+                </div>
+                <div className="relative grid h-20 w-20 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(currentColor ${ring * 3.6}deg, color-mix(in oklab, currentColor 20%, transparent) 0deg)` }}>
+                  <div className="grid h-[64px] w-[64px] place-items-center rounded-full bg-primary text-center">
+                    <span className="font-heading text-lg font-bold leading-none">{pct}%<span className="mt-0.5 block text-[9px] font-medium opacity-80">of target</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Type tiles (also act as filter) */}
+        <div className="grid grid-cols-3 gap-2">
+          {([
+            { key: 'regional', label: 'Regional', data: analyticsData.regional, icon: MapPin },
+            { key: 'dcg', label: 'DCG', data: analyticsData.dcg, icon: Users },
+            { key: 'special', label: 'Special', data: analyticsData.special, icon: Star },
+          ] as const).map(({ key, label, data, icon: Icon }) => {
+            const active = eventTypeFilter === key;
+            return (
+              <button key={key} type="button" onClick={() => setEventTypeFilter(active ? 'all' : key)}
+                className={cn('min-w-0 rounded-2xl border p-3 text-left transition-all', active ? 'border-primary bg-primary text-primary-foreground shadow-sm' : 'border-border bg-card hover:bg-muted/50')}>
+                <Icon className={cn('h-4 w-4', active ? 'text-primary-foreground' : 'text-primary')} />
+                <p className="mt-2 font-heading text-xl font-bold leading-none">{data.count}</p>
+                <p className={cn('mt-1 truncate text-[11px] font-medium', active ? 'text-primary-foreground/85' : 'text-muted-foreground')}>{label} · avg {data.avgAttendance}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Period */}
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} className="mb-0" />
+        </div>
+
+        {/* Time tabs */}
+        {(() => {
+          const now = new Date();
+          const base = filteredEvents; // already filtered by time; recompute counts from period set
+          void base;
+          const pool = periodFilteredEvents.filter(ev => {
+            const n = (ev?.name ?? '').toLowerCase(); const q = searchTerm.toLowerCase();
+            const m = n.includes(q) || (ev.location_name ?? '').toLowerCase().includes(q) || (ev.category ?? '').toLowerCase().includes(q);
+            if (!m) return false;
+            if (eventTypeFilter === 'regional' && (ev.dcg_id || ev.is_special)) return false;
+            if (eventTypeFilter === 'dcg' && !ev.dcg_id) return false;
+            if (eventTypeFilter === 'special' && !ev.is_special) return false;
+            return true;
+          });
+          const counts: Record<string, number> = {
+            all: pool.length,
+            upcoming: pool.filter(ev => new Date(ev.start_datetime) >= now).length,
+            past: pool.filter(ev => new Date(ev.start_datetime) < now).length,
+          };
+          return (
+            <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-muted/50 p-1">
+              {(['upcoming', 'past', 'all'] as const).map(v => (
+                <button key={v} type="button" onClick={() => setTimeFilter(v)}
+                  className={cn('flex items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-sm font-semibold capitalize transition-all', timeFilter === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+                  {v}
+                  <span className={cn('grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px]', timeFilter === v ? 'bg-primary-foreground/20' : 'bg-background')}>{counts[v]}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
+        {isError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading events</AlertTitle>
+            <AlertDescription>{String(error || "An unknown error occurred.")}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Mobile / tablet list */}
+        <div className="lg:hidden">
+          {isLoading || !userRegion ? (
+            <div className="space-y-2">{[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}</div>
+          ) : filteredEvents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+              <Calendar className="mx-auto h-8 w-8 text-muted-foreground" />
+              <p className="mt-2 text-sm font-semibold text-foreground">{searchTerm ? 'No events match your search' : 'No events here yet'}</p>
+              <Button size="sm" className="mt-3 rounded-full" onClick={() => setCreateEventDialogOpen(true)}><Plus className="mr-1 h-4 w-4" />Add event</Button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+              {filteredEvents.map(ev => {
+                const d = new Date(ev.start_datetime);
+                const valid = !isNaN(d.getTime());
+                const future = valid && d >= new Date();
+                const type = ev.is_special ? 'Special' : ev.dcg_id ? 'DCG' : 'Regional';
+                const att = getEventAttendance(ev.id);
+                return (
+                  <li key={ev.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 p-3">
+                    <button type="button" onClick={() => navigate(`/admin/regional/events/${ev.id}/report`)} className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary">
+                      {ev.image_url && <img src={ev.image_url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />}
+                      <span className="absolute inset-0 flex flex-col items-center justify-center bg-foreground/35 text-background">
+                        <span className="text-[9px] font-bold uppercase leading-none">{valid ? format(d, 'MMM') : '—'}</span>
+                        <span className="font-heading text-lg font-bold leading-none">{valid ? format(d, 'dd') : ''}</span>
+                      </span>
+                    </button>
+                    <button type="button" onClick={() => navigate(`/admin/regional/events/${ev.id}/report`)} className="min-w-0 text-left">
+                      <p className="truncate text-sm font-semibold text-foreground">{ev.name ?? '—'}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatTimeRange(ev.start_datetime, ev.end_datetime)}{ev.location_name ? ` · ${ev.location_name}` : ''}</p>
+                      <div className="mt-1 flex min-w-0 items-center gap-1.5">
+                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', type === 'Special' ? 'bg-secondary/15 text-secondary' : type === 'DCG' ? 'bg-accent/15 text-accent-foreground' : 'bg-primary/10 text-primary')}>{type}</span>
+                        {ev.recurrence_rule_id && <Repeat className="h-3 w-3 shrink-0 text-primary" />}
+                        <span className="truncate text-[11px] text-muted-foreground">{future ? (ev.capacity ? `Cap ${ev.capacity}` : 'Upcoming') : `${att} attended`}</span>
+                      </div>
+                    </button>
+                    {renderActions(ev, (
+                      <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full" aria-label="Event actions"><MoreHorizontal className="h-5 w-5" /></Button>
+                    ))}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead>Event Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead className="text-center">Capacity</TableHead>
+                  <TableHead className="text-center">Attendance</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>{renderTableBody(filteredEvents)}</TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
 
       {/* Create Event Dialog */}
       <RecurringSeriesDialog
