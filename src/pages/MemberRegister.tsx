@@ -364,7 +364,7 @@ export default function MemberRegister() {
               {duplicateInfo.isVisitor ? t('alreadyRegisteredAsVisitor') : t('alreadyRegisteredAsMember')}
             </p>
             <div className="flex flex-col gap-3 pt-2">
-              <Button onClick={() => navigate(`/${regionCode}`)} className="w-full rounded-xl">
+              <Button onClick={() => navigate(`/${region?.name ? generateSlug(region.name) : regionCode}`)} className="w-full rounded-xl">
                 {t('goToHomepage')}
               </Button>
               <Button variant="outline" onClick={() => setDuplicateInfo(null)} className="w-full rounded-xl">
