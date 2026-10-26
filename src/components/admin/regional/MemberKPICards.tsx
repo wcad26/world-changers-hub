@@ -3,6 +3,7 @@ import { Users, CheckCircle, Clock, Baby, Star, TrendingUp, TrendingDown } from 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { HeroCard, RingTile } from '@/components/admin/regional/RegionalUI';
 import type { MemberWithProfile } from '@/hooks/useMembers';
 
 interface MemberKPICardsProps {
@@ -11,10 +12,12 @@ interface MemberKPICardsProps {
   memberRelationships: { member_id: string; related_member_id: string }[];
   specialEventIds: Set<string>;
   regionId?: string;
+  selected?: string;
+  onSelect?: (key: string) => void;
 }
 
 const MemberKPICards: React.FC<MemberKPICardsProps> = ({
-  members, isLoading, memberRelationships, specialEventIds, regionId
+  members, isLoading, memberRelationships, specialEventIds, regionId, selected, onSelect
 }) => {
   // Fetch last 5 regional attendance events + records
   const { data: recentAttendance } = useQuery({
@@ -102,48 +105,38 @@ const MemberKPICards: React.FC<MemberKPICardsProps> = ({
     };
 
     return [
-      { label: 'Total', count: totalIds.length, growth: calcGrowth(totalIds.length, newTotal), active: calcActive(totalIds), icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
-      { label: 'Members', count: memberTypeIds.length, growth: calcGrowth(memberTypeIds.length, newMembers), active: calcActive(memberTypeIds), icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/10' },
-      { label: 'Regular Visitors', count: regularVisitorIds.length, growth: calcGrowth(regularVisitorIds.length, newRegular), active: calcActive(regularVisitorIds), icon: Clock, color: 'text-primary', bg: 'bg-primary/10' },
-      { label: 'Children', count: childrenIds.length, growth: calcGrowth(childrenIds.length, newChildren), active: calcActive(childrenIds), icon: Baby, color: 'text-pink-500', bg: 'bg-pink-500/10' },
-      { label: 'Special Event Visitors', count: specialVisitorIds.length, growth: calcGrowth(specialVisitorIds.length, newSpecial), active: calcActive(specialVisitorIds), icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
+      { key: 'all', tone: 'var(--chart-1)', label: 'Total', count: totalIds.length, growth: calcGrowth(totalIds.length, newTotal), active: calcActive(totalIds), icon: Users, color: 'text-primary', bg: 'bg-primary/10' },
+      { key: 'member', tone: 'var(--chart-2)', label: 'Members', count: memberTypeIds.length, growth: calcGrowth(memberTypeIds.length, newMembers), active: calcActive(memberTypeIds), icon: CheckCircle, color: 'text-primary', bg: 'bg-primary/10' },
+      { key: 'visitor_regular', tone: 'var(--chart-3)', label: 'Regular Visitors', count: regularVisitorIds.length, growth: calcGrowth(regularVisitorIds.length, newRegular), active: calcActive(regularVisitorIds), icon: Clock, color: 'text-primary', bg: 'bg-primary/10' },
+      { key: 'children', tone: 'var(--chart-5)', label: 'Children', count: childrenIds.length, growth: calcGrowth(childrenIds.length, newChildren), active: calcActive(childrenIds), icon: Baby, color: 'text-pink-500', bg: 'bg-pink-500/10' },
+      { key: 'visitor_special', tone: 'var(--chart-4)', label: 'Special Event Visitors', count: specialVisitorIds.length, growth: calcGrowth(specialVisitorIds.length, newSpecial), active: calcActive(specialVisitorIds), icon: Star, color: 'text-amber-600', bg: 'bg-amber-500/10' },
     ];
   }, [members, memberRelationships, specialEventIds, activeMemberIds]);
 
   if (isLoading || !kpiData) {
     return (
-      <div className="grid gap-4 md:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5 h-[140px] animate-pulse" />
-        ))}
+      <div className="space-y-3">
+        <div className="h-36 animate-pulse rounded-3xl bg-muted" />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-28 animate-pulse rounded-2xl bg-muted" />)}
+        </div>
       </div>
     );
   }
 
+  const [total, ...rest] = kpiData;
   return (
-    <div className="grid gap-4 md:grid-cols-5">
-      {kpiData.map(({ label, count, growth, active, icon: Icon, color, bg }) => (
-        <div key={label} className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${bg} ${color}`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">{label}</span>
-          </div>
-          <p className="font-bold text-foreground text-lg">{count}</p>
-          <p className="text-xs text-muted-foreground mt-1">Active: {active}%</p>
-          <div className="mt-2">
-            {growth !== 0 ? (
-              <div className={`flex items-center gap-1 ${growth > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {growth > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                <span className="text-xs font-medium">{growth > 0 ? '+' : ''}{growth}% last 30 days</span>
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">0% growth</span>
-            )}
-          </div>
-        </div>
-      ))}
+    <div className="space-y-3">
+      <HeroCard eyebrow="People in your region" value={total.count}
+        sub={<>{total.growth >= 0 ? '+' : ''}{total.growth}% joined in the last 30 days</>}
+        ring={total.active} ringLabel="Active" />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {rest.map((k) => (
+          <RingTile key={k.key} icon={k.icon} label={k.label} value={k.count} ring={k.active} ringLabel="active" tone={k.tone}
+            active={selected === k.key}
+            onClick={onSelect ? () => onSelect(selected === k.key ? 'all' : k.key) : undefined} />
+        ))}
+      </div>
     </div>
   );
 };
