@@ -53,7 +53,7 @@ export const RecurringSeriesDialog: React.FC<RecurringSeriesDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:rounded-2xl sm:border sm:max-w-[720px] sm:max-h-[85vh] flex flex-col">
+      <DialogContent className="max-h-[92dvh] lg:max-w-[720px] lg:max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Repeat className="h-5 w-5 text-primary" /> Recurring Series
