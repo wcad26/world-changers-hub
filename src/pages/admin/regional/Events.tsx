@@ -1993,8 +1993,8 @@ const RegionalEvents: React.FC = () => {
       />
 
       <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
-        <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
-          <div className="relative overflow-hidden sm:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:pt-6 pb-5">
+        <DialogContent className="max-h-[94dvh] lg:max-w-4xl lg:max-h-[90vh] p-0 pb-0 lg:pb-0 gap-0 bg-gradient-to-br from-card/95 to-muted/20">
+          <div className="relative overflow-hidden rounded-t-3xl lg:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-7 lg:pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
             <DialogHeader className="relative space-y-2">
@@ -2083,13 +2083,14 @@ const RegionalEvents: React.FC = () => {
                     <FormItem>
                       <FormLabel>Event Type</FormLabel>
                       <FormControl>
-                        <select 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                          {...field}
-                        >
-                          <option value="">Select event type</option>
-                          {eventCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select event type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {eventCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -3389,8 +3390,8 @@ const RegionalEvents: React.FC = () => {
 
       {/* Edit Event Dialog */}
       <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
-        <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
-          <div className="relative overflow-hidden sm:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:pt-6 pb-5">
+        <DialogContent className="max-h-[94dvh] lg:max-w-4xl lg:max-h-[90vh] p-0 pb-0 lg:pb-0 gap-0 bg-gradient-to-br from-card/95 to-muted/20">
+          <div className="relative overflow-hidden rounded-t-3xl lg:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-7 lg:pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
             <DialogHeader className="relative space-y-2">
