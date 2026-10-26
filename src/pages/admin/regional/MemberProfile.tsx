@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, Calendar, Phone, Mail, MapPin, Briefcase, Heart, Shield, Pen, RefreshCw, MessageCircle, TrendingUp, Users } from 'lucide-react';
 import { useMembers, MemberWithProfile } from '@/hooks/useMembers';
 import { useAuth } from '@/hooks/useAuth';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
@@ -14,6 +14,9 @@ import { useMemberDiscipleshipStats, useDiscipleshipImpactTrend, useMemberDiscip
 import { useMemberAttendanceStats } from '@/hooks/useAttendance';
 import FamilyRelationshipsSection from '@/components/admin/regional/FamilyRelationshipsSection';
 import MemberPhotoUpload from '@/components/admin/regional/MemberPhotoUpload';
+import { RingTile, Initials, InfoRow, SheetHeader } from '@/components/admin/regional/RegionalUI';
+import { Panel } from '@/components/member/MemberUI';
+import { format } from 'date-fns';
 
 const MemberProfile: React.FC = () => {
   const { memberId } = useParams<{ memberId: string }>();
@@ -93,184 +96,110 @@ const MemberProfile: React.FC = () => {
     );
   }
 
+  const p = member.profiles;
+  const activeMentor = discipleshipRelationships?.asDisciple?.find((rel: any) => rel.status === 'active');
+  const fmt = (d?: string | null) => (d ? format(new Date(d), 'dd/MM/yyyy') : 'Not provided');
+  const isActive = !!attendanceStats?.isActiveBasedOnAttendance;
+  const rate = Math.round(attendanceStats?.attendanceRate || 0);
+  const change = Math.round(attendanceStats?.monthlyChange || 0);
+
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/admin/regional/members')}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Members
+      <div className="space-y-5 pb-24 lg:pb-0">
+        {/* Top bar */}
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => navigate('/admin/regional/members')} aria-label="Back to members"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-card hover:bg-muted">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-muted-foreground">Members / Profile</p>
+          <button type="button" onClick={() => refetch()} aria-label="Refresh"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border bg-card hover:bg-muted">
+            <RefreshCw className="h-4 w-4" />
+          </button>
+          <Button onClick={() => setIsEditDialogOpen(true)} className="h-10 gap-2 rounded-full">
+            <Pen className="h-4 w-4" /> <span className="hidden sm:inline">Edit profile</span><span className="sm:hidden">Edit</span>
           </Button>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setIsEditDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Pen className="h-4 w-4" />
-              Edit Profile
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => refetch()}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
-          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* User Profile Card */}
-          <Card className="md:col-span-1">
-            <CardHeader>
-              <CardTitle className="text-lg">Member Profile</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Avatar and Basic Info */}
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="relative">
-                  {member.photo_url ? (
-                    <div className="w-20 h-20 rounded-full overflow-hidden bg-muted">
-                      <img 
-                        src={member.photo_url} 
-                        alt={`${member.profiles?.last_name} ${member.profiles?.first_name}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-semibold text-primary">
-                      {getInitials(member.profiles?.first_name ?? undefined, member.profiles?.last_name ?? undefined)}
-                    </div>
-                  )}
-                  <MemberPhotoUpload 
-                    memberId={member.id}
-                    currentPhotoUrl={member.photo_url ?? undefined}
-                  />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">
-                    {member.profiles?.last_name} {member.profiles?.first_name}
-                  </h3>
-                  <p className="text-muted-foreground">{member.profiles?.email}</p>
-                </div>
+        {/* Hero */}
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-secondary p-5 text-primary-foreground shadow-regal sm:p-6">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary-foreground/10 blur-2xl" />
+          <div className="relative flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+            <div className="relative shrink-0">
+              <div className="rounded-full ring-4 ring-primary-foreground/25">
+                <Initials size="lg" first={p?.first_name} last={p?.last_name} photo={member.photo_url} />
               </div>
-
-              <Separator />
-
-              {/* Contact Information */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Mentor: {getMentorName()}</span>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    Joined: {member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-
-                {member.profiles?.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{member.profiles.phone}</span>
-                  </div>
-                )}
-
-                {member.profiles?.address && (
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{member.profiles.address}</span>
-                  </div>
-                )}
+              <MemberPhotoUpload memberId={member.id} currentPhotoUrl={member.photo_url ?? undefined} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-heading text-2xl font-bold leading-tight">{p?.last_name} {p?.first_name}</h2>
+              {p?.email && <p className="truncate text-sm opacity-85">{p.email}</p>}
+              <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
+                <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold capitalize">{member.member_type || 'member'}</span>
+                <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold capitalize">{member.status || 'new'}</span>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold">
+                  <Shield className="h-3 w-3" /> {isActive ? 'Active attendee' : 'Inactive attendee'}
+                </span>
+                {member.member_id && <span className="rounded-full bg-primary-foreground/15 px-3 py-1 text-xs font-semibold">ID {member.member_id}</span>}
               </div>
+            </div>
+          </div>
+          {p?.phone && (
+            <div className="relative mt-4 grid grid-cols-2 gap-2 sm:max-w-xs">
+              <a href={`tel:${p.phone}`} className="flex items-center justify-center gap-2 rounded-full bg-primary-foreground/15 py-2 text-sm font-semibold hover:bg-primary-foreground/25">
+                <Phone className="h-4 w-4" /> Call
+              </a>
+              <a href={`https://wa.me/${p.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-full bg-primary-foreground/15 py-2 text-sm font-semibold hover:bg-primary-foreground/25">
+                <MessageCircle className="h-4 w-4" /> WhatsApp
+              </a>
+            </div>
+          )}
+        </section>
 
-              <Separator />
+        {/* KPIs */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <RingTile icon={Calendar} label={`Attended of ${attendanceStats?.totalEvents || 0}`} value={attendanceStats?.eventsAttended || 0} ring={rate} ringLabel="rate" tone="var(--chart-2)" />
+          <RingTile icon={TrendingUp} label="This month" value={`${change >= 0 ? '+' : ''}${change}%`} tone="var(--chart-1)" />
+          <RingTile icon={Users} label="Disciples" value={discipleshipStats?.total_disciples || 0} tone="var(--chart-3)" />
+          <RingTile icon={Heart} label="Became members" value={`${Math.round(discipleshipStats?.success_rate || 0)}%`} ring={discipleshipStats?.success_rate || 0} ringLabel="success" tone="var(--chart-4)" />
+        </div>
 
-              {/* Status Badge */}
-              <div className="flex flex-col items-center space-y-2">
-                <Badge className={getStatusColor(member.status || 'new')}>
-                  {member.status || 'new'}
-                </Badge>
-                <Badge 
-                  variant="outline" 
-                  className={`bg-background ${
-                    attendanceStats?.isActiveBasedOnAttendance 
-                      ? 'text-green-600 border-green-200' 
-                      : 'text-red-600 border-red-200'
-                  }`}
-                >
-                  <Shield className="h-3 w-3 mr-1" />
-                  {attendanceStats?.isActiveBasedOnAttendance ? 'Active Member' : 'Inactive Member'}
-                </Badge>
+        <div className="grid gap-5 lg:grid-cols-3">
+          {/* Details */}
+          <div className="space-y-5 lg:col-span-1">
+            <Panel title="Personal" bodyClassName="py-2">
+              <div className="divide-y divide-border">
+                <InfoRow icon={Phone} label="Phone" value={p?.phone || 'Not provided'} />
+                <InfoRow icon={MapPin} label="Address" value={p?.address || 'Not provided'} />
+                <InfoRow icon={Calendar} label="Date of birth" value={fmt(p?.date_of_birth)} />
+                <InfoRow icon={User} label="Gender" value={<span className="capitalize">{p?.gender || 'Not provided'}</span>} />
+                <InfoRow icon={Briefcase} label="Occupation" value={p?.occupation || 'Not provided'} />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Member Attendance Summary Dashboard */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Attendance & Impact Summary</CardTitle>
-              <p className="text-sm text-muted-foreground">Track member's engagement and discipleship impact</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-xs text-muted-foreground">Events Attended</div>
-                  <div className="text-2xl font-bold text-primary">
-                    {attendanceStats?.eventsAttended || 0}
-                  </div>
-                  <div className="text-xs text-green-600">
-                    of {attendanceStats?.totalEvents || 0} total
-                  </div>
-                </div>
-                <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-xs text-muted-foreground">Attendance Rate</div>
-                  <div className="text-2xl font-bold text-primary">
-                    {attendanceStats?.attendanceRate ? `${Math.round(attendanceStats.attendanceRate)}%` : '0%'}
-                  </div>
-                  <div className={`text-xs ${
-                    (attendanceStats?.monthlyChange || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {attendanceStats?.monthlyChange ? 
-                      `${attendanceStats.monthlyChange >= 0 ? '+' : ''}${Math.round(attendanceStats.monthlyChange)}% this month` : 
-                      'No change'
-                    }
-                  </div>
-                </div>
-                <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-xs text-muted-foreground">Disciples</div>
-                  <div className="text-2xl font-bold text-primary">
-                    {discipleshipStats?.total_disciples || 0}
-                  </div>
-                  <div className="text-xs text-blue-600">Total disciples</div>
-                </div>
-                <div className="p-4 border rounded-lg bg-muted/30">
-                  <div className="text-xs text-muted-foreground">Success Rate</div>
-                  <div className="text-2xl font-bold text-primary">
-                    {discipleshipStats?.success_rate ? `${Math.round(discipleshipStats.success_rate)}%` : '0%'}
-                  </div>
-                  <div className="text-xs text-green-600">Became members</div>
-                </div>
+            </Panel>
+            <Panel title="Membership" bodyClassName="py-2">
+              <div className="divide-y divide-border">
+                <InfoRow icon={Calendar} label="Joined" value={fmt(member.join_date)} />
+                <InfoRow icon={Shield} label="Membership class" value={member.membership_class_completed ? 'Completed' : 'Not completed'} />
+                <InfoRow icon={Heart} label="Volunteer" value={member.is_volunteer ? 'Active volunteer' : 'Not a volunteer'} />
+                {member.baptism_date && <InfoRow icon={Calendar} label="Baptism" value={fmt(member.baptism_date)} />}
+                <InfoRow icon={Calendar} label="Last active" value={attendanceStats?.lastActiveDate ? fmt(attendanceStats.lastActiveDate) : 'No events attended'} />
               </div>
+            </Panel>
+            <Panel title="Mentor" bodyClassName="py-2">
+              <div className="divide-y divide-border">
+                <InfoRow icon={User} label="Mentor" value={getMentorName()} />
+                <InfoRow icon={Phone} label="Mentor phone" value={activeMentor?.mentor?.profiles?.phone || 'Not provided'} />
+              </div>
+            </Panel>
+            {member.notes && (
+              <Panel title="Notes"><p className="whitespace-pre-wrap text-sm text-foreground">{member.notes}</p></Panel>
+            )}
+          </div>
 
-              <Separator />
-
-              {/* Discipleship Impact Trend */}
-              <div>
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">Discipleship Impact Trend</h4>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Shows how your event attendance impacts your disciples' participation
-                </p>
-                <div className="h-64 border rounded-lg bg-muted/20">
+          <div className="space-y-5 lg:col-span-2">
+            <Panel title="Discipleship impact" action={<span className="text-xs text-muted-foreground">Disciples' attendance</span>} bodyClassName="p-2 sm:p-3">
+                <div className="h-64 rounded-xl">
                   {impactTrend && impactTrend.length > 0 ? (
                     <div className="h-full w-full">
                       {/* Legend */}
@@ -391,141 +320,20 @@ const MemberProfile: React.FC = () => {
                       </div>
                     </div>
                   )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </Panel>
+            <FamilyRelationshipsSection memberId={member.id} />
+          </div>
         </div>
-
-        {/* Member Details Card - Moved Below */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Member Details</CardTitle>
-            <p className="text-sm text-muted-foreground">Personal information and member data</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Personal Information */}
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">Personal Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground">Date of Birth</label>
-                  <p className="text-sm">
-                    {member.profiles?.date_of_birth 
-                      ? new Date(member.profiles.date_of_birth).toLocaleDateString() 
-                      : 'Not provided'
-                    }
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Gender</label>
-                  <p className="text-sm capitalize">{member.profiles?.gender || 'Not provided'}</p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Occupation</label>
-                  <p className="text-sm flex items-center gap-2">
-                    <Briefcase className="h-3 w-3" />
-                    {member.profiles?.occupation || 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Last Active</label>
-                  <p className="text-sm">
-                    {attendanceStats?.lastActiveDate 
-                      ? new Date(attendanceStats.lastActiveDate).toLocaleDateString() 
-                      : 'No events attended'
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">Discipleship</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground">Mentor</label>
-                  <p className="text-sm flex items-center gap-2">
-                    <User className="h-3 w-3" />
-                    {getMentorName()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Mentor Telephone</label>
-                  <p className="text-sm flex items-center gap-2">
-                    <Phone className="h-3 w-3" />
-                    {discipleshipRelationships?.asDisciple?.find((rel: any) => rel.status === 'active')?.mentor?.profiles?.phone || 'Not provided'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Membership Information */}
-            <div>
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">Membership Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-muted-foreground">Membership Class</label>
-                  <p className="text-sm">
-                    {member.membership_class_completed ? 'Completed' : 'Not completed'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-xs text-muted-foreground">Volunteer Status</label>
-                  <p className="text-sm">
-                    {member.is_volunteer ? 'Active Volunteer' : 'Not a volunteer'}
-                  </p>
-                </div>
-                {member.baptism_date && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">Baptism Date</label>
-                    <p className="text-sm">
-                      {new Date(member.baptism_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {member.notes && (
-              <>
-                <Separator />
-                <div>
-                  <label className="text-xs text-muted-foreground">Notes</label>
-                  <p className="text-sm mt-1 p-3 bg-muted rounded-md">{member.notes}</p>
-                </div>
-              </>
-            )}
-          </CardContent>
-          </Card>
-
-          {/* Family Relationships */}
-          {member?.id && (
-            <div className="md:col-span-3">
-              <FamilyRelationshipsSection memberId={member.id} />
-            </div>
-          )}
-
 
         {/* Edit Member Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="lg:max-w-3xl">
+            <SheetHeader icon={Pen} title="Edit profile" description="Update personal, spiritual and family details." />
+            <DialogHeader className="sr-only">
               <DialogTitle>Edit Member Profile</DialogTitle>
-              <DialogDescription>
-                Update member information and details.
-              </DialogDescription>
+              <DialogDescription>Update member information and details.</DialogDescription>
             </DialogHeader>
-            {member && (
-              <EditMemberForm 
-                member={member} 
-                onSuccess={() => setIsEditDialogOpen(false)} 
-              />
-            )}
+            <EditMemberForm member={member} onSuccess={() => setIsEditDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
