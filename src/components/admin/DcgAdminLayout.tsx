@@ -232,11 +232,11 @@ const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto pt-14 pb-24">{children}</main>
+      <main className="flex-1 overflow-auto pt-14 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">{children}</main>
 
       {/* Bottom tab bar */}
-      <nav className="fixed bottom-4 left-4 right-4 z-50">
-         <div className="rounded-md bg-primary shadow-regal">
+      <nav className="fixed inset-x-0 bottom-0 z-50 w-full">
+         <div className="w-full border-t border-border bg-primary pb-[env(safe-area-inset-bottom)] shadow-regal">
           <div className="flex justify-around items-center py-2 px-1">
             {bottomTabs.map((item) => {
               const isActive = location.pathname === item.path;

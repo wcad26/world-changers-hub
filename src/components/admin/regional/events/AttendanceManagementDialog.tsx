@@ -208,7 +208,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh] overflow-hidden flex flex-col bg-background border-border/50 p-4 sm:p-6">
+      <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] rounded-none border-0 sm:h-auto sm:rounded-2xl sm:border sm:max-w-4xl sm:w-[95vw] sm:max-h-[85vh] overflow-hidden flex flex-col bg-background border-border/50 p-4 sm:p-6">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <UserCheck className="h-5 w-5 text-primary" />

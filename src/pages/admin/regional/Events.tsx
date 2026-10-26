@@ -1994,7 +1994,7 @@ const RegionalEvents: React.FC = () => {
 
       <Dialog open={createEventDialogOpen} onOpenChange={setCreateEventDialogOpen}>
         <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
-          <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+          <div className="relative overflow-hidden sm:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
             <DialogHeader className="relative space-y-2">
@@ -2751,7 +2751,7 @@ const RegionalEvents: React.FC = () => {
                               </Button>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               <FormField
                                 control={form.control}
                                 name={`testimonials.${index}.name`}
@@ -3041,7 +3041,7 @@ const RegionalEvents: React.FC = () => {
                               </Button>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               <FormField
                                 control={form.control}
                                 name={`speakers.${index}.name`}
@@ -3184,7 +3184,7 @@ const RegionalEvents: React.FC = () => {
                               )}
                             />
                             
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                               <FormField
                                 control={form.control}
                                 name={`speakers.${index}.linkedin_url`}
@@ -3390,7 +3390,7 @@ const RegionalEvents: React.FC = () => {
       {/* Edit Event Dialog */}
       <Dialog open={editEventDialogOpen} onOpenChange={setEditEventDialogOpen}>
         <DialogContent className="w-full max-w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto overflow-x-hidden p-0 gap-0 border-0 sm:border border-border/40 bg-gradient-to-br from-card/95 to-muted/20 backdrop-blur-xl shadow-2xl rounded-none sm:rounded-2xl">
-          <div className="relative overflow-hidden rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-purple-500/10 px-6 pt-6 pb-5">
+          <div className="relative overflow-hidden sm:rounded-t-2xl border-b border-border/30 bg-gradient-to-br from-primary/15 via-primary/5 to-secondary/10 px-4 sm:px-6 pt-[calc(1.25rem+env(safe-area-inset-top))] sm:pt-6 pb-5">
             <div className="absolute -top-12 -right-12 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-purple-500/15 blur-3xl pointer-events-none" />
             <DialogHeader className="relative space-y-2">
