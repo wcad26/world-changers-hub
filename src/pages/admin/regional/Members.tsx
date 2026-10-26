@@ -66,6 +66,7 @@ const Members: React.FC = () => {
   // Member filters
   const [memberStatusFilter, setMemberStatusFilter] = React.useState('all');
   const [memberTypeFilter, setMemberTypeFilter] = React.useState('all');
+  const [joinedPeriod, setJoinedPeriod] = React.useState('all');
   
 
 
@@ -148,9 +149,15 @@ const Members: React.FC = () => {
         typeMatch = member.member_type === memberTypeFilter;
       }
       
-      return searchMatch && statusMatch && typeMatch;
+      const months = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 }[joinedPeriod as '1m'];
+      let periodMatch = true;
+      if (months) {
+        const cutoff = new Date(); cutoff.setMonth(cutoff.getMonth() - months);
+        periodMatch = !!member.created_at && new Date(member.created_at) >= cutoff;
+      }
+      return searchMatch && statusMatch && typeMatch && periodMatch;
     });
-  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, childrenSet, specialEventIds]);
+  }, [members, searchTerm, memberStatusFilter, memberTypeFilter, joinedPeriod, childrenSet, specialEventIds]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -314,6 +321,13 @@ const Members: React.FC = () => {
             { value: 'active', label: 'Active' },
             { value: 'inactive', label: 'Inactive' },
             { value: 'transferred', label: 'Transferred' },
+          ]} />
+          <ChipRow value={joinedPeriod} onChange={setJoinedPeriod} options={[
+            { value: 'all', label: 'Joined: any time' },
+            { value: '1m', label: 'Last month' },
+            { value: '3m', label: 'Last 3 months' },
+            { value: '6m', label: 'Last 6 months' },
+            { value: '1y', label: 'Last year' },
           ]} />
         </div>
 

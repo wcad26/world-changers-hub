@@ -11,15 +11,14 @@ import { useActivePlanTargets } from "@/hooks/useActivePlanTargets";
 import { useDcgRegionMembership } from "@/hooks/useDcgRegionMembership";
 import { isChildMember } from "@/utils/childUtils";
 import { fetchMemberRelationshipsForMembers } from "@/utils/fetchMemberRelationships";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { GlassKPICard } from "@/components/ui/GlassSection";
+import { HeroCard, RingTile, Ring, SearchBar, ChipRow } from "@/components/admin/regional/RegionalUI";
+import { Link } from "@/lib/router-compat";
 import {
   Users, Baby, Heart, CalendarDays, UsersRound, Target,
-  TrendingUp, TrendingDown, Search, CalendarIcon, Banknote, HandCoins, Crosshair, AlertCircle
+  TrendingUp, TrendingDown, CalendarIcon, Banknote, HandCoins, AlertCircle
 } from "lucide-react";
 import { format, subMonths, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -27,7 +26,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, BarChart, Bar, Legend, Area, AreaChart, Cell
+  ReferenceLine, Area, AreaChart
 } from "recharts";
 
 interface RegionLike {
@@ -495,281 +494,223 @@ const RegionalDashboardView: React.FC<RegionalDashboardViewProps> = ({ region, m
   ) : null;
 
   const periodOptions = [
-    { value: "1-month", label: "1M" },
-    { value: "3-months", label: "3M" },
-    { value: "6-months", label: "6M" },
-    { value: "1-year", label: "1Y" },
+    { value: "1-month", label: "1 month" },
+    { value: "3-months", label: "3 months" },
+    { value: "6-months", label: "6 months" },
+    { value: "1-year", label: "1 year" },
     { value: "custom", label: "Custom" },
   ];
 
+  const isDcg = eventType === "dcg";
+  const targetPct = kpis ? (isDcg ? kpis.dcgAttendanceTargetPct : kpis.regionalAttendanceTargetPct) : 0;
+  const targetMissing = kpis ? (isDcg ? kpis.dcgAttendanceTargetMissing : kpis.regionalAttendanceTargetMissing) : true;
+  const targetSub = kpis ? (isDcg ? kpis.dcgAttendanceTargetSubtitle : kpis.regionalAttendanceTargetSubtitle) : '';
+  const totalAttendees = (kpis?.uniqueAdultAttendees ?? 0) + (kpis?.uniqueChildAttendees ?? 0);
+  const memberShare = totalAttendees ? Math.round(((kpis?.uniqueMemberAttendees ?? 0) / totalAttendees) * 100) : 0;
+  const growth = kpis?.incomeGrowthPct ?? 0;
+  const genderTotal = genderChartData.reduce((s, g) => s + g.count, 0);
+  const periodLabel = periodOptions.find(p => p.value === quickPeriod)?.label.toLowerCase();
+
+  const quickLinks = [
+    { label: 'Members', href: '/admin/regional/members', icon: Users, tone: 'var(--chart-1)' },
+    { label: 'Events', href: '/admin/regional/events', icon: CalendarDays, tone: 'var(--chart-2)' },
+    { label: 'Discipleship', href: '/admin/regional/discipleship', icon: Heart, tone: 'var(--chart-4)' },
+    { label: 'Finances', href: '/admin/regional/finances', icon: Banknote, tone: 'var(--chart-5)' },
+  ];
+
+  const Tile = ({ icon: Icon, label, value, sub, tone }: { icon: any; label: string; value: React.ReactNode; sub: string; tone: string }) => (
+    <div className="relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full blur-2xl" style={{ background: `color-mix(in oklab, ${tone} 18%, transparent)` }} />
+      <span className="relative grid h-8 w-8 place-items-center rounded-xl" style={{ background: `color-mix(in oklab, ${tone} 15%, transparent)`, color: tone }}><Icon className="h-4 w-4" /></span>
+      <p className="relative mt-2 font-heading text-2xl font-bold leading-none text-foreground">{value}</p>
+      <p className="relative mt-1 truncate text-xs font-medium text-foreground">{label}</p>
+      <p className="relative truncate text-[11px] text-muted-foreground">{sub}</p>
+    </div>
+  );
+
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
-        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-          <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 p-1">
-            {periodOptions.map(opt => (
-              <Button
-                key={opt.value}
-                variant={quickPeriod === opt.value ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setQuickPeriod(opt.value)}
-                className={cn(
-                  "h-8 px-3 rounded-lg text-xs",
-                  quickPeriod === opt.value && "bg-primary text-primary-foreground hover:bg-primary/90"
-                )}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-
-          {quickPeriod === "custom" && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 gap-2">
-                  <CalendarIcon className="h-3.5 w-3.5" />
-                  {customRange.from
-                    ? `${format(customRange.from, "MMM d")}${customRange.to ? ` - ${format(customRange.to, "MMM d, y")}` : ""}`
-                    : "Pick dates"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-                <Calendar
-                  mode="range"
-                  selected={{ from: customRange.from, to: customRange.to }}
-                  onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
-                  numberOfMonths={2}
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          )}
-
-          <Select value={eventType} onValueChange={setEventType}>
-            <SelectTrigger className="w-full sm:w-[160px] h-8 text-xs rounded-lg">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="regional">Regional Events</SelectItem>
-              <SelectItem value="dcg">DCG Events</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <div className="relative flex-1 sm:min-w-[180px] sm:max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 pl-8 text-xs rounded-lg"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-7xl space-y-5 px-4 pb-24 pt-4 md:px-6 lg:pb-8">
         {regionMissingNotice}
         {dataErrorNotice}
 
-        {kpis && eventType === "regional" && (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
-              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
-              subtitle="Unique attendees in period" />
-            <GlassKPICard icon={<CalendarDays className="h-5 w-5" />} label="Regional Events" value={kpis.regionalEventsCount}
-              subtitle={`Avg: ${kpis.avgRegionalAttendees} attendees`} />
-            <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
-              value={kpis.regionalAttendanceTargetMissing ? "—" : `${kpis.regionalAttendanceTargetPct}%`}
-              subtitle={kpis.regionalAttendanceTargetSubtitle} />
-            <GlassKPICard icon={<Heart className="h-5 w-5" />} label="Discipleship Success" value={`${kpis.successRate}%`}
-              subtitle="Reached membership milestone" />
+        {/* Filters */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search events…" />
+            {quickPeriod === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" aria-label="Pick dates" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border bg-card text-foreground hover:bg-muted">
+                    <CalendarIcon className="h-5 w-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar mode="range" selected={{ from: customRange.from, to: customRange.to }}
+                    onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
+                    numberOfMonths={1} className="pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
-        )}
-
-        {kpis && eventType === "dcg" && (
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <GlassKPICard icon={<Users className="h-5 w-5" />} label="Members" value={kpis.uniqueAdultAttendees}
-              subtitle={`${kpis.uniqueMemberAttendees} members · ${kpis.uniqueVisitorAttendees} visitors attended`} />
-            <GlassKPICard icon={<Baby className="h-5 w-5" />} label="Children" value={kpis.uniqueChildAttendees}
-              subtitle="Unique attendees in period" />
-            <GlassKPICard icon={<UsersRound className="h-5 w-5" />} label="DCG Events" value={kpis.dcgEventsCount}
-              subtitle={`Avg: ${kpis.avgDcgAttendees} attendees`} />
-            <GlassKPICard icon={<Target className="h-5 w-5" />} label="Attendance Target"
-              value={kpis.dcgAttendanceTargetMissing ? "—" : `${kpis.dcgAttendanceTargetPct}%`}
-              subtitle={kpis.dcgAttendanceTargetSubtitle} />
-            <GlassKPICard icon={<Heart className="h-5 w-5" />} label="Discipleship Success" value={`${kpis.successRate}%`}
-              subtitle="Reached membership milestone" />
+          <div className="grid grid-cols-2 gap-1 rounded-full border border-border bg-muted/50 p-1">
+            {[{ v: 'regional', l: 'Regional events' }, { v: 'dcg', l: 'DCG events' }].map(o => (
+              <button key={o.v} type="button" onClick={() => setEventType(o.v)}
+                className={cn('rounded-full py-2 text-sm font-semibold transition',
+                  eventType === o.v ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground')}>
+                {o.l}
+              </button>
+            ))}
           </div>
-        )}
-
-        <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl">
-          <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
-          {trendChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={380}>
-              <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradMembers" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradVisitors" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradChildren" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                  }}
-                  content={({ active, payload, label }) => {
-                    if (!active || !payload || payload.length === 0) return null;
-                    const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
-                    return (
-                      <div style={{
-                        backgroundColor: "var(--card)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                        padding: "8px 12px",
-                        boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
-                      }}>
-                        <div style={{ fontWeight: 600, marginBottom: 4, color: "var(--foreground)" }}>{label}</div>
-                        {payload.map((p: any) => (
-                          <div key={p.dataKey} style={{ color: p.color }}>
-                            {p.dataKey} : {p.value}
-                          </div>
-                        ))}
-                        <div style={{
-                          marginTop: 6,
-                          paddingTop: 6,
-                          borderTop: "1px solid var(--border)",
-                          fontWeight: 600,
-                          color: "var(--foreground)",
-                        }}>
-                          Total : {total}
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                {kpis && kpis.targetMembers > 0 && (
-                  <ReferenceLine
-                    y={kpis.targetMembers}
-                    stroke="var(--destructive)"
-                    strokeDasharray="6 4"
-                    label={{ value: `Target: ${kpis.targetMembers}`, position: "insideTopRight", fontSize: 11, fill: "var(--destructive)" }}
-                  />
-                )}
-                <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#gradMembers)" strokeWidth={2.5} dot={false} />
-                <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#gradVisitors)" strokeWidth={2.5} dot={false} />
-                <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#gradChildren)" strokeWidth={2.5} dot={false} />
-                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-[380px] flex items-center justify-center text-muted-foreground text-sm">
-              No attendance data for the selected period
-            </div>
+          <ChipRow value={quickPeriod} onChange={setQuickPeriod} options={periodOptions} />
+          {quickPeriod === "custom" && customRange.from && (
+            <p className="px-1 text-xs text-muted-foreground">
+              {format(customRange.from, "dd/MM/yyyy")}{customRange.to ? ` – ${format(customRange.to, "dd/MM/yyyy")}` : ''}
+            </p>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl lg:col-span-2">
-            <h3 className="text-base font-semibold mb-4 text-foreground">Gender & Age Distribution</h3>
-            {genderChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={genderChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                    }}
-                  />
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]} maxBarSize={60}>
-                    {genderChartData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.fill} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
-                No member data available
-              </div>
-            )}
+        {/* Hero + KPIs */}
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <HeroCard
+              eyebrow={`${region?.name ?? 'Region'} · ${isDcg ? 'DCG' : 'Regional'} reach`}
+              value={totalAttendees}
+              sub={`${kpis?.uniqueMemberAttendees ?? 0} members · ${kpis?.uniqueVisitorAttendees ?? 0} visitors · ${kpis?.uniqueChildAttendees ?? 0} children`}
+              ring={targetMissing ? memberShare : targetPct}
+              ringLabel={targetMissing ? 'Members' : 'Target'}
+            >
+              <p className="text-xs opacity-85">{targetMissing ? 'Unique people who attended in this period' : targetSub}</p>
+            </HeroCard>
           </div>
+          <div className="grid grid-cols-2 gap-3 lg:col-span-2">
+            <Tile icon={isDcg ? UsersRound : CalendarDays} label={isDcg ? 'DCG events' : 'Regional events'}
+              value={isDcg ? kpis?.dcgEventsCount ?? 0 : kpis?.regionalEventsCount ?? 0}
+              sub={`Avg ${isDcg ? kpis?.avgDcgAttendees ?? 0 : kpis?.avgRegionalAttendees ?? 0} attending`} tone="var(--chart-2)" />
+            <RingTile icon={Target} label="Attendance target" value={targetMissing ? '—' : `${targetPct}%`}
+              ring={targetMissing ? undefined : Math.min(targetPct, 100)} tone="var(--chart-1)" />
+            <RingTile icon={Heart} label="Discipleship success" value={`${kpis?.successRate ?? 0}%`}
+              ring={kpis?.successRate ?? 0} tone="var(--chart-4)" />
+            <Tile icon={Baby} label="Children" value={kpis?.uniqueChildAttendees ?? 0} sub="Attended this period" tone="var(--chart-3)" />
+          </div>
+        </div>
 
-          <div className="overflow-hidden rounded-md border border-border/70 bg-card/85 shadow-card backdrop-blur-xl">
-            <div className="grid grid-cols-2 grid-rows-2 h-full">
-              <div className="p-5 border-r border-b border-border/30 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Banknote className="h-4 w-4" />
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground">Tithers</span>
-                </div>
-                <p className="font-bold text-foreground text-lg">{kpis?.uniqueTithers ?? 0}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
-              </div>
+        {/* Quick actions */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3">
+          {quickLinks.map(a => (
+            <Link key={a.href} to={a.href} className="group flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card p-3 text-center transition hover:-translate-y-0.5 hover:shadow-md">
+              <span className="grid h-10 w-10 place-items-center rounded-full" style={{ background: `color-mix(in oklab, ${a.tone} 15%, transparent)`, color: a.tone }}>
+                <a.icon className="h-5 w-5" />
+              </span>
+              <span className="truncate text-[11px] font-semibold text-foreground sm:text-xs">{a.label}</span>
+            </Link>
+          ))}
+        </div>
 
-              <div className="p-5 border-b border-border/30 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10 text-accent">
-                    <HandCoins className="h-4 w-4" />
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground">Givers</span>
-                </div>
-                <p className="font-bold text-foreground text-lg">{kpis?.uniqueGivers ?? 0}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Unique this period</p>
-              </div>
+        {/* Trend */}
+        <section className="rounded-3xl border border-border bg-card p-4 sm:p-6">
+          <div className="mb-3 flex items-end justify-between gap-2">
+            <div>
+              <h3 className="font-heading text-lg font-semibold text-foreground">Attendance rhythm</h3>
+              <p className="text-xs text-muted-foreground">{isDcg ? 'Weekly totals' : 'Per event'} · last {periodLabel}</p>
+            </div>
+            {kpis && kpis.targetMembers > 0 && <span className="rounded-full bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive">Target {kpis.targetMembers}</span>}
+          </div>
+          {trendChartData.length > 0 ? (
+            <div className="h-[240px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendChartData} margin={{ top: 10, right: 4, left: -20, bottom: 0 }}>
+                  <defs>
+                    {['1', '2', '3'].map(n => (
+                      <linearGradient key={n} id={`grad${n}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={`var(--chart-${n})`} stopOpacity={0.35} />
+                        <stop offset="95%" stopColor={`var(--chart-${n})`} stopOpacity={0} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} minTickGap={16} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    const total = payload.reduce((s, p: any) => s + (Number(p.value) || 0), 0);
+                    return (
+                      <div className="rounded-xl border border-border bg-card px-3 py-2 text-xs shadow-lg">
+                        <p className="mb-1 font-semibold text-foreground">{label}</p>
+                        {payload.map((p: any) => <p key={p.dataKey} style={{ color: p.color }}>{p.dataKey}: {p.value}</p>)}
+                        <p className="mt-1 border-t border-border pt-1 font-semibold text-foreground">Total: {total}</p>
+                      </div>
+                    );
+                  }} />
+                  {kpis && kpis.targetMembers > 0 && <ReferenceLine y={kpis.targetMembers} stroke="var(--destructive)" strokeDasharray="6 4" />}
+                  <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#grad1)" strokeWidth={2.5} dot={false} />
+                  <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#grad2)" strokeWidth={2.5} dot={false} />
+                  <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#grad3)" strokeWidth={2.5} dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="grid h-[200px] place-items-center text-sm text-muted-foreground">No attendance in this period</div>
+          )}
+          <div className="mt-3 flex flex-wrap gap-3 text-[11px] font-medium text-muted-foreground">
+            {[['Members', '1'], ['Visitors', '2'], ['Children', '3']].map(([l, n]) => (
+              <span key={l} className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: `var(--chart-${n})` }} />{l}</span>
+            ))}
+          </div>
+        </section>
 
-              <div className="p-5 border-r border-border/30 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-lg",
-                    (kpis?.incomeGrowthPct ?? 0) >= 0 ? "bg-green-500/10 text-green-600" : "bg-destructive/10 text-destructive"
-                  )}>
-                    {(kpis?.incomeGrowthPct ?? 0) >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+        <div className="grid gap-3 lg:grid-cols-3">
+          {/* People mix as smart bars */}
+          <section className="rounded-3xl border border-border bg-card p-4 sm:p-6 lg:col-span-2">
+            <h3 className="font-heading text-lg font-semibold text-foreground">People mix</h3>
+            <p className="mb-4 text-xs text-muted-foreground">{genderTotal} people on file by gender and age</p>
+            <div className="space-y-3">
+              {genderChartData.map(g => {
+                const pct = genderTotal ? Math.round((g.count / genderTotal) * 100) : 0;
+                return (
+                  <div key={g.name}>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="font-medium text-foreground">{g.name}</span>
+                      <span className="text-muted-foreground"><b className="text-foreground">{g.count}</b> · {pct}%</span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: g.fill }} />
+                    </div>
                   </div>
-                  <span className="text-xs font-medium text-muted-foreground">Income Growth</span>
-                </div>
-                <p className={cn(
-                  "text-2xl font-bold",
-                  (kpis?.incomeGrowthPct ?? 0) >= 0 ? "text-green-600" : "text-destructive"
-                )}>
-                  {(kpis?.incomeGrowthPct ?? 0) > 0 ? "+" : ""}{kpis?.incomeGrowthPct ?? 0}%
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">vs previous period</p>
-              </div>
+                );
+              })}
+            </div>
+          </section>
 
-              <div className="p-5 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/10 text-secondary">
-                    <Crosshair className="h-4 w-4" />
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground">Fundraising</span>
-                </div>
-                <p className="font-bold text-foreground text-lg">{kpis?.fundraisingTargetPct ?? 0}%</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Of all campaign goals</p>
+          {/* Giving snapshot */}
+          <section className="rounded-3xl border border-border bg-card p-4 sm:p-6">
+            <h3 className="font-heading text-lg font-semibold text-foreground">Giving snapshot</h3>
+            <p className="mb-4 text-xs text-muted-foreground">Last {periodLabel}</p>
+            <div className="flex items-center gap-4">
+              <Ring value={kpis?.fundraisingTargetPct ?? 0} size={80} tone="var(--chart-5)" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">Fundraising</p>
+                <p className="text-sm font-semibold text-foreground">of all campaign goals</p>
               </div>
             </div>
-          </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-muted/50 p-3">
+                <HandCoins className="h-4 w-4 text-primary" />
+                <p className="mt-1 font-heading text-xl font-bold text-foreground">{kpis?.uniqueGivers ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground">Givers</p>
+              </div>
+              <div className="rounded-2xl bg-muted/50 p-3">
+                <Banknote className="h-4 w-4 text-primary" />
+                <p className="mt-1 font-heading text-xl font-bold text-foreground">{kpis?.uniqueTithers ?? 0}</p>
+                <p className="text-[10px] text-muted-foreground">Tithers</p>
+              </div>
+              <div className="rounded-2xl bg-muted/50 p-3">
+                {growth >= 0 ? <TrendingUp className="h-4 w-4 text-primary" /> : <TrendingDown className="h-4 w-4 text-destructive" />}
+                <p className={cn("mt-1 font-heading text-xl font-bold", growth >= 0 ? "text-foreground" : "text-destructive")}>{growth > 0 ? '+' : ''}{growth}%</p>
+                <p className="text-[10px] text-muted-foreground">Income</p>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
