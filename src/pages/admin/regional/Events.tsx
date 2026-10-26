@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from "react";
-import PeriodFilter, { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { PeriodFilters } from "@/components/admin/regional/dashboard/PeriodFilter";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { ChipRow } from "@/components/admin/regional/RegionalUI";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +13,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2, Copy } from "lucide-react";
+import { Calendar, CalendarIcon, Clock, MapPin, Users, Plus, CalendarDays, BarChart2, Search, AlertCircle, Trash2, MoreHorizontal, Edit, UserCheck, TrendingUp, TrendingDown, Filter, X, ChevronDown, Languages, Star, Layers, Target, Repeat, Link2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
@@ -172,6 +175,27 @@ const RegionalEvents: React.FC = () => {
     const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
     return { dateRange: { from, to: undefined }, quickDateRange: '1-year' };
   });
+  const periodOptions = [
+    { value: '1-month', label: '1 month' },
+    { value: '3-months', label: '3 months' },
+    { value: '6-months', label: '6 months' },
+    { value: '1-year', label: '1 year' },
+    { value: 'custom', label: 'Custom' },
+  ];
+  const handlePeriodChange = (value: string) => {
+    if (value === 'custom') {
+      setPeriodFilters(prev => ({ ...prev, quickDateRange: 'custom' }));
+      return;
+    }
+    const now = new Date();
+    let from: Date | undefined;
+    if (value === '1-month') from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    else if (value === '3-months') from = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    else if (value === '6-months') from = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    else if (value === '1-year') from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    else return;
+    setPeriodFilters({ quickDateRange: value, dateRange: { from, to: now } });
+  };
   const [cardImagePreview, setCardImagePreview] = useState<string>('');
   const [cardImagePreviewFr, setCardImagePreviewFr] = useState<string>('');
   const [editCardImagePreview, setEditCardImagePreview] = useState<string>('');
@@ -1865,8 +1889,26 @@ const RegionalEvents: React.FC = () => {
         </div>
 
         {/* Period */}
-        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <PeriodFilter filters={periodFilters} onFiltersChange={(f) => setPeriodFilters(prev => ({ ...prev, ...f }))} className="mb-0" />
+        <div className="space-y-2">
+          <ChipRow value={periodFilters.quickDateRange} onChange={handlePeriodChange} options={periodOptions} />
+          {periodFilters.quickDateRange === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted">
+                  <CalendarIcon className="h-4 w-4" />
+                  {periodFilters.dateRange.from
+                    ? `${format(periodFilters.dateRange.from, "dd/MM/yyyy")}${periodFilters.dateRange.to ? ` – ${format(periodFilters.dateRange.to, "dd/MM/yyyy")}` : ''}`
+                    : 'Pick dates'}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarPicker mode="range" initialFocus numberOfMonths={1}
+                  selected={{ from: periodFilters.dateRange.from, to: periodFilters.dateRange.to }}
+                  onSelect={(range) => setPeriodFilters(prev => ({ ...prev, dateRange: { from: range?.from, to: range?.to } }))}
+                  className="pointer-events-auto" />
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Time tabs */}
