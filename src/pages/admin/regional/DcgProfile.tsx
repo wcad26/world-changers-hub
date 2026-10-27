@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useParams, useNavigate } from "@/lib/router-compat";
 import {
   ArrowLeft, Users, Calendar as CalendarIcon2, MapPin, Phone, Clock, Edit,
-  Wallet, TrendingUp, TrendingDown, Search, CalendarIcon, Download,
+  Wallet, TrendingUp, TrendingDown, CalendarIcon, Download,
   MoreVertical, Eye, UserMinus,
 } from "lucide-react";
 import { format, subMonths } from "date-fns";
@@ -12,9 +12,6 @@ import {
 } from "recharts";
 
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,8 +20,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GlassSection, GlassKPICard } from "@/components/ui/GlassSection";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
+import {
+  HeroCard, RingTile, SearchBar, RoundButton, ChipRow, Initials, StatusPill, TypePill, InfoRow,
+} from "@/components/admin/regional/RegionalUI";
 
 import { useDcgs } from "@/hooks/useDCGs";
 import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
@@ -35,14 +34,15 @@ import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useDcgEvents } from "@/hooks/useDcgEvents";
 import { formatWithCurrency } from "@/utils/currencyUtils";
 import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const periodOptions = [
-  { value: "1-month", label: "1M" },
-  { value: "3-months", label: "3M" },
-  { value: "6-months", label: "6M" },
-  { value: "1-year", label: "1Y" },
+type PeriodValue = "1-month" | "3-months" | "6-months" | "1-year" | "custom";
+
+const periodOptions: { value: PeriodValue; label: string }[] = [
+  { value: "1-month", label: "1 month" },
+  { value: "3-months", label: "3 months" },
+  { value: "6-months", label: "6 months" },
+  { value: "1-year", label: "1 year" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -53,7 +53,7 @@ const DcgProfile: React.FC = () => {
   const { userRegion } = useAuth();
 
   // Period filter
-  const [quickPeriod, setQuickPeriod] = useState("1-month");
+  const [quickPeriod, setQuickPeriod] = useState<PeriodValue>("1-month");
   const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
   const dateRange = useMemo(() => {
@@ -77,7 +77,7 @@ const DcgProfile: React.FC = () => {
 
   const { data: dcgs, isLoading: dcgsLoading } = useDcgs();
   const { data: members, isLoading: membersLoading } = useDcgMembers(dcgId || "");
-  const { data: transactions, isLoading: financialsLoading } = useFinancialTransactions();
+  const { data: transactions } = useFinancialTransactions();
   const { data: currency } = useRegionCurrency(userRegion?.id);
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: dcgEvents } = useDcgEvents(dcgId);
@@ -106,7 +106,6 @@ const DcgProfile: React.FC = () => {
   const netBalance = totalIncome - totalExpenses;
 
   // Trend chart data — only attendance for events OWNED by this DCG (events.dcg_id === dcgId).
-  // This excludes regional-event submissions, which would otherwise inflate counts beyond the DCG's own membership.
   const trendChartData = useMemo(() => {
     if (!attendanceData) return [];
     const ownedEventIds = new Set((dcgEvents || []).map((e: any) => e.id));
@@ -120,8 +119,6 @@ const DcgProfile: React.FC = () => {
       return true;
     });
 
-    // Group by source event (or by date when source missing) so multiple
-    // submissions for the same event collapse into one point.
     const groups = new Map<string, { date: Date; m: number; v: number; c: number }>();
     filtered.forEach(a => {
       const key = a.source_event_id || a.event_date;
@@ -142,7 +139,7 @@ const DcgProfile: React.FC = () => {
       }));
   }, [attendanceData, dcgEvents, dateRange]);
 
-  // Member table filtering — must run before any early return to keep hook order stable.
+  // Member filtering — must run before any early return to keep hook order stable.
   const filteredMembers = useMemo(() => {
     const active = (members || []).filter(m => m.is_active);
     return active.filter(m => {
@@ -170,9 +167,7 @@ const DcgProfile: React.FC = () => {
   if (!dcg) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
+        <RoundButton icon={ArrowLeft} label="Back" onClick={() => navigate(-1)} />
         <Alert>
           <AlertDescription>DCG not found</AlertDescription>
         </Alert>
@@ -197,16 +192,10 @@ const DcgProfile: React.FC = () => {
 
   const activeMembers = (members || []).filter(m => m.is_active);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active": return "bg-green-100 text-green-800 border-green-200";
-      case "completed": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "transferred": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "inactive": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "new": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
+  // Latest gathering fill rate: most recent total attendance vs active membership.
+  const latestPoint = trendChartData[trendChartData.length - 1];
+  const latestTotal = latestPoint ? latestPoint.Members + latestPoint["Regular Visitors"] + latestPoint.Children : 0;
+  const fillRate = activeMembers.length > 0 ? Math.min(100, (latestTotal / activeMembers.length) * 100) : 0;
 
   const handleExport = () => {
     if (filteredMembers.length === 0) {
@@ -239,315 +228,316 @@ const DcgProfile: React.FC = () => {
     await removeMember.mutateAsync({ dcgMemberId, dcgId });
   };
 
-  const metaItems = [
-    { icon: Users, label: "Leader", value: getLeaderName(dcg) },
-    { icon: MapPin, label: "Location", value: dcg.location || "Not set" },
-    { icon: CalendarIcon2, label: "Meeting Day", value: dcg.meeting_day || "Not set" },
-    { icon: Clock, label: "Time", value: formatMeetingTime(dcg.meeting_time) },
-    ...(dcg.contact_phone ? [{ icon: Phone, label: "Contact", value: dcg.contact_phone }] : []),
-  ];
+  const memberMenu = (m: any) => {
+    const memberId = m.members?.id;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Member actions"
+            className="grid h-9 w-9 place-items-center rounded-full text-muted-foreground transition hover:bg-muted"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="z-50 border bg-popover shadow-md">
+          <DropdownMenuItem onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}>
+            <Eye className="mr-2 h-4 w-4" /> View
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleRemove(m.id)}>
+            <UserMinus className="mr-2 h-4 w-4" /> Remove from DCG
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="-ml-2">
-        <ArrowLeft className="h-4 w-4 mr-2" /> Back
-      </Button>
-
-      {/* Header */}
-      <GlassSection className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 pointer-events-none" />
-        <div className="relative">
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 mb-6">
-            <div className="min-w-0">
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">{dcg.name}</h1>
-              {dcg.description && (
-                <p className="text-muted-foreground mt-2 max-w-2xl">{dcg.description}</p>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
-              {/* Period filter */}
-              <div className="flex items-center gap-1 bg-muted/40 rounded-xl p-1">
-                {periodOptions.map(opt => (
-                  <Button
-                    key={opt.value}
-                    variant={quickPeriod === opt.value ? "default" : "ghost"}
-                    size="sm"
-                    onClick={() => setQuickPeriod(opt.value)}
-                    className={cn(
-                      "h-8 px-3 rounded-lg text-xs",
-                      quickPeriod === opt.value && "bg-primary text-primary-foreground hover:bg-primary/90"
-                    )}
-                  >
-                    {opt.label}
-                  </Button>
-                ))}
-              </div>
-              {quickPeriod === "custom" && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-2">
-                      <CalendarIcon className="h-3.5 w-3.5" />
-                      {customRange.from
-                        ? `${format(customRange.from, "MMM d")}${customRange.to ? ` - ${format(customRange.to, "MMM d, y")}` : ""}`
-                        : "Pick dates"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-                    <Calendar
-                      mode="range"
-                      selected={{ from: customRange.from, to: customRange.to }}
-                      onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
-                      numberOfMonths={2}
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              )}
-              <Badge variant={dcg.is_active ? "default" : "secondary"}>
-                {dcg.is_active ? "Active" : "Inactive"}
-              </Badge>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {metaItems.map(({ icon: Icon, label, value }) => (
-              <div key={label} className="flex items-center gap-3 rounded-xl border border-border/40 bg-background/50 px-3 py-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="text-sm font-medium text-foreground truncate">{value}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className="space-y-5">
+      {/* Top bar */}
+      <div className="flex items-center gap-2">
+        <RoundButton icon={ArrowLeft} label="Back" onClick={() => navigate(-1)} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{dcg.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{dcg.location || "No location set"}</p>
         </div>
-      </GlassSection>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GlassKPICard icon={<Users className="h-4 w-4" />} label="Total Members" value={activeMembers.length} tone="primary" />
-        <GlassKPICard icon={<TrendingUp className="h-4 w-4" />} label="Total Income" value={fmt(totalIncome)} tone="emerald" />
-        <GlassKPICard icon={<TrendingDown className="h-4 w-4" />} label="Total Expenses" value={fmt(totalExpenses)} tone="coral" />
-        <GlassKPICard icon={<Wallet className="h-4 w-4" />} label="Net Balance" value={fmt(netBalance)} subtitle={netBalance >= 0 ? "Positive balance" : "Deficit"} tone="blue" />
+        <StatusPill status={dcg.is_active ? "active" : "inactive"} />
+        <RoundButton icon={Edit} label="Edit DCG" onClick={() => setIsEditDialogOpen(true)} />
       </div>
 
-      {/* Attendance Trend (DCG-scoped, dashboard look) */}
-      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
+      {/* Period filter */}
+      <ChipRow<PeriodValue> value={quickPeriod} onChange={setQuickPeriod} options={periodOptions} />
+      {quickPeriod === "custom" && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-4 text-sm text-foreground transition hover:bg-muted sm:w-auto"
+            >
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+              {customRange.from
+                ? `${format(customRange.from, "MMM d")}${customRange.to ? ` - ${format(customRange.to, "MMM d, y")}` : ""}`
+                : "Pick dates"}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto bg-popover p-0 z-50" align="start">
+            <Calendar
+              mode="range"
+              selected={{ from: customRange.from, to: customRange.to }}
+              onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
+              numberOfMonths={2}
+              className="pointer-events-auto"
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+
+      {/* Hero summary */}
+      <HeroCard
+        eyebrow={`${dcg.meeting_day || "Weekly"} · ${formatMeetingTime(dcg.meeting_time)}`}
+        value={activeMembers.length}
+        sub={`members · led by ${getLeaderName(dcg)}`}
+        ring={fillRate}
+        ringLabel="Last gathering"
+      />
+
+      {/* Group details */}
+      <section className="rounded-3xl border border-border bg-card p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+          <InfoRow icon={Users} label="Leader" value={getLeaderName(dcg)} />
+          <InfoRow icon={MapPin} label="Location" value={dcg.location || "Not set"} />
+          <InfoRow icon={CalendarIcon2} label="Meeting day" value={dcg.meeting_day || "Not set"} />
+          <InfoRow icon={Clock} label="Time" value={formatMeetingTime(dcg.meeting_time)} />
+          {dcg.contact_phone && <InfoRow icon={Phone} label="Contact" value={dcg.contact_phone} />}
+        </div>
+        {dcg.description && (
+          <p className="mt-2 border-t border-border/60 pt-3 text-sm text-muted-foreground">{dcg.description}</p>
+        )}
+      </section>
+
+      {/* Financial KPI tiles */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <RingTile icon={Users} label="Members" value={activeMembers.length} ring={fillRate} tone="var(--chart-1)" />
+        <RingTile icon={TrendingUp} label="Income" value={fmt(totalIncome)} tone="var(--chart-2)" />
+        <RingTile icon={TrendingDown} label="Expenses" value={fmt(totalExpenses)} tone="var(--chart-4)" />
+        <RingTile
+          icon={Wallet}
+          label="Net balance"
+          value={fmt(netBalance)}
+          tone={netBalance >= 0 ? "var(--chart-3)" : "var(--destructive)"}
+        />
+      </div>
+
+      {/* Attendance trend */}
+      <section className="rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <h3 className="mb-4 font-heading text-base font-semibold text-foreground">Attendance trend</h3>
         {trendChartData.some(p => p.Members + p["Regular Visitors"] + p.Children > 0) ? (
-          <ResponsiveContainer width="100%" height={380}>
-            <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="dcgGradMembers" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="dcgGradVisitors" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="dcgGradChildren" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                content={({ active, payload, label }) => {
-                  if (!active || !payload || payload.length === 0) return null;
-                  const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
-                  return (
-                    <div style={{
-                      backgroundColor: "var(--card)",
-                      border: "1px solid var(--border)",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      padding: "8px 12px",
-                      boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
-                    }}>
-                      <div style={{ fontWeight: 600, marginBottom: 4, color: "var(--foreground)" }}>{label}</div>
-                      {payload.map((p: any) => (
-                        <div key={p.dataKey} style={{ color: p.color }}>
-                          {p.dataKey} : {p.value}
-                        </div>
-                      ))}
+          <div className="h-[260px] sm:h-[360px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="dcgGradMembers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="dcgGradVisitors" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="dcgGradChildren" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload || payload.length === 0) return null;
+                    const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
+                    return (
                       <div style={{
-                        marginTop: 6, paddingTop: 6,
-                        borderTop: "1px solid var(--border)",
-                        fontWeight: 600, color: "var(--foreground)",
+                        backgroundColor: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        padding: "8px 12px",
+                        boxShadow: "0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)",
                       }}>
-                        Total : {total}
+                        <div style={{ fontWeight: 600, marginBottom: 4, color: "var(--foreground)" }}>{label}</div>
+                        {payload.map((p: any) => (
+                          <div key={p.dataKey} style={{ color: p.color }}>
+                            {p.dataKey} : {p.value}
+                          </div>
+                        ))}
+                        <div style={{
+                          marginTop: 6, paddingTop: 6,
+                          borderTop: "1px solid var(--border)",
+                          fontWeight: 600, color: "var(--foreground)",
+                        }}>
+                          Total : {total}
+                        </div>
                       </div>
-                    </div>
-                  );
-                }}
-              />
-              <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#dcgGradMembers)" strokeWidth={2.5} dot={false} />
-              <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#dcgGradVisitors)" strokeWidth={2.5} dot={false} />
-              <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#dcgGradChildren)" strokeWidth={2.5} dot={false} />
-              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
-            </AreaChart>
-          </ResponsiveContainer>
+                    );
+                  }}
+                />
+                <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#dcgGradMembers)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#dcgGradVisitors)" strokeWidth={2.5} dot={false} />
+                <Area type="monotone" dataKey="Children" stroke="var(--chart-3)" fill="url(#dcgGradChildren)" strokeWidth={2.5} dot={false} />
+                <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "8px" }} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         ) : (
-          <div className="h-[380px] flex items-center justify-center text-muted-foreground text-sm">
+          <div className="flex h-[200px] items-center justify-center text-sm text-muted-foreground">
             No attendance data for the selected period
           </div>
         )}
-      </div>
+      </section>
 
       {/* Members section */}
-      <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-              <Users className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">DCG Members</h2>
-              <p className="text-sm text-muted-foreground">All active members in this DCG</p>
-            </div>
+      <section className="space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <Users className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-heading text-lg font-semibold text-foreground">DCG members</h2>
+            <p className="text-xs text-muted-foreground">{activeMembers.length} active in this group</p>
           </div>
+          <RoundButton icon={Download} label={`Export ${filteredMembers.length} members`} onClick={handleExport} />
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
-          <div className="relative flex-1 sm:min-w-[250px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email, or phone..."
-              className="pl-9 bg-background/60"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search by name, email, or phone..." />
 
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="new">New</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-              <SelectItem value="transferred">Transferred</SelectItem>
-            </SelectContent>
-          </Select>
+        <ChipRow
+          value={statusFilter}
+          onChange={setStatusFilter}
+          options={[
+            { value: "all", label: "All statuses" },
+            { value: "new", label: "New" },
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
+            { value: "transferred", label: "Transferred" },
+          ]}
+        />
+        <ChipRow
+          value={roleFilter}
+          onChange={setRoleFilter}
+          options={[
+            { value: "all", label: "All roles" },
+            { value: "Leader", label: "Leader" },
+            { value: "Assistant", label: "Assistant" },
+            { value: "Member", label: "Member" },
+          ]}
+        />
 
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
-            <SelectTrigger className="w-full sm:w-[180px] bg-background/60">
-              <SelectValue placeholder="Filter by Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="Leader">Leader</SelectItem>
-              <SelectItem value="Assistant">Assistant</SelectItem>
-              <SelectItem value="Member">Member</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
-            <Download className="mr-2 h-4 w-4" />
-            Export ({filteredMembers.length})
-          </Button>
+        {/* Mobile / tablet member cards */}
+        <div className="space-y-3 lg:hidden">
+          {membersLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl border border-border bg-card" />
+            ))
+          ) : filteredMembers.length > 0 ? (
+            filteredMembers.map(m => {
+              const p = m.members?.profiles;
+              const memberId = m.members?.id;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
+                  className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition active:scale-[0.99]"
+                >
+                  <Initials first={p?.first_name} last={p?.last_name} photo={(p as any)?.photo_url} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {p?.last_name} {p?.first_name}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{p?.phone || p?.email || "No contact"}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <TypePill label={m.role} />
+                      <StatusPill status={m.members?.status || "new"} />
+                    </div>
+                  </div>
+                  {memberMenu(m)}
+                </button>
+              );
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-border bg-card/50 py-10 text-center text-sm text-muted-foreground">
+              No members found
+            </div>
+          )}
         </div>
 
-        <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/30">
-                  <TableHead className="w-[30%]">Name</TableHead>
-                  <TableHead className="hidden md:table-cell w-[15%]">Address</TableHead>
-                  <TableHead className="hidden sm:table-cell">Phone</TableHead>
-                  <TableHead>DCG Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Joined</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {membersLoading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      {Array.from({ length: 7 }).map((_, j) => (
-                        <TableCell key={j}><div className="animate-pulse rounded-lg bg-muted h-5 w-full" /></TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : filteredMembers.length > 0 ? (
-                  filteredMembers.map(m => {
-                    const p = m.members?.profiles;
-                    const memberId = m.members?.id;
-                    return (
-                      <TableRow
-                        key={m.id}
-                        className="cursor-pointer hover:bg-muted/20 transition-colors"
-                        onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
-                      >
-                        <TableCell className="font-medium">
-                          {p?.last_name} {p?.first_name}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell max-w-[140px] truncate">{p?.address || "N/A"}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{p?.phone || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{m.role}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(m.members?.status || "new")}>
-                            {m.members?.status || "new"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          {m.joined_date ? new Date(m.joined_date).toLocaleDateString() : "N/A"}
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
-                              >
-                                <Eye className="h-4 w-4 mr-2" /> View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleRemove(m.id)}
-                              >
-                                <UserMinus className="h-4 w-4 mr-2" /> Remove from DCG
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      No members found
-                    </TableCell>
+        {/* Desktop table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-border/40 lg:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="w-[30%]">Name</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>DCG Role</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead className="w-[60px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {membersLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-5 w-full animate-pulse rounded-lg bg-muted" /></TableCell>
+                    ))}
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                ))
+              ) : filteredMembers.length > 0 ? (
+                filteredMembers.map(m => {
+                  const p = m.members?.profiles;
+                  const memberId = m.members?.id;
+                  return (
+                    <TableRow
+                      key={m.id}
+                      className="cursor-pointer transition-colors hover:bg-muted/20"
+                      onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}
+                    >
+                      <TableCell className="font-medium">
+                        {p?.last_name} {p?.first_name}
+                      </TableCell>
+                      <TableCell className="max-w-[140px] truncate">{p?.address || "N/A"}</TableCell>
+                      <TableCell>{p?.phone || "N/A"}</TableCell>
+                      <TableCell><TypePill label={m.role} /></TableCell>
+                      <TableCell><StatusPill status={m.members?.status || "new"} /></TableCell>
+                      <TableCell>
+                        {m.joined_date ? new Date(m.joined_date).toLocaleDateString() : "N/A"}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>{memberMenu(m)}</TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    No members found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </section>
 
       <EditDcgDialog
         open={isEditDialogOpen}
         setOpen={setIsEditDialogOpen}
         dcg={dcg}
       />
-
     </div>
   );
 };
