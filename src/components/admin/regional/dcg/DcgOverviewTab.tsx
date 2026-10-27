@@ -10,7 +10,7 @@ import { EditDcgDialog } from "./EditDcgDialog";
 import { useToast } from "@/hooks/use-toast";
 import { useRegionalDcgStats } from "@/hooks/useRegionalStats";
 import { useAuth } from "@/hooks/useAuth";
-import { HeroCard, RingTile, SearchBar, RoundButton, ChipRow, StatusPill } from "@/components/admin/regional/RegionalUI";
+import { HeroCard, SearchBar, RoundButton, ChipRow, StatusPill } from "@/components/admin/regional/RegionalUI";
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
@@ -129,18 +129,6 @@ const DcgOverviewTab = () => {
         ringLabel="Avg attendance"
       />
 
-      {/* KPI tiles */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <RingTile icon={Home} label="Active groups" value={activeDcgs} tone="var(--chart-1)" />
-        <RingTile icon={Users} label="Total members" value={totalMembers} tone="var(--chart-2)" />
-        <RingTile
-          icon={BarChart3}
-          label="Avg attendance"
-          value={avgAttendance > 0 ? `${avgAttendance}%` : 'N/A'}
-          ring={avgAttendance}
-          tone="var(--chart-3)"
-        />
-      </div>
 
       {isError && (
         <Alert variant="destructive">
