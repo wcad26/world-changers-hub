@@ -1,14 +1,24 @@
-import React, { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useDcgMembers, type DcgMemberWithDetails } from "@/hooks/useDcgMembers";
-import { useSaveDcgAttendance } from "@/hooks/useDcgAttendance";
-import { Search, UserCheck, Save, Loader2 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import React, { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useDcgMembers, type DcgMemberWithDetails } from '@/hooks/useDcgMembers';
+import { useSaveDcgAttendance } from '@/hooks/useDcgAttendance';
+import { UserCheck, Save, Loader2, Check, Inbox } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
+import {
+  SheetHeader,
+  SearchBar,
+  Initials,
+  TypePill,
+  EmptyState,
+} from '@/components/admin/dcg/DcgUI';
 
 interface DcgAttendanceRecordDialogProps {
   isOpen: boolean;
@@ -21,62 +31,65 @@ interface DcgAttendanceRecordDialogProps {
   dcgId: string;
 }
 
-export function DcgAttendanceRecordDialog({ 
-  isOpen, 
-  onClose, 
+export function DcgAttendanceRecordDialog({
+  isOpen,
+  onClose,
   attendanceEvent,
-  dcgId 
+  dcgId,
 }: DcgAttendanceRecordDialogProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
-  
-  const { data: dcgMembers, isLoading: loadingMembers, error: membersError } = useDcgMembers(dcgId);
+
+  const {
+    data: dcgMembers,
+    isLoading: loadingMembers,
+    error: membersError,
+  } = useDcgMembers(dcgId);
   const saveAttendance = useSaveDcgAttendance();
 
   const filteredMembers = useMemo(() => {
     if (!dcgMembers) return [];
-    return dcgMembers.filter(dcgMember => {
+    const searchLower = searchTerm.toLowerCase().trim();
+    return dcgMembers.filter((dcgMember) => {
       if (!dcgMember.members) return false;
-      
-      const searchLower = searchTerm.toLowerCase();
+      if (!searchLower) return true;
       const firstName = dcgMember.members.profiles?.first_name?.toLowerCase() || '';
       const lastName = dcgMember.members.profiles?.last_name?.toLowerCase() || '';
       const email = dcgMember.members.profiles?.email?.toLowerCase() || '';
       const memberId = dcgMember.members.member_id?.toLowerCase() || '';
-      
-      return firstName.includes(searchLower) || 
-             lastName.includes(searchLower) || 
-             email.includes(searchLower) ||
-             memberId.includes(searchLower);
+      return (
+        firstName.includes(searchLower) ||
+        lastName.includes(searchLower) ||
+        `${lastName} ${firstName}`.includes(searchLower) ||
+        email.includes(searchLower) ||
+        memberId.includes(searchLower)
+      );
     });
   }, [dcgMembers, searchTerm]);
 
   const handleToggleMember = (memberId: string) => {
-    const newPresentMembers = new Set(presentMembers);
-    if (newPresentMembers.has(memberId)) {
-      newPresentMembers.delete(memberId);
-    } else {
-      newPresentMembers.add(memberId);
-    }
-    setPresentMembers(newPresentMembers);
+    setPresentMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      return next;
+    });
   };
 
   const handleSelectAll = () => {
     if (presentMembers.size === filteredMembers.length) {
       setPresentMembers(new Set());
     } else {
-      setPresentMembers(new Set(filteredMembers.map(m => m.members!.id)));
+      setPresentMembers(new Set(filteredMembers.map((m) => m.members!.id)));
     }
   };
 
   const handleRecordAttendance = async () => {
     if (!dcgMembers) return;
-
     try {
-      // Create attendance records for all DCG members
       const attendanceRecords = dcgMembers
-        .filter(dcgMember => dcgMember.members)
-        .map(dcgMember => ({
+        .filter((dcgMember) => dcgMember.members)
+        .map((dcgMember) => ({
           event_id: attendanceEvent.id,
           member_id: dcgMember.members!.id,
           is_present: presentMembers.has(dcgMember.members!.id),
@@ -91,142 +104,158 @@ export function DcgAttendanceRecordDialog({
 
   const getDisplayName = (dcgMember: DcgMemberWithDetails) => {
     if (!dcgMember.members) return 'Unknown Member';
-    
     const member = dcgMember.members;
-    if (member.profiles?.first_name && member.profiles?.last_name) {
-      return `${member.profiles.first_name} ${member.profiles.last_name}`;
+    if (member.profiles?.first_name || member.profiles?.last_name) {
+      return `${member.profiles?.last_name || ''} ${member.profiles?.first_name || ''}`.trim();
     }
     return member.profiles?.email || member.member_id || 'Unknown Member';
   };
 
+  const totalCount = dcgMembers?.filter((m) => m.members).length || 0;
+  const pct = totalCount > 0 ? Math.round((presentMembers.size / totalCount) * 100) : 0;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Record Attendance - {attendanceEvent.name}
-          </DialogTitle>
+      <DialogContent className="flex max-h-[88vh] max-w-2xl flex-col overflow-hidden rounded-3xl">
+        <SheetHeader
+          icon={UserCheck}
+          title={attendanceEvent.name}
+          description={`Tap members present · ${presentMembers.size}/${totalCount} (${pct}%)`}
+        />
+        <DialogHeader className="sr-only">
+          <DialogTitle>Record Attendance - {attendanceEvent.name}</DialogTitle>
           <DialogDescription>
-            Select DCG members who were present at this event. Members not selected will be marked as absent.
+            Select DCG members who were present at this event.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 flex-1 overflow-hidden">
-          {/* Search and controls */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Search DCG members..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search DCG members…"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSelectAll}
+            disabled={loadingMembers || !filteredMembers.length}
+            className="h-11 shrink-0 rounded-full"
+          >
+            {presentMembers.size === filteredMembers.length && filteredMembers.length > 0
+              ? 'Deselect All'
+              : 'Select All'}
+          </Button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {membersError && (
+            <Alert variant="destructive" className="mb-3">
+              <AlertDescription>
+                Error loading DCG members: {membersError.message}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {loadingMembers ? (
+            <div className="flex h-44 items-center justify-center text-muted-foreground">
+              <Loader2 className="mr-2 h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm">Loading DCG members…</span>
             </div>
-            <Button
-              variant="outline"
-              onClick={handleSelectAll}
-              disabled={loadingMembers || !filteredMembers.length}
-            >
-              {presentMembers.size === filteredMembers.length ? "Deselect All" : "Select All"}
-            </Button>
-          </div>
-
-          {/* Summary */}
-          <div className="bg-muted p-3 rounded-md">
-            <p className="text-sm">
-              <strong>{presentMembers.size}</strong> of <strong>{filteredMembers.length}</strong> DCG members selected as present
-              {searchTerm && ` (filtered from ${dcgMembers?.length || 0} total DCG members)`}
-            </p>
-          </div>
-
-          {/* Members table */}
-          <div className="flex-1 overflow-auto border rounded-md">
-            {membersError && (
-              <Alert variant="destructive" className="m-4">
-                <AlertDescription>
-                  Error loading DCG members: {membersError.message}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Present</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Member ID</TableHead>
-                  <TableHead>DCG Role</TableHead>
-                  <TableHead>Email</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingMembers ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-40" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : filteredMembers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      {searchTerm ? "No DCG members match your search" : "No DCG members found"}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMembers.map((dcgMember) => (
-                    <TableRow key={dcgMember.id} className="hover:bg-muted/50">
-                      <TableCell>
-                        <Checkbox
-                          checked={presentMembers.has(dcgMember.members!.id)}
-                          onCheckedChange={() => handleToggleMember(dcgMember.members!.id)}
+          ) : filteredMembers.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title={searchTerm ? 'No members match your search' : 'No DCG members found'}
+            />
+          ) : (
+            <div className="space-y-2 py-1">
+              {filteredMembers.map((dcgMember) => {
+                const memberId = dcgMember.members!.id;
+                const isPresent = presentMembers.has(memberId);
+                return (
+                  <button
+                    key={dcgMember.id}
+                    type="button"
+                    onClick={() => handleToggleMember(memberId)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all active:scale-[0.99]',
+                      isPresent
+                        ? 'border-primary bg-primary/5 ring-1 ring-primary/25'
+                        : 'border-border bg-card hover:border-primary/40',
+                    )}
+                  >
+                    <Initials
+                      size="sm"
+                      first={dcgMember.members?.profiles?.first_name}
+                      last={dcgMember.members?.profiles?.last_name}
+                      photo={(dcgMember.members?.profiles as any)?.avatar_url}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate font-heading text-sm font-semibold text-foreground">
+                          {getDisplayName(dcgMember)}
+                        </p>
+                        <TypePill
+                          label={dcgMember.role}
+                          tone={
+                            dcgMember.role === 'Leader'
+                              ? 'var(--primary)'
+                              : dcgMember.role === 'Assistant'
+                                ? 'var(--chart-3)'
+                                : 'var(--muted-foreground)'
+                          }
                         />
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {getDisplayName(dcgMember)}
-                      </TableCell>
-                      <TableCell>{dcgMember.members?.member_id}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          dcgMember.role === 'Leader' ? 'bg-primary/10 text-primary' :
-                          dcgMember.role === 'Assistant' ? 'bg-secondary/10 text-secondary-foreground' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          {dcgMember.role}
-                        </span>
-                      </TableCell>
-                      <TableCell>{dcgMember.members?.profiles?.email || 'N/A'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {dcgMember.members?.profiles?.email || dcgMember.members?.member_id || '—'}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        'grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors',
+                        isPresent
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-background text-transparent',
+                      )}
+                    >
+                      <Check className="h-4 w-4" />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose} disabled={saveAttendance.isPending}>
+        <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+          <span className="text-xs font-medium text-muted-foreground">
+            <strong>{presentMembers.size}</strong> of <strong>{totalCount}</strong> marked present
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={saveAttendance.isPending}
+              className="rounded-full"
+            >
               Cancel
             </Button>
-            <Button 
-              onClick={handleRecordAttendance} 
+            <Button
+              type="button"
+              onClick={handleRecordAttendance}
               disabled={saveAttendance.isPending || loadingMembers || !dcgMembers?.length}
+              className="rounded-full bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-regal hover:opacity-95"
             >
               {saveAttendance.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Recording...
+                  Saving…
                 </>
               ) : (
                 <>
-                  <Save className="mr-2 h-4 w-4" />
-                  Record Attendance
+                  <Save className="mr-1.5 h-4 w-4" />
+                  Save Attendance
                 </>
               )}
             </Button>

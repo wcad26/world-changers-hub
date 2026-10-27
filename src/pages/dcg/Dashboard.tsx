@@ -1,57 +1,110 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from '@/lib/router-compat';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { GlassKPICard } from '@/components/ui/GlassSection';
-import { Users, Baby, Wallet, Heart, CalendarIcon, Search } from 'lucide-react';
+import {
+  Users,
+  Baby,
+  Wallet,
+  Heart,
+  MapPin,
+  Clock,
+  Phone,
+  Calendar as CalendarIcon,
+  TrendingUp,
+  UserPlus,
+  Plus,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
 import { useDcgAttendanceHistory } from '@/hooks/useDcgAttendance';
-import { useFinancialTransactions } from '@/hooks/useFinancials';
+import { useCurrentDcg, useDcgFinancialTransactions } from '@/hooks/useDcgFinancials';
 import { useDcgs } from '@/hooks/useDCGs';
 import { useRegionCurrency } from '@/hooks/useCurrencies';
 import { formatWithCurrency } from '@/utils/currencyUtils';
 import { buildChildrenSet } from '@/utils/childUtils';
+import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths } from 'date-fns';
-import { cn } from '@/lib/utils';
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Area, AreaChart, Legend,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  Legend,
 } from 'recharts';
+import {
+  HeroCard,
+  RingTile,
+  SearchBar,
+  PeriodChipBar,
+  InfoRow,
+  Panel,
+  EmptyState,
+  StatusPill,
+  type DateRangeValue,
+} from '@/components/admin/dcg/DcgUI';
 
-const DcgDashboard = () => {
+type PeriodKey = '1-month' | '3-months' | '6-months' | '1-year' | 'custom';
+
+const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
+  { value: '1-month', label: '1 month' },
+  { value: '3-months', label: '3 months' },
+  { value: '6-months', label: '6 months' },
+  { value: '1-year', label: '1 year' },
+  { value: 'custom', label: 'Custom' },
+];
+
+const formatMeetingTime = (time?: string | null): string => {
+  if (!time) return 'Schedule TBD';
+  const [hours, minutes] = time.split(':');
+  const hour = parseInt(hours, 10);
+  if (isNaN(hour)) return time;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes || '00'} ${ampm}`;
+};
+
+const DcgDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { profile, userDcg } = useAuth();
+  const { data: resolvedDcg } = useCurrentDcg();
   const { data: dcgs } = useDcgs();
-  const currentDcg = dcgs?.find((d) => d.id === userDcg?.id);
+
+  const dcgId = userDcg?.id || resolvedDcg?.id;
+  const currentDcg = useMemo(
+    () => dcgs?.find((d) => d.id === dcgId) || resolvedDcg || userDcg,
+    [dcgs, dcgId, resolvedDcg, userDcg],
+  );
   const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
 
-  const { data: dcgMembers = [] } = useDcgMembers(userDcg?.id);
-  const { data: attendanceHistory = [] } = useDcgAttendanceHistory(userDcg?.id);
+  const { data: dcgMembers = [] } = useDcgMembers(dcgId);
+  const { data: attendanceHistory = [] } = useDcgAttendanceHistory(dcgId);
 
   // ── Period filter ──
-  const [quickPeriod, setQuickPeriod] = useState('1-month');
-  const [customRange, setCustomRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: undefined,
-    to: undefined,
-  });
+  const [quickPeriod, setQuickPeriod] = useState<PeriodKey>('1-month');
+  const [customRange, setCustomRange] = useState<DateRangeValue>({});
   const [searchQuery, setSearchQuery] = useState('');
 
   const dateRange = useMemo(() => {
     const now = new Date();
-    let from: Date;
     switch (quickPeriod) {
-      case '1-month': from = subMonths(now, 1); break;
-      case '3-months': from = subMonths(now, 3); break;
-      case '6-months': from = subMonths(now, 6); break;
-      case '1-year': from = subMonths(now, 12); break;
-      case 'custom': return { from: customRange.from, to: customRange.to || now };
-      default: from = subMonths(now, 1);
+      case '1-month':
+        return { from: subMonths(now, 1), to: now };
+      case '3-months':
+        return { from: subMonths(now, 3), to: now };
+      case '6-months':
+        return { from: subMonths(now, 6), to: now };
+      case '1-year':
+        return { from: subMonths(now, 12), to: now };
+      case 'custom':
+        return { from: customRange.from, to: customRange.to || now };
+      default:
+        return { from: subMonths(now, 1), to: now };
     }
-    return { from, to: now };
   }, [quickPeriod, customRange]);
 
   const dateFilters = useMemo(() => {
@@ -62,57 +115,57 @@ const DcgDashboard = () => {
     };
   }, [dateRange]);
 
-  const { data: periodTransactions = [] } = useFinancialTransactions(dateFilters);
+  const { data: dcgTransactions = [] } = useDcgFinancialTransactions(dcgId, dateFilters);
 
   // ── Members + strict child rule ──
-  const activeMembersAll = dcgMembers.filter((m) => m.is_active);
-  const [childrenSet, setChildrenSet] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    const ids = activeMembersAll.map((m) => m.member_id).filter(Boolean) as string[];
-    if (ids.length === 0) { setChildrenSet(new Set()); return; }
-    let cancelled = false;
-    (async () => {
-      const { fetchMemberRelationshipsForMembers } = await import('@/utils/fetchMemberRelationships');
-      const rels = await fetchMemberRelationshipsForMembers(ids);
-      const set = buildChildrenSet(
-        activeMembersAll.map((m) => ({
-          id: m.member_id,
-          profiles: { date_of_birth: m.members?.profiles?.date_of_birth ?? null },
-        })),
-        rels,
-      );
-      if (!cancelled) setChildrenSet(set);
-    })();
-    return () => { cancelled = true; };
-  }, [activeMembersAll.length]);
-
-  const adultMembers = activeMembersAll.filter((m) => !childrenSet.has(m.member_id));
-  const totalAdults = adultMembers.length;
-  const totalChildren = childrenSet.size;
-
-  // ── Net balance (period-scoped, DCG-only) ──
-  const dcgTxns = periodTransactions.filter((t: any) => t.dcg_id === userDcg?.id);
-  const financeTotals = dcgTxns.reduce(
-    (acc, t: any) => {
-      const amount = Number(t.amount) || 0;
-      const type = t.category?.type?.toLowerCase();
-      if (type === 'income') acc.income += amount;
-      else if (type === 'expense') acc.expenses += amount;
-      return acc;
-    },
-    { income: 0, expenses: 0 },
-  );
-  const netBalance = financeTotals.income - financeTotals.expenses;
-
-  // ── Discipleship Success (DCG mentors) ──
+  const activeMembersAll = useMemo(() => dcgMembers.filter((m) => m.is_active), [dcgMembers]);
   const dcgMemberIds = useMemo(
     () => activeMembersAll.map((m) => m.member_id).filter(Boolean) as string[],
     [activeMembersAll],
   );
   const sortedIdsKey = useMemo(() => [...dcgMemberIds].sort().join(','), [dcgMemberIds]);
 
+  const { data: memberRelationships = [] } = useQuery({
+    queryKey: ['dcg-dashboard-relationships', sortedIdsKey],
+    queryFn: () => fetchMemberRelationshipsForMembers(dcgMemberIds),
+    enabled: dcgMemberIds.length > 0,
+  });
+
+  const childrenSet = useMemo(
+    () =>
+      buildChildrenSet(
+        activeMembersAll.map((m) => ({
+          id: m.member_id,
+          profiles: { date_of_birth: m.members?.profiles?.date_of_birth ?? null },
+        })),
+        memberRelationships,
+      ),
+    [activeMembersAll, memberRelationships],
+  );
+
+  const totalAdults = activeMembersAll.filter((m) => !childrenSet.has(m.member_id)).length;
+  const totalChildren = childrenSet.size;
+
+  // ── Net balance (period-scoped, DCG-only) ──
+  const financeTotals = useMemo(
+    () =>
+      dcgTransactions.reduce(
+        (acc, t) => {
+          const amount = Number(t.amount) || 0;
+          const type = t.category?.type?.toLowerCase();
+          if (type === 'income') acc.income += amount;
+          else if (type === 'expense') acc.expenses += amount;
+          return acc;
+        },
+        { income: 0, expenses: 0 },
+      ),
+    [dcgTransactions],
+  );
+  const netBalance = financeTotals.income - financeTotals.expenses;
+
+  // ── Discipleship Success (DCG mentors) ──
   const { data: discipleshipStats } = useQuery({
-    queryKey: ['dcg-discipleship-stats', userDcg?.id, sortedIdsKey],
+    queryKey: ['dcg-discipleship-stats', dcgId, sortedIdsKey],
     queryFn: async () => {
       if (!dcgMemberIds.length) return { totalRelationships: 0, becameMembers: 0 };
       const { data: rels, error } = await supabase
@@ -131,19 +184,24 @@ const DcgDashboard = () => {
       const successSet = new Set((progress || []).map((p) => p.relationship_id));
       return { totalRelationships: relIds.length, becameMembers: successSet.size };
     },
-    enabled: !!userDcg?.id && dcgMemberIds.length > 0,
+    enabled: !!dcgId && dcgMemberIds.length > 0,
   });
 
-  const successRate = discipleshipStats && discipleshipStats.totalRelationships > 0
-    ? Math.round((discipleshipStats.becameMembers / discipleshipStats.totalRelationships) * 100)
-    : 0;
+  const successRate =
+    discipleshipStats && discipleshipStats.totalRelationships > 0
+      ? Math.round((discipleshipStats.becameMembers / discipleshipStats.totalRelationships) * 100)
+      : 0;
 
   // ── Attendance trend (period + search filtered) ──
   const filteredAttendance = useMemo(() => {
     return (attendanceHistory || []).filter((a) => {
       const d = new Date(a.event_date);
       if (dateRange.from && d < dateRange.from) return false;
-      if (dateRange.to && d > dateRange.to) return false;
+      if (dateRange.to) {
+        const end = new Date(dateRange.to);
+        end.setHours(23, 59, 59, 999);
+        if (d > end) return false;
+      }
       if (searchQuery && !a.event_name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
@@ -154,171 +212,263 @@ const DcgDashboard = () => {
       .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
       .map((a) => ({
         date: format(new Date(a.event_date), 'MMM d'),
+        eventName: a.event_name,
         Members: a.members_present || 0,
         'Regular Visitors': a.visitors_present || 0,
       }));
   }, [filteredAttendance]);
 
-  const periodOptions = [
-    { value: '1-month', label: '1M' },
-    { value: '3-months', label: '3M' },
-    { value: '6-months', label: '6M' },
-    { value: '1-year', label: '1Y' },
-    { value: 'custom', label: 'Custom' },
-  ];
+  // Latest gathering fill rate
+  const latestGathering = filteredAttendance[0] || attendanceHistory[0];
+  const latestTotal = latestGathering ? latestGathering.total_present || 0 : 0;
+  const fillRate =
+    activeMembersAll.length > 0 ? Math.min(100, Math.round((latestTotal / activeMembersAll.length) * 100)) : 0;
+
+  const leaderName = useMemo(() => {
+    const d = currentDcg as any;
+    if (d?.leader?.profiles) {
+      const p = d.leader.profiles;
+      return `${p.last_name || ''} ${p.first_name || ''}`.trim() || 'DCG Leader';
+    }
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.last_name || ''} ${profile.first_name || ''}`.trim();
+    }
+    return 'Assigned Leader';
+  }, [currentDcg, profile]);
+
+  const fc = (n: number) => formatWithCurrency(n, regionCurrency);
 
   return (
     <DcgAdminLayout>
-      <div className="h-full flex flex-col overflow-hidden">
-        {/* ── FIXED FILTER BAR ── */}
-        <div className="shrink-0 z-20 bg-background/98 backdrop-blur-md border-b border-border/30 px-4 md:px-6 py-3">
-          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
-            <div className="flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 p-1">
-              {periodOptions.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={quickPeriod === opt.value ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setQuickPeriod(opt.value)}
-                  className={cn(
-                    'h-8 px-3 rounded-lg text-xs',
-                    quickPeriod === opt.value && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                  )}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
+      <div className="space-y-5">
+        {/* Period Filter */}
+        <PeriodChipBar
+          value={quickPeriod}
+          onChange={setQuickPeriod}
+          options={PERIOD_OPTIONS}
+          customRange={customRange}
+          onCustomRangeChange={setCustomRange}
+        />
 
-            {quickPeriod === 'custom' && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-8 gap-2">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {customRange.from
-                      ? `${format(customRange.from, 'MMM d')}${customRange.to ? ` - ${format(customRange.to, 'MMM d, y')}` : ''}`
-                      : 'Pick dates'}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 bg-popover z-50" align="start">
-                  <Calendar
-                    mode="range"
-                    selected={{ from: customRange.from, to: customRange.to }}
-                    onSelect={(range) => setCustomRange({ from: range?.from, to: range?.to })}
-                    numberOfMonths={2}
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-
-            <div className="relative flex-1 sm:min-w-[180px] sm:max-w-xs">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search events..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 pl-8 text-xs rounded-lg"
-              />
-            </div>
+        {/* Hero Summary Card */}
+        <HeroCard
+          eyebrow={`${(currentDcg as any)?.meeting_day || 'Weekly Gathering'} · ${formatMeetingTime((currentDcg as any)?.meeting_time)}`}
+          value={activeMembersAll.length}
+          sub={`${totalAdults} adults · ${totalChildren} children · Led by ${leaderName}`}
+          ring={fillRate}
+          ringLabel="Last gathering"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/dcg/members')}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> Manage Members
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dcg/events')}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
+            >
+              <Plus className="h-3.5 w-3.5" /> Schedule Event
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/dcg/finances')}
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
+            >
+              <Wallet className="h-3.5 w-3.5" /> Record Finance
+            </button>
           </div>
+        </HeroCard>
+
+        {/* KPI Ring Tiles */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <RingTile
+            icon={Users}
+            label="Adult members"
+            value={totalAdults}
+            ring={fillRate}
+            ringLabel="fill"
+            tone="var(--chart-1)"
+            onClick={() => navigate('/dcg/members')}
+          />
+          <RingTile
+            icon={Baby}
+            label="Children in DCG"
+            value={totalChildren}
+            tone="var(--chart-5)"
+            onClick={() => navigate('/dcg/members')}
+          />
+          <RingTile
+            icon={Wallet}
+            label={`${fc(financeTotals.income)} in · ${fc(financeTotals.expenses)} out`}
+            value={fc(netBalance)}
+            tone={netBalance >= 0 ? 'var(--chart-2)' : 'var(--destructive)'}
+            onClick={() => navigate('/dcg/finances')}
+          />
+          <RingTile
+            icon={Heart}
+            label="Discipleship milestone"
+            value={`${successRate}%`}
+            ring={successRate}
+            ringLabel="success"
+            tone="var(--chart-4)"
+          />
         </div>
 
-        {/* ── SCROLLABLE CONTENT ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 md:px-6 py-6 space-y-6">
-          {/* Header */}
-          <div className="hidden lg:block">
-            <h1 className="text-2xl font-bold">DCG Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Welcome back, {profile?.first_name}! Here's your {userDcg?.name} overview.
-            </p>
-          </div>
+        {/* Group Details Card */}
+        {currentDcg && (
+          <Panel
+            title="Group Information"
+            action={<StatusPill status={(currentDcg as any).is_active !== false ? 'active' : 'inactive'} />}
+            bodyClassName="py-2"
+          >
+            <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0 lg:grid-cols-4">
+              <InfoRow icon={Users} label="Leader" value={leaderName} />
+              <InfoRow icon={MapPin} label="Location" value={(currentDcg as any).location || 'Not set'} />
+              <InfoRow
+                icon={CalendarIcon}
+                label="Meeting day"
+                value={(currentDcg as any).meeting_day || 'Not set'}
+              />
+              <InfoRow
+                icon={Clock}
+                label="Time"
+                value={formatMeetingTime((currentDcg as any).meeting_time)}
+              />
+              {(currentDcg as any).contact_phone && (
+                <InfoRow icon={Phone} label="Contact" value={(currentDcg as any).contact_phone} />
+              )}
+            </div>
+            {(currentDcg as any).description && (
+              <p className="mt-2 border-t border-border/60 pt-3 text-sm text-muted-foreground">
+                {(currentDcg as any).description}
+              </p>
+            )}
+          </Panel>
+        )}
 
-          {/* ── KPI CARDS ── */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <GlassKPICard
-              icon={<Users className="h-5 w-5" />}
-              label="Members"
-              value={totalAdults}
-              subtitle={`${totalAdults} adults · ${totalChildren} children`}
-            />
-            <GlassKPICard
-              icon={<Baby className="h-5 w-5" />}
-              label="Children"
-              value={totalChildren}
-              subtitle="In DCG"
-            />
-            <GlassKPICard
-              icon={<Wallet className="h-5 w-5" />}
-              label="Net Balance"
-              value={formatWithCurrency(netBalance, regionCurrency)}
-              subtitle={`${formatWithCurrency(financeTotals.income, regionCurrency)} in · ${formatWithCurrency(financeTotals.expenses, regionCurrency)} out`}
-            />
-            <GlassKPICard
-              icon={<Heart className="h-5 w-5" />}
-              label="Discipleship Success"
-              value={`${successRate}%`}
-              subtitle="Reached membership milestone"
-            />
-          </div>
+        {/* Attendance Trend */}
+        <Panel
+          title="Attendance Trend"
+          action={
+            <span className="text-xs font-medium text-muted-foreground">
+              {trendChartData.length} {trendChartData.length === 1 ? 'gathering' : 'gatherings'}
+            </span>
+          }
+          bodyClassName="space-y-4"
+        >
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Filter attendance by event name…"
+          />
 
-          {/* ── ATTENDANCE TREND ── */}
-          <div className="rounded-md border border-border/70 bg-card/85 p-6 shadow-card backdrop-blur-xl">
-            <h3 className="text-base font-semibold mb-4 text-foreground">Attendance Trend</h3>
-            {trendChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={380}>
+          {trendChartData.length > 0 ? (
+            <div className="h-[280px] sm:h-[360px]">
+              <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="dcgGradMembers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.3} />
+                    <linearGradient id="dcgDashGradMembers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.32} />
                       <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="dcgGradVisitors" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
+                    <linearGradient id="dcgDashGradVisitors" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.32} />
                       <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }} axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (!active || !payload || payload.length === 0) return null;
                       const total = payload.reduce((sum, p: any) => sum + (Number(p.value) || 0), 0);
+                      const eventTitle = payload[0]?.payload?.eventName;
                       return (
-                        <div style={{
-                          backgroundColor: 'var(--card)',
-                          border: '1px solid var(--border)',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          padding: '8px 12px',
-                          boxShadow: '0 4px 12px color-mix(in oklab, var(--foreground) calc(0.08 * 100%), transparent)',
-                        }}>
-                          <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--foreground)' }}>{label}</div>
+                        <div
+                          style={{
+                            backgroundColor: 'var(--card)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '14px',
+                            fontSize: '12px',
+                            padding: '10px 14px',
+                            boxShadow:
+                              '0 6px 20px color-mix(in oklab, var(--foreground) calc(0.1 * 100%), transparent)',
+                          }}
+                        >
+                          <div style={{ fontWeight: 700, color: 'var(--foreground)' }}>{label}</div>
+                          {eventTitle && (
+                            <div
+                              style={{
+                                fontSize: '11px',
+                                marginBottom: 6,
+                                color: 'var(--muted-foreground)',
+                              }}
+                            >
+                              {eventTitle}
+                            </div>
+                          )}
                           {payload.map((p: any) => (
-                            <div key={p.dataKey} style={{ color: p.color }}>{p.dataKey} : {p.value}</div>
+                            <div key={p.dataKey} style={{ color: p.color }}>
+                              {p.dataKey}: <strong>{p.value}</strong>
+                            </div>
                           ))}
-                          <div style={{
-                            marginTop: 6, paddingTop: 6,
-                            borderTop: '1px solid var(--border)',
-                            fontWeight: 600, color: 'var(--foreground)',
-                          }}>Total : {total}</div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              paddingTop: 6,
+                              borderTop: '1px solid var(--border)',
+                              fontWeight: 600,
+                              color: 'var(--foreground)',
+                            }}
+                          >
+                            Total: {total}
+                          </div>
                         </div>
                       );
                     }}
                   />
-                  <Area type="monotone" dataKey="Members" stroke="var(--chart-1)" fill="url(#dcgGradMembers)" strokeWidth={2.5} dot={false} />
-                  <Area type="monotone" dataKey="Regular Visitors" stroke="var(--chart-2)" fill="url(#dcgGradVisitors)" strokeWidth={2.5} dot={false} />
+                  <Area
+                    type="monotone"
+                    dataKey="Members"
+                    stroke="var(--chart-1)"
+                    fill="url(#dcgDashGradMembers)"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="Regular Visitors"
+                    stroke="var(--chart-2)"
+                    fill="url(#dcgDashGradVisitors)"
+                    strokeWidth={2.5}
+                    dot={false}
+                  />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : (
-              <div className="h-[380px] flex items-center justify-center text-sm text-muted-foreground">
-                No attendance data for this period.
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          ) : (
+            <EmptyState
+              icon={TrendingUp}
+              title={searchQuery ? 'No gatherings match your search' : 'No attendance data for this period'}
+              hint="Record attendance on the Events page to visualize your group's growth over time."
+            />
+          )}
+        </Panel>
       </div>
     </DcgAdminLayout>
   );

@@ -3,8 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar as CalendarIcon, Copy, Pencil, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -29,17 +28,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import { useCreateDcgEvent } from '@/hooks/useDcgEvents';
+import { useCreateDcgEvent, useUpdateDcgEvent } from '@/hooks/useDcgEvents';
 import type { Event } from '@/hooks/useDcgEvents';
 import { useCurrencies } from '@/hooks/useCurrencies';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,43 +42,51 @@ import {
   type RecurrenceInput,
 } from '@/hooks/useRecurringEvents';
 import { useAuth } from '@/hooks/useAuth';
+import { SheetHeader } from '@/components/admin/dcg/DcgUI';
 
-const eventFormSchema = z.object({
-  name: z.string().min(1, 'Event name is required'),
-  description: z.string().optional(),
-  expectations: z.string().optional(),
-  requirements: z.string().optional(),
-  category: z.enum([
-    'DCG Meeting',
-    'Bible Study',
-    'Worship',
-    'Outreach',
-    'Community Service',
-    'Training',
-    'Other'
-  ]),
-  start_date: z.string().min(1, 'Start date is required'),
-  start_time: z.string().min(1, 'Start time is required'),
-  end_date: z.string().optional(),
-  end_time: z.string().optional(),
-  location_name: z.string().optional(),
-  address: z.string().optional(),
-  capacity: z.number().optional(),
-  cost: z.coerce.number().min(0, "Cost cannot be negative").optional().default(0),
-  cost_currency_code: z.string().optional(),
-  event_card_image: z.instanceof(File).optional(),
-  whatsapp_contact: z.string().optional(),
-  is_public: z.boolean().default(false),
-  is_featured: z.boolean().default(false),
-}).refine((data) => {
-  if (data.end_date && data.start_date) {
-    return new Date(data.end_date) >= new Date(data.start_date);
-  }
-  return true;
-}, {
-  message: "End date must be after or same as start date",
-  path: ["end_date"]
-});
+const ALLOWED_CATEGORIES = [
+  'DCG Meeting',
+  'Bible Study',
+  'Worship',
+  'Outreach',
+  'Community Service',
+  'Training',
+  'Other',
+] as const;
+
+const eventFormSchema = z
+  .object({
+    name: z.string().min(1, 'Event name is required'),
+    description: z.string().optional(),
+    expectations: z.string().optional(),
+    requirements: z.string().optional(),
+    category: z.enum(ALLOWED_CATEGORIES),
+    start_date: z.string().min(1, 'Start date is required'),
+    start_time: z.string().min(1, 'Start time is required'),
+    end_date: z.string().optional(),
+    end_time: z.string().optional(),
+    location_name: z.string().optional(),
+    address: z.string().optional(),
+    capacity: z.number().optional(),
+    cost: z.coerce.number().min(0, 'Cost cannot be negative').optional().default(0),
+    cost_currency_code: z.string().optional(),
+    event_card_image: z.instanceof(File).optional(),
+    whatsapp_contact: z.string().optional(),
+    is_public: z.boolean().default(false),
+    is_featured: z.boolean().default(false),
+  })
+  .refine(
+    (data) => {
+      if (data.end_date && data.start_date) {
+        return new Date(data.end_date) >= new Date(data.start_date);
+      }
+      return true;
+    },
+    {
+      message: 'End date must be after or same as start date',
+      path: ['end_date'],
+    },
+  );
 
 type EventFormData = z.infer<typeof eventFormSchema>;
 
@@ -94,20 +94,25 @@ interface CreateEventDialogProps {
   isOpen: boolean;
   onClose: () => void;
   duplicateFrom?: Event | null;
+  editEvent?: Event | null;
 }
 
 export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   isOpen,
   onClose,
   duplicateFrom,
+  editEvent,
 }) => {
   const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(false);
   const [recurrence, setRecurrence] = React.useState<RecurrenceInput>(DEFAULT_RECURRENCE);
   const createEvent = useCreateDcgEvent();
+  const updateEvent = useUpdateDcgEvent();
   const createRule = useCreateRecurrenceRule();
   const { user, userDcg, userRegion } = useAuth();
   const { data: currencies } = useCurrencies();
+
+  const isEditing = !!editEvent;
 
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
@@ -124,26 +129,49 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       location_name: '',
       address: '',
       is_public: false,
+      is_featured: false,
     },
   });
 
-  // Prefill form when duplicating an event
+  // Prefill form when editing or duplicating an event
   React.useEffect(() => {
-    if (isOpen && duplicateFrom) {
-      const allowedCategories = [
-        'DCG Meeting','Bible Study','Worship','Outreach',
-        'Community Service','Training','Other'
-      ] as const;
-      const category = (allowedCategories as readonly string[]).includes(duplicateFrom.category as string)
-        ? (duplicateFrom.category as EventFormData['category'])
+    const resolveCat = (raw?: string | null): EventFormData['category'] =>
+      (ALLOWED_CATEGORIES as readonly string[]).includes(raw || '')
+        ? (raw as EventFormData['category'])
         : 'DCG Meeting';
 
+    if (isOpen && editEvent) {
+      const startDt = editEvent.start_datetime ? new Date(editEvent.start_datetime) : null;
+      const endDt = editEvent.end_datetime ? new Date(editEvent.end_datetime) : null;
+
+      form.reset({
+        name: editEvent.name || '',
+        description: editEvent.description ?? '',
+        expectations: editEvent.expectations ?? '',
+        requirements: editEvent.requirements ?? '',
+        category: resolveCat(editEvent.category),
+        start_date: startDt && !isNaN(startDt.getTime()) ? format(startDt, 'yyyy-MM-dd') : '',
+        start_time: startDt && !isNaN(startDt.getTime()) ? startDt.toTimeString().slice(0, 5) : '',
+        end_date: endDt && !isNaN(endDt.getTime()) ? format(endDt, 'yyyy-MM-dd') : '',
+        end_time: endDt && !isNaN(endDt.getTime()) ? endDt.toTimeString().slice(0, 5) : '',
+        location_name: editEvent.location_name ?? '',
+        address: editEvent.address ?? '',
+        capacity: editEvent.capacity ?? undefined,
+        cost: editEvent.cost ?? 0,
+        cost_currency_code: editEvent.cost_currency_code ?? undefined,
+        whatsapp_contact: editEvent.whatsapp_contact ?? '',
+        is_public: editEvent.is_public ?? false,
+        is_featured: editEvent.is_featured ?? false,
+      });
+      setCardImagePreview(editEvent.image_url || '');
+      setRecurrenceEnabled(false);
+    } else if (isOpen && duplicateFrom) {
       form.reset({
         name: `${duplicateFrom.name} (Copy)`,
         description: duplicateFrom.description ?? '',
         expectations: duplicateFrom.expectations ?? '',
         requirements: duplicateFrom.requirements ?? '',
-        category,
+        category: resolveCat(duplicateFrom.category),
         start_date: '',
         start_time: '',
         end_date: '',
@@ -158,7 +186,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         is_featured: duplicateFrom.is_featured ?? false,
       });
       setCardImagePreview('');
-    } else if (isOpen && !duplicateFrom) {
+      setRecurrenceEnabled(false);
+    } else if (isOpen) {
       form.reset({
         name: '',
         description: '',
@@ -172,49 +201,48 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         location_name: '',
         address: '',
         is_public: false,
+        is_featured: false,
       });
       setCardImagePreview('');
+      setRecurrenceEnabled(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, duplicateFrom?.id]);
+  }, [isOpen, duplicateFrom?.id, editEvent?.id]);
 
   const handleSubmit = async (data: EventFormData) => {
     try {
-      // Upload event card image if provided
-      let eventCardImageUrl: string | null = null;
+      let eventCardImageUrl: string | null = editEvent?.image_url ?? null;
       if (data.event_card_image) {
         const fileExt = data.event_card_image.name.split('.').pop();
         const fileName = `dcg-card-${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('event-images')
-          .upload(filePath, data.event_card_image);
+          .upload(fileName, data.event_card_image);
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('event-images')
-            .getPublicUrl(filePath);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from('event-images').getPublicUrl(fileName);
           eventCardImageUrl = publicUrl;
         }
       }
 
       const start_datetime = new Date(`${data.start_date}T${data.start_time}`).toISOString();
       let end_datetime: string | null = null;
-      
       if (data.end_date) {
-        const endTime = data.end_time || data.start_time; // Use start time if no end time specified
+        const endTime = data.end_time || data.start_time;
         end_datetime = new Date(`${data.end_date}T${endTime}`).toISOString();
       }
-      
-      const createdEvent = await createEvent.mutateAsync({
+
+      const payload = {
         name: data.name,
         description: data.description,
         expectations: data.expectations || null,
         requirements: data.requirements || null,
         category: data.category,
-        start_datetime: start_datetime,
-        end_datetime: end_datetime,
+        start_datetime,
+        end_datetime,
         location_name: data.location_name,
         address: data.address,
         capacity: data.capacity || null,
@@ -223,20 +251,42 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         whatsapp_contact: data.whatsapp_contact || null,
         is_public: data.is_public,
         is_featured: data.is_featured,
-        image_url: eventCardImageUrl || null,
-      });
+        image_url: eventCardImageUrl,
+      };
 
-      if (recurrenceEnabled && createdEvent?.id) {
-        await createRule.mutateAsync({
-          templateEventId: createdEvent.id,
-          name: data.name,
-          regionId: userRegion?.id ?? null,
-          dcgId: userDcg?.id ?? null,
-          startDatetime: start_datetime,
-          endDatetime: end_datetime,
-          createdBy: user?.id ?? null,
-          recurrence,
+      if (isEditing && editEvent) {
+        await updateEvent.mutateAsync({
+          id: editEvent.id,
+          ...payload,
         });
+
+        if (recurrenceEnabled && !editEvent.recurrence_rule_id) {
+          await createRule.mutateAsync({
+            templateEventId: editEvent.id,
+            name: data.name,
+            regionId: editEvent.region_id ?? userRegion?.id ?? null,
+            dcgId: editEvent.dcg_id ?? userDcg?.id ?? null,
+            startDatetime: start_datetime,
+            endDatetime: end_datetime,
+            createdBy: user?.id ?? null,
+            recurrence,
+          });
+        }
+      } else {
+        const createdEvent = await createEvent.mutateAsync(payload);
+
+        if (recurrenceEnabled && createdEvent?.id) {
+          await createRule.mutateAsync({
+            templateEventId: createdEvent.id,
+            name: data.name,
+            regionId: userRegion?.id ?? null,
+            dcgId: userDcg?.id ?? null,
+            startDatetime: start_datetime,
+            endDatetime: end_datetime,
+            createdBy: user?.id ?? null,
+            recurrence,
+          });
+        }
       }
 
       form.reset();
@@ -245,26 +295,36 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
       setRecurrence(DEFAULT_RECURRENCE);
       onClose();
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error('Error saving event:', error);
     }
   };
 
+  const isPending = createEvent.isPending || updateEvent.isPending || createRule.isPending;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{duplicateFrom ? 'Duplicate Event' : 'Create New Event'}</DialogTitle>
-          <DialogDescription>
-            {duplicateFrom
-              ? 'Review the prefilled details and pick new dates to duplicate this event.'
-              : 'Create a new event for your DCG. This event will be visible to DCG members.'}
-          </DialogDescription>
+      <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl sm:max-w-[640px]">
+        <SheetHeader
+          icon={isEditing ? Pencil : duplicateFrom ? Copy : Plus}
+          title={isEditing ? 'Edit Event' : duplicateFrom ? 'Duplicate Event' : 'Create DCG Event'}
+          description={
+            isEditing
+              ? 'Update schedule, location, and details for this DCG event.'
+              : duplicateFrom
+                ? 'Review prefilled details and pick new dates to duplicate this event.'
+                : 'Schedule a gathering or activity for your DCG members.'
+          }
+        />
+        <DialogHeader className="sr-only">
+          <DialogTitle>
+            {isEditing ? 'Edit Event' : duplicateFrom ? 'Duplicate Event' : 'Create New Event'}
+          </DialogTitle>
+          <DialogDescription>Fill out event details below.</DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 overflow-y-auto pr-4">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="name"
@@ -285,20 +345,18 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="DCG Meeting">DCG Meeting</SelectItem>
-                        <SelectItem value="Bible Study">Bible Study</SelectItem>
-                        <SelectItem value="Worship">Worship</SelectItem>
-                        <SelectItem value="Outreach">Outreach</SelectItem>
-                        <SelectItem value="Community Service">Community Service</SelectItem>
-                        <SelectItem value="Training">Training</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        {ALLOWED_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat}>
+                            {cat}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -314,11 +372,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Enter event description"
-                      className="resize-none"
-                      {...field}
-                    />
+                    <Textarea placeholder="Enter event description" className="resize-none" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -331,7 +385,13 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>What to Expect</FormLabel>
-                  <FormControl><Textarea placeholder={"Teaching sessions\nWorship and prayer\nNetworking with other members"} className="min-h-[100px] resize-none" {...field} /></FormControl>
+                  <FormControl>
+                    <Textarea
+                      placeholder={'Teaching sessions\nWorship and prayer\nNetworking with other members'}
+                      className="min-h-[90px] resize-none"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormDescription>Enter one programme highlight or experience per line.</FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -344,7 +404,13 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>What Attendees Should Prepare</FormLabel>
-                  <FormControl><Textarea placeholder="Items, documents, clothing or eligibility requirements..." className="min-h-[90px] resize-none" {...field} /></FormControl>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Items, documents, clothing or eligibility requirements..."
+                      className="min-h-[80px] resize-none"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -364,7 +430,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="start_time"
@@ -394,7 +460,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="end_time"
@@ -410,7 +476,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="location_name"
@@ -436,7 +502,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                         type="number"
                         placeholder="Max attendees"
                         {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        value={field.value ?? ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -445,7 +512,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="cost_currency_code"
@@ -496,12 +563,12 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             <FormField
               control={form.control}
               name="event_card_image"
-              render={({ field: { onChange, value, ...field } }) => (
+              render={({ field: { onChange, value: _val, ...field } }) => (
                 <FormItem>
                   <FormLabel>Event Card Image</FormLabel>
                   <FormControl>
-                    <Input 
-                      type="file" 
+                    <Input
+                      type="file"
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
@@ -518,8 +585,8 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                     This image will appear on the Events listing page
                   </div>
                   {cardImagePreview && (
-                    <div className="mt-2 relative w-32 aspect-[4/3] rounded-md overflow-hidden border">
-                      <img src={cardImagePreview} alt="Card preview" className="object-cover w-full h-full" />
+                    <div className="relative mt-2 aspect-[4/3] w-32 overflow-hidden rounded-xl border">
+                      <img src={cardImagePreview} alt="Card preview" className="h-full w-full object-cover" />
                     </div>
                   )}
                   <FormMessage />
@@ -568,41 +635,47 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
                       type="checkbox"
                       checked={field.value}
                       onChange={field.onChange}
-                      className="h-4 w-4 mt-1"
+                      className="mt-1 h-4 w-4 rounded border-border"
                     />
                   </FormControl>
                   <div className="space-y-1 leading-none">
                     <FormLabel>Featured Event</FormLabel>
-                    <div className="text-xs text-muted-foreground">
-                      Highlight this event on the homepage
-                    </div>
+                    <div className="text-xs text-muted-foreground">Highlight this event on the homepage</div>
                   </div>
                 </FormItem>
               )}
             />
 
-            <RecurrenceSettings
-              enabled={recurrenceEnabled}
-              onEnabledChange={setRecurrenceEnabled}
-              value={recurrence}
-              onChange={setRecurrence}
-            />
+            {(!isEditing || !editEvent?.recurrence_rule_id) && (
+              <RecurrenceSettings
+                enabled={recurrenceEnabled}
+                onEnabledChange={setRecurrenceEnabled}
+                value={recurrence}
+                onChange={setRecurrence}
+              />
+            )}
 
-
-
-            <DialogFooter className="flex-shrink-0 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <DialogFooter className="gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={onClose} className="rounded-full">
                 Cancel
               </Button>
-              <Button type="submit" disabled={createEvent.isPending}>
-                {createEvent.isPending
-                  ? (duplicateFrom ? 'Duplicating...' : 'Creating...')
-                  : (duplicateFrom ? 'Duplicate Event' : 'Create Event')}
+              <Button type="submit" disabled={isPending} className="rounded-full px-5 shadow-regal">
+                <CalendarIcon className="mr-1.5 h-4 w-4" />
+                {isPending
+                  ? isEditing
+                    ? 'Saving…'
+                    : duplicateFrom
+                      ? 'Duplicating…'
+                      : 'Creating…'
+                  : isEditing
+                    ? 'Save Changes'
+                    : duplicateFrom
+                      ? 'Duplicate Event'
+                      : 'Create Event'}
               </Button>
             </DialogFooter>
           </form>
         </Form>
-        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

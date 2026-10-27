@@ -4,25 +4,20 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, UserCheck, Users, Baby } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Search, UserCheck, Users, Check, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
 import { useSaveEventAttendance, useEventAttendanceRecords } from '@/hooks/useDcgEvents';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { isChildMember } from '@/utils/childUtils';
+import { Initials } from '@/components/admin/dcg/DcgUI';
 import type { Event } from '@/hooks/useDcgEvents';
 
 interface EventAttendanceDialogProps {
@@ -32,6 +27,8 @@ interface EventAttendanceDialogProps {
   dcgId: string;
 }
 
+type AttendanceFilter = 'all' | 'member' | 'visitor' | 'child' | 'leadership';
+
 export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
   isOpen,
   onClose,
@@ -40,17 +37,21 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [presentMembers, setPresentMembers] = useState<Set<string>>(new Set());
-  const [showChildrenOnly, setShowChildrenOnly] = useState(false);
-  const isMobile = useIsMobile();
+  const [typeFilter, setTypeFilter] = useState<AttendanceFilter>('all');
+  const [showPresentOnly, setShowPresentOnly] = useState(false);
 
   const { data: dcgMembers, isLoading: loadingMembers } = useDcgMembers(dcgId);
   const { data: existingRecords } = useEventAttendanceRecords(event.id, dcgId);
   const saveAttendance = useSaveEventAttendance();
 
-  // Fetch relationships for children filter
-  const memberIds = useMemo(() => dcgMembers?.map(m => m.member_id) || [], [dcgMembers]);
+  const activeMembers = useMemo(
+    () => (dcgMembers || []).filter((m) => m.is_active !== false && m.members),
+    [dcgMembers],
+  );
+
+  const memberIds = useMemo(() => activeMembers.map((m) => m.member_id), [activeMembers]);
   const { data: memberRelationships = [] } = useQuery({
-    queryKey: ['dcg-attendance-member-relationships', memberIds.sort().join(',')],
+    queryKey: ['dcg-attendance-member-relationships', [...memberIds].sort().join(',')],
     queryFn: () => fetchMemberRelationshipsForMembers(memberIds),
     enabled: memberIds.length > 0,
   });
@@ -63,57 +64,65 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
     return dcgMember.members?.member_id || 'Unknown Member';
   };
 
-  const getDob = (dcgMember: any): string | null => {
-    return dcgMember.members?.profiles?.date_of_birth || null;
-  };
-
   useEffect(() => {
     if (existingRecords) {
       const presentMemberIds = new Set(
-        existingRecords
-          .filter(record => record.is_present)
-          .map(record => record.member_id)
+        existingRecords.filter((record) => record.is_present).map((record) => record.member_id),
       );
       setPresentMembers(presentMemberIds);
     }
   }, [existingRecords]);
 
   const filteredMembers = useMemo(() => {
-    const list = dcgMembers || [];
-    return list.filter(dcgMember => {
-      const fullName = getDisplayName(dcgMember);
-      const searchMatch = fullName.toLowerCase().includes(searchTerm.toLowerCase());
-      if (!searchMatch) return false;
+    return activeMembers.filter((dcgMember) => {
+      const fullName = getDisplayName(dcgMember).toLowerCase();
+      const memberCode = (dcgMember.members?.member_id || '').toLowerCase();
+      const q = searchTerm.toLowerCase();
+      if (q && !fullName.includes(q) && !memberCode.includes(q)) return false;
 
-      if (showChildrenOnly) {
-        return isChildMember(getDob(dcgMember), dcgMember.member_id, memberRelationships);
-      }
+      const dob = dcgMember.members?.profiles?.date_of_birth || null;
+      const isChild = isChildMember(dob, dcgMember.member_id, memberRelationships);
+      const memberType = dcgMember.members?.member_type || 'member';
+
+      if (typeFilter === 'child') return isChild;
+      if (typeFilter === 'leadership') return dcgMember.role === 'Leader' || dcgMember.role === 'Assistant';
+      if (typeFilter === 'visitor') return !isChild && memberType === 'visitor';
+      if (typeFilter === 'member') return !isChild && memberType !== 'visitor';
       return true;
     });
-  }, [dcgMembers, searchTerm, showChildrenOnly, memberRelationships]);
+  }, [activeMembers, searchTerm, typeFilter, memberRelationships]);
+
+  const visibleMembers = useMemo(
+    () => (showPresentOnly ? filteredMembers.filter((m) => presentMembers.has(m.member_id)) : filteredMembers),
+    [filteredMembers, showPresentOnly, presentMembers],
+  );
+
+  const allFilteredSelected =
+    filteredMembers.length > 0 && filteredMembers.every((m) => presentMembers.has(m.member_id));
 
   const handleToggleMember = (memberId: string) => {
-    const newPresentMembers = new Set(presentMembers);
-    if (newPresentMembers.has(memberId)) {
-      newPresentMembers.delete(memberId);
-    } else {
-      newPresentMembers.add(memberId);
-    }
-    setPresentMembers(newPresentMembers);
+    setPresentMembers((prev) => {
+      const next = new Set(prev);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      return next;
+    });
   };
 
   const handleSelectAll = () => {
-    if (presentMembers.size === filteredMembers.length) {
-      setPresentMembers(new Set());
-    } else {
-      setPresentMembers(new Set(filteredMembers.map(m => m.member_id)));
-    }
+    setPresentMembers((prev) => {
+      const next = new Set(prev);
+      if (allFilteredSelected) {
+        filteredMembers.forEach((m) => next.delete(m.member_id));
+      } else {
+        filteredMembers.forEach((m) => next.add(m.member_id));
+      }
+      return next;
+    });
   };
 
   const handleRecordAttendance = async () => {
-    if (!dcgMembers) return;
-
-    const attendanceRecords = dcgMembers.map(dcgMember => ({
+    const attendanceRecords = activeMembers.map((dcgMember) => ({
       member_id: dcgMember.member_id,
       is_present: presentMembers.has(dcgMember.member_id),
     }));
@@ -131,150 +140,219 @@ export const EventAttendanceDialog: React.FC<EventAttendanceDialogProps> = ({
     }
   };
 
+  const total = activeMembers.length;
+  const pct = total ? Math.round((presentMembers.size / total) * 100) : 0;
+  const existingCount = (existingRecords || []).filter((r) => r.is_present).length;
+
+  let dateLabel = '';
+  try {
+    dateLabel = format(new Date(event.start_datetime), 'EEE, dd MMM yyyy');
+  } catch {
+    /* ignore */
+  }
+
+  const chips: { key: AttendanceFilter; label: string }[] = [
+    { key: 'all', label: 'Everyone' },
+    { key: 'member', label: 'Members' },
+    { key: 'visitor', label: 'Visitors' },
+    { key: 'child', label: 'Children' },
+    { key: 'leadership', label: 'Leadership' },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] h-[90vh] sm:h-[85vh] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-4 md:p-6 pb-0 shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <UserCheck className="h-5 w-5" />
-            Record Attendance
-          </DialogTitle>
-          <DialogDescription>
-            {event.name} - {format(new Date(event.start_datetime), 'PPP')}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="flex h-[94dvh] max-h-[94dvh] flex-col gap-0 overflow-hidden bg-background p-0 pb-0 lg:h-[88vh] lg:max-h-[88vh] lg:max-w-2xl lg:rounded-3xl">
+        {/* Gradient Sheet Header */}
+        <div className="relative shrink-0 overflow-hidden rounded-t-3xl bg-gradient-to-br from-primary to-secondary px-4 pb-4 pt-6 text-primary-foreground sm:px-6 lg:pt-5">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary-foreground/10 blur-2xl" />
+          <DialogHeader className="relative space-y-0 pr-10 text-left">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">
+              Mark DCG Attendance
+            </p>
+            <DialogTitle className="truncate font-heading text-lg font-bold text-primary-foreground sm:text-xl">
+              {event.name}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-primary-foreground/80">
+              {dateLabel} · Tap a person to mark them present
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-3 px-4 md:px-6 pt-3 overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 shrink-0">
-            <div className="relative flex-1 w-full sm:max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+            <div className="min-w-0">
+              <p className="font-heading text-3xl font-bold leading-none">
+                {presentMembers.size}
+                <span className="ml-1 text-sm font-medium text-primary-foreground/75">/ {total} present</span>
+              </p>
+              {existingCount > 0 && (
+                <p className="mt-1.5 text-[11px] text-primary-foreground/80">
+                  {existingCount} already saved — changes update the record
+                </p>
+              )}
+              <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-primary-foreground/20">
+                <div
+                  className="h-full rounded-full bg-primary-foreground transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary-foreground/15 font-heading text-sm font-bold">
+              {pct}%
+            </span>
+          </div>
+        </div>
+
+        {/* Search & Filters */}
+        <div className="shrink-0 space-y-2.5 border-b border-border px-4 py-3 sm:px-6">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <div className="relative min-w-0">
+              <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search members..."
-                className="pl-8"
+                placeholder="Search name or ID…"
+                className="h-11 rounded-full bg-card pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Toggle
-                pressed={showChildrenOnly}
-                onPressedChange={setShowChildrenOnly}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-              >
-                <Baby className="h-4 w-4" />
-                Children
-              </Toggle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                {presentMembers.size === filteredMembers.length ? 'Deselect All' : 'Select All'}
-              </Button>
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {presentMembers.size}/{filteredMembers.length}
-              </span>
-            </div>
+            <Button
+              type="button"
+              variant={showPresentOnly ? 'default' : 'outline'}
+              className="h-11 rounded-full px-4"
+              onClick={() => setShowPresentOnly((v) => !v)}
+              aria-pressed={showPresentOnly}
+            >
+              <UserCheck className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Present only</span>
+            </Button>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 -mx-1 px-1">
-            {isMobile ? (
-              <div className="space-y-2 pr-2 pb-2">
-                {loadingMembers ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                  ))
-                ) : filteredMembers.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
-                  </div>
-                ) : (
-                  filteredMembers.map((dcgMember) => (
-                    <div
-                      key={dcgMember.id}
-                      className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleToggleMember(dcgMember.member_id)}
-                    >
-                      <Checkbox
-                        checked={presentMembers.has(dcgMember.member_id)}
-                        onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{getDisplayName(dcgMember)}</p>
-                        <p className="text-xs text-muted-foreground">{dcgMember.role}</p>
-                      </div>
-                    </div>
-                  ))
+          <div className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
+            {chips.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setTypeFilter(c.key)}
+                className={cn(
+                  'whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
+                  typeFilter === c.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/60 text-muted-foreground hover:text-foreground',
                 )}
-              </div>
-            ) : (
-              <div className="rounded-md border mb-2">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead className="w-[50px]">Present</TableHead>
-                      <TableHead>Member Name</TableHead>
-                      <TableHead>Role</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loadingMembers ? (
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-16" /></TableCell>
-                        </TableRow>
-                      ))
-                    ) : filteredMembers.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                          {searchTerm ? "No members match your search" : showChildrenOnly ? "No children found" : "No members found"}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredMembers.map((dcgMember) => (
-                        <TableRow key={dcgMember.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={presentMembers.has(dcgMember.member_id)}
-                              onCheckedChange={() => handleToggleMember(dcgMember.member_id)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {getDisplayName(dcgMember)}
-                          </TableCell>
-                          <TableCell>{dcgMember.role}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </ScrollArea>
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">{visibleMembers.length} shown</span>
+            <button
+              type="button"
+              onClick={handleSelectAll}
+              disabled={loadingMembers || !filteredMembers.length}
+              className="font-semibold text-primary disabled:opacity-50"
+            >
+              {allFilteredSelected ? 'Clear shown' : 'Mark all shown present'}
+            </button>
+          </div>
         </div>
 
-        <DialogFooter className="p-4 md:p-6 pt-3 border-t shrink-0">
-          {!isMobile && (
-            <Button variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
+        {/* Member List */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-6">
+          {loadingMembers ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+              ))}
+            </div>
+          ) : visibleMembers.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              <Users className="mx-auto mb-2 h-8 w-8 opacity-40" />
+              {searchTerm
+                ? 'No members match your search.'
+                : showPresentOnly
+                  ? 'No one marked present yet.'
+                  : 'No members in this filter.'}
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {visibleMembers.map((dcgMember) => {
+                const checked = presentMembers.has(dcgMember.member_id);
+                const p = dcgMember.members?.profiles;
+                const dob = p?.date_of_birth || null;
+                const isChild = isChildMember(dob, dcgMember.member_id, memberRelationships);
+                const mType = isChild
+                  ? 'Child'
+                  : dcgMember.members?.member_type === 'visitor'
+                    ? 'Visitor'
+                    : 'Member';
+                return (
+                  <li key={dcgMember.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleMember(dcgMember.member_id)}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition active:scale-[0.99]',
+                        checked
+                          ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                          : 'border-border bg-card hover:bg-muted/40',
+                      )}
+                    >
+                      <Initials
+                        size="sm"
+                        first={p?.first_name}
+                        last={p?.last_name}
+                        photo={(dcgMember.members as any)?.photo_url}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-foreground">
+                          {getDisplayName(dcgMember)}
+                        </p>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-foreground">
+                            {dcgMember.role || 'Member'}
+                          </span>
+                          <span>·</span>
+                          <span>{mType}</span>
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          'grid h-7 w-7 shrink-0 place-items-center rounded-full border transition',
+                          checked
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border bg-background text-transparent',
+                        )}
+                      >
+                        <Check className="h-4 w-4" />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
           )}
+        </div>
+
+        {/* Sticky Footer */}
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border bg-card/80 px-4 py-3 backdrop-blur sm:px-6">
+          <Button type="button" variant="outline" onClick={onClose} className="rounded-full">
+            Cancel
+          </Button>
           <Button
+            type="button"
             onClick={handleRecordAttendance}
             disabled={saveAttendance.isPending || loadingMembers}
-            className="flex items-center gap-2"
+            className="gap-2 rounded-full px-5 shadow-regal"
           >
-            <UserCheck className="h-4 w-4" />
-            {saveAttendance.isPending ? 'Recording...' : 'Record Attendance'}
+            {saveAttendance.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <UserCheck className="h-4 w-4" />
+            )}
+            {saveAttendance.isPending ? 'Saving…' : `Save Attendance (${presentMembers.size})`}
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

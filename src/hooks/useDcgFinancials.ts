@@ -180,6 +180,8 @@ export const useCreateDcgTransaction = (dcgId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['regional_ledger'] });
     },
   });
 };
@@ -208,6 +210,8 @@ export const useUpdateDcgTransaction = (dcgId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['regional_ledger'] });
     },
   });
 };
@@ -226,6 +230,8 @@ export const useDeleteDcgTransaction = (dcgId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dcg_financial_transactions', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['dcg_financial_summary', dcgId] });
+      queryClient.invalidateQueries({ queryKey: ['regional_ledger'] });
     },
   });
 };

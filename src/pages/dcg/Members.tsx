@@ -1,20 +1,38 @@
 import React from 'react';
 import { useNavigate } from '@/lib/router-compat';
 import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Search, Download, Users, UserPlus, MoreVertical, Eye, Trash2, UserMinus, Pencil, ShieldCheck, ShieldOff } from 'lucide-react';
+import {
+  Download,
+  Users,
+  UserPlus,
+  MoreVertical,
+  Eye,
+  UserMinus,
+  Pencil,
+  ShieldCheck,
+  ShieldOff,
+  Phone,
+} from 'lucide-react';
 import { useDcgMembers, useRemoveMemberFromDcg, useUpdateDcgMemberRole } from '@/hooks/useDcgMembers';
+import { useCurrentDcg } from '@/hooks/useDcgFinancials';
 import EditMemberForm from '@/components/admin/regional/EditMemberForm';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,18 +43,43 @@ import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelations
 import DcgMemberKPICards from '@/components/admin/dcg/DcgMemberKPICards';
 import AddExistingMemberDialog from '@/components/admin/dcg/AddExistingMemberDialog';
 import RegisterNewMemberDialog from '@/components/admin/dcg/RegisterNewMemberDialog';
+import {
+  SearchBar,
+  RoundButton,
+  ChipRow,
+  Initials,
+  StatusPill,
+  TypePill,
+  SheetHeader,
+  EmptyState,
+} from '@/components/admin/dcg/DcgUI';
 import { toast } from 'sonner';
 import Papa from 'papaparse';
+import { format, subMonths } from 'date-fns';
 import type { MemberWithProfile } from '@/hooks/useMembers';
+
+type DcgMemberItem = MemberWithProfile & {
+  __dcgMemberId: string;
+  __dcgRole: string;
+  __dcgJoinedDate?: string | null;
+};
 
 const DcgMembers: React.FC = () => {
   const navigate = useNavigate();
   const { userDcg } = useAuth();
-  const { data: dcgMembers, isLoading } = useDcgMembers(userDcg?.id);
+  const { data: resolvedDcg } = useCurrentDcg();
+  const dcgId = userDcg?.id || resolvedDcg?.id;
+
+  const { data: dcgMembers, isLoading } = useDcgMembers(dcgId);
   const removeMember = useRemoveMemberFromDcg();
   const updateRole = useUpdateDcgMemberRole();
 
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [joinedPeriod, setJoinedPeriod] = React.useState('all');
+  const [memberTypeFilter, setMemberTypeFilter] = React.useState('all');
+  const [memberStatusFilter, setMemberStatusFilter] = React.useState('all');
+  const [dcgRoleFilter, setDcgRoleFilter] = React.useState('all');
+
   const [addExistingOpen, setAddExistingOpen] = React.useState(false);
   const [registerNewOpen, setRegisterNewOpen] = React.useState(false);
   const [memberToRemove, setMemberToRemove] = React.useState<{ dcgMemberId: string; name: string } | null>(null);
@@ -44,13 +87,18 @@ const DcgMembers: React.FC = () => {
 
   // Flatten DCG members to MemberWithProfile shape (preserve dcg_member id + role)
   const flatMembers = React.useMemo(() => {
-    if (!dcgMembers) return [] as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
+    if (!dcgMembers) return [] as DcgMemberItem[];
     return dcgMembers
-      .filter(dm => dm.members)
-      .map(dm => ({ ...(dm.members as any), __dcgMemberId: dm.id, __dcgRole: dm.role })) as (MemberWithProfile & { __dcgMemberId: string; __dcgRole: string })[];
+      .filter((dm) => dm.members && dm.is_active !== false)
+      .map((dm) => ({
+        ...(dm.members as any),
+        __dcgMemberId: dm.id,
+        __dcgRole: dm.role,
+        __dcgJoinedDate: dm.joined_date,
+      })) as DcgMemberItem[];
   }, [dcgMembers]);
 
-  const memberIds = React.useMemo(() => flatMembers.map(m => m.id), [flatMembers]);
+  const memberIds = React.useMemo(() => flatMembers.map((m) => m.id), [flatMembers]);
   const sortedKey = React.useMemo(() => [...memberIds].sort().join(','), [memberIds]);
 
   const { data: memberRelationships = [] } = useQuery({
@@ -61,8 +109,8 @@ const DcgMembers: React.FC = () => {
 
   const visitorEventIds = React.useMemo(() => {
     const ids = flatMembers
-      .filter(m => m.member_type === 'visitor' && m.rated_event_id)
-      .map(m => m.rated_event_id as string);
+      .filter((m) => m.member_type === 'visitor' && m.rated_event_id)
+      .map((m) => m.rated_event_id as string);
     return [...new Set(ids)];
   }, [flatMembers]);
 
@@ -78,7 +126,9 @@ const DcgMembers: React.FC = () => {
 
   const specialEventIds = React.useMemo(() => {
     const set = new Set<string>();
-    visitorEvents.forEach(e => { if (e.is_special) set.add(e.id); });
+    visitorEvents.forEach((e) => {
+      if (e.is_special) set.add(e.id);
+    });
     return set;
   }, [visitorEvents]);
 
@@ -87,33 +137,73 @@ const DcgMembers: React.FC = () => {
     [flatMembers, memberRelationships],
   );
 
+  // Period-filtered subset (shared between KPIs and directory)
+  const periodMembers = React.useMemo(() => {
+    if (joinedPeriod === 'all') return flatMembers;
+    const now = new Date();
+    const monthsMap: Record<string, number> = { '1m': 1, '3m': 3, '6m': 6, '1y': 12 };
+    const months = monthsMap[joinedPeriod];
+    if (!months) return flatMembers;
+    const cutoff = subMonths(now, months);
+    return flatMembers.filter((m) => {
+      const d = m.__dcgJoinedDate || m.join_date;
+      if (!d) return false;
+      return new Date(d) >= cutoff;
+    });
+  }, [flatMembers, joinedPeriod]);
+
   const filteredMembers = React.useMemo(() => {
-    return flatMembers.filter(member => {
+    return periodMembers.filter((member) => {
       const profile = member.profiles;
       if (!profile) return false;
 
+      // Hide special-event visitors to match DCG KPI scope
+      const isSpecialVisitor =
+        member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
+      if (isSpecialVisitor) return false;
+
+      // Search filter
       const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
+      const reverseName = `${profile.last_name || ''} ${profile.first_name || ''}`.toLowerCase();
       const email = (profile.email || '').toLowerCase();
       const phone = (profile.phone || '').toLowerCase();
       const searchLower = searchTerm.toLowerCase();
-      const searchMatch = fullName.includes(searchLower) || email.includes(searchLower) || phone.includes(searchLower);
+      const searchMatch =
+        !searchLower ||
+        fullName.includes(searchLower) ||
+        reverseName.includes(searchLower) ||
+        email.includes(searchLower) ||
+        phone.includes(searchLower);
 
-      // Hide special-event visitors to match KPI scope
-      const isSpecialVisitor = member.member_type === 'visitor' && !!member.rated_event_id && specialEventIds.has(member.rated_event_id);
+      // Status filter
+      const statusMatch = memberStatusFilter === 'all' || member.status === memberStatusFilter;
 
-      return searchMatch && !isSpecialVisitor;
+      // DCG role filter
+      const roleMatch = dcgRoleFilter === 'all' || member.__dcgRole === dcgRoleFilter;
+
+      // Member type filter
+      const isChild = childrenSet.has(member.id);
+      let typeMatch = false;
+      if (memberTypeFilter === 'all') {
+        typeMatch = true;
+      } else if (memberTypeFilter === 'children') {
+        typeMatch = isChild;
+      } else if (isChild) {
+        typeMatch = false;
+      } else if (memberTypeFilter === 'visitor_regular') {
+        typeMatch = member.member_type === 'visitor';
+      } else {
+        typeMatch = member.member_type === memberTypeFilter;
+      }
+
+      return searchMatch && statusMatch && roleMatch && typeMatch;
     });
-  }, [flatMembers, searchTerm, specialEventIds]);
+  }, [periodMembers, searchTerm, memberStatusFilter, dcgRoleFilter, memberTypeFilter, childrenSet, specialEventIds]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800 border-green-200';
-      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'transferred': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'inactive': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'new': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const typeLabel = (m: MemberWithProfile) => {
+    if (childrenSet.has(m.id)) return { label: 'Child', tone: 'var(--chart-5)' };
+    if (m.member_type === 'visitor') return { label: 'Visitor', tone: 'var(--chart-3)' };
+    return { label: 'Member', tone: 'var(--chart-2)' };
   };
 
   const handleExport = () => {
@@ -121,15 +211,16 @@ const DcgMembers: React.FC = () => {
       toast.error('No members to export');
       return;
     }
-    const data = filteredMembers.map(m => ({
+    const data = filteredMembers.map((m) => ({
       'Member ID': m.member_id,
       'Last Name': m.profiles?.last_name || '',
       'First Name': m.profiles?.first_name || '',
-      'Email': m.profiles?.email || '',
-      'Phone': m.profiles?.phone || '',
-      'Address': m.profiles?.address || '',
-      'Type': m.member_type,
-      'Status': m.status || '',
+      Email: m.profiles?.email || '',
+      Phone: m.profiles?.phone || '',
+      Address: m.profiles?.address || '',
+      'DCG Role': m.__dcgRole || 'Member',
+      Type: childrenSet.has(m.id) ? 'Child' : m.member_type,
+      Status: m.status || '',
       'Join Date': m.join_date ? new Date(m.join_date).toLocaleDateString() : '',
     }));
     const csv = Papa.unparse(data);
@@ -144,194 +235,322 @@ const DcgMembers: React.FC = () => {
   };
 
   const handleRemove = async () => {
-    if (!memberToRemove || !userDcg?.id) return;
+    if (!memberToRemove || !dcgId) return;
     try {
-      await removeMember.mutateAsync({ dcgMemberId: memberToRemove.dcgMemberId, dcgId: userDcg.id });
+      await removeMember.mutateAsync({ dcgMemberId: memberToRemove.dcgMemberId, dcgId });
       setMemberToRemove(null);
-    } catch (e) {
+    } catch {
       // toast handled by mutation
     }
   };
 
+  const rowMenu = (member: DcgMemberItem) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Member actions"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border bg-card text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onClick={() => navigate(`/dcg/member/${member.id}`)}>
+          <Eye className="mr-2 h-4 w-4" /> View profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setEditMember(member)}>
+          <Pencil className="mr-2 h-4 w-4" /> Edit details
+        </DropdownMenuItem>
+        {member.profiles?.phone && (
+          <DropdownMenuItem
+            onClick={() => {
+              window.location.href = `tel:${member.profiles?.phone}`;
+            }}
+          >
+            <Phone className="mr-2 h-4 w-4" /> Call
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        {member.__dcgRole === 'Assistant' ? (
+          <DropdownMenuItem
+            onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Member' })}
+          >
+            <ShieldOff className="mr-2 h-4 w-4" /> Remove as Assistant
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Assistant' })}
+          >
+            <ShieldCheck className="mr-2 h-4 w-4" /> Make DCG Assistant
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() =>
+            setMemberToRemove({
+              dcgMemberId: member.__dcgMemberId,
+              name: `${member.profiles?.last_name || ''} ${member.profiles?.first_name || ''}`.trim(),
+            })
+          }
+          className="text-destructive focus:text-destructive"
+        >
+          <UserMinus className="mr-2 h-4 w-4" /> Remove from DCG
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <DcgAdminLayout>
-      <div className="space-y-6 p-4 md:p-0 px-[10px]">
+      <div className="space-y-5">
+        {/* Joined Period Filter */}
+        <ChipRow
+          value={joinedPeriod}
+          onChange={setJoinedPeriod}
+          options={[
+            { value: 'all', label: 'All time' },
+            { value: '1m', label: '1 month' },
+            { value: '3m', label: '3 months' },
+            { value: '6m', label: '6 months' },
+            { value: '1y', label: '1 year' },
+          ]}
+        />
+
+        {/* Hero + KPI Ring Tiles */}
         <DcgMemberKPICards
-          members={flatMembers}
+          members={periodMembers}
           isLoading={isLoading}
           memberRelationships={memberRelationships}
           specialEventIds={specialEventIds}
-          dcgId={userDcg?.id}
+          dcgId={dcgId}
+          selected={memberTypeFilter}
+          onSelect={setMemberTypeFilter}
         />
 
-        <div className="rounded-2xl border border-border/40 bg-card/60 backdrop-blur-sm p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Member Directory</h2>
-                <p className="text-sm text-muted-foreground">A list of all members in this DCG</p>
-              </div>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button variant="outline" onClick={() => setAddExistingOpen(true)} disabled={!userDcg} className="gap-2">
-                <Users className="h-4 w-4" /> Add Existing
-              </Button>
-              <Button onClick={() => setRegisterNewOpen(true)} disabled={!userDcg} className="gap-2">
-                <UserPlus className="h-4 w-4" /> Register New
-              </Button>
-            </div>
-          </div>
+        {/* Search + Quick Actions */}
+        <div className="flex items-center gap-2">
+          <SearchBar
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Search name, email or phone"
+          />
+          <RoundButton
+            icon={Download}
+            label={`Export ${filteredMembers.length} to CSV`}
+            onClick={handleExport}
+          />
+          <RoundButton
+            icon={Users}
+            label="Add existing regional member"
+            onClick={() => setAddExistingOpen(true)}
+          />
+          <RoundButton
+            icon={UserPlus}
+            label="Register new member"
+            primary
+            onClick={() => setRegisterNewOpen(true)}
+          />
+        </div>
 
-          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-stretch sm:items-center mb-4">
-            <div className="relative flex-1 sm:min-w-[250px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or phone..."
-                className="pl-9 bg-background/60"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+        {/* Filter Chip Rows */}
+        <div className="space-y-2">
+          <ChipRow
+            value={memberTypeFilter}
+            onChange={setMemberTypeFilter}
+            options={[
+              { value: 'all', label: 'Everyone' },
+              { value: 'member', label: 'Members' },
+              { value: 'visitor_regular', label: 'Visitors' },
+              { value: 'children', label: 'Children' },
+            ]}
+          />
+          <div className="flex flex-wrap gap-2">
+            <div className="min-w-0 flex-1">
+              <ChipRow
+                value={memberStatusFilter}
+                onChange={setMemberStatusFilter}
+                options={[
+                  { value: 'all', label: 'Any status' },
+                  { value: 'new', label: 'New' },
+                  { value: 'active', label: 'Active' },
+                  { value: 'inactive', label: 'Inactive' },
+                  { value: 'transferred', label: 'Transferred' },
+                ]}
+              />
+            </div>
+            <div className="min-w-0">
+              <ChipRow
+                value={dcgRoleFilter}
+                onChange={setDcgRoleFilter}
+                options={[
+                  { value: 'all', label: 'All roles' },
+                  { value: 'Leader', label: 'Leader' },
+                  { value: 'Assistant', label: 'Assistant' },
+                  { value: 'Member', label: 'Member' },
+                ]}
               />
             </div>
           </div>
+        </div>
 
-          <div className="rounded-xl border border-border/40 overflow-hidden -mx-2 sm:mx-0">
-            <div className="overflow-x-auto">
+        <p className="px-1 text-xs font-medium text-muted-foreground">
+          Showing {filteredMembers.length} of {flatMembers.length}
+        </p>
+
+        {/* Directory List / Table */}
+        {isLoading || !dcgId ? (
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-muted" />
+            ))}
+          </div>
+        ) : filteredMembers.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title={searchTerm ? 'No one matches your search' : 'No members found'}
+            hint="Try adjusting your filters, adding an existing regional member, or registering someone new."
+          />
+        ) : (
+          <>
+            {/* Mobile / Tablet Card Grid */}
+            <ul className="grid gap-2 md:grid-cols-2 lg:hidden">
+              {filteredMembers.map((member) => {
+                const t = typeLabel(member);
+                return (
+                  <li key={member.id} className="min-w-0">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/dcg/member/${member.id}`)}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/dcg/member/${member.id}`)}
+                      className="flex min-w-0 items-center gap-3 rounded-2xl border border-border bg-card p-3 transition active:scale-[0.99]"
+                    >
+                      <Initials
+                        first={member.profiles?.first_name}
+                        last={member.profiles?.last_name}
+                        photo={member.photo_url}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-semibold text-foreground">
+                          {member.profiles?.last_name} {member.profiles?.first_name}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {member.profiles?.phone || member.profiles?.email || 'No contact'}
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <TypePill label={t.label} tone={t.tone} />
+                          {member.__dcgRole && member.__dcgRole !== 'Member' && (
+                            <TypePill label={member.__dcgRole} tone="var(--primary)" />
+                          )}
+                          <StatusPill status={member.status} />
+                        </div>
+                      </div>
+                      {rowMenu(member)}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Desktop Table */}
+            <div className="hidden overflow-hidden rounded-2xl border border-border bg-card lg:block">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted/30">
-                    <TableHead className="min-w-[180px]">Name</TableHead>
-                    <TableHead className="hidden lg:table-cell w-[20%]">Address</TableHead>
-                    <TableHead className="hidden sm:table-cell">Phone</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead className="hidden lg:table-cell">Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Join Date</TableHead>
-                    <TableHead className="w-[1%] whitespace-nowrap text-right">Actions</TableHead>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead className="hidden xl:table-cell">Address</TableHead>
+                    <TableHead>DCG Role</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading || !userDcg ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        {Array.from({ length: 7 }).map((_, j) => (
-                          <TableCell key={j}>
-                            <div className="animate-pulse rounded-lg bg-muted h-5 w-full" />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : filteredMembers.length > 0 ? (
-                    filteredMembers.map(member => (
+                  {filteredMembers.map((member) => {
+                    const t = typeLabel(member);
+                    return (
                       <TableRow
                         key={member.id}
-                        className="cursor-pointer hover:bg-muted/20 transition-colors"
+                        className="cursor-pointer transition-colors hover:bg-muted/30"
                         onClick={() => navigate(`/dcg/member/${member.id}`)}
                       >
-                        <TableCell className="font-medium min-w-[180px]">
-                          {member.profiles?.last_name} {member.profiles?.first_name}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell max-w-xs truncate">
-                          {member.profiles?.address || 'N/A'}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">{member.profiles?.phone || 'N/A'}</TableCell>
                         <TableCell>
-                          <Badge
-                            variant={member.member_type === 'visitor' ? 'secondary' : 'default'}
-                            className={member.member_type === 'visitor' ? 'bg-amber-100 text-amber-800' : 'bg-purple-100 text-purple-800'}
-                          >
-                            <Users className="w-3 h-3 mr-1" />
-                            {member.member_type === 'visitor' ? 'Visitor' : 'Member'}
-                          </Badge>
+                          <div className="flex items-center gap-3">
+                            <Initials
+                              size="sm"
+                              first={member.profiles?.first_name}
+                              last={member.profiles?.last_name}
+                              photo={member.photo_url}
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate font-medium">
+                                {member.profiles?.last_name} {member.profiles?.first_name}
+                              </p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {member.profiles?.email}
+                              </p>
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <Badge className={getStatusColor(member.status || 'new')}>
-                            {member.status || 'new'}
-                          </Badge>
+                        <TableCell>{member.profiles?.phone || '—'}</TableCell>
+                        <TableCell className="hidden max-w-[220px] truncate xl:table-cell">
+                          {member.profiles?.address || '—'}
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          {member.join_date ? new Date(member.join_date).toLocaleDateString() : 'N/A'}
+                        <TableCell>
+                          <TypePill label={member.__dcgRole || 'Member'} />
                         </TableCell>
-                        <TableCell className="w-[1%] whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => navigate(`/dcg/member/${member.id}`)}>
-                                <Eye className="h-4 w-4 mr-2" /> View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditMember(member)}>
-                                <Pencil className="h-4 w-4 mr-2" /> Edit
-                              </DropdownMenuItem>
-                              {member.__dcgRole === 'Assistant' ? (
-                                <DropdownMenuItem
-                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Member' })}
-                                >
-                                  <ShieldOff className="h-4 w-4 mr-2" /> Remove as DCG Assistant
-                                </DropdownMenuItem>
-                              ) : (
-                                <DropdownMenuItem
-                                  onClick={() => updateRole.mutate({ dcgMemberId: member.__dcgMemberId, role: 'Assistant' })}
-                                >
-                                  <ShieldCheck className="h-4 w-4 mr-2" /> Make DCG Assistant
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => setMemberToRemove({
-                                  dcgMemberId: member.__dcgMemberId,
-                                  name: `${member.profiles?.last_name || ''} ${member.profiles?.first_name || ''}`.trim(),
-                                })}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <UserMinus className="h-4 w-4 mr-2" /> Remove from DCG
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <TableCell>
+                          <TypePill label={t.label} tone={t.tone} />
                         </TableCell>
+                        <TableCell>
+                          <StatusPill status={member.status} />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {member.join_date ? format(new Date(member.join_date), 'dd/MM/yyyy') : '—'}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>{rowMenu(member)}</TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                        {searchTerm ? 'No members match your search.' : 'No members found.'}
-                      </TableCell>
-                    </TableRow>
-                  )}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
+      {/* Add Existing Regional Member Dialog */}
       <AddExistingMemberDialog
         open={addExistingOpen}
         onOpenChange={setAddExistingOpen}
-        dcgId={userDcg?.id || ''}
+        dcgId={dcgId || ''}
       />
+
+      {/* Register New Member Dialog */}
       <RegisterNewMemberDialog
         open={registerNewOpen}
         onOpenChange={setRegisterNewOpen}
-        dcgId={userDcg?.id || ''}
+        dcgId={dcgId || ''}
       />
 
+      {/* Remove Confirmation AlertDialog */}
       <AlertDialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from DCG?</AlertDialogTitle>
+            <AlertDialogTitle>Remove {memberToRemove?.name} from DCG?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove {memberToRemove?.name} from this DCG. Their regional member record stays intact.
+              This will remove {memberToRemove?.name} from this DCG. Their regional member record remains intact.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemove}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Remove
             </AlertDialogAction>
@@ -339,15 +558,24 @@ const DcgMembers: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!editMember} onOpenChange={(open) => { if (!open) setEditMember(null); }}>
-        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background border-border/50 p-4 sm:p-6">
-          <DialogHeader>
+      {/* Edit Member Dialog */}
+      <Dialog
+        open={!!editMember}
+        onOpenChange={(open) => {
+          if (!open) setEditMember(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl lg:max-w-3xl">
+          <SheetHeader
+            icon={Pencil}
+            title="Edit member"
+            description="Update personal, spiritual and family details."
+          />
+          <DialogHeader className="sr-only">
             <DialogTitle>Edit Member</DialogTitle>
             <DialogDescription>Update member information and details.</DialogDescription>
           </DialogHeader>
-          {editMember && (
-            <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />
-          )}
+          {editMember && <EditMemberForm member={editMember} onSuccess={() => setEditMember(null)} />}
         </DialogContent>
       </Dialog>
     </DcgAdminLayout>
