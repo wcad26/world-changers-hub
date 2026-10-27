@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from "@/lib/router-compat";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Home, Users, Plus, Eye, Edit, Trash2, MoreVertical, AlertCircle, BarChart3, MapPin, Clock } from "lucide-react";
 import { useDcgs, useDeleteDcg, DcgWithLeader } from "@/hooks/useDCGs";
@@ -12,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useRegionalDcgStats } from "@/hooks/useRegionalStats";
 import { useAuth } from "@/hooks/useAuth";
 import { HeroCard, RingTile, SearchBar, RoundButton, ChipRow, StatusPill } from "@/components/admin/regional/RegionalUI";
-import { cn } from "@/lib/utils";
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 

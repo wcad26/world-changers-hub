@@ -29,5 +29,5 @@
 - [x] Members page period filter moved to top, filters KPIs
 - [x] Bottom bar: 5 buttons incl. Discipleship
 - [x] Events page period filter modernized
-- [ ] DCG overview page modern rebuild (search, KPI rings, cards/table, tabs)
-- [ ] DCG details page modern rebuild (hero, KPI tiles, attendance chart, segmented tabs)
+- [x] DCG overview page modern rebuild (search, KPI rings, cards/table, status chips)
+- [x] DCG details page modern rebuild (hero, KPI tiles, attendance chart, member cards/table)
