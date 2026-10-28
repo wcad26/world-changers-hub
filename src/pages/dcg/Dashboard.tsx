@@ -33,7 +33,6 @@ import {
 } from 'recharts';
 import {
   HeroCard,
-  RingTile,
   SearchBar,
   PeriodChipBar,
   InfoRow,
