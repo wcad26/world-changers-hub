@@ -36,8 +36,6 @@ import {
 import {
   ArrowUpRight,
   ArrowDownRight,
-  Wallet,
-  PiggyBank,
   Plus,
   Minus,
   Download,
@@ -69,8 +67,6 @@ import {
   format,
   subMonths,
   startOfYear,
-  startOfWeek,
-  eachWeekOfInterval,
 } from 'date-fns';
 import { toast } from 'sonner';
 
