@@ -4,27 +4,22 @@ import DcgAdminLayout from '@/components/admin/DcgAdminLayout';
 import {
   Users,
   Baby,
-  Wallet,
-  Heart,
   MapPin,
   Clock,
   Phone,
   Calendar as CalendarIcon,
   TrendingUp,
-  UserPlus,
-  Plus,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useDcgMembers } from '@/hooks/useDcgMembers';
 import { useDcgAttendanceHistory } from '@/hooks/useDcgAttendance';
-import { useCurrentDcg, useDcgFinancialTransactions } from '@/hooks/useDcgFinancials';
+import { useCurrentDcg } from '@/hooks/useDcgFinancials';
 import { useDcgs } from '@/hooks/useDCGs';
-import { useRegionCurrency } from '@/hooks/useCurrencies';
-import { formatWithCurrency } from '@/utils/currencyUtils';
 import { buildChildrenSet } from '@/utils/childUtils';
 import { fetchMemberRelationshipsForMembers } from '@/utils/fetchMemberRelationships';
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { format, subMonths } from 'date-fns';
 import {
   XAxis,
@@ -38,7 +33,6 @@ import {
 } from 'recharts';
 import {
   HeroCard,
-  RingTile,
   SearchBar,
   PeriodChipBar,
   InfoRow,
@@ -68,6 +62,82 @@ const formatMeetingTime = (time?: string | null): string => {
   return `${hour12}:${minutes || '00'} ${ampm}`;
 };
 
+const GENDER_TONES = { male: 'var(--chart-1)', female: 'var(--chart-4)' };
+
+/** Total with a male/female breakdown bar. */
+function SplitTile({ icon: Icon, label, total, male, female, tone = 'var(--chart-1)', onClick }: {
+  icon: LucideIcon;
+  label: string;
+  total: number;
+  male: number;
+  female: number;
+  other?: number;
+  tone?: string;
+  onClick?: () => void;
+}) {
+  const shown = male + female;
+  const malePct = shown > 0 ? Math.round((male / shown) * 100) : 0;
+  const Comp: any = onClick ? 'button' : 'div';
+  return (
+    <Comp
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
+      className={cn(
+        'relative min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 text-left transition-all',
+        onClick && 'hover:border-primary/50 active:scale-[0.98]',
+      )}
+    >
+      <div
+        className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full blur-2xl"
+        style={{ background: `color-mix(in oklab, ${tone} 18%, transparent)` }}
+      />
+      <div className="relative">
+        <span
+          className="grid h-8 w-8 place-items-center rounded-xl"
+          style={{ background: `color-mix(in oklab, ${tone} 15%, transparent)`, color: tone }}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <p className="mt-2 font-heading text-2xl font-bold leading-none text-foreground">{total}</p>
+        <p className="mt-1 truncate text-xs font-medium text-muted-foreground">{label}</p>
+        <div className="mt-3 flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full transition-all duration-700"
+            style={{ width: shown ? `${malePct}%` : '0%', background: GENDER_TONES.male }}
+          />
+          <div
+            className="h-full transition-all duration-700"
+            style={{ width: shown ? `${100 - malePct}%` : '0%', background: GENDER_TONES.female }}
+          />
+        </div>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: GENDER_TONES.male }} />
+            Male <strong className="font-bold text-foreground">{male}</strong>
+            <span className="tabular-nums opacity-70">{shown ? `${malePct}%` : '—'}</span>
+          </span>
+          <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: GENDER_TONES.female }} />
+            Female <strong className="font-bold text-foreground">{female}</strong>
+            <span className="tabular-nums opacity-70">{shown ? `${100 - malePct}%` : '—'}</span>
+          </span>
+        </div>
+      </div>
+    </Comp>
+  );
+}
+
+function splitByGender(list: { members?: { profiles?: { gender?: string | null } | null } | null }[]) {
+  let male = 0;
+  let female = 0;
+  list.forEach((m) => {
+    const g = (m.members?.profiles?.gender || '').toLowerCase();
+    if (g === 'male') male += 1;
+    else if (g === 'female') female += 1;
+  });
+  return { male, female, other: list.length - male - female };
+}
+
 const DcgDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { profile, userDcg } = useAuth();
@@ -79,7 +149,6 @@ const DcgDashboard: React.FC = () => {
     () => dcgs?.find((d) => d.id === dcgId) || resolvedDcg || userDcg,
     [dcgs, dcgId, resolvedDcg, userDcg],
   );
-  const { data: regionCurrency } = useRegionCurrency(currentDcg?.region_id);
 
   const { data: dcgMembers = [] } = useDcgMembers(dcgId);
   const { data: attendanceHistory = [] } = useDcgAttendanceHistory(dcgId);
@@ -106,16 +175,6 @@ const DcgDashboard: React.FC = () => {
         return { from: subMonths(now, 1), to: now };
     }
   }, [quickPeriod, customRange]);
-
-  const dateFilters = useMemo(() => {
-    if (!dateRange.from) return undefined;
-    return {
-      from: format(dateRange.from, 'yyyy-MM-dd'),
-      to: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
-    };
-  }, [dateRange]);
-
-  const { data: dcgTransactions = [] } = useDcgFinancialTransactions(dcgId, dateFilters);
 
   // ── Members + strict child rule ──
   const activeMembersAll = useMemo(() => dcgMembers.filter((m) => m.is_active), [dcgMembers]);
@@ -146,51 +205,17 @@ const DcgDashboard: React.FC = () => {
   const totalAdults = activeMembersAll.filter((m) => !childrenSet.has(m.member_id)).length;
   const totalChildren = childrenSet.size;
 
-  // ── Net balance (period-scoped, DCG-only) ──
-  const financeTotals = useMemo(
-    () =>
-      dcgTransactions.reduce(
-        (acc, t) => {
-          const amount = Number(t.amount) || 0;
-          const type = t.category?.type?.toLowerCase();
-          if (type === 'income') acc.income += amount;
-          else if (type === 'expense') acc.expenses += amount;
-          return acc;
-        },
-        { income: 0, expenses: 0 },
-      ),
-    [dcgTransactions],
+  // ── Gender split (adults & children) ──
+  const adultList = useMemo(
+    () => activeMembersAll.filter((m) => !childrenSet.has(m.member_id)),
+    [activeMembersAll, childrenSet],
   );
-  const netBalance = financeTotals.income - financeTotals.expenses;
-
-  // ── Discipleship Success (DCG mentors) ──
-  const { data: discipleshipStats } = useQuery({
-    queryKey: ['dcg-discipleship-stats', dcgId, sortedIdsKey],
-    queryFn: async () => {
-      if (!dcgMemberIds.length) return { totalRelationships: 0, becameMembers: 0 };
-      const { data: rels, error } = await supabase
-        .from('discipleship_relationships')
-        .select('id')
-        .in('mentor_id', dcgMemberIds);
-      if (error) throw error;
-      const relIds = (rels || []).map((r) => r.id);
-      if (!relIds.length) return { totalRelationships: 0, becameMembers: 0 };
-      const { data: progress, error: pErr } = await supabase
-        .from('discipleship_progress')
-        .select('relationship_id, milestone')
-        .in('relationship_id', relIds)
-        .eq('milestone', 'became_member');
-      if (pErr) throw pErr;
-      const successSet = new Set((progress || []).map((p) => p.relationship_id));
-      return { totalRelationships: relIds.length, becameMembers: successSet.size };
-    },
-    enabled: !!dcgId && dcgMemberIds.length > 0,
-  });
-
-  const successRate =
-    discipleshipStats && discipleshipStats.totalRelationships > 0
-      ? Math.round((discipleshipStats.becameMembers / discipleshipStats.totalRelationships) * 100)
-      : 0;
+  const childList = useMemo(
+    () => activeMembersAll.filter((m) => childrenSet.has(m.member_id)),
+    [activeMembersAll, childrenSet],
+  );
+  const adultSplit = useMemo(() => splitByGender(adultList), [adultList]);
+  const childSplit = useMemo(() => splitByGender(childList), [childList]);
 
   // ── Attendance trend (period + search filtered) ──
   const filteredAttendance = useMemo(() => {
@@ -236,8 +261,6 @@ const DcgDashboard: React.FC = () => {
     return 'Assigned Leader';
   }, [currentDcg, profile]);
 
-  const fc = (n: number) => formatWithCurrency(n, regionCurrency);
-
   return (
     <DcgAdminLayout>
       <div className="space-y-5">
@@ -257,64 +280,25 @@ const DcgDashboard: React.FC = () => {
           sub={`${totalAdults} adults · ${totalChildren} children · Led by ${leaderName}`}
           ring={fillRate}
           ringLabel="Last gathering"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigate('/dcg/members')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
-            >
-              <UserPlus className="h-3.5 w-3.5" /> Manage Members
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/dcg/events')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
-            >
-              <Plus className="h-3.5 w-3.5" /> Schedule Event
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/dcg/finances')}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground/15 px-3.5 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25"
-            >
-              <Wallet className="h-3.5 w-3.5" /> Record Finance
-            </button>
-          </div>
-        </HeroCard>
+        />
 
-        {/* KPI Ring Tiles */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <RingTile
+        {/* People mix */}
+        <div className="grid grid-cols-2 gap-3">
+          <SplitTile
             icon={Users}
-            label="Adult members"
-            value={totalAdults}
-            ring={fillRate}
-            ringLabel="fill"
+            label="Adults"
             tone="var(--chart-1)"
+            total={totalAdults}
+            {...adultSplit}
             onClick={() => navigate('/dcg/members')}
           />
-          <RingTile
+          <SplitTile
             icon={Baby}
-            label="Children in DCG"
-            value={totalChildren}
+            label="Children"
             tone="var(--chart-5)"
+            total={totalChildren}
+            {...childSplit}
             onClick={() => navigate('/dcg/members')}
-          />
-          <RingTile
-            icon={Wallet}
-            label={`${fc(financeTotals.income)} in · ${fc(financeTotals.expenses)} out`}
-            value={fc(netBalance)}
-            tone={netBalance >= 0 ? 'var(--chart-2)' : 'var(--destructive)'}
-            onClick={() => navigate('/dcg/finances')}
-          />
-          <RingTile
-            icon={Heart}
-            label="Discipleship milestone"
-            value={`${successRate}%`}
-            ring={successRate}
-            ringLabel="success"
-            tone="var(--chart-4)"
           />
         </div>
 
