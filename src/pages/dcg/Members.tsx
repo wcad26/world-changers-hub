@@ -366,32 +366,31 @@ const DcgMembers: React.FC = () => {
               { value: 'children', label: 'Children' },
             ]}
           />
-          <div className="flex flex-wrap gap-2">
-            <div className="min-w-0 flex-1">
-              <ChipRow
-                value={memberStatusFilter}
-                onChange={setMemberStatusFilter}
-                options={[
-                  { value: 'all', label: 'Any status' },
-                  { value: 'new', label: 'New' },
-                  { value: 'active', label: 'Active' },
-                  { value: 'inactive', label: 'Inactive' },
-                  { value: 'transferred', label: 'Transferred' },
-                ]}
-              />
-            </div>
-            <div className="min-w-0">
-              <ChipRow
-                value={dcgRoleFilter}
-                onChange={setDcgRoleFilter}
-                options={[
-                  { value: 'all', label: 'All roles' },
-                  { value: 'Leader', label: 'Leader' },
-                  { value: 'Assistant', label: 'Assistant' },
-                  { value: 'Member', label: 'Member' },
-                ]}
-              />
-            </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {([
+              { value: 'all', label: 'Any status' },
+              { value: 'new', label: 'New' },
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+              { value: 'transferred', label: 'Transferred' },
+            ] as const).map((o) => (
+              <button key={o.value} type="button" onClick={() => setMemberStatusFilter(o.value as any)}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition ${memberStatusFilter === o.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:text-foreground'}`}>
+                {o.label}
+              </button>
+            ))}
+            <span className="mx-1 w-px shrink-0 self-stretch bg-border" />
+            {([
+              { value: 'all', label: 'All roles' },
+              { value: 'Leader', label: 'Leader' },
+              { value: 'Assistant', label: 'Assistant' },
+              { value: 'Member', label: 'Member' },
+            ] as const).map((o) => (
+              <button key={o.value} type="button" onClick={() => setDcgRoleFilter(o.value as any)}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-medium transition ${dcgRoleFilter === o.value ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-card text-muted-foreground hover:text-foreground'}`}>
+                {o.label}
+              </button>
+            ))}
           </div>
         </div>
 
