@@ -364,31 +364,29 @@ const DcgFinances: React.FC = () => {
         <HeroCard
           eyebrow={`${currentDcg.name} · Net Balance`}
           value={fc(periodSummary.net)}
-          sub={`${fc(periodSummary.income)} income · ${fc(periodSummary.expenses)} expenses · ${periodSummary.count} ${periodSummary.count === 1 ? 'record' : 'records'}`}
           ring={retainedPct}
-          ringLabel="Retained"
+          ringLabel="Of income"
         >
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setIncomeOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground px-4 py-2 text-xs font-semibold text-primary shadow-sm transition hover:opacity-95 active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-foreground px-3 py-2 text-xs font-semibold text-primary shadow-sm transition hover:opacity-95 active:scale-95"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 shrink-0" />
               Record Income
             </button>
             <button
               type="button"
               onClick={() => setExpenseOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/30 bg-primary-foreground/15 px-4 py-2 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25 active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-primary-foreground/30 bg-primary-foreground/15 px-3 py-2 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25 active:scale-95"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-4 w-4 shrink-0" />
               Record Expense
             </button>
           </div>
         </HeroCard>
 
-        {/* Error Banner if transaction fetch failed */}
         {txError && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
             <div className="flex items-center gap-2.5 text-sm text-destructive">
@@ -401,14 +399,11 @@ const DcgFinances: React.FC = () => {
           </div>
         )}
 
-        {/* Interactive KPI Tiles */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           <RingTile
             icon={ArrowUpRight}
             label="Total Income"
             value={fc(periodSummary.income)}
-            ring={grossVolume > 0 ? (periodSummary.income / grossVolume) * 100 : 0}
-            ringLabel="Share"
             tone="var(--chart-2)"
             active={typeFilter === 'income'}
             onClick={() => {
@@ -427,25 +422,6 @@ const DcgFinances: React.FC = () => {
             onClick={() => {
               setOfferingsOnly(false);
               setTypeFilter((prev) => (prev === 'expense' ? 'all' : 'expense'));
-            }}
-          />
-          <RingTile
-            icon={Wallet}
-            label="Net Balance"
-            value={fc(periodSummary.net)}
-            tone={periodSummary.net >= 0 ? 'var(--chart-1)' : 'var(--destructive)'}
-          />
-          <RingTile
-            icon={PiggyBank}
-            label="Offerings"
-            value={fc(periodSummary.offerings)}
-            ring={periodSummary.income > 0 ? (periodSummary.offerings / periodSummary.income) * 100 : 0}
-            ringLabel="Of Income"
-            tone="var(--chart-3)"
-            active={offeringsOnly}
-            onClick={() => {
-              setTypeFilter('all');
-              setOfferingsOnly((prev) => !prev);
             }}
           />
         </div>
