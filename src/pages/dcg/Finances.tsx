@@ -36,8 +36,6 @@ import {
 import {
   ArrowUpRight,
   ArrowDownRight,
-  Wallet,
-  PiggyBank,
   Plus,
   Minus,
   Download,
@@ -55,8 +53,9 @@ import {
   Tag,
 } from 'lucide-react';
 import {
-  AreaChart,
-  Area,
+  ComposedChart,
+  Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -68,8 +67,6 @@ import {
   format,
   subMonths,
   startOfYear,
-  startOfWeek,
-  eachWeekOfInterval,
 } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -235,51 +232,20 @@ const DcgFinances: React.FC = () => {
     });
   }, [rows, search, typeFilter, offeringsOnly]);
 
-  // Weekly cumulative trend series
+  // Monthly income/expense bars with net trend (period-filtered)
   const trendData = useMemo(() => {
-    if (!filtered.length) return [];
-    const weeks: Record<string, { income: number; expenses: number; ts: number }> = {};
-    let minTs = Infinity;
-    let maxTs = -Infinity;
-
-    for (const r of filtered) {
+    const m: Record<string, { month: string; Income: number; Expenses: number; ts: number }> = {};
+    for (const r of rows) {
       const d = parseLocalDate(r.transaction_date);
-      const ws = startOfWeek(d, { weekStartsOn: 1 });
-      const key = format(ws, 'yyyy-MM-dd');
-      if (!weeks[key]) weeks[key] = { income: 0, expenses: 0, ts: ws.getTime() };
+      const key = format(d, 'yyyy-MM');
+      if (!m[key]) m[key] = { month: format(d, 'MMM yy'), Income: 0, Expenses: 0, ts: new Date(d.getFullYear(), d.getMonth(), 1).getTime() };
       const ct = (r.category?.type || '').toLowerCase();
       const amt = Number(r.amount) || 0;
-      if (ct === 'income') weeks[key].income += amt;
-      else if (ct === 'expense') weeks[key].expenses += amt;
-      if (ws.getTime() < minTs) minTs = ws.getTime();
-      if (ws.getTime() > maxTs) maxTs = ws.getTime();
+      if (ct === 'income') m[key].Income += amt;
+      else if (ct === 'expense') m[key].Expenses += amt;
     }
-
-    const series: { week: string; Income: number; Expenses: number; Net: number }[] = [];
-    if (isFinite(minTs) && isFinite(maxTs)) {
-      const allWeeks = eachWeekOfInterval(
-        { start: new Date(minTs), end: new Date(maxTs) },
-        { weekStartsOn: 1 },
-      );
-      let cumIncome = 0;
-      let cumExpenses = 0;
-      for (const w of allWeeks) {
-        const key = format(w, 'yyyy-MM-dd');
-        const bucket = weeks[key];
-        if (bucket) {
-          cumIncome += bucket.income;
-          cumExpenses += bucket.expenses;
-        }
-        series.push({
-          week: format(w, 'MMM d'),
-          Income: cumIncome,
-          Expenses: cumExpenses,
-          Net: cumIncome - cumExpenses,
-        });
-      }
-    }
-    return series;
-  }, [filtered]);
+    return Object.values(m).sort((x, y) => x.ts - y.ts).map((v) => ({ ...v, Net: v.Income - v.Expenses }));
+  }, [rows]);
 
   const fc = (n: number) => formatCurrencyWithSymbol(n, regionCurrency);
 
@@ -364,31 +330,29 @@ const DcgFinances: React.FC = () => {
         <HeroCard
           eyebrow={`${currentDcg.name} · Net Balance`}
           value={fc(periodSummary.net)}
-          sub={`${fc(periodSummary.income)} income · ${fc(periodSummary.expenses)} expenses · ${periodSummary.count} ${periodSummary.count === 1 ? 'record' : 'records'}`}
           ring={retainedPct}
-          ringLabel="Retained"
+          ringLabel="Of income"
         >
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => setIncomeOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary-foreground px-4 py-2 text-xs font-semibold text-primary shadow-sm transition hover:opacity-95 active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-primary-foreground px-3 py-2 text-xs font-semibold text-primary shadow-sm transition hover:opacity-95 active:scale-95"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 shrink-0" />
               Record Income
             </button>
             <button
               type="button"
               onClick={() => setExpenseOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-primary-foreground/30 bg-primary-foreground/15 px-4 py-2 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25 active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-primary-foreground/30 bg-primary-foreground/15 px-3 py-2 text-xs font-semibold text-primary-foreground backdrop-blur transition hover:bg-primary-foreground/25 active:scale-95"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-4 w-4 shrink-0" />
               Record Expense
             </button>
           </div>
         </HeroCard>
 
-        {/* Error Banner if transaction fetch failed */}
         {txError && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
             <div className="flex items-center gap-2.5 text-sm text-destructive">
@@ -401,14 +365,11 @@ const DcgFinances: React.FC = () => {
           </div>
         )}
 
-        {/* Interactive KPI Tiles */}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3">
           <RingTile
             icon={ArrowUpRight}
             label="Total Income"
             value={fc(periodSummary.income)}
-            ring={grossVolume > 0 ? (periodSummary.income / grossVolume) * 100 : 0}
-            ringLabel="Share"
             tone="var(--chart-2)"
             active={typeFilter === 'income'}
             onClick={() => {
@@ -429,25 +390,6 @@ const DcgFinances: React.FC = () => {
               setTypeFilter((prev) => (prev === 'expense' ? 'all' : 'expense'));
             }}
           />
-          <RingTile
-            icon={Wallet}
-            label="Net Balance"
-            value={fc(periodSummary.net)}
-            tone={periodSummary.net >= 0 ? 'var(--chart-1)' : 'var(--destructive)'}
-          />
-          <RingTile
-            icon={PiggyBank}
-            label="Offerings"
-            value={fc(periodSummary.offerings)}
-            ring={periodSummary.income > 0 ? (periodSummary.offerings / periodSummary.income) * 100 : 0}
-            ringLabel="Of Income"
-            tone="var(--chart-3)"
-            active={offeringsOnly}
-            onClick={() => {
-              setTypeFilter('all');
-              setOfferingsOnly((prev) => !prev);
-            }}
-          />
         </div>
 
         {/* Financial Trends Chart */}
@@ -459,7 +401,7 @@ const DcgFinances: React.FC = () => {
             </span>
           }
           action={
-            <span className="text-xs text-muted-foreground">Cumulative weekly ledger</span>
+            <span className="text-xs text-muted-foreground">Monthly income vs expenses</span>
           }
         >
           {trendData.length === 0 ? (
@@ -471,24 +413,11 @@ const DcgFinances: React.FC = () => {
           ) : (
             <div className="h-[260px] w-full sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="dcgGradIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.32} />
-                      <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="dcgGradExpenses" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-4)" stopOpacity={0.32} />
-                      <stop offset="95%" stopColor="var(--chart-4)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="dcgGradNet" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.28} />
-                      <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <ComposedChart data={trendData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                   <XAxis
-                    dataKey="week"
+                    dataKey="month"
                     tick={{ fontSize: 11, fill: 'var(--muted-foreground)' }}
                     axisLine={false}
                     tickLine={false}
@@ -503,7 +432,7 @@ const DcgFinances: React.FC = () => {
                     }
                   />
                   <Tooltip
-                    cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                    cursor={{ fill: 'var(--muted)', opacity: 0.4 }}
                     contentStyle={{
                       backgroundColor: 'var(--card)',
                       border: '1px solid var(--border)',
@@ -513,31 +442,10 @@ const DcgFinances: React.FC = () => {
                     formatter={(value, name) => [fc(Number(value)), name]}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '8px' }} />
-                  <Area
-                    type="monotone"
-                    dataKey="Income"
-                    stroke="var(--chart-2)"
-                    fill="url(#dcgGradIncome)"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Expenses"
-                    stroke="var(--chart-4)"
-                    fill="url(#dcgGradExpenses)"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="Net"
-                    stroke="var(--chart-1)"
-                    fill="url(#dcgGradNet)"
-                    strokeWidth={2.5}
-                    dot={false}
-                  />
-                </AreaChart>
+                  <Bar dataKey="Income" fill="var(--chart-2)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Bar dataKey="Expenses" fill="var(--chart-4)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+                  <Line type="monotone" dataKey="Net" stroke="var(--chart-1)" strokeWidth={2.5} dot={{ r: 3 }} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           )}
