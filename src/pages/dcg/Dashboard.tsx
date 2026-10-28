@@ -302,38 +302,6 @@ const DcgDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Group Details Card */}
-        {currentDcg && (
-          <Panel
-            title="Group Information"
-            action={<StatusPill status={(currentDcg as any).is_active !== false ? 'active' : 'inactive'} />}
-            bodyClassName="py-2"
-          >
-            <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0 lg:grid-cols-4">
-              <InfoRow icon={Users} label="Leader" value={leaderName} />
-              <InfoRow icon={MapPin} label="Location" value={(currentDcg as any).location || 'Not set'} />
-              <InfoRow
-                icon={CalendarIcon}
-                label="Meeting day"
-                value={(currentDcg as any).meeting_day || 'Not set'}
-              />
-              <InfoRow
-                icon={Clock}
-                label="Time"
-                value={formatMeetingTime((currentDcg as any).meeting_time)}
-              />
-              {(currentDcg as any).contact_phone && (
-                <InfoRow icon={Phone} label="Contact" value={(currentDcg as any).contact_phone} />
-              )}
-            </div>
-            {(currentDcg as any).description && (
-              <p className="mt-2 border-t border-border/60 pt-3 text-sm text-muted-foreground">
-                {(currentDcg as any).description}
-              </p>
-            )}
-          </Panel>
-        )}
-
         {/* Attendance Trend */}
         <Panel
           title="Attendance Trend"
@@ -453,6 +421,38 @@ const DcgDashboard: React.FC = () => {
             />
           )}
         </Panel>
+        {/* Group Details Card */}
+        {currentDcg && (
+          <Panel
+            title="Group Information"
+            action={<StatusPill status={(currentDcg as any).is_active !== false ? 'active' : 'inactive'} />}
+            bodyClassName="py-2"
+          >
+            <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:gap-x-6 sm:divide-y-0 lg:grid-cols-4">
+              <InfoRow icon={Users} label="Leader" value={leaderName} />
+              <InfoRow icon={MapPin} label="Location" value={(currentDcg as any).location || 'Not set'} />
+              <InfoRow
+                icon={CalendarIcon}
+                label="Meeting day"
+                value={(currentDcg as any).meeting_day || 'Not set'}
+              />
+              <InfoRow
+                icon={Clock}
+                label="Time"
+                value={formatMeetingTime((currentDcg as any).meeting_time)}
+              />
+              {(currentDcg as any).contact_phone && (
+                <InfoRow icon={Phone} label="Contact" value={(currentDcg as any).contact_phone} />
+              )}
+            </div>
+            {(currentDcg as any).description && (
+              <p className="mt-2 border-t border-border/60 pt-3 text-sm text-muted-foreground">
+                {(currentDcg as any).description}
+              </p>
+            )}
+          </Panel>
+        )}
+
       </div>
     </DcgAdminLayout>
   );
