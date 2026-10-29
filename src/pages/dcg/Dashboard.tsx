@@ -296,6 +296,7 @@ const DcgDashboard: React.FC = () => {
             label="Adults"
             tone="var(--chart-1)"
             total={totalAdults}
+            share={activeMembersAll.length ? (totalAdults / activeMembersAll.length) * 100 : 0}
             {...adultSplit}
             onClick={() => navigate('/dcg/members')}
           />
@@ -304,6 +305,7 @@ const DcgDashboard: React.FC = () => {
             label="Children"
             tone="var(--chart-5)"
             total={totalChildren}
+            share={activeMembersAll.length ? (totalChildren / activeMembersAll.length) * 100 : 0}
             {...childSplit}
             onClick={() => navigate('/dcg/members')}
           />
