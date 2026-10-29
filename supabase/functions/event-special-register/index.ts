@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
     // Validate event
     const { data: event, error: evErr } = await admin
       .from("events")
-      .select("id, capacity, region_id, is_special, requires_pre_registration, collect_lodging, collect_meal_preferences, collect_pledges, linked_fundraising_campaign_id")
+      .select("id, capacity, region_id, dcg_id, is_special, requires_pre_registration, collect_lodging, collect_meal_preferences, collect_pledges, fees_compulsory, linked_fundraising_campaign_id")
       .eq("id", event_id)
       .maybeSingle();
     if (evErr || !event) return json({ error: "Event not found" }, 404);
@@ -455,6 +455,12 @@ Deno.serve(async (req) => {
       if (toInsert.length) await admin.from("member_relationships").insert(toInsert);
     }
 
+    const unpaidFeesTotal = rows.reduce((s: number, r: any) => {
+      if (locked.has(r.member_id)) return s;
+      if (r.fee_is_group && !r.is_primary) return s;
+      return s + (Number(r.registration_fee_amount) || 0);
+    }, 0);
+
     return json({
       success: true,
       was_update: !!existingPrimary,
@@ -468,7 +474,14 @@ Deno.serve(async (req) => {
         amount: r.registration_fee_amount ?? 0,
       })),
       fees_currency_code: feeRows[0]?.currency_code ?? null,
-      fees_total: rows.reduce((s: number, r: any) => s + (Number(r.registration_fee_amount) || 0), 0),
+      fees_total: rows.reduce((s: number, r: any) => {
+        if (r.fee_is_group && !r.is_primary) return s;
+        return s + (Number(r.registration_fee_amount) || 0);
+      }, 0),
+      unpaid_fees_total: unpaidFeesTotal,
+      fees_compulsory: !!(event as any).fees_compulsory,
+      host_region_id: event.region_id ?? null,
+      host_dcg_id: (event as any).dcg_id ?? null,
     });
   } catch (e: any) {
     if (e instanceof RegistrationError) {

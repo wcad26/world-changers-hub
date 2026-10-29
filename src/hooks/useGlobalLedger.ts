@@ -33,7 +33,8 @@ export const useGlobalLedger = (filters: GlobalLedgerFilters) => {
         .from("financial_transactions")
         .select(
           "id, amount, description, transaction_date, dcg_id, category_id, region_id, scope, currency_code, category:financial_transaction_categories(name, type), dcg:dcgs(name), region:regions(id, name, code, currency_code)"
-        );
+        )
+        .eq("payment_status", "completed");
 
       if (filters.scope === "regional") q = q.is("dcg_id", null);
       if (filters.scope === "dcg") {

@@ -22,6 +22,8 @@ export interface RegContribution {
   category: string | null;
   fee: number; // major units, 0 if not billed on this row
   fee_status: string;
+  fee_payment_method: string | null;
+  fee_payment_reference: string | null;
   pledge: number; // major units
   group_id: string | null;
   fee_is_group: boolean;
@@ -42,7 +44,7 @@ export function useCampaignContributions(campaignId?: string) {
         ids.length
           ? supabase
               .from("event_pre_registrations")
-              .select("id, event_id, member_id, group_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, pledge_amount, pledge_status, email, phone")
+              .select("id, event_id, member_id, group_id, is_primary, created_at, registration_fee_category, registration_fee_amount, fee_status, fee_is_group, fee_payment_method, fee_payment_reference, pledge_amount, pledge_status, email, phone")
               .in("event_id", ids)
           : Promise.resolve({ data: [], error: null } as any),
         supabase.from("fundraising_pledges").select("id, amount, status, created_at").eq("campaign_id", campaignId!),
@@ -77,6 +79,8 @@ export function useCampaignContributions(campaignId?: string) {
           // registration_fee_amount is stored in minor units
           fee: billed ? Number(r.registration_fee_amount) / 100 : 0,
           fee_status: r.fee_status || "unpaid",
+          fee_payment_method: r.fee_payment_method || null,
+          fee_payment_reference: r.fee_payment_reference || null,
           // pledge_amount is stored in MAJOR units
           pledge: r.pledge_status === "cancelled" ? 0 : Number(r.pledge_amount || 0),
           group_id: r.group_id ?? null,
@@ -177,7 +181,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
     const rows = (data?.rows || []).filter((r) => inRange(r.created_at, range));
     const cps = (data?.campaignPledges || []).filter((p) => inRange(p.created_at, range));
     const feesPaid = rows.filter((r) => r.fee_status === "paid").reduce((a, r) => a + r.fee, 0);
-    const feesUnpaid = rows.filter((r) => r.fee_status === "unpaid").reduce((a, r) => a + r.fee, 0);
+    const feesUnpaid = rows.filter((r) => r.fee_status === "unpaid" || r.fee_status === "pending").reduce((a, r) => a + r.fee, 0);
     const feesWaived = rows.filter((r) => r.fee_status === "waived").reduce((a, r) => a + r.fee, 0);
     const regPledges = rows.reduce((a, r) => a + r.pledge, 0);
     const campPledges = cps.reduce((a, p) => a + p.amount, 0);
@@ -205,7 +209,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
   const base = s.rows.filter((r) => r.fee > 0 || r.pledge > 0);
   const categories = Array.from(new Set(base.map((r) => r.category).filter(Boolean) as string[])).sort();
   const list = base
-    .filter((r) => !q || `${r.name} ${r.event_name}`.toLowerCase().includes(q.toLowerCase()))
+    .filter((r) => !q || `${r.name} ${r.event_name} ${r.fee_payment_reference || ""}`.toLowerCase().includes(q.toLowerCase()))
     .filter((r) => statusFilter === "all" || (r.fee > 0 ? r.fee_status === statusFilter : false))
     .filter((r) => categoryFilter === "all" || (r.category || "") === categoryFilter)
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -230,7 +234,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Stat icon={<Wallet className="h-4 w-4" />} tone="--chart-5" label="Fees collected" value={fc(s.feesPaid)} sub="Confirmed paid fees" />
           <Stat icon={<Receipt className="h-4 w-4" />} tone="--chart-6" label="Fees expected" value={fc(s.feesExpected)} sub={`${s.feeCount} billed registration${s.feeCount === 1 ? "" : "s"}`} />
-          <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting cash deposit" />
+          <Stat icon={<Clock className="h-4 w-4" />} tone="--chart-3" label="Fees awaited" value={fc(s.feesUnpaid)} sub="Awaiting payment confirmation" />
           <Stat icon={<Users className="h-4 w-4" />} tone="--chart-1" label="No. attendees" value={`${s.attendees}`} sub="Registered for linked events" />
         </div>
       )}
@@ -246,7 +250,7 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
         </div>
         <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-5)" }} />Collected {fc(s.collected)} ({s.pctCollected.toFixed(1)}%)</span>
-          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting cash {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
+          <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "var(--chart-3)" }} />Awaiting confirmation {fc(s.pending)} ({s.pctPending.toFixed(1)}%)</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
           <Stat icon={<Target className="h-4 w-4" />} tone="--chart-1" label="Fundraising goal" value={fc(goal)} sub={`${fc(Math.max(0, goal - s.total))} still needed`} />
@@ -278,12 +282,13 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
         </CollapsibleTrigger>
         <CollapsibleContent className="px-6 pb-6 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-            <Input placeholder="Search name or event…" value={q} onChange={(e) => setQ(e.target.value)} className="sm:max-w-xs" />
+            <Input placeholder="Search name, event, or ref…" value={q} onChange={(e) => setQ(e.target.value)} className="sm:max-w-xs" />
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="sm:w-48"><SelectValue placeholder="Payment status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All payment statuses</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
+                <SelectItem value="pending">Bank pending</SelectItem>
                 <SelectItem value="unpaid">Awaiting cash</SelectItem>
                 <SelectItem value="waived">Waived</SelectItem>
               </SelectContent>
@@ -330,7 +335,21 @@ const CampaignContributionsPanel: React.FC<Props> = ({ campaignId, donationsTota
                       <TableCell className="capitalize">{r.category || "—"}{r.fee > 0 && r.fee_is_group ? <span className="ml-1 text-xs text-muted-foreground">(family)</span> : null}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.fee > 0 ? fc(r.fee) : "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.pledge > 0 ? fc(r.pledge) : "—"}</TableCell>
-                      <TableCell>{r.fee > 0 ? <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">{r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status}</Badge> : "—"}</TableCell>
+                      <TableCell>
+                        {r.fee > 0 ? (
+                          <div className="space-y-0.5">
+                            <Badge variant={r.fee_status === "paid" ? "default" : "outline"} className="capitalize">
+                              {r.fee_status === "unpaid" ? "Awaiting cash" : r.fee_status === "pending" ? "Bank pending" : r.fee_status}
+                            </Badge>
+                            {r.fee_payment_reference && (
+                              <div className="font-mono text-[10px] text-muted-foreground">
+                                {r.fee_payment_method ? `${r.fee_payment_method.replace("_", " ")} · ` : ""}
+                                {r.fee_payment_reference}
+                              </div>
+                            )}
+                          </div>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         {r.fee > 0 ? (
                           <DropdownMenu>

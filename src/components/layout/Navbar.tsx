@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Languages, Mail, Menu, Phone } from "lucide-react";
+import { ChevronDown, Heart, Languages, Mail, Menu, Phone } from "lucide-react";
 import { Link, useLocation } from "@/lib/router-compat";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -18,6 +18,7 @@ const mainLinks = [
   { to: "/about", en: "About Us", fr: "À propos" },
   { to: "/locations", en: "Locations", fr: "Emplacements" },
   { to: "/events", en: "Events", fr: "Événements" },
+  { to: "/donate", en: "Give", fr: "Donner" },
 ];
 
 const resourceLinks = [
@@ -75,6 +76,9 @@ export default function Navbar() {
             <Button variant="ghost" size="icon" asChild><a href="mailto:info@wcaglobal.org" aria-label="Email World Changers Association"><Mail /></a></Button>
           </div>
           <ThemeToggle />
+          <Button size="sm" variant="outline" asChild className="hidden sm:inline-flex gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
+            <Link to="/donate"><Heart className="h-3.5 w-3.5" />{language === "fr" ? "Donner" : "Give"}</Link>
+          </Button>
           <Button size="sm" asChild className="hidden sm:inline-flex"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
           <Sheet>
             <SheetTrigger asChild><Button variant="outline" size="icon" aria-label="Open navigation"><Menu /></Button></SheetTrigger>
@@ -130,7 +134,10 @@ export default function Navbar() {
                   {language === "fr" ? "Choisissez la langue du site" : "Choose the website language"}
                 </p>
               </div>
-              <div className="mx-4 border-t p-4">
+              <div className="mx-4 border-t p-4 space-y-2">
+                <Button asChild variant="outline" className="w-full gap-1.5 border-primary/30 text-primary">
+                  <Link to="/donate"><Heart className="h-4 w-4" />{language === "fr" ? "Donner" : "Give"}</Link>
+                </Button>
                 <Button asChild className="w-full"><Link to="/locations">{language === "fr" ? "Visitez-nous" : "Visit Us"}</Link></Button>
                 <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
                   <a href="tel:+237690634860" className="flex items-center gap-2 hover:text-primary"><Phone className="h-4 w-4" />+237 690 63 48 60</a>

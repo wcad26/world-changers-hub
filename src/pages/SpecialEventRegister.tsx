@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useParams, Link } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -110,9 +111,12 @@ const calcAge = (dob?: string | null): number | null => {
   return a;
 };
 
-type StepKey = "identify" | "onboard" | "details" | "extras" | "done";
+type StepKey = "identify" | "onboard" | "details" | "extras" | "payment" | "done";
 
 import { GlassSection, StepIndicator } from "@/components/events/EventFlowUI";
+import { UniversalCheckout } from "@/components/payments/UniversalCheckout";
+import { listPublicDestinations } from "@/lib/giving.functions";
+import { formatMajorCurrency } from "@/lib/payment-utils";
 
 
 export default function SpecialEventRegister() {
@@ -126,13 +130,13 @@ export default function SpecialEventRegister() {
     queryFn: async () => {
       let { data } = await supabase
         .from("events")
-        .select("*, fundraising_campaigns:linked_fundraising_campaign_id(id,name,goal,raised,currency_code)")
+        .select("*, dcg:dcg_id(region_id), fundraising_campaigns:linked_fundraising_campaign_id(id,name,goal,raised,currency_code)")
         .eq("slug", slug!)
         .maybeSingle();
       if (!data) {
         const { data: byId } = await supabase
           .from("events")
-          .select("*, fundraising_campaigns:linked_fundraising_campaign_id(id,name,goal,raised,currency_code)")
+          .select("*, dcg:dcg_id(region_id), fundraising_campaigns:linked_fundraising_campaign_id(id,name,goal,raised,currency_code)")
           .eq("id", slug!)
           .maybeSingle();
         data = byId;
@@ -164,12 +168,45 @@ export default function SpecialEventRegister() {
   const [wasUpdated, setWasUpdated] = useState(false);
   const [primaryEmail, setPrimaryEmail] = useState("");
   const [primaryPhone, setPrimaryPhone] = useState("");
+  const [feeCheckout, setFeeCheckout] = useState<{
+    preRegistrationIds: string[];
+    groupId: string | null;
+    amountMajor: number;
+    currency: string;
+    feesCompulsory: boolean;
+    payerName: string;
+    payerEmail: string;
+    payerPhone: string;
+  } | null>(null);
+  const [feePaidInfo, setFeePaidInfo] = useState<{ txRef: string; isBankPending?: boolean } | null>(null);
+
+  const listPublicDestFn = useServerFn(listPublicDestinations);
+  const { data: publicDest } = useQuery({
+    queryKey: ["public_payment_destinations"],
+    queryFn: () => listPublicDestFn(),
+    enabled: step === "payment" || !!(event as any)?.is_special,
+    staleTime: 2 * 60_000,
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tx_ref")) {
+      setStep("payment");
+    }
+  }, []);
 
   const campaign = (event as any)?.fundraising_campaigns ?? null;
   const ev: any = event;
 
   const eventName = (localizedField(ev?.name, ev?.name_fr) as string) || ev?.name || "";
   const eventLocation = (localizedField(ev?.location_name, ev?.location_name_fr) as string) || ev?.location_name || "";
+  const effectiveRegionId: string | null = ev?.region_id || ev?.dcg?.region_id || null;
+  const eventTenant = useMemo(() => {
+    if (!publicDest) return null;
+    if (!effectiveRegionId) return publicDest.headOffice;
+    return publicDest.regions.find((r) => r.id === effectiveRegionId) ?? null;
+  }, [publicDest, effectiveRegionId]);
 
   // --- Registration fees (categories resolved server-side) ---
   const feeAttendees = useMemo(() => {
@@ -599,14 +636,34 @@ export default function SpecialEventRegister() {
         }
         return;
       }
-      setWasUpdated(!!(data as any)?.was_update);
-      setStep("done");
-      const isUpdate = !!(data as any)?.was_update;
+      const regRes: any = data || {};
+      const isUpdate = !!regRes.was_update;
+      setWasUpdated(isUpdate);
+      const unpaidMinor = Number(regRes.unpaid_fees_total ?? 0);
+      const feeCur = (regRes.fees_currency_code || feeQuote?.currency_code || eventTenant?.currency || "XAF").toUpperCase();
+      const amountMajor = unpaidMinor / 100;
+
       toast.success(
         isUpdate
           ? t("sr_toast_updated")
-          : `${t("sr_toast_success_prefix")} ${(data as any).registered} ${t("sr_toast_success_suffix")}`
+          : `${t("sr_toast_success_prefix")} ${regRes.registered} ${t("sr_toast_success_suffix")}`
       );
+
+      if (amountMajor > 0) {
+        setFeeCheckout({
+          preRegistrationIds: Array.isArray(regRes.pre_registration_ids) ? regRes.pre_registration_ids : [],
+          groupId: regRes.group_id ?? null,
+          amountMajor,
+          currency: feeCur,
+          feesCompulsory: !!regRes.fees_compulsory || !!ev?.fees_compulsory,
+          payerName: body.primary_pledger_name || "Event Attendee",
+          payerEmail: primaryEmailVal || "",
+          payerPhone: primaryPhoneVal || "",
+        });
+        setStep("payment");
+      } else {
+        setStep("done");
+      }
     } catch (e: any) {
       toast.error(e.message || t("sr_toast_error"));
     } finally {
@@ -647,7 +704,7 @@ export default function SpecialEventRegister() {
   }
 
   const renderActions = () => {
-    if (step === "done") return null;
+    if (step === "done" || step === "payment") return null;
     const currentIdx = steps.findIndex((s) => s.key === step);
     const isLast = currentIdx === steps.length - 1;
     const isFirst = currentIdx === 0;
@@ -802,13 +859,67 @@ export default function SpecialEventRegister() {
             </div>
           </div>
 
-          {step !== "done" && (
+          {step !== "done" && step !== "payment" && (
             <div className="py-1">
               <StepIndicator step={step} steps={steps} />
             </div>
           )}
 
-          {step === "done" ? (
+          {step === "payment" ? (
+            <GlassSection
+              icon={Receipt}
+              title={language === "fr" ? "Paiement des frais d'inscription" : "Registration Fee Payment"}
+              description={
+                feeCheckout?.feesCompulsory
+                  ? language === "fr"
+                    ? "Le règlement des frais d'inscription est requis pour finaliser votre participation."
+                    : "Online payment of your registration fee is required to complete your registration."
+                  : language === "fr"
+                    ? "Réglez vos frais d'inscription maintenant en toute sécurité ou choisissez de payer sur place."
+                    : "Complete your registration fee securely online now, or choose to pay at the registration desk."
+              }
+            >
+              <div className="space-y-4">
+                {feeCheckout && (
+                  <div className="flex items-center justify-between rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                        {language === "fr" ? "Montant à régler" : "Amount due"}
+                      </p>
+                      <p className="text-sm font-medium text-foreground">{eventName}</p>
+                    </div>
+                    <span className="font-heading text-xl font-bold text-primary">
+                      {formatMajorCurrency(feeCheckout.amountMajor, feeCheckout.currency)}
+                    </span>
+                  </div>
+                )}
+
+                <UniversalCheckout
+                  context="event_fee"
+                  amount={feeCheckout?.amountMajor || (feeQuote?.total ? feeQuote.total / 100 : 0)}
+                  currency={feeCheckout?.currency || feeQuote?.currency_code || eventTenant?.currency || "XAF"}
+                  tenant={eventTenant}
+                  regionId={effectiveRegionId || "global"}
+                  dcgId={ev?.dcg_id || undefined}
+                  eventId={ev?.id}
+                  preRegistrationIds={feeCheckout?.preRegistrationIds}
+                  groupId={feeCheckout?.groupId}
+                  payer={{
+                    name: feeCheckout?.payerName,
+                    email: feeCheckout?.payerEmail,
+                    phone: feeCheckout?.payerPhone,
+                  }}
+                  redirectPath={`/events/${slug}/register`}
+                  allowPayLater={!feeCheckout?.feesCompulsory && !ev?.fees_compulsory}
+                  onSkipOrPayAtDesk={() => setStep("done")}
+                  onSuccess={(res) => {
+                    setFeePaidInfo({ txRef: res.txRef, isBankPending: res.isBankPending });
+                    setStep("done");
+                  }}
+                />
+              </div>
+            </GlassSection>
+          ) : step === "done" ? (
             <GlassSection icon={CheckCircle2} title={wasUpdated ? t("sr_done_updated_title") : t("sr_done_title")}>
               <div className="text-center space-y-4 py-4">
                 <div className="mx-auto h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -821,6 +932,17 @@ export default function SpecialEventRegister() {
                     <>{t("sr_done_body_prefix")} <strong className="text-primary">{eventName}</strong>{t("sr_done_body_suffix")}</>
                   )}
                 </p>
+                {feePaidInfo && (
+                  <div className="mx-auto max-w-md rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5 text-xs text-foreground">
+                    {feePaidInfo.isBankPending
+                      ? language === "fr"
+                        ? `Référence de virement bancaire enregistrée : ${feePaidInfo.txRef}`
+                        : `Bank transfer reference recorded: ${feePaidInfo.txRef}`
+                      : language === "fr"
+                        ? `Frais d'inscription payés — Réf : ${feePaidInfo.txRef}`
+                        : `Registration fee paid — Ref: ${feePaidInfo.txRef}`}
+                  </div>
+                )}
                 <Button asChild className="rounded-xl">
                   <Link to="/events">{t("sr_browse_other")}</Link>
                 </Button>
@@ -1309,9 +1431,13 @@ export default function SpecialEventRegister() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {language === "fr"
-                            ? "Les frais sont réglés sur place lors de l'événement."
-                            : "Fees are paid at the event registration desk."}
+                          {ev?.fees_compulsory
+                            ? language === "fr"
+                              ? "Le paiement en ligne des frais s'effectue à l'étape suivante."
+                              : "Online fee payment will be completed in the next step."
+                            : language === "fr"
+                              ? "Vous pourrez régler en ligne à l'étape suivante ou sur place lors de l'événement."
+                              : "You can pay online in the next step or at the event registration desk."}
                         </p>
                       </div>
                     </GlassSection>

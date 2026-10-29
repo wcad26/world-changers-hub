@@ -121,6 +121,7 @@ const eventSchema = z.object({
   collect_lodging: z.boolean().default(false),
   collect_meal_preferences: z.boolean().default(false),
   collect_pledges: z.boolean().default(false),
+  fees_compulsory: z.boolean().default(false),
   linked_fundraising_campaign_id: z.string().uuid().optional().or(z.literal("")),
   attendance_target: z.coerce.number().positive().int().optional(),
   slug: z.string().min(3).max(100).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Only lowercase letters, numbers, and hyphens allowed").optional().or(z.literal("")),
@@ -216,7 +217,7 @@ const SuperEvents: React.FC = () => {
     cost: 0, cost_currency_code: "",
     organizer_name: "", organizer_email: "", whatsapp_contact: "",
     is_public: true, is_featured: false, is_special: false, requires_pre_registration: false,
-    collect_lodging: false, collect_meal_preferences: false, collect_pledges: false,
+    collect_lodging: false, collect_meal_preferences: false, collect_pledges: false, fees_compulsory: false,
     linked_fundraising_campaign_id: "",
     slug: "", registration_url: "",
     testimonials: [], faqs: [], speakers: [],
@@ -537,6 +538,7 @@ const SuperEvents: React.FC = () => {
         collect_lodging: values.is_special ? !!values.collect_lodging : false,
         collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
         collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        fees_compulsory: values.is_special ? !!values.fees_compulsory : false,
         linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
@@ -623,6 +625,7 @@ const SuperEvents: React.FC = () => {
       collect_lodging: !!event.collect_lodging,
       collect_meal_preferences: !!event.collect_meal_preferences,
       collect_pledges: !!event.collect_pledges,
+      fees_compulsory: !!event.fees_compulsory,
       linked_fundraising_campaign_id: event.linked_fundraising_campaign_id || "",
       attendance_target: event.attendance_target || undefined,
       slug: event.slug || "",
@@ -719,6 +722,7 @@ const SuperEvents: React.FC = () => {
         collect_lodging: values.is_special ? !!values.collect_lodging : false,
         collect_meal_preferences: values.is_special ? !!values.collect_meal_preferences : false,
         collect_pledges: values.is_special ? !!values.collect_pledges : false,
+        fees_compulsory: values.is_special ? !!values.fees_compulsory : false,
         linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
@@ -822,6 +826,7 @@ const SuperEvents: React.FC = () => {
         collect_lodging: event.collect_lodging ?? false,
         collect_meal_preferences: event.collect_meal_preferences ?? false,
         collect_pledges: event.collect_pledges ?? false,
+        fees_compulsory: event.fees_compulsory ?? false,
         linked_fundraising_campaign_id: event.linked_fundraising_campaign_id ?? null,
         attendance_target: event.attendance_target ?? null,
         status: 'Upcoming' as const,
@@ -1506,7 +1511,7 @@ const SuperEvents: React.FC = () => {
         {formInstance.watch('is_special') && (
           <div className="border border-amber-500/30 rounded-xl p-4 bg-amber-500/5 space-y-3">
             <h4 className="text-sm font-semibold text-amber-700">Special Event Settings</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <FormField control={formInstance.control} name="collect_lodging" render={({ field }: any) => (
                 <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect lodging</FormLabel></FormItem>
               )} />
@@ -1515,6 +1520,9 @@ const SuperEvents: React.FC = () => {
               )} />
               <FormField control={formInstance.control} name="collect_pledges" render={({ field }: any) => (
                 <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Collect pledges</FormLabel></FormItem>
+              )} />
+              <FormField control={formInstance.control} name="fees_compulsory" render={({ field }: any) => (
+                <FormItem className="flex items-center gap-2 space-y-0"><FormControl><input type="checkbox" checked={!!field.value} onChange={field.onChange} className="h-4 w-4 rounded border-input" /></FormControl><FormLabel className="font-normal">Require online fee payment during registration</FormLabel></FormItem>
               )} />
             </div>
             <FormField control={formInstance.control} name="linked_fundraising_campaign_id" render={({ field }: any) => (

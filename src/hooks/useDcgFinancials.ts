@@ -63,7 +63,8 @@ export const useDcgFinancialSummary = (
       let query = supabase
         .from('financial_transactions')
         .select('amount, transaction_date, category:financial_transaction_categories(type)')
-        .eq('dcg_id', dcgId);
+        .eq('dcg_id', dcgId)
+        .eq('payment_status', 'completed');
 
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);
@@ -112,7 +113,8 @@ export const useDcgFinancialTransactions = (
           *,
           category:financial_transaction_categories(name, type)
         `)
-        .eq('dcg_id', dcgId);
+        .eq('dcg_id', dcgId)
+        .eq('payment_status', 'completed');
 
       if (filters?.from) query = query.gte('transaction_date', filters.from);
       if (filters?.to) query = query.lte('transaction_date', filters.to);

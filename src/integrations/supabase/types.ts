@@ -1070,7 +1070,10 @@ export type Database = {
           event_id: string
           fee_is_group: boolean
           fee_paid_at: string | null
+          fee_payment_method: string | null
+          fee_payment_reference: string | null
           fee_status: string
+          financial_transaction_id: string | null
           group_id: string | null
           has_children: boolean
           id: string
@@ -1097,7 +1100,10 @@ export type Database = {
           event_id: string
           fee_is_group?: boolean
           fee_paid_at?: string | null
+          fee_payment_method?: string | null
+          fee_payment_reference?: string | null
           fee_status?: string
+          financial_transaction_id?: string | null
           group_id?: string | null
           has_children?: boolean
           id?: string
@@ -1124,7 +1130,10 @@ export type Database = {
           event_id?: string
           fee_is_group?: boolean
           fee_paid_at?: string | null
+          fee_payment_method?: string | null
+          fee_payment_reference?: string | null
           fee_status?: string
+          financial_transaction_id?: string | null
           group_id?: string | null
           has_children?: boolean
           id?: string
@@ -1475,6 +1484,7 @@ export type Database = {
           end_datetime: string | null
           expectations: string | null
           expectations_fr: string | null
+          fees_compulsory: boolean
           id: string
           image_url: string | null
           image_url_fr: string | null
@@ -1522,6 +1532,7 @@ export type Database = {
           end_datetime?: string | null
           expectations?: string | null
           expectations_fr?: string | null
+          fees_compulsory?: boolean
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
@@ -1569,6 +1580,7 @@ export type Database = {
           end_datetime?: string | null
           expectations?: string | null
           expectations_fr?: string | null
+          fees_compulsory?: boolean
           id?: string
           image_url?: string | null
           image_url_fr?: string | null
@@ -1723,8 +1735,14 @@ export type Database = {
           currency_code: string
           dcg_id: string | null
           description: string | null
+          donor_email: string | null
+          donor_name: string | null
+          donor_phone: string | null
+          gateway_transaction_id: string | null
           id: string
           member_id: string | null
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
           payment_method: string | null
           payment_reference: string | null
           payment_status: string
@@ -1741,8 +1759,14 @@ export type Database = {
           currency_code: string
           dcg_id?: string | null
           description?: string | null
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           member_id?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
@@ -1759,8 +1783,14 @@ export type Database = {
           currency_code?: string
           dcg_id?: string | null
           description?: string | null
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          gateway_transaction_id?: string | null
           id?: string
           member_id?: string | null
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
@@ -2569,8 +2599,51 @@ export type Database = {
           },
         ]
       }
+      payment_webhook_events: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          flw_tx_id: string | null
+          id: string
+          processed_at: string | null
+          provider: string
+          raw_payload: Json | null
+          signature_valid: boolean
+          tenant_setting_id: string | null
+          tx_ref: string
+          verified_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          flw_tx_id?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_payload?: Json | null
+          signature_valid?: boolean
+          tenant_setting_id?: string | null
+          tx_ref: string
+          verified_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          flw_tx_id?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_payload?: Json | null
+          signature_valid?: boolean
+          tenant_setting_id?: string | null
+          tx_ref?: string
+          verified_status?: string | null
+        }
+        Relationships: []
+      }
       region_payment_settings: {
         Row: {
+          allow_central_fallback: boolean
           bank_accounts: Json
           bank_instructions: string | null
           bank_transfer_enabled: boolean
@@ -2582,12 +2655,21 @@ export type Database = {
           flutterwave_public_key: string | null
           flutterwave_secret_key: string | null
           id: string
+          last_verified_at: string | null
+          last_verified_mode: string | null
           mobile_money_enabled: boolean
+          primary_currency: string | null
+          provider: string
           region_id: string | null
+          tenant_code: string | null
+          tenant_type: string
           updated_at: string
           updated_by: string | null
+          wallet_pay_enabled: boolean
+          webhook_secret_hash: string | null
         }
         Insert: {
+          allow_central_fallback?: boolean
           bank_accounts?: Json
           bank_instructions?: string | null
           bank_transfer_enabled?: boolean
@@ -2599,12 +2681,21 @@ export type Database = {
           flutterwave_public_key?: string | null
           flutterwave_secret_key?: string | null
           id?: string
+          last_verified_at?: string | null
+          last_verified_mode?: string | null
           mobile_money_enabled?: boolean
+          primary_currency?: string | null
+          provider?: string
           region_id?: string | null
+          tenant_code?: string | null
+          tenant_type?: string
           updated_at?: string
           updated_by?: string | null
+          wallet_pay_enabled?: boolean
+          webhook_secret_hash?: string | null
         }
         Update: {
+          allow_central_fallback?: boolean
           bank_accounts?: Json
           bank_instructions?: string | null
           bank_transfer_enabled?: boolean
@@ -2616,10 +2707,18 @@ export type Database = {
           flutterwave_public_key?: string | null
           flutterwave_secret_key?: string | null
           id?: string
+          last_verified_at?: string | null
+          last_verified_mode?: string | null
           mobile_money_enabled?: boolean
+          primary_currency?: string | null
+          provider?: string
           region_id?: string | null
+          tenant_code?: string | null
+          tenant_type?: string
           updated_at?: string
           updated_by?: string | null
+          wallet_pay_enabled?: boolean
+          webhook_secret_hash?: string | null
         }
         Relationships: [
           {
@@ -4467,6 +4566,14 @@ export type Database = {
         Returns: boolean
       }
       generate_member_id: { Args: { _region_id: string }; Returns: string }
+      get_public_payment_capabilities: {
+        Args: {
+          _region_id?: string | null
+          _tenant_code?: string | null
+          _tenant_type?: string
+        }
+        Returns: Json
+      }
       get_attendance_summary: {
         Args: { p_region_id: string }
         Returns: {

@@ -9,8 +9,8 @@ export interface LedgerFilters {
   scope: LedgerScope;
   from?: Date;
   to?: Date;
-  dcgId?: string | null;        // dcg-scope only; "all" or null
-  categoryId?: string | null;   // null = all
+  dcgId?: string | null; // dcg-scope only; "all" or null
+  categoryId?: string | null; // null = all
   type?: "all" | "income" | "expense";
 }
 
@@ -37,8 +37,11 @@ export const useRegionalLedger = (filters: LedgerFilters) => {
       if (!regionId) return [];
       let q = supabase
         .from("financial_transactions")
-        .select("id, amount, description, transaction_date, dcg_id, category_id, category:financial_transaction_categories(name, type), dcg:dcgs(name)")
-        .eq("region_id", regionId);
+        .select(
+          "id, amount, description, transaction_date, dcg_id, category_id, category:financial_transaction_categories(name, type), dcg:dcgs(name)"
+        )
+        .eq("region_id", regionId)
+        .eq("payment_status", "completed");
 
       if (filters.scope === "regional") q = q.is("dcg_id", null);
       if (filters.scope === "dcg") {
@@ -55,7 +58,7 @@ export const useRegionalLedger = (filters: LedgerFilters) => {
       if (error) throw error;
       let rows = (data || []) as unknown as LedgerRow[];
       if (filters.type && filters.type !== "all") {
-        rows = rows.filter(r => r.category?.type?.toLowerCase() === filters.type);
+        rows = rows.filter((r) => r.category?.type?.toLowerCase() === filters.type);
       }
       return rows;
     },
@@ -76,8 +79,13 @@ export interface LedgerSummary {
 
 export function summarizeLedger(rows: LedgerRow[]): LedgerSummary {
   const s: LedgerSummary = {
-    total_income: 0, total_expenses: 0, net_balance: 0,
-    tithes: 0, offerings: 0, special_giving: 0, transaction_count: rows.length,
+    total_income: 0,
+    total_expenses: 0,
+    net_balance: 0,
+    tithes: 0,
+    offerings: 0,
+    special_giving: 0,
+    transaction_count: rows.length,
   };
   for (const r of rows) {
     const amt = Number(r.amount) || 0;
@@ -87,7 +95,10 @@ export function summarizeLedger(rows: LedgerRow[]): LedgerSummary {
       s.total_income += amt;
       if (cn === "Tithes") s.tithes += amt;
       else if (cn.includes("Offering")) s.offerings += amt;
-      else if (["Building Fund","Mission Fund","Youth Fund","Benevolence Fund","Special Giving"].includes(cn)) s.special_giving += amt;
+      else if (
+        ["Building Fund", "Mission Fund", "Youth Fund", "Benevolence Fund", "Special Giving"].includes(cn)
+      )
+        s.special_giving += amt;
     } else if (ct === "expense") {
       s.total_expenses += amt;
     }
@@ -111,7 +122,14 @@ export function aggregateByDcg(rows: LedgerRow[]): DcgAggRow[] {
     if (!r.dcg_id) continue;
     const key = r.dcg_id;
     if (!map.has(key)) {
-      map.set(key, { dcg_id: key, dcg_name: r.dcg?.name || "Unknown DCG", income: 0, expenses: 0, net: 0, count: 0 });
+      map.set(key, {
+        dcg_id: key,
+        dcg_name: r.dcg?.name || "Unknown DCG",
+        income: 0,
+        expenses: 0,
+        net: 0,
+        count: 0,
+      });
     }
     const row = map.get(key)!;
     const amt = Number(r.amount) || 0;

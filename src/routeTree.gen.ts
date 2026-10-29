@@ -17,6 +17,7 @@ import { Route as BlogRouteImport } from './routes/blog'
 import { Route as CounselingRouteImport } from './routes/counseling'
 import { Route as DcgRouteImport } from './routes/dcg'
 import { Route as DcgAuthRouteImport } from './routes/dcg-auth'
+import { Route as DonateRouteImport } from './routes/donate'
 import { Route as EventsRouteImport } from './routes/events'
 import { Route as FundraisingRouteImport } from './routes/fundraising'
 import { Route as LocationsRouteImport } from './routes/locations'
@@ -169,6 +170,11 @@ const DcgRoute = DcgRouteImport.update({
 const DcgAuthRoute = DcgAuthRouteImport.update({
   id: '/dcg-auth',
   path: '/dcg-auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DonateRoute = DonateRouteImport.update({
+  id: '/donate',
+  path: '/donate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventsRoute = EventsRouteImport.update({
@@ -770,6 +776,7 @@ export interface FileRoutesByFullPath {
   '/counseling': typeof CounselingRoute
   '/dcg': typeof DcgRouteWithChildren
   '/dcg-auth': typeof DcgAuthRoute
+  '/donate': typeof DonateRoute
   '/events': typeof EventsRouteWithChildren
   '/fundraising': typeof FundraisingRouteWithChildren
   '/locations': typeof LocationsRouteWithChildren
@@ -891,6 +898,7 @@ export interface FileRoutesByTo {
   '/blog': typeof BlogRoute
   '/counseling': typeof CounselingRoute
   '/dcg-auth': typeof DcgAuthRoute
+  '/donate': typeof DonateRoute
   '/media': typeof MediaRoute
   '/portal-selector': typeof PortalSelectorRoute
   '/privacy': typeof PrivacyRoute
@@ -1000,6 +1008,7 @@ export interface FileRoutesById {
   '/counseling': typeof CounselingRoute
   '/dcg': typeof DcgRouteWithChildren
   '/dcg-auth': typeof DcgAuthRoute
+  '/donate': typeof DonateRoute
   '/events': typeof EventsRouteWithChildren
   '/fundraising': typeof FundraisingRouteWithChildren
   '/locations': typeof LocationsRouteWithChildren
@@ -1125,6 +1134,7 @@ export interface FileRouteTypes {
     | '/counseling'
     | '/dcg'
     | '/dcg-auth'
+    | '/donate'
     | '/events'
     | '/fundraising'
     | '/locations'
@@ -1246,6 +1256,7 @@ export interface FileRouteTypes {
     | '/blog'
     | '/counseling'
     | '/dcg-auth'
+    | '/donate'
     | '/media'
     | '/portal-selector'
     | '/privacy'
@@ -1354,6 +1365,7 @@ export interface FileRouteTypes {
     | '/counseling'
     | '/dcg'
     | '/dcg-auth'
+    | '/donate'
     | '/events'
     | '/fundraising'
     | '/locations'
@@ -1478,6 +1490,7 @@ export interface RootRouteChildren {
   CounselingRoute: typeof CounselingRoute
   DcgRoute: typeof DcgRouteWithChildren
   DcgAuthRoute: typeof DcgAuthRoute
+  DonateRoute: typeof DonateRoute
   EventsRoute: typeof EventsRouteWithChildren
   FundraisingRoute: typeof FundraisingRouteWithChildren
   LocationsRoute: typeof LocationsRouteWithChildren
@@ -1559,6 +1572,13 @@ declare module '@tanstack/react-router' {
       path: '/dcg-auth'
       fullPath: '/dcg-auth'
       preLoaderRoute: typeof DcgAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/donate': {
+      id: '/donate'
+      path: '/donate'
+      fullPath: '/donate'
+      preLoaderRoute: typeof DonateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/events': {
@@ -2706,6 +2726,7 @@ const rootRouteChildren: RootRouteChildren = {
   CounselingRoute: CounselingRoute,
   DcgRoute: DcgRouteWithChildren,
   DcgAuthRoute: DcgAuthRoute,
+  DonateRoute: DonateRoute,
   EventsRoute: EventsRouteWithChildren,
   FundraisingRoute: FundraisingRouteWithChildren,
   LocationsRoute: LocationsRouteWithChildren,

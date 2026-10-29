@@ -45,10 +45,11 @@ export const SpecialEventSettings: React.FC<Props> = ({ form, feeRows, setFeeRow
   return (
     <div className="border border-amber-500/30 rounded-xl p-4 bg-amber-500/5 space-y-3">
       <h4 className="text-sm font-semibold text-amber-700">Special Event Settings</h4>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {checkbox('collect_lodging', 'Collect lodging')}
         {checkbox('collect_meal_preferences', 'Collect meal preferences')}
         {checkbox('collect_pledges', 'Collect pledges')}
+        {checkbox('fees_compulsory', 'Require online fee payment during registration')}
       </div>
       <FormField
         control={form.control}

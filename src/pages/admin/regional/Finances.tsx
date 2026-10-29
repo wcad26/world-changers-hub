@@ -4,8 +4,11 @@ import PeriodSelector, { type PeriodKey, resolvePeriod } from "@/components/admi
 import RegionalLedgerTab from "@/components/admin/regional/finances/RegionalLedgerTab";
 import DcgLedgerTab from "@/components/admin/regional/finances/DcgLedgerTab";
 import FundraisingLedgerTab from "@/components/admin/regional/finances/FundraisingLedgerTab";
+import PendingBankTransfersPanel from "@/components/admin/payments/PendingBankTransfersPanel";
+import { useAuth } from "@/hooks/useAuth";
 
 const RegionalFinances: React.FC = () => {
+  const { userRegion } = useAuth();
   const [period, setPeriod] = useState<PeriodKey>("3m");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
@@ -25,6 +28,8 @@ const RegionalFinances: React.FC = () => {
           onCustomRangeChange={setCustomRange}
         />
       </div>
+
+      {userRegion?.id && <PendingBankTransfersPanel scope={userRegion.id} />}
 
       <Tabs defaultValue="regional" className="space-y-6">
         <TabsList className="grid grid-cols-3 w-full max-w-xl bg-muted/40 backdrop-blur-sm rounded-xl p-1 h-auto">

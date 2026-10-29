@@ -8,20 +8,19 @@ import GlobalDcgLedgerTab from "@/components/admin/super/finances/GlobalDcgLedge
 import GlobalFundraisingTab from "@/components/admin/super/finances/GlobalFundraisingTab";
 import GlobalBooksTab from "@/components/admin/super/finances/GlobalBooksTab";
 import GlobalCampaignsTab from "@/components/admin/super/finances/GlobalCampaignsTab";
+import PendingBankTransfersPanel from "@/components/admin/payments/PendingBankTransfersPanel";
 import { useSystemSetting } from "@/hooks/useSystemSettings";
 
 const SuperFinances: React.FC = () => {
   const [period, setPeriod] = useState<PeriodKey>("3m");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [regionFilter, setRegionFilter] = useState<string>("all");
-  // Use raw query so we can distinguish "loading" from "resolved to null".
   const baseQuery = useSystemSetting<string>("base_currency");
   const resolvedBaseCode = (baseQuery.data as string | null) || null;
   const [displayCurrency, setDisplayCurrency] = useState<string>("");
   const userOverrodeRef = useRef(false);
   const range = useMemo(() => resolvePeriod(period, customRange), [period, customRange]);
 
-  // Mirror the resolved base currency until the user explicitly picks one.
   useEffect(() => {
     if (userOverrodeRef.current) return;
     if (baseQuery.isSuccess && resolvedBaseCode && resolvedBaseCode !== displayCurrency) {
@@ -54,6 +53,8 @@ const SuperFinances: React.FC = () => {
           />
         </div>
       </div>
+
+      <PendingBankTransfersPanel scope={regionFilter} />
 
       <Tabs defaultValue="global-books" className="space-y-6">
         <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full max-w-4xl bg-muted/40 backdrop-blur-sm rounded-xl p-1 h-auto">

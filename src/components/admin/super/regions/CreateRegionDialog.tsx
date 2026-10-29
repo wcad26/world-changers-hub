@@ -1,11 +1,12 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRegionMutations } from '@/hooks/useRegionMutations';
+import { useCurrencies } from '@/hooks/useCurrencies';
 import { Loader2 } from 'lucide-react';
 
 interface CreateRegionDialogProps {
@@ -14,27 +15,30 @@ interface CreateRegionDialogProps {
 }
 
 const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenChange }) => {
+  const { data: currencies } = useCurrencies();
   const [formData, setFormData] = useState({
     name: '',
     code: '',
+    currency_code: 'XAF',
     description: '',
     address: '',
     contact_phone: '',
     contact_email: '',
     regional_president: '',
-    established_date: ''
+    established_date: '',
   });
 
   const { createRegion } = useRegionMutations();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const regionData = {
       ...formData,
       code: formData.code.toUpperCase(),
+      currency_code: formData.currency_code || 'XAF',
       established_date: formData.established_date || null,
-      is_active: true
+      is_active: true,
     };
 
     createRegion.mutate(regionData, {
@@ -43,40 +47,41 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
         setFormData({
           name: '',
           code: '',
+          currency_code: 'XAF',
           description: '',
           address: '',
           contact_phone: '',
           contact_email: '',
           regional_president: '',
-          established_date: ''
+          established_date: '',
         });
-      }
+      },
     });
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Region</DialogTitle>
           <DialogDescription>
-            Add a new regional branch to the WCA network. You can assign a president after the region is created and members are registered.
+            Add a new regional branch to the WCA network. An isolated multi-tenant payment gateway profile is automatically provisioned for this region.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="name">Region Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="e.g., North America"
+                placeholder="e.g., WCA North America"
                 required
               />
             </div>
@@ -86,11 +91,40 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
                 id="code"
                 value={formData.code}
                 onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
-                placeholder="e.g., NA"
+                placeholder="e.g., WCANA"
                 maxLength={10}
                 required
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="currency_code">Default Currency *</Label>
+            <Select
+              value={formData.currency_code}
+              onValueChange={(val) => handleInputChange('currency_code', val)}
+            >
+              <SelectTrigger id="currency_code">
+                <SelectValue placeholder="Select regional currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {(currencies?.length
+                  ? currencies
+                  : [
+                      { code: 'XAF', name: 'Central African CFA Franc', symbol: 'FCFA' },
+                      { code: 'XOF', name: 'West African CFA Franc', symbol: 'CFA' },
+                      { code: 'USD', name: 'US Dollar', symbol: '$' },
+                      { code: 'CAD', name: 'Canadian Dollar', symbol: 'CA$' },
+                      { code: 'EUR', name: 'Euro', symbol: '€' },
+                      { code: 'GBP', name: 'British Pound', symbol: '£' },
+                    ]
+                ).map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.code} — {c.name} ({c.symbol})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
@@ -100,7 +134,7 @@ const CreateRegionDialog: React.FC<CreateRegionDialogProps> = ({ open, onOpenCha
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder="Brief description of the region..."
-              rows={3}
+              rows={2}
             />
           </div>
 
