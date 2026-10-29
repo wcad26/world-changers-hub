@@ -49,6 +49,35 @@ Deno.serve(async (req) => {
       dcgId: lookup.dcgId,
       tenantCode: lookup.tenantCode,
     });
+
+    // Stripe Checkout Session verification
+    if (gw.primaryProvider === "stripe" && gw.stripeSecretKey) {
+      const { data: finRow } = await admin
+        .from("financial_transactions")
+        .select("gateway_transaction_id")
+        .eq("payment_reference", txRef)
+        .maybeSingle();
+      const sessionId = finRow?.gateway_transaction_id;
+      if (sessionId && String(sessionId).startsWith("cs_")) {
+        const sRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+          headers: { Authorization: `Bearer ${gw.stripeSecretKey}` },
+        });
+        const sBody = (await sRes.json().catch(() => ({}))) as any;
+        if (sBody?.payment_status === "paid") {
+          await finalizeSuccessfulPayment(admin, lookup, {
+            gatewayTxId: sBody.payment_intent || sBody.id,
+            resolvedMethod: lookup.paymentMethod || "card",
+          });
+          return json({ status: "successful" });
+        }
+        if (sBody?.status === "expired") {
+          await finalizeFailedPayment(admin, lookup);
+          return json({ status: "failed" });
+        }
+      }
+      return json({ status: "pending" });
+    }
+
     if (!gw.secretKey) {
       return json({ status: "pending" });
     }

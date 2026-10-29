@@ -112,6 +112,7 @@ export const listGivingDestinations = createServerFn({ method: 'GET' })
         code: hoGw.tenantCode,
         name: hoGw.tenantName,
         currency: hoGw.currency,
+        primaryProvider: hoGw.primaryProvider,
         onlineReady: hoGw.onlineReady,
         mobileMoney: hoGw.mobileMoneyEnabled,
         card: hoGw.cardEnabled,
@@ -123,6 +124,7 @@ export const listGivingDestinations = createServerFn({ method: 'GET' })
         code: gw.tenantCode,
         name: gw.tenantName,
         currency: gw.currency,
+        primaryProvider: gw.primaryProvider,
         onlineReady: gw.onlineReady,
         usingCentralFallback: gw.usingCentralFallback,
         mobileMoney: gw.mobileMoneyEnabled,
@@ -160,6 +162,7 @@ export const listPublicDestinations = createServerFn({ method: 'GET' }).handler(
       code: hoGw.tenantCode,
       name: hoGw.tenantName,
       currency: hoGw.currency,
+      primaryProvider: hoGw.primaryProvider,
       onlineReady: hoGw.onlineReady,
       mobileMoney: hoGw.mobileMoneyEnabled,
       card: hoGw.cardEnabled,
@@ -171,6 +174,7 @@ export const listPublicDestinations = createServerFn({ method: 'GET' }).handler(
       code: gw.tenantCode,
       name: gw.tenantName,
       currency: gw.currency,
+      primaryProvider: gw.primaryProvider,
       onlineReady: gw.onlineReady,
       usingCentralFallback: gw.usingCentralFallback,
       mobileMoney: gw.mobileMoneyEnabled,
@@ -213,6 +217,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       executeFlwMomoCharge,
       executeFlwCardCharge,
       executeFlwWalletCheckout,
+      executeStripeCheckoutSession,
     } = await import('@/lib/payment-engine.server');
 
     const { data: member } = await supabaseAdmin
@@ -262,7 +267,7 @@ export const startGiving = createServerFn({ method: 'POST' })
         throw new Error(`Bank deposits are not yet configured for ${gw.tenantName}.`);
       }
     } else {
-      if (!gw.onlineReady || !gw.secretKey) {
+      if (!gw.onlineReady || (!gw.secretKey && !gw.stripeSecretKey)) {
         throw new Error(
           `Online payments are not yet activated for ${gw.tenantName}. Please pay via Bank Deposit or contact the regional finance team.`,
         );
@@ -270,7 +275,7 @@ export const startGiving = createServerFn({ method: 'POST' })
       if (data.method === 'mobile_money' && !gw.mobileMoneyEnabled) {
         throw new Error(`Mobile Money is not available for ${gw.tenantName} (${currency}).`);
       }
-      if (data.method === 'card' && (!gw.cardEnabled || !gw.encryptionKey)) {
+      if (data.method === 'card' && (!gw.cardEnabled || (gw.primaryProvider === 'flutterwave' && !gw.encryptionKey))) {
         throw new Error(`Card payments are not enabled for ${gw.tenantName}.`);
       }
       if (data.method === 'wallet_pay' && !gw.walletPayEnabled) {
@@ -370,6 +375,24 @@ export const startGiving = createServerFn({ method: 'POST' })
       }
     }
 
+    if (gw.primaryProvider === 'stripe' && gw.stripeSecretKey) {
+      const stripeSession = await executeStripeCheckoutSession({
+        stripeSecretKey: gw.stripeSecretKey,
+        txRef,
+        amount,
+        currency,
+        email,
+        name,
+        title: campaign ? campaign.name : data.purpose ? `WCA Store · ${data.purpose}` : `${gw.tenantName} Giving`,
+        redirectUrl,
+      });
+      await supabaseAdmin
+        .from('financial_transactions')
+        .update({ gateway_transaction_id: stripeSession.sessionId } as any)
+        .eq('payment_reference', txRef);
+      return { txRef, link: stripeSession.link, network: null, bank: null, regionName: gw.tenantName };
+    }
+
     if (data.method === 'wallet_pay') {
       const wallet = await executeFlwWalletCheckout({
         secret: gw.secretKey!,
@@ -421,7 +444,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
   .inputValidator((d) =>
     z
       .object({
-        context: z.enum(['public_giving', 'campaign_donation', 'event_fee']),
+        context: z.enum(['public_giving', 'campaign_donation', 'event_fee', 'store_order']),
         method: z.enum(['mobile_money', 'card', 'wallet_pay', 'bank_transfer']),
         amount: z.number().nonnegative().max(100_000_000).optional(),
         kind: z.enum(['tithe', 'offering', 'special']).optional(),
@@ -456,6 +479,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
       executeFlwMomoCharge,
       executeFlwCardCharge,
       executeFlwWalletCheckout,
+      executeStripeCheckoutSession,
     } = await import('@/lib/payment-engine.server');
 
     const redirectUrl = `${data.origin.replace(/\/$/, '')}${data.redirectPath || '/'}`;
@@ -521,7 +545,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
           throw new Error(`Bank deposits are not yet configured for ${gw.tenantName}.`);
         }
       } else {
-        if (!gw.onlineReady || !gw.secretKey) {
+        if (!gw.onlineReady || (!gw.secretKey && !gw.stripeSecretKey)) {
           throw new Error(
             `Online payments are not yet activated for ${gw.tenantName}. Please pay via Bank Deposit or contact the regional finance team.`,
           );
@@ -529,7 +553,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
         if (data.method === 'mobile_money' && !gw.mobileMoneyEnabled) {
           throw new Error(`Mobile Money is not available for ${gw.tenantName}.`);
         }
-        if (data.method === 'card' && (!gw.cardEnabled || !gw.encryptionKey)) {
+        if (data.method === 'card' && (!gw.cardEnabled || (gw.primaryProvider === 'flutterwave' && !gw.encryptionKey))) {
           throw new Error(`Card payments are not enabled for ${gw.tenantName}.`);
         }
         if (data.method === 'wallet_pay' && !gw.walletPayEnabled) {
@@ -607,6 +631,24 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
         }
       }
 
+      if (gw.primaryProvider === 'stripe' && gw.stripeSecretKey) {
+        const stripeSession = await executeStripeCheckoutSession({
+          stripeSecretKey: gw.stripeSecretKey,
+          txRef,
+          amount: majorAmount,
+          currency,
+          email: payerEmail,
+          name: payerName,
+          title: `${ev.name} · Registration Fee`,
+          redirectUrl,
+        });
+        await supabaseAdmin
+          .from('financial_transactions')
+          .update({ gateway_transaction_id: stripeSession.sessionId } as any)
+          .eq('id', finRow.id);
+        return { txRef, link: stripeSession.link, network: null, bank: null, regionName: gw.tenantName };
+      }
+
       if (data.method === 'wallet_pay') {
         const wallet = await executeFlwWalletCheckout({
           secret: gw.secretKey!,
@@ -672,7 +714,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
     if (data.method === 'bank_transfer') {
       if (!gw.bank) throw new Error(`Bank deposits are not yet configured for ${gw.tenantName}.`);
     } else {
-      if (!gw.onlineReady || !gw.secretKey) {
+      if (!gw.onlineReady || (!gw.secretKey && !gw.stripeSecretKey)) {
         throw new Error(
           `Online payments are not yet activated for ${gw.tenantName}. Please pay via Bank Deposit or contact the regional finance team.`,
         );
@@ -680,7 +722,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
       if (data.method === 'mobile_money' && !gw.mobileMoneyEnabled) {
         throw new Error(`Mobile Money is not available for ${gw.tenantName} (${currency}).`);
       }
-      if (data.method === 'card' && (!gw.cardEnabled || !gw.encryptionKey)) {
+      if (data.method === 'card' && (!gw.cardEnabled || (gw.primaryProvider === 'flutterwave' && !gw.encryptionKey))) {
         throw new Error(`Card payments are not enabled for ${gw.tenantName}.`);
       }
       if (data.method === 'wallet_pay' && !gw.walletPayEnabled) {
@@ -748,7 +790,7 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
     const txRef = generateTxRef({
       app: 'WCA',
       tenantCode: gw.tenantCode,
-      context: campaignRow ? 'CMP' : data.dcgId ? 'DCG' : 'GIV',
+      context: campaignRow ? 'CMP' : data.context === 'store_order' ? 'SHP' : data.dcgId ? 'DCG' : 'GIV',
     });
 
     const { data: finIns, error: finErr } = await supabaseAdmin
@@ -764,9 +806,11 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
         transaction_date: new Date().toISOString().slice(0, 10),
         description: campaignRow
           ? `${CAMPAIGN_TAG}${campaignRow.id}`
-          : data.purpose
-            ? `public:${data.purpose}`
-            : `public_${kind}`,
+          : data.context === 'store_order'
+            ? `store:${data.purpose || 'Public Store Order'}`
+            : data.purpose
+              ? `public:${data.purpose}`
+              : `public_${kind}`,
         payment_method: data.method,
         payment_reference: txRef,
         payment_status: 'pending',
@@ -818,6 +862,24 @@ export const startUniversalCheckout = createServerFn({ method: 'POST' })
         }
         throw err;
       }
+    }
+
+    if (gw.primaryProvider === 'stripe' && gw.stripeSecretKey) {
+      const stripeSession = await executeStripeCheckoutSession({
+        stripeSecretKey: gw.stripeSecretKey,
+        txRef,
+        amount: majorAmount,
+        currency,
+        email: donorEmail,
+        name: donorName,
+        title: campaignRow ? campaignRow.name : data.context === 'store_order' ? `WCA Store · ${data.purpose || 'Order'}` : `${gw.tenantName} Giving`,
+        redirectUrl,
+      });
+      await supabaseAdmin
+        .from('financial_transactions')
+        .update({ gateway_transaction_id: stripeSession.sessionId } as any)
+        .eq('id', finIns.id);
+      return { txRef, link: stripeSession.link, network: null, bank: null, regionName: gw.tenantName };
     }
 
     if (data.method === 'wallet_pay') {
@@ -1034,6 +1096,34 @@ async function pollAndVerifyTxRef(txRef: string, requiredMemberIds?: string[]) {
     dcgId: lookup.dcgId,
     tenantCode: lookup.tenantCode,
   });
+
+  if (gw.primaryProvider === 'stripe' && gw.stripeSecretKey) {
+    const { data: finRow } = await supabaseAdmin
+      .from('financial_transactions')
+      .select('gateway_transaction_id')
+      .eq('payment_reference', txRef)
+      .maybeSingle();
+    const sessionId = (finRow as any)?.gateway_transaction_id;
+    if (sessionId && String(sessionId).startsWith('cs_')) {
+      const sRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, {
+        headers: { Authorization: `Bearer ${gw.stripeSecretKey}` },
+      });
+      const sBody = (await sRes.json().catch(() => ({}))) as any;
+      if (sBody?.payment_status === 'paid') {
+        await finalizeSuccessfulPayment(supabaseAdmin, lookup, {
+          gatewayTxId: sBody.payment_intent || sBody.id,
+          resolvedMethod: lookup.paymentMethod || 'card',
+        });
+        return { status: 'successful' as const };
+      }
+      if (sBody?.status === 'expired') {
+        await finalizeFailedPayment(supabaseAdmin, lookup);
+        return { status: 'failed' as const };
+      }
+    }
+    return { status: 'pending' as const };
+  }
+
   if (!gw.secretKey) return { status: 'pending' as const };
 
   const res = await fetch(`${FLW_API}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(txRef)}`, {

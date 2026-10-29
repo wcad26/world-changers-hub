@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Copy,
   CreditCard,
+  FileText,
   Gift,
   Globe2,
   Heart,
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { PaymentReceiptDialog } from '@/components/payments/PaymentReceiptDialog';
 import {
   startGiving,
   checkGiving,
@@ -37,6 +39,7 @@ import {
   CURRENCY_PRESETS,
   detectMomo,
   formatMajorCurrency,
+  getMomoPlaceholder,
   isMomoCurrency,
   isWalletCurrency,
   type PaymentMethodId,
@@ -188,6 +191,8 @@ export function MemberGiveSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [network, setNetwork] = useState<string | null>(null);
+  const [lastTxRef, setLastTxRef] = useState<string>('');
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [bank, setBank] = useState<{ ref: string; info: BankInfo; regionName: string } | null>(null);
   const [card, setCard] = useState<CardValue>(emptyCard);
   const [cardStep, setCardStep] = useState<CardStep | null>(null);
@@ -244,6 +249,7 @@ export function MemberGiveSheet({
   };
 
   const poll = async (txRef: string) => {
+    setLastTxRef(txRef);
     const until = Date.now() + 4 * 60_000;
     while (alive.current && Date.now() < until) {
       await new Promise((r) => setTimeout(r, 5000));
@@ -625,7 +631,7 @@ export function MemberGiveSheet({
                     inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder={currency === 'XOF' ? '+225 XX XX XX XX' : '6XX XXX XXX'}
+                    placeholder={getMomoPlaceholder(currency)}
                     className="h-12 rounded-2xl pr-24"
                   />
                   {detected && (
@@ -852,16 +858,42 @@ export function MemberGiveSheet({
             <CheckCircle2 className="h-14 w-14 text-success" />
             <p className="mt-4 font-heading text-lg font-semibold">Thank you!</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Your gift of {fmt(amount)} to {activeTenant?.name || 'WCA'} was received.
+              Your {purchase ? 'order payment' : 'gift'} of {fmt(amount)} to {activeTenant?.name || 'WCA'} was received.
             </p>
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => close(false)}
-              className="mt-6 h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground"
-            >
-              Done
-            </Button>
+            {lastTxRef && (
+              <p className="mt-1 font-mono text-xs text-muted-foreground">Ref: {lastTxRef}</p>
+            )}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={() => setReceiptOpen(true)}
+                className="h-11 rounded-full gap-1.5 px-5 font-semibold"
+              >
+                <FileText className="h-4 w-4 text-primary" />
+                View & Print Receipt
+              </Button>
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => close(false)}
+                className="h-11 rounded-full bg-primary px-8 font-semibold text-primary-foreground"
+              >
+                Done
+              </Button>
+            </div>
+            <PaymentReceiptDialog
+              open={receiptOpen}
+              onOpenChange={setReceiptOpen}
+              txRef={lastTxRef}
+              amount={amount}
+              currency={currency}
+              tenantName={activeTenant?.name || 'World Changers Army'}
+              payerName={[(profile as any)?.last_name, (profile as any)?.first_name].filter(Boolean).join(' ') || undefined}
+              payerEmail={(profile as any)?.email || undefined}
+              paymentMethod={method}
+              purpose={purchase?.title || campaign?.name || kind}
+            />
           </div>
         )}
 

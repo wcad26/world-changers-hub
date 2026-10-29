@@ -9,6 +9,7 @@ import {
   executeFlwCardCharge,
   executeFlwMomoCharge,
   executeFlwWalletCheckout,
+  executeStripeCheckoutSession,
   lookupPendingTransaction,
   finalizeFailedPayment,
   supportsMobileMoneyCurrency,
@@ -425,7 +426,7 @@ Deno.serve(async (req) => {
           }, 400);
         }
       } else {
-        if (!gw.onlineReady || !gw.secretKey) {
+        if (!gw.onlineReady || (!gw.secretKey && !gw.stripeSecretKey)) {
           return json({
             error: `Online payments are not yet activated for ${gw.tenantName}. Please pay via Bank Deposit or contact the regional finance team.`,
           }, 400);
@@ -433,7 +434,7 @@ Deno.serve(async (req) => {
         if (method === "mobile_money" && !gw.mobileMoneyEnabled) {
           return json({ error: `Mobile Money is not enabled for ${gw.tenantName}.` }, 400);
         }
-        if (method === "card" && (!gw.cardEnabled || !gw.encryptionKey)) {
+        if (method === "card" && (!gw.cardEnabled || (gw.primaryProvider === "flutterwave" && !gw.encryptionKey))) {
           return json({ error: `Card payments are not enabled for ${gw.tenantName}.` }, 400);
         }
         if (method === "wallet_pay" && !gw.walletPayEnabled) {
@@ -520,6 +521,21 @@ Deno.serve(async (req) => {
         }
       }
 
+      if (gw.primaryProvider === "stripe" && gw.stripeSecretKey) {
+        const stripeSession = await executeStripeCheckoutSession({
+          stripeSecretKey: gw.stripeSecretKey,
+          txRef,
+          amount: majorAmount,
+          currency,
+          email: payerEmail,
+          name: payerName,
+          title: `${ev.name} · Registration Fee`,
+          redirectUrl: `${origin}${redirectPath}`,
+        });
+        await admin.from("financial_transactions").update({ gateway_transaction_id: stripeSession.sessionId }).eq("id", finRow.id);
+        return json({ txRef, link: stripeSession.link, regionName: gw.tenantName });
+      }
+
       if (method === "wallet_pay") {
         const wallet = await executeFlwWalletCheckout({
           secret: gw.secretKey!,
@@ -601,7 +617,7 @@ Deno.serve(async (req) => {
       if (method === "mobile_money" && (!gw.mobileMoneyEnabled || !supportsMobileMoneyCurrency(currency))) {
         return json({ error: `Mobile Money is not available for ${gw.tenantName} (${currency}).` }, 400);
       }
-      if (method === "card" && (!gw.cardEnabled || !gw.encryptionKey)) {
+      if (method === "card" && (!gw.cardEnabled || (gw.primaryProvider === "flutterwave" && !gw.encryptionKey))) {
         return json({ error: `Card payments are not enabled for ${gw.tenantName}.` }, 400);
       }
       if (method === "wallet_pay" && !gw.walletPayEnabled) {
@@ -675,7 +691,7 @@ Deno.serve(async (req) => {
     const txRef = generateTxRef({
       app: "WCA",
       tenantCode: gw.tenantCode,
-      context: campaignRow ? "CMP" : targetDcgId ? "DCG" : "GIV",
+      context: campaignRow ? "CMP" : paymentContext === "store_order" ? "SHP" : targetDcgId ? "DCG" : "GIV",
     });
 
     const { data: finIns, error: finErr } = await admin
@@ -691,9 +707,11 @@ Deno.serve(async (req) => {
         transaction_date: new Date().toISOString().slice(0, 10),
         description: campaignRow
           ? `campaign:${campaignRow.id}`
-          : body?.purpose
-            ? String(body.purpose).slice(0, 160)
-            : `public_${kind}`,
+          : paymentContext === "store_order"
+            ? `store:${String(body?.purpose || "Order").slice(0, 150)}`
+            : body?.purpose
+              ? String(body.purpose).slice(0, 160)
+              : `public_${kind}`,
         payment_method: method,
         payment_reference: txRef,
         payment_status: "pending",
@@ -753,6 +771,21 @@ Deno.serve(async (req) => {
         }
         return json({ error: err.message }, 400);
       }
+    }
+
+    if (gw.primaryProvider === "stripe" && gw.stripeSecretKey) {
+      const stripeSession = await executeStripeCheckoutSession({
+        stripeSecretKey: gw.stripeSecretKey,
+        txRef,
+        amount: majorAmount,
+        currency,
+        email: donorEmail,
+        name: donorName,
+        title: campaignRow ? campaignRow.name : `${gw.tenantName} Giving`,
+        redirectUrl: `${origin}${redirectPath}`,
+      });
+      await admin.from("financial_transactions").update({ gateway_transaction_id: stripeSession.sessionId }).eq("id", finIns.id);
+      return json({ txRef, link: stripeSession.link, regionName: gw.tenantName });
     }
 
     if (method === "wallet_pay") {

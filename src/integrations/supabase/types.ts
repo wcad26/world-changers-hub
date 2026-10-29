@@ -1649,41 +1649,59 @@ export type Database = {
       exchange_rates: {
         Row: {
           ask: number
+          auto_sync: boolean
           base_code: string
           bid: number
+          buy_spread_pct: number
           created_at: string
           created_by: string | null
           effective_at: string
           id: string
           is_active: boolean
+          last_api_fetch_at: string | null
           mid: number | null
           quote_code: string
+          sell_spread_pct: number
+          spot_price: number | null
+          spread_mode: string
           updated_at: string
         }
         Insert: {
           ask: number
+          auto_sync?: boolean
           base_code: string
           bid: number
+          buy_spread_pct?: number
           created_at?: string
           created_by?: string | null
           effective_at?: string
           id?: string
           is_active?: boolean
+          last_api_fetch_at?: string | null
           mid?: number | null
           quote_code: string
+          sell_spread_pct?: number
+          spot_price?: number | null
+          spread_mode?: string
           updated_at?: string
         }
         Update: {
           ask?: number
+          auto_sync?: boolean
           base_code?: string
           bid?: number
+          buy_spread_pct?: number
           created_at?: string
           created_by?: string | null
           effective_at?: string
           id?: string
           is_active?: boolean
+          last_api_fetch_at?: string | null
           mid?: number | null
           quote_code?: string
+          sell_spread_pct?: number
+          spot_price?: number | null
+          spread_mode?: string
           updated_at?: string
         }
         Relationships: [
@@ -1746,7 +1764,12 @@ export type Database = {
           payment_method: string | null
           payment_reference: string | null
           payment_status: string
+          receipt_sent_at: string | null
           recorded_by: string | null
+          refund_reason: string | null
+          refund_reference: string | null
+          refunded_at: string | null
+          refunded_by: string | null
           region_id: string | null
           scope: string
           transaction_date: string
@@ -1770,7 +1793,12 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
+          receipt_sent_at?: string | null
           recorded_by?: string | null
+          refund_reason?: string | null
+          refund_reference?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           region_id?: string | null
           scope?: string
           transaction_date?: string
@@ -1794,7 +1822,12 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
+          receipt_sent_at?: string | null
           recorded_by?: string | null
+          refund_reason?: string | null
+          refund_reference?: string | null
+          refunded_at?: string | null
+          refunded_by?: string | null
           region_id?: string | null
           scope?: string
           transaction_date?: string
@@ -2659,8 +2692,14 @@ export type Database = {
           last_verified_mode: string | null
           mobile_money_enabled: boolean
           primary_currency: string | null
+          primary_provider: string
           provider: string
           region_id: string | null
+          stripe_enabled: boolean
+          stripe_mode: string
+          stripe_publishable_key: string | null
+          stripe_secret_key: string | null
+          stripe_webhook_secret: string | null
           tenant_code: string | null
           tenant_type: string
           updated_at: string
@@ -2685,8 +2724,14 @@ export type Database = {
           last_verified_mode?: string | null
           mobile_money_enabled?: boolean
           primary_currency?: string | null
+          primary_provider?: string
           provider?: string
           region_id?: string | null
+          stripe_enabled?: boolean
+          stripe_mode?: string
+          stripe_publishable_key?: string | null
+          stripe_secret_key?: string | null
+          stripe_webhook_secret?: string | null
           tenant_code?: string | null
           tenant_type?: string
           updated_at?: string
@@ -2711,8 +2756,14 @@ export type Database = {
           last_verified_mode?: string | null
           mobile_money_enabled?: boolean
           primary_currency?: string | null
+          primary_provider?: string
           provider?: string
           region_id?: string | null
+          stripe_enabled?: boolean
+          stripe_mode?: string
+          stripe_publishable_key?: string | null
+          stripe_secret_key?: string | null
+          stripe_webhook_secret?: string | null
           tenant_code?: string | null
           tenant_type?: string
           updated_at?: string

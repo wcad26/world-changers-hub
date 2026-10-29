@@ -116,16 +116,22 @@ export const listPaymentGatewayStatus = createServerFn({ method: 'GET' })
     const defaultWcbn = wcbnRows.find((r) => r.tenant_code === 'WCBN-GEN') ?? null;
 
     const status = (r: any) => {
-      const mode: 'test' | 'live' = r?.flutterwave_mode === 'test' ? 'test' : 'live';
-      const ownGateway = !!(
+      const primaryProvider = r?.primary_provider === 'stripe' ? 'stripe' : 'flutterwave';
+      const flwMode: 'test' | 'live' = r?.flutterwave_mode === 'test' ? 'test' : 'live';
+      const stripeMode: 'test' | 'live' = r?.stripe_mode === 'test' ? 'test' : 'live';
+      const flwOk = !!(
         r?.flutterwave_enabled &&
         r?.flutterwave_secret_key &&
-        keyMatchesEnvironment(r.flutterwave_secret_key, mode)
+        keyMatchesEnvironment(r.flutterwave_secret_key, flwMode)
       );
+      const stripeOk = !!(r?.stripe_enabled && r?.stripe_secret_key);
+      const ownGateway = primaryProvider === 'stripe' ? stripeOk : flwOk;
+      const mode = primaryProvider === 'stripe' ? stripeMode : flwMode;
       const bankAccounts = Array.isArray(r?.bank_accounts) ? r.bank_accounts : [];
       const bank = !!(r?.bank_transfer_enabled && bankAccounts.length > 0);
       return {
         ownGateway,
+        primaryProvider,
         mode: ownGateway ? mode : null,
         bank,
         allowCentralFallback: !!r?.allow_central_fallback,
@@ -201,15 +207,21 @@ export const getPaymentSettings = createServerFn({ method: 'POST' })
       tenant_type: parsed.tenantType,
       tenant_code: tenantCode,
       primary_currency: primaryCurrency,
+      primary_provider: (row?.primary_provider === 'stripe' ? 'stripe' : 'flutterwave') as 'flutterwave' | 'stripe',
       allow_central_fallback: !!row?.allow_central_fallback,
       flutterwave_enabled: !!row?.flutterwave_enabled,
       flutterwave_mode: (row?.flutterwave_mode === 'test' ? 'test' : 'live') as 'test' | 'live',
       flutterwave_public_key: row?.flutterwave_public_key ?? '',
       secret_key_hint: mask(row?.flutterwave_secret_key),
       encryption_key_hint: mask(row?.flutterwave_encryption_key),
+      stripe_enabled: !!row?.stripe_enabled,
+      stripe_mode: (row?.stripe_mode === 'test' ? 'test' : 'live') as 'test' | 'live',
+      stripe_publishable_key: row?.stripe_publishable_key ?? '',
+      stripe_secret_key_hint: mask(row?.stripe_secret_key),
+      stripe_webhook_secret_hint: mask(row?.stripe_webhook_secret),
       webhook_secret_hash: webhookSecretHash ?? generateWebhookSecretHash(),
       webhook_url: SUPABASE_WEBHOOK_URL,
-      mobile_money_enabled: row ? !!row.mobile_money_enabled : ['XAF', 'XOF'].includes(primaryCurrency),
+      mobile_money_enabled: row ? !!row.mobile_money_enabled : ['XAF', 'XOF', 'GHS', 'KES', 'RWF', 'UGX'].includes(primaryCurrency),
       card_enabled: row ? !!row.card_enabled : true,
       wallet_pay_enabled: row ? !!row.wallet_pay_enabled : ['USD', 'EUR', 'GBP', 'CAD'].includes(primaryCurrency),
       bank_transfer_enabled: !!row?.bank_transfer_enabled,
@@ -228,12 +240,18 @@ export const savePaymentSettings = createServerFn({ method: 'POST' })
       .object({
         scope: z.string().min(1),
         primary_currency: z.string().min(3).max(6).optional(),
+        primary_provider: z.enum(['flutterwave', 'stripe']).optional(),
         allow_central_fallback: z.boolean().optional(),
         flutterwave_enabled: z.boolean(),
         flutterwave_mode: z.enum(['test', 'live']),
         flutterwave_public_key: z.string().max(200),
         secret_key: z.string().max(200).optional(),
         encryption_key: z.string().max(200).optional(),
+        stripe_enabled: z.boolean().optional(),
+        stripe_mode: z.enum(['test', 'live']).optional(),
+        stripe_publishable_key: z.string().max(200).optional(),
+        stripe_secret_key: z.string().max(200).optional(),
+        stripe_webhook_secret: z.string().max(200).optional(),
         webhook_secret_hash: z.string().min(8).max(160).optional(),
         mobile_money_enabled: z.boolean(),
         card_enabled: z.boolean(),
@@ -255,9 +273,15 @@ export const savePaymentSettings = createServerFn({ method: 'POST' })
     const nextSecret = data.secret_key?.trim() || existing?.flutterwave_secret_key || null;
     const nextPublic = data.flutterwave_public_key.trim() || null;
     const nextEnc = data.encryption_key?.trim() || existing?.flutterwave_encryption_key || null;
+    const nextStripeSecret = data.stripe_secret_key?.trim() || existing?.stripe_secret_key || null;
+    const nextStripePublic = data.stripe_publishable_key?.trim() || existing?.stripe_publishable_key || null;
+    const primaryProvider = data.primary_provider || existing?.primary_provider || 'flutterwave';
 
-    if (data.flutterwave_enabled && !nextSecret) {
+    if (primaryProvider === 'flutterwave' && data.flutterwave_enabled && !nextSecret) {
       throw new Error('Add the Flutterwave Secret Key before activating online payments.');
+    }
+    if (primaryProvider === 'stripe' && data.stripe_enabled && !nextStripeSecret) {
+      throw new Error('Add the Stripe Secret Key (sk_live_... or sk_test_...) before activating Stripe online payments.');
     }
     if (nextSecret && !keyMatchesEnvironment(nextSecret, data.flutterwave_mode)) {
       throw new Error(
@@ -273,7 +297,7 @@ export const savePaymentSettings = createServerFn({ method: 'POST' })
           : 'You selected Test mode, but entered a LIVE public key.',
       );
     }
-    if (data.flutterwave_enabled && data.card_enabled && !nextEnc) {
+    if (primaryProvider === 'flutterwave' && data.flutterwave_enabled && data.card_enabled && !nextEnc) {
       throw new Error('Add the Flutterwave Encryption Key to enable direct Card payments (or turn Card off).');
     }
 
@@ -293,9 +317,13 @@ export const savePaymentSettings = createServerFn({ method: 'POST' })
       tenant_type: parsed.tenantType,
       tenant_code: existing?.tenant_code || regionCode || 'HO',
       primary_currency: regionCurrency || existing?.primary_currency || 'XAF',
+      primary_provider: primaryProvider,
       flutterwave_enabled: data.flutterwave_enabled,
       flutterwave_mode: data.flutterwave_mode,
       flutterwave_public_key: nextPublic,
+      stripe_enabled: !!data.stripe_enabled,
+      stripe_mode: data.stripe_mode || 'live',
+      stripe_publishable_key: nextStripePublic,
       mobile_money_enabled: data.mobile_money_enabled,
       card_enabled: data.card_enabled,
       wallet_pay_enabled: !!data.wallet_pay_enabled,
@@ -314,6 +342,8 @@ export const savePaymentSettings = createServerFn({ method: 'POST' })
 
     if (data.secret_key?.trim()) patch.flutterwave_secret_key = data.secret_key.trim();
     if (data.encryption_key?.trim()) patch.flutterwave_encryption_key = data.encryption_key.trim();
+    if (data.stripe_secret_key?.trim()) patch.stripe_secret_key = data.stripe_secret_key.trim();
+    if (data.stripe_webhook_secret?.trim()) patch.stripe_webhook_secret = data.stripe_webhook_secret.trim();
 
     const res = existing
       ? await (supabaseAdmin as any).from('region_payment_settings').update(patch).eq('id', existing.id)
@@ -335,8 +365,10 @@ export const testPaymentGatewayConnection = createServerFn({ method: 'POST' })
     z
       .object({
         scope: z.string().min(1),
+        provider: z.enum(['flutterwave', 'stripe']).optional(),
         mode: z.enum(['test', 'live']),
         secret_key: z.string().max(200).optional(),
+        stripe_secret_key: z.string().max(200).optional(),
       })
       .parse(d),
   )
@@ -346,6 +378,40 @@ export const testPaymentGatewayConnection = createServerFn({ method: 'POST' })
     await assertCanManage(context.supabase, supabaseAdmin, context.userId, data.scope);
 
     const existing = await fetchScopeRow(supabaseAdmin, data.scope);
+    const provider = data.provider || existing?.primary_provider || 'flutterwave';
+
+    if (provider === 'stripe') {
+      const stripeKey = data.stripe_secret_key?.trim() || existing?.stripe_secret_key;
+      if (!stripeKey) {
+        throw new Error('Enter or save your Stripe Secret Key first before testing the connection.');
+      }
+      const res = await fetch('https://api.stripe.com/v1/balance', {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${stripeKey}` },
+      });
+      const body = (await res.json().catch(() => ({}))) as any;
+      if (!res.ok || body.error) {
+        throw new Error(body.error?.message || 'Stripe rejected this Secret Key. Please check the key and try again.');
+      }
+      const avail = Array.isArray(body.available)
+        ? body.available.map((w: any) => String(w.currency || '').toUpperCase()).filter(Boolean)
+        : [];
+      const verifiedAt = new Date().toISOString();
+      if (existing?.id) {
+        await (supabaseAdmin as any)
+          .from('region_payment_settings')
+          .update({ last_verified_at: verifiedAt, last_verified_mode: data.mode })
+          .eq('id', existing.id);
+      }
+      return {
+        ok: true,
+        mode: data.mode,
+        verified_at: verifiedAt,
+        currencies: avail.slice(0, 8),
+        message: `Stripe Connected (${data.mode.toUpperCase()}) · ${avail.length ? `Currencies: ${avail.join(', ')}` : 'Account verified'}`,
+      };
+    }
+
     const keyToTest = data.secret_key?.trim() || existing?.flutterwave_secret_key;
     if (!keyToTest) {
       throw new Error('Enter or save your Flutterwave Secret Key first before testing the connection.');
@@ -387,6 +453,139 @@ export const testPaymentGatewayConnection = createServerFn({ method: 'POST' })
       verified_at: verifiedAt,
       currencies: wallets.slice(0, 8),
       message: `Connected (${data.mode.toUpperCase()}) · ${wallets.length ? `Active wallets: ${wallets.slice(0, 5).join(', ')}` : 'Merchant account verified'}`,
+    };
+  });
+
+/**
+ * Pings the live Supabase Edge Function `flutterwave-webhook` with `action: 'webhook_ping'`
+ * and the tenant's `verif-hash` header to verify public reachability & hash matching.
+ */
+export const testWebhookEndpoint = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        scope: z.string().min(1),
+        webhook_secret_hash: z.string().optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { SUPABASE_WEBHOOK_URL } = await import('@/lib/payment-engine.server');
+    await assertCanManage(context.supabase, supabaseAdmin, context.userId, data.scope);
+
+    const parsed = parseScope(data.scope);
+    const existing = await fetchScopeRow(supabaseAdmin, data.scope);
+    const hashToTest = (data.webhook_secret_hash?.trim() || existing?.webhook_secret_hash || '').trim();
+
+    if (!hashToTest) {
+      throw new Error('Save your payment settings first so a Webhook Secret Hash is stored for this tenant.');
+    }
+
+    const res = await fetch(SUPABASE_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'verif-hash': hashToTest,
+      },
+      body: JSON.stringify({
+        action: 'webhook_ping',
+        tenant_type: parsed.tenantType,
+        region_id: parsed.regionId,
+        tenant_code: existing?.tenant_code || parsed.tenantCode || 'HO',
+      }),
+    });
+
+    const body = (await res.json().catch(() => ({}))) as any;
+    if (!res.ok || !body?.ok) {
+      throw new Error(body?.error || `Webhook endpoint returned HTTP ${res.status}. Save settings and try again.`);
+    }
+
+    return {
+      ok: true,
+      tenant_name: body.tenant_name || 'Tenant',
+      message: body.message || 'Webhook endpoint is live and verified.',
+    };
+  });
+
+/**
+ * Executes a full gateway refund (for online Flutterwave/Stripe payments) or ledger reversal
+ * (for manual/bank transfer entries) and atomically updates linked campaign/event records.
+ */
+export const refundPaymentTransaction = createServerFn({ method: 'POST' })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) =>
+    z
+      .object({
+        transactionId: z.string().uuid(),
+        reason: z.string().min(3, 'Please provide a brief reason for this refund/reversal.').max(400),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const { executeGatewayRefund } = await import('@/lib/payment-engine.server');
+
+    const { data: tx, error: txErr } = await (supabaseAdmin as any)
+      .from('financial_transactions')
+      .select('*')
+      .eq('id', data.transactionId)
+      .maybeSingle();
+
+    if (txErr || !tx) {
+      throw new Error('Financial transaction was not found.');
+    }
+    if (tx.payment_status === 'refunded') {
+      throw new Error('This transaction has already been refunded.');
+    }
+
+    const scopeToCheck = tx.region_id ?? GLOBAL;
+    await assertCanManage(context.supabase, supabaseAdmin, context.userId, scopeToCheck, 'finances_edit');
+
+    let refundReference = `REV-${Date.now().toString(36).toUpperCase()}`;
+    const isOnlineGatewayMethod = ['mobile_money', 'card', 'wallet_pay'].includes(String(tx.payment_method || ''));
+
+    if (isOnlineGatewayMethod && (tx.gateway_transaction_id || tx.payment_reference)) {
+      const gwRefund = await executeGatewayRefund(supabaseAdmin, tx, data.reason);
+      if (gwRefund.refundReference) {
+        refundReference = gwRefund.refundReference;
+      }
+    }
+
+    const refundedAt = new Date().toISOString();
+    const { error: updErr } = await (supabaseAdmin as any)
+      .from('financial_transactions')
+      .update({
+        payment_status: 'refunded',
+        refunded_at: refundedAt,
+        refunded_by: context.userId,
+        refund_reason: data.reason.trim(),
+        refund_reference: refundReference,
+      })
+      .eq('id', tx.id);
+
+    if (updErr) {
+      throw new Error(updErr.message || 'Failed to mark transaction as refunded.');
+    }
+
+    // Sync linked campaign donations or event pre-registrations
+    if (tx.payment_reference) {
+      await supabaseAdmin
+        .from('fundraising_donations')
+        .update({ status: 'refunded' } as any)
+        .eq('message', tx.payment_reference);
+
+      await supabaseAdmin
+        .from('event_pre_registrations')
+        .update({ fee_status: 'unpaid' } as any)
+        .eq('fee_payment_reference', tx.payment_reference);
+    }
+
+    return {
+      ok: true,
+      refundReference,
+      refundedAt,
     };
   });
 

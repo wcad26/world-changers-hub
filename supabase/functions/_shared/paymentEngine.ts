@@ -1,8 +1,10 @@
 import CryptoJS from "npm:crypto-js@4.2.0";
 
 export const FLW_API = "https://api.flutterwave.com/v3";
+export const STRIPE_API = "https://api.stripe.com/v1";
 
 export type TenantType = "wca_region" | "head_office" | "wcbn_chapter";
+export type GatewayProvider = "flutterwave" | "stripe";
 export type PaymentMethod = "mobile_money" | "card" | "wallet_pay" | "bank_transfer";
 export type TxContextCode = "EVT" | "GIV" | "CMP" | "SHP" | "DCG" | "INV" | "MEM";
 
@@ -22,12 +24,18 @@ export interface ResolvedTenantGateway {
   tenantCode: string;
   tenantName: string;
   currency: string;
+  primaryProvider: GatewayProvider;
   mode: "test" | "live";
   onlineReady: boolean;
   usingCentralFallback: boolean;
   publicKey: string | null;
   secretKey: string | null;
   encryptionKey: string | null;
+  stripeEnabled: boolean;
+  stripeMode: "test" | "live";
+  stripePublishableKey: string | null;
+  stripeSecretKey: string | null;
+  stripeWebhookSecret: string | null;
   webhookSecretHash: string | null;
   mobileMoneyEnabled: boolean;
   cardEnabled: boolean;
@@ -61,10 +69,10 @@ export type CardStep = {
   message?: string;
 };
 
-/** Currencies supporting Francophone Mobile Money on Flutterwave. */
+/** Currencies supporting African Mobile Money on Flutterwave (CEMAC, UEMOA, Ghana, Kenya, Rwanda, Uganda). */
 export function supportsMobileMoneyCurrency(currency: string): boolean {
   const c = (currency || "").toUpperCase();
-  return c === "XAF" || c === "XOF";
+  return ["XAF", "XOF", "GHS", "KES", "RWF", "UGX"].includes(c);
 }
 
 /** Currencies with zero decimal subdivisions in standard display/charges. */
@@ -73,7 +81,7 @@ export function isZeroDecimalCurrency(currency: string): boolean {
   return c === "XAF" || c === "XOF" || c === "RWF" || c === "UGX" || c === "JPY";
 }
 
-/** Normalizes a major-unit amount safely for Flutterwave charges & financial_transactions. */
+/** Normalizes a major-unit amount safely for Flutterwave/Stripe charges & financial_transactions. */
 export function normalizeMajorAmount(amount: number, currency: string): number {
   if (!Number.isFinite(amount) || amount <= 0) return 0;
   return isZeroDecimalCurrency(currency)
@@ -98,6 +106,17 @@ export function keyMatchesEnvironment(key: string | null | undefined, mode: "tes
   const hasTestTag = /_TEST[-_]/i.test(k) || k.startsWith("FLWSECK_TEST") || k.startsWith("FLWPUBK_TEST");
   if (mode === "live" && hasTestTag) return false;
   if (mode === "test" && (k.startsWith("FLWSECK-") || k.startsWith("FLWPUBK-")) && !hasTestTag) return false;
+  return true;
+}
+
+/** Validates that a Stripe key matches the selected test/live environment. */
+export function stripeKeyMatchesEnvironment(key: string | null | undefined, mode: "test" | "live"): boolean {
+  if (!key || !key.trim()) return false;
+  const k = key.trim();
+  const isTest = k.startsWith("sk_test_") || k.startsWith("pk_test_") || k.startsWith("rk_test_");
+  const isLive = k.startsWith("sk_live_") || k.startsWith("pk_live_") || k.startsWith("rk_live_");
+  if (mode === "live" && isTest) return false;
+  if (mode === "test" && isLive) return false;
   return true;
 }
 
@@ -132,23 +151,28 @@ export function generateTxRef(opts: {
 }
 
 /**
- * Normalizes XAF / XOF Mobile Money numbers and detects country + network.
- * Defaults to Cameroon (237, CM) for 9-digit local XAF numbers while supporting
- * international prefixes across XAF & XOF countries.
+ * Normalizes Mobile Money numbers across African currencies (XAF, XOF, GHS, KES, RWF, UGX)
+ * and resolves the exact Flutterwave charge endpoint type + country + network.
  */
 export function detectFrancophoneMomo(raw: string, currency = "XAF"): {
   valid: boolean;
   local: string;
   international: string;
   country: string;
-  network?: "MTN" | "ORANGE" | "WAVE" | "MOOV";
+  flwChargeType:
+    | "mobile_money_franco"
+    | "mobile_money_ghana"
+    | "mpesa"
+    | "mobile_money_rwanda"
+    | "mobile_money_uganda";
+  network?: "MTN" | "ORANGE" | "VODAFONE" | "AIRTELTIGO" | "MPESA" | "AIRTEL" | "WAVE" | "MOOV";
 } {
   let d = (raw || "").replace(/\D/g, "");
   if (d.startsWith("00")) d = d.slice(2);
 
   const cur = currency.toUpperCase();
 
-  // Cameroon (XAF) — 237 + 9 digits
+  // 1. Cameroon & CEMAC (XAF) — 237 + 9 digits
   if (cur === "XAF") {
     if (d.startsWith("237") && d.length === 12) d = d.slice(3);
     if (d.length === 9 && d.startsWith("6")) {
@@ -165,10 +189,10 @@ export function detectFrancophoneMomo(raw: string, currency = "XAF"): {
         local: d,
         international: `237${d}`,
         country: "CM",
+        flwChargeType: "mobile_money_franco",
         network,
       };
     }
-    // Central African international numbers (Gabon 241, Chad 235, Congo 242)
     const xafCountries: Record<string, string> = { "241": "GA", "235": "TD", "242": "CG" };
     for (const [dial, iso] of Object.entries(xafCountries)) {
       if (d.startsWith(dial) && d.length >= 11) {
@@ -177,14 +201,21 @@ export function detectFrancophoneMomo(raw: string, currency = "XAF"): {
           local: d.slice(dial.length),
           international: d,
           country: iso,
+          flwChargeType: "mobile_money_franco",
           network: "MTN",
         };
       }
     }
-    return { valid: false, local: d, international: d, country: "CM" };
+    return {
+      valid: false,
+      local: d,
+      international: d,
+      country: "CM",
+      flwChargeType: "mobile_money_franco",
+    };
   }
 
-  // Francophone West Africa (XOF)
+  // 2. Francophone West Africa (XOF)
   if (cur === "XOF") {
     const xofCountries: Record<string, string> = {
       "225": "CI",
@@ -201,32 +232,189 @@ export function detectFrancophoneMomo(raw: string, currency = "XAF"): {
           local: d.slice(dial.length),
           international: d,
           country: iso,
+          flwChargeType: "mobile_money_franco",
           network: "MTN",
         };
       }
     }
-    // Local 8-10 digit XOF fallback (default Côte d'Ivoire / Senegal)
     if (d.length >= 8 && d.length <= 10) {
       return {
         valid: true,
         local: d,
         international: `225${d}`,
         country: "CI",
+        flwChargeType: "mobile_money_franco",
         network: "MTN",
       };
     }
+    return {
+      valid: false,
+      local: d,
+      international: d,
+      country: "CI",
+      flwChargeType: "mobile_money_franco",
+    };
   }
 
-  return { valid: false, local: d, international: d, country: "CM" };
+  // 3. Ghana (GHS - +233: MTN, Vodafone/Telecel, AirtelTigo)
+  if (cur === "GHS") {
+    if (d.startsWith("233") && d.length >= 12) d = d.slice(3);
+    if (d.startsWith("0") && d.length === 10) d = d.slice(1);
+    const p2 = d.slice(0, 2);
+    let network: "MTN" | "VODAFONE" | "AIRTELTIGO" = "MTN";
+    if (["24", "54", "55", "59", "25", "53"].includes(p2)) {
+      network = "MTN";
+    } else if (["20", "50"].includes(p2)) {
+      network = "VODAFONE";
+    } else if (["26", "27", "56", "57"].includes(p2)) {
+      network = "AIRTELTIGO";
+    }
+    return {
+      valid: d.length === 9,
+      local: `0${d}`,
+      international: `233${d}`,
+      country: "GH",
+      flwChargeType: "mobile_money_ghana",
+      network,
+    };
+  }
+
+  // 4. Kenya (KES - +254: Safaricom M-Pesa, Airtel Money)
+  if (cur === "KES") {
+    if (d.startsWith("254") && d.length >= 12) d = d.slice(3);
+    if (d.startsWith("0") && d.length === 10) d = d.slice(1);
+    return {
+      valid: d.length === 9 && (d.startsWith("7") || d.startsWith("1")),
+      local: `0${d}`,
+      international: `254${d}`,
+      country: "KE",
+      flwChargeType: "mpesa",
+      network: "MPESA",
+    };
+  }
+
+  // 5. Rwanda (RWF - +250: MTN, Airtel)
+  if (cur === "RWF") {
+    if (d.startsWith("250") && d.length >= 12) d = d.slice(3);
+    if (d.startsWith("0") && d.length === 10) d = d.slice(1);
+    const p2 = d.slice(0, 2);
+    const network: "MTN" | "AIRTEL" = ["72", "73"].includes(p2) ? "AIRTEL" : "MTN";
+    return {
+      valid: d.length === 9 && d.startsWith("7"),
+      local: `0${d}`,
+      international: `250${d}`,
+      country: "RW",
+      flwChargeType: "mobile_money_rwanda",
+      network,
+    };
+  }
+
+  // 6. Uganda (UGX - +256: MTN, Airtel)
+  if (cur === "UGX") {
+    if (d.startsWith("256") && d.length >= 12) d = d.slice(3);
+    if (d.startsWith("0") && d.length === 10) d = d.slice(1);
+    const p2 = d.slice(0, 2);
+    const network: "MTN" | "AIRTEL" = ["70", "74", "75"].includes(p2) ? "AIRTEL" : "MTN";
+    return {
+      valid: d.length === 9 && d.startsWith("7"),
+      local: `0${d}`,
+      international: `256${d}`,
+      country: "UG",
+      flwChargeType: "mobile_money_uganda",
+      network,
+    };
+  }
+
+  return {
+    valid: false,
+    local: d,
+    international: d,
+    country: "CM",
+    flwChargeType: "mobile_money_franco",
+  };
+}
+
+function buildTenantResolution(
+  row: any,
+  opts: {
+    tenantType: TenantType;
+    regionId: string | null;
+    dcgId: string | null;
+    tenantCode: string;
+    tenantName: string;
+    currency: string;
+    usingCentralFallback: boolean;
+    bankSourceRow?: any;
+  },
+): ResolvedTenantGateway {
+  const flwMode: "test" | "live" = row?.flutterwave_mode === "test" ? "test" : "live";
+  const flwReady = !!(
+    row?.flutterwave_enabled &&
+    row?.flutterwave_secret_key &&
+    keyMatchesEnvironment(row.flutterwave_secret_key, flwMode)
+  );
+
+  const stpMode: "test" | "live" = row?.stripe_mode === "test" ? "test" : "live";
+  const stpReady = !!(
+    row?.stripe_enabled &&
+    row?.stripe_secret_key &&
+    stripeKeyMatchesEnvironment(row.stripe_secret_key, stpMode)
+  );
+
+  const onlineReady = flwReady || stpReady;
+  const preferred: GatewayProvider = row?.primary_provider === "stripe" ? "stripe" : "flutterwave";
+  const primaryProvider: GatewayProvider =
+    preferred === "stripe" && stpReady
+      ? "stripe"
+      : flwReady
+        ? "flutterwave"
+        : stpReady
+          ? "stripe"
+          : preferred;
+
+  const bankRow = opts.bankSourceRow ?? row;
+  const accounts: BankAccountInfo[] = Array.isArray(bankRow?.bank_accounts)
+    ? bankRow.bank_accounts
+    : [];
+  const bankReady = !!(bankRow?.bank_transfer_enabled && accounts.length > 0);
+
+  return {
+    settingId: row?.id ?? bankRow?.id ?? null,
+    tenantType: opts.tenantType,
+    regionId: opts.regionId,
+    dcgId: opts.dcgId,
+    tenantCode: opts.tenantCode,
+    tenantName: opts.tenantName,
+    currency: opts.currency,
+    primaryProvider,
+    mode: primaryProvider === "stripe" ? stpMode : flwMode,
+    onlineReady,
+    usingCentralFallback: opts.usingCentralFallback,
+    publicKey: flwReady ? row?.flutterwave_public_key ?? null : null,
+    secretKey: flwReady ? row?.flutterwave_secret_key ?? null : null,
+    encryptionKey: flwReady ? row?.flutterwave_encryption_key ?? null : null,
+    stripeEnabled: stpReady,
+    stripeMode: stpMode,
+    stripePublishableKey: stpReady ? row?.stripe_publishable_key ?? null : null,
+    stripeSecretKey: stpReady ? row?.stripe_secret_key ?? null : null,
+    stripeWebhookSecret: row?.stripe_webhook_secret ?? null,
+    webhookSecretHash: row?.webhook_secret_hash ?? bankRow?.webhook_secret_hash ?? null,
+    mobileMoneyEnabled:
+      flwReady && supportsMobileMoneyCurrency(opts.currency) && !!row?.mobile_money_enabled,
+    cardEnabled:
+      onlineReady &&
+      !!row?.card_enabled &&
+      ((flwReady && !!row?.flutterwave_encryption_key) || stpReady),
+    walletPayEnabled:
+      onlineReady && !supportsMobileMoneyCurrency(opts.currency) && !!row?.wallet_pay_enabled,
+    bankTransferEnabled: bankReady,
+    bank: bankReady ? { accounts, instructions: bankRow?.bank_instructions ?? "" } : null,
+  };
 }
 
 /**
  * Strictly resolves the destination payment tenant without silent cross-region
  * or silent Head Office fund contamination.
- * - DCGs automatically inherit their parent region's gateway (dcgs.region_id).
- * - Unconfigured regions NEVER fall back to Head Office unless Super Admin explicitly
- *   enabled allow_central_fallback = true.
- * - Bank accounts NEVER fall back across regions or to Head Office.
  */
 export async function resolveTenantGateway(
   admin: any,
@@ -240,7 +428,6 @@ export async function resolveTenantGateway(
   let regionId = input.regionId ?? null;
   const dcgId = input.dcgId ?? null;
 
-  // DCG Inheritance: every DCG automatically uses its parent Region's payment gateway
   if (dcgId && !regionId) {
     const { data: dcg } = await admin
       .from("dcgs")
@@ -269,37 +456,16 @@ export async function resolveTenantGateway(
       .eq("tenant_code", code)
       .maybeSingle();
 
-    const mode: "test" | "live" = row?.flutterwave_mode === "test" ? "test" : "live";
     const currency = (row?.primary_currency || "XAF").toUpperCase();
-    const onlineReady = !!(
-      row?.flutterwave_enabled &&
-      row?.flutterwave_secret_key &&
-      keyMatchesEnvironment(row.flutterwave_secret_key, mode)
-    );
-    const accounts: BankAccountInfo[] = Array.isArray(row?.bank_accounts) ? row.bank_accounts : [];
-    const bankReady = !!(row?.bank_transfer_enabled && accounts.length > 0);
-
-    return {
-      settingId: row?.id ?? null,
+    return buildTenantResolution(row, {
       tenantType: "wcbn_chapter",
       regionId: null,
       dcgId: null,
       tenantCode: code,
       tenantName: code === "WCBN-GEN" ? "WCBN Connect" : `WCBN (${code})`,
       currency,
-      mode,
-      onlineReady,
       usingCentralFallback: false,
-      publicKey: onlineReady ? row?.flutterwave_public_key ?? null : null,
-      secretKey: onlineReady ? row?.flutterwave_secret_key ?? null : null,
-      encryptionKey: onlineReady ? row?.flutterwave_encryption_key ?? null : null,
-      webhookSecretHash: row?.webhook_secret_hash ?? null,
-      mobileMoneyEnabled: onlineReady && supportsMobileMoneyCurrency(currency) && !!row?.mobile_money_enabled,
-      cardEnabled: onlineReady && !!row?.card_enabled && !!row?.flutterwave_encryption_key,
-      walletPayEnabled: onlineReady && !supportsMobileMoneyCurrency(currency) && !!row?.wallet_pay_enabled,
-      bankTransferEnabled: bankReady,
-      bank: bankReady ? { accounts, instructions: row?.bank_instructions ?? "" } : null,
-    };
+    });
   }
 
   // 2. Head Office (Global / Inter-regional Scope)
@@ -311,47 +477,22 @@ export async function resolveTenantGateway(
       .neq("tenant_type", "wcbn_chapter")
       .maybeSingle();
 
-    const mode: "test" | "live" = ho?.flutterwave_mode === "test" ? "test" : "live";
     const currency = (ho?.primary_currency || "XAF").toUpperCase();
-    const onlineReady = !!(
-      ho?.flutterwave_enabled &&
-      ho?.flutterwave_secret_key &&
-      keyMatchesEnvironment(ho.flutterwave_secret_key, mode)
-    );
-    const accounts: BankAccountInfo[] = Array.isArray(ho?.bank_accounts) ? ho.bank_accounts : [];
-    const bankReady = !!(ho?.bank_transfer_enabled && accounts.length > 0);
-
-    return {
-      settingId: ho?.id ?? null,
+    return buildTenantResolution(ho, {
       tenantType: "head_office",
       regionId: null,
       dcgId: null,
       tenantCode: ho?.tenant_code || "HO",
       tenantName: "WCA Head Office",
       currency,
-      mode,
-      onlineReady,
       usingCentralFallback: false,
-      publicKey: onlineReady ? ho?.flutterwave_public_key ?? null : null,
-      secretKey: onlineReady ? ho?.flutterwave_secret_key ?? null : null,
-      encryptionKey: onlineReady ? ho?.flutterwave_encryption_key ?? null : null,
-      webhookSecretHash: ho?.webhook_secret_hash ?? null,
-      mobileMoneyEnabled: onlineReady && supportsMobileMoneyCurrency(currency) && !!ho?.mobile_money_enabled,
-      cardEnabled: onlineReady && !!ho?.card_enabled && !!ho?.flutterwave_encryption_key,
-      walletPayEnabled: onlineReady && !supportsMobileMoneyCurrency(currency) && !!ho?.wallet_pay_enabled,
-      bankTransferEnabled: bankReady,
-      bank: bankReady ? { accounts, instructions: ho?.bank_instructions ?? "" } : null,
-    };
+    });
   }
 
   // 3. WCA Regional Tenant (Strict Isolation)
   const [{ data: region }, { data: own }] = await Promise.all([
     admin.from("regions").select("id, name, code, currency_code").eq("id", regionId).maybeSingle(),
-    admin
-      .from("region_payment_settings")
-      .select("*")
-      .eq("region_id", regionId)
-      .maybeSingle(),
+    admin.from("region_payment_settings").select("*").eq("region_id", regionId).maybeSingle(),
   ]);
 
   if (!region) {
@@ -359,17 +500,23 @@ export async function resolveTenantGateway(
   }
 
   const currency = (region.currency_code || own?.primary_currency || "XAF").toUpperCase();
-  const ownMode: "test" | "live" = own?.flutterwave_mode === "test" ? "test" : "live";
-  const ownReady = !!(
+  const ownFlwMode: "test" | "live" = own?.flutterwave_mode === "test" ? "test" : "live";
+  const ownFlwReady = !!(
     own?.flutterwave_enabled &&
     own?.flutterwave_secret_key &&
-    keyMatchesEnvironment(own.flutterwave_secret_key, ownMode)
+    keyMatchesEnvironment(own.flutterwave_secret_key, ownFlwMode)
   );
+  const ownStpMode: "test" | "live" = own?.stripe_mode === "test" ? "test" : "live";
+  const ownStpReady = !!(
+    own?.stripe_enabled &&
+    own?.stripe_secret_key &&
+    stripeKeyMatchesEnvironment(own.stripe_secret_key, ownStpMode)
+  );
+  const ownReady = ownFlwReady || ownStpReady;
 
   let activeGw = ownReady ? own : null;
   let usingCentralFallback = false;
 
-  // Only allow Head Office fallback if Super Admin explicitly authorized allow_central_fallback = true
   if (!ownReady && own?.allow_central_fallback === true) {
     const { data: ho } = await admin
       .from("region_payment_settings")
@@ -377,41 +524,31 @@ export async function resolveTenantGateway(
       .is("region_id", null)
       .neq("tenant_type", "wcbn_chapter")
       .maybeSingle();
-    const hoMode: "test" | "live" = ho?.flutterwave_mode === "test" ? "test" : "live";
-    if (ho?.flutterwave_enabled && ho?.flutterwave_secret_key && keyMatchesEnvironment(ho.flutterwave_secret_key, hoMode)) {
+    const hoFlwMode: "test" | "live" = ho?.flutterwave_mode === "test" ? "test" : "live";
+    const hoStpMode: "test" | "live" = ho?.stripe_mode === "test" ? "test" : "live";
+    const hoReady =
+      (ho?.flutterwave_enabled &&
+        ho?.flutterwave_secret_key &&
+        keyMatchesEnvironment(ho.flutterwave_secret_key, hoFlwMode)) ||
+      (ho?.stripe_enabled &&
+        ho?.stripe_secret_key &&
+        stripeKeyMatchesEnvironment(ho.stripe_secret_key, hoStpMode));
+    if (hoReady) {
       activeGw = ho;
       usingCentralFallback = true;
     }
   }
 
-  const activeMode: "test" | "live" = activeGw?.flutterwave_mode === "test" ? "test" : ownMode;
-  const onlineReady = !!activeGw;
-
-  // Strict Money Isolation: Bank Accounts NEVER fall back to Head Office or another region
-  const ownAccounts: BankAccountInfo[] = Array.isArray(own?.bank_accounts) ? own.bank_accounts : [];
-  const bankReady = !!(own?.bank_transfer_enabled && ownAccounts.length > 0);
-
-  return {
-    settingId: activeGw?.id ?? own?.id ?? null,
+  return buildTenantResolution(activeGw ?? own, {
     tenantType: "wca_region",
     regionId: region.id,
     dcgId,
     tenantCode: (own?.tenant_code || region.code || "REG").toUpperCase(),
     tenantName: region.name,
     currency,
-    mode: activeMode,
-    onlineReady,
     usingCentralFallback,
-    publicKey: onlineReady ? activeGw.flutterwave_public_key ?? null : null,
-    secretKey: onlineReady ? activeGw.flutterwave_secret_key ?? null : null,
-    encryptionKey: onlineReady ? activeGw.flutterwave_encryption_key ?? null : null,
-    webhookSecretHash: activeGw?.webhook_secret_hash ?? own?.webhook_secret_hash ?? null,
-    mobileMoneyEnabled: onlineReady && supportsMobileMoneyCurrency(currency) && !!activeGw.mobile_money_enabled,
-    cardEnabled: onlineReady && !!activeGw.card_enabled && !!activeGw.flutterwave_encryption_key,
-    walletPayEnabled: onlineReady && !supportsMobileMoneyCurrency(currency) && !!activeGw.wallet_pay_enabled,
-    bankTransferEnabled: bankReady,
-    bank: bankReady ? { accounts: ownAccounts, instructions: own?.bank_instructions ?? "" } : null,
-  };
+    bankSourceRow: own,
+  });
 }
 
 /** Executes a 3DES-encrypted direct card charge against Flutterwave /v3/charges?type=card. */
@@ -510,7 +647,55 @@ export async function executeFlwWalletCheckout(opts: {
   return { link: body.data.link as string };
 }
 
-/** Initiates a Francophone Mobile Money push charge on Flutterwave. */
+/** Creates a native Stripe Checkout Session for Western regions (supports Cards, Apple Pay, Google Pay). */
+export async function executeStripeCheckoutSession(opts: {
+  stripeSecretKey: string;
+  txRef: string;
+  amount: number;
+  currency: string;
+  email: string;
+  name: string;
+  title: string;
+  redirectUrl: string;
+}): Promise<{ link: string; sessionId: string }> {
+  const cur = opts.currency.toLowerCase();
+  const unitAmount = isZeroDecimalCurrency(opts.currency)
+    ? Math.round(opts.amount)
+    : Math.round(opts.amount * 100);
+
+  const sep = opts.redirectUrl.includes("?") ? "&" : "?";
+  const successUrl = `${opts.redirectUrl}${sep}tx_ref=${encodeURIComponent(opts.txRef)}&status=successful`;
+  const cancelUrl = `${opts.redirectUrl}${sep}tx_ref=${encodeURIComponent(opts.txRef)}&status=cancelled`;
+
+  const params = new URLSearchParams();
+  params.set("mode", "payment");
+  params.set("client_reference_id", opts.txRef);
+  params.set("customer_email", opts.email);
+  params.set("success_url", successUrl);
+  params.set("cancel_url", cancelUrl);
+  params.set("line_items[0][quantity]", "1");
+  params.set("line_items[0][price_data][currency]", cur);
+  params.set("line_items[0][price_data][unit_amount]", String(unitAmount));
+  params.set("line_items[0][price_data][product_data][name]", opts.title || "World Changers Association");
+  params.set("metadata[tx_ref]", opts.txRef);
+  params.set("metadata[payer_name]", opts.name);
+
+  const res = await fetch(`${STRIPE_API}/checkout/sessions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${opts.stripeSecretKey}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: params.toString(),
+  });
+  const body = (await res.json().catch(() => ({}))) as any;
+  if (!res.ok || !body?.url) {
+    throw new Error(body?.error?.message || "Could not start Stripe checkout session.");
+  }
+  return { link: body.url as string, sessionId: body.id as string };
+}
+
+/** Initiates an African Mobile Money push charge on Flutterwave (XAF, XOF, GHS, KES, RWF, UGX). */
 export async function executeFlwMomoCharge(opts: {
   secret: string;
   txRef: string;
@@ -521,17 +706,24 @@ export async function executeFlwMomoCharge(opts: {
   name: string;
 }): Promise<{ link: string | null; network: string }> {
   if (!supportsMobileMoneyCurrency(opts.currency)) {
-    throw new Error(`Mobile Money is not available for ${opts.currency}. Please pay by card or bank transfer.`);
+    throw new Error(
+      `Mobile Money is not available for ${opts.currency}. Please pay by card or bank transfer.`
+    );
   }
   const momo = detectFrancophoneMomo(opts.phoneRaw, opts.currency);
   if (!momo.valid) {
-    throw new Error(
-      opts.currency === "XAF"
-        ? "Please enter a valid MTN or Orange Mobile Money number."
-        : "Please enter a valid XOF Mobile Money number (with country code if outside Côte d'Ivoire).",
-    );
+    const hints: Record<string, string> = {
+      XAF: "Please enter a valid 9-digit MTN or Orange Mobile Money number.",
+      XOF: "Please enter a valid XOF Mobile Money number (with country code if outside Côte d'Ivoire).",
+      GHS: "Please enter a valid 10-digit Ghana Mobile Money number (MTN, Telecel/Vodafone, or AirtelTigo).",
+      KES: "Please enter a valid Safaricom M-Pesa number (e.g. 0712 345 678).",
+      RWF: "Please enter a valid Rwanda MTN or Airtel Mobile Money number.",
+      UGX: "Please enter a valid Uganda MTN or Airtel Mobile Money number.",
+    };
+    throw new Error(hints[opts.currency.toUpperCase()] || "Please enter a valid Mobile Money number.");
   }
-  const res = await fetch(`${FLW_API}/charges?type=mobile_money_franco`, {
+
+  const res = await fetch(`${FLW_API}/charges?type=${momo.flwChargeType}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${opts.secret}`,
@@ -582,7 +774,6 @@ export async function lookupPendingTransaction(
   const ref = (txRef || "").trim();
   if (!ref) return null;
 
-  // 1. Check WCBN payments first if prefixed with WCBN-
   if (ref.toUpperCase().startsWith("WCBN-")) {
     const parts = ref.toUpperCase().split("-");
     const parsedChapter = parts.length >= 3 ? `WCBN-${parts[1]}` : "WCBN-GEN";
@@ -609,7 +800,6 @@ export async function lookupPendingTransaction(
     }
   }
 
-  // 2. Check WCA financial_transactions (covers Member Giving, Visitor Giving, Campaigns, Event Fees, Store, DCG)
   const { data: fRow } = await admin
     .from("financial_transactions")
     .select("id, amount, currency_code, region_id, dcg_id, payment_status, payment_method")
@@ -632,7 +822,6 @@ export async function lookupPendingTransaction(
     };
   }
 
-  // 3. Fallback check on wcbn_payments even if non-prefixed reference
   const { data: wFallback } = await admin
     .from("wcbn_payments")
     .select("id, invoice_id, amount, currency_code, method, status, reference")
@@ -659,11 +848,117 @@ export async function lookupPendingTransaction(
 }
 
 /**
+ * Dispatches an automated branded HTML payment receipt email via Resend when a WCA payment completes.
+ */
+export async function sendPaymentReceiptEmail(admin: any, transactionId: string): Promise<void> {
+  try {
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendKey) return;
+
+    const { data: tx } = await admin
+      .from("financial_transactions")
+      .select(
+        "id, amount, currency_code, description, payment_reference, payment_method, transaction_date, donor_name, donor_email, receipt_sent_at, member_id, region:regions(name), category:financial_transaction_categories(name)"
+      )
+      .eq("id", transactionId)
+      .maybeSingle();
+
+    if (!tx || tx.receipt_sent_at) return;
+
+    let recipientEmail = (tx.donor_email || "").trim();
+    let recipientName = (tx.donor_name || "").trim();
+
+    if ((!recipientEmail || recipientEmail.endsWith("@worldchangers.org")) && tx.member_id) {
+      const { data: mem } = await admin
+        .from("members")
+        .select("email, family_name, other_names")
+        .eq("id", tx.member_id)
+        .maybeSingle();
+      if (mem?.email) recipientEmail = mem.email.trim();
+      if (!recipientName && mem) {
+        recipientName = [mem.other_names, mem.family_name].filter(Boolean).join(" ").trim();
+      }
+    }
+
+    if (!recipientEmail || recipientEmail.endsWith("@worldchangers.org")) return;
+
+    const regionName = tx.region?.name || "WCA Head Office";
+    const purpose = tx.description || tx.category?.name || "Contribution";
+    const formattedAmt = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: isZeroDecimalCurrency(tx.currency_code) ? 0 : 2,
+      maximumFractionDigits: isZeroDecimalCurrency(tx.currency_code) ? 0 : 2,
+    }).format(Number(tx.amount) || 0);
+    const methodLabel = String(tx.payment_method || "Online Payment").replace(/_/g, " ").toUpperCase();
+
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background: #ffffff;">
+        <div style="background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%); padding: 28px 24px; color: #ffffff; text-align: center;">
+          <p style="margin: 0; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.85;">Official Payment Receipt</p>
+          <h1 style="margin: 6px 0 4px; font-size: 22px; font-weight: 700;">World Changers Association</h1>
+          <p style="margin: 0; font-size: 13px; opacity: 0.9;">${regionName}</p>
+        </div>
+        <div style="padding: 24px;">
+          <p style="margin: 0 0 16px; color: #374151; font-size: 14px;">Dear <strong>${recipientName || "Supporter"}</strong>,</p>
+          <p style="margin: 0 0 20px; color: #4b5563; font-size: 14px; line-height: 1.5;">Thank you for your payment. Your transaction has been verified and recorded in the <strong>${regionName}</strong> ledger.</p>
+          <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Amount Paid</span>
+              <strong style="color: #111827; font-size: 16px;">${formattedAmt} ${tx.currency_code}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Purpose</span>
+              <span style="color: #111827; font-size: 13px; font-weight: 600;">${purpose}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Reference</span>
+              <span style="color: #111827; font-size: 12px; font-family: monospace;">${tx.payment_reference || tx.id}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+              <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Channel</span>
+              <span style="color: #111827; font-size: 12px;">${methodLabel}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+              <span style="color: #6b7280; font-size: 12px; text-transform: uppercase;">Date</span>
+              <span style="color: #111827; font-size: 12px;">${tx.transaction_date}</span>
+            </div>
+          </div>
+          <p style="margin: 0; color: #9ca3af; font-size: 11px; text-align: center;">Keep this receipt for your records · World Changers Association (${regionName})</p>
+        </div>
+      </div>
+    `;
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "World Changers Association <noreply@wcaglobal.org>",
+        to: [recipientEmail],
+        subject: `Payment Receipt · ${formattedAmt} ${tx.currency_code} (${tx.payment_reference || "WCA"})`,
+        html,
+      }),
+    });
+
+    if (res.ok) {
+      await admin
+        .from("financial_transactions")
+        .update({ receipt_sent_at: new Date().toISOString() })
+        .eq("id", transactionId);
+    }
+  } catch (err) {
+    console.warn("Receipt email dispatch skipped:", err);
+  }
+}
+
+/**
  * Atomically & idempotently marks a verified transaction as completed across:
  * - WCA financial_transactions
- * - Linked fundraising_donations (matched by message = txRef)
- * - Linked event_pre_registrations (matched by fee_payment_reference = txRef or financial_transaction_id)
+ * - Linked fundraising_donations
+ * - Linked event_pre_registrations
  * - OR WCBN wcbn_payments + wcbn_confirm_payment RPC
+ * And dispatches the branded donor email receipt via Resend.
  */
 export async function finalizeSuccessfulPayment(
   admin: any,
@@ -694,7 +989,6 @@ export async function finalizeSuccessfulPayment(
     return;
   }
 
-  // WCA Ledger completion (idempotent)
   const patch: Record<string, unknown> = {
     payment_status: "completed",
   };
@@ -711,14 +1005,12 @@ export async function finalizeSuccessfulPayment(
     .eq("id", lookup.id)
     .neq("payment_status", "completed");
 
-  // Sync linked fundraising campaign donation (if any)
   await admin
     .from("fundraising_donations")
     .update({ status: "completed" })
     .eq("message", lookup.txRef)
     .eq("status", "pending");
 
-  // Sync linked special/DCG event pre-registrations (all attendees in the registration group)
   await admin
     .from("event_pre_registrations")
     .update({
@@ -729,6 +1021,8 @@ export async function finalizeSuccessfulPayment(
     })
     .eq("fee_payment_reference", lookup.txRef)
     .neq("fee_status", "paid");
+
+  await sendPaymentReceiptEmail(admin, lookup.id);
 }
 
 /** Atomically marks a declined/cancelled payment as failed across linked records. */
@@ -757,7 +1051,6 @@ export async function finalizeFailedPayment(
     .eq("message", lookup.txRef)
     .eq("status", "pending");
 
-  // Keep event_pre_registrations as 'unpaid' if an online attempt failed so attendee can retry
   await admin
     .from("event_pre_registrations")
     .update({ fee_status: "unpaid" })

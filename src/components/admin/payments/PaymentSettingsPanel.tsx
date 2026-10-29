@@ -34,6 +34,7 @@ import {
   getPaymentSettings,
   savePaymentSettings,
   testPaymentGatewayConnection,
+  testWebhookEndpoint,
 } from '@/lib/payment-settings.functions';
 import { isMomoCurrency, isWalletCurrency } from '@/lib/payment-utils';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,7 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
   const load = useServerFn(getPaymentSettings);
   const save = useServerFn(savePaymentSettings);
   const testConn = useServerFn(testPaymentGatewayConnection);
+  const testWebhook = useServerFn(testWebhookEndpoint);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['payment_settings', scope],
@@ -72,11 +74,17 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
   });
 
   const [form, setForm] = useState({
+    primary_provider: 'flutterwave' as 'flutterwave' | 'stripe',
     flutterwave_enabled: false,
     flutterwave_mode: 'live' as 'test' | 'live',
     flutterwave_public_key: '',
     secret_key: '',
     encryption_key: '',
+    stripe_enabled: false,
+    stripe_mode: 'live' as 'test' | 'live',
+    stripe_publishable_key: '',
+    stripe_secret_key: '',
+    stripe_webhook_secret: '',
     webhook_secret_hash: '',
     allow_central_fallback: false,
     mobile_money_enabled: true,
@@ -88,18 +96,26 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
   const [banks, setBanks] = useState<Bank[]>([]);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingWebhook, setTestingWebhook] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [webhookTestResult, setWebhookTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showHash, setShowHash] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
     setForm({
+      primary_provider: data.primary_provider || 'flutterwave',
       flutterwave_enabled: data.flutterwave_enabled,
       flutterwave_mode: data.flutterwave_mode,
       flutterwave_public_key: data.flutterwave_public_key,
       secret_key: '',
       encryption_key: '',
+      stripe_enabled: !!data.stripe_enabled,
+      stripe_mode: data.stripe_mode || 'live',
+      stripe_publishable_key: data.stripe_publishable_key || '',
+      stripe_secret_key: '',
+      stripe_webhook_secret: '',
       webhook_secret_hash: data.webhook_secret_hash || '',
       allow_central_fallback: data.allow_central_fallback,
       mobile_money_enabled: data.mobile_money_enabled,
@@ -110,6 +126,7 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
     });
     setBanks(data.bank_accounts.map((b) => ({ ...emptyBank, ...b })));
     setTestResult(null);
+    setWebhookTestResult(null);
   }, [data]);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
@@ -129,8 +146,10 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
       const res = await testConn({
         data: {
           scope,
-          mode: form.flutterwave_mode,
+          provider: form.primary_provider,
+          mode: form.primary_provider === 'stripe' ? form.stripe_mode : form.flutterwave_mode,
           secret_key: form.secret_key.trim() || undefined,
+          stripe_secret_key: form.stripe_secret_key.trim() || undefined,
         },
       });
       setTestResult({ ok: true, message: res.message });
@@ -146,6 +165,27 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
     }
   };
 
+  const onTestWebhook = async () => {
+    setTestingWebhook(true);
+    setWebhookTestResult(null);
+    try {
+      const res = await testWebhook({
+        data: {
+          scope,
+          webhook_secret_hash: form.webhook_secret_hash.trim() || undefined,
+        },
+      });
+      setWebhookTestResult({ ok: true, message: res.message });
+      toast.success(res.message);
+    } catch (e) {
+      const msg = (e as Error).message || 'Webhook diagnostic ping failed';
+      setWebhookTestResult({ ok: false, message: msg });
+      toast.error(msg);
+    } finally {
+      setTestingWebhook(false);
+    }
+  };
+
   const onSave = async () => {
     setSaving(true);
     try {
@@ -153,12 +193,18 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
         data: {
           scope,
           primary_currency: data?.primary_currency,
+          primary_provider: form.primary_provider,
           allow_central_fallback: form.allow_central_fallback,
           flutterwave_enabled: form.flutterwave_enabled,
           flutterwave_mode: form.flutterwave_mode,
           flutterwave_public_key: form.flutterwave_public_key,
           secret_key: form.secret_key || undefined,
           encryption_key: form.encryption_key || undefined,
+          stripe_enabled: form.stripe_enabled,
+          stripe_mode: form.stripe_mode,
+          stripe_publishable_key: form.stripe_publishable_key,
+          stripe_secret_key: form.stripe_secret_key || undefined,
+          stripe_webhook_secret: form.stripe_webhook_secret || undefined,
           webhook_secret_hash: form.webhook_secret_hash || undefined,
           mobile_money_enabled: form.mobile_money_enabled,
           card_enabled: form.card_enabled,
@@ -168,7 +214,13 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
           bank_instructions: form.bank_instructions,
         },
       });
-      setForm((f) => ({ ...f, secret_key: '', encryption_key: '' }));
+      setForm((f) => ({
+        ...f,
+        secret_key: '',
+        encryption_key: '',
+        stripe_secret_key: '',
+        stripe_webhook_secret: '',
+      }));
       toast.success(`Payment gateway settings saved for ${label}`);
       qc.invalidateQueries({ queryKey: ['payment_settings'] });
       qc.invalidateQueries({ queryKey: ['payment_gateway_status'] });
@@ -200,8 +252,14 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
   const tenantCode = data?.tenant_code || 'REG';
   const isWcbn = data?.tenant_type === 'wcbn_chapter';
   const refPrefix = isWcbn ? `WCBN-${tenantCode.replace(/^WCBN-?/i, '')}` : `WCA-${tenantCode}`;
-  const hasSecret = !!(form.secret_key.trim() || data?.secret_key_hint);
-  const ready = form.flutterwave_enabled && hasSecret;
+  const hasFlwSecret = !!(form.secret_key.trim() || data?.secret_key_hint);
+  const hasStripeSecret = !!(form.stripe_secret_key.trim() || data?.stripe_secret_key_hint);
+  const hasSecret = form.primary_provider === 'stripe' ? hasStripeSecret : hasFlwSecret;
+  const ready =
+    form.primary_provider === 'stripe'
+      ? form.stripe_enabled && hasStripeSecret
+      : form.flutterwave_enabled && hasFlwSecret;
+  const activeMode = form.primary_provider === 'stripe' ? form.stripe_mode : form.flutterwave_mode;
   const momoCapable = isMomoCurrency(currency);
   const walletCapable = isWalletCurrency(currency);
 
@@ -225,13 +283,13 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
                 <Badge
                   className={cn(
                     'gap-1 border-0',
-                    form.flutterwave_mode === 'live'
+                    activeMode === 'live'
                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
                       : 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
                   )}
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Connected ({form.flutterwave_mode === 'live' ? 'Live' : 'Test'})
+                  Connected ({form.primary_provider === 'stripe' ? 'Stripe' : 'Flutterwave'} · {activeMode === 'live' ? 'Live' : 'Test'})
                 </Badge>
               ) : (
                 <Badge variant="secondary" className="gap-1">
@@ -255,7 +313,7 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
               variant="outline"
               size="sm"
               onClick={onTestConnection}
-              disabled={testing || (!form.secret_key.trim() && !data?.secret_key_hint)}
+              disabled={testing || !hasSecret}
               className="rounded-full"
             >
               {testing ? (
@@ -283,114 +341,260 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
         )}
       </GlassSection>
 
-      {/* 2. Flutterwave API Credentials & Multi-Account Webhook Configuration */}
+      {/* 2. Gateway Provider & API Credentials */}
       <GlassSection>
         <GlassSectionHeader
           icon={<Wallet className="h-5 w-5" />}
-          title={`Flutterwave Gateway Credentials · ${label}`}
-          description="Configure this tenant's independent Flutterwave merchant keys and webhook verification hash."
+          title={`Online Payment Gateway · ${label}`}
+          description="Choose this tenant's primary online processor (Flutterwave or Stripe) and configure merchant keys."
         />
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background/50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-background/50 p-4">
             <div className="space-y-0.5">
-              <Label className="text-base">Activate online gateway for {label}</Label>
+              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                Primary Gateway Provider
+              </Label>
               <p className="text-xs text-muted-foreground">
-                {scope === 'global'
-                  ? 'Processes global / inter-regional events, Head Office campaigns, and Head Office giving.'
-                  : form.allow_central_fallback
-                    ? 'When off, Super Admin has authorized fallback to the Head Office gateway.'
-                    : 'When off, online Card & Mobile Money are strictly blocked and donors are prompted to use Bank Deposit.'}
+                Flutterwave is recommended for Africa (XAF/XOF/GHS/KES Mobile Money + Cards). Stripe is optional for North America, UK & Europe (USD/EUR/GBP/CAD).
               </p>
             </div>
-            <Switch
-              checked={form.flutterwave_enabled}
-              onCheckedChange={(v) => set('flutterwave_enabled', v)}
-            />
+            <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 w-64">
+              {(['flutterwave', 'stripe'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => set('primary_provider', p)}
+                  className={cn(
+                    'rounded-full py-1.5 text-sm font-semibold capitalize transition-all',
+                    form.primary_provider === p
+                      ? 'bg-background text-primary shadow-sm'
+                      : 'text-muted-foreground',
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Environment</Label>
-              <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 w-56">
-                {(['test', 'live'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => set('flutterwave_mode', m)}
-                    className={cn(
-                      'rounded-full py-1.5 text-sm font-semibold capitalize transition-all',
-                      form.flutterwave_mode === m
-                        ? 'bg-background text-primary shadow-sm'
-                        : 'text-muted-foreground',
-                    )}
-                  >
-                    {m}
-                  </button>
-                ))}
+          {form.primary_provider === 'stripe' ? (
+            <div className="space-y-4 rounded-2xl border border-border/70 bg-background/30 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Activate Stripe Checkout for {label}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Supports Cards, Apple Pay, and Google Pay via Stripe Checkout Sessions in {currency}.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.stripe_enabled}
+                  onCheckedChange={(v) => set('stripe_enabled', v)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Stripe Environment</Label>
+                <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 w-56">
+                  {(['test', 'live'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => set('stripe_mode', m)}
+                      className={cn(
+                        'rounded-full py-1.5 text-sm font-semibold capitalize transition-all',
+                        form.stripe_mode === m
+                          ? 'bg-background text-primary shadow-sm'
+                          : 'text-muted-foreground',
+                      )}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>Publishable Key</Label>
+                  <Input
+                    value={form.stripe_publishable_key}
+                    onChange={(e) => set('stripe_publishable_key', e.target.value)}
+                    placeholder={form.stripe_mode === 'test' ? 'pk_test_...' : 'pk_live_...'}
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <KeyRound className="h-3.5 w-3.5" />
+                    Secret Key
+                  </Label>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={form.stripe_secret_key}
+                    onChange={(e) => set('stripe_secret_key', e.target.value)}
+                    placeholder={
+                      data?.stripe_secret_key_hint
+                        ? `Saved ${data.stripe_secret_key_hint} — leave blank to keep`
+                        : form.stripe_mode === 'test'
+                          ? 'sk_test_...'
+                          : 'sk_live_...'
+                    }
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Webhook Signing Secret (optional)</Label>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={form.stripe_webhook_secret}
+                    onChange={(e) => set('stripe_webhook_secret', e.target.value)}
+                    placeholder={
+                      data?.stripe_webhook_secret_hint
+                        ? `Saved ${data.stripe_webhook_secret_hint} — leave blank to keep`
+                        : 'whsec_...'
+                    }
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background/50 p-4">
+                <div className="space-y-0.5">
+                  <Label className="text-base">Activate Flutterwave gateway for {label}</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {scope === 'global'
+                      ? 'Processes global / inter-regional events, Head Office campaigns, and Head Office giving.'
+                      : form.allow_central_fallback
+                        ? 'When off, Super Admin has authorized fallback to the Head Office gateway.'
+                        : 'When off, online Card & Mobile Money are strictly blocked and donors are prompted to use Bank Deposit.'}
+                  </p>
+                </div>
+                <Switch
+                  checked={form.flutterwave_enabled}
+                  onCheckedChange={(v) => set('flutterwave_enabled', v)}
+                />
+              </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Public Key</Label>
-              <Input
-                value={form.flutterwave_public_key}
-                onChange={(e) => set('flutterwave_public_key', e.target.value)}
-                placeholder={form.flutterwave_mode === 'test' ? 'FLWPUBK_TEST-...' : 'FLWPUBK-...'}
-                className="bg-background/60 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                <KeyRound className="h-3.5 w-3.5" />
-                Secret Key
-              </Label>
-              <Input
-                type="password"
-                autoComplete="new-password"
-                value={form.secret_key}
-                onChange={(e) => set('secret_key', e.target.value)}
-                placeholder={
-                  data?.secret_key_hint
-                    ? `Saved ${data.secret_key_hint} — leave blank to keep`
-                    : form.flutterwave_mode === 'test'
-                      ? 'FLWSECK_TEST-...'
-                      : 'FLWSECK-...'
-                }
-                className="bg-background/60 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Encryption Key (3DES Card)</Label>
-              <Input
-                type="password"
-                autoComplete="new-password"
-                value={form.encryption_key}
-                onChange={(e) => set('encryption_key', e.target.value)}
-                placeholder={
-                  data?.encryption_key_hint
-                    ? `Saved ${data.encryption_key_hint} — leave blank to keep`
-                    : 'FLWSECK_TEST...enc / 24-char key'
-                }
-                className="bg-background/60 font-mono text-xs"
-              />
-            </div>
-          </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Environment</Label>
+                  <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 w-56">
+                    {(['test', 'live'] as const).map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => set('flutterwave_mode', m)}
+                        className={cn(
+                          'rounded-full py-1.5 text-sm font-semibold capitalize transition-all',
+                          form.flutterwave_mode === m
+                            ? 'bg-background text-primary shadow-sm'
+                            : 'text-muted-foreground',
+                        )}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>Public Key</Label>
+                  <Input
+                    value={form.flutterwave_public_key}
+                    onChange={(e) => set('flutterwave_public_key', e.target.value)}
+                    placeholder={form.flutterwave_mode === 'test' ? 'FLWPUBK_TEST-...' : 'FLWPUBK-...'}
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1">
+                    <KeyRound className="h-3.5 w-3.5" />
+                    Secret Key
+                  </Label>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={form.secret_key}
+                    onChange={(e) => set('secret_key', e.target.value)}
+                    placeholder={
+                      data?.secret_key_hint
+                        ? `Saved ${data.secret_key_hint} — leave blank to keep`
+                        : form.flutterwave_mode === 'test'
+                          ? 'FLWSECK_TEST-...'
+                          : 'FLWSECK-...'
+                    }
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Encryption Key (3DES Card)</Label>
+                  <Input
+                    type="password"
+                    autoComplete="new-password"
+                    value={form.encryption_key}
+                    onChange={(e) => set('encryption_key', e.target.value)}
+                    placeholder={
+                      data?.encryption_key_hint
+                        ? `Saved ${data.encryption_key_hint} — leave blank to keep`
+                        : 'FLWSECK_TEST...enc / 24-char key'
+                    }
+                    className="bg-background/60 font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Webhook URL + Secret Hash Block */}
           <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-4">
-            <div className="flex items-start gap-2.5">
-              <Webhook className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <div className="space-y-0.5">
-                <p className="text-sm font-semibold text-foreground">
-                  Flutterwave Webhook Configuration
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  In this merchant&apos;s Flutterwave Dashboard → <strong>Settings → Webhooks</strong>, paste both the Webhook URL and Secret Hash below so asynchronous Mobile Money and 3D Secure card payments confirm automatically.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-2.5">
+              <div className="flex items-start gap-2.5 max-w-2xl">
+                <Webhook className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold text-foreground">
+                    Webhook Configuration & Live Diagnostics
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    In this merchant&apos;s Flutterwave Dashboard → <strong>Settings → Webhooks</strong>, paste both the Webhook URL and Secret Hash below so asynchronous Mobile Money and 3D Secure card payments confirm automatically.
+                  </p>
+                </div>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onTestWebhook}
+                disabled={testingWebhook || !form.webhook_secret_hash.trim()}
+                className="rounded-full shrink-0"
+              >
+                {testingWebhook ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Webhook className="mr-1.5 h-3.5 w-3.5 text-primary" />
+                )}
+                Test Webhook Endpoint
+              </Button>
             </div>
+
+            {webhookTestResult && (
+              <div
+                className={cn(
+                  'flex items-center gap-2 rounded-xl border px-3 py-2 text-xs',
+                  webhookTestResult.ok
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+                    : 'border-destructive/30 bg-destructive/10 text-destructive',
+                )}
+              >
+                {webhookTestResult.ok ? <ShieldCheck className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
+                <span>{webhookTestResult.message}</span>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1.5">
@@ -479,7 +683,13 @@ export default function PaymentSettingsPanel({ scope, label }: { scope: string; 
                     <span>
                       Mobile Money
                       <span className="block text-[11px] font-normal text-muted-foreground">
-                        {currency === 'XAF' ? 'MTN MoMo & Orange Money' : 'MTN, Orange, Wave & Moov (XOF)'}
+                        {currency === 'XAF'
+                          ? 'MTN MoMo & Orange Money'
+                          : currency === 'GHS'
+                            ? 'MTN, Telecel/Vodafone & AirtelTigo (GHS)'
+                            : currency === 'KES'
+                              ? 'Safaricom M-Pesa (KES)'
+                              : 'MTN, Orange, Wave & Moov'}
                       </span>
                     </span>
                   </span>

@@ -6,8 +6,9 @@ import { EmptyState } from '@/components/member/MemberUI';
 import { MemberGiveSheet } from '@/components/member/MemberGiveSheet';
 import { Cover } from '@/components/member/store/Cover';
 import { useCart } from '@/components/member/store/cart';
+import { useMemberStoreCurrency } from '@/components/member/store/useStoreCurrency';
 import { CartSheet } from './Store';
-import { products, fcfa } from '@/data/memberDemo';
+import { products } from '@/data/memberDemo';
 import { toast } from 'sonner';
 
 export default function StoreProduct({ productId }: { productId: string }) {
@@ -16,6 +17,7 @@ export default function StoreProduct({ productId }: { productId: string }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [pay, setPay] = useState<{ title: string; amount: number; fromCart?: boolean } | null>(null);
   const { cart, add, clear } = useCart();
+  const { currency, fmt, toRegionalMajor } = useMemberStoreCurrency();
   const count = Object.values(cart).reduce((s, n) => s + n, 0);
 
   if (!p) return <EmptyState icon={Package} title="Product not found" action={<Button asChild size="sm"><Link to="/member/store">Back to store</Link></Button>} />;
@@ -45,7 +47,7 @@ export default function StoreProduct({ productId }: { productId: string }) {
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{p.format}</span>
           </div>
-          <p className="font-heading text-3xl font-bold text-foreground">{fcfa(p.price)}</p>
+          <p className="font-heading text-3xl font-bold text-foreground">{fmt(p.price)}</p>
           <p className="text-sm leading-relaxed text-muted-foreground">{p.description}</p>
           <p className={soldOut ? 'text-sm font-semibold text-destructive' : p.stock < 10 ? 'text-sm font-semibold text-warning' : 'text-sm font-semibold text-success'}>
             {soldOut ? 'Sold out' : p.stock < 10 ? `Only ${p.stock} left` : 'In stock'}
@@ -63,7 +65,7 @@ export default function StoreProduct({ productId }: { productId: string }) {
                 <button type="button" aria-label="More" onClick={() => setQty((n) => Math.min(p.stock || 1, n + 1))} className="grid h-9 w-9 place-items-center rounded-full"><Plus className="h-4 w-4" /></button>
               </div>
               <Button variant="outline" disabled={soldOut} className="h-11 flex-1 rounded-full" onClick={() => { add(p.id, qty); toast.success(`${qty} × ${p.name} added to cart`); }}>Add to cart</Button>
-              <Button disabled={soldOut} className="h-11 flex-1 rounded-full" onClick={() => setPay({ title: `${qty} × ${p.name}`, amount: p.price * qty })}>Buy now</Button>
+              <Button disabled={soldOut} className="h-11 flex-1 rounded-full" onClick={() => setPay({ title: `${qty} × ${p.name}`, amount: toRegionalMajor(p.price * qty) })}>Buy now · {fmt(p.price * qty)}</Button>
             </div>
           </div>
         </div>
@@ -78,7 +80,7 @@ export default function StoreProduct({ productId }: { productId: string }) {
                 <Link to="/member/store/$productId" params={{ productId: r.id }} className="block">
                   <Cover title={r.name} tone={r.tone} small className="aspect-[4/5] w-full" />
                   <p className="mt-2 truncate text-sm font-semibold">{r.name}</p>
-                  <p className="text-xs text-muted-foreground">{fcfa(r.price)}</p>
+                  <p className="text-xs text-muted-foreground">{fmt(r.price)}</p>
                 </Link>
               </li>
             ))}
@@ -87,7 +89,7 @@ export default function StoreProduct({ productId }: { productId: string }) {
       )}
 
       <CartSheet open={cartOpen} onOpenChange={setCartOpen} onCheckout={(title, amount) => { setCartOpen(false); setPay({ title, amount, fromCart: true }); }} />
-      <MemberGiveSheet open={!!pay} onOpenChange={(o) => { if (!o) { if (pay?.fromCart) clear(); setPay(null); } }} currency="XAF" purchase={pay} />
+      <MemberGiveSheet open={!!pay} onOpenChange={(o) => { if (!o) { if (pay?.fromCart) clear(); setPay(null); } }} currency={currency} purchase={pay} />
     </div>
   );
 }

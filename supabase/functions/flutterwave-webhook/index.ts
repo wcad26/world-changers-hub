@@ -34,6 +34,31 @@ Deno.serve(async (req) => {
     const rawPayload = (await req.json().catch(() => null)) as any;
     if (!rawPayload) return json({ error: "Invalid JSON payload" }, 400);
 
+    // 0. Diagnostic Webhook Connectivity & Signature Verification Ping from Admin Settings
+    if (rawPayload?.action === "webhook_ping" || rawPayload?.event === "wca.webhook.ping") {
+      const tenantType = rawPayload?.tenant_type || (rawPayload?.region_id ? "wca_region" : "head_office");
+      const gw = await resolveTenantGateway(admin, {
+        tenantType,
+        regionId: rawPayload?.region_id || null,
+        tenantCode: rawPayload?.tenant_code || null,
+      });
+      const incomingHash = req.headers.get("verif-hash");
+      const signatureValid = constantTimeEquals(incomingHash, gw.webhookSecretHash);
+      return json(
+        {
+          ok: signatureValid,
+          pong: true,
+          tenantCode: gw.tenantCode,
+          tenantName: gw.tenantName,
+          signatureValid,
+          message: signatureValid
+            ? `Webhook endpoint reachable & verif-hash verified for ${gw.tenantName} (${gw.tenantCode}).`
+            : `Webhook endpoint reachable, but verif-hash did not match saved hash for ${gw.tenantName}. Save your settings first and try again.`,
+        },
+        signatureValid ? 200 : 401
+      );
+    }
+
     // Flutterwave v3 supports both { event, data: { id, tx_ref, status, ... } } and legacy flat payloads
     const eventType = String(rawPayload?.event || rawPayload?.["event.type"] || "charge.completed");
     const txData = rawPayload?.data || rawPayload;
@@ -120,7 +145,6 @@ Deno.serve(async (req) => {
     const verifiedAmount = Number(verifiedTx.amount || 0);
     const verifiedCurrency = String(verifiedTx.currency || "").toUpperCase();
 
-    // 5. Execute single atomic status transition
     if (
       flwStatus === "successful" &&
       verifiedAmount >= lookup.expectedMajorAmount &&
@@ -141,7 +165,7 @@ Deno.serve(async (req) => {
       await finalizeFailedPayment(admin, lookup);
     }
 
-    // 6. Record idempotent audit log entry
+    // 5. Record processed webhook event in audit ledger
     await admin.from("payment_webhook_events").upsert(
       {
         provider: "flutterwave",
@@ -158,8 +182,8 @@ Deno.serve(async (req) => {
     );
 
     return json({ ok: true, status: flwStatus }, 200);
-  } catch (e: any) {
-    console.error("flutterwave-webhook error:", e);
+  } catch (err: any) {
+    console.error("flutterwave-webhook error:", err);
     return json({ error: "Webhook processing error" }, 500);
   }
 });

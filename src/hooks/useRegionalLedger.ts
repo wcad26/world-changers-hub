@@ -21,6 +21,13 @@ export interface LedgerRow {
   transaction_date: string;
   dcg_id: string | null;
   category_id: string;
+  payment_status?: string | null;
+  payment_method?: string | null;
+  payment_reference?: string | null;
+  gateway_transaction_id?: string | null;
+  refunded_at?: string | null;
+  refund_reason?: string | null;
+  refund_reference?: string | null;
   category: { name: string | null; type: string | null } | null;
   dcg: { name: string | null } | null;
 }
@@ -38,10 +45,10 @@ export const useRegionalLedger = (filters: LedgerFilters) => {
       let q = supabase
         .from("financial_transactions")
         .select(
-          "id, amount, description, transaction_date, dcg_id, category_id, category:financial_transaction_categories(name, type), dcg:dcgs(name)"
+          "id, amount, description, transaction_date, dcg_id, category_id, payment_status, payment_method, payment_reference, gateway_transaction_id, refunded_at, refund_reason, refund_reference, category:financial_transaction_categories(name, type), dcg:dcgs(name)"
         )
         .eq("region_id", regionId)
-        .eq("payment_status", "completed");
+        .in("payment_status", ["completed", "refunded"]);
 
       if (filters.scope === "regional") q = q.is("dcg_id", null);
       if (filters.scope === "dcg") {
@@ -78,6 +85,7 @@ export interface LedgerSummary {
 }
 
 export function summarizeLedger(rows: LedgerRow[]): LedgerSummary {
+  const activeRows = rows.filter((r) => r.payment_status !== "refunded");
   const s: LedgerSummary = {
     total_income: 0,
     total_expenses: 0,
@@ -85,9 +93,9 @@ export function summarizeLedger(rows: LedgerRow[]): LedgerSummary {
     tithes: 0,
     offerings: 0,
     special_giving: 0,
-    transaction_count: rows.length,
+    transaction_count: activeRows.length,
   };
-  for (const r of rows) {
+  for (const r of activeRows) {
     const amt = Number(r.amount) || 0;
     const ct = r.category?.type?.toLowerCase();
     const cn = r.category?.name || "";
@@ -119,7 +127,7 @@ export interface DcgAggRow {
 export function aggregateByDcg(rows: LedgerRow[]): DcgAggRow[] {
   const map = new Map<string, DcgAggRow>();
   for (const r of rows) {
-    if (!r.dcg_id) continue;
+    if (!r.dcg_id || r.payment_status === "refunded") continue;
     const key = r.dcg_id;
     if (!map.has(key)) {
       map.set(key, {

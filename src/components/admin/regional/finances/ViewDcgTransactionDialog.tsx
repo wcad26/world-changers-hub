@@ -57,6 +57,21 @@ export const ViewDcgTransactionDialog: React.FC<Props> = ({ open, onOpenChange, 
                   <Badge variant={type === "income" ? "default" : "secondary"} className="capitalize">{transaction.category?.type}</Badge>
                 </Row>
                 <Row label="Amount"><span className="font-semibold tabular-nums">{fc(Number(transaction.amount))}</span></Row>
+                <Row label="Status">
+                  <Badge variant={transaction.payment_status === "refunded" ? "destructive" : "outline"} className="capitalize">
+                    {transaction.payment_status || "completed"}
+                  </Badge>
+                </Row>
+                {transaction.payment_reference && (
+                  <Row label="Reference"><span className="font-mono text-xs">{transaction.payment_reference}</span></Row>
+                )}
+                {transaction.refunded_at && (
+                  <>
+                    <Row label="Refunded At">{format(new Date(transaction.refunded_at), "PPp")}</Row>
+                    <Row label="Refund Reason">{transaction.refund_reason || "—"}</Row>
+                    <Row label="Refund Ref"><span className="font-mono text-xs">{transaction.refund_reference || "—"}</span></Row>
+                  </>
+                )}
                 <Row label="Description">{transaction.description || "—"}</Row>
               </>
             ) : null}

@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Copy,
   CreditCard,
+  FileText,
   Landmark,
   Loader2,
   LockKeyhole,
@@ -18,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CardEntry, emptyCard, toCardPayload, validateCard, type CardValue } from '@/components/member/CardEntry';
+import { PaymentReceiptDialog } from '@/components/payments/PaymentReceiptDialog';
 import {
   continueUniversalCard,
   startUniversalCheckout,
@@ -27,6 +29,7 @@ import {
 import {
   detectMomo,
   formatMajorCurrency,
+  getMomoPlaceholder,
   isMomoCurrency,
   isWalletCurrency,
   type PaymentMethodId,
@@ -66,7 +69,7 @@ type CardStep = {
 type Stage = 'form' | 'waiting' | 'bank' | 'success' | 'failed';
 
 export interface UniversalCheckoutProps {
-  context: 'public_giving' | 'campaign_donation' | 'event_fee';
+  context: 'public_giving' | 'campaign_donation' | 'event_fee' | 'store_order';
   amount: number;
   currency: string;
   tenant: PublicTenantCapability | null;
@@ -177,6 +180,7 @@ export function UniversalCheckout({
   const [error, setError] = useState('');
   const [network, setNetwork] = useState<string | null>(null);
   const [activeRef, setActiveRef] = useState<string>('');
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const [bankState, setBankState] = useState<{
     ref: string;
     info: NonNullable<PublicTenantCapability['bank']>;
@@ -558,6 +562,9 @@ export function UniversalCheckout({
   }
 
   if (stage === 'success') {
+    const receiptRef = bankState?.ref || activeRef;
+    const payerDisplayName =
+      payer?.name || [payer?.familyName, payer?.otherNames].filter(Boolean).join(' ') || undefined;
     return (
       <div className="flex flex-col items-center rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-6 py-8 text-center">
         <CheckCircle2 className="h-14 w-14 text-emerald-500" />
@@ -573,6 +580,32 @@ export function UniversalCheckout({
         <p className="mt-1 text-sm text-muted-foreground">
           {formatMajorCurrency(amount, cur)} · {tenant.name}
         </p>
+        {receiptRef && (
+          <p className="mt-1 font-mono text-xs text-muted-foreground">Ref: {receiptRef}</p>
+        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setReceiptOpen(true)}
+          className="mt-4 rounded-full gap-1.5"
+        >
+          <FileText className="h-4 w-4 text-primary" />
+          {isFr ? 'Voir & Imprimer le reçu' : 'View & Print Receipt'}
+        </Button>
+        <PaymentReceiptDialog
+          open={receiptOpen}
+          onOpenChange={setReceiptOpen}
+          txRef={receiptRef}
+          amount={bankState?.amount ?? amount}
+          currency={cur}
+          tenantName={tenant.name}
+          payerName={payerDisplayName}
+          payerEmail={payer?.email}
+          paymentMethod={bankState ? 'bank_transfer' : method}
+          purpose={payer?.purpose}
+          isBankPending={!!bankState}
+        />
       </div>
     );
   }
@@ -701,7 +734,7 @@ export function UniversalCheckout({
               inputMode="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder={cur === 'XOF' ? '+225 XX XX XX XX' : '6XX XXX XXX'}
+              placeholder={getMomoPlaceholder(cur)}
               className="h-12 rounded-xl pr-24"
             />
             {momoCheck.network && (
