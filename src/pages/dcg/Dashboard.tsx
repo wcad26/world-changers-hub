@@ -42,6 +42,7 @@ import {
   type DateRangeValue,
 } from '@/components/admin/dcg/DcgUI';
 
+import { Ring } from '@/components/admin/regional/RegionalUI';
 type PeriodKey = '1-month' | '3-months' | '6-months' | '1-year' | 'custom';
 
 const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
@@ -65,10 +66,11 @@ const formatMeetingTime = (time?: string | null): string => {
 const GENDER_TONES = { male: 'var(--chart-1)', female: 'var(--chart-4)' };
 
 /** Total with a male/female breakdown bar. */
-function SplitTile({ icon: Icon, label, total, male, female, tone = 'var(--chart-1)', onClick }: {
+function SplitTile({ icon: Icon, label, total, male, female, share, tone = 'var(--chart-1)', onClick }: {
   icon: LucideIcon;
   label: string;
   total: number;
+  share?: number;
   male: number;
   female: number;
   other?: number;
@@ -92,6 +94,11 @@ function SplitTile({ icon: Icon, label, total, male, female, tone = 'var(--chart
         style={{ background: `color-mix(in oklab, ${tone} 18%, transparent)` }}
       />
       <div className="relative">
+        {share !== undefined && (
+          <div className="absolute right-0 top-0">
+            <Ring value={share} size={52} tone={tone} label={`${label} share of members`} />
+          </div>
+        )}
         <span
           className="grid h-8 w-8 place-items-center rounded-xl"
           style={{ background: `color-mix(in oklab, ${tone} 15%, transparent)`, color: tone }}
