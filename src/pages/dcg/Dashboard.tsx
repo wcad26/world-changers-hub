@@ -42,6 +42,7 @@ import {
   type DateRangeValue,
 } from '@/components/admin/dcg/DcgUI';
 
+import { Ring } from '@/components/admin/regional/RegionalUI';
 type PeriodKey = '1-month' | '3-months' | '6-months' | '1-year' | 'custom';
 
 const PERIOD_OPTIONS: { value: PeriodKey; label: string }[] = [
