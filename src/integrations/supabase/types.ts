@@ -1159,6 +1159,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_pre_registrations_financial_transaction_id_fkey"
+            columns: ["financial_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "financial_transactions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_pre_registrations_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
@@ -2576,6 +2583,56 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_webhook_events: {
+        Row: {
+          created_at: string
+          event_type: string | null
+          flw_tx_id: string | null
+          id: string
+          processed_at: string | null
+          provider: string
+          raw_payload: Json | null
+          signature_valid: boolean
+          tenant_setting_id: string | null
+          tx_ref: string
+          verified_status: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type?: string | null
+          flw_tx_id?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_payload?: Json | null
+          signature_valid?: boolean
+          tenant_setting_id?: string | null
+          tx_ref: string
+          verified_status?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string | null
+          flw_tx_id?: string | null
+          id?: string
+          processed_at?: string | null
+          provider?: string
+          raw_payload?: Json | null
+          signature_valid?: boolean
+          tenant_setting_id?: string | null
+          tx_ref?: string
+          verified_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_webhook_events_tenant_setting_id_fkey"
+            columns: ["tenant_setting_id"]
+            isOneToOne: false
+            referencedRelation: "region_payment_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -2631,48 +2688,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      payment_webhook_events: {
-        Row: {
-          created_at: string
-          event_type: string | null
-          flw_tx_id: string | null
-          id: string
-          processed_at: string | null
-          provider: string
-          raw_payload: Json | null
-          signature_valid: boolean
-          tenant_setting_id: string | null
-          tx_ref: string
-          verified_status: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_type?: string | null
-          flw_tx_id?: string | null
-          id?: string
-          processed_at?: string | null
-          provider?: string
-          raw_payload?: Json | null
-          signature_valid?: boolean
-          tenant_setting_id?: string | null
-          tx_ref: string
-          verified_status?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_type?: string | null
-          flw_tx_id?: string | null
-          id?: string
-          processed_at?: string | null
-          provider?: string
-          raw_payload?: Json | null
-          signature_valid?: boolean
-          tenant_setting_id?: string | null
-          tx_ref?: string
-          verified_status?: string | null
-        }
-        Relationships: []
       }
       region_payment_settings: {
         Row: {
@@ -4617,14 +4632,6 @@ export type Database = {
         Returns: boolean
       }
       generate_member_id: { Args: { _region_id: string }; Returns: string }
-      get_public_payment_capabilities: {
-        Args: {
-          _region_id?: string | null
-          _tenant_code?: string | null
-          _tenant_type?: string
-        }
-        Returns: Json
-      }
       get_attendance_summary: {
         Args: { p_region_id: string }
         Returns: {
@@ -4673,6 +4680,14 @@ export type Database = {
           is_today: boolean
           is_upcoming: boolean
         }[]
+      }
+      get_public_payment_capabilities: {
+        Args: {
+          _region_id?: string
+          _tenant_code?: string
+          _tenant_type?: string
+        }
+        Returns: Json
       }
       get_public_region_dcgs: {
         Args: { _region_id: string }
