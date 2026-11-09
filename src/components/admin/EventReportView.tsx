@@ -89,7 +89,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
         a.member?.profile?.email || '',
         a.member?.profile?.phone || '',
         a.member?.profile?.gender || '',
-        a.member?.member_type || '',
+        (a.member as any)?.is_first_timer ? 'First Timer' : a.member?.member_type === 'visitor' ? 'Returning Visitor' : (a.member?.member_type || ''),
         ...(showRegionFilter ? [a.region_name || ''] : []),
         a.member?.member_id || '',
         a.member?.join_interest || 'not_specified',
@@ -213,10 +213,9 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                 </div>
               ))}
               <div className="col-span-2 rounded-2xl border border-border bg-card p-4 lg:col-span-4">
-                <p className="text-sm font-semibold text-foreground">Visitors who want to join</p>
-                <p className="text-xs text-muted-foreground">Based on {stats?.visitorsTotal || 0} visitors</p>
+                <p className="text-sm font-semibold text-foreground">First Timers <span className="ml-1 font-heading text-lg font-bold">{stats?.visitorsTotal || 0}</span></p>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  {[['Yes', stats?.wantToJoin], ['No', stats?.notWantToJoin], ['Undecided', stats?.undecided]].map(([l, v]) => (
+                  {[['Want to Join', stats?.wantToJoin], ['Not Interested', stats?.notWantToJoin], ['Undecided', stats?.undecided]].map(([l, v]) => (
                     <div key={l as string} className="rounded-xl bg-muted/50 py-2">
                       <p className="font-heading text-lg font-bold text-foreground">{(v as number) || 0}</p>
                       <p className="text-[11px] text-muted-foreground">{l}</p>
@@ -297,7 +296,7 @@ const EventReportView: React.FC<Props> = ({ eventId, regionId, backTo, headerSuf
                           {showRegionFilter && a.region_name && <p className="truncate text-[11px] text-muted-foreground">{a.region_name}</p>}
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1">
-                          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', visitor ? 'bg-secondary/15 text-secondary' : 'bg-primary/10 text-primary')}>{visitor ? 'Visitor' : 'Member'}</span>
+                          <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', visitor ? 'bg-secondary/15 text-secondary' : 'bg-primary/10 text-primary')}>{(a.member as any)?.is_first_timer ? 'First Timer' : visitor ? 'Visitor' : 'Member'}</span>
                           {isMultiDay && dayFilter === 'all' && <span className="text-[11px] text-muted-foreground">{a.days_attended}/{reportData?.totalDays} days</span>}
                         </div>
                       </li>

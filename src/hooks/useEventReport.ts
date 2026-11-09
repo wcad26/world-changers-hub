@@ -26,6 +26,7 @@ export interface EventAttendeeWithDetails {
     member_id: string;
     member_type: string;
     join_interest: string | null;
+    is_first_timer?: boolean;
     region_id?: string | null;
     profile: {
       id: string;
@@ -177,7 +178,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const { data: members, error: membersError } = await supabase
         .from('members')
         .select(`
-          id, member_id, member_type, join_interest, region_id,
+          id, member_id, member_type, join_interest, region_id, rated_event_id,
           profile:profiles!members_profile_id_fkey (
             id, first_name, last_name, email, phone, gender, date_of_birth
           )
@@ -239,6 +240,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
             member_id: member.member_id,
             member_type: member.member_type,
             join_interest: member.join_interest,
+            is_first_timer: member.member_type === 'visitor' && (member as any).rated_event_id === eventId,
             region_id: (member as any).region_id ?? null,
             profile: (member as any).profile as NonNullable<EventAttendeeWithDetails['member']>['profile'],
           } : null,
@@ -254,7 +256,7 @@ export const useEventReport = (eventId?: string, regionId?: string | null, dayEv
       const maleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'male').length;
       const femaleCount = attendees.filter(a => a.member?.profile?.gender?.toLowerCase() === 'female').length;
       const unknownGender = totalAttendees - maleCount - femaleCount;
-      const visitorsAll = attendees.filter(a => a.member?.member_type === 'visitor');
+      const visitorsAll = attendees.filter(a => (a.member as any)?.is_first_timer);
       const wantToJoin = visitorsAll.filter(a => a.member?.join_interest === 'yes').length;
       const notWantToJoin = visitorsAll.filter(a => a.member?.join_interest === 'no').length;
       const undecided = visitorsAll.filter(a => a.member?.join_interest === 'undecided').length;
