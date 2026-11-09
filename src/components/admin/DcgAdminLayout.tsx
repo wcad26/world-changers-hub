@@ -174,7 +174,7 @@ const DesktopShell: React.FC<DcgAdminLayoutProps> = ({ children, title }) => {
                     'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
                     isCollapsed && 'justify-center px-2',
                     active
-                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      ? 'rounded-xl bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold ring-1 ring-primary/25 shadow-sm'
                       : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                   )}
                 >
@@ -296,7 +296,7 @@ const MobileShell: React.FC<DcgAdminLayoutProps> = ({ children, title }) => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex w-72 flex-col bg-card p-0">
+              <SheetContent side="left" className="flex w-72 flex-col p-0 border-r border-border/60 bg-gradient-to-b from-card via-card to-muted/40 backdrop-blur-xl">
                 <SheetTitle className="sr-only">DCG Navigation Menu</SheetTitle>
                 <SheetDescription className="sr-only">
                   Navigate across DCG portal pages
@@ -332,7 +332,7 @@ const MobileShell: React.FC<DcgAdminLayoutProps> = ({ children, title }) => {
                         className={cn(
                           'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
                           active
-                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            ? 'rounded-xl bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold ring-1 ring-primary/25 shadow-sm'
                             : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                         )}
                       >

@@ -111,7 +111,7 @@ const ShellInner: React.FC<RegionalAdminShellProps> = ({ children, title, menuIt
                       isCollapsed ? 'justify-center px-2' : ''
                     } ${
                       isActive
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'rounded-xl bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold ring-1 ring-primary/25 shadow-sm'
                          : 'text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
                     }`}
                   >
@@ -208,8 +208,8 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 bg-card flex flex-col">
-            <div className="border-b border-border bg-primary p-6 text-primary-foreground">
+          <SheetContent side="left" className="w-72 p-0 flex flex-col border-r border-border/60 bg-gradient-to-b from-card via-card to-muted/40 backdrop-blur-xl">
+            <div className="relative overflow-hidden rounded-b-3xl bg-gradient-to-br from-primary via-primary/95 to-secondary/90 p-6 text-primary-foreground shadow-lg"><div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary-foreground/15 blur-2xl" /><div className="pointer-events-none absolute -bottom-12 -left-8 h-28 w-28 rounded-full bg-secondary/40 blur-2xl" />
               <h2 className="font-heading truncate text-lg font-bold">
                 {region?.name?.toUpperCase() || 'PORTAL'}
               </h2>
@@ -230,7 +230,7 @@ const ShellMobile: React.FC<RegionalAdminShellProps> = ({ children, title, menuI
                     className={cn(
                       'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                       isActive
-                        ? 'bg-primary text-primary-foreground'
+                        ? 'rounded-xl bg-gradient-to-r from-primary/15 via-primary/10 to-transparent text-primary font-semibold ring-1 ring-primary/25 shadow-sm'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
                     )}
                   >
