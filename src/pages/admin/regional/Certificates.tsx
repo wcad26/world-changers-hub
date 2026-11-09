@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { HeroCard, RingTile } from '@/components/admin/regional/RegionalUI';
 import { Award, Upload, FileCheck, Send, Trash2, MoreHorizontal, Download, Eye, RotateCcw, XCircle, ImageIcon, Pencil } from 'lucide-react';
 import { CertificatePositionPicker } from '@/components/admin/regional/CertificatePositionPicker';
 import { PreviewCertificateDialog } from '@/components/admin/regional/PreviewCertificateDialog';
@@ -629,10 +630,27 @@ const Certificates = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-5 pb-24 lg:pb-6">
+        {(() => {
+          const total = issuedCertificates?.length || 0;
+          const sentN = sentCertificates?.length || 0;
+          const unsentN = unsentCertificates?.length || 0;
+          const tplN = templates?.length || 0;
+          const rate = total ? Math.round((sentN / total) * 100) : 0;
+          return (
+            <>
+              <HeroCard eyebrow="Regional Certificates" value={total} sub={`${tplN} templates · ${unsentN} awaiting delivery`} ring={rate} ringLabel="Delivered" />
+              <div className="grid grid-cols-3 gap-3">
+                <RingTile icon={Send} label="Ready to send" value={unsentN} ring={total ? Math.round((unsentN / total) * 100) : 0} tone="var(--chart-4)" onClick={() => setActiveTab('issued')} />
+                <RingTile icon={FileCheck} label="Delivered" value={sentN} ring={rate} tone="var(--chart-2)" onClick={() => setActiveTab('sent')} />
+                <RingTile icon={ImageIcon} label="Templates" value={tplN} tone="var(--chart-1)" onClick={() => setActiveTab('templates')} />
+              </div>
+            </>
+          );
+        })()}
 
         <Tabs value={activeTab} onValueChange={(value) => !isGenerating && setActiveTab(value)}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsList className="grid w-full grid-cols-4 h-auto rounded-2xl bg-muted/60 p-1 backdrop-blur [&>button]:rounded-xl [&>button]:py-2 [&>button]:text-xs sm:[&>button]:text-sm [&>button[data-state=active]]:bg-gradient-to-br [&>button[data-state=active]]:from-primary [&>button[data-state=active]]:to-secondary [&>button[data-state=active]]:text-primary-foreground [&>button[data-state=active]]:shadow-md">
             <TabsTrigger value="generate" disabled={isGenerating}>Generate</TabsTrigger>
             <TabsTrigger value="templates" disabled={isGenerating}>Templates</TabsTrigger>
             <TabsTrigger value="issued" disabled={isGenerating}>Issued</TabsTrigger>
@@ -851,7 +869,7 @@ const Certificates = () => {
 
           {/* Templates Tab */}
           <TabsContent value="templates" className="space-y-6">
-            <Card>
+            <Card className="rounded-3xl border-border/60 bg-card/80 backdrop-blur shadow-sm">
               <CardHeader>
                 <CardTitle>Upload New Template</CardTitle>
                 <CardDescription>
@@ -928,7 +946,7 @@ const Certificates = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="rounded-3xl border-border/60 bg-card/80 backdrop-blur shadow-sm">
               <CardHeader>
                 <CardTitle>Existing Templates</CardTitle>
               </CardHeader>
@@ -981,7 +999,7 @@ const Certificates = () => {
 
           {/* Unsent Certificates Tab */}
           <TabsContent value="issued" className="space-y-6">
-            <Card>
+            <Card className="rounded-3xl border-border/60 bg-card/80 backdrop-blur shadow-sm">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
@@ -1172,7 +1190,7 @@ const Certificates = () => {
 
           {/* Sent Certificates Tab */}
           <TabsContent value="sent" className="space-y-6">
-            <Card>
+            <Card className="rounded-3xl border-border/60 bg-card/80 backdrop-blur shadow-sm">
               <CardHeader>
                 <div className="flex justify-between items-center flex-wrap gap-4">
                   <div>
