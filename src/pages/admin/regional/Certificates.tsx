@@ -1068,6 +1068,23 @@ const Certificates = () => {
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
                 ) : unsentCertificates && unsentCertificates.length > 0 ? (
+                  <>
+                  <div className="space-y-2 md:hidden">
+                    {unsentCertificates.map((c) => (
+                      <label key={c.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !c.is_active && "opacity-60")}>
+                        <Checkbox className="mt-1" checked={selectedCertificates.includes(c.id)} onCheckedChange={() => toggleCertificateSelection(c.id)} disabled={!c.is_active} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate font-semibold">{c.recipient_name}</p>
+                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", c.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{c.is_active ? 'Active' : 'Revoked'}</span>
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(c.certificate_type)} · {c.event_name || '-'}</p>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(c.issued_date).toLocaleDateString('en-GB')}</span></div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="hidden md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1181,6 +1198,8 @@ const Certificates = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
+                  </>
                 ) : (
                   <p className="text-muted-foreground">No unsent certificates.</p>
                 )}
@@ -1253,6 +1272,23 @@ const Certificates = () => {
                 {certificatesLoading ? (
                   <p className="text-muted-foreground">Loading certificates...</p>
                 ) : filteredSentCertificates.length > 0 ? (
+                  <>
+                  <div className="space-y-2 md:hidden">
+                    {filteredSentCertificates.map((c) => (
+                      <label key={c.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !c.is_active && "opacity-60")}>
+                        <Checkbox className="mt-1" checked={selectedSentCertificates.includes(c.id)} onCheckedChange={() => toggleSentCertificateSelection(c.id)} disabled={!c.is_active} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate font-semibold">{c.recipient_name}</p>
+                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", c.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{c.is_active ? 'Active' : 'Revoked'}</span>
+                          </div>
+                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(c.certificate_type)} · {c.event_name || '-'}</p>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(c.issued_date).toLocaleDateString('en-GB')}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{(c.email_status || 'pending')}</span></div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <div className="hidden md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1413,6 +1449,8 @@ const Certificates = () => {
                       })}
                     </TableBody>
                   </Table>
+                  </div>
+                  </>
                 ) : (
                   <p className="text-muted-foreground">No certificates sent yet.</p>
                 )}
