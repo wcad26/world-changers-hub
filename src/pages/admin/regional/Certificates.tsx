@@ -776,7 +776,7 @@ const Certificates = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>Select Recipients</Label>
-                    <Button
+                    <Button className="rounded-full"
                       type="button"
                       variant="outline"
                       size="sm"
@@ -792,12 +792,12 @@ const Certificates = () => {
                       placeholder="Search by name or member ID..."
                       value={memberSearchTerm}
                       onChange={(e) => setMemberSearchTerm(e.target.value)}
-                      className="w-full"
+                      className="w-full rounded-full"
                     />
                   </div>
                   
                   {selectedEventId && selectedEventId !== 'none' && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground bg-primary/5 p-3 rounded-2xl">
                       <FileCheck className="h-4 w-4" />
                       <span>
                         {certificateStatusFilter === 'pending' 
@@ -820,12 +820,12 @@ const Certificates = () => {
                             : member.profiles?.email || 'Unknown';
                           
                           return (
-                            <div key={member.id} className="flex items-center space-x-3 p-3 hover:bg-accent">
+                            <div key={member.id} className="m-1 flex items-center gap-3 rounded-2xl p-3 transition hover:bg-primary/5">
                               <Checkbox
                                 checked={selectedMembers.includes(member.id)}
                                 onCheckedChange={() => toggleMemberSelection(member.id)}
                               />
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 <p className="text-sm font-medium">{fullName}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {member.member_id} • {member.member_type}
@@ -854,7 +854,7 @@ const Certificates = () => {
                 <Button 
                   onClick={() => setShowGenerateDialog(true)}
                   disabled={!selectedTemplate || selectedMembers.length === 0 || !certificateType || isGenerating}
-                  className="w-full"
+                  className="w-full rounded-full"
                   size="lg"
                 >
                   <FileCheck className={cn("mr-2 h-5 w-5", isGenerating && "animate-spin")} />
@@ -927,7 +927,7 @@ const Certificates = () => {
                       type="button"
                       variant="outline"
                       onClick={() => setShowPreviewDialog(true)}
-                      className="w-full"
+                      className="w-full rounded-full"
                     >
                       <ImageIcon className="mr-2 h-4 w-4" />
                       Preview Certificate
@@ -938,7 +938,7 @@ const Certificates = () => {
                 <Button 
                   onClick={handleTemplateUpload}
                   disabled={!templateFile || !templateName || !templateType || uploadTemplate.isPending}
-                  className="w-full"
+                  className="w-full rounded-full"
                 >
                   <Upload className="mr-2 h-4 w-4" />
                   {uploadTemplate.isPending ? 'Uploading...' : 'Upload Template'}
@@ -956,20 +956,20 @@ const Certificates = () => {
                 ) : templates && templates.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {templates.map((template) => (
-                  <Card key={template.id}>
+                  <Card key={template.id} className="rounded-2xl border-border/60 bg-gradient-to-br from-primary/5 to-transparent shadow-sm transition hover:shadow-md">
                     <CardHeader>
                       <CardTitle className="text-base">{template.template_name}</CardTitle>
                       <CardDescription>{formatCertificateType(template.template_type)}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <Badge variant={template.is_active ? 'default' : 'secondary'}>
+                      <Badge className="rounded-full" variant={template.is_active ? 'default' : 'secondary'}>
                         {template.is_active ? 'Active' : 'Inactive'}
                       </Badge>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 rounded-full"
                           onClick={() => setTemplateToEdit(template)}
                         >
                           <Pencil className="mr-2 h-4 w-4" />
@@ -978,7 +978,7 @@ const Certificates = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="flex-1"
+                          className="flex-1 rounded-full"
                           onClick={() => setTemplateToDelete(template.id)}
                           disabled={deleteTemplate.isPending}
                         >
@@ -1009,7 +1009,7 @@ const Certificates = () => {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
+                    <Button className="rounded-full" 
                       variant="outline"
                       size="sm"
                       onClick={handleBulkDownload}
@@ -1018,7 +1018,7 @@ const Certificates = () => {
                       <FileCheck className="mr-2 h-4 w-4" />
                       Download ({selectedCertificates.length})
                     </Button>
-                    <Button 
+                    <Button className="rounded-full" 
                       size="sm"
                       onClick={() => {
                         const activeCertificates = selectedCertificates.filter(id => 
@@ -1041,7 +1041,7 @@ const Certificates = () => {
                         ? `Sending ${emailProgress.current}/${emailProgress.total}...` 
                         : `Email (${selectedCertificates.length})`}
                     </Button>
-                    <Button
+                    <Button className="rounded-full"
                       variant="destructive"
                       size="sm"
                       onClick={() => setBulkDeleteOpen(true)}
@@ -1070,18 +1070,74 @@ const Certificates = () => {
                 ) : unsentCertificates && unsentCertificates.length > 0 ? (
                   <>
                   <div className="space-y-2 md:hidden">
-                    {unsentCertificates.map((c) => (
-                      <label key={c.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !c.is_active && "opacity-60")}>
-                        <Checkbox className="mt-1" checked={selectedCertificates.includes(c.id)} onCheckedChange={() => toggleCertificateSelection(c.id)} disabled={!c.is_active} />
+                    {unsentCertificates.map((cert) => (
+                      <div key={cert.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !cert.is_active && "opacity-60")}>
+                        <Checkbox className="mt-1" checked={selectedCertificates.includes(cert.id)} onCheckedChange={() => toggleCertificateSelection(cert.id)} disabled={!cert.is_active} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate font-semibold">{c.recipient_name}</p>
-                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", c.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{c.is_active ? 'Active' : 'Revoked'}</span>
+                            <p className="truncate font-semibold">{cert.recipient_name}</p>
+                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", cert.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{cert.is_active ? 'Active' : 'Revoked'}</span>
                           </div>
-                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(c.certificate_type)} · {c.event_name || '-'}</p>
-                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(c.issued_date).toLocaleDateString('en-GB')}</span></div>
+                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(cert.certificate_type)} · {cert.event_name || '-'}</p>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(cert.issued_date).toLocaleDateString('en-GB')}</span></div>
                         </div>
-                      </label>
+                        <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {cert.is_active ? (
+                          <DropdownMenuItem
+                            onClick={() => setCertificateToDelete(cert.id)}
+                            disabled={deleteCertificate.isPending}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Revoke (mark invalid)
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() => reinstateCertificate.mutate(cert.id)}
+                            disabled={reinstateCertificate.isPending}
+                            className="text-green-600 focus:text-green-600"
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                            Reinstate
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => setCertificateToDeletePermanently({
+                            id: cert.id,
+                            certificate_url: cert.certificate_url,
+                            certificate_number: cert.certificate_number,
+                            recipient_name: cert.recipient_name,
+                            certificate_type: cert.certificate_type
+                          })}
+                          disabled={permanentlyDeleteCertificate.isPending}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Delete Permanently
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                            </DropdownMenu>
+                      </div>
                     ))}
                   </div>
                   <div className="hidden md:block">
@@ -1239,7 +1295,7 @@ const Certificates = () => {
                         <SelectItem value="pending">⏳ Pending</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button 
+                    <Button className="rounded-full" 
                       variant="outline"
                       onClick={handleDownloadSentCertificates}
                       disabled={selectedSentCertificates.length === 0}
@@ -1247,7 +1303,7 @@ const Certificates = () => {
                       <FileCheck className="mr-2 h-4 w-4" />
                       Download Selected ({selectedSentCertificates.length})
                     </Button>
-                    <Button 
+                    <Button className="rounded-full" 
                       onClick={handleResendEmails}
                       disabled={selectedSentCertificates.length === 0 || isSendingEmails}
                     >
@@ -1274,18 +1330,74 @@ const Certificates = () => {
                 ) : filteredSentCertificates.length > 0 ? (
                   <>
                   <div className="space-y-2 md:hidden">
-                    {filteredSentCertificates.map((c) => (
-                      <label key={c.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !c.is_active && "opacity-60")}>
-                        <Checkbox className="mt-1" checked={selectedSentCertificates.includes(c.id)} onCheckedChange={() => toggleSentCertificateSelection(c.id)} disabled={!c.is_active} />
+                    {filteredSentCertificates.map((cert) => (
+                      <div key={cert.id} className={cn("flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 p-3 backdrop-blur", !cert.is_active && "opacity-60")}>
+                        <Checkbox className="mt-1" checked={selectedSentCertificates.includes(cert.id)} onCheckedChange={() => toggleSentCertificateSelection(cert.id)} disabled={!cert.is_active} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate font-semibold">{c.recipient_name}</p>
-                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", c.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{c.is_active ? 'Active' : 'Revoked'}</span>
+                            <p className="truncate font-semibold">{cert.recipient_name}</p>
+                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", cert.is_active ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive")}>{cert.is_active ? 'Active' : 'Revoked'}</span>
                           </div>
-                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(c.certificate_type)} · {c.event_name || '-'}</p>
-                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(c.issued_date).toLocaleDateString('en-GB')}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{(c.email_status || 'pending')}</span></div>
+                          <p className="truncate text-xs text-muted-foreground">{formatCertificateType(cert.certificate_type)} · {cert.event_name || '-'}</p>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-muted-foreground"><span>{new Date(cert.issued_date).toLocaleDateString('en-GB')}</span><span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{(cert.email_status || 'pending')}</span></div>
                         </div>
-                      </label>
+                        <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => downloadCertificate(cert.certificate_url, `${cert.certificate_number}.png`)}
+                                >
+                                  <Download className="mr-2 h-4 w-4" />
+                                  Download
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => window.open(`/verify/${cert.verification_code}`, '_blank')}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {cert.is_active ? (
+                                  <DropdownMenuItem
+                                    onClick={() => setCertificateToDelete(cert.id)}
+                                    disabled={deleteCertificate.isPending}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Revoke (mark invalid)
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onClick={() => reinstateCertificate.mutate(cert.id)}
+                                    disabled={reinstateCertificate.isPending}
+                                    className="text-green-600 focus:text-green-600"
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reinstate
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => setCertificateToDeletePermanently({
+                                    id: cert.id,
+                                    certificate_url: cert.certificate_url,
+                                    certificate_number: cert.certificate_number,
+                                    recipient_name: cert.recipient_name,
+                                    certificate_type: cert.certificate_type
+                                  })}
+                                  disabled={permanentlyDeleteCertificate.isPending}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Delete Permanently
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                      </div>
                     ))}
                   </div>
                   <div className="hidden md:block">
@@ -1475,10 +1587,10 @@ const Certificates = () => {
               <p><strong>Recipients:</strong> {selectedMembers.length} member(s)</p>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowGenerateDialog(false)}>
+              <Button className="rounded-full" variant="outline" onClick={() => setShowGenerateDialog(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleGenerateCertificates}>
+              <Button className="rounded-full" onClick={handleGenerateCertificates}>
                 Generate Certificates
               </Button>
             </DialogFooter>
@@ -1502,10 +1614,10 @@ const Certificates = () => {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setTemplateToDelete(null)}>
+              <Button className="rounded-full" variant="outline" onClick={() => setTemplateToDelete(null)}>
                 Cancel
               </Button>
-              <Button 
+              <Button className="rounded-full" 
                 variant="destructive"
                 onClick={() => templateToDelete && handleDeleteTemplate(templateToDelete)}
               >
@@ -1532,10 +1644,10 @@ const Certificates = () => {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCertificateToDelete(null)}>
+              <Button className="rounded-full" variant="outline" onClick={() => setCertificateToDelete(null)}>
                 Cancel
               </Button>
-              <Button 
+              <Button className="rounded-full" 
                 variant="destructive"
                 onClick={() => certificateToDelete && handleDeleteCertificate(certificateToDelete)}
                 disabled={deleteCertificate.isPending}
@@ -1568,10 +1680,10 @@ const Certificates = () => {
               This action cannot be reversed.
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setCertificateToDeletePermanently(null)}>
+              <Button className="rounded-full" variant="outline" onClick={() => setCertificateToDeletePermanently(null)}>
                 Cancel
               </Button>
-              <Button 
+              <Button className="rounded-full" 
                 variant="destructive"
                 onClick={handlePermanentDelete}
                 disabled={permanentlyDeleteCertificate.isPending}
@@ -1601,10 +1713,10 @@ const Certificates = () => {
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={isBulkDeleting}>
+              <Button className="rounded-full" variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={isBulkDeleting}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
+              <Button className="rounded-full" variant="destructive" onClick={handleBulkDelete} disabled={isBulkDeleting}>
                 {isBulkDeleting ? 'Deleting...' : `Delete ${selectedCertificates.length} Permanently`}
               </Button>
             </DialogFooter>
