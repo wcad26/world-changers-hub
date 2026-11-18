@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Initials } from '@/components/admin/dcg/DcgUI';
+import { signOutAndRedirect } from '@/lib/signOutAndRedirect';
 
 interface DcgAdminLayoutProps {
   children: React.ReactNode;
@@ -108,13 +109,11 @@ const safeSignOut = async (
   signOut: () => Promise<void> | void,
   navigate: ReturnType<typeof useNavigate>,
 ) => {
-  try {
-    await signOut();
-  } catch (err) {
-    console.error('[DcgAdminLayout] signOut error', err);
-  } finally {
-    navigate('/dcg-auth', { replace: true });
-  }
+  await signOutAndRedirect(
+    signOut,
+    () => navigate('/dcg-auth', { replace: true }),
+    (error) => console.error('[DcgAdminLayout] signOut error', error),
+  );
 };
 
 const DesktopShell: React.FC<DcgAdminLayoutProps> = ({ children, title }) => {
