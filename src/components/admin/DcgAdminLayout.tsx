@@ -26,6 +26,7 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -413,7 +414,29 @@ const MobileShell: React.FC<DcgAdminLayoutProps> = ({ children, title }) => {
 const DcgAdminLayout: React.FC<DcgAdminLayoutProps> = (props) => {
   const isMobile = useIsMobile();
   const isTablet = useIsTablet();
+  const { data: leadershipDcg, isLoading: verifyingLeadership, isError: leadershipCheckFailed } = useCurrentDcg();
   const useMobileShell = isMobile || isTablet;
+
+  // Keep DcgSessionRoute pass-through, but never render the administration
+  // shell for an ordinary member who opens a /dcg URL directly.
+  if (leadershipCheckFailed || (!verifyingLeadership && !leadershipDcg)) {
+    return (
+      <main className="grid min-h-svh place-items-center bg-muted/40 p-6">
+        <section className="w-full max-w-md rounded-3xl border border-border/60 bg-card p-8 text-center shadow-xl">
+          <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+            <ShieldAlert className="h-7 w-7" />
+          </span>
+          <h1 className="mt-5 font-heading text-2xl font-bold">DCG leadership access required</h1>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            This portal is reserved for active DCG Leaders and Assistants. Ask your regional admin to assign you a leadership role if you manage a DCG.
+          </p>
+          <Button asChild className="mt-6 rounded-full">
+            <Link to="/member/dashboard">Go to Member Portal</Link>
+          </Button>
+        </section>
+      </main>
+    );
+  }
 
   if (useMobileShell) {
     return <MobileShell {...props} />;

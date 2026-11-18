@@ -106,38 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {
         // ignore
       }
-      if (!resolvedDcg) {
-        const { data: memberRows } = await supabase
-          .from('members')
-          .select('id')
-          .eq('profile_id', userId);
-        const memberIds = (memberRows || []).map((m) => m.id);
-        if (memberIds.length > 0) {
-          const { data: ledDcg } = await supabase
-            .from('dcgs')
-            .select('*')
-            .in('leader_id', memberIds)
-            .eq('is_active', true)
-            .limit(1)
-            .maybeSingle();
-          if (ledDcg) {
-            resolvedDcg = ledDcg;
-          } else {
-            const { data: memberships } = await supabase
-              .from('dcg_members')
-              .select('dcg_id, role, dcgs:dcg_id (*)')
-              .in('member_id', memberIds)
-              .eq('is_active', true);
-            if (memberships && memberships.length > 0) {
-              const preferred =
-                memberships.find((m) => m.role === 'Leader') ||
-                memberships.find((m) => m.role === 'Assistant') ||
-                memberships[0];
-              if (preferred?.dcgs) resolvedDcg = preferred.dcgs as Dcg;
-            }
-          }
-        }
-      }
+      // get_user_dcg is the single source of truth: only active Leaders and
+      // Assistants resolve a DCG administration context. Never fall back to
+      // an ordinary membership or a legacy dcg_user_sessions row.
       if (resolvedDcg) setUserDcg(resolvedDcg);
     } catch (error) {
       console.warn('[PortalAuth] non-fatal context load error', error);

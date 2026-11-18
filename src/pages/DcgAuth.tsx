@@ -4,13 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Mail, Lock, UsersRound } from 'lucide-react';
 import { AuthShell, AuthField, AuthSubmit, AuthError, ForgotLink } from '@/components/auth/AuthShell';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import wcaLogo from '@/assets/wca-logo.png';
-import { writeCachedUser } from '@/lib/portalAuthCache';
+import { clearCachedUser, markExplicitSignOut, writeCachedUser } from '@/lib/portalAuthCache';
+import { evaluateDcgLeadership } from '@/lib/dcgLeadership';
 
 /**
  * Isolated DCG portal login page.
@@ -26,6 +21,20 @@ const DcgAuth = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const rejectLogin = async (message: string) => {
+    // Do not leave a valid Supabase session or sticky portal cache behind when
+    // the account is not a DCG Leader or Assistant.
+    markExplicitSignOut();
+    clearCachedUser();
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // Access is still denied even if remote sign-out fails.
+    }
+    setError(message);
+    setLoading(false);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -40,6 +49,19 @@ const DcgAuth = () => {
       if (authError || !authData.user) {
         setError(authError?.message ?? 'Invalid credentials.');
         setLoading(false);
+        return;
+      }
+
+      const leadershipAccess = evaluateDcgLeadership(
+        await supabase.rpc('get_user_dcg', { _user_id: authData.user.id }),
+      );
+
+      if (!leadershipAccess.allowed) {
+        await rejectLogin(
+          leadershipAccess.reason === 'verification_failed'
+            ? 'We could not verify your DCG leadership role. Please try again.'
+            : 'Access is restricted to active DCG Leaders and Assistants. Please use the Member Portal.',
+        );
         return;
       }
 

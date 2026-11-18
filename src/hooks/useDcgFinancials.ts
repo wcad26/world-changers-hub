@@ -8,14 +8,15 @@ import * as z from 'zod';
 // Supabase, independent of any regional context. This is the source of
 // truth for the DCG portal.
 export const useCurrentDcg = () => {
-  return useQuery({
-    queryKey: ['current_dcg'],
-    queryFn: async (): Promise<Database['public']['Tables']['dcgs']['Row'] | null> => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const uid = sessionData.session?.user?.id;
-      if (!uid) return null;
+  const { user } = useAuth();
+  const userId = user?.id as string | undefined;
 
-      const { data: dcgId, error: rpcErr } = await supabase.rpc('get_user_dcg', { _user_id: uid });
+  return useQuery({
+    queryKey: ['current_dcg', userId],
+    queryFn: async (): Promise<Database['public']['Tables']['dcgs']['Row'] | null> => {
+      if (!userId) return null;
+
+      const { data: dcgId, error: rpcErr } = await supabase.rpc('get_user_dcg', { _user_id: userId });
       if (rpcErr) throw rpcErr;
       if (!dcgId) return null;
 
@@ -27,6 +28,7 @@ export const useCurrentDcg = () => {
       if (error) throw error;
       return dcg ?? null;
     },
+    enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   });
 };
