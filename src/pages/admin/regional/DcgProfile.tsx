@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "@/lib/router-compat";
 import {
   ArrowLeft, Users, Calendar as CalendarIcon2, MapPin, Phone, Clock, Edit,
   Wallet, TrendingUp, TrendingDown, CalendarIcon, Download,
-  MoreVertical, Eye, UserMinus,
+  MoreVertical, Eye, UserMinus, UserPlus, ShieldCheck, Crown, User as UserIcon,
 } from "lucide-react";
 import { format, subMonths } from "date-fns";
 import Papa from "papaparse";
@@ -17,15 +17,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import AddExistingMemberDialog from "@/components/admin/dcg/AddExistingMemberDialog";
 import { EditDcgDialog } from "@/components/admin/regional/dcg/EditDcgDialog";
 import {
   HeroCard, RingTile, SearchBar, RoundButton, ChipRow, Initials, StatusPill, TypePill, InfoRow,
 } from "@/components/admin/regional/RegionalUI";
 
 import { useDcgs } from "@/hooks/useDCGs";
-import { useDcgMembers, useRemoveMemberFromDcg } from "@/hooks/useDcgMembers";
+import { useDcgMembers, useRemoveMemberFromDcg, useUpdateDcgMemberRole } from "@/hooks/useDcgMembers";
 import { useFinancialTransactions } from "@/hooks/useFinancials";
 
 import { useRegionCurrency } from "@/hooks/useCurrencies";
@@ -81,6 +82,8 @@ const DcgProfile: React.FC = () => {
   const { data: attendanceData } = useAttendanceHistoryWithMemberTypes(userRegion?.id);
   const { data: dcgEvents } = useDcgEvents(dcgId);
   const removeMember = useRemoveMemberFromDcg();
+  const updateRole = useUpdateDcgMemberRole();
+  const [addOpen, setAddOpen] = useState(false);
 
   const dcg = dcgs?.find(d => d.id === dcgId);
   const fmt = (amount: number) => formatWithCurrency(amount, currency);
@@ -224,6 +227,7 @@ const DcgProfile: React.FC = () => {
 
   const handleRemove = async (dcgMemberId: string) => {
     if (!dcgId) return;
+    if (!window.confirm("Remove this member from the DCG?")) return;
     await removeMember.mutateAsync({ dcgMemberId, dcgId });
   };
 
@@ -245,7 +249,15 @@ const DcgProfile: React.FC = () => {
           <DropdownMenuItem onClick={() => memberId && navigate(`/admin/regional/members/${memberId}`)}>
             <Eye className="mr-2 h-4 w-4" /> View
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleRemove(m.id)}>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs text-muted-foreground">Assign DCG role</DropdownMenuLabel>
+          {([["Leader", Crown], ["Assistant", ShieldCheck], ["Member", UserIcon]] as const).map(([r, Icon]) => (
+            <DropdownMenuItem key={r} disabled={m.role === r} onClick={(e) => { e.stopPropagation(); updateRole.mutate({ dcgMemberId: m.id, role: r }); }}>
+              <Icon className="mr-2 h-4 w-4" /> {r}{m.role === r ? " (current)" : ""}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={(e) => { e.stopPropagation(); handleRemove(m.id); }}>
             <UserMinus className="mr-2 h-4 w-4" /> Remove from DCG
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -407,6 +419,7 @@ const DcgProfile: React.FC = () => {
             <h2 className="font-heading text-lg font-semibold text-foreground">DCG members</h2>
             <p className="text-xs text-muted-foreground">{activeMembers.length} active in this group</p>
           </div>
+          <RoundButton icon={UserPlus} label="Add members" onClick={() => setAddOpen(true)} />
           <RoundButton icon={Download} label={`Export ${filteredMembers.length} members`} onClick={handleExport} />
         </div>
 
@@ -532,6 +545,7 @@ const DcgProfile: React.FC = () => {
         </div>
       </section>
 
+      {dcgId && <AddExistingMemberDialog open={addOpen} onOpenChange={setAddOpen} dcgId={dcgId} />}
       <EditDcgDialog
         open={isEditDialogOpen}
         setOpen={setIsEditDialogOpen}
