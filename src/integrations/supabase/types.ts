@@ -4720,6 +4720,7 @@ export type Database = {
         Args: { _perm: string; _user_id: string }
         Returns: boolean
       }
+      is_portal_staff: { Args: { _user_id: string }; Returns: boolean }
       is_principal_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_user: { Args: { _user_id: string }; Returns: boolean }
       search_all_donors: {
