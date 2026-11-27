@@ -27,6 +27,7 @@ interface AttendanceManagementDialogProps {
     id: string;
     name: string;
     start_datetime: string;
+    dcg_id?: string | null;
   };
 }
 
@@ -68,7 +69,27 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
   const [isInitialized, setIsInitialized] = useState(false);
   const [typeFilter, setTypeFilter] = useState<MemberTypeFilter>('all');
 
-  const { data: members, isLoading: loadingMembers, error: membersError } = useMembers(userRegion?.id);
+  const { data: regionMembers, isLoading: loadingRegionMembers, error: membersError } = useMembers(userRegion?.id);
+  const dcgId = event.dcg_id || null;
+  const { data: dcgInfo, isLoading: loadingDcg } = useQuery({
+    queryKey: ['attendance-dcg-scope', dcgId],
+    queryFn: async () => {
+      const [{ data: rows, error }, { data: dcg }] = await Promise.all([
+        supabase.from('dcg_members').select('member_id').eq('dcg_id', dcgId!).eq('is_active', true),
+        supabase.from('dcgs').select('name').eq('id', dcgId!).maybeSingle(),
+      ]);
+      if (error) throw error;
+      return { ids: new Set((rows || []).map(r => r.member_id)), name: dcg?.name || 'DCG' };
+    },
+    enabled: !!dcgId && isOpen,
+  });
+  const members = useMemo(() => {
+    if (!regionMembers) return regionMembers;
+    if (!dcgId) return regionMembers;
+    if (!dcgInfo) return [];
+    return regionMembers.filter(m => dcgInfo.ids.has(m.id));
+  }, [regionMembers, dcgId, dcgInfo]);
+  const loadingMembers = loadingRegionMembers || (!!dcgId && loadingDcg);
   const { data: existingAttendance, isLoading: loadingExisting } = useExistingEventAttendance(event.id, userRegion?.id);
   const createAttendanceEvent = useCreateAttendanceEvent();
   const saveAttendance = useSaveAttendance();
@@ -172,6 +193,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
           region_id: userRegion.id,
           description: `Attendance tracking for ${event.name}`,
           source_event_id: event.id,
+          dcg_id: dcgId,
         });
         attendanceEventId = ae.id;
       }
@@ -232,7 +254,7 @@ export function AttendanceManagementDialog({ isOpen, onClose, event }: Attendanc
         <div className="relative shrink-0 overflow-hidden bg-gradient-to-br from-primary to-secondary rounded-t-3xl px-4 pb-4 pt-6 text-primary-foreground sm:px-6 lg:pt-5">
           <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-primary-foreground/10 blur-2xl" />
           <DialogHeader className="relative space-y-0 pr-10 text-left">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">Mark attendance</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary-foreground/75">Mark attendance{dcgId && dcgInfo ? ` · DCG · ${dcgInfo.name}` : ''}</p>
             <DialogTitle className="truncate font-heading text-lg font-bold text-primary-foreground sm:text-xl">{event.name}</DialogTitle>
             <DialogDescription className="text-xs text-primary-foreground/80">{dateLabel} · Tap a person to mark them present</DialogDescription>
           </DialogHeader>

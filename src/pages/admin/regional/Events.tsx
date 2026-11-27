@@ -25,6 +25,7 @@ import { MakeRecurringDialog } from "@/components/admin/events/MakeRecurringDial
 import { useCreateRecurrenceRule, DEFAULT_RECURRENCE, type RecurrenceInput } from "@/hooks/useRecurringEvents";
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
+import { useDcgs } from "@/hooks/useDCGs";
 import { useCurrencies } from "@/hooks/useCurrencies";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -146,6 +147,8 @@ const eventSchema = z.object({
   is_public: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_special: z.boolean().default(false),
+  event_scope: z.enum(["regional", "dcg"]).default("regional"),
+  dcg_id: z.string().optional().or(z.literal("")),
   requires_pre_registration: z.boolean().default(false),
   attendance_target: z.coerce.number().positive().int().optional(),
 }).refine((data) => {
@@ -157,6 +160,37 @@ const eventSchema = z.object({
   message: "End date must be after or same as start date",
   path: ["end_date"]
 });
+
+const DcgScopeFields: React.FC<{ form: any; dcgs: Array<{ id: string; name: string; member_count?: number }> }> = ({ form, dcgs }) => {
+  const scope = form.watch('event_scope') || 'regional';
+  return (
+    <div className="space-y-3 rounded-2xl border border-border/50 bg-background/40 p-3">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1">
+        {(['regional', 'dcg'] as const).map(v => (
+          <button key={v} type="button" onClick={() => { form.setValue('event_scope', v); if (v === 'dcg') { form.setValue('is_special', false); } else { form.setValue('dcg_id', ''); } }}
+            className={cn('rounded-lg px-3 py-2 text-sm font-semibold transition-all', scope === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+            {v === 'regional' ? 'Regional event' : 'DCG event'}
+          </button>
+        ))}
+      </div>
+      {scope === 'dcg' && (
+        <FormField control={form.control} name="dcg_id" render={({ field }) => (
+          <FormItem>
+            <FormLabel>DCG hosting this event</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <FormControl><SelectTrigger><SelectValue placeholder="Select a DCG" /></SelectTrigger></FormControl>
+              <SelectContent>
+                {dcgs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}{typeof d.member_count === 'number' ? ` · ${d.member_count} members` : ''}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <FormDescription className="text-xs">Attendance for this event will list only this DCG's members.</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )} />
+      )}
+    </div>
+  );
+};
 
 const RegionalEvents: React.FC = () => {
   const navigate = useNavigate();
@@ -170,6 +204,8 @@ const RegionalEvents: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
+  const { data: regionDcgs = [] } = useDcgs();
+  const dcgNameById = useMemo(() => new Map(regionDcgs.map(d => [d.id, d.name] as const)), [regionDcgs]);
   const [timeFilter, setTimeFilter] = useState("upcoming");
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
     const now = new Date();
@@ -244,6 +280,8 @@ const RegionalEvents: React.FC = () => {
   const form = useForm<z.infer<typeof eventSchema>>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
+      event_scope: "regional",
+      dcg_id: "",
       name: "",
       name_fr: "",
       description: "",
@@ -388,6 +426,10 @@ const RegionalEvents: React.FC = () => {
   }, [filteredEvents, attendanceData]);
 
   async function onSubmit(values: z.infer<typeof eventSchema>) {
+    if (values.event_scope === 'dcg') {
+      if (!values.dcg_id) { toast({ title: "Select a DCG", description: "Choose the DCG hosting this event.", variant: "destructive" }); return; }
+      values = { ...values, is_special: false };
+    }
     try {
       // Upload event card image first (if provided)
       let eventCardImageUrl: string | null = null;
@@ -558,7 +600,7 @@ const RegionalEvents: React.FC = () => {
         fees_compulsory: values.is_special ? !!values.fees_compulsory : false,
         linked_fundraising_campaign_id: values.is_special && values.linked_fundraising_campaign_id ? values.linked_fundraising_campaign_id : null,
         status: 'Upcoming',
-        dcg_id: null,
+        dcg_id: values.event_scope === 'dcg' && values.dcg_id ? values.dcg_id : null,
         registration_url: values.registration_url || null,
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
@@ -764,7 +806,7 @@ const RegionalEvents: React.FC = () => {
           templateEventId: createdEvent.id,
           name: values.name,
           regionId: userRegion?.id ?? null,
-          dcgId: null,
+          dcgId: values.event_scope === 'dcg' && values.dcg_id ? values.dcg_id : null,
           startDatetime: start_datetime,
           endDatetime: end_datetime,
           createdBy: user?.id ?? null,
@@ -1010,6 +1052,10 @@ const RegionalEvents: React.FC = () => {
   };
 
   async function onEditSubmit(values: z.infer<typeof eventSchema>) {
+    if (values.event_scope === 'dcg') {
+      if (!values.dcg_id) { toast({ title: "Select a DCG", description: "Choose the DCG hosting this event.", variant: "destructive" }); return; }
+      values = { ...values, is_special: false };
+    }
     if (!eventToEdit) return;
     
     try {
@@ -1316,6 +1362,7 @@ const RegionalEvents: React.FC = () => {
         organizer_name: values.organizer_name || null,
         organizer_email: values.organizer_email || null,
         whatsapp_contact: values.whatsapp_contact || null,
+        dcg_id: values.event_scope === 'dcg' && values.dcg_id ? values.dcg_id : null,
       };
 
       await updateEventMutation.mutateAsync(updateData);
@@ -1448,7 +1495,7 @@ const RegionalEvents: React.FC = () => {
           templateEventId: eventToEdit.id,
           name: values.name,
           regionId: userRegion?.id ?? null,
-          dcgId: eventToEdit.dcg_id ?? null,
+          dcgId: values.event_scope === 'dcg' && values.dcg_id ? values.dcg_id : null,
           startDatetime: start_datetime,
           endDatetime: end_datetime,
           createdBy: user?.id ?? null,
@@ -1619,6 +1666,8 @@ const RegionalEvents: React.FC = () => {
       is_public: event.is_public,
       is_featured: event.is_featured,
       is_special: event.is_special || false,
+      event_scope: event.dcg_id ? 'dcg' : 'regional',
+      dcg_id: event.dcg_id || '',
       requires_pre_registration: !!event.requires_pre_registration,
       collect_lodging: !!event.collect_lodging,
       collect_meal_preferences: !!event.collect_meal_preferences,
@@ -1784,7 +1833,7 @@ const RegionalEvents: React.FC = () => {
         </TableCell>
         <TableCell>
           <Badge variant={eventType === 'DCG' ? 'secondary' : eventType === 'Special' ? 'outline' : 'default'} className="text-xs">
-            {eventType}
+            {eventType === 'DCG' && event.dcg_id && dcgNameById.get(event.dcg_id) ? `DCG · ${dcgNameById.get(event.dcg_id)}` : eventType}
           </Badge>
         </TableCell>
         <TableCell>{formatDateRange(event.start_datetime, event.end_datetime)}</TableCell>
@@ -1987,7 +2036,7 @@ const RegionalEvents: React.FC = () => {
                       <p className="truncate text-sm font-semibold text-foreground">{ev.name ?? '—'}</p>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">{formatTimeRange(ev.start_datetime, ev.end_datetime)}{ev.location_name ? ` · ${ev.location_name}` : ''}</p>
                       <div className="mt-1 flex min-w-0 items-center gap-1.5">
-                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', type === 'Special' ? 'bg-secondary/15 text-secondary' : type === 'DCG' ? 'bg-accent/15 text-accent-foreground' : 'bg-primary/10 text-primary')}>{type}</span>
+                        <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', type === 'Special' ? 'bg-secondary/15 text-secondary' : type === 'DCG' ? 'bg-accent/15 text-accent-foreground' : 'bg-primary/10 text-primary')}>{type === 'DCG' && ev.dcg_id && dcgNameById.get(ev.dcg_id) ? `DCG · ${dcgNameById.get(ev.dcg_id)}` : type}</span>
                         {ev.recurrence_rule_id && <Repeat className="h-3 w-3 shrink-0 text-primary" />}
                         <span className="truncate text-[11px] text-muted-foreground">{future ? (ev.capacity ? `Cap ${ev.capacity}` : 'Upcoming') : `${att} attended`}</span>
                       </div>
@@ -2066,6 +2115,7 @@ const RegionalEvents: React.FC = () => {
                 variant: "destructive",
               });
             })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
+              <DcgScopeFields form={form} dcgs={regionDcgs} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -3464,6 +3514,7 @@ const RegionalEvents: React.FC = () => {
               });
             })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
               {/* Event details form fields - same structure as create dialog */}
+              <DcgScopeFields form={form} dcgs={regionDcgs} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
