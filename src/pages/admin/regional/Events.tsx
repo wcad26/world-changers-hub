@@ -26,6 +26,7 @@ import { useCreateRecurrenceRule, DEFAULT_RECURRENCE, type RecurrenceInput } fro
 import { useAttendanceHistoryWithMemberTypes } from "@/hooks/useAttendance";
 import { useAuth } from "@/hooks/useAuth";
 import { useDcgs } from "@/hooks/useDCGs";
+import { CreateEventDialog } from "@/components/admin/dcg/CreateEventDialog";
 import { useCurrencies } from "@/hooks/useCurrencies";
 import { useToast } from "@/components/ui/use-toast";
 import { format } from "date-fns";
@@ -161,36 +162,12 @@ const eventSchema = z.object({
   path: ["end_date"]
 });
 
-const DcgScopeFields: React.FC<{ form: any; dcgs: Array<{ id: string; name: string; member_count?: number }> }> = ({ form, dcgs }) => {
-  const scope = form.watch('event_scope') || 'regional';
-  return (
-    <div className="space-y-3 rounded-2xl border border-border/50 bg-background/40 p-3">
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1">
-        {(['regional', 'dcg'] as const).map(v => (
-          <button key={v} type="button" onClick={() => { form.setValue('event_scope', v); if (v === 'dcg') { form.setValue('is_special', false); } else { form.setValue('dcg_id', ''); } }}
-            className={cn('rounded-lg px-3 py-2 text-sm font-semibold transition-all', scope === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
-            {v === 'regional' ? 'Regional event' : 'DCG event'}
-          </button>
-        ))}
-      </div>
-      {scope === 'dcg' && (
-        <FormField control={form.control} name="dcg_id" render={({ field }) => (
-          <FormItem>
-            <FormLabel>DCG hosting this event</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value || undefined}>
-              <FormControl><SelectTrigger><SelectValue placeholder="Select a DCG" /></SelectTrigger></FormControl>
-              <SelectContent>
-                {dcgs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}{typeof d.member_count === 'number' ? ` · ${d.member_count} members` : ''}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <FormDescription className="text-xs">Attendance for this event will list only this DCG's members.</FormDescription>
-            <FormMessage />
-          </FormItem>
-        )} />
-      )}
-    </div>
-  );
-};
+const DcgScopeFields: React.FC<{ onPickDcg: () => void }> = ({ onPickDcg }) => (
+  <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/60 p-1">
+    <button type="button" className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm">Regional event</button>
+    <button type="button" onClick={onPickDcg} className="rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground">DCG event</button>
+  </div>
+);
 
 const RegionalEvents: React.FC = () => {
   const navigate = useNavigate();
@@ -205,6 +182,7 @@ const RegionalEvents: React.FC = () => {
   const [drilldownEvent, setDrilldownEvent] = useState<any>(null);
   const [eventTypeFilter, setEventTypeFilter] = useState("all");
   const { data: regionDcgs = [] } = useDcgs();
+  const [dcgDialog, setDcgDialog] = useState<{ open: boolean; edit: any | null }>({ open: false, edit: null });
   const dcgNameById = useMemo(() => new Map(regionDcgs.map(d => [d.id, d.name] as const)), [regionDcgs]);
   const [timeFilter, setTimeFilter] = useState("upcoming");
   const [periodFilters, setPeriodFilters] = useState<PeriodFilters>(() => {
@@ -1529,6 +1507,7 @@ const RegionalEvents: React.FC = () => {
   }
 
   const handleEdit = async (event: any) => {
+    if (event.dcg_id) { setDcgDialog({ open: true, edit: event }); return; }
     setEventToEdit(event);
     setEditRecurrenceEnabled(false);
     setEditRecurrence(DEFAULT_RECURRENCE);
@@ -2115,7 +2094,7 @@ const RegionalEvents: React.FC = () => {
                 variant: "destructive",
               });
             })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
-              <DcgScopeFields form={form} dcgs={regionDcgs} />
+              <DcgScopeFields onPickDcg={() => { setCreateEventDialogOpen(false); setDcgDialog({ open: true, edit: null }); }} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -3514,7 +3493,6 @@ const RegionalEvents: React.FC = () => {
               });
             })} className="px-4 sm:px-6 py-5 space-y-6 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:rounded-xl [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:bg-background/60 [&_input:not([type=checkbox]):not([type=radio]):not([type=file])]:border-border/50 [&_textarea]:rounded-xl [&_textarea]:bg-background/60 [&_textarea]:border-border/50 [&_[role=combobox]]:rounded-xl [&_[role=combobox]]:bg-background/60 [&_[role=combobox]]:border-border/50">
               {/* Event details form fields - same structure as create dialog */}
-              <DcgScopeFields form={form} dcgs={regionDcgs} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -4836,6 +4814,13 @@ const RegionalEvents: React.FC = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <CreateEventDialog
+        isOpen={dcgDialog.open}
+        onClose={() => setDcgDialog({ open: false, edit: null })}
+        editEvent={dcgDialog.edit}
+        dcgOptions={regionDcgs}
+      />
 
       {/* Attendance Management Dialog */}
       {selectedEvent && (

@@ -42,6 +42,7 @@ import {
   type RecurrenceInput,
 } from '@/hooks/useRecurringEvents';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import { SheetHeader } from '@/components/admin/dcg/DcgUI';
 
 const ALLOWED_CATEGORIES = [
@@ -95,6 +96,8 @@ interface CreateEventDialogProps {
   onClose: () => void;
   duplicateFrom?: Event | null;
   editEvent?: Event | null;
+  /** Regional portal: list of DCGs the admin can pick from */
+  dcgOptions?: Array<{ id: string; name: string; member_count?: number }>;
 }
 
 export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
@@ -102,7 +105,10 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   onClose,
   duplicateFrom,
   editEvent,
+  dcgOptions,
 }) => {
+  const [selectedDcgId, setSelectedDcgId] = React.useState<string>('');
+  React.useEffect(() => { if (isOpen) setSelectedDcgId(editEvent?.dcg_id || duplicateFrom?.dcg_id || ''); }, [isOpen, editEvent?.id, duplicateFrom?.id]);
   const [cardImagePreview, setCardImagePreview] = React.useState<string>('');
   const [recurrenceEnabled, setRecurrenceEnabled] = React.useState(false);
   const [recurrence, setRecurrence] = React.useState<RecurrenceInput>(DEFAULT_RECURRENCE);
@@ -210,6 +216,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
   }, [isOpen, duplicateFrom?.id, editEvent?.id]);
 
   const handleSubmit = async (data: EventFormData) => {
+    if (dcgOptions && !selectedDcgId) { toast.error('Select the DCG hosting this event.'); return; }
     try {
       let eventCardImageUrl: string | null = editEvent?.image_url ?? null;
       if (data.event_card_image) {
@@ -258,6 +265,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
         await updateEvent.mutateAsync({
           id: editEvent.id,
           ...payload,
+          ...(dcgOptions && selectedDcgId ? { dcg_id: selectedDcgId } : {}),
         });
 
         if (recurrenceEnabled && !editEvent.recurrence_rule_id) {
@@ -265,7 +273,7 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
             templateEventId: editEvent.id,
             name: data.name,
             regionId: editEvent.region_id ?? userRegion?.id ?? null,
-            dcgId: editEvent.dcg_id ?? userDcg?.id ?? null,
+            dcgId: (dcgOptions ? selectedDcgId : null) || editEvent.dcg_id || userDcg?.id || null,
             startDatetime: start_datetime,
             endDatetime: end_datetime,
             createdBy: user?.id ?? null,
@@ -273,14 +281,14 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
           });
         }
       } else {
-        const createdEvent = await createEvent.mutateAsync(payload);
+        const createdEvent = await createEvent.mutateAsync({ ...payload, dcgIdOverride: dcgOptions ? selectedDcgId : null });
 
         if (recurrenceEnabled && createdEvent?.id) {
           await createRule.mutateAsync({
             templateEventId: createdEvent.id,
             name: data.name,
             regionId: userRegion?.id ?? null,
-            dcgId: userDcg?.id ?? null,
+            dcgId: (dcgOptions ? selectedDcgId : null) || userDcg?.id || null,
             startDatetime: start_datetime,
             endDatetime: end_datetime,
             createdBy: user?.id ?? null,
@@ -324,6 +332,17 @@ export const CreateEventDialog: React.FC<CreateEventDialogProps> = ({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {dcgOptions && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">DCG hosting this event</label>
+                <Select value={selectedDcgId || undefined} onValueChange={setSelectedDcgId}>
+                  <SelectTrigger><SelectValue placeholder="Select a DCG" /></SelectTrigger>
+                  <SelectContent>
+                    {dcgOptions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}{typeof d.member_count === 'number' ? ` · ${d.member_count} members` : ''}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}

@@ -53,8 +53,9 @@ export const useCreateDcgEvent = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (eventData: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'dcg_id' | 'created_by'>) => {
-      if (!userDcg?.id || !userRegion?.id || !user?.id) {
+    mutationFn: async ({ dcgIdOverride, ...eventData }: Omit<NewEvent, 'id' | 'created_at' | 'updated_at' | 'region_id' | 'dcg_id' | 'created_by'> & { dcgIdOverride?: string | null }) => {
+      const targetDcgId = dcgIdOverride || userDcg?.id;
+      if (!targetDcgId || !userRegion?.id || !user?.id) {
         throw new Error('User, DCG, or region not found');
       }
       
@@ -62,7 +63,7 @@ export const useCreateDcgEvent = () => {
         .from('events')
         .insert([{ 
           ...eventData,
-          dcg_id: userDcg.id,
+          dcg_id: targetDcgId,
           region_id: userRegion.id,
           created_by: user.id
         }])
@@ -74,6 +75,7 @@ export const useCreateDcgEvent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dcg-events'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       toast({
         title: "Success",
         description: "Event created successfully",
@@ -108,6 +110,7 @@ export const useUpdateDcgEvent = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dcg-events'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
       toast({
         title: "Success",
         description: "Event updated successfully",
